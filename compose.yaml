@@ -1,0 +1,6 @@
+﻿services:
+  tavern-backend:
+    image: backend
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
