@@ -1,6 +1,6 @@
-@Tavern_HostAddress = http://localhost:5273
+@Tavern_HostAddress = http://localhost:8080
 
-GET {{Tavern_HostAddress}}/weatherforecast/
+GET {{Tavern_HostAddress}}/activity?activityId=1
 Accept: application/json
 
 ###
