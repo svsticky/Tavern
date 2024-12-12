@@ -1,6 +1,7 @@
 ﻿services:
   tavern-backend:
     container_name: tavern-backend
+    restart: unless-stopped
     image: tavern-backend # Give the image a better name, real image is generated from the dockerfile below
     build:
       context: .
@@ -10,6 +11,17 @@
     networks:
       tavern-network:
 
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: docker-secret # TODO: use docker secrets to store this password
+    volumes:
+      - postgres-data:$PGDATA
+
 networks:
   tavern-network:
     name: tavern-network
+
+volumes:
+  postgres-data:
