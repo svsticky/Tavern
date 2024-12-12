@@ -1,6 +1,26 @@
 ﻿services:
-  tavern-backend:
-    image: backend
+  backend:
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
     build:
       context: .
       dockerfile: Backend/Dockerfile
+    networks:
+      - postgres-network
+
+  postgres:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: docker-secret # TODO: use docker secrets to store this password
+    volumes:
+      - postgres-data:$PGDATA
+    networks:
+      - postgres-network
+
+volumes:
+  postgres-data:
+
+networks:
+  postgres-network:
