@@ -1,0 +1,22 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/dotnet-postgres
+{
+  "name": "Tavern devcontainer for frontend and backend",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "backend",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+  // Features to add to the dev container. More info: https://containers.dev/features.
+   "features": {
+     "ghcr.io/devcontainers/features/common-utils:2": {},
+   },
+
+  "customizations" : {
+    "jetbrains" : {
+      "backend" : "Rider"
+    },
+    "vscode": {}
+  },
+
+//  "forwardPorts": [8080],
+}
