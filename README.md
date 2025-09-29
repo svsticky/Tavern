@@ -12,7 +12,7 @@ TL;DR clone repo
 
 ## How to use
 
-TL;DR do docker comose up.
+TL;DR use the devcontainer, using your favourite tool like vscode or Jetbrains Rider
 
 ## How to host
 
