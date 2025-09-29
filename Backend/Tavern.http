@@ -1,3 +1,5 @@
+# This quick and dirty alternative to postman and imsonmia might be interesting - see what our IDE can mak of it.
+
 @Tavern_HostAddress = http://localhost:5273
 
 GET {{Tavern_HostAddress}}/weatherforecast/

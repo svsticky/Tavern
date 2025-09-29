@@ -1,5 +1,7 @@
 services:
   backend:
+    container_name: tavern-backend-devcontainer
+    image: tavern-backend-devcontainer
     build:
       context: .
       dockerfile: Dockerfile

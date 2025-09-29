@@ -16,7 +16,7 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection(); # TODO issues when accessing through localhost - port is removed from url
 
 app.MapGet("/activity", (uint activityId) =>
     {
@@ -28,7 +28,7 @@ app.MapGet("/activity", (uint activityId) =>
             DateTimeStart = DateTimeOffset.Now,
         };
     })
-	.WithName("GetWeatherForecast")
+	.WithName("GetActivity")
 	.WithOpenApi();
 
 app.Run();

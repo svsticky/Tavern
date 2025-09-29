@@ -1,0 +1,17 @@
+﻿services:
+  tavern-backend:
+    container_name: tavern-backend
+    image: tavern-backend # Give the image a better name, real image is generated from the dockerfile below
+    build:
+      context: .
+      dockerfile: Backend/Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "443:443"
+    networks:
+      tavern-network:
+
+networks:
+  tavern-network:
+    name: tavern-network
