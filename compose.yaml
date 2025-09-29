@@ -7,8 +7,6 @@
       dockerfile: Backend/Dockerfile
     ports:
       - "8080:8080"
-      - "8081:8081"
-      - "443:443"
     networks:
       tavern-network:
 
