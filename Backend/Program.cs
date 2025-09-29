@@ -16,8 +16,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-//app.UseHttpsRedirection(); # TODO issues when accessing through localhost - port is removed from url
-
 app.MapGet("/activity", (uint activityId) =>
     {
         return new Activity()
