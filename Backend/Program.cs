@@ -16,8 +16,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.MapGet("/activity", (uint activityId) =>
     {
         return new Activity()
@@ -28,7 +26,7 @@ app.MapGet("/activity", (uint activityId) =>
             DateTimeStart = DateTimeOffset.Now,
         };
     })
-	.WithName("GetWeatherForecast")
+	.WithName("GetActivity")
 	.WithOpenApi();
 
 app.Run();

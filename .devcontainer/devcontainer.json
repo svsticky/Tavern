@@ -1,0 +1,40 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/dotnet-postgres
+{
+    "name": "Tavern devcontainer",
+    "dockerComposeFile": "compose.yaml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {},
+    },
+
+    // Configure tool-specific properties.
+    "customizations": {
+        "jetbrains": {
+            "backend": "Rider"
+        },
+        "vscode": {}
+    },
+
+    "forwardPorts": [
+        3000,
+        8080
+    ],
+
+    "portsAttributes": {
+        "3000": {
+            "label": "Frontend",
+            "onAutoForward": "notify"
+        },
+        "8000": {
+            "label": "Backend API",
+            "onAutoForward": "ignore"
+        }
+    }
+
+    // Use 'postCreateCommand' to run commands after the container is created.
+    // "postCreateCommand": "dotnet --info",
+}
