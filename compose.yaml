@@ -8,20 +8,18 @@
       dockerfile: Backend/Dockerfile
     ports:
       - "8080:8080"
-    networks:
-      tavern-network:
 
-  postgres:
+  db:
     image: postgres:17
     restart: unless-stopped
     environment:
-      POSTGRES_PASSWORD: docker-secret # TODO: use docker secrets to store this password
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres # TODO move this to docker secrets or something
+      POSTGRES_DB: tavern
     volumes:
-      - postgres-data:$PGDATA
-
-networks:
-  tavern-network:
-    name: tavern-network
+      - postgres-data:/var/lib/postgresql/data/
+#    ports:
+#      - "5432:5432"
 
 volumes:
   postgres-data:

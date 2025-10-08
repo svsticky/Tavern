@@ -1,6 +1,5 @@
 using Backend.Database;
 using Backend.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
+Console.WriteLine(builder.Configuration.GetConnectionString("Postgresql"));
 
 var app = builder.Build();
 
@@ -21,11 +21,12 @@ if (app.Environment.IsDevelopment())
 
 app.MapGet("/activity", async (PostgresDbContext db, uint activityId) =>
     {
+        await db.Database.EnsureCreatedAsync();
+
         // Simply fetch and return
         Activity? activity = await db.Activities.FindAsync(activityId);
         return activity != null ? Results.Ok(activity) : Results.NotFound();
     })
-	// .WithName("GetWeatherForecast")
 	.WithOpenApi();
 
 app.MapPost("/activity", async (PostgresDbContext db, Activity activity) =>

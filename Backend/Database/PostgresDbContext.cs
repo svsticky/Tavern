@@ -20,4 +20,15 @@ public class PostgresDbContext : DbContext
     /// <param name="options">All parameters that define the database connection.</param>
     public PostgresDbContext(DbContextOptions<PostgresDbContext> options) : base(options)
     { }
+
+    /// <summary>
+    /// Define advanced properties of the database.
+    /// </summary>
+    /// <param name="modelBuilder"></param>
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Just here as an example as of now
+        // modelBuilder.Entity<Enrollment>()
+        //     .HasIndex(x => x.ActivityId);
+    }
 }
