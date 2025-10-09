@@ -1,3 +1,4 @@
+using Backend.Database;
 using Backend.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -6,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
 
 var app = builder.Build();
 
@@ -16,15 +18,39 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.MapGet("/activity", (uint activityId) =>
+app.MapGet("/activity", async (PostgresDbContext db, uint activityId) =>
     {
-        return new Activity()
-        {
-            Id = activityId,
-            Name = "Some activity",
-            Description = "Some activity description",
-            DateTimeStart = DateTimeOffset.Now,
-        };
+        // Simply fetch and return
+        Activity? activity = await db.Activities.FindAsync(activityId);
+        return activity != null ? Results.Ok(activity) : Results.NotFound();
+    })
+	.WithOpenApi();
+
+app.MapPost("/activity", async (PostgresDbContext db, Activity activity) =>
+    {
+        // First, ensure activity with same id does not exist yet
+        Activity? currentActivity = await db.Activities.FindAsync(activity.Id);
+        if (currentActivity != null)
+            return Results.BadRequest("Activity already exists with this Id.");
+
+        // Activity does not exist yet, create it
+        db.Activities.Add(activity);
+        await db.SaveChangesAsync();
+        return Results.Ok(activity.Id);
+    })
+	.WithOpenApi();
+
+app.MapDelete("/activity", async (PostgresDbContext db, uint activityId) =>
+    {
+        // First, check if activity exists
+        Activity? activity = await db.Activities.FindAsync(activityId);
+        if (activity == null)
+            return Results.NotFound();
+
+        // Remove activity
+        db.Activities.Remove(activity);
+        await db.SaveChangesAsync();
+        return Results.Ok();
     })
 	.WithName("GetActivity")
 	.WithOpenApi();

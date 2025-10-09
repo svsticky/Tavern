@@ -1,15 +1,25 @@
 ﻿services:
   tavern-backend:
     container_name: tavern-backend
+    restart: unless-stopped
     image: tavern-backend # Give the image a better name, real image is generated from the dockerfile below
     build:
       context: .
       dockerfile: Backend/Dockerfile
     ports:
       - "8080:8080"
-    networks:
-      tavern-network:
 
-networks:
-  tavern-network:
-    name: tavern-network
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres # TODO move this to docker secrets or something
+      POSTGRES_DB: tavern
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+#    ports:
+#      - "5432:5432"
+
+volumes:
+  postgres-data:
