@@ -16,7 +16,11 @@
         "jetbrains": {
             "backend": "Rider"
         },
-        "vscode": {}
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csdevkit"
+            ]
+        }
     },
 
     "forwardPorts": [

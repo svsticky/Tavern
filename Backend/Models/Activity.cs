@@ -10,13 +10,13 @@ public class Activity
     /// <summary>
     /// The unique identifier of an activity, assigned incrementally.
     /// </summary>
-    public uint   Id          { get; set; }
+    public uint Id { get; set; }
 
     /// <summary>
     /// The name of the activity.
     /// </summary>
     [StringLength(120)]
-    public string Name        { get; set; }
+    public string Name { get; set; }
 
     /// <summary>
     /// A description or arbitrary length, explaining everything there is to know about the activity.
