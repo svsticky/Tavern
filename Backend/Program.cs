@@ -1,15 +1,16 @@
 using Backend.Database;
-using Backend.Models;
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers();
+builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.AddSwaggerGen();
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
 
-var app = builder.Build();
+WebApplication app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -18,41 +19,82 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-app.MapGet("/activity", async (PostgresDbContext db, uint activityId) =>
-    {
-        // Simply fetch and return
-        Activity? activity = await db.Activities.FindAsync(activityId);
-        return activity != null ? Results.Ok(activity) : Results.NotFound();
-    })
-	.WithOpenApi();
-
-app.MapPost("/activity", async (PostgresDbContext db, Activity activity) =>
-    {
-        // First, ensure activity with same id does not exist yet
-        Activity? currentActivity = await db.Activities.FindAsync(activity.Id);
-        if (currentActivity != null)
-            return Results.BadRequest("Activity already exists with this Id.");
-
-        // Activity does not exist yet, create it
-        db.Activities.Add(activity);
-        await db.SaveChangesAsync();
-        return Results.Ok(activity.Id);
-    })
-	.WithOpenApi();
-
-app.MapDelete("/activity", async (PostgresDbContext db, uint activityId) =>
-    {
-        // First, check if activity exists
-        Activity? activity = await db.Activities.FindAsync(activityId);
-        if (activity == null)
-            return Results.NotFound();
-
-        // Remove activity
-        db.Activities.Remove(activity);
-        await db.SaveChangesAsync();
-        return Results.Ok();
-    })
-	.WithName("GetActivity")
-	.WithOpenApi();
-
+app.MapControllers();
 app.Run();
+
+
+
+/* Example program.cs file with many security features we should consider at some point, according to Claude
+ *
+ * using Backend.Database;
+   using Microsoft.AspNetCore.RateLimiting;
+
+   WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+   // Controllers
+   builder.Services.AddControllers();
+   builder.Services.AddEndpointsApiExplorer();
+   builder.Services.AddRouting(options => options.LowercaseUrls = true);
+   builder.Services.AddSwaggerGen();
+
+   // Database
+   builder.Services.AddNpgsql<PostgresDbContext>(
+       connectionString: builder.Configuration.GetConnectionString("Postgresql"));
+
+   // Security
+   builder.Services.AddCors(options =>
+   {
+       options.AddDefaultPolicy(policy =>
+           policy.WithOrigins(builder.Configuration["AllowedOrigins"]!)
+                 .AllowAnyHeader()
+                 .AllowAnyMethod());
+   });
+
+   builder.Services.AddRateLimiter(options =>
+   {
+       options.AddFixedWindowLimiter("api", opt =>
+       {
+           opt.Window = TimeSpan.FromMinutes(1);
+           opt.PermitLimit = 100;
+       });
+   });
+
+   // Authentication (add your auth scheme here)
+   // builder.Services.AddAuthentication()...
+   // builder.Services.AddAuthorization();
+
+   WebApplication app = builder.Build();
+
+   // Middleware order matters!
+   if (app.Environment.IsDevelopment())
+   {
+       app.UseSwagger();
+       app.UseSwaggerUI();
+   }
+   else
+   {
+       app.UseHsts();
+   }
+
+   app.UseHttpsRedirection();
+
+   // Security headers
+   app.Use(async (context, next) =>
+   {
+       context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+       context.Response.Headers.Append("X-Frame-Options", "DENY");
+       context.Response.Headers.Append("Referrer-Policy", "no-referrer");
+       await next();
+   });
+
+   app.UseCors();
+   app.UseRateLimiter();
+
+   // app.UseAuthentication();
+   // app.UseAuthorization();
+
+   app.MapControllers()
+      .RequireRateLimiting("api");
+
+   app.Run();
+*/
