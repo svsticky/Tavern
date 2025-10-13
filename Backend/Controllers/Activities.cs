@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Database;
 using Backend.Models;
+using Backend.Controllers.DTOs;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Backend.Controllers
 {
@@ -10,6 +12,10 @@ namespace Backend.Controllers
     public class Activities(PostgresDbContext db) : ControllerBase
     {
         // GET: api/activities
+        /// <summary>
+        /// Lists all activities in the database.
+        /// </summary>
+        /// <returns>Said list.</returns>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Activity>>> GetActivities()
         {
@@ -17,6 +23,11 @@ namespace Backend.Controllers
         }
 
         // GET: api/activities/5
+        /// <summary>
+        /// Fetches a single activity.
+        /// </summary>
+        /// <param name="id">The id of the activity to fetch.</param>
+        /// <returns>The full activity.</returns> // TODO: perhaps replace this with a DTO to prevent exposing unneeded fields?
         [HttpGet("{id}")]
         public async Task<ActionResult<Activity>> GetActivity(uint id)
         {
@@ -26,19 +37,31 @@ namespace Backend.Controllers
         }
 
         // POST: api/activities
+        /// <summary>
+        /// Creates a new activity with a unique ID assigned by the database.
+        /// </summary>
+        /// <param name="activity">The activity to be added to the database.</param>
+        /// <returns>Fully created activity in body and api route of where to fetch it in the headers.</returns>
         [HttpPost]
-        public async Task<ActionResult<Activity>> PostActivity(Activity activity) // TODO replace with DTO
+        public async Task<ActionResult<Activity>> PostActivity(PostActivityDTO activity)
         {
-            Activity? currentActivity = await db.Activities.FindAsync(activity.Id);
-            if (currentActivity != null) return BadRequest("Activity already exists with this Id.");
+            Activity newActivity = new()
+            {
+                Name = activity.Name, Description = activity.Description, DateTimeStart = activity.DateTimeStart
+            };
 
-            db.Activities.Add(activity);
+            EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
             await db.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
+            return CreatedAtAction(nameof(GetActivity), new { id = newEntry.Entity.Id }, newEntry.Entity);
         }
 
         // DELETE: api/activities/5
+        /// <summary>
+        /// Deletes an activity.
+        /// </summary>
+        /// <param name="id">The id of the activity to delete.</param>
+        /// <returns>Nothing, really.</returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteActivity(uint id)
         {
