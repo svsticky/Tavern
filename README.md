@@ -8,12 +8,11 @@ Sticky hosts an abundance of activities. This is where we manage them.
 
 ## How to install
 
-TL;DR clone repo and apply migrations, see docs
+TL;DR clone repo
 
 ## How to use
 
 TL;DR use the devcontainer, using your favourite tool like vscode or Jetbrains Rider
-ALso apply migrations, see docs
 
 ## How to host
 
