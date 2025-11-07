@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers.DTOs;
 
-// ReSharper disable once InconsistentNaming => Allow DTO as an acronym
 public class PostMemberDTO
 {
     /// <inheritdoc cref="Models.Member.StudentNumber"/>
@@ -34,4 +33,50 @@ public class PostMemberDTO
 
     /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
+
+    /// <summary>
+    /// Studies where the member is enrolled.
+    /// </summary>
+    public List<PostStudyEnrollmentDTO>? StudyEnrollments { get; set; }
+}
+
+public class MemberResponseDTO
+{
+    /// <inheritdoc cref="Models.Member.Id"/>
+    public uint Id { get; set; }
+
+    /// <inheritdoc cref="Models.Member.StudentNumber"/>
+    public uint StudentNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.FirstName"/>
+    public string FirstName { get; set; } = null!;
+
+    /// <inheritdoc cref="Models.Member.LastName"/>
+    public string LastName { get; set; } = null!;
+
+    /// <inheritdoc cref="Models.Member.Email"/>
+    public string Email { get; set; } = null!;
+
+    /// <inheritdoc cref="Models.Member.PhoneNumber"/>
+    public string PhoneNumber { get; set; } = null!;
+
+    /// <inheritdoc cref="Models.Member.Address"/>
+    public string Address { get; set; } = null!;
+
+    /// <inheritdoc cref="Models.Member.DateOfBirth"/>
+    public DateTimeOffset DateOfBirth { get; set; }
+
+    /// <inheritdoc cref="Models.Member.Notes"/>
+    public string? Notes { get; set; }
+
+    /// <inheritdoc cref="Models.Member.RegisteredOn"/>
+    public DateTimeOffset RegisteredOn { get; set; }
+
+    /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
+    public Language PreferredLanguage { get; set; }
+
+    /// <summary>
+    /// Studies where the member is enrolled.
+    /// </summary>
+    public List<StudyEnrollmentResponseDTO> StudyEnrollments { get; set; } = new();
 }
