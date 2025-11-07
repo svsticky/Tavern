@@ -72,13 +72,13 @@ namespace Backend.Controllers
         /// member.
         /// </remarks>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMember(uint id)
+        public async Task<IActionResult> DeleteMember(uint id, CancellationToken cancellationToken)
         {
-            Member? member = await db.Members.FindAsync(id);
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) return NotFound();
 
             db.Members.Remove(member);
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
 
             return NoContent();
         }

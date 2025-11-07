@@ -13,6 +13,12 @@ public class PostgresDbContext : DbContext
     public DbSet<Activity> Activities { get; set; }
     /// <summary>Reference to the Enrollments relational table. </summary>
     public DbSet<Enrollment> Enrollments { get; set; }
+    /// <summary>Reference to the Members relational table. </summary>
+    public DbSet<Member> Members { get; set; }
+    /// <summary>Reference to the Studies relational table. </summary>
+    public DbSet<Study> Studies { get; set; }
+    /// <summary>Reference to the StudyEnrollments relational table. </summary>
+    public DbSet<StudyEnrollment> StudyEnrollments { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.
@@ -27,8 +33,20 @@ public class PostgresDbContext : DbContext
     /// <param name="modelBuilder"></param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Just here as an example as of now
-        // modelBuilder.Entity<Enrollment>()
-        //     .HasIndex(x => x.ActivityId);
+        base.OnModelCreating(modelBuilder);
+
+        // Member → Enrollment (cascade delete)
+        modelBuilder.Entity<Enrollment>()
+            .HasOne(e => e.Member)
+            .WithMany(m => m.Enrollments)
+            .HasForeignKey(e => e.MemberId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Member → StudyEnrollment (cascade delete)
+        modelBuilder.Entity<StudyEnrollment>()
+            .HasOne(se => se.Member)
+            .WithMany(m => m.StudyEnrollments)
+            .HasForeignKey(se => se.MemberId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

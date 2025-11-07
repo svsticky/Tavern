@@ -22,33 +22,33 @@ public class Member
     /// The first name of the member.
     /// </summary>
     [StringLength(60)]
-    public string FirstName { get; set; }
+    public string FirstName { get; set; } = null!;
 
     /// <summary>
     /// The last name of the member.
     /// </summary>
     [StringLength(60)]
-    public string LastName { get; set; }
+    public string LastName { get; set; } = null!;
 
     /// <summary>
     /// The email address of the member.
     /// </summary>
     [StringLength(100)]
     [EmailAddress]
-    public string Email { get; set; }
+    public string Email { get; set; } = null!;
 
     /// <summary>
     /// The phone number of the member. 
     /// </summary>
     [StringLength(20)]
     [Phone]
-    public string PhoneNumber { get; set; }
+    public string PhoneNumber { get; set; } = null!;
 
     /// <summary>
     /// The address of the member.
     /// </summary>
     [StringLength(200)]
-    public string Address { get; set; }
+    public string Address { get; set; } = null!;
 
     /// <summary>
     /// The date of birth of the member.
@@ -58,7 +58,7 @@ public class Member
     /// <summary>
     /// The notes about the member.
     /// </summary>
-    public string Notes { get; set; }
+    public string? Notes { get; set; }
 
     /// <summary>
     /// The date and time at which the member registered.
@@ -68,12 +68,12 @@ public class Member
     /// <summary>
     /// The enrollments associated with this member.
     /// </summary>
-    public List<StudyEnrollment> StudyEnrollments { get; set; }
+    public List<StudyEnrollment> StudyEnrollments { get; set; } = new List<StudyEnrollment>();
 
     /// <summary>
     /// The activities this member is enrolled in.
     /// </summary>
-    public List<Enrollment> Enrollments { get; set; }
+    public List<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 
     /// <summary>
     /// The preferred language of the member.
