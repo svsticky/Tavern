@@ -28,4 +28,14 @@ public class Activity
     /// The date and time at which the activity will start.
     /// </summary>
     public DateTimeOffset DateTimeStart { get; set; }
+
+    /// <summary>
+    /// The date and time at which the activity will end.
+    /// </summary>
+    public DateTimeOffset DateTimeEnd { get; set; }
+
+    /// <summary>
+    /// The members enrolled in this activity.
+    /// </summary>
+    public List<Enrollment> Enrollments { get; set; }
 }
