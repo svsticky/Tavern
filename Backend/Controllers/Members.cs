@@ -16,9 +16,9 @@ namespace Backend.Controllers
         /// </summary>
         /// <returns>Said list.</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Member>>> GetMembers()
+        public async Task<ActionResult<IEnumerable<Member>>> GetMembers(CancellationToken cancellationToken)
         {
-            return await db.Members.ToListAsync();
+            return await db.Members.ToListAsync(cancellationToken);
         }
 
         // GET: api/members/5
@@ -26,11 +26,11 @@ namespace Backend.Controllers
         /// Fetches a single member.
         /// </summary>
         /// <param name="id">The id of the member to fetch.</param>
-        /// <returns>The full member.</returns> // TODO: perhaps replace this with a DTO to prevent exposing unneeded fields?
+        /// <returns>The full member.</returns> 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Member>> GetMember(uint id)
+        public async Task<ActionResult<Member>> GetMember(uint id, CancellationToken cancellationToken)
         {
-            Member? member = await db.Members.FindAsync(id);
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
 
             return member != null ? member : NotFound();
         }
@@ -42,7 +42,7 @@ namespace Backend.Controllers
         /// <param name="member">The member to be added to the database.</param>
         /// <returns>Fully created member in body and api route of where to fetch it in the headers.</returns>
         [HttpPost]
-        public async Task<ActionResult<Member>> PostMember(PostMemberDTO member)
+        public async Task<ActionResult<Member>> PostMember(PostMemberDTO member, CancellationToken cancellationToken)
         {
             var newEntry = db.Members.Add(new Member
             {
@@ -56,7 +56,7 @@ namespace Backend.Controllers
                 PreferredLanguage = member.PreferredLanguage,
                 RegisteredOn = DateTimeOffset.UtcNow
             });
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
 
             return CreatedAtAction(nameof(GetMember), new { id = newEntry.Entity.Id }, newEntry.Entity);
         }

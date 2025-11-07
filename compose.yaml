@@ -15,7 +15,7 @@
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres # TODO move this to docker secrets or something
-      POSTGRES_DB: tavern
+      POSTGRES_DB: postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data/
 #    ports:
