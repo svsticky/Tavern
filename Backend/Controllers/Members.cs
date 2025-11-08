@@ -42,10 +42,24 @@ namespace Backend.Controllers
                     Id = se.Id,
                     StudyId = se.StudyId,
                     StudyTitle = se.Study.Title,
+                    MemberId = se.MemberId,
+                    MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
                     EnrollmentDate = se.EnrollmentDate,
                     CompletionDate = se.CompletionDate,
                     Status = se.Status
                 }).ToList(),
+                CommissionMemberships = db.CommissionMemberships
+                    .Where(cm => cm.MemberId == m.Id)
+                    .Include(cm => cm.Commission)
+                    .Select(cm => new CommissionMembershipResponseDTO
+                    {
+                        Id = cm.Id,
+                        CommissionId = cm.CommissionId,
+                        CommissionName = cm.Commission.Name,
+                        MemberId = cm.MemberId,
+                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
+                        MembershipYear = cm.MembershipYear
+                    }).ToList()
             });
 
             return Ok(result);
@@ -62,7 +76,7 @@ namespace Backend.Controllers
         {
             var member = await db.Members
                 .Include(m => m.StudyEnrollments)
-                    .ThenInclude(se => se.Study) // als je ook de study info wilt
+                .ThenInclude(se => se.Study) // als je ook de study info wilt
                 .Include(m => m.Enrollments)
                 .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
 
@@ -86,10 +100,24 @@ namespace Backend.Controllers
                     Id = se.Id,
                     StudyId = se.StudyId,
                     StudyTitle = se.Study.Title,
+                    MemberId = se.MemberId,
+                    MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
                     EnrollmentDate = se.EnrollmentDate,
                     CompletionDate = se.CompletionDate,
                     Status = se.Status
                 }).ToList(),
+                CommissionMemberships = db.CommissionMemberships
+                    .Where(cm => cm.MemberId == member.Id)
+                    .Include(cm => cm.Commission)
+                    .Select(cm => new CommissionMembershipResponseDTO
+                    {
+                        Id = cm.Id,
+                        CommissionId = cm.CommissionId,
+                        CommissionName = cm.Commission.Name,
+                        MemberId = cm.MemberId,
+                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
+                        MembershipYear = cm.MembershipYear
+                    }).ToList()
             };
 
             return Ok(result);
@@ -158,6 +186,33 @@ namespace Backend.Controllers
             if (member == null) return NotFound();
 
             db.Members.Remove(member);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PUT: api/members/5
+        /// <summary>
+        /// Updates a member's details.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="memberDto">The new details of the member.</param>
+        /// <returns>The updated member.</returns>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutMember(uint id, MemberUpdateDTO memberDto, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.StudentNumber = memberDto.StudentNumber;
+            member.FirstName = memberDto.FirstName;
+            member.LastName = memberDto.LastName;
+            member.Email = memberDto.Email;
+            member.PhoneNumber = memberDto.PhoneNumber;
+            member.Address = memberDto.Address;
+            member.DateOfBirth = memberDto.DateOfBirth;
+            member.PreferredLanguage = memberDto.PreferredLanguage;
+
             await db.SaveChangesAsync(cancellationToken);
 
             return NoContent();

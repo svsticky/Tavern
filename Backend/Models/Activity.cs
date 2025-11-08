@@ -38,4 +38,6 @@ public class Activity
     /// The members enrolled in this activity.
     /// </summary>
     public List<Enrollment> Enrollments { get; set; }
+
+    // Prijs, Poster, Uitschrijfdeadline, Locatie, Organisator, extra specificatie, publiek, verplicht, opmerkingen (prive), toon in koala, toon op website, inschrijfbaar, deelnemers zichtbaar, deelnemerslimiet, filters (eerstejaars, tweedejaars, derdejaars+, masters, alcohol), betaalbaar, VAT
 }

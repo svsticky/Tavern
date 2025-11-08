@@ -73,5 +73,27 @@ namespace Backend.Controllers
 
             return NoContent();
         }
+
+        // PUT: api/activities/5
+        /// <summary>
+        /// Updates an activity.
+        /// </summary>
+        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="activityDto">The new details of the activity.</param>
+        /// <returns>The updated activity.</returns>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutActivity(uint id, ActivityUpdateDTO activityDto)
+        {
+            Activity? activity = await db.Activities.FindAsync(id);
+            if (activity == null) return NotFound();
+
+            activity.Name = activityDto.Name;
+            activity.Description = activityDto.Description;
+            activity.DateTimeStart = activityDto.DateTimeStart;
+
+            await db.SaveChangesAsync();
+
+            return NoContent();
+        }
     }
 }

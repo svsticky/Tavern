@@ -76,7 +76,37 @@ public class Member
     public List<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 
     /// <summary>
+    /// The commissions this member is part of.
+    /// </summary>
+    public List<CommissionMembership> CommissionMemberships { get; set; } = new List<CommissionMembership>();
+
+    /// <summary>
     /// The preferred language of the member.
     /// </summary>
     public Language PreferredLanguage { get; set; }
+
+    /// <summary>
+    /// Indicates whether the member is granted a fee waiver.
+    /// </summary>
+    public bool Gratie { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is a "Lid van Verdienste".
+    /// </summary>
+    public bool LidVanVerdienste { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is an honorary member.
+    /// </summary>
+    public bool EreLid { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is a "Begunstiger".
+    /// </summary>
+    public bool Begunstiger { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is suspended.
+    /// </summary>
+    public bool Suspended { get; set; } = false;
 }

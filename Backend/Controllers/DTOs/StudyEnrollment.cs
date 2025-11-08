@@ -23,16 +23,16 @@ public class StudyEnrollmentResponseDTO
     public uint Id { get; set; }
 
     /// <inheritdoc cref="Models.StudyEnrollment.MemberId"/>
-    public uint MemberId { get; set; }
+    public uint? MemberId { get; set; }
 
     /// <inheritdoc cref="Models.Member"/>
-    public string MemberName { get; set; } = null!;
+    public string? MemberName { get; set; }
 
     /// <inheritdoc cref="Models.StudyEnrollment.StudyId"/>
-    public uint StudyId { get; set; }
+    public uint? StudyId { get; set; }
 
     /// <inheritdoc cref="Models.Study"/>
-    public string StudyTitle { get; set; } = null!;
+    public string? StudyTitle { get; set; }
 
     /// <inheritdoc cref="Models.StudyEnrollment.EnrollmentDate"/>
     public DateTimeOffset EnrollmentDate { get; set; }

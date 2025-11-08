@@ -54,7 +54,7 @@ namespace Backend.Controllers
 
             return CreatedAtAction(nameof(GetStudy), new { id = newEntry.Entity.Id }, newEntry.Entity);
         }
-        
+
         // DELETE: api/studies/5
         /// <summary>
         /// Deletes a study.
@@ -72,6 +72,28 @@ namespace Backend.Controllers
             if (study == null) return NotFound();
 
             db.Studies.Remove(study);
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PUT: api/studies/5
+        /// <summary>
+        /// Updates a study's details.
+        /// </summary>
+        /// <param name="id">The id of the study to update.</param>
+        /// <param name="studyDto">The new details of the study.</param>
+        /// <returns>The updated study.</returns>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutStudy(uint id, StudyUpdateDTO studyDto, CancellationToken cancellationToken)
+        {
+            Study? study = await db.Studies.FindAsync(id, cancellationToken);
+            if (study == null) return NotFound();
+
+            study.Title = studyDto.Title;
+            study.DurationYears = studyDto.DurationYears;
+            study.Type = studyDto.Type;
+
             await db.SaveChangesAsync(cancellationToken);
 
             return NoContent();
