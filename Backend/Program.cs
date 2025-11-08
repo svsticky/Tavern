@@ -20,13 +20,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwaggerUI();
 }
 
-// Apply migrations on startup
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-    await dbContext.Database.MigrateAsync(); // Applies pending migrations
-}
-
 app.MapControllers();
 app.Run();
 
