@@ -1,4 +1,13 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Backend.Controllers.DTOs;
+
+public class PostCommissionDTO
+{
+    /// <inheritdoc cref="Models.Commission.Name"/>
+    [StringLength(100)]
+    public required string Name { get; set; }
+}
 
 public class CommissionResponseDTO
 {
@@ -12,7 +21,7 @@ public class CommissionResponseDTO
     public bool Active { get; set; } = true;
 
     /// <inheritdoc cref="Models.Commission.CommissionMemberships"/>
-    public List<CommissionMembershipResponseDTO> CommissionMemberships { get; set; } = new ();
+    public List<CommissionMembershipResponseDTO> CommissionMemberships { get; set; } = new();
 }
 
 public class CommissionUpdateDTO

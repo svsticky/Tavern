@@ -15,6 +15,9 @@ public class PostActivityDTO
 
     /// <inheritdoc cref="Models.Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.DateTimeEnd"/>
+    public required DateTimeOffset DateTimeEnd { get; set; }
 }
 
 public class ActivityUpdateDTO
@@ -29,4 +32,7 @@ public class ActivityUpdateDTO
 
     /// <inheritdoc cref="Models.Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.DateTimeEnd"/>
+    public required DateTimeOffset DateTimeEnd { get; set; }
 }

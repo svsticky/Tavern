@@ -114,6 +114,24 @@ public class MemberUpdateDTO
     /// <inheritdoc cref="Models.Member.DateOfBirth"/>
     public required DateTimeOffset DateOfBirth { get; set; }
 
+    /// <inheritdoc cref="Models.Member.Notes"/>
+    public string? Notes { get; set; }
+
     /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
+
+    /// <inheritdoc cref="Models.Member.Gratie"/>
+    public bool Gratie { get; set; }
+
+    /// <inheritdoc cref="Models.Member.LidVanVerdienste"/>
+    public bool LidVanVerdienste { get; set; }
+
+    /// <inheritdoc cref="Models.Member.EreLid"/>
+    public bool EreLid { get; set; }
+
+    /// <inheritdoc cref="Models.Member.Begunstiger"/>
+    public bool Begunstiger { get; set; }
+
+    /// <inheritdoc cref="Models.Member.Suspended"/>
+    public bool Suspended { get; set; }
 }

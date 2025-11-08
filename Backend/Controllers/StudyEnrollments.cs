@@ -110,25 +110,6 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
         );
     }
 
-    // PATCH: api/studyenrollments
-    /// <summary>
-    /// Updates an existing study enrollment.
-    /// </summary>
-    /// <param name="enrollmentDto">The study enrollment to be updated.</param>
-    /// <returns>Fully updated study enrollment in body and api route of where to fetch it in the headers.</returns>
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken cancellationToken)
-    {
-        var enrollment = await db.StudyEnrollments.FindAsync([id], cancellationToken);
-        if (enrollment is null)
-            return NotFound();
-
-        enrollment.Status = newStatus;
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
-    }
-
     // DELETE: api/studyenrollments/5
     /// <summary>
     /// Deletes a study enrollment.
@@ -143,6 +124,25 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
             return NotFound();
 
         db.StudyEnrollments.Remove(enrollment);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    // PATCH: api/studyenrollments
+    /// <summary>
+    /// Updates an existing study enrollment.
+    /// </summary>
+    /// <param name="enrollmentDto">The study enrollment to be updated.</param>
+    /// <returns>Fully updated study enrollment in body and api route of where to fetch it in the headers.</returns>
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken cancellationToken)
+    {
+        var enrollment = await db.StudyEnrollments.FindAsync([id], cancellationToken);
+        if (enrollment is null)
+            return NotFound();
+
+        enrollment.Status = newStatus;
         await db.SaveChangesAsync(cancellationToken);
 
         return NoContent();

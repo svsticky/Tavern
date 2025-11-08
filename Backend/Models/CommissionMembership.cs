@@ -36,4 +36,14 @@ public class CommissionMembership
     /// The year of the membership.
     /// </summary>
     public uint MembershipYear { get; set; }
+
+    /// <summary>
+    /// The role of the member in this commission membership.
+    /// </summary>
+    public uint? RoleId { get; set; } = null;
+
+    /// <summary>
+    /// The role of the member in this commission membership.
+    /// </summary>
+    public Role? Role { get; set; } = null;
 }

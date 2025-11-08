@@ -23,6 +23,8 @@ public class PostgresDbContext : DbContext
     public DbSet<Commission> Commissions { get; set; }
     /// <summary>Reference to the CommissionMemberships relational table. </summary>
     public DbSet<CommissionMembership> CommissionMemberships { get; set; }
+    /// <summary>Reference to the Roles relational table. </summary>
+    public DbSet<Role> Roles { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.
@@ -80,5 +82,12 @@ public class PostgresDbContext : DbContext
             .WithMany(m => m.CommissionMemberships)
             .HasForeignKey(cm => cm.MemberId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Role → CommissionMembership (set null on delete)
+        modelBuilder.Entity<CommissionMembership>()
+            .HasOne(cm => cm.Role)
+            .WithMany()
+            .HasForeignKey(cm => cm.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

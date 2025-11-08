@@ -34,7 +34,9 @@ namespace Backend.Controllers
                     CommissionName = cm.Commission.Name,
                     MemberId = cm.MemberId,
                     MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                    MembershipYear = cm.MembershipYear
+                    MembershipYear = cm.MembershipYear,
+                    RoleId = cm.Role?.Id,
+                    RoleName = cm.Role?.Name
                 }).ToList()
             });
 
@@ -46,7 +48,7 @@ namespace Backend.Controllers
         /// Fetches a single commission.
         /// </summary>
         /// <param name="id">The id of the commission to fetch.</param>
-        /// <returns>The full commission.</returns> // TODO: perhaps replace this with a DTO to prevent exposing unneeded fields?
+        /// <returns>The full commission.</returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<Commission>> GetCommission(uint id, CancellationToken cancellationToken)
         {
@@ -68,7 +70,9 @@ namespace Backend.Controllers
                     CommissionName = cm.Commission.Name,
                     MemberId = cm.MemberId,
                     MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                    MembershipYear = cm.MembershipYear
+                    MembershipYear = cm.MembershipYear,
+                    RoleId = cm.Role?.Id,
+                    RoleName = cm.Role?.Name
                 }).ToList()
             };
 
@@ -82,11 +86,11 @@ namespace Backend.Controllers
         /// <param name="commission">The commission to be added to the database.</param>
         /// <returns>Fully created commission in body and api route of where to fetch it in the headers.</returns>
         [HttpPost]
-        public async Task<ActionResult<Commission>> PostCommission(string name, CancellationToken cancellationToken)
+        public async Task<ActionResult<Commission>> PostCommission(PostCommissionDTO commissionDto, CancellationToken cancellationToken)
         {
             var newEntry = db.Commissions.Add(new Commission
             {
-                Name = name
+                Name = commissionDto.Name
             });
             await db.SaveChangesAsync(cancellationToken);
 
@@ -115,13 +119,32 @@ namespace Backend.Controllers
             return NoContent();
         }
 
+        // PATCH: api/commissions/5/name
+        /// <summary>
+        /// Updates a commission's name.
+        /// </summary>
+        /// <param name="id">The id of the commission to update.</param>
+        /// <param name="nameDto">The new name of the commission.</param>
+        /// <returns>No Content.</returns>
+        [HttpPatch("{id}/name")]
+        public async Task<IActionResult> PatchCommissionName(uint id, string newName, CancellationToken cancellationToken)
+        {
+            Commission? commission = await db.Commissions.FindAsync(id, cancellationToken);
+            if (commission == null) return NotFound();
+
+            commission.Name = newName;
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
         // PUT: api/commissions/5
         /// <summary>
         /// Updates a commission's details.
         /// </summary>
         /// <param name="id">The id of the commission to update.</param>
         /// <param name="commissionDto">The new details of the commission.</param>
-        /// <returns>The updated commission.</returns>
+        /// <returns>No Content.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCommission(uint id, CommissionUpdateDTO commissionDto, CancellationToken cancellationToken)
         {

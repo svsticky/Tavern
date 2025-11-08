@@ -12,6 +12,9 @@ public class PostCommissionMembershipDTO
 
     /// <inheritdoc cref="Models.CommissionMembership.MembershipYear"/>
     public required uint MembershipYear { get; set; }
+
+    /// <inheritdoc cref="Models.CommissionMembership.RoleId"/>
+    public uint? RoleId { get; set; }
 }
 
 public class CommissionMembershipResponseDTO
@@ -33,4 +36,15 @@ public class CommissionMembershipResponseDTO
 
     /// <inheritdoc cref="Models.CommissionMembership.MembershipYear"/>
     public uint MembershipYear { get; set; }
+
+    /// <inheritdoc cref="Models.CommissionMembership.RoleId"/>
+    public uint? RoleId { get; set; }
+
+    /// <inheritdoc cref="Models.Role.Name"/>
+    public string? RoleName { get; set; }
+}
+
+public class CommissionMembershipUpdateDTO
+{
+    public uint? RoleId { get; set; }
 }

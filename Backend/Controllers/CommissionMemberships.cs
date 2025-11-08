@@ -30,7 +30,9 @@ public class CommissionMemberships(PostgresDbContext db) : ControllerBase
             MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
             CommissionId = cm.CommissionId,
             CommissionName = cm.Commission.Name,
-            MembershipYear = cm.MembershipYear
+            MembershipYear = cm.MembershipYear,
+            RoleId = cm.Role?.Id,
+            RoleName = cm.Role?.Name
         });
 
         return Ok(result);
@@ -59,7 +61,9 @@ public class CommissionMemberships(PostgresDbContext db) : ControllerBase
             MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
             CommissionId = cm.CommissionId,
             CommissionName = cm.Commission.Name,
-            MembershipYear = cm.MembershipYear
+            MembershipYear = cm.MembershipYear,
+            RoleId = cm.Role?.Id,
+            RoleName = cm.Role?.Name
         };
 
         return Ok(result);
@@ -86,21 +90,16 @@ public class CommissionMemberships(PostgresDbContext db) : ControllerBase
         {
             Member = member,
             Commission = commission,
-            MembershipYear = membershipDto.MembershipYear
+            MembershipYear = membershipDto.MembershipYear,
+            RoleId = membershipDto.RoleId
         };
-        
+
         var newEntry = db.CommissionMemberships.Add(newMembership);
         await db.SaveChangesAsync(cancellationToken);
         return CreatedAtAction(
             nameof(GetCommissionMembership),
             new { id = newEntry.Entity.Id },
-            new CommissionMembershipResponseDTO
-            {
-                Id = newEntry.Entity.Id,
-                MemberId = newEntry.Entity.MemberId,
-                CommissionId = newEntry.Entity.CommissionId,
-                MembershipYear = newEntry.Entity.MembershipYear,
-            }
+            newEntry.Entity
         );
     }
 
@@ -118,6 +117,47 @@ public class CommissionMemberships(PostgresDbContext db) : ControllerBase
             return NotFound();
 
         db.CommissionMemberships.Remove(membership);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    // PATCH: api/commissionmemberships/5/role
+    /// <summary>
+    /// Updates the role of a commission membership.
+    /// </summary>
+    /// <param name="id">The id of the commission membership to update.</param>
+    /// <param name="roleId">The new role id of the commission membership.</param>
+    /// <returns>No content.</returns>
+    [HttpPatch("{id}/role")]
+    public async Task<IActionResult> UpdateCommissionMembershipRole(uint id, uint? roleId, CancellationToken cancellationToken)
+    {
+        var membership = await db.CommissionMemberships.FindAsync(id, cancellationToken);
+        if (membership is null)
+            return NotFound();
+
+        membership.RoleId = roleId;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return NoContent();
+    }
+
+    // PUT: api/commissionmemberships/5
+    /// <summary>
+    /// Updates a commission membership's details.
+    /// </summary>
+    /// <param name="id">The id of the commission membership to update.</param>
+    /// <param name="membershipDto">The new details of the commission membership.</param>
+    /// <returns>No Content.</returns>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutCommissionMembership(uint id, CommissionMembershipUpdateDTO membershipDto, CancellationToken cancellationToken)
+    {
+        var membership = await db.CommissionMemberships.FindAsync(id, cancellationToken);
+        if (membership is null)
+            return NotFound();
+
+        membership.RoleId = membershipDto.RoleId;
+
         await db.SaveChangesAsync(cancellationToken);
 
         return NoContent();

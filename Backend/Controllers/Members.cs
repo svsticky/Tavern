@@ -58,7 +58,9 @@ namespace Backend.Controllers
                         CommissionName = cm.Commission.Name,
                         MemberId = cm.MemberId,
                         MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                        MembershipYear = cm.MembershipYear
+                        MembershipYear = cm.MembershipYear,
+                        RoleId = cm.Role != null ? cm.Role.Id : (uint?)null,
+                        RoleName = cm.Role != null ? cm.Role.Name : null
                     }).ToList()
             });
 
@@ -116,7 +118,9 @@ namespace Backend.Controllers
                         CommissionName = cm.Commission.Name,
                         MemberId = cm.MemberId,
                         MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                        MembershipYear = cm.MembershipYear
+                        MembershipYear = cm.MembershipYear,
+                        RoleId = cm.Role != null ? cm.Role.Id : (uint?)null,
+                        RoleName = cm.Role != null ? cm.Role.Name : null
                     }).ToList()
             };
 
@@ -191,6 +195,286 @@ namespace Backend.Controllers
             return NoContent();
         }
 
+        // PATCH: api/members/5/studentnumber
+        /// <summary>
+        /// Updates a member's student number.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newStudentNumber">The new student number for the member.</param
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/studentnumber")]
+        public async Task<IActionResult> PatchMemberStudentNumber(uint id, uint newStudentNumber, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.StudentNumber = newStudentNumber;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/firstName
+        /// <summary>
+        /// Updates a member's first name.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newFirstName">The new first name for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/firstName")]
+        public async Task<IActionResult> PatchMemberFirstName(uint id, string newFirstName, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.FirstName = newFirstName;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/lastName
+        /// <summary>
+        /// Updates a member's last name.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newLastName">The new last name for the member.</param
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/lastName")]
+        public async Task<IActionResult> PatchMemberLastName(uint id, string newLastName, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.LastName = newLastName;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/email
+        /// <summary>
+        /// Updates a member's email.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newEmail">The new email for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/email")]
+        public async Task<IActionResult> PatchMemberEmail(uint id, string newEmail, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.Email = newEmail;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/phoneNumber
+        /// <summary>
+        /// Updates a member's phone number.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newPhoneNumber">The new phone number for the member.</param
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/phoneNumber")]
+        public async Task<IActionResult> PatchMemberPhoneNumber(uint id, string newPhoneNumber, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.PhoneNumber = newPhoneNumber;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/address
+        /// <summary>
+        /// Updates a member's address.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newAddress">The new address for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/address")]
+        public async Task<IActionResult> PatchMemberAddress(uint id, string newAddress, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.Address = newAddress;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/dateOfBirth
+        /// <summary>
+        /// Updates a member's date of birth.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newDateOfBirth">The new date of birth for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/dateOfBirth")]
+        public async Task<IActionResult> PatchMemberDateOfBirth(uint id, DateTimeOffset newDateOfBirth, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.DateOfBirth = newDateOfBirth;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/preferredLanguage
+        /// <summary>
+        /// Updates a member's preferred language.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newPreferredLanguage">The new preferred language for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/preferredLanguage")]
+        public async Task<IActionResult> PatchMemberPreferredLanguage(uint id, Language newPreferredLanguage, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.PreferredLanguage = newPreferredLanguage;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/notes
+        /// <summary>
+        /// Updates a member's notes.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newNotes">The new notes for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/notes")]
+        public async Task<IActionResult> PatchMemberNotes(uint id, string newNotes, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.Notes = newNotes;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/gratie
+        /// <summary>
+        /// Updates a member's gratie status.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newGratie">The new gratie status for the member.</
+        /// returns>No content.</returns>
+        [HttpPatch("{id}/gratie")]
+        public async Task<IActionResult> PatchMemberGratie(uint id, bool newGratie, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.Gratie = newGratie;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/lidVanVerdienste
+        /// <summary>
+        /// Updates a member's lid van verdienste status.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newLidVanVerdienste">The new lid van verdienste status for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/lidVanVerdienste")]
+        public async Task<IActionResult> PatchMemberLidVanVerdienste(uint id, bool newLidVanVerdienste, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.LidVanVerdienste = newLidVanVerdienste;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/ereLid
+        /// <summary>
+        /// Updates a member's ere lid status.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newEreLid">The new ere lid status for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/ereLid")]
+        public async Task<IActionResult> PatchMemberEreLid(uint id, bool newEreLid, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.EreLid = newEreLid;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/begunstiger
+        /// <summary>
+        /// Updates a member's begunstiger status.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newBegunstiger">The new begunstiger status for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/begunstiger")]
+        public async Task<IActionResult> PatchMemberBegunstiger(uint id, bool newBegunstiger, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.Begunstiger = newBegunstiger;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
+        // PATCH: api/members/5/suspended
+        /// <summary>
+        /// Updates a member's suspended status.
+        /// </summary>
+        /// <param name="id">The id of the member to update.</param>
+        /// <param name="newSuspended">The new suspended status for the member.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/suspended")]
+        public async Task<IActionResult> PatchMemberSuspended(uint id, bool newSuspended, CancellationToken cancellationToken)
+        {
+            Member? member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) return NotFound();
+
+            member.Suspended = newSuspended;
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
         // PUT: api/members/5
         /// <summary>
         /// Updates a member's details.
@@ -212,6 +496,12 @@ namespace Backend.Controllers
             member.Address = memberDto.Address;
             member.DateOfBirth = memberDto.DateOfBirth;
             member.PreferredLanguage = memberDto.PreferredLanguage;
+            member.Notes = memberDto.Notes;
+            member.Gratie = memberDto.Gratie;
+            member.LidVanVerdienste = memberDto.LidVanVerdienste;
+            member.EreLid = memberDto.EreLid;
+            member.Begunstiger = memberDto.Begunstiger;
+            member.Suspended = memberDto.Suspended;
 
             await db.SaveChangesAsync(cancellationToken);
 

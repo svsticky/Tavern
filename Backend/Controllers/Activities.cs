@@ -47,7 +47,7 @@ namespace Backend.Controllers
         {
             Activity newActivity = new()
             {
-                Name = activity.Name, Description = activity.Description, DateTimeStart = activity.DateTimeStart
+                Name = activity.Name, Description = activity.Description, DateTimeStart = activity.DateTimeStart, DateTimeEnd = activity.DateTimeEnd
             };
 
             EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
@@ -74,13 +74,93 @@ namespace Backend.Controllers
             return NoContent();
         }
 
+        // PATCH: api/activities/5/name
+        /// <summary>
+        /// Updates an activities name.
+        /// </summary>
+        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="newName">The new name of the activity.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/name")]
+        public async Task<IActionResult> PatchActivityName(uint id, string newName)
+        {
+            Activity? activity = await db.Activities.FindAsync(id);
+            if (activity == null) return NotFound();
+
+            activity.Name = newName;
+
+            await db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PATCH: api/activities/5/description
+        /// <summary>
+        /// Updates an activities description.
+        /// </summary>
+        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="newDescription">The new description of the activity.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/description")]
+        public async Task<IActionResult> PatchActivityDescription(uint id, string newDescription)
+        {
+            Activity? activity = await db.Activities.FindAsync(id);
+            if (activity == null) return NotFound();
+
+            activity.Description = newDescription;
+
+            await db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PATCH: api/activities/5/datetimestart
+        /// <summary>
+        /// Updates an activities start date and time.
+        /// </summary>
+        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="newDateTimeStart">The new start date and time of the activity.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/datetimestart")]
+        public async Task<IActionResult> PatchActivityDateTimeStart(uint id, DateTime newDateTimeStart)
+        {
+            Activity? activity = await db.Activities.FindAsync(id);
+            if (activity == null) return NotFound();
+
+            activity.DateTimeStart = newDateTimeStart;
+
+            await db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // PATCH: api/activities/5/datetimeend
+        /// <summary>
+        /// Updates an activities end date and time.
+        /// </summary>
+        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="newDateTimeEnd">The new end date and time of the activity.</param>
+        /// <returns>No content.</returns>
+        [HttpPatch("{id}/datetimeend")]
+        public async Task<IActionResult> PatchActivityDateTimeEnd(uint id, DateTime newDateTimeEnd)
+        {
+            Activity? activity = await db.Activities.FindAsync(id);
+            if (activity == null) return NotFound();
+
+            activity.DateTimeEnd = newDateTimeEnd;
+
+            await db.SaveChangesAsync();
+
+            return NoContent();
+        }
+
         // PUT: api/activities/5
         /// <summary>
         /// Updates an activity.
         /// </summary>
         /// <param name="id">The id of the activity to update.</param>
         /// <param name="activityDto">The new details of the activity.</param>
-        /// <returns>The updated activity.</returns>
+        /// <returns>No content.</returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> PutActivity(uint id, ActivityUpdateDTO activityDto)
         {
@@ -90,6 +170,7 @@ namespace Backend.Controllers
             activity.Name = activityDto.Name;
             activity.Description = activityDto.Description;
             activity.DateTimeStart = activityDto.DateTimeStart;
+            activity.DateTimeEnd = activityDto.DateTimeEnd;
 
             await db.SaveChangesAsync();
 
