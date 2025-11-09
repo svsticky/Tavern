@@ -6,6 +6,8 @@ namespace Backend.Models;
 public enum Language { NL, EN }
 
 [PrimaryKey(nameof(Id))]
+[Index(nameof(StudentNumber), IsUnique = true)]
+[Index(nameof(Email), IsUnique = true)]
 public class Member
 {
     /// <summary>
