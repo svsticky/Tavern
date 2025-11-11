@@ -4,6 +4,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
 
+/// <summary>
+/// A role for a member in a committee. E.g.: "Chair" or "Treasurer".
+/// </summary>
 [PrimaryKey(nameof(Id))]
 public class Role
 {
