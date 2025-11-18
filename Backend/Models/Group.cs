@@ -4,27 +4,38 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
 
+public enum GroupType
+{
+    Group,
+    WorkingGroup
+}
+
 [PrimaryKey(nameof(Id))]
-public class Commission
+public class Group
 {
     /// <summary>
-    /// The unique identifier of a commission, assigned incrementally.
+    /// The unique identifier of a Group, assigned incrementally.
     /// </summary>
     public uint Id { get; set; }
 
     /// <summary>
-    /// The name of the commission.
+    /// The name of the Group.
     /// </summary>
     [StringLength(100)]
     public string Name { get; set; }
 
     /// <summary>
-    /// Indicates whether the commission is active.
+    /// Indicates whether the Group is active.
     /// </summary>
     public bool Active { get; set; } = true;
 
     /// <summary>
-    /// The members associated with this commission.
+    /// The members associated with this Group.
     /// </summary>
-    public List<CommissionMembership> CommissionMemberships { get; set; } = new List<CommissionMembership>();
+    public List<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
+
+    /// <summary>
+    /// The type of the Group (E.G. Group, Working Group).
+    /// </summary>
+    public GroupType Type { get; set; }
 }

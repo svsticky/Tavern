@@ -78,9 +78,9 @@ public class Member
     public List<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 
     /// <summary>
-    /// The commissions this member is part of.
+    /// The groups this member is part of.
     /// </summary>
-    public List<CommissionMembership> CommissionMemberships { get; set; } = new List<CommissionMembership>();
+    public List<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
 
     /// <summary>
     /// The preferred language of the member.

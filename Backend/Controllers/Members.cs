@@ -48,14 +48,14 @@ namespace Backend.Controllers
                     CompletionDate = se.CompletionDate,
                     Status = se.Status
                 }).ToList(),
-                CommissionMemberships = db.CommissionMemberships
+                GroupMemberships = db.GroupMemberships
                     .Where(cm => cm.MemberId == m.Id)
-                    .Include(cm => cm.Commission)
-                    .Select(cm => new CommissionMembershipResponseDTO
+                    .Include(cm => cm.Group)
+                    .Select(cm => new GroupMembershipResponseDTO
                     {
                         Id = cm.Id,
-                        CommissionId = cm.CommissionId,
-                        CommissionName = cm.Commission.Name,
+                        GroupId = cm.GroupId,
+                        GroupName = cm.Group.Name,
                         MemberId = cm.MemberId,
                         MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
                         MembershipYear = cm.MembershipYear,
@@ -108,14 +108,14 @@ namespace Backend.Controllers
                     CompletionDate = se.CompletionDate,
                     Status = se.Status
                 }).ToList(),
-                CommissionMemberships = db.CommissionMemberships
+                GroupMemberships = db.GroupMemberships
                     .Where(cm => cm.MemberId == member.Id)
-                    .Include(cm => cm.Commission)
-                    .Select(cm => new CommissionMembershipResponseDTO
+                    .Include(cm => cm.Group)
+                    .Select(cm => new GroupMembershipResponseDTO
                     {
                         Id = cm.Id,
-                        CommissionId = cm.CommissionId,
-                        CommissionName = cm.Commission.Name,
+                        GroupId = cm.GroupId,
+                        GroupName = cm.Group.Name,
                         MemberId = cm.MemberId,
                         MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
                         MembershipYear = cm.MembershipYear,

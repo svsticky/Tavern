@@ -81,9 +81,9 @@ public class MemberResponseDTO
     public List<StudyEnrollmentResponseDTO> StudyEnrollments { get; set; } = new();
 
     /// <summary>
-    /// Commissions where the member is a part of.
+    /// Groups where the member is a part of.
     /// </summary>
-    public List<CommissionMembershipResponseDTO> CommissionMemberships { get; set; } = new();
+    public List<GroupMembershipResponseDTO> GroupMemberships { get; set; } = new();
 }
 
 public class MemberUpdateDTO

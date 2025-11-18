@@ -19,10 +19,10 @@ public class PostgresDbContext : DbContext
     public DbSet<Study> Studies { get; set; }
     /// <summary>Reference to the StudyEnrollments relational table. </summary>
     public DbSet<StudyEnrollment> StudyEnrollments { get; set; }
-    /// <summary>Reference to the Commissions relational table. </summary>
-    public DbSet<Commission> Commissions { get; set; }
-    /// <summary>Reference to the CommissionMemberships relational table. </summary>
-    public DbSet<CommissionMembership> CommissionMemberships { get; set; }
+    /// <summary>Reference to the Groups relational table. </summary>
+    public DbSet<Group> Groups { get; set; }
+    /// <summary>Reference to the GroupMemberships relational table. </summary>
+    public DbSet<GroupMembership> GroupMemberships { get; set; }
     /// <summary>Reference to the Roles relational table. </summary>
     public DbSet<Role> Roles { get; set; }
 
@@ -69,22 +69,22 @@ public class PostgresDbContext : DbContext
             .HasForeignKey(se => se.StudyId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Commission → CommissionMembership (cascade delete)
-        modelBuilder.Entity<CommissionMembership>()
-            .HasOne(cm => cm.Commission)
-            .WithMany(c => c.CommissionMemberships)
-            .HasForeignKey(cm => cm.CommissionId)
+        // Group → GroupMembership (cascade delete)
+        modelBuilder.Entity<GroupMembership>()
+            .HasOne(cm => cm.Group)
+            .WithMany(c => c.GroupMemberships)
+            .HasForeignKey(cm => cm.GroupId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Member → CommissionMembership (cascade delete)
-        modelBuilder.Entity<CommissionMembership>()
+        // Member → GroupMembership (cascade delete)
+        modelBuilder.Entity<GroupMembership>()
             .HasOne(cm => cm.Member)
-            .WithMany(m => m.CommissionMemberships)
+            .WithMany(m => m.GroupMemberships)
             .HasForeignKey(cm => cm.MemberId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Role → CommissionMembership (set null on delete)
-        modelBuilder.Entity<CommissionMembership>()
+        // Role → GroupMembership (set null on delete)
+        modelBuilder.Entity<GroupMembership>()
             .HasOne(cm => cm.Role)
             .WithMany()
             .HasForeignKey(cm => cm.RoleId)

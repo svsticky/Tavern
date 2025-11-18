@@ -4,10 +4,10 @@ using Microsoft.EntityFrameworkCore;
 namespace Backend.Models;
 
 [PrimaryKey(nameof(Id))]
-public class CommissionMembership
+public class GroupMembership
 {
     /// <summary>
-    /// The unique identifier of a commission membership, assigned incrementally.
+    /// The unique identifier of a group membership, assigned incrementally.
     /// </summary>
     public uint Id { get; set; }
 
@@ -23,14 +23,14 @@ public class CommissionMembership
 
 
     /// <summary>
-    /// The commission associated with this membership.
+    /// The group associated with this membership.
     /// </summary>
-    public uint CommissionId { get; set; }
+    public uint GroupId { get; set; }
 
     /// <summary>
-    /// The commission associated with this membership.
+    /// The group associated with this membership.
     /// </summary>
-    public Commission Commission { get; set; }
+    public Group Group { get; set; }
 
     /// <summary>
     /// The year of the membership.
@@ -38,12 +38,12 @@ public class CommissionMembership
     public uint MembershipYear { get; set; }
 
     /// <summary>
-    /// The role of the member in this commission membership.
+    /// The role of the member in this group membership.
     /// </summary>
     public uint? RoleId { get; set; } = null;
 
     /// <summary>
-    /// The role of the member in this commission membership.
+    /// The role of the member in this group membership.
     /// </summary>
     public Role? Role { get; set; } = null;
 }
