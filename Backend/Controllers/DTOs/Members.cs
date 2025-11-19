@@ -49,19 +49,19 @@ public class MemberResponseDTO
     public uint StudentNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.FirstName"/>
-    public string FirstName { get; set; } = null!;
+    public required string FirstName { get; set; };
 
     /// <inheritdoc cref="Models.Member.LastName"/>
-    public string LastName { get; set; } = null!;
+    public required string LastName { get; set; };
 
     /// <inheritdoc cref="Models.Member.Email"/>
-    public string Email { get; set; } = null!;
+    public required string Email { get; set; };
 
     /// <inheritdoc cref="Models.Member.PhoneNumber"/>
-    public string PhoneNumber { get; set; } = null!;
+    public required string PhoneNumber { get; set; };
 
     /// <inheritdoc cref="Models.Member.Address"/>
-    public string Address { get; set; } = null!;
+    public required string Address { get; set; }
 
     /// <inheritdoc cref="Models.Member.DateOfBirth"/>
     public DateTimeOffset DateOfBirth { get; set; }

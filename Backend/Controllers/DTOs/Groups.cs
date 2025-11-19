@@ -18,7 +18,7 @@ public class GroupResponseDTO
     public uint Id { get; set; }
 
     /// <inheritdoc cref="Models.Group.Name"/>
-    public string Name { get; set; } = null!;
+    public required string Name { get; set; }
 
     /// <inheritdoc cref="Models.Group.Active"/>
     public bool Active { get; set; } = true;

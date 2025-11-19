@@ -24,33 +24,33 @@ public class Member
     /// The first name of the member.
     /// </summary>
     [StringLength(60)]
-    public string FirstName { get; set; } = null!;
+    public required string FirstName { get; set; }
 
     /// <summary>
     /// The last name of the member.
     /// </summary>
     [StringLength(60)]
-    public string LastName { get; set; } = null!;
+    public required string LastName { get; set; }
 
     /// <summary>
     /// The email address of the member.
     /// </summary>
     [StringLength(100)]
     [EmailAddress]
-    public string Email { get; set; } = null!;
+    public required string Email { get; set; }
 
     /// <summary>
     /// The phone number of the member. 
     /// </summary>
     [StringLength(20)]
     [Phone]
-    public string PhoneNumber { get; set; } = null!;
+    public required string PhoneNumber { get; set; }
 
     /// <summary>
     /// The address of the member.
     /// </summary>
     [StringLength(200)]
-    public string Address { get; set; } = null!;
+    public required string Address { get; set; }
 
     /// <summary>
     /// The date of birth of the member.
