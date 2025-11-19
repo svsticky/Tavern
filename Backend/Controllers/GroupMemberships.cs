@@ -30,6 +30,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
             MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
             GroupId = cm.GroupId,
             GroupName = cm.Group.Name,
+            GroupType = cm.Group.Type,
             MembershipYear = cm.MembershipYear,
             RoleId = cm.Role?.Id,
             RoleName = cm.Role?.Name
@@ -61,6 +62,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
             MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
             GroupId = cm.GroupId,
             GroupName = cm.Group.Name,
+            GroupType = cm.Group.Type,
             MembershipYear = cm.MembershipYear,
             RoleId = cm.Role?.Id,
             RoleName = cm.Role?.Name

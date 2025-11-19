@@ -32,6 +32,7 @@ namespace Backend.Controllers
                     Id = cm.Id,
                     GroupId = cm.GroupId,
                     GroupName = cm.Group.Name,
+                    GroupType = cm.Group.Type,
                     MemberId = cm.MemberId,
                     MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
                     MembershipYear = cm.MembershipYear,
@@ -63,11 +64,14 @@ namespace Backend.Controllers
             {
                 Id = group.Id,
                 Name = group.Name,
+                Active = group.Active,
+                Type = group.Type,
                 GroupMemberships = group.GroupMemberships.Select(cm => new GroupMembershipResponseDTO
                 {
                     Id = cm.Id,
                     GroupId = cm.GroupId,
                     GroupName = cm.Group.Name,
+                    GroupType = cm.Group.Type,
                     MemberId = cm.MemberId,
                     MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
                     MembershipYear = cm.MembershipYear,
@@ -90,7 +94,8 @@ namespace Backend.Controllers
         {
             var newEntry = db.Groups.Add(new Group
             {
-                Name = groupDto.Name
+                Name = groupDto.Name,
+                Type = groupDto.Type
             });
             await db.SaveChangesAsync(cancellationToken);
 
@@ -138,6 +143,44 @@ namespace Backend.Controllers
             return NoContent();
         }
 
+        // PATCH: api/groups/5/active
+        /// <summary>
+        /// Updates a group's active status.
+        /// </summary>
+        /// <param name="id">The id of the group to update.</param>
+        /// <param name="activeDto">The new active status of the group.</param>
+        /// <returns>No Content.</returns>
+        [HttpPatch("{id}/active")]
+        public async Task<IActionResult> PatchGroupActive(uint id, bool newActive, CancellationToken cancellationToken)
+        {
+            Group? group = await db.Groups.FindAsync(id, cancellationToken);
+            if (group == null) return NotFound();
+
+            group.Active = newActive;
+            await db.SaveChangesAsync(cancellationToken);
+            
+            return NoContent();
+        }
+
+        // PATCH: api/groups/5/type
+        /// <summary>
+        /// Updates a group's type.
+        /// </summary>
+        /// <param name="id">The id of the group to update.</param>
+        /// <param name="typeDto">The new type of the group.</param>
+        /// <returns>No Content.</returns>
+        [HttpPatch("{id}/type")]
+        public async Task<IActionResult> PatchGroupType(uint id, Models.GroupType newType, CancellationToken cancellationToken)
+        {
+            Group? group = await db.Groups.FindAsync(id, cancellationToken);
+            if (group == null) return NotFound();
+
+            group.Type = newType;
+            await db.SaveChangesAsync(cancellationToken);
+
+            return NoContent();
+        }
+
         // PUT: api/groups/5
         /// <summary>
         /// Updates a group's details.
@@ -152,6 +195,8 @@ namespace Backend.Controllers
             if (group == null) return NotFound();
 
             group.Name = groupDto.Name;
+            group.Active = groupDto.Active;
+            group.Type = groupDto.Type;
 
             await db.SaveChangesAsync(cancellationToken);
 

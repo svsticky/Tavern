@@ -23,16 +23,19 @@ public class GroupMembershipResponseDTO
     public uint Id { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
-    public uint? MemberId { get; set; }
+    public required uint MemberId { get; set; }
 
     /// <inheritdoc cref="Models.Member"/>
-    public string? MemberName { get; set; }
+    public required string MemberName { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.GroupId"/>
-    public uint? GroupId { get; set; }
+    public required uint GroupId { get; set; }
 
     /// <inheritdoc cref="Models.Group"/>
-    public string? GroupName { get; set; }
+    public required string GroupName { get; set; }
+
+    /// <inheritdoc cref="Models.Group.Active"/>
+    public GroupType GroupType { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
     public uint MembershipYear { get; set; }
