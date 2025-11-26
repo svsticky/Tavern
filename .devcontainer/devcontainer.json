@@ -9,6 +9,9 @@
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {},
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20" 
+        }
     },
 
     // Configure tool-specific properties.
@@ -31,10 +34,10 @@
 
     "portsAttributes": {
         "3000": {
-            "label": "Frontend",
+            "label": "Frontend (Vue Dev Server)",
             "onAutoForward": "notify"
         },
-        "8000": {
+        "8080": {
             "label": "Backend API",
             "onAutoForward": "ignore"
         }

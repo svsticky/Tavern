@@ -21,5 +21,15 @@
 #    ports:
 #      - "5432:5432"
 
+  tavern-frontend:
+    container_name: tavern-frontend
+    restart: unless-stopped
+    image: tavern-frontend
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+
 volumes:
   postgres-data:
