@@ -16,9 +16,7 @@ export default defineComponent({
     const isActive = window.location.pathname === props.item.url;
 
     const handleClick = () => {
-      if (props.onClick) {
-        props.onClick();
-      }
+      props.onClick?.();
     };
 
     return () => (
