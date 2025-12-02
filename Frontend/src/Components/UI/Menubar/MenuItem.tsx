@@ -1,6 +1,6 @@
 import { defineComponent, type PropType } from "vue";
-import type { MenuItem } from "./Types/MenuItem";
 import { cn } from "@/lib/utils";
+import type { MenuItem } from "./Types/MenuItem";
 
 export default defineComponent({
   name: "MenubarItem",
@@ -22,13 +22,14 @@ export default defineComponent({
     return () => (
       <a
         href={props.item.url}
-        class={cn("flex items-center gap-2 text-white font-bold no-underline transition-colors duration-200 ease-in-out border-2 border-transparent",
+        class={cn(
+          "flex items-center gap-2 text-white font-bold no-underline transition-colors duration-200 ease-in-out border-2 border-transparent",
           // Mobile style
           "py-2 px-3 rounded-lg text-lg h-auto w-full justify-start",
           // Desktop style
           "lg:py-5 lg:px-2 lg:rounded-xl lg:text-sm lg:h-4 lg:w-auto lg:justify-center",
           // Hover & Active style
-          "hover:bg-(--theme-460) hover:border-white/20 " + (isActive ? "bg-(--theme-460) border-white/20" : "")
+          `hover:bg-(--theme-460) hover:border-white/20 ${isActive ? "bg-(--theme-460) border-white/20" : ""}`,
         )}
         onClick={handleClick}
       >

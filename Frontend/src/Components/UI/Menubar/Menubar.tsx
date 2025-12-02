@@ -44,7 +44,7 @@ export default defineComponent({
       <header
         class={cn(
           "bg-(--theme) w-full sticky top-0 z-50 shadow-lg",
-          props.class // Merge custom class if provided
+          props.class, // Merge custom class if provided
         )}
       >
         {/* Top row: Logo, desktop nav, profile, mobile toggle */}

@@ -73,10 +73,11 @@ export default defineComponent({
           class={`
               flex items-center gap-2 rounded-xl border-2 border-transparent
               py-1 px-2
-              ${props.isMobile
-              ? "w-full justify-start py-2 px-3"
-              : "cursor-pointer transition-colors duration-200 ease-in-out hover:bg-(--theme-460) hover:border-white/20"
-            }
+              ${
+                props.isMobile
+                  ? "w-full justify-start py-2 px-3"
+                  : "cursor-pointer transition-colors duration-200 ease-in-out hover:bg-(--theme-460) hover:border-white/20"
+              }
         `}
           onClick={props.isMobile ? undefined : toggleProfile}
         >
@@ -92,14 +93,16 @@ export default defineComponent({
         {(isProfileOpen.value || props.isMobile) && (
           <div
             class={`rounded shadow-lg min-w-30 z-500 overflow-hidden flex flex-col py-1
-                  ${!props.isMobile
-                ? "absolute mt-3 top-full right-0 shadow-lg bg-white"
-                : ""
-              }
-                  ${props.isMobile
-                ? "relative top-auto right-auto w-full mt-1 bg-transparent shadow-none"
-                : ""
-              }
+                  ${
+                    !props.isMobile
+                      ? "absolute mt-3 top-full right-0 shadow-lg bg-white"
+                      : ""
+                  }
+                  ${
+                    props.isMobile
+                      ? "relative top-auto right-auto w-full mt-1 bg-transparent shadow-none"
+                      : ""
+                  }
               `}
           >
             {/* Option list */}
@@ -110,9 +113,10 @@ export default defineComponent({
                     type="button"
                     class={`flex items-center gap-2 py-2.5 px-4 text-sm no-underline w-full
                       cursor-pointer
-                      ${props.isMobile
-                        ? "text-white hover:bg-(--theme-450) rounded-lg"
-                        : "text-gray-800 bg-transparent hover:bg-[#f0f0f0]"
+                      ${
+                        props.isMobile
+                          ? "text-white hover:bg-(--theme-450) rounded-lg"
+                          : "text-gray-800 bg-transparent hover:bg-[#f0f0f0]"
                       }`}
                     onClick={() => handleOptionClick(option.action)}
                   >
