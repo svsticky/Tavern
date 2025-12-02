@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "npx @biomejs/biome check --write",
+    "format": "npx @biomejs/biome format --write"
   },
   "dependencies": {
     "@vitejs/plugin-vue-jsx": "^5.1.2",
