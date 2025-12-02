@@ -17,7 +17,7 @@ const Button = defineComponent({
       <button
         class={`
           bg-white 
-          text-[#fa6b20] 
+          text-(--theme)
           font-semibold 
           px-6 py-2 
           rounded-lg 
