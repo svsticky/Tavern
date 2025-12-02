@@ -18,18 +18,25 @@ export default defineComponent({
 
 	setup(props) {
 		return () => (
-			<Tile class={cn("inline-block w-60 rounded-2xl p-0", props.class)}>
+			<Tile
+				class={cn(
+					"inline-block w-60 rounded-2xl p-0 overflow-hidden cursor-pointer group",
+					props.class
+				)}
+			>
 				{/* Poster image */}
 				<img
 					src={props.activity.image}
 					alt={props.activity.title}
-					class="rounded-t-2xl w-full"
+					class="rounded-t-2xl w-full transition-transform duration-300 group-hover:scale-105"
 				/>
 
 				{/* Activity details */}
 				<div class="p-3 border-r border-l border-b rounded-b-2xl border-gray-200">
 					{/* Title */}
-					<p class="text-[18px] font-bold mt-1.5 mb-1">
+					<p
+						class="text-[18px] font-bold mt-1.5 mb-1 transition-colors duration-300 group-hover:text-orange-500"
+					>
 						{props.activity.title}
 					</p>
 
