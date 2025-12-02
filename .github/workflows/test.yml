@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: ["main", "development"]
     paths:
-      - Frontend
+      - Frontend/**
 
 jobs:
   run-biome:
