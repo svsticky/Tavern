@@ -23,12 +23,14 @@ export default defineComponent({
         const isProfileOpen = ref(false);
         const dropdownRef = ref<HTMLElement | null>(null);
 
+        // Toggle profile dropdown
         const toggleProfile = () => {
             if (!props.isMobile) {
                 isProfileOpen.value = !isProfileOpen.value;
             }
         };
 
+        // Handle option click
         const handleOptionClick = (action: () => void) => {
             action();
             if (!props.isMobile) {
@@ -39,7 +41,7 @@ export default defineComponent({
             }
         };
 
-        // **Click outside logic**
+        // Handle clicks outside the dropdown to close it
         const handleClickOutside = (event: MouseEvent) => {
             if (!props.isMobile && isProfileOpen.value) {
                 if (
@@ -51,10 +53,12 @@ export default defineComponent({
             }
         };
 
+        // Set up and clean up event listeners
         onMounted(() => {
             document.addEventListener("click", handleClickOutside);
         });
 
+        // Clean up event listeners
         onBeforeUnmount(() => {
             document.removeEventListener("click", handleClickOutside);
         });
@@ -64,12 +68,17 @@ export default defineComponent({
                 ref={dropdownRef}
                 class={`${props.isMobile ? "ml-0 w-full" : "relative ml-5"}`}
             >
+                {/* User avatar + username row */}
                 <div
                     class={`
-                        flex items-center gap-2 rounded-xl 
+                        flex items-center gap-2 rounded-xl border-2 border-transparent
                         py-1 px-2
-                        ${props.isMobile ? "w-full justify-start py-2 px-3" : "cursor-pointer transition-colors duration-200 ease-in-out hover:bg-(--theme-450) "}
+                        ${props.isMobile
+                            ? "w-full justify-start py-2 px-3"
+                            : "cursor-pointer transition-colors duration-200 ease-in-out hover:bg-(--theme-460) hover:border-white/20"
+                        }
                     `}
+                    // Entire row toggles dropdown on desktop
                     onClick={props.isMobile ? undefined : toggleProfile}
                 >
                     <img
@@ -79,14 +88,22 @@ export default defineComponent({
                     <span class="text-white font-bold text-sm">{props.username}</span>
                 </div>
 
+                {/* Dropdown menu (always visible on mobile, conditional on desktop) */}
                 {(isProfileOpen.value || props.isMobile) && (
                     <div
                         class={`
                             rounded shadow-lg min-w-30 z-500 overflow-hidden flex flex-col py-1
-                            ${!props.isMobile ? "absolute mt-3 top-full right-0 shadow-lg bg-white" : ""}
-                            ${props.isMobile ? "relative top-auto right-auto w-full mt-1 bg-transparent shadow-none" : ""}
+                            ${!props.isMobile
+                                ? "absolute mt-3 top-full right-0 shadow-lg bg-white"
+                                : ""
+                            }
+                            ${props.isMobile
+                                ? "relative top-auto right-auto w-full mt-1 bg-transparent shadow-none"
+                                : ""
+                            }
                         `}
                     >
+                        {/* Option list */}
                         {props.options.map((option) => (
                             <div
                                 class={`

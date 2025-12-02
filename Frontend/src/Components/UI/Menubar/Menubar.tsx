@@ -9,16 +9,19 @@ export default defineComponent({
     name: "Menubar",
     props: {
         title: { type: String, default: "Sticky" },
+
         items: {
             type: Array as () => MenuItemType[],
             required: true,
             default: () => [],
         },
+
         profileOptions: {
             type: Object as PropType<ProfileOptions>,
             required: false,
             default: () => ({ options: [] }),
         },
+
         class: {
             type: String,
             required: false,
@@ -26,10 +29,13 @@ export default defineComponent({
     },
 
     setup(props) {
+        // Path to sticky logo
         const logo = "https://public.svsticky.nl/logos/hoofd_outline_wit.svg";
 
+        // Track whether the mobile menu is open
         const isMenuOpen = ref(false);
 
+        // Toggle the mobile menu open/closed
         const toggleMenu = () => {
             isMenuOpen.value = !isMenuOpen.value;
         };
@@ -37,11 +43,13 @@ export default defineComponent({
         return () => (
             <header
                 class={cn(
-                    "bg-(--theme) w-full sticky top-0 z-50 shadow-lg ",
-                    props.class,
+                    "bg-(--theme) w-full sticky top-0 z-50 shadow-lg",
+                    props.class, // Merge custom class if provided
                 )}
             >
+                {/* Top row: Logo, desktop nav, profile, mobile toggle */}
                 <div class="flex items-center justify-between w-full py-2 px-[10%]">
+                    {/* Logo + Title */}
                     <a
                         href="/"
                         class="flex items-center gap-x-3 text-white cursor-pointer no-underline"
@@ -50,13 +58,16 @@ export default defineComponent({
                         <p class="text-white text-2xl font-bold my-0">{props.title}</p>
                     </a>
 
+                    {/* Desktop navigation */}
                     <nav class="hidden lg:flex text-white text-2xl my-0 gap-2 items-center">
                         {props.items.map((item) => {
                             return <MenuItem item={item} />;
                         })}
                     </nav>
 
+                    {/* Profile section + mobile menu button */}
                     <div class="flex items-center">
+                        {/* Desktop profile dropdown */}
                         {props.profileOptions &&
                             props.profileOptions.username &&
                             props.profileOptions.avatarUrl && (
@@ -69,6 +80,7 @@ export default defineComponent({
                                 </div>
                             )}
 
+                        {/* Mobile hamburger button */}
                         <button
                             class="text-white text-3xl cursor-pointer lg:hidden"
                             onClick={toggleMenu}
@@ -79,8 +91,10 @@ export default defineComponent({
                     </div>
                 </div>
 
+                {/* Mobile menu expanded content */}
                 {isMenuOpen.value && (
                     <div class="lg:hidden bg-(--theme) py-2 border-t border-opacity-20 border-white">
+                        {/* Mobile navigation items */}
                         <div class="px-5">
                             <nav class="flex flex-col text-white text-xl gap-1">
                                 {props.items.map((item) => (
@@ -89,6 +103,7 @@ export default defineComponent({
                             </nav>
                         </div>
 
+                        {/* Mobile profile dropdown */}
                         {props.profileOptions &&
                             props.profileOptions.username &&
                             props.profileOptions.avatarUrl && (
@@ -98,7 +113,7 @@ export default defineComponent({
                                         avatarUrl={props.profileOptions.avatarUrl}
                                         options={props.profileOptions.options}
                                         isMobile={true}
-                                        onOptionClick={toggleMenu}
+                                        onOptionClick={toggleMenu} // Close menu after selection
                                     />
                                 </div>
                             )}

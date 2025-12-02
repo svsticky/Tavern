@@ -4,7 +4,7 @@ import Tile from "./Tile";
 import type { Activity } from "@/Types/Activity";
 import { Calendar, MapPin, UsersRound } from "lucide-vue-next";
 
-const ActivityTile = defineComponent({
+export default defineComponent({
 	props: {
 		activity: {
 			type: Object as () => Activity,
@@ -19,16 +19,22 @@ const ActivityTile = defineComponent({
 	setup(props) {
 		return () => (
 			<Tile class={cn("inline-block w-60 rounded-2xl p-0", props.class)}>
+				{/* Poster image */}
 				<img
 					src={props.activity.image}
 					alt={props.activity.title}
 					class="rounded-t-2xl w-full"
 				/>
+
+				{/* Activity details */}
 				<div class="p-3 border-r border-l border-b rounded-b-2xl border-gray-200">
+					{/* Title */}
 					<p class="text-[18px] font-bold mt-1.5 mb-1">
 						{props.activity.title}
 					</p>
+
 					<div class="flex flex-col text-[14px] text-gray-500 mt-0">
+						{/* Date and time */}
 						<div class="flex items-center gap-1.5 mt-1">
 							<Calendar size={12} />
 							{props.activity.startdate.getDate()}{" "}
@@ -41,9 +47,13 @@ const ActivityTile = defineComponent({
 								minute: "2-digit",
 							})}
 						</div>
+
+						{/* Location */}
 						<div class="flex items-center gap-1.5 mt-1">
 							<MapPin size={12} /> {props.activity.location}
 						</div>
+
+						{/* Available spots */}
 						<div class="flex items-center gap-1.5 mt-1">
 							<UsersRound size={12} />{" "}
 							{props.activity.maxParticipants -
@@ -56,5 +66,3 @@ const ActivityTile = defineComponent({
 		);
 	},
 });
-
-export default ActivityTile;

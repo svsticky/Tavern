@@ -1,7 +1,8 @@
 import { defineComponent } from "vue";
 import { cn } from "@/lib/utils";
 
-const Tile = defineComponent({
+export default defineComponent({
+	name: "Tile",
 	props: {
 		class: {
 			type: String,
@@ -17,4 +18,3 @@ const Tile = defineComponent({
 		);
 	},
 });
-export default Tile;

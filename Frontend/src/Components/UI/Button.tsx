@@ -2,7 +2,8 @@ import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-vue-next";
 import { defineComponent } from "vue";
 
-const Button = defineComponent({
+export default defineComponent({
+	name: "Button",
 	props: {
 		class: {
 			type: String,
@@ -13,6 +14,7 @@ const Button = defineComponent({
 			default: false,
 		},
 	},
+
 	setup(props, { slots }) {
 		return () => (
 			<button
@@ -30,10 +32,10 @@ const Button = defineComponent({
 				)}
 			>
 				{slots.default && slots.default()}
+
+				{/* Optional Arrow Icon */}
 				{props.showArrow && <ArrowRight class="inline-block ml-2" size={16} />}
 			</button>
 		);
 	},
 });
-
-export default Button;
