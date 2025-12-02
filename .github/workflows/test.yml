@@ -20,15 +20,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+      - name: Setup Biome
+        uses: biomejs/setup-biome@v2
         with:
-          node-version: ${{ matrix.node-version }}
-          cache: "npm"
-          cache-dependency-path: Frontend/package-lock.json
+          version: latest
 
-      - run: npm ci
+      - name: Run Biome
         working-directory: Frontend
-
-      - run: npm run lint
-        working-directory: Frontend
+        run: biome ci .
