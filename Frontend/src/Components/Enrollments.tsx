@@ -1,8 +1,8 @@
 import { CircleCheckBig } from "lucide-vue-next";
 import { defineComponent } from "vue";
 import ListTile from "@/Components/UI/Tile/ListTile";
-import type { Activity } from "@/Types/Activity";
 import { formatDate } from "@/lib/utils";
+import type { Activity } from "@/Types/Activity";
 
 export default defineComponent({
   name: "Enrollments",

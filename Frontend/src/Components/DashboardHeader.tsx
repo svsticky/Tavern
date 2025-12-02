@@ -8,8 +8,8 @@ import {
 import { defineComponent } from "vue";
 import Button from "@/Components/UI/Button";
 import Tile from "@/Components/UI/Tile/Tile";
-import type { Activity } from "@/Types/Activity";
 import { formatDate } from "@/lib/utils";
+import type { Activity } from "@/Types/Activity";
 
 export default defineComponent({
   name: "DashboardHeader",

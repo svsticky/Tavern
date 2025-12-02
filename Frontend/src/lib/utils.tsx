@@ -39,7 +39,6 @@ export function formatDate(date: Date, format: DateFormatType): string {
         minute: "2-digit",
         hour12: false,
       });
-    case "defaultDate":
     default:
       return date.toLocaleDateString();
   }
