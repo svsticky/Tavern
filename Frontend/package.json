@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "lint": "npx @biomejs/biome check --write",
-    "format": "npx @biomejs/biome format --write"
+    "biome": "biome check --write ."
   },
   "dependencies": {
     "@vitejs/plugin-vue-jsx": "^5.1.2",
@@ -19,6 +18,7 @@
     "vue-router": "^4.0.13"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.8",
     "@tailwindcss/vite": "^4.1.17",
     "@types/node": "^24.10.1",
     "@vitejs/plugin-vue": "^6.0.1",
