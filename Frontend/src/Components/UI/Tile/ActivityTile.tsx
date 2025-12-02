@@ -33,10 +33,15 @@ export default defineComponent({
 
         {/* Activity details */}
         <div class="p-3 border-r border-l border-b rounded-b-2xl border-gray-200">
-          {/* Title */}
-          <p class="text-[18px] font-bold mt-1.5 mb-1 transition-colors duration-300 group-hover:text-orange-500">
-            {props.activity.title}
-          </p>
+          {/* Title and price */}
+          <div class="flex w-full justify-between text-[18px] font-bold mt-1.5 mb-1">
+            <p class="transition-colors duration-300 group-hover:text-(--theme)">
+              {props.activity.title}
+            </p>
+            <p class="text-(--theme) text-nowrap">
+              {props.activity.price > 0 ? `€${props.activity.price}` : "Gratis"}
+            </p>
+          </div>
 
           <div class="flex flex-col text-[14px] text-gray-500 mt-0">
             {/* Date and time */}

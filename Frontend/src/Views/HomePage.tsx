@@ -20,7 +20,7 @@ export default defineComponent({
         title: "Study Trip",
         summary:
           "26 november is de hype-avond voor de studiereis!\n\nWe gaan weer met Sticky het verre buitenland opzoeken! Deze keer buiten de grenzen van Europa duiken we in een compleet nieuwe wereld vol cultuur, bijzondere ervaringen en geweldig eten.\n\nTijdens de avond onthullen we eindelijk de bestemming en kun jij kijken of je goed gegokt hebt. We geven een presentatie met alle belangrijke informatie die jij nodig hebt om mee te gaan. Na de presentatie opent de inschrijfperiode en heb je tot en met 12 december de tijd om je aan te melden en je motivatie in te sturen.\n\nWij van de studiereis commissie gaan er een mooie reis van maken en we hopen dat natuurlijk jij mee gaat!",
-        price: 0,
+        price: 10,
         numberOfParticipants: 1,
         maxParticipants: 1,
         startdate: new Date("2024-06-01T10:00:00"),
@@ -92,7 +92,7 @@ export default defineComponent({
         title: "Study Trip",
         summary:
           "26 november is de hype-avond voor de studiereis!\n\nWe gaan weer met Sticky het verre buitenland opzoeken! Deze keer buiten de grenzen van Europa duiken we in een compleet nieuwe wereld vol cultuur, bijzondere ervaringen en geweldig eten.\n\nTijdens de avond onthullen we eindelijk de bestemming en kun jij kijken of je goed gegokt hebt. We geven een presentatie met alle belangrijke informatie die jij nodig hebt om mee te gaan. Na de presentatie opent de inschrijfperiode en heb je tot en met 12 december de tijd om je aan te melden en je motivatie in te sturen.\n\nWij van de studiereis commissie gaan er een mooie reis van maken en we hopen dat natuurlijk jij mee gaat!",
-        price: 0,
+        price: 10,
         numberOfParticipants: 1,
         maxParticipants: 1,
         startdate: new Date("2024-06-01T10:00:00"),

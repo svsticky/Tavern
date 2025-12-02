@@ -22,7 +22,7 @@ export default defineComponent({
         {/* Title and date */}
         <div class="flex w-full justify-between">
           <p class="mb-2">{props.announcement.title}</p>
-          <p class="flex text-gray-600 gap-1 text-sm">
+          <p class="flex text-gray-600 gap-1 text-sm text-nowrap">
             <Calendar class="h-5" />{" "}
             {props.announcement.date.toLocaleDateString()}
           </p>
