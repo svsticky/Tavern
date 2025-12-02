@@ -49,7 +49,7 @@ export default defineComponent({
               <div class="flex justify-between items-center">
                 <div>
                   <p>Openstaand</p>
-                  <p>€ 45,00</p>
+                  <p>€45,00</p>
                 </div>
                 <Button>Betalen</Button>
               </div>
