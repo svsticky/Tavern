@@ -2,6 +2,7 @@ import { CircleCheckBig } from "lucide-vue-next";
 import { defineComponent } from "vue";
 import ListTile from "@/Components/UI/Tile/ListTile";
 import type { Activity } from "@/Types/Activity";
+import { formatDate } from "@/lib/utils";
 
 export default defineComponent({
   name: "Enrollments",
@@ -23,10 +24,7 @@ export default defineComponent({
             <div>
               <p>{activity.title}</p>
               <p class="text-gray-500">
-                {activity.startdate.toLocaleDateString("default", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                {formatDate(activity.startdate, "shortDate")}
               </p>
             </div>
           </div>

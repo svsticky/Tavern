@@ -1,6 +1,6 @@
 import { Calendar, Megaphone } from "lucide-vue-next";
 import { defineComponent } from "vue";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import type { Announcement } from "@/Types/Announcement";
 import Tile from "./Tile";
 
@@ -24,7 +24,7 @@ export default defineComponent({
           <p class="mb-2">{props.announcement.title}</p>
           <p class="flex text-gray-600 gap-1 text-sm text-nowrap">
             <Calendar class="h-5" />{" "}
-            {props.announcement.date.toLocaleDateString()}
+            {formatDate(props.announcement.date, "defaultDate")}
           </p>
         </div>
 

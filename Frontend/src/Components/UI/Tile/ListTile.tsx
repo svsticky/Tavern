@@ -1,5 +1,5 @@
-import { defineComponent, Fragment, type VNode, type VNodeChild } from "vue";
-import { cn } from "@/lib/utils";
+import { defineComponent } from "vue";
+import { cn, flattenChildren } from "@/lib/utils";
 import Tile from "./Tile";
 
 export default defineComponent({
@@ -15,7 +15,7 @@ export default defineComponent({
     return () => {
       // Flatten the slot children
       const raw = slots.default?.() ?? [];
-      const children = flatten(raw);
+      const children = flattenChildren(raw);
 
       // Insert dividers between children
       const childrenWithDividers = children.flatMap((child, index) => {
@@ -31,28 +31,3 @@ export default defineComponent({
     };
   },
 });
-
-function flatten(vnodes: VNodeChild[]): VNode[] {
-  const result: VNode[] = [];
-
-  // Recursively process each vnode
-  vnodes.forEach((vnode) => {
-    // Skip null/boolean nodes
-    if (vnode == null || typeof vnode === "boolean") return;
-
-    if (typeof vnode === "object" && "type" in vnode) {
-      const node = vnode as VNode;
-
-      // If it's a Fragment, flatten its children
-      if (node.type === Fragment) {
-        const children = (node.children ?? []) as VNodeChild[];
-        result.push(...flatten(children));
-      } else if (node.type !== Text && node.type !== Comment) {
-        // Regular vnode, add to result
-        result.push(node);
-      }
-    }
-  });
-
-  return result;
-}

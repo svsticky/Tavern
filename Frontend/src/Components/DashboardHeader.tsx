@@ -9,6 +9,7 @@ import { defineComponent } from "vue";
 import Button from "@/Components/UI/Button";
 import Tile from "@/Components/UI/Tile/Tile";
 import type { Activity } from "@/Types/Activity";
+import { formatDate } from "@/lib/utils";
 
 export default defineComponent({
   name: "DashboardHeader",
@@ -65,14 +66,7 @@ export default defineComponent({
               <p>{props.nextActivity.title}</p>
               <div class="flex items-center gap-2">
                 <Calendar />{" "}
-                {props.nextActivity.startdate.toLocaleDateString("default", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                })}
+                {formatDate(props.nextActivity.startdate, "fullDateTime")}
               </div>
               <div class="flex items-center gap-2">
                 <UsersRound />{" "}

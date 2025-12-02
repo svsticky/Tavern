@@ -1,6 +1,6 @@
 import { Calendar, MapPin, UsersRound } from "lucide-vue-next";
 import { defineComponent } from "vue";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import type { Activity } from "@/Types/Activity";
 import Tile from "./Tile";
 
@@ -48,14 +48,8 @@ export default defineComponent({
             <div class="flex items-center gap-1.5 mt-1">
               <Calendar size={12} />
               {props.activity.startdate.getDate()}{" "}
-              {props.activity.startdate.toLocaleDateString("default", {
-                month: "short",
-              })}{" "}
-              •{" "}
-              {props.activity.startdate.toLocaleTimeString("default", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {formatDate(props.activity.startdate, "monthShort")} •{" "}
+              {formatDate(props.activity.startdate, "timeOnly")}
             </div>
 
             {/* Location */}
