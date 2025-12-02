@@ -68,8 +68,7 @@ export default defineComponent({
           {/* Profile section + mobile menu button */}
           <div class="flex items-center">
             {/* Desktop profile dropdown */}
-            {props.profileOptions &&
-              props.profileOptions.username &&
+            {props.profileOptions?.username &&
               props.profileOptions.avatarUrl && (
                 <div class="hidden lg:block">
                   <ProfileDropdown
@@ -82,6 +81,7 @@ export default defineComponent({
 
             {/* Mobile hamburger button */}
             <button
+              type="button"
               class="text-white text-3xl cursor-pointer lg:hidden"
               onClick={toggleMenu}
               aria-label="Open menu"
@@ -104,8 +104,7 @@ export default defineComponent({
             </div>
 
             {/* Mobile profile dropdown */}
-            {props.profileOptions &&
-              props.profileOptions.username &&
+            {props.profileOptions?.username &&
               props.profileOptions.avatarUrl && (
                 <div class="mt-2 pt-2 px-5 border-t border-opacity-20 border-white">
                   <ProfileDropdown

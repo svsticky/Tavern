@@ -19,6 +19,7 @@ export default defineComponent({
             <div class="bg-(--theme-200) rounded-xl w-10 h-10 p-1">
               <img
                 src={CommitteeEnrollment.icon}
+                alt={`${CommitteeEnrollment.name} Icon`}
                 class="text-(--theme) h-full m-auto"
               />
             </div>
