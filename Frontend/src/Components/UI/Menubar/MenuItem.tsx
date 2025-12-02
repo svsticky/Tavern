@@ -2,30 +2,30 @@ import { defineComponent, type PropType } from "vue";
 import type { MenuItem } from "./Types/MenuItem";
 
 export default defineComponent({
-	name: "MenubarItem",
-	props: {
-		item: { type: Object as PropType<MenuItem>, required: true },
-		onClick: { type: Function as PropType<() => void>, required: false },
-	},
+  name: "MenubarItem",
+  props: {
+    item: { type: Object as PropType<MenuItem>, required: true },
+    onClick: { type: Function as PropType<() => void>, required: false },
+  },
 
-	setup(props) {
-		// Destructure icon component
-		const IconComponent = props.item.icon;
+  setup(props) {
+    // Destructure icon component
+    const IconComponent = props.item.icon;
 
-		// Determine if the menu item is active
-		const isActive = window.location.pathname === props.item.url;
+    // Determine if the menu item is active
+    const isActive = window.location.pathname === props.item.url;
 
-		// Handle click event
-		const handleClick = () => {
-			if (props.onClick) {
-				props.onClick();
-			}
-		};
+    // Handle click event
+    const handleClick = () => {
+      if (props.onClick) {
+        props.onClick();
+      }
+    };
 
-		return () => (
-			<a
-				href={props.item.url}
-				class={`
+    return () => (
+      <a
+        href={props.item.url}
+        class={`
                     flex items-center gap-2 text-white font-bold no-underline transition-colors duration-200 ease-in-out border-2 border-transparent
                     // Mobile style
                     py-2 px-3 rounded-lg text-lg h-auto w-full justify-start
@@ -34,11 +34,11 @@ export default defineComponent({
                     // Hover & Active style
                     hover:bg-(--theme-460) hover:border-white/20 ${isActive ? "bg-(--theme-460) border-white/20" : ""}
                 `}
-				onClick={handleClick}
-			>
-				{IconComponent && <IconComponent />}
-				<span>{props.item.label}</span>
-			</a>
-		);
-	},
+        onClick={handleClick}
+      >
+        {IconComponent && <IconComponent />}
+        <span>{props.item.label}</span>
+      </a>
+    );
+  },
 });
