@@ -1,5 +1,5 @@
 import { defineComponent, type PropType } from "vue";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/tailwind.utils";
 import type { MenuItem } from "./Types/MenuItem";
 
 export default defineComponent({
@@ -15,10 +15,6 @@ export default defineComponent({
 
     const isActive = window.location.pathname === props.item.url;
 
-    const handleClick = () => {
-      props.onClick?.();
-    };
-
     return () => (
       <a
         href={props.item.url}
@@ -31,7 +27,7 @@ export default defineComponent({
           // Hover & Active style
           `hover:bg-(--theme-460) hover:border-white/20 ${isActive ? "bg-(--theme-460) border-white/20" : ""}`,
         )}
-        onClick={handleClick}
+        onClick={() => props.onClick?.()}
       >
         {IconComponent && <IconComponent />}
         <span>{props.item.label}</span>

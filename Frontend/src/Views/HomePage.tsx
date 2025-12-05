@@ -1,5 +1,5 @@
 import { defineComponent } from "vue";
-import AnnouncementList from "@/Components/AnnouncementList";
+import AnnouncementsList from "@/Components/AnnouncementsList";
 import DashboardHeader from "@/Components/DashboardHeader";
 import EnrolledCommitteesList from "@/Components/EnrolledCommitteesList";
 import Enrollments from "@/Components/Enrollments";
@@ -180,7 +180,7 @@ export default defineComponent({
                   Bekijk alles
                 </Button>
               </div>
-              <AnnouncementList announcements={announcements} />
+              <AnnouncementsList announcements={announcements} />
             </div>
           </div>
 

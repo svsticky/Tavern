@@ -8,7 +8,7 @@ import {
 import { defineComponent } from "vue";
 import Button from "@/Components/UI/Button";
 import Tile from "@/Components/UI/Tile/Tile";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/dates.utils";
 import type { Activity } from "@/Types/Activity";
 
 export default defineComponent({

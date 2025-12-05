@@ -6,7 +6,7 @@ import {
   ref,
 } from "vue";
 import ActivityTile from "@/Components/UI/Tile/ActivityTile";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/tailwind.utils";
 import type { Activity } from "@/Types/Activity";
 
 export default defineComponent({

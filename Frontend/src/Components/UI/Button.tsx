@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-vue-next";
 import { defineComponent } from "vue";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/tailwind.utils";
 
 export default defineComponent({
   name: "Button",

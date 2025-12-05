@@ -1,5 +1,6 @@
 import { defineComponent, type PropType, ref } from "vue";
-import { cn } from "@/lib/utils";
+import images from "@/lib/images";
+import { cn } from "@/lib/tailwind.utils";
 import MenuItem from "./MenuItem";
 import ProfileDropdown from "./ProfileDropdown";
 import type { MenuItem as MenuItemType } from "./Types/MenuItem";
@@ -29,9 +30,6 @@ export default defineComponent({
   },
 
   setup(props) {
-    // Path to sticky logo
-    const logo = "https://public.svsticky.nl/logos/hoofd_outline_wit.svg";
-
     // Track whether the mobile menu is open
     const isMenuOpen = ref(false);
 
@@ -54,7 +52,7 @@ export default defineComponent({
             href="/"
             class="flex items-center gap-x-3 text-white cursor-pointer no-underline"
           >
-            <img src={logo} alt="Logo" class="h-10 w-auto" />
+            <img src={images.sticky_logo} alt="Logo" class="h-10 w-auto" />
             <p class="text-white text-2xl font-bold my-0">{props.title}</p>
           </a>
 

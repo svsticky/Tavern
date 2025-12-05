@@ -1,5 +1,6 @@
 import { defineComponent } from "vue";
-import { cn, flattenChildren } from "@/lib/utils";
+import { flattenChildren } from "@/lib/component.utils";
+import { cn } from "@/lib/tailwind.utils";
 import Tile from "./Tile";
 
 export default defineComponent({

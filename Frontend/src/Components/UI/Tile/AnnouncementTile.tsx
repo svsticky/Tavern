@@ -1,6 +1,7 @@
 import { Calendar, Megaphone } from "lucide-vue-next";
 import { defineComponent } from "vue";
-import { cn, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/dates.utils";
+import { cn } from "@/lib/tailwind.utils";
 import type { Announcement } from "@/Types/Announcement";
 import Tile from "./Tile";
 
