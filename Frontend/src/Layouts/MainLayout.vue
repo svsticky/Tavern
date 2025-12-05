@@ -5,15 +5,18 @@ import {
   LayoutDashboard,
   SquareArrowOutUpRight,
 } from "lucide-vue-next";
+import { useI18n } from "vue-i18n";
 import Menubar from "@/Components/UI/Menubar/Menubar";
+
+const { t } = useI18n();
 
 // Define menu items for the Menubar
 const menuItems = [
-  { label: "Dashboard", url: "/", icon: LayoutDashboard },
-  { label: "Activities", url: "/Activities", icon: CalendarDays },
-  { label: "Announcements", url: "/Announcements", icon: Bell },
+  { label: t("dashboard"), url: "/", icon: LayoutDashboard },
+  { label: t("activities"), url: "/Activities", icon: CalendarDays },
+  { label: t("announcements"), url: "/Announcements", icon: Bell },
   {
-    label: "External links",
+    label: t("external_links"),
     url: "/ExternalLinks",
     icon: SquareArrowOutUpRight,
   },
