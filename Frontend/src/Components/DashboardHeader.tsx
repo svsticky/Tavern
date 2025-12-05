@@ -6,11 +6,11 @@ import {
   UsersRound,
 } from "lucide-vue-next";
 import { defineComponent } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "@/Components/UI/Button";
 import Tile from "@/Components/UI/Tile/Tile";
 import { formatDate } from "@/lib/dates.utils";
 import type { Activity } from "@/Types/Activity";
-import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   name: "DashboardHeader",
@@ -77,7 +77,8 @@ export default defineComponent({
                   ? props.nextActivity.maxParticipants -
                     props.nextActivity.numberOfParticipants
                   : 0}{" "}
-                {t("of_the")} {props.nextActivity.maxParticipants} {t("available")}{" "}
+                {t("of_the")} {props.nextActivity.maxParticipants}{" "}
+                {t("available")}{" "}
               </div>
               <Button showArrow={true}>{t("view_details")}</Button>
             </Tile>

@@ -1,10 +1,10 @@
 import { Calendar, MapPin, UsersRound } from "lucide-vue-next";
 import { defineComponent } from "vue";
+import { useI18n } from "vue-i18n";
 import { formatDate } from "@/lib/dates.utils";
 import { cn } from "@/lib/tailwind.utils";
 import type { Activity } from "@/Types/Activity";
 import Tile from "./Tile";
-import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   props: {

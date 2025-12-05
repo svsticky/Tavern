@@ -8,6 +8,6 @@ export const i18n = createI18n({
   fallbackLocale: "en-US",
   messages: {
     "en-US": enUS,
-    "nl-NL": nlNL
-  }
+    "nl-NL": nlNL,
+  },
 });

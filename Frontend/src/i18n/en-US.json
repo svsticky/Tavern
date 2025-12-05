@@ -1,15 +1,15 @@
 {
-    "upcomming_activities": "Upcoming Activities",
-    "latest_announcements": "Latest Announcements",
-    "my_enrollments": "My Enrollments",
-    "my_committees": "My Committees",
-    "enrollments": "Enrollments",
-    "attended": "Attended",
-    "outstanding_payments": "Outstanding Payments",
-    "pay": "Pay",
-    "upcoming_activity": "Upcoming Activity",
-    "view_details": "View Details",
-    "of_the": "of the",
-    "available": "available",
-    "places_available": "places available"
+  "upcomming_activities": "Upcoming Activities",
+  "latest_announcements": "Latest Announcements",
+  "my_enrollments": "My Enrollments",
+  "my_committees": "My Committees",
+  "enrollments": "Enrollments",
+  "attended": "Attended",
+  "outstanding_payments": "Outstanding Payments",
+  "pay": "Pay",
+  "upcoming_activity": "Upcoming Activity",
+  "view_details": "View Details",
+  "of_the": "of the",
+  "available": "available",
+  "places_available": "places available"
 }
