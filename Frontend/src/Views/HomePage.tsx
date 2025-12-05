@@ -7,9 +7,12 @@ import Button from "@/Components/UI/Button";
 import UpcomingActivities from "@/Components/UpcomingActivities";
 import type { Activity } from "@/Types/Activity";
 import type { Announcement } from "@/Types/Announcement";
+import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   setup() {
+    const { t } = useI18n();
+
     const name = "Rens"; // TO DO: fetch from user session
 
     const enrolledActivities: Activity[] = [
@@ -158,7 +161,7 @@ export default defineComponent({
             {/* Upcoming Activities */}
             <div class="w-full">
               <div class="flex w-full justify-between horizontal-align-center">
-                <p class="font-semibold text-lg">Aankomende activiteiten:</p>
+                <p class="font-semibold text-lg">{ t("upcomming_activities") }</p>
                 <Button
                   showArrow
                   class="bg-transparent p-0 hover:bg-transparent hover:text-(--theme-450)"
@@ -172,7 +175,7 @@ export default defineComponent({
             {/* Announcements */}
             <div class="flex flex-col w-full gap-y-3">
               <div class="flex w-full justify-between horizontal-align-center">
-                <p class="font-semibold text-lg">Laatste mededelingen:</p>
+                <p class="font-semibold text-lg">{ t("latest_announcements") }</p>
                 <Button
                   showArrow
                   class="bg-transparent p-0 hover:bg-transparent hover:text-(--theme-450)"
@@ -186,10 +189,10 @@ export default defineComponent({
 
           {/* Enrollments and Committees */}
           <div class="flex flex-col col-span-4 lg:col-span-1 gap-3">
-            <p class="text-md">Mijn aanmeldingen:</p>
+            <p class="text-md">{ t("my_enrollments") }</p>
             <Enrollments enrolledActivities={enrolledActivities} />
 
-            <p class="text-md">Mijn commissies:</p>
+            <p class="text-md">{ t("my_committees") }</p>
             <EnrolledCommitteesList
               CommitteeEnrollments={committeeEnrollments}
             />

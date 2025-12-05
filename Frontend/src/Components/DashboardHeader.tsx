@@ -10,6 +10,7 @@ import Button from "@/Components/UI/Button";
 import Tile from "@/Components/UI/Tile/Tile";
 import { formatDate } from "@/lib/dates.utils";
 import type { Activity } from "@/Types/Activity";
+import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   name: "DashboardHeader",
@@ -18,6 +19,8 @@ export default defineComponent({
     nextActivity: { type: Object as () => Activity, required: false },
   },
   setup(props) {
+    const { t } = useI18n();
+
     return () => (
       <Tile class="w-full m-0 bg-[linear-gradient(var(--theme-475),var(--theme))] text-white">
         <div class="flex lg:flex-row flex-col gap-5">
@@ -29,7 +32,7 @@ export default defineComponent({
             <div class="flex gap-5">
               {/* Activity Enrollments */}
               <Tile class="bg-(--theme-460) border-2 border-white/20 grow">
-                <p>Aanmeldingen</p>
+                <p>{t("enrollments")}</p>
                 <div class="flex items-center gap-2">
                   <p class="text-2xl">3</p> <CircleCheckBig />
                 </div>
@@ -37,7 +40,7 @@ export default defineComponent({
 
               {/* Attended Activities */}
               <Tile class="bg-(--theme-460) border-2 border-white/20 grow">
-                <p>Bijgewoond</p>
+                <p>{t("attended")}</p>
                 <div class="flex items-center gap-2">
                   <p class="text-2xl">12</p>
                   <TrendingUp />
@@ -49,10 +52,10 @@ export default defineComponent({
             <Tile class="bg-(--theme-460) border-2 border-white/20 grow">
               <div class="flex justify-between items-center">
                 <div>
-                  <p>Openstaand</p>
+                  <p>{t("outstanding_payments")}</p>
                   <p>€45,00</p>
                 </div>
-                <Button>Betalen</Button>
+                <Button>{t("pay")}</Button>
               </div>
             </Tile>
           </div>
@@ -61,7 +64,7 @@ export default defineComponent({
           {props.nextActivity && (
             <Tile class="flex flex-col gap-4 bg-(--theme-460) border-2 border-white/20 grow basis-0">
               <div class="flex items-center gap-2">
-                <Clock /> Eerstvolgende activiteit
+                <Clock /> {t("upcomming_activity")}
               </div>
               <p>{props.nextActivity.title}</p>
               <div class="flex items-center gap-2">
@@ -74,9 +77,9 @@ export default defineComponent({
                   ? props.nextActivity.maxParticipants -
                     props.nextActivity.numberOfParticipants
                   : 0}{" "}
-                van de {props.nextActivity.maxParticipants} vrij{" "}
+                {t("of_the")} {props.nextActivity.maxParticipants} {t("available")}{" "}
               </div>
-              <Button showArrow={true}>Bekijk details</Button>
+              <Button showArrow={true}>{t("view_details")}</Button>
             </Tile>
           )}
         </div>

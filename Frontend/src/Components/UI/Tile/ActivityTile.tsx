@@ -4,6 +4,7 @@ import { formatDate } from "@/lib/dates.utils";
 import { cn } from "@/lib/tailwind.utils";
 import type { Activity } from "@/Types/Activity";
 import Tile from "./Tile";
+import { useI18n } from "vue-i18n";
 
 export default defineComponent({
   props: {
@@ -18,6 +19,8 @@ export default defineComponent({
   },
 
   setup(props) {
+    const { t } = useI18n();
+
     return () => (
       <Tile
         class={cn(
@@ -63,7 +66,7 @@ export default defineComponent({
               <UsersRound size={12} />{" "}
               {props.activity.maxParticipants -
                 props.activity.numberOfParticipants}{" "}
-              plaatsen vrij
+              {t("places_available")}
             </div>
           </div>
         </div>
