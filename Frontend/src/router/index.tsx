@@ -13,10 +13,15 @@ const router = createRouter({
           path: "",
           name: "dashboard",
           component: HomePage,
+          meta: { title: "Koala" },
         },
       ],
     },
   ],
+});
+
+router.afterEach((to) => {
+  document.title = (to.meta.title as string) || "Mijn App";
 });
 
 export default router;

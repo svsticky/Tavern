@@ -52,7 +52,11 @@ export default defineComponent({
             href="/"
             class="flex items-center gap-x-3 text-white cursor-pointer no-underline"
           >
-            <img src={images.sticky_logo} alt="Logo" class="h-10 w-auto" />
+            <img
+              src={images.sticky_logo_head_white}
+              alt="Logo"
+              class="h-10 w-auto"
+            />
             <p class="text-white text-2xl font-bold my-0">{props.title}</p>
           </a>
 
