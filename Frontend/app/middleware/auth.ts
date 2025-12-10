@@ -9,9 +9,9 @@ export async function requireAuth(args: LoaderArgs) {
 
 	const session = await getSession(request.headers.get("Cookie"));
 
-	if (!session.has("userId")) {
+	if (!session.has("auth_token")) {
 		throw redirect("/login");
 	}
 
-	return { userId: session.get("userId") };
+	return { userId: session.get("auth_token") };
 }

@@ -9,5 +9,7 @@ export default [
   ]),
   route('logout', 'routes/auth/logout.tsx'),
 
-  route("test", "routes/test.tsx"),
+  /**
+   * TODO: Make a common layout for when you are authenticated
+   */
 ] satisfies RouteConfig;

@@ -5,7 +5,7 @@ import type { Route } from "./+types/login";
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request.headers.get("Cookie"));
 
-  if (session.has("userId")) {
+  if (session.has("auth_token")) {
     // Redirect to the home page if they are already signed in.
     return redirect("/");
   }
@@ -26,6 +26,7 @@ export async function action({ request }: Route.ActionArgs) {
   const _username = form.get("username");
   const _password = form.get("password");
 
+  // TODO: Normally we would call the backend here to validate
   const userId = "12";
 
   if (userId == null) {
@@ -39,7 +40,8 @@ export async function action({ request }: Route.ActionArgs) {
     });
   }
 
-  session.set("userId", userId);
+  // TODO: Set an actual auth_token here.
+  session.set("auth_token", "asdf");
 
   // Login succeeded, send them to the home page.
   return redirect("/", {
@@ -52,6 +54,9 @@ export async function action({ request }: Route.ActionArgs) {
 export default function Login({ loaderData }: Route.ComponentProps) {
   const { error } = loaderData;
 
+  /**
+   * The email and password are currently not required untill we actually implement auth
+   */
   return (
     <div>
       {error ? <div className="error">{error}</div> : null}

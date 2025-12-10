@@ -1,13 +1,16 @@
 import { createCookieSessionStorage } from "react-router";
 
 type SessionData = {
-  userId: string;
+  auth_token: string;
 };
 
 type SessionFlashData = {
   error: string;
 };
 
+/**
+ * TODO: Below is the temporary implementation of the Cookie session. Eventually secret has to come from the .env
+ */
 const { getSession, commitSession, destroySession } =
   createCookieSessionStorage<SessionData, SessionFlashData>(
     {
@@ -22,10 +25,10 @@ const { getSession, commitSession, destroySession } =
         //
         // expires: new Date(Date.now() + 60_000),
         // httpOnly: true,
-        // maxAge: 60,
-        // path: "/",
+        maxAge: 60,
+        path: "/",
         // sameSite: "lax",
-        // secrets: ["s3cret1"],
+        secrets: ["s3cret1"],
         // secure: true,
       },
     },
