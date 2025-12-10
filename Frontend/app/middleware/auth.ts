@@ -1,0 +1,17 @@
+import { redirect } from "react-router";
+import type { Route } from "../+types/root";
+import { getSession } from "../sessions.server";
+
+type LoaderArgs = Route.LoaderArgs | Request;
+
+export async function requireAuth(args: LoaderArgs) {
+  const request = args instanceof Request ? args : args.request;
+
+  const session = await getSession(request.headers.get("Cookie"));
+
+  if (!session.has("auth_token")) {
+    throw redirect("/login");
+  }
+
+  return { authToken: session.get("auth_token") };
+}

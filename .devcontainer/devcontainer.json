@@ -29,12 +29,13 @@
     "forwardPorts": [
         3000,
         8080,
-        5432
+        5432,
+        5173
     ],
 
     "portsAttributes": {
         "3000": {
-            "label": "Frontend (Vue Dev Server)",
+            "label": "Frontend (React Router Server)",
             "onAutoForward": "notify"
         },
         "8080": {
