@@ -15,7 +15,7 @@ export default function AuthLayout() {
     <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-sm">
         <img
-          alt="Your Company"
+          alt="Sticky logo"
           src="https://public.svsticky.nl/logos/logo_compact_outline_wit_kleur.svg"
           className="mx-auto h-10 w-auto"
         />
