@@ -23,14 +23,14 @@ export async function loader({ request }: Route.LoaderArgs) {
 export async function action({ request }: Route.ActionArgs) {
   const session = await getSession(request.headers.get("Cookie"));
   const form = await request.formData();
-  const _username = form.get("username");
+  const _email = form.get("email");
   const _password = form.get("password");
 
   // TODO: Normally we would call the backend here to validate
   const userId = "12";
 
-  if (userId == null) {
-    session.flash("error", "Invalid username/password");
+  if (userId === null) {
+    session.flash("error", "Invalid email/password");
 
     // Redirect back to the login page with errors.
     return redirect("/login", {
