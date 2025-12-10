@@ -1,5 +1,5 @@
 import { requireAuth } from "../middleware/auth";
-import type { Route } from "./+types/home";
+import type { Route } from "./+types/test";
 
 export async function loader({request}: Route.LoaderArgs) {
   return requireAuth(request);
@@ -13,5 +13,5 @@ export function meta() {
 }
 
 export default function Home() {
-  return <p>Home</p>;
+  return <p>Test page</p>;
 }
