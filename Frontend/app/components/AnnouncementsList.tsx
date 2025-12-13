@@ -11,10 +11,7 @@ export default function AnnouncementsList({
   return (
     <div className="flex flex-col gap-5">
       {announcements.map((announcement) => (
-        <AnnouncementTile
-          key={announcement.id}
-          announcement={announcement}
-        />
+        <AnnouncementTile key={announcement.id} announcement={announcement} />
       ))}
     </div>
   );

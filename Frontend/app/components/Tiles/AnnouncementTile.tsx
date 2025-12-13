@@ -1,8 +1,8 @@
 import { Calendar, Megaphone } from "lucide-react";
-import Tile from "./Tile";
-import { cn } from "~/util/tailwind.util";
-import { formatDate } from "~/util/date.util";
 import type { Announcement } from "~/types/Announcement";
+import { formatDate } from "~/util/date.util";
+import { cn } from "~/util/tailwind.util";
+import Tile from "./Tile";
 
 type AnnouncementTileProps = {
   announcement: Announcement;
