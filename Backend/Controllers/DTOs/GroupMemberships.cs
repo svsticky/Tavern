@@ -5,7 +5,7 @@ namespace Backend.Controllers.DTOs;
 public class PostGroupMembershipDTO
 {
     /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
-    public required uint MemberId { get; set; }
+    public required Guid MemberId { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.GroupId"/>
     public required uint GroupId { get; set; }
@@ -23,7 +23,7 @@ public class GroupMembershipResponseDTO
     public uint Id { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
-    public required uint MemberId { get; set; }
+    public required Guid MemberId { get; set; }
 
     /// <inheritdoc cref="Models.Member"/>
     public required string MemberName { get; set; }

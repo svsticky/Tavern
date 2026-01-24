@@ -8,7 +8,7 @@ public class PostStudyEnrollmentDTO
     public required uint StudyId { get; set; }
 
     /// <inheritdoc cref="Models.StudyEnrollment.MemberId"/>
-    public required uint MemberId { get; set; }
+    public required Guid MemberId { get; set; }
 
     /// <inheritdoc cref="Models.StudyEnrollment.EnrollmentDate"/>
     public required DateTimeOffset EnrollmentDate { get; set; }
@@ -23,7 +23,7 @@ public class StudyEnrollmentResponseDTO
     public uint Id { get; set; }
 
     /// <inheritdoc cref="Models.StudyEnrollment.MemberId"/>
-    public uint? MemberId { get; set; }
+    public Guid? MemberId { get; set; }
 
     /// <inheritdoc cref="Models.Member"/>
     public string? MemberName { get; set; }

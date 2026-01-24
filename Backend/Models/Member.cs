@@ -13,7 +13,7 @@ public class Member
     /// <summary>
     /// The unique identifier of a member, assigned incrementally.
     /// </summary>
-    public uint Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <summary>
     /// The student number of the member.

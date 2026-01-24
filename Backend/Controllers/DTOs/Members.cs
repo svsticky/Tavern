@@ -43,7 +43,7 @@ public class PostMemberDTO
 public class MemberResponseDTO
 {
     /// <inheritdoc cref="Models.Member.Id"/>
-    public uint Id { get; set; }
+    public Guid Id { get; set; }
 
     /// <inheritdoc cref="Models.Member.StudentNumber"/>
     public uint StudentNumber { get; set; }

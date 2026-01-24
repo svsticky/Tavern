@@ -69,7 +69,7 @@ namespace Backend.Controllers
         /// <param name="id">The id of the member to fetch.</param>
         /// <returns>The full member.</returns> 
         [HttpGet("{id}")]
-        public async Task<ActionResult<MemberResponseDTO>> GetMember(uint id, CancellationToken cancellationToken)
+        public async Task<ActionResult<MemberResponseDTO>> GetMember(Guid id, CancellationToken cancellationToken)
         {
             var result = await db.Members
                 .Where(m => m.Id == id)

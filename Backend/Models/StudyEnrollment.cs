@@ -21,7 +21,7 @@ public class StudyEnrollment
     /// <summary>
     /// The member associated with this enrollment.
     /// </summary>
-    public uint MemberId { get; set; }
+    public Guid MemberId { get; set; }
     
     /// <summary>
     /// The member associated with this enrollment.

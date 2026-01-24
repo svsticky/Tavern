@@ -21,7 +21,7 @@ public class Enrollment
     /// <summary>
     /// The ID of the user, as determined by the used OAuth application, which enrolls for the activity.
     /// </summary>
-    public uint MemberId { get; set; }
+    public Guid MemberId { get; set; }
 
     /// <summary>
     /// The member who enrolled for the activity.
