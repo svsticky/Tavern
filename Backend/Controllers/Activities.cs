@@ -75,7 +75,7 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-// PATCH: api/activities/5
+        // PATCH: api/activities/5
         /// <summary>
         /// Partially updates an activity's details.
         /// </summary>
