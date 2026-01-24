@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch;
 using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -129,20 +130,29 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
         return NoContent();
     }
 
-    // PATCH: api/studyenrollments
+    // PATCH: api/studyenrollments/5
     /// <summary>
-    /// Updates an existing study enrollment.
+    /// Partially updates a study enrollment's details.
     /// </summary>
-    /// <param name="enrollmentDto">The study enrollment to be updated.</param>
-    /// <returns>Fully updated study enrollment in body and api route of where to fetch it in the headers.</returns>
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken cancellationToken)
+    /// <param name="id">The id of the study enrollment to update.</param>
+    /// <param name="patchDoc">The patch document containing the changes.</param>
+    /// <returns>No Content.</returns>
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> PatchStudyEnrollment(uint id, [FromBody] JsonPatchDocument<StudyEnrollment> patchDoc, CancellationToken cancellationToken)
     {
-        var enrollment = await db.StudyEnrollments.FindAsync([id], cancellationToken);
+        if (patchDoc == null)
+            return BadRequest();
+
+        var enrollment = await db.StudyEnrollments.FindAsync(new object[] { id }, cancellationToken);
         if (enrollment is null)
             return NotFound();
 
-        enrollment.Status = newStatus;
+        // Pas de patch toe op de entiteit
+        patchDoc.ApplyTo(enrollment, ModelState);
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         await db.SaveChangesAsync(cancellationToken);
 
         return NoContent();

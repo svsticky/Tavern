@@ -6,11 +6,6 @@
     "service": "devcontainer",
     "workspaceFolder": "/workspaces",
 
-    // Features to add to the dev container. More info: https://containers.dev/features.
-    "features": {
-        "ghcr.io/devcontainers/features/common-utils:2": {},
-    },
-
     // Configure tool-specific properties.
     "customizations": {
         "jetbrains": {

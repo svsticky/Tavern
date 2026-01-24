@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch;
 using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
-using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers
 {
@@ -76,20 +76,28 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // PATCH: api/roles/5/name
+        // PATCH: api/roles/5
         /// <summary>
-        /// Updates a role's name.
+        /// Partially updates a role's details.
         /// </summary>
         /// <param name="id">The id of the role to update.</param>
-        /// <param name="name">The new name of the role.</param>
+        /// <param name="patchDoc">The patch document containing the changes.</param>
         /// <returns>No Content.</returns>
-        [HttpPatch("{id}/name")]
-        public async Task<IActionResult> PatchRoleName(uint id, [FromBody, StringLength(100)] string name, CancellationToken cancellationToken)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchRole(uint id, [FromBody] JsonPatchDocument<Role> patchDoc, CancellationToken cancellationToken)
         {
-            Role? role = await db.Roles.FindAsync(id, cancellationToken);
-            if (role == null) return NotFound();
+            if (patchDoc == null)
+                return BadRequest();
 
-            role.Name = name;
+            Role? role = await db.Roles.FindAsync(new object[] { id }, cancellationToken);
+            if (role == null)
+                return NotFound();
+
+            patchDoc.ApplyTo(role, ModelState);
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
             await db.SaveChangesAsync(cancellationToken);
 
             return NoContent();

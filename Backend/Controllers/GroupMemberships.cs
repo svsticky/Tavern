@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch;
 using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -124,21 +125,28 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
         return NoContent();
     }
 
-    // PATCH: api/groupmemberships/5/role
+    // PATCH: api/groupmemberships/5
     /// <summary>
-    /// Updates the role of a group membership.
+    /// Partially updates a group membership's details.
     /// </summary>
     /// <param name="id">The id of the group membership to update.</param>
-    /// <param name="roleId">The new role id of the group membership.</param>
-    /// <returns>No content.</returns>
-    [HttpPatch("{id}/role")]
-    public async Task<IActionResult> UpdateGroupMembershipRole(uint id, uint? roleId, CancellationToken cancellationToken)
+    /// <param name="patchDoc">The patch document containing the changes.</param>
+    /// <returns>No Content.</returns>
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> PatchGroupMembership(uint id, [FromBody] JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
-        var membership = await db.GroupMemberships.FindAsync(id, cancellationToken);
-        if (membership is null)
+        if (patchDoc == null)
+            return BadRequest();
+
+        GroupMembership? membership = await db.GroupMemberships.FindAsync(new object[] { id }, cancellationToken);
+        if (membership == null)
             return NotFound();
 
-        membership.RoleId = roleId;
+        patchDoc.ApplyTo(membership, ModelState);
+
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         await db.SaveChangesAsync(cancellationToken);
 
         return NoContent();

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch;
 using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -124,58 +125,28 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // PATCH: api/groups/5/name
+        // PATCH: api/activities/5
         /// <summary>
-        /// Updates a group's name.
+        /// Partially updates an activity's details.
         /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="nameDto">The new name of the group.</param>
+        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="patchDoc">The patch document containing the changes.</param>
         /// <returns>No Content.</returns>
-        [HttpPatch("{id}/name")]
-        public async Task<IActionResult> PatchGroupName(uint id, string newName, CancellationToken cancellationToken)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken cancellationToken)
         {
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
+            if (patchDoc == null)
+                return BadRequest();
 
-            group.Name = newName;
-            await db.SaveChangesAsync(cancellationToken);
+            Activity? activity = await db.Activities.FindAsync(new object[] { id }, cancellationToken);
+            if (activity == null)
+                return NotFound();
 
-            return NoContent();
-        }
+            patchDoc.ApplyTo(activity, ModelState);
 
-        // PATCH: api/groups/5/active
-        /// <summary>
-        /// Updates a group's active status.
-        /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="activeDto">The new active status of the group.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}/active")]
-        public async Task<IActionResult> PatchGroupActive(uint id, bool newActive, CancellationToken cancellationToken)
-        {
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            group.Active = newActive;
-            await db.SaveChangesAsync(cancellationToken);
-            
-            return NoContent();
-        }
-
-        // PATCH: api/groups/5/type
-        /// <summary>
-        /// Updates a group's type.
-        /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="typeDto">The new type of the group.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}/type")]
-        public async Task<IActionResult> PatchGroupType(uint id, Models.GroupType newType, CancellationToken cancellationToken)
-        {
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
-
-            group.Type = newType;
             await db.SaveChangesAsync(cancellationToken);
 
             return NoContent();

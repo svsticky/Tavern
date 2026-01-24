@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch;
 using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
@@ -77,60 +78,27 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // PATCH: api/studies/5/name
+        // PATCH: api/studies/5
         /// <summary>
-        /// Updates a study's name.
+        /// Partially updates a study's details.
         /// </summary>
         /// <param name="id">The id of the study to update.</param>
-        /// <param name="newStudyName">The new name of the study.</param>
+        /// <param name="patchDoc">The patch document containing the changes.</param>
         /// <returns>No Content.</returns>
-        [HttpPatch("{id}/name")]
-        public async Task<IActionResult> PatchStudyName(uint id, string newStudyName, CancellationToken cancellationToken)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchStudy(uint id, [FromBody] JsonPatchDocument<Study> patchDoc, CancellationToken cancellationToken)
         {
-            Study? study = await db.Studies.FindAsync(id, cancellationToken);
-            if (study == null) return NotFound();
+            if (patchDoc == null)
+                return BadRequest();
 
-            study.Title = newStudyName;
+            Study? study = await db.Studies.FindAsync(new object[] { id }, cancellationToken);
+            if (study == null)
+                return NotFound();
 
-            await db.SaveChangesAsync(cancellationToken);
+            patchDoc.ApplyTo(study, ModelState);
 
-            return NoContent();
-        }
-
-        // PATCH: api/studies/5/duration
-        /// <summary>
-        /// Updates a study's duration.
-        /// </summary>
-        /// <param name="id">The id of the study to update.</param>
-        /// <param name="newDurationYears">The new duration of the study in years.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}/duration")]
-        public async Task<IActionResult> PatchStudyDuration(uint id, uint newDurationYears, CancellationToken cancellationToken)
-        {
-            Study? study = await db.Studies.FindAsync(id, cancellationToken);
-            if (study == null) return NotFound();
-
-            study.DurationYears = newDurationYears;
-
-            await db.SaveChangesAsync(cancellationToken);
-
-            return NoContent();
-        }
-
-        // PATCH: api/studies/5/type
-        /// <summary>
-        /// Updates a study's type.
-        /// </summary>
-        /// <param name="id">The id of the study to update.</param>
-        /// <param name="newStudyType">The new type of the study.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}/type")]
-        public async Task<IActionResult> PatchStudyType(uint id, StudyType newStudyType, CancellationToken cancellationToken)
-        {
-            Study? study = await db.Studies.FindAsync(id, cancellationToken);
-            if (study == null) return NotFound();
-
-            study.Type = newStudyType;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             await db.SaveChangesAsync(cancellationToken);
 

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Backend.Database;
 using Backend.Models;
@@ -74,86 +75,34 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // PATCH: api/activities/5/name
+// PATCH: api/activities/5
         /// <summary>
-        /// Updates an activities name.
+        /// Partially updates an activity's details.
         /// </summary>
         /// <param name="id">The id of the activity to update.</param>
-        /// <param name="newName">The new name of the activity.</param>
-        /// <returns>No content.</returns>
-        [HttpPatch("{id}/name")]
-        public async Task<IActionResult> PatchActivityName(uint id, string newName)
+        /// <param name="patchDoc">The patch document containing the changes.</param>
+        /// <returns>No Content.</returns>
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken cancellationToken)
         {
-            Activity? activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
+            if (patchDoc == null)
+                return BadRequest();
 
-            activity.Name = newName;
+            Activity? activity = await db.Activities.FindAsync(new object[] { id }, cancellationToken);
+            if (activity == null)
+                return NotFound();
 
-            await db.SaveChangesAsync();
+            // Pas de patch toe op de entiteit
+            patchDoc.ApplyTo(activity, ModelState);
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            await db.SaveChangesAsync(cancellationToken);
 
             return NoContent();
         }
-
-        // PATCH: api/activities/5/description
-        /// <summary>
-        /// Updates an activities description.
-        /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
-        /// <param name="newDescription">The new description of the activity.</param>
-        /// <returns>No content.</returns>
-        [HttpPatch("{id}/description")]
-        public async Task<IActionResult> PatchActivityDescription(uint id, string newDescription)
-        {
-            Activity? activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
-
-            activity.Description = newDescription;
-
-            await db.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // PATCH: api/activities/5/datetimestart
-        /// <summary>
-        /// Updates an activities start date and time.
-        /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
-        /// <param name="newDateTimeStart">The new start date and time of the activity.</param>
-        /// <returns>No content.</returns>
-        [HttpPatch("{id}/datetimestart")]
-        public async Task<IActionResult> PatchActivityDateTimeStart(uint id, DateTime newDateTimeStart)
-        {
-            Activity? activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
-
-            activity.DateTimeStart = newDateTimeStart;
-
-            await db.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // PATCH: api/activities/5/datetimeend
-        /// <summary>
-        /// Updates an activities end date and time.
-        /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
-        /// <param name="newDateTimeEnd">The new end date and time of the activity.</param>
-        /// <returns>No content.</returns>
-        [HttpPatch("{id}/datetimeend")]
-        public async Task<IActionResult> PatchActivityDateTimeEnd(uint id, DateTime newDateTimeEnd)
-        {
-            Activity? activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
-
-            activity.DateTimeEnd = newDateTimeEnd;
-
-            await db.SaveChangesAsync();
-
-            return NoContent();
-        }
-
+        
         // PUT: api/activities/5
         /// <summary>
         /// Updates an activity.
