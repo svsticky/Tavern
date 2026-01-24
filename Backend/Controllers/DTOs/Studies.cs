@@ -11,8 +11,8 @@ public class PostStudyDTO
     [StringLength(100)]
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Study.DurationYears"/>
-    public required uint DurationYears { get; set; }
+    /// <inheritdoc cref="Models.Study.NominalDurationYears"/>
+    public required uint NominalDurationYears { get; set; }
 
     /// <inheritdoc cref="Models.Study.Type"/>
     public required StudyType Type { get; set; }
@@ -24,8 +24,8 @@ public class StudyUpdateDTO
     [StringLength(100)]
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Study.DurationYears"/>
-    public required uint DurationYears { get; set; }
+    /// <inheritdoc cref="Models.Study.NominalDurationYears"/>
+    public required uint NominalDurationYears { get; set; }
 
     /// <inheritdoc cref="Models.Study.Type"/>
     public required StudyType Type { get; set; }

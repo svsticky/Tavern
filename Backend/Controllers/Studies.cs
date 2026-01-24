@@ -48,7 +48,7 @@ namespace Backend.Controllers
             var newEntry = db.Studies.Add(new Study
             {
                 Title = study.Title,
-                DurationYears = study.DurationYears,
+                NominalDurationYears = study.NominalDurationYears,
                 Type = study.Type
             });
             await db.SaveChangesAsync(cancellationToken);
@@ -119,7 +119,7 @@ namespace Backend.Controllers
             if (study == null) return NotFound();
 
             study.Title = studyDto.Title;
-            study.DurationYears = studyDto.DurationYears;
+            study.NominalDurationYears = studyDto.NominalDurationYears;
             study.Type = studyDto.Type;
 
             await db.SaveChangesAsync(cancellationToken);

@@ -28,7 +28,7 @@ public class Study
     /// <summary>
     /// The default duration of the study in years.
     /// </summary>
-    public uint DurationYears { get; set; }
+    public uint NominalDurationYears { get; set; }
 
     /// <summary>
     /// The type of the study (e.g., Bachelor, Master).
