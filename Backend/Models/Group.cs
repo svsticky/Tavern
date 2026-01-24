@@ -25,7 +25,8 @@ public class Group
     public string Name { get; set; }
 
     /// <summary>
-    /// Indicates whether the Group is active.
+    /// Status of the group. Inactive groups are hidden from administrative views to prevent clutter, 
+    /// but are preserved in the database for historical records and statistics (e.g., the Almanac).
     /// </summary>
     public bool Active { get; set; } = true;
 
@@ -35,7 +36,7 @@ public class Group
     public List<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
 
     /// <summary>
-    /// The type of the Group (E.G. Group, Working Group).
+    /// The type of the Group (E.G. Committee, Working Group).
     /// </summary>
     public GroupType Type { get; set; }
 }
