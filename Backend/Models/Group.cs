@@ -1,5 +1,6 @@
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor => Will be saturated by EFCore
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
@@ -33,7 +34,7 @@ public class Group
     /// <summary>
     /// The members associated with this Group.
     /// </summary>
-    public List<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
+    [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
 
     /// <summary>
     /// The type of the Group (E.G. Committee, Working Group).
