@@ -6,7 +6,7 @@ namespace Backend.Models;
 
 public enum GroupType
 {
-    Group,
+    Committee,
     WorkingGroup
 }
 
