@@ -85,6 +85,13 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
         if (group is null)
             return BadRequest($"Group with ID {membershipDto.GroupId} does not exist.");
 
+        if (membershipDto.RoleId.HasValue)
+        {
+            Role? role = await db.Roles.FindAsync(membershipDto.RoleId.Value, cancellationToken);
+            if (role is null)
+                return BadRequest($"Role with ID {membershipDto.RoleId.Value} does not exist.");
+        }
+
         var newMembership = new GroupMembership
         {
             Member = member,
