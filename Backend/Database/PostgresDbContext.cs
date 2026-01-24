@@ -41,48 +41,6 @@ public class PostgresDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // Member → Enrollment (cascade delete)
-        modelBuilder.Entity<Enrollment>()
-            .HasOne(e => e.Member)
-            .WithMany(m => m.Enrollments)
-            .HasForeignKey(e => e.MemberId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Activity → Enrollment (cascade delete)
-        modelBuilder.Entity<Enrollment>()
-            .HasOne(e => e.Activity)
-            .WithMany(a => a.Enrollments)
-            .HasForeignKey(e => e.ActivityId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Member → StudyEnrollment (cascade delete)
-        modelBuilder.Entity<StudyEnrollment>()
-            .HasOne(se => se.Member)
-            .WithMany(m => m.StudyEnrollments)
-            .HasForeignKey(se => se.MemberId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Study → StudyEnrollment (cascade delete)
-        modelBuilder.Entity<StudyEnrollment>()
-            .HasOne(se => se.Study)
-            .WithMany(s => s.Enrollments)
-            .HasForeignKey(se => se.StudyId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Group → GroupMembership (cascade delete)
-        modelBuilder.Entity<GroupMembership>()
-            .HasOne(cm => cm.Group)
-            .WithMany(c => c.GroupMemberships)
-            .HasForeignKey(cm => cm.GroupId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Member → GroupMembership (cascade delete)
-        modelBuilder.Entity<GroupMembership>()
-            .HasOne(cm => cm.Member)
-            .WithMany(m => m.GroupMemberships)
-            .HasForeignKey(cm => cm.MemberId)
-            .OnDelete(DeleteBehavior.Cascade);
-
         // Role → GroupMembership (set null on delete)
         modelBuilder.Entity<GroupMembership>()
             .HasOne(cm => cm.Role)
