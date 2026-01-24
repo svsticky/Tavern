@@ -17,56 +17,49 @@ namespace Backend.Controllers
         /// </summary>
         /// <returns>Said list.</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Member>>> GetMembers(CancellationToken cancellationToken)
+        public async Task<ActionResult<IEnumerable<MemberResponseDTO>>> GetMembers(CancellationToken cancellationToken)
         {
-            var members = await db.Members
-                .Include(m => m.StudyEnrollments)
-                .ThenInclude(se => se.Study)
-                .Include(m => m.Enrollments)
-                .ToListAsync(cancellationToken);
-
-            var result = members.Select(m => new MemberResponseDTO
-            {
-                Id = m.Id,
-                StudentNumber = m.StudentNumber,
-                FirstName = m.FirstName,
-                LastName = m.LastName,
-                Email = m.Email,
-                PhoneNumber = m.PhoneNumber,
-                Address = m.Address,
-                DateOfBirth = m.DateOfBirth,
-                Notes = m.Notes,
-                RegisteredOn = m.RegisteredOn,
-                PreferredLanguage = m.PreferredLanguage,
-                StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
+            return await db.Members
+                .Select(m => new MemberResponseDTO
                 {
-                    Id = se.Id,
-                    StudyId = se.StudyId,
-                    StudyTitle = se.Study.Title,
-                    MemberId = se.MemberId,
-                    MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
-                    EnrollmentDate = se.EnrollmentDate,
-                    CompletionDate = se.CompletionDate,
-                    Status = se.Status
-                }).ToList(),
-                GroupMemberships = db.GroupMemberships
-                    .Where(cm => cm.MemberId == m.Id)
-                    .Include(cm => cm.Group)
-                    .Select(cm => new GroupMembershipResponseDTO
+                    Id = m.Id,
+                    StudentNumber = m.StudentNumber,
+                    FirstName = m.FirstName,
+                    LastName = m.LastName,
+                    Email = m.Email,
+                    PhoneNumber = m.PhoneNumber,
+                    Address = m.Address,
+                    DateOfBirth = m.DateOfBirth,
+                    Notes = m.Notes,
+                    RegisteredOn = m.RegisteredOn,
+                    PreferredLanguage = m.PreferredLanguage,
+                    StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
                     {
-                        Id = cm.Id,
-                        GroupId = cm.GroupId,
-                        GroupName = cm.Group.Name,
-                        GroupType = cm.Group.Type,
-                        MemberId = cm.MemberId,
-                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                        MembershipYear = cm.MembershipYear,
-                        RoleId = cm.Role != null ? cm.Role.Id : (uint?)null,
-                        RoleName = cm.Role != null ? cm.Role.Name : null
-                    }).ToList()
-            });
-
-            return Ok(result);
+                        Id = se.Id,
+                        StudyId = se.StudyId,
+                        StudyTitle = se.Study.Title, 
+                        MemberId = se.MemberId,
+                        MemberName = $"{m.FirstName} {m.LastName}",
+                        EnrollmentDate = se.EnrollmentDate,
+                        CompletionDate = se.CompletionDate,
+                        Status = se.Status
+                    }).ToList(),
+                    GroupMemberships = db.GroupMemberships
+                        .Where(gm => gm.MemberId == m.Id)
+                        .Select(gm => new GroupMembershipResponseDTO
+                        {
+                            Id = gm.Id,
+                            GroupId = gm.GroupId,
+                            GroupName = gm.Group.Name, 
+                            GroupType = gm.Group.Type,
+                            MemberId = gm.MemberId,
+                            MemberName = $"{m.FirstName} {m.LastName}",
+                            MembershipYear = gm.MembershipYear,
+                            RoleId = gm.Role != null ? gm.Role.Id : null,
+                            RoleName = gm.Role != null ? gm.Role.Name : null
+                        }).ToList()
+                })
+                .ToListAsync(cancellationToken);
         }
 
         // GET: api/members/5
@@ -78,54 +71,50 @@ namespace Backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<MemberResponseDTO>> GetMember(uint id, CancellationToken cancellationToken)
         {
-            var member = await db.Members
-                .Include(m => m.StudyEnrollments)
-                .ThenInclude(se => se.Study) // als je ook de study info wilt
-                .Include(m => m.Enrollments)
-                .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
-
-            if (member is null) return NotFound();
-
-            var result = new MemberResponseDTO
-            {
-                Id = member.Id,
-                StudentNumber = member.StudentNumber,
-                FirstName = member.FirstName,
-                LastName = member.LastName,
-                Email = member.Email,
-                PhoneNumber = member.PhoneNumber,
-                Address = member.Address,
-                DateOfBirth = member.DateOfBirth,
-                Notes = member.Notes,
-                RegisteredOn = member.RegisteredOn,
-                PreferredLanguage = member.PreferredLanguage,
-                StudyEnrollments = member.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
+            var result = await db.Members
+                .Where(m => m.Id == id)
+                .Select(m => new MemberResponseDTO
                 {
-                    Id = se.Id,
-                    StudyId = se.StudyId,
-                    StudyTitle = se.Study.Title,
-                    MemberId = se.MemberId,
-                    MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
-                    EnrollmentDate = se.EnrollmentDate,
-                    CompletionDate = se.CompletionDate,
-                    Status = se.Status
-                }).ToList(),
-                GroupMemberships = db.GroupMemberships
-                    .Where(cm => cm.MemberId == member.Id)
-                    .Include(cm => cm.Group)
-                    .Select(cm => new GroupMembershipResponseDTO
+                    Id = m.Id,
+                    StudentNumber = m.StudentNumber,
+                    FirstName = m.FirstName,
+                    LastName = m.LastName,
+                    Email = m.Email,
+                    PhoneNumber = m.PhoneNumber,
+                    Address = m.Address,
+                    DateOfBirth = m.DateOfBirth,
+                    Notes = m.Notes,
+                    RegisteredOn = m.RegisteredOn,
+                    PreferredLanguage = m.PreferredLanguage,
+                    StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
                     {
-                        Id = cm.Id,
-                        GroupId = cm.GroupId,
-                        GroupName = cm.Group.Name,
-                        GroupType = cm.Group.Type,
-                        MemberId = cm.MemberId,
-                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                        MembershipYear = cm.MembershipYear,
-                        RoleId = cm.Role != null ? cm.Role.Id : (uint?)null,
-                        RoleName = cm.Role != null ? cm.Role.Name : null
-                    }).ToList()
-            };
+                        Id = se.Id,
+                        StudyId = se.StudyId,
+                        StudyTitle = se.Study.Title,
+                        MemberId = se.MemberId,
+                        MemberName = $"{m.FirstName} {m.LastName}",
+                        EnrollmentDate = se.EnrollmentDate,
+                        CompletionDate = se.CompletionDate,
+                        Status = se.Status
+                    }).ToList(),
+                    GroupMemberships = db.GroupMemberships
+                        .Where(gm => gm.MemberId == m.Id)
+                        .Select(gm => new GroupMembershipResponseDTO
+                        {
+                            Id = gm.Id,
+                            GroupId = gm.GroupId,
+                            GroupName = gm.Group.Name,
+                            GroupType = gm.Group.Type,
+                            MemberId = gm.MemberId,
+                            MemberName = $"{m.FirstName} {m.LastName}",
+                            MembershipYear = gm.MembershipYear,
+                            RoleId = gm.Role != null ? gm.Role.Id : null,
+                            RoleName = gm.Role != null ? gm.Role.Name : null
+                        }).ToList()
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (result == null) return NotFound();
 
             return Ok(result);
         }

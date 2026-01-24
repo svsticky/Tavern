@@ -19,23 +19,21 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GroupMembership>>> GetGroupMemberships(CancellationToken cancellationToken)
     {
-        var memberships = await db.GroupMemberships
-            .Include(cm => cm.Member)
-            .Include(cm => cm.Group)
-            .ToListAsync(cancellationToken);
 
-        var result = memberships.Select(cm => new GroupMembershipResponseDTO
-        {
-            Id = cm.Id,
-            MemberId = cm.MemberId,
-            MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-            GroupId = cm.GroupId,
-            GroupName = cm.Group.Name,
-            GroupType = cm.Group.Type,
-            MembershipYear = cm.MembershipYear,
-            RoleId = cm.Role?.Id,
-            RoleName = cm.Role?.Name
-        });
+        var result = await db.GroupMemberships
+            .Select(cm => new GroupMembershipResponseDTO
+            {
+                Id = cm.Id,
+                MemberId = cm.MemberId,
+                MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
+                GroupId = cm.GroupId,
+                GroupName = cm.Group.Name,
+                GroupType = cm.Group.Type,
+                MembershipYear = cm.MembershipYear,
+                RoleId = cm.Role != null ? cm.Role.Id : null,
+                RoleName = cm.Role != null ? cm.Role.Name : null
+            })
+            .ToListAsync(cancellationToken);
 
         return Ok(result);
     }
@@ -49,25 +47,23 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<GroupMembership>> GetGroupMembership(uint id, CancellationToken cancellationToken)
     {
-        var cm = await db.GroupMemberships
-            .Include(e => e.Member)
-            .Include(e => e.Group)
-            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        var result = await db.GroupMemberships
+            .Where(cm => cm.Id == id)
+            .Select(cm => new GroupMembershipResponseDTO
+            {
+                Id = cm.Id,
+                MemberId = cm.MemberId,
+                MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
+                GroupId = cm.GroupId,
+                GroupName = cm.Group.Name,
+                GroupType = cm.Group.Type,
+                MembershipYear = cm.MembershipYear,
+                RoleId = cm.Role != null ? cm.Role.Id : null,
+                RoleName = cm.Role != null ? cm.Role.Name : null
+            })
+            .FirstOrDefaultAsync(cancellationToken);
 
-        if (cm is null) return NotFound();
-
-        var result = new GroupMembershipResponseDTO
-        {
-            Id = cm.Id,
-            MemberId = cm.MemberId,
-            MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-            GroupId = cm.GroupId,
-            GroupName = cm.Group.Name,
-            GroupType = cm.Group.Type,
-            MembershipYear = cm.MembershipYear,
-            RoleId = cm.Role?.Id,
-            RoleName = cm.Role?.Name
-        };
+        if (result is null) return NotFound();
 
         return Ok(result);
     }

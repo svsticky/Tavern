@@ -19,28 +19,25 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Group>>> GetGroups(CancellationToken cancellationToken)
         {
-            var groups = await db.Groups
-                .Include(c => c.GroupMemberships)
-                .ThenInclude(cm => cm.Member)
-                .ToListAsync(cancellationToken);
-
-            var result = groups.Select(c => new GroupResponseDTO
-            {
-                Id = c.Id,
-                Name = c.Name,
-                GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipResponseDTO
+            var result = await db.Groups
+                .Select(c => new GroupResponseDTO
                 {
-                    Id = cm.Id,
-                    GroupId = cm.GroupId,
-                    GroupName = cm.Group.Name,
-                    GroupType = cm.Group.Type,
-                    MemberId = cm.MemberId,
-                    MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                    MembershipYear = cm.MembershipYear,
-                    RoleId = cm.Role?.Id,
-                    RoleName = cm.Role?.Name
-                }).ToList()
-            });
+                    Id = c.Id,
+                    Name = c.Name,
+                    GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipResponseDTO
+                    {
+                        Id = cm.Id,
+                        GroupId = cm.GroupId,
+                        GroupName = cm.Group.Name,
+                        GroupType = cm.Group.Type,
+                        MemberId = cm.MemberId,
+                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
+                        MembershipYear = cm.MembershipYear,
+                        RoleId = cm.Role != null ? cm.Role.Id : null,
+                        RoleName = cm.Role != null ? cm.Role.Name : null
+                    }).ToList()
+                })
+                .ToListAsync(cancellationToken);
 
             return Ok(result);
         }
@@ -54,32 +51,30 @@ namespace Backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Group>> GetGroup(uint id, CancellationToken cancellationToken)
         {
-            var group = await db.Groups
-                .Include(c => c.GroupMemberships)
-                .ThenInclude(cm => cm.Member)
-                .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
-
-            if (group is null) return NotFound();
-
-            var result = new GroupResponseDTO
-            {
-                Id = group.Id,
-                Name = group.Name,
-                Active = group.Active,
-                Type = group.Type,
-                GroupMemberships = group.GroupMemberships.Select(cm => new GroupMembershipResponseDTO
+            var result = await db.Groups
+                .Where(g => g.Id == id)
+                .Select(g => new GroupResponseDTO
                 {
-                    Id = cm.Id,
-                    GroupId = cm.GroupId,
-                    GroupName = cm.Group.Name,
-                    GroupType = cm.Group.Type,
-                    MemberId = cm.MemberId,
-                    MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                    MembershipYear = cm.MembershipYear,
-                    RoleId = cm.Role?.Id,
-                    RoleName = cm.Role?.Name
-                }).ToList()
-            };
+                    Id = g.Id,
+                    Name = g.Name,
+                    Active = g.Active,
+                    Type = g.Type,
+                    GroupMemberships = g.GroupMemberships.Select(gm => new GroupMembershipResponseDTO
+                    {
+                        Id = gm.Id,
+                        GroupId = gm.GroupId,
+                        GroupName = g.Name,
+                        GroupType = g.Type,
+                        MemberId = gm.MemberId,
+                        MemberName = $"{gm.Member.FirstName} {gm.Member.LastName}",
+                        MembershipYear = gm.MembershipYear,
+                        RoleId = gm.Role != null ? gm.Role.Id : null,
+                        RoleName = gm.Role != null ? gm.Role.Name : null
+                    }).ToList()
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (result == null) return NotFound();
 
             return Ok(result);
         }
