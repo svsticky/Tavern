@@ -1,5 +1,6 @@
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor => Will be saturated by EFCore
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
@@ -37,5 +38,5 @@ public class Study
     /// <summary>
     /// The enrollments associated with this study.
     /// </summary>
-    public List<StudyEnrollment> Enrollments { get; set; }
+    [JsonIgnore] public virtual ICollection<StudyEnrollment> Enrollments { get; set; }
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
@@ -70,17 +71,17 @@ public class Member
     /// <summary>
     /// The enrollments associated with this member.
     /// </summary>
-    public List<StudyEnrollment> StudyEnrollments { get; set; } = new List<StudyEnrollment>();
+    [JsonIgnore] public virtual ICollection<StudyEnrollment> StudyEnrollments { get; set; } = new List<StudyEnrollment>();
 
     /// <summary>
     /// The activities this member is enrolled in.
     /// </summary>
-    public List<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+    [JsonIgnore] public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
 
     /// <summary>
     /// The groups this member is part of.
     /// </summary>
-    public List<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
+    [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
 
     /// <summary>
     /// The preferred language of the member.

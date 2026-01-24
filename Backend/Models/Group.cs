@@ -34,7 +34,7 @@ public class Group
     /// <summary>
     /// The members associated with this Group.
     /// </summary>
-    [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
+    [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; }
 
     /// <summary>
     /// The type of the Group (E.G. Committee, Working Group).
