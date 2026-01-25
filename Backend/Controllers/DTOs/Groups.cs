@@ -28,6 +28,18 @@ public class GroupResponseDTO
 
     /// <inheritdoc cref="Models.Group.Type"/>
     public Models.GroupType Type { get; set; }
+
+    /// <inheritdoc cref="Models.Group.Activities"/>
+    public List<ActivityResponseDTO>? Activities { get; set; } = null;
+
+    /// <inheritdoc cref="Models.Group.GeneralLedgerAccount"/>
+    public string? GeneralLedgerAccount { get; set; } = null;
+
+    /// <inheritdoc cref="Models.Group.CostCenterId"/>
+    public string? CostCenterId { get; set; } = null;
+
+    /// <inheritdoc cref="Models.Group.CostUnit"/>
+    public string? CostUnit { get; set; } = null;
 }
 
 public class GroupUpdateDTO

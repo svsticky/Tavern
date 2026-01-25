@@ -70,6 +70,18 @@ namespace Backend.Controllers
                         MembershipYear = gm.MembershipYear,
                         RoleId = gm.Role != null ? gm.Role.Id : null,
                         RoleName = gm.Role != null ? gm.Role.Name : null
+                    }).ToList(),
+                    GeneralLedgerAccount = g.GeneralLedgerAccount,
+                    CostCenterId = g.CostCenterId,
+                    CostUnit = g.CostUnit,
+                    Activities = g.Activities.Select(a => new ActivityResponseDTO
+                    {
+                        Id = a.Id,
+                        Name = a.Name,
+                        DutchDescription = a.DutchDescription,
+                        EnglishDescription = a.EnglishDescription,
+                        DateTimeStart = a.DateTimeStart,
+                        DateTimeEnd = a.DateTimeEnd
                     }).ToList()
                 })
                 .FirstOrDefaultAsync(cancellationToken);
