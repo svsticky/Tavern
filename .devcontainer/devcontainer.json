@@ -6,6 +6,14 @@
     "service": "devcontainer",
     "workspaceFolder": "/workspaces",
 
+    // // Features to add to the dev container. More info: https://containers.dev/features.
+    // "features": {
+    //     "ghcr.io/devcontainers/features/common-utils:2": {},
+    //     "ghcr.io/devcontainers/features/node:1": {
+    //         "version": "20" 
+    //     }
+    // },
+
     // Configure tool-specific properties.
     "customizations": {
         "jetbrains": {
@@ -21,15 +29,16 @@
     "forwardPorts": [
         3000,
         8080,
-        5432
+        5432,
+        5173
     ],
 
     "portsAttributes": {
         "3000": {
-            "label": "Frontend",
+            "label": "Frontend (React Router Server)",
             "onAutoForward": "notify"
         },
-        "8000": {
+        "8080": {
             "label": "Backend API",
             "onAutoForward": "ignore"
         }
