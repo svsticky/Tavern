@@ -30,6 +30,9 @@ namespace Backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<DateTimeOffset>("DateTimeEnd")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTimeOffset>("DateTimeStart")
                         .HasColumnType("timestamp with time zone");
 
@@ -53,13 +56,303 @@ namespace Backend.Migrations
                     b.Property<long>("ActivityId")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("UserId")
-                        .HasMaxLength(80)
-                        .HasColumnType("character varying(80)");
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
 
-                    b.HasKey("ActivityId", "UserId");
+                    b.HasKey("ActivityId", "MemberId");
+
+                    b.HasIndex("MemberId");
 
                     b.ToTable("Enrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.Group", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Groups");
+                });
+
+            modelBuilder.Entity("Backend.Models.GroupMembership", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("GroupId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("MembershipYear")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("RoleId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.HasIndex("MemberId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("GroupMemberships");
+                });
+
+            modelBuilder.Entity("Backend.Models.Member", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("Begunstiger")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("DateOfBirth")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("EreLid")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<bool>("Gratie")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("character varying(60)");
+
+                    b.Property<bool>("LidVanVerdienste")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhoneNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("PreferredLanguage")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("RegisteredOn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("StudentNumber")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("Suspended")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("StudentNumber")
+                        .IsUnique();
+
+                    b.ToTable("Members");
+                });
+
+            modelBuilder.Entity("Backend.Models.Role", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("Backend.Models.Study", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("NominalDurationYears")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Studies");
+                });
+
+            modelBuilder.Entity("Backend.Models.StudyEnrollment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset?>("CompletionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("EnrollmentDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("StudyId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
+
+                    b.HasIndex("StudyId");
+
+                    b.ToTable("StudyEnrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.Enrollment", b =>
+                {
+                    b.HasOne("Backend.Models.Activity", "Activity")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Activity");
+
+                    b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("Backend.Models.GroupMembership", b =>
+                {
+                    b.HasOne("Backend.Models.Group", "Group")
+                        .WithMany("GroupMemberships")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany("GroupMemberships")
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Member");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Backend.Models.StudyEnrollment", b =>
+                {
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany("StudyEnrollments")
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Study", "Study")
+                        .WithMany("Enrollments")
+                        .HasForeignKey("StudyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Member");
+
+                    b.Navigation("Study");
+                });
+
+            modelBuilder.Entity("Backend.Models.Activity", b =>
+                {
+                    b.Navigation("Enrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.Group", b =>
+                {
+                    b.Navigation("GroupMemberships");
+                });
+
+            modelBuilder.Entity("Backend.Models.Member", b =>
+                {
+                    b.Navigation("Enrollments");
+
+                    b.Navigation("GroupMemberships");
+
+                    b.Navigation("StudyEnrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.Study", b =>
+                {
+                    b.Navigation("Enrollments");
                 });
 #pragma warning restore 612, 618
         }

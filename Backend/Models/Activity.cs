@@ -1,5 +1,6 @@
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor => Will be saturated by EFCore
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
@@ -28,4 +29,16 @@ public class Activity
     /// The date and time at which the activity will start.
     /// </summary>
     public DateTimeOffset DateTimeStart { get; set; }
+
+    /// <summary>
+    /// The date and time at which the activity will end.
+    /// </summary>
+    public DateTimeOffset DateTimeEnd { get; set; }
+
+    /// <summary>
+    /// The members enrolled in this activity.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<Enrollment> Enrollments { get; set; }
+
+    // Prijs, Poster, Uitschrijfdeadline, Locatie, Organisator, extra specificatie, publiek, verplicht, opmerkingen (prive), toon in koala, toon op website, inschrijfbaar, deelnemers zichtbaar, deelnemerslimiet, filters (eerstejaars, tweedejaars, derdejaars+, masters, alcohol), betaalbaar, VAT
 }
