@@ -14,6 +14,8 @@ namespace Backend.Controllers
     [ApiController]
     public class Activities(PostgresDbContext db) : ControllerBase
     {
+        private readonly string[] _allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf"];
+
         // GET: api/activities
         /// <summary>
         /// Lists all activities in the database.
@@ -69,11 +71,15 @@ namespace Backend.Controllers
 
             if(activityDto.Poster != null)
             {
-                string path = new Guid().ToString() + Path.GetExtension(activityDto.Poster.FileName);
-                string fullPath = Path.Combine("Posters", path);
-                await FileUtils.SaveFileAsync(activityDto.Poster, fullPath);
-                newActivity.PosterFileName = activityDto.Poster.FileName;
-                newActivity.PosterPath = fullPath;
+                try
+                {
+                    newActivity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
+                    newActivity.PosterFileName = activityDto.Poster.FileName;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
             }
 
             EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
@@ -229,11 +235,16 @@ namespace Backend.Controllers
 
                 if(activityDto.Poster != null)
                 {
-                    string path = new Guid().ToString() + Path.GetExtension(activityDto.Poster.FileName);
-                    string fullPath = Path.Combine("Posters", path);
-                    await FileUtils.SaveFileAsync(activityDto.Poster, fullPath);
-                    activity.PosterFileName = activityDto.Poster.FileName;
-                    activity.PosterPath = fullPath;
+                    try
+                    {
+                        activity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
+                        activity.PosterFileName = activityDto.Poster.FileName;
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest(ex.Message);
+                    }
                 }
                 else
                 {
