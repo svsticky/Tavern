@@ -26,7 +26,17 @@ public class Activity
     [Column(TypeName = "numeric(18,2)")]
     public decimal Price { get; set; }
 
-    public string? PosterUrl { get; set; }
+    /// <summary>
+    /// The filename of the poster for the activity, if any.
+    /// </summary>
+    public string? PosterFileName { get; set; }
+
+    /// <summary>
+    /// The Path where the poster for the activity is stored, if any.
+    /// </summary>
+    public string? PosterPath { get; set; }
+
+
 
     /// <summary>
     /// A dutch description or arbitrary length, explaining everything there is to know about the activity.
