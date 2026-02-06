@@ -48,7 +48,7 @@ namespace Backend.Controllers
         {
             Activity newActivity = new()
             {
-                Name = activity.Name, Description = activity.Description, DateTimeStart = activity.DateTimeStart, DateTimeEnd = activity.DateTimeEnd
+                Name = activity.Name, EnglishDescription = activity.EnglishDescription, DutchDescription = activity.DutchDescription, DateTimeStart = activity.DateTimeStart, DateTimeEnd = activity.DateTimeEnd
             };
 
             EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
@@ -92,7 +92,6 @@ namespace Backend.Controllers
             if (activity == null)
                 return NotFound();
 
-            // Pas de patch toe op de entiteit
             patchDoc.ApplyTo(activity, ModelState);
 
             if (!ModelState.IsValid)
@@ -117,7 +116,8 @@ namespace Backend.Controllers
             if (activity == null) return NotFound();
 
             activity.Name = activityDto.Name;
-            activity.Description = activityDto.Description;
+            activity.EnglishDescription = activityDto.EnglishDescription;
+            activity.DutchDescription = activityDto.DutchDescription;
             activity.DateTimeStart = activityDto.DateTimeStart;
             activity.DateTimeEnd = activityDto.DateTimeEnd;
 

@@ -204,7 +204,6 @@ namespace Backend.Controllers
             if (member == null)
                 return NotFound();
 
-            // Pas de patch toe op het database object
             patchDoc.ApplyTo(member, ModelState);
 
             if (!ModelState.IsValid)

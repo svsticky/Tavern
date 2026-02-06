@@ -37,27 +37,7 @@ public class Group
     [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; }
 
     /// <summary>
-    /// The activities associated with this Group.
-    /// </summary>
-    [JsonIgnore] public virtual ICollection<Activity> Activities { get; set; }
-
-    /// <summary>
     /// The type of the Group (E.G. Committee, Working Group).
     /// </summary>
     public GroupType Type { get; set; }
-
-    /// <summary>
-    /// A general ledger account associated with this Group for financial tracking.
-    /// </summary>
-    public string? GeneralLedgerAccount { get; set; } = null;
-
-    /// <summary>
-    /// The cost center associated with this Group for budgeting purposes.
-    /// </summary>
-    public string? CostCenter { get; set; } = null;
-
-    /// <summary>
-    /// The cost unit associated with this Group for financial management.
-    /// </summary>
-    public string? CostUnit { get; set; } = null;
 }
