@@ -14,8 +14,6 @@ namespace Backend.Controllers
     [ApiController]
     public class Activities(PostgresDbContext db) : ControllerBase
     {
-        private readonly string[] _allowedExtensions = ["jpg", "jpeg", "png", "gif", "pdf"];
-
         // GET: api/activities
         /// <summary>
         /// Lists all activities in the database.

@@ -41,14 +41,30 @@ public class Activity
     /// <summary>
     /// A dutch description or arbitrary length, explaining everything there is to know about the activity.
     /// </summary>
-    [StringLength(240)]
+    [StringLength(2000)]
     public string DutchDescription { get; set; }
 
     /// <summary>
     /// An english description or arbitrary length, explaining everything there is to know about the activity.
     /// </summary>
-    [StringLength(240)]
+    [StringLength(2000)]
     public string EnglishDescription { get; set; }
+
+    /// <summary>
+    /// Gets the description of the activity in the specified locale.
+    /// </summary>
+    /// <param name="locale">The locale for which to get the description.</param>
+    /// <returns>The description of the activity in the specified locale.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when an unsupported locale is provided.</exception>
+    public string GetDescription(Locale locale)
+    {
+        return locale switch
+        {
+            Locale.Dutch => DutchDescription,
+            Locale.English => EnglishDescription,
+            _ => EnglishDescription
+        };
+    }
 
     /// <summary>
     /// The date and time at which the activity will start.
@@ -63,7 +79,12 @@ public class Activity
     /// <summary>
     /// The deadline for unenrollment from the activity.
     /// </summary>
-    public DateTimeOffset UnenrollmentDeadline { get; set; }
+    public DateTimeOffset? UnenrollmentDeadline { get; set; }
+
+    /// <summary>
+    /// The deadline for enrollment from the activity.
+    /// </summary>
+    public DateTimeOffset? EnrollmentDeadline { get; set; }
 
     /// <summary>
     /// The location where the activity will take place.
@@ -79,12 +100,12 @@ public class Activity
     /// <summary>
     /// The unique identifier of the organizer group.
     /// </summary>
-    public uint OrganizerId { get; set; }
+    public uint? OrganizerId { get; set; }
 
     /// <summary>
     /// The organizer of the activity.
     /// </summary>
-    public Group Organizer { get; set; }
+    public Group? Organizer { get; set; }
 
     /// <summary>
     /// An extra specification question for the activity.
@@ -144,7 +165,7 @@ public class Activity
     /// <summary>
     /// The VAT rate applicable to the activity.
     /// </summary>
-    public uint VatRate { get; set; }
+    public uint? VatRate { get; set; }
 
     /// <summary>
     /// The members enrolled in this activity.
@@ -152,17 +173,17 @@ public class Activity
     [JsonIgnore] public virtual ICollection<Enrollment> Enrollments { get; set; }
 
     /// <summary>
-    /// The general ledger account associated with this activity for financial tracking.
+    /// The general ledger account associated with this activity for financial tracking. Dutch: Grootboekrekening
     /// </summary>
     public string? GLAccountId { get; set; } = null;
 
     /// <summary>
-    /// The cost center associated with this activity for financial tracking.
+    /// The cost center associated with this activity for financial tracking. Dutch: Kostenplaats
     /// </summary>
     public string? CostCenterId { get; set; } = null;
 
     /// <summary>
-    /// The cost unit associated with this activity for financial tracking.
+    /// The cost unit associated with this activity for financial tracking. Dutch: Kostendrager
     /// </summary>
     public string? CostUnitId { get; set; } = null;
 }
