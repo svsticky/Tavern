@@ -48,42 +48,69 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Activity>> PostActivity(PostActivityDTO activityDto)
         {
-            Activity newActivity = new()
-            {
-                Name = activityDto.Name,
-                Price = activityDto.Price,
-                DutchDescription = activityDto.DutchDescription,
-                EnglishDescription = activityDto.EnglishDescription,
-                DateTimeStart = activityDto.DateTimeStart,
-                DateTimeEnd = activityDto.DateTimeEnd,
-                UnenrollmentDeadline = activityDto.UnenrollmentDeadline,
-                Location = activityDto.Location,
-                ParticipantLimit = activityDto.ParticipantLimit,
-                OrganizerId = activityDto.OrganizerId,
-                ShowInKoala = activityDto.ShowInKoala,
-                ShowOnWebsite = activityDto.ShowOnWebsite,
-                IsEnrollable = activityDto.IsEnrollable,
-                AreParticipantsVisible = activityDto.AreParticipantsVisible,
-                IsAdultOnly = activityDto.IsAdultOnly
-            };
+            IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
 
-            if(activityDto.Poster != null)
+            try
             {
-                try
+                Activity newActivity = new()
                 {
-                    newActivity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
-                    newActivity.PosterFileName = activityDto.Poster.FileName;
-                }
-                catch (InvalidOperationException ex)
+                    Name = activityDto.Name,
+                    Price = activityDto.Price,
+                    DutchDescription = activityDto.DutchDescription,
+                    EnglishDescription = activityDto.EnglishDescription,
+                    DateTimeStart = activityDto.DateTimeStart,
+                    DateTimeEnd = activityDto.DateTimeEnd,
+                    UnenrollmentDeadline = activityDto.UnenrollmentDeadline,
+                    EnrollmentDeadline = activityDto.EnrollmentDeadline,
+                    Location = activityDto.Location,
+                    ParticipantLimit = activityDto.ParticipantLimit,
+                    OrganizerId = activityDto.OrganizerId,
+                    ShowInKoala = activityDto.ShowInKoala,
+                    ShowOnWebsite = activityDto.ShowOnWebsite,
+                    IsEnrollable = activityDto.IsEnrollable,
+                    AreParticipantsVisible = activityDto.AreParticipantsVisible,
+                    IsAdultOnly = activityDto.IsAdultOnly,
+                    IsOpenToFirstYears = activityDto.IsOpenToFirstYears,
+                    IsOpenToSecondYears = activityDto.IsOpenToSecondYears,
+                    IsOpenToThirdYearsAndAbove = activityDto.IsOpenToThirdYearsAndAbove,
+                    IsOpenToMasters = activityDto.IsOpenToMasters,
+                    VatRate = activityDto.VatRate,
+                    GLAccountId = activityDto.GLAccountId,
+                    CostCenterId = activityDto.CostCenterId,
+                    CostUnitId = activityDto.CostUnitId
+                };
+
+                newActivity.SpecificationQuestions = activityDto.SpecificationQuestions.Select(q => new SpecificationQuestion 
+                { 
+                    Activity = newActivity,
+                    QuestionDutch = q.QuestionDutch, 
+                    QuestionEnglish = q.QuestionEnglish,
+                    Type = q.Type,
+                }).ToList();
+
+                if(activityDto.Poster != null)
                 {
-                    return BadRequest(ex.Message);
+                    try
+                    {
+                        newActivity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
+                        newActivity.PosterFileName = activityDto.Poster.FileName;
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        return BadRequest(ex.Message);
+                    }
                 }
+
+                EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+                return CreatedAtAction(nameof(GetActivity), new { id = newEntry.Entity.Id }, newEntry.Entity);
             }
-
-            EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
-            await db.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetActivity), new { id = newEntry.Entity.Id }, newEntry.Entity);
+            catch
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, "An error occurred while creating the activity.");
+            }
         }
 
         // DELETE: api/activities/5
@@ -152,7 +179,7 @@ namespace Backend.Controllers
 
             string? oldPath = activity.PosterPath;
 
-            using var transaction = await db.Database.BeginTransactionAsync();
+            using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
             try
             {
                 if(poster != null)
@@ -200,6 +227,8 @@ namespace Backend.Controllers
             Activity? activity = await db.Activities.FindAsync(id);
             if (activity == null) return NotFound();
 
+            using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
+            
             activity.Name = activityDto.Name;
             activity.Price = activityDto.Price;
             activity.DutchDescription = activityDto.DutchDescription;
@@ -207,9 +236,17 @@ namespace Backend.Controllers
             activity.DateTimeStart = activityDto.DateTimeStart;
             activity.DateTimeEnd = activityDto.DateTimeEnd;
             activity.UnenrollmentDeadline = activityDto.UnenrollmentDeadline;
+            activity.EnrollmentDeadline = activityDto.EnrollmentDeadline;
             activity.Location = activityDto.Location;
             activity.ParticipantLimit = activityDto.ParticipantLimit;
             activity.OrganizerId = activityDto.OrganizerId;
+            activity.SpecificationQuestions = activityDto.SpecificationQuestions.Select(q => new SpecificationQuestion 
+            { 
+                Activity = activity,
+                QuestionDutch = q.QuestionDutch, 
+                QuestionEnglish = q.QuestionEnglish,
+                Type = q.Type,
+            }).ToList();
             activity.ShowInKoala = activityDto.ShowInKoala;
             activity.ShowOnWebsite = activityDto.ShowOnWebsite;
             activity.IsEnrollable = activityDto.IsEnrollable;
@@ -219,13 +256,10 @@ namespace Backend.Controllers
             activity.IsOpenToSecondYears = activityDto.IsOpenToSecondYears;
             activity.IsOpenToThirdYearsAndAbove = activityDto.IsOpenToThirdYearsAndAbove;
             activity.IsOpenToMasters = activityDto.IsOpenToMasters;
-            activity.IsOpenForPayment = activityDto.IsOpenForPayment;
             activity.VatRate = activityDto.VatRate;
             activity.GLAccountId = activityDto.GLAccountId;
             activity.CostCenterId = activityDto.CostCenterId;
             activity.CostUnitId = activityDto.CostUnitId;
-
-            using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
 
             try
             {

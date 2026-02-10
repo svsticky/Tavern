@@ -32,7 +32,10 @@ public class PostActivityDTO
     public required DateTimeOffset DateTimeEnd { get; set; }
 
     /// <inheritdoc cref="Models.Activity.UnenrollmentDeadline"/>
-    public required DateTimeOffset UnenrollmentDeadline { get; set; }
+    public DateTimeOffset? UnenrollmentDeadline { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.EnrollmentDeadline"/>
+    public DateTimeOffset? EnrollmentDeadline { get; set; }
 
     /// <inheritdoc cref="Models.Activity.Location"/>
     [StringLength(200)]
@@ -42,7 +45,10 @@ public class PostActivityDTO
     public uint? ParticipantLimit { get; set; }
 
     /// <inheritdoc cref="Models.Activity.OrganizerId"/>
-    public required uint OrganizerId { get; set; }
+    public uint? OrganizerId { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.SpecificationQuestions"/>
+    public List<SpecificationQuestionDTO> SpecificationQuestions { get; set; } = new();
 
     /// <inheritdoc cref="Models.Activity.ShowInKoala"/>
     public bool ShowInKoala { get; set; } = true;
@@ -71,11 +77,8 @@ public class PostActivityDTO
     /// <inheritdoc cref="Models.Activity.IsOpenToMasters"/>
     public bool IsOpenToMasters { get; set; } = true;
 
-    /// <inheritdoc cref="Models.Activity.IsOpenForPayment"/>
-    public bool IsOpenForPayment { get; set; }
-
     /// <inheritdoc cref="Models.Activity.VatRate"/>
-    public uint VatRate { get; set; }
+    public uint? VatRate { get; set; }
 
     /// <inheritdoc cref="Models.Activity.GLAccountId"/>
     public string? GLAccountId { get; set; }

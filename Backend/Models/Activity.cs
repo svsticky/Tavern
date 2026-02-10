@@ -36,8 +36,6 @@ public class Activity
     /// </summary>
     public string? PosterPath { get; set; }
 
-
-
     /// <summary>
     /// A dutch description or arbitrary length, explaining everything there is to know about the activity.
     /// </summary>
