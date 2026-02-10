@@ -136,25 +136,10 @@ public class Activity
     public bool IsAdultOnly { get; set; }
 
     /// <summary>
-    /// Whether the activity is open for first-year students.
+    /// Bitflag representing which student years/levels are allowed to enroll.
     /// </summary>
-    public bool IsOpenToFirstYears { get; set; }
-
-    /// <summary>
-    /// Whether the activity is open for second-year students.
-    /// </summary>
-    public bool IsOpenToSecondYears { get; set; }
-
-    /// <summary>
-    /// Whether the activity is open for third-year and higher students.
-    /// </summary>
-    public bool IsOpenToThirdYearsAndAbove { get; set; }
-
-    /// <summary>
-    /// Whether the activity is open for master's students.
-    /// </summary>
-    public bool IsOpenToMasters { get; set; }
-
+    public TargetAudience AllowedAudience { get; set; }
+    
     /// <summary>
     /// Whether the activity is open for payment.
     /// </summary>

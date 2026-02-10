@@ -65,17 +65,8 @@ public class PostActivityDTO
     /// <inheritdoc cref="Models.Activity.IsAdultOnly"/>
     public bool IsAdultOnly { get; set; }
 
-    /// <inheritdoc cref="Models.Activity.IsOpenToFirstYears"/>
-    public bool IsOpenToFirstYears { get; set; } = true;
-
-    /// <inheritdoc cref="Models.Activity.IsOpenToSecondYears"/>
-    public bool IsOpenToSecondYears { get; set; } = true;
-
-    /// <inheritdoc cref="Models.Activity.IsOpenToThirdYearsAndAbove"/>
-    public bool IsOpenToThirdYearsAndAbove { get; set; } = true;
-
-    /// <inheritdoc cref="Models.Activity.IsOpenToMasters"/>
-    public bool IsOpenToMasters { get; set; } = true;
+    /// <inheritdoc cref="Models.Activity.AllowedAudience"/>
+    public TargetAudience AllowedAudience { get; set; } = TargetAudience.All;
 
     /// <inheritdoc cref="Models.Activity.VatRate"/>
     public uint? VatRate { get; set; }

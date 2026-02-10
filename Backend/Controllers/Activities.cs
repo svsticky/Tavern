@@ -70,10 +70,7 @@ namespace Backend.Controllers
                     IsEnrollable = activityDto.IsEnrollable,
                     AreParticipantsVisible = activityDto.AreParticipantsVisible,
                     IsAdultOnly = activityDto.IsAdultOnly,
-                    IsOpenToFirstYears = activityDto.IsOpenToFirstYears,
-                    IsOpenToSecondYears = activityDto.IsOpenToSecondYears,
-                    IsOpenToThirdYearsAndAbove = activityDto.IsOpenToThirdYearsAndAbove,
-                    IsOpenToMasters = activityDto.IsOpenToMasters,
+                    AllowedAudience = activityDto.AllowedAudience,
                     VatRate = activityDto.VatRate,
                     GLAccountId = activityDto.GLAccountId,
                     CostCenterId = activityDto.CostCenterId,
@@ -252,10 +249,7 @@ namespace Backend.Controllers
             activity.IsEnrollable = activityDto.IsEnrollable;
             activity.AreParticipantsVisible = activityDto.AreParticipantsVisible;
             activity.IsAdultOnly = activityDto.IsAdultOnly;
-            activity.IsOpenToFirstYears = activityDto.IsOpenToFirstYears;
-            activity.IsOpenToSecondYears = activityDto.IsOpenToSecondYears;
-            activity.IsOpenToThirdYearsAndAbove = activityDto.IsOpenToThirdYearsAndAbove;
-            activity.IsOpenToMasters = activityDto.IsOpenToMasters;
+            activity.AllowedAudience = activityDto.AllowedAudience;
             activity.VatRate = activityDto.VatRate;
             activity.GLAccountId = activityDto.GLAccountId;
             activity.CostCenterId = activityDto.CostCenterId;
