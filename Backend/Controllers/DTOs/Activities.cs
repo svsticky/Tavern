@@ -1,4 +1,3 @@
-using Backend.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers.DTOs;
@@ -16,4 +15,24 @@ public class PostActivityDTO
 
     /// <inheritdoc cref="Models.Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.DateTimeEnd"/>
+    public required DateTimeOffset DateTimeEnd { get; set; }
+}
+
+public class ActivityUpdateDTO
+{
+    /// <inheritdoc cref="Models.Activity.Name"/>
+    [StringLength(120)]
+    public required string Name { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.Description"/>
+    [StringLength(240)]
+    public required string Description { get; set; } // TODO: this is of course not good for localisation
+
+    /// <inheritdoc cref="Models.Activity.DateTimeStart"/>
+    public required DateTimeOffset DateTimeStart { get; set; }
+
+    /// <inheritdoc cref="Models.Activity.DateTimeEnd"/>
+    public required DateTimeOffset DateTimeEnd { get; set; }
 }

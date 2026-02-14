@@ -13,6 +13,18 @@ public class PostgresDbContext : DbContext
     public DbSet<Activity> Activities { get; set; }
     /// <summary>Reference to the Enrollments relational table. </summary>
     public DbSet<Enrollment> Enrollments { get; set; }
+    /// <summary>Reference to the Members relational table. </summary>
+    public DbSet<Member> Members { get; set; }
+    /// <summary>Reference to the Studies relational table. </summary>
+    public DbSet<Study> Studies { get; set; }
+    /// <summary>Reference to the StudyEnrollments relational table. </summary>
+    public DbSet<StudyEnrollment> StudyEnrollments { get; set; }
+    /// <summary>Reference to the Groups relational table. </summary>
+    public DbSet<Group> Groups { get; set; }
+    /// <summary>Reference to the GroupMemberships relational table. </summary>
+    public DbSet<GroupMembership> GroupMemberships { get; set; }
+    /// <summary>Reference to the Roles relational table. </summary>
+    public DbSet<Role> Roles { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.
@@ -27,8 +39,13 @@ public class PostgresDbContext : DbContext
     /// <param name="modelBuilder"></param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Just here as an example as of now
-        // modelBuilder.Entity<Enrollment>()
-        //     .HasIndex(x => x.ActivityId);
+        base.OnModelCreating(modelBuilder);
+
+        // Role → GroupMembership (set null on delete)
+        modelBuilder.Entity<GroupMembership>()
+            .HasOne(cm => cm.Role)
+            .WithMany()
+            .HasForeignKey(cm => cm.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
