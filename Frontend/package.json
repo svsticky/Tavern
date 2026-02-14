@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "react-router build",
-    "dev": "react-router dev",
+    "dev": "react-router dev --host --watch",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
     "openapi-ts": "openapi-ts"
@@ -12,13 +12,17 @@
   "dependencies": {
     "@react-router/node": "7.10.1",
     "@react-router/serve": "7.10.1",
-    "@svsticky/sticky-elements": "^0.0.5",
     "clsx": "^2.1.1",
+    "i18next": "^25.7.2",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "i18next-http-backend": "^3.0.2",
     "isbot": "^5.1.31",
     "lucide-react": "^0.561.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
+    "react-i18next": "^16.5.0",
     "react-router": "7.10.1",
+    "sticky-elements": "^0.1.0",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

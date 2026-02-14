@@ -8,9 +8,13 @@ import {
   useLoaderData,
 } from "react-router";
 
+import "./i18n";
+
 import type { Route } from "./+types/root";
 import "./app.css";
+import { useEffect, useState } from "react";
 import { client } from "./api/client.gen";
+import i18n from "./i18n";
 import { getSession } from "./sessions.server";
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -77,6 +81,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    i18n.on("initialized", () => setReady(true));
+  }, []);
+
+  if (!ready) return null;
+
   return <Outlet />;
 }
 
