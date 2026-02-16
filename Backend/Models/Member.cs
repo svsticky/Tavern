@@ -112,4 +112,9 @@ public class Member
     /// Indicates whether the member is suspended.
     /// </summary>
     public bool Suspended { get; set; } = false;
+
+    /// <summary>
+    /// The announcements created by this member.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
 }

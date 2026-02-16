@@ -1,0 +1,38 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace Backend.Models;
+
+public class Announcement
+{
+    /// <summary>
+    /// The unique identifier of the announcement, assigned incrementally.
+    /// </summary>
+    public uint Id { get; set; }
+
+    /// <summary>
+    /// The title of the announcement.
+    /// </summary>
+    [StringLength(100)]
+    public string Title { get; set; } = null!;
+
+    /// <summary>
+    /// The content of the announcement.
+    /// </summary>
+    [StringLength(1000)]
+    public string Content { get; set; } = null!;
+
+    /// <summary>
+    /// The date and time when the announcement was created.
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// The member id who created the announcement.
+    /// </summary>
+    public uint CreatedById { get; set; }
+
+    /// <summary>
+    /// The member who created the announcement.
+    /// </summary>
+    public Member CreatedBy { get; set; } = null!;
+}

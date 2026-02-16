@@ -29,6 +29,8 @@ public class PostgresDbContext : DbContext
     public DbSet<GroupMembership> GroupMemberships { get; set; }
     /// <summary>Reference to the Roles relational table. </summary>
     public DbSet<Role> Roles { get; set; }
+    /// <summary>Reference to the Announcements relational table. </summary>
+    public DbSet<Announcement> Announcements { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.
