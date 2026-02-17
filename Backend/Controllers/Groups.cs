@@ -120,24 +120,24 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // PATCH: api/activities/5
+        // PATCH: api/groups/5
         /// <summary>
-        /// Partially updates an activity's details.
+        /// Partially updates an groups details.
         /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="id">The id of the group to update.</param>
         /// <param name="patchDoc">The patch document containing the changes.</param>
         /// <returns>No Content.</returns>
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken cancellationToken)
+        public async Task<IActionResult> PatchGroup(uint id, [FromBody] JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
         {
             if (patchDoc == null)
                 return BadRequest();
 
-            Activity? activity = await db.Activities.FindAsync(new object[] { id }, cancellationToken);
-            if (activity == null)
+            Group? group = await db.Groups.FindAsync(new object[] { id }, cancellationToken);
+            if (group == null)
                 return NotFound();
 
-            patchDoc.ApplyTo(activity, ModelState);
+            patchDoc.ApplyTo(group, ModelState);
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
