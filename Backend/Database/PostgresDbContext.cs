@@ -11,6 +11,10 @@ public class PostgresDbContext : DbContext
 {
     /// <summary>Reference to the Activities relational table. </summary>
     public DbSet<Activity> Activities { get; set; }
+    /// <summary>Reference to the SpecificationQuestions relational table. </summary>
+    public DbSet<SpecificationQuestion> SpecificationQuestions { get; set; }
+    /// <summary>Reference to the SpecificationAnswers relational table. </summary>
+    public DbSet<SpecificationAnswer> SpecificationAnswers { get; set; }
     /// <summary>Reference to the Enrollments relational table. </summary>
     public DbSet<Enrollment> Enrollments { get; set; }
     /// <summary>Reference to the Members relational table. </summary>

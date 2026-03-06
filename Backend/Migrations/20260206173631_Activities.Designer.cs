@@ -3,6 +3,7 @@ using System;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(PostgresDbContext))]
-    partial class PostgresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260206173631_Activities")]
+    partial class Activities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -29,9 +32,6 @@ namespace Backend.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<long>("AllowedAudience")
-                        .HasColumnType("bigint");
 
                     b.Property<bool>("AreParticipantsVisible")
                         .HasColumnType("boolean");
@@ -50,16 +50,13 @@ namespace Backend.Migrations
 
                     b.Property<string>("DutchDescription")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)");
 
                     b.Property<string>("EnglishDescription")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset?>("EnrollmentDeadline")
-                        .HasColumnType("timestamp with time zone");
+                        .HasMaxLength(240)
+                        .HasColumnType("character varying(240)");
 
                     b.Property<string>("GLAccountId")
                         .HasColumnType("text");
@@ -73,6 +70,18 @@ namespace Backend.Migrations
                     b.Property<bool>("IsOpenForPayment")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsOpenToFirstYears")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOpenToMasters")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOpenToSecondYears")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOpenToThirdYearsAndAbove")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -83,7 +92,7 @@ namespace Backend.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
-                    b.Property<long?>("OrganizerId")
+                    b.Property<long>("OrganizerId")
                         .HasColumnType("bigint");
 
                     b.Property<long?>("ParticipantLimit")
@@ -104,10 +113,10 @@ namespace Backend.Migrations
                     b.Property<bool>("ShowOnWebsite")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTimeOffset?>("UnenrollmentDeadline")
+                    b.Property<DateTimeOffset>("UnenrollmentDeadline")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("VatRate")
+                    b.Property<long>("VatRate")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
@@ -410,7 +419,9 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Group", "Organizer")
                         .WithMany()
-                        .HasForeignKey("OrganizerId");
+                        .HasForeignKey("OrganizerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Organizer");
                 });
