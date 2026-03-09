@@ -1,4 +1,9 @@
 using Backend.Database;
+using Backend.Services;
+using DotNetEnv;
+using Mollie.Api;
+
+Env.Load();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +14,12 @@ builder.Services.AddControllers();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.AddSwaggerGen();
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
+builder.Services.AddControllers().AddNewtonsoftJson();
+builder.Services.AddMollieApi(options => 
+{
+    options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? throw new Exception("No Mollie Key initialized");
+});
+builder.Services.AddHostedService<PaymentSyncService>();
 
 WebApplication app = builder.Build();
 
