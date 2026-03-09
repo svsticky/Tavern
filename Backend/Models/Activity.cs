@@ -53,7 +53,6 @@ public class Activity
     /// </summary>
     /// <param name="locale">The locale for which to get the description.</param>
     /// <returns>The description of the activity in the specified locale.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when an unsupported locale is provided.</exception>
     public string GetDescription(Locale locale)
     {
         return locale switch
