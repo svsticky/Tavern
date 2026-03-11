@@ -29,6 +29,15 @@ public static class PaymentUtils
             .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
     }
 
+    public static decimal GetUnpaidAmountForEnrollment(Enrollment enrollment, PostgresDbContext db)
+    {
+        var paidSum = db.EnrollmentPayments
+            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId)
+            .Sum(p => (decimal?)p.Price) ?? 0;
+
+        return enrollment.Price - paidSum;
+    }
+
     public static IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments(PostgresDbContext db)
     {
         return db.Enrollments

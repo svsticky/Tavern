@@ -4,6 +4,7 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Backend.Utils;
 
 namespace Backend.Controllers
 {
@@ -164,7 +165,6 @@ namespace Backend.Controllers
             return CreatedAtAction(nameof(GetMember), new { id = newMember.Id }, newMember);
         }
 
-
         // DELETE: api/members/5
         /// <summary>
         /// Deletes a member.
@@ -180,6 +180,11 @@ namespace Backend.Controllers
         {
             Member? member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) return NotFound();
+
+            if(!PaymentUtils.MemberHasPaidAllActivities(member, db))
+            {
+                return BadRequest("Member has unpaid activities and cannot be deleted.");
+            }
 
             db.Members.Remove(member);
             await db.SaveChangesAsync(cancellationToken);

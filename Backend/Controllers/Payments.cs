@@ -85,7 +85,7 @@ namespace Backend.Controllers
                 Amount = amount,
                 Description = $"Membership payment for {member.FirstName} {member.LastName}",
                 RedirectUrl = $"{_frontendUrl}",
-                WebhookUrl = $"{_frontendUrl}/api/payments/webhook",
+                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
                 Metadata = $"membership_{dto.MemberId}"
             };
 
@@ -114,39 +114,55 @@ namespace Backend.Controllers
             Member? member = await db.Members.FindAsync(dto.MemberId);
             if (member == null) return NotFound("Member not found");
 
-            List<Enrollment> enrollemnts = await db.Enrollments.Where(e => dto.ActivityIds.Contains(e.ActivityId)).ToListAsync();
-            if (enrollemnts.Count != dto.ActivityIds.Count) return NotFound("One or more enrollments not found");
+            List<Enrollment> enrollments = await db.Enrollments
+                .Include(e => e.Activity)
+                .Where(e => dto.ActivityIds.Contains(e.ActivityId))
+                .ToListAsync();
+            if (enrollments.Count != dto.ActivityIds.Count) return NotFound("One or more enrollments not found");
 
-            decimal totalPrice = enrollemnts.Sum(a => a.Price);
+            var enrollmentBalances = await db.Enrollments
+                .Where(e => dto.ActivityIds.Contains(e.ActivityId) && e.MemberId == dto.MemberId)
+                .Select(e => new
+                {
+                    Enrollment = e,
+                    Activity = e.Activity,
+                    PaidSum = db.EnrollmentPayments
+                        .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
+                        .Sum(p => (decimal?)p.Price) ?? 0
+                })
+                .ToListAsync();
 
+            var totalPrice = enrollmentBalances.Sum(e => Math.Max(0, e.Enrollment.Price - e.PaidSum));
             var amount = new Mollie.Api.Models.Amount(Mollie.Api.Models.Currency.EUR, totalPrice);
             var request = new Mollie.Api.Models.Payment.Request.PaymentRequest
             {
                 Amount = amount,
                 Description = $"Activity payment for {member.FirstName} {member.LastName}",
                 RedirectUrl = $"{_frontendUrl}",
-                WebhookUrl = $"{_frontendUrl}/api/payments/webhook",
+                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
                 Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
             };
 
             var mollieResponse = await paymentClient.CreatePaymentAsync(request);
 
-            foreach (var enrollment in enrollemnts)
+            foreach (var enrollment in enrollments)
             {
                 if(!enrollment.Activity.IsOpenForPayment)
                 {
                     return BadRequest($"Activity {enrollment.Activity.Name} is not open for payment");
                 }
 
-                if(enrollment.Price == 0) continue; // No need to create a payment for free activities
+                decimal price = PaymentUtils.GetUnpaidAmountForEnrollment(enrollment, db);
+
+                if(price <= 0) continue; // No need to create a payment for free activities
 
                 if (mollieResponse.Links.Checkout == null) return BadRequest("Mollie response did not contain a checkout link");
 
-                var payment = new EnrollmentPayment
+                EnrollmentPayment payment = new EnrollmentPayment
                 {
                     MemberId = dto.MemberId,
                     ActivityId = enrollment.ActivityId,
-                    Price = enrollment.Price,
+                    Price = price,
                     MollieId = mollieResponse.Id,
                     PaymentIntentUrl = mollieResponse.Links.Checkout.Href
                 };
