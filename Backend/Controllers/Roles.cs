@@ -4,11 +4,14 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Backend.Utils;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class Roles(PostgresDbContext db) : ControllerBase
     {
         // GET: api/roles
@@ -45,6 +48,13 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Role>> PostRole(PostRoleDTO roleDto, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can create roles.");
+            }
+
             var newEntry = db.Roles.Add(new Role
             {
                 Name = roleDto.Name
@@ -67,6 +77,13 @@ namespace Backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteRole(uint id, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can delete roles.");
+            }
+
             Role? role = await db.Roles.FindAsync(id, cancellationToken);
             if (role == null) return NotFound();
 
@@ -86,6 +103,13 @@ namespace Backend.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchRole(uint id, [FromBody] JsonPatchDocument<Role> patchDoc, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can change roles.");
+            }
+
             if (patchDoc == null)
                 return BadRequest();
 
@@ -113,6 +137,13 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutRole(uint id, RoleUpdateDTO roleDto, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can change roles.");
+            }
+
             Role? role = await db.Roles.FindAsync(id, cancellationToken);
             if (role == null) return NotFound();
 

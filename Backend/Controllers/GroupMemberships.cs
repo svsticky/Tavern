@@ -4,11 +4,14 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Backend.Utils;
 
 namespace Backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class GroupMemberships(PostgresDbContext db) : ControllerBase
 {
     // GET: api/groupMemberships
@@ -19,6 +22,12 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GroupMembership>>> GetGroupMemberships(CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can view group memberships.");
+        }
 
         var result = await db.GroupMemberships
             .Select(cm => new GroupMembershipResponseDTO
@@ -30,8 +39,8 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
                 GroupName = cm.Group.Name,
                 GroupType = cm.Group.Type,
                 MembershipYear = cm.MembershipYear,
-                RoleId = cm.Role != null ? cm.Role.Id : null,
-                RoleName = cm.Role != null ? cm.Role.Name : null
+                RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
+                RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
             })
             .ToListAsync(cancellationToken);
 
@@ -47,6 +56,8 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<GroupMembership>> GetGroupMembership(uint id, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
         var result = await db.GroupMemberships
             .Where(cm => cm.Id == id)
             .Select(cm => new GroupMembershipResponseDTO
@@ -58,12 +69,18 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
                 GroupName = cm.Group.Name,
                 GroupType = cm.Group.Type,
                 MembershipYear = cm.MembershipYear,
-                RoleId = cm.Role != null ? cm.Role.Id : null,
-                RoleName = cm.Role != null ? cm.Role.Name : null
+                RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
+                RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
             })
             .FirstOrDefaultAsync(cancellationToken);
 
         if (result is null) return NotFound();
+
+        
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && result.MemberId != userId)
+        {
+            return Forbid("Only board members can view group memberships.");
+        }
 
         return Ok(result);
     }
@@ -77,6 +94,13 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<GroupMembership>> PostGroupMembership(PostGroupMembershipDTO membershipDto, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can create group memberships.");
+        }
+
         Member? member = await db.Members.FindAsync(membershipDto.MemberId, cancellationToken);
         if (member is null)
             return BadRequest($"Member with ID {membershipDto.MemberId} does not exist.");
@@ -85,28 +109,47 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
         if (group is null)
             return BadRequest($"Group with ID {membershipDto.GroupId} does not exist.");
 
-        if (membershipDto.RoleId.HasValue)
+        if (membershipDto.RoleAliasId.HasValue)
         {
-            Role? role = await db.Roles.FindAsync(membershipDto.RoleId.Value, cancellationToken);
-            if (role is null)
-                return BadRequest($"Role with ID {membershipDto.RoleId.Value} does not exist.");
+            RoleAlias? roleAlias = await db.RoleAliases.FindAsync(membershipDto.RoleAliasId.Value, cancellationToken);
+            if (roleAlias is null)
+                return BadRequest($"Role alias with ID {membershipDto.RoleAliasId.Value} does not exist.");
         }
 
-        var newMembership = new GroupMembership
-        {
-            Member = member,
-            Group = group,
-            MembershipYear = membershipDto.MembershipYear,
-            RoleId = membershipDto.RoleId
-        };
+        var transaction = await db. Database.BeginTransactionAsync(cancellationToken);
 
-        var newEntry = db.GroupMemberships.Add(newMembership);
-        await db.SaveChangesAsync(cancellationToken);
-        return CreatedAtAction(
-            nameof(GetGroupMembership),
-            new { id = newEntry.Entity.Id },
-            newEntry.Entity
-        );
+        try
+        {
+            var newMembership = new GroupMembership
+            {
+                Member = member,
+                Group = group,
+                MembershipYear = membershipDto.MembershipYear,
+                RoleAliasId = membershipDto.RoleAliasId
+            };
+
+            var newEntry = db.GroupMemberships.Add(newMembership);
+
+            db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            {
+                MemberId = membershipDto.MemberId,
+            });
+
+            await db.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+            
+            return CreatedAtAction(
+                nameof(GetGroupMembership),
+                new { id = newEntry.Entity.Id },
+                newEntry.Entity
+            );
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return StatusCode(500, $"An error occurred while saving the group membership: {ex.Message}");
+        }
     }
 
     // DELETE: api/groupmemberships/5
@@ -118,14 +161,39 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteGroupMembership(uint id, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can delete group memberships.");
+        }
+
         var membership = await db.GroupMemberships.FindAsync(id, cancellationToken);
         if (membership is null)
             return NotFound();
 
-        db.GroupMemberships.Remove(membership);
-        await db.SaveChangesAsync(cancellationToken);
+        var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        return NoContent();
+        try
+        {
+            db.GroupMemberships.Remove(membership);
+            await db.SaveChangesAsync(cancellationToken);
+
+            db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            {
+                MemberId = membership.MemberId,
+            });
+
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return NoContent();
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return StatusCode(500, $"An error occurred while deleting the group membership: {ex.Message}");
+        }
     }
 
     // PATCH: api/groupmemberships/5
@@ -138,6 +206,13 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpPatch("{id}")]
     public async Task<IActionResult> PatchGroupMembership(uint id, [FromBody] JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+        
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can update group memberships.");
+        }
+
         if (patchDoc == null)
             return BadRequest();
 
@@ -145,14 +220,41 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
         if (membership == null)
             return NotFound();
 
-        patchDoc.ApplyTo(membership, ModelState);
+        var oldMemberId = membership.MemberId;
 
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        await db.SaveChangesAsync(cancellationToken);
+        try
+        {
+            patchDoc.ApplyTo(membership, ModelState);
 
-        return NoContent();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            {
+                MemberId = membership.MemberId,
+            });
+
+            if(oldMemberId != membership.MemberId)
+            {
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    MemberId = oldMemberId,
+                });
+            }
+
+
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return NoContent();
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return StatusCode(500, $"An error occurred while updating the group membership: {ex.Message}");
+        }
     }
 
     // PUT: api/groupmemberships/5
@@ -165,14 +267,54 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> PutGroupMembership(uint id, GroupMembershipUpdateDTO membershipDto, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can update group memberships.");
+        }
+
         var membership = await db.GroupMemberships.FindAsync(id, cancellationToken);
         if (membership is null)
             return NotFound();
 
-        membership.RoleId = membershipDto.RoleId;
+        var oldMemberId = membership.MemberId;
 
-        await db.SaveChangesAsync(cancellationToken);
+        var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-        return NoContent();
+        try
+        {
+            if (membershipDto.RoleAliasId.HasValue)
+            {
+                RoleAlias? roleAlias = await db.RoleAliases.FindAsync(membershipDto.RoleAliasId.Value, cancellationToken);
+                if (roleAlias is null)
+                    return BadRequest($"Role alias with ID {membershipDto.RoleAliasId.Value} does not exist.");
+            }
+
+            membership.RoleAliasId = membershipDto.RoleAliasId;
+
+            db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            {
+                MemberId = membership.MemberId,
+            });
+
+            if(oldMemberId != membership.MemberId)
+            {
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    MemberId = oldMemberId,
+                });
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return NoContent();
+        }
+        catch (DbUpdateException ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return StatusCode(500, $"An error occurred while updating the group membership: {ex.Message}");
+        }
     }
 }

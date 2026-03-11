@@ -1,14 +1,54 @@
 using Backend.Database;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using DotNetEnv;
+using Backend.Services;
+
+Env.Load();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = Environment.GetEnvironmentVariable("KeycloakAuthority"); 
+        options.Audience = $"{Environment.GetEnvironmentVariable("KeycloakClientId")}"; 
+        options.RequireHttpsMetadata = false;
+        
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidIssuer = Environment.GetEnvironmentVariable("KeycloakAuthority")
+        };
+    });
+
+builder.Services.AddHttpClient("KeycloakAdmin", client =>
+{
+    client.BaseAddress = new Uri(Environment.GetEnvironmentVariable("KeycloakAuthority")!.Replace("/realms/", "/admin/realms/"));
+});
+
+builder.Services.AddScoped<KeycloakSyncService>();
+
+builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.AddSwaggerGen();
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
+builder.Services.AddHttpClient("KeycloakAdmin", client =>
+{
+    var baseUri = Environment.GetEnvironmentVariable("KeycloakAuthority")!
+        .Replace("/realms/", "/admin/realms/");
+    client.BaseAddress = new Uri(baseUri.EndsWith("/") ? baseUri : baseUri + "/");
+});
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<KeycloakSyncService>();
+builder.Services.AddHostedService<KeycloakOutboxWorker>();
 
 WebApplication app = builder.Build();
 
@@ -18,6 +58,9 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.Run();

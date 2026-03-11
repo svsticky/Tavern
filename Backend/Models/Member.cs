@@ -11,6 +11,8 @@ public enum Language { NL, EN }
 [Index(nameof(Email), IsUnique = true)]
 public class Member
 {
+    public static readonly string[] RestrictedFields = new[] { "id", "studentnumber", "firstname", "lastname", "dateofbirth", "notes", "registeredon", "gratie", "lidvanverdienste", "erelid", "begunstiger", "suspended" };
+
     /// <summary>
     /// The unique identifier of a member, assigned incrementally.
     /// </summary>

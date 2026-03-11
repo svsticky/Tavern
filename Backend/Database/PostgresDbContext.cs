@@ -29,6 +29,10 @@ public class PostgresDbContext : DbContext
     public DbSet<GroupMembership> GroupMemberships { get; set; }
     /// <summary>Reference to the Roles relational table. </summary>
     public DbSet<Role> Roles { get; set; }
+    /// <summary>Reference to the RoleAliases relational table. </summary>
+    public DbSet<RoleAlias> RoleAliases { get; set; }
+    /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
+    public DbSet<KeyCloakOutboxTask> KeyCloakOutboxTasks { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.
@@ -44,12 +48,5 @@ public class PostgresDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-
-        // Role → GroupMembership (set null on delete)
-        modelBuilder.Entity<GroupMembership>()
-            .HasOne(cm => cm.Role)
-            .WithMany()
-            .HasForeignKey(cm => cm.RoleId)
-            .OnDelete(DeleteBehavior.SetNull);
     }
 }
