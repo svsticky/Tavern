@@ -178,10 +178,26 @@ namespace Backend.Controllers
                 }
             }
 
-            db.Members.Add(newMember);
-            await db.SaveChangesAsync(cancellationToken);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            return CreatedAtAction(nameof(GetMember), new { id = newMember.Id }, newMember);
+            try
+            {
+                db.Members.Add(newMember);
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = newMember.Id,
+                    TaskType = KeycloakTaskType.Create
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return CreatedAtAction(nameof(GetMember), new { id = newMember.Id }, newMember);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while creating the member.");
+            }
         }
 
 
@@ -208,10 +224,27 @@ namespace Backend.Controllers
             Member? member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) return NotFound();
 
-            db.Members.Remove(member);
-            await db.SaveChangesAsync(cancellationToken);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            return NoContent();
+            try
+            {
+                db.Members.Remove(member);
+
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Delete
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while deleting the member.");
+            }
         }
 
         // PATCH: api/members/5
@@ -224,13 +257,20 @@ namespace Backend.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchMember(Guid id, [FromBody] JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-    
+            if(patchDoc.Operations.Any(op => 
+                op.path.TrimStart('/').ToLower() == "id" || 
+                op.path.TrimStart('/').ToLower() == "keycloakid"))
+            {
+                return BadRequest("Updating 'id' or 'keycloakid' is not allowed.");
+            }
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);    
+
             bool isUpdatingSensitiveData = patchDoc.Operations.Any(op => 
                 Member.RestrictedFields.Any(field => op.path.TrimStart('/').ToLower().Equals(field)));
 
             bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db);
-            bool isOwnProfile = (id == userId);
+            bool isOwnProfile = id == userId;
 
             if (!isBoard)
             {
@@ -252,14 +292,33 @@ namespace Backend.Controllers
             if (member == null)
                 return NotFound();
 
-            patchDoc.ApplyTo(member, ModelState);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            try
+            {
+                patchDoc.ApplyTo(member, ModelState);
 
-            await db.SaveChangesAsync(cancellationToken);
+                if (!ModelState.IsValid)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return BadRequest(ModelState);
+                }
 
-            return NoContent();
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Sync
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while updating the member.");
+            }
         }
 
         // PUT: api/members/5
@@ -282,24 +341,39 @@ namespace Backend.Controllers
                 return Forbid("Only board members can update members.");
             }
 
-            member.StudentNumber = memberDto.StudentNumber;
-            member.FirstName = memberDto.FirstName;
-            member.LastName = memberDto.LastName;
-            member.Email = memberDto.Email;
-            member.PhoneNumber = memberDto.PhoneNumber;
-            member.Address = memberDto.Address;
-            member.DateOfBirth = memberDto.DateOfBirth;
-            member.PreferredLanguage = memberDto.PreferredLanguage;
-            member.Notes = memberDto.Notes;
-            member.Gratie = memberDto.Gratie;
-            member.LidVanVerdienste = memberDto.LidVanVerdienste;
-            member.EreLid = memberDto.EreLid;
-            member.Begunstiger = memberDto.Begunstiger;
-            member.Suspended = memberDto.Suspended;
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            await db.SaveChangesAsync(cancellationToken);
+            try
+            {
+                member.StudentNumber = memberDto.StudentNumber;
+                member.FirstName = memberDto.FirstName;
+                member.LastName = memberDto.LastName;
+                member.Email = memberDto.Email;
+                member.PhoneNumber = memberDto.PhoneNumber;
+                member.Address = memberDto.Address;
+                member.DateOfBirth = memberDto.DateOfBirth;
+                member.PreferredLanguage = memberDto.PreferredLanguage;
+                member.Notes = memberDto.Notes;
+                member.Gratie = memberDto.Gratie;
+                member.LidVanVerdienste = memberDto.LidVanVerdienste;
+                member.EreLid = memberDto.EreLid;
+                member.Begunstiger = memberDto.Begunstiger;
+                member.Suspended = memberDto.Suspended;
 
-            return NoContent();
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Sync
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while updating the member.");
+            }
         }
     }
 }

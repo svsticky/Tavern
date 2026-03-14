@@ -189,12 +189,12 @@ namespace Backend.Controllers
         public async Task<IActionResult> PutGroup(uint id, GroupUpdateDTO groupDto, CancellationToken cancellationToken)
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
+            
             if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
             {
                 return Forbid("Only board members can update groups.");
             }
-            
+
             Group? group = await db.Groups.FindAsync(id, cancellationToken);
             if (group == null) return NotFound();
 

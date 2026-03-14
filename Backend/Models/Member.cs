@@ -19,6 +19,11 @@ public class Member
     public Guid Id { get; set; }
 
     /// <summary>
+    /// The keycloak id of the member, used for authentication and authorization.
+    /// </summary>
+    public Guid? KeycloakId { get; set; }
+
+    /// <summary>
     /// The student number of the member.
     /// </summary>
     public uint StudentNumber { get; set; }

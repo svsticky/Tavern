@@ -132,7 +132,8 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
 
             db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
             {
-                MemberId = membershipDto.MemberId,
+                KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                TaskType = KeycloakTaskType.Sync
             });
 
             await db.SaveChangesAsync(cancellationToken);
@@ -181,7 +182,8 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
 
             db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
             {
-                MemberId = membership.MemberId,
+                KeycoakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                TaskType = KeycloakTaskType.Sync
             });
 
             await db.SaveChangesAsync(cancellationToken);
@@ -207,7 +209,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     public async Task<IActionResult> PatchGroupMembership(uint id, [FromBody] JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-        
+
         if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
         {
             return Forbid("Only board members can update group memberships.");
@@ -233,15 +235,21 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
 
             db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
             {
-                MemberId = membership.MemberId,
+                KeycoakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                TaskType = KeycloakTaskType.Sync
             });
 
             if(oldMemberId != membership.MemberId)
             {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                Member? oldMember = await db.Members.FindAsync(new object[] { oldMemberId }, cancellationToken);
+                if (oldMember is not null)
                 {
-                    MemberId = oldMemberId,
-                });
+                    db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    {
+                        KeycoakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
+                        TaskType = KeycloakTaskType.Sync
+                    });
+                }
             }
 
 
@@ -295,15 +303,20 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
 
             db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
             {
-                MemberId = membership.MemberId,
+                KeycoakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                TaskType = KeycloakTaskType.Sync
             });
 
             if(oldMemberId != membership.MemberId)
             {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
-                {
-                    MemberId = oldMemberId,
-                });
+                Member? oldMember = await db.Members.FindAsync(new object[] { oldMemberId }, cancellationToken);
+                if (oldMember is not null)                {
+                    db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    {
+                        KeycoakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
+                        TaskType = KeycloakTaskType.Sync
+                    });
+                }
             }
 
             await db.SaveChangesAsync(cancellationToken);

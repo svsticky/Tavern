@@ -31,7 +31,7 @@ builder.Services.AddHttpClient("KeycloakAdmin", client =>
     client.BaseAddress = new Uri(Environment.GetEnvironmentVariable("KeycloakAuthority")!.Replace("/realms/", "/admin/realms/"));
 });
 
-builder.Services.AddScoped<KeycloakSyncService>();
+builder.Services.AddScoped<KeycloakAPIService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
@@ -47,7 +47,7 @@ builder.Services.AddHttpClient("KeycloakAdmin", client =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<KeycloakSyncService>();
+builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddHostedService<KeycloakOutboxWorker>();
 
 WebApplication app = builder.Build();

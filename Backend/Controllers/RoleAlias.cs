@@ -94,10 +94,9 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
         using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            // Zoek alle leden die deze alias gebruiken om hun Keycloak claims te updaten
             var affectedMembers = await db.GroupMemberships
                 .Where(gm => gm.RoleAliasId == id)
-                .Select(gm => gm.MemberId)
+                .Select(gm => gm.Member.KeycloakId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
 
@@ -105,7 +104,10 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
 
             foreach (var memberId in affectedMembers)
             {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { MemberId = memberId });
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
+                    KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found in affected members list."),
+                    TaskType = KeycloakTaskType.Sync
+                });
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -147,13 +149,16 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
 
             var affectedMembers = await db.GroupMemberships
                 .Where(gm => gm.RoleAliasId == id)
-                .Select(gm => gm.MemberId)
+                .Select(gm => gm.Member.KeycloakId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
 
             foreach (var memberId in affectedMembers)
             {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { MemberId = memberId });
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
+                    KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found in affected members list."),
+                    TaskType = KeycloakTaskType.Sync
+                });
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -193,13 +198,16 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
 
             var affectedMembers = await db.GroupMemberships
                 .Where(gm => gm.RoleAliasId == id)
-                .Select(gm => gm.MemberId)
+                .Select(gm => gm.Member.KeycloakId)
                 .Distinct()
                 .ToListAsync(cancellationToken);
 
             foreach (var memberId in affectedMembers)
             {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { MemberId = memberId });
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
+                    KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found in affected members list."), 
+                    TaskType = KeycloakTaskType.Sync 
+                });
             }
 
             await db.SaveChangesAsync(cancellationToken);

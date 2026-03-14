@@ -113,7 +113,7 @@ namespace Backend.Controllers
             if (patchDoc == null)
                 return BadRequest();
 
-            Role? role = await db.Roles.FindAsync(new object[] { id }, cancellationToken);
+            Role? role = await db.Roles.FindAsync(new [] { id }, cancellationToken);
             if (role == null)
                 return NotFound();
 
@@ -138,7 +138,7 @@ namespace Backend.Controllers
         public async Task<IActionResult> PutRole(uint id, RoleUpdateDTO roleDto, CancellationToken cancellationToken)
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
+            
             if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
             {
                 return Forbid("Only board members can change roles.");
