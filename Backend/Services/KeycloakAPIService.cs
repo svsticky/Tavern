@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Backend.Database;
 using Backend.Models;
+using Backend.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;
@@ -32,7 +33,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             email = member.Email,
             firstName = member.FirstName,
             lastName = member.LastName,
-            enabled = !member.Suspended, // TO DO: CHECK IF PAID MEMBERSHIPS FEE
+            enabled = !member.Suspended && PaymentUtils.HasPaidMembershipPayment(member, db),
             attributes = new Dictionary<string, string[]> {
                 { "member_memberships", memberships.ToArray() },
                 { "koala_user_id", new[] { member.Id.ToString() } }
@@ -55,10 +56,9 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             email = member.Email,
             firstName = member.FirstName,
             lastName = member.LastName,
-            enabled = !member.Suspended, // TO DO: CHECK IF PAID MEMBERSHIPS FEE
+            enabled = !member.Suspended && PaymentUtils.HasPaidMembershipPayment(member, db),
             attributes = new Dictionary<string, string[]> {
                 { "member_memberships", [] },
-                { "db_user_id", new[] { member.Id.ToString() } },
                 { "koala_user_id", new[] { member.Id.ToString() } }
             }
         };

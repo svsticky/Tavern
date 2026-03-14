@@ -224,6 +224,11 @@ namespace Backend.Controllers
             Member? member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) return NotFound();
 
+            if(!PaymentUtils.MemberHasPaidAllActivities(member, db))
+            {
+                return BadRequest("Member has unpaid activities and cannot be deleted.");
+            }
+
             var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
