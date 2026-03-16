@@ -620,6 +620,17 @@ namespace Backend.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
+                {
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Member");
+                });
+
             modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
                 {
                     b.HasOne("Backend.Models.SpecificationQuestion", "Question")
