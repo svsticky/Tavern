@@ -18,15 +18,17 @@ public static class PaymentUtils
     public static IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Member member, PostgresDbContext db)
     {
         return db.Enrollments
-            .Where(e => e.MemberId == member.Id)
+            .Where(e => e.MemberId == member.Id) // All enrollments for the member
             .Select(e => new 
             {
                 Enrollment = e,
                 PaidSum = db.EnrollmentPayments
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
-            })
-            .Where(x => x.PaidSum < x.Enrollment.Price)
+            }) // List of member enrollments with their paid sums
+            .Where(x => x.PaidSum < x.Enrollment.Price) // Filter to only those enrollments where the paid sum is less than the enrollment price
+            .Include(e=> e.Enrollment.Member) // Include the Member navigation property to avoid lazy loading issues
+            .Include(e => e.Enrollment.Activity) // Include the Activity navigation property to avoid lazy loading issues
             .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
     }
 
@@ -48,10 +50,10 @@ public static class PaymentUtils
                 PaidSum = db.EnrollmentPayments
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
-            })
-            .Where(x => x.PaidSum < x.Enrollment.Price)
-            .Include(e=> e.Enrollment.Member)
-            .Include(e => e.Enrollment.Activity)
+            }) // List of all enrollments with their paid sums
+            .Where(x => x.PaidSum < x.Enrollment.Price) // Filter to only those enrollments where the paid sum is less than the enrollment price
+            .Include(e=> e.Enrollment.Member) // Include the Member navigation property to avoid lazy loading issues
+            .Include(e => e.Enrollment.Activity) // Include the Activity navigation property to avoid lazy loading issues
             .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
     }
 
@@ -64,10 +66,10 @@ public static class PaymentUtils
                 PaidSum = db.EnrollmentPayments
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
-            })
-            .Where(x => x.PaidSum > x.Enrollment.Price)
-            .Include(e=> e.Enrollment.Member)
-            .Include(e => e.Enrollment.Activity)
+            }) // List of all enrollments with their paid sums
+            .Where(x => x.PaidSum > x.Enrollment.Price) // Filter to only those enrollments where the paid sum is greater than the enrollment price
+            .Include(e=> e.Enrollment.Member) // Include the Member navigation property to avoid lazy loading issues
+            .Include(e => e.Enrollment.Activity) // Include the Activity navigation property to avoid lazy loading issues
             .Select(x => new EnrollmentBalance(x.Enrollment, x.PaidSum - x.Enrollment.Price));
     }
 
