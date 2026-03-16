@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Backend.Utils;
+using Backend.Services;
 
 namespace Backend.Controllers
 {
@@ -378,6 +379,49 @@ namespace Backend.Controllers
             {
                 await transaction.RollbackAsync(cancellationToken);
                 return StatusCode(500, "An error occurred while updating the member.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO dto, [FromServices] KeycloakAPIService keycloakService)
+        {
+            var member = await db.Members.FirstOrDefaultAsync(m => m.Email == dto.Email);
+            if (member == null || member.KeycloakId == null)
+            {
+                return Ok("If an account exists, a reset email has been sent.");
+            }
+
+            try 
+            {
+                await keycloakService.SendActionEmail(member.KeycloakId.Value, new[] { "UPDATE_PASSWORD" });
+                return Ok("Reset email sent.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Error sending reset email.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("{id}/resend-activation")]
+        public async Task<IActionResult> ResendActivation(Guid id, [FromServices] KeycloakAPIService keycloakService)
+        {
+            var member = await db.Members.FindAsync(id);
+            if (member == null || member.KeycloakId == null) return NotFound();
+
+            try 
+            {
+                await keycloakService.SendActionEmail(member.KeycloakId.Value, new[] { "UPDATE_PASSWORD", "VERIFY_EMAIL" });
+                return Ok("Activation email resent.");
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("User is disabled"))
+                {
+                    return BadRequest("Account is disabled. Please contact the board.");
+                }
+                return StatusCode(500, "Error resending email.");
             }
         }
     }

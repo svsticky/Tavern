@@ -135,3 +135,5 @@ public class MemberUpdateDTO
     /// <inheritdoc cref="Models.Member.Suspended"/>
     public bool Suspended { get; set; }
 }
+
+public record ForgotPasswordDTO(string Email);
