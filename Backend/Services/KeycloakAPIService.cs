@@ -27,20 +27,9 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         var tokenResponse = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updateData = new
-        {
-            username = member.Email,
-            email = member.Email,
-            firstName = member.FirstName,
-            lastName = member.LastName,
-            enabled = !member.Suspended && PaymentUtils.HasPaidMembershipPayment(member, db),
-            attributes = new Dictionary<string, string[]> {
-                { "member_memberships", memberships.ToArray() },
-                { "koala_user_id", new[] { member.Id.ToString() } }
-            }
-        };
+        var updatedUser = MapToKeycloakUser(member, memberships.ToArray());
 
-        var response = await client.PutAsJsonAsync($"users/{member.KeycloakId}", updateData);
+        var response = await client.PutAsJsonAsync($"users/{member.KeycloakId}", updatedUser);
         response.EnsureSuccessStatusCode();
     }
 
@@ -50,18 +39,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var newUser = new
-        {
-            username = member.Email,
-            email = member.Email,
-            firstName = member.FirstName,
-            lastName = member.LastName,
-            enabled = !member.Suspended && PaymentUtils.HasPaidMembershipPayment(member, db),
-            attributes = new Dictionary<string, string[]> {
-                { "member_memberships", [] },
-                { "koala_user_id", new[] { member.Id.ToString() } }
-            }
-        };
+        var newUser = MapToKeycloakUser(member);
 
         var response = await client.PostAsJsonAsync("users", newUser);
         
@@ -101,5 +79,21 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         var response = await client.PostAsync($"{Environment.GetEnvironmentVariable("KeycloakAuthority")}/protocol/openid-connect/token", new FormUrlEncodedContent(dict));
         var content = await response.Content.ReadFromJsonAsync<dynamic>();
         return content!.access_token;
+    }
+
+    private object MapToKeycloakUser(Member member, string[]? memberships = null)
+    {
+        return new
+        {
+            username = member.Email,
+            email = member.Email,
+            firstName = member.FirstName,
+            lastName = member.LastName,
+            enabled = !member.Suspended && PaymentUtils.HasPaidMembershipPayment(member, db),
+            attributes = new Dictionary<string, string[]> {
+                { "member_memberships", memberships ?? [] },
+                { "koala_user_id", new[] { member.Id.ToString() } }
+            }
+        };
     }
 }
