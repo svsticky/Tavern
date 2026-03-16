@@ -128,16 +128,17 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
 
     private object MapToKeycloakUser(Member member, string[]? memberships = null)
     {
-        // TO DO: If not paid for membership or account suspended: add to group that can't do anything except receiving emails and paying
         return new
         {
             username = member.Email,
             email = member.Email,
             firstName = member.FirstName,
             lastName = member.LastName,
+            enabled = true,
             attributes = new Dictionary<string, string[]> {
                 { "member_memberships", memberships ?? [] },
-                { "koala_user_id", new[] { member.Id.ToString() } }
+                { "koala_user_id", new[] { member.Id.ToString() } },
+                { "access_level", new [] { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" }}
             }
         };
     }
