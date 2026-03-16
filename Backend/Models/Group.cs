@@ -41,3 +41,8 @@ public class Group
     /// </summary>
     public GroupType Type { get; set; }
 }
+
+public enum PredefinedGroup : uint
+{
+    Board = 0,
+}

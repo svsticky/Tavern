@@ -3,6 +3,7 @@ using System;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(PostgresDbContext))]
-    partial class PostgresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260310085039_AddPayments")]
+    partial class AddPayments
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -117,40 +120,6 @@ namespace Backend.Migrations
                     b.ToTable("Activities");
                 });
 
-            modelBuilder.Entity("Backend.Models.Announcement", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("CreatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("CreatedById1")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById1");
-
-                    b.ToTable("Announcements");
-                });
-
             modelBuilder.Entity("Backend.Models.Enrollment", b =>
                 {
                     b.Property<long>("ActivityId")
@@ -247,7 +216,7 @@ namespace Backend.Migrations
                     b.Property<long>("MembershipYear")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("RoleAliasId")
+                    b.Property<long?>("RoleId")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
@@ -256,7 +225,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.HasIndex("RoleAliasId");
+                    b.HasIndex("RoleId");
 
                     b.ToTable("GroupMemberships");
                 });
@@ -293,9 +262,6 @@ namespace Backend.Migrations
 
                     b.Property<bool>("Gratie")
                         .HasColumnType("boolean");
-
-                    b.Property<Guid?>("KeycloakId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -384,29 +350,6 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
-                });
-
-            modelBuilder.Entity("Backend.Models.RoleAlias", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<long>("RoleId")
-                        .HasColumnType("bigint");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoleId");
-
-                    b.ToTable("RoleAliases");
                 });
 
             modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
@@ -535,31 +478,6 @@ namespace Backend.Migrations
                     b.ToTable("StudyEnrollments");
                 });
 
-            modelBuilder.Entity("KeyCloakOutboxTask", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("KeycoakId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("RetryCount")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TaskType")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("KeyCloakOutboxTasks");
-                });
-
             modelBuilder.Entity("Backend.Models.Activity", b =>
                 {
                     b.HasOne("Backend.Models.Group", "Organizer")
@@ -567,17 +485,6 @@ namespace Backend.Migrations
                         .HasForeignKey("OrganizerId");
 
                     b.Navigation("Organizer");
-                });
-
-            modelBuilder.Entity("Backend.Models.Announcement", b =>
-                {
-                    b.HasOne("Backend.Models.Member", "CreatedBy")
-                        .WithMany("Announcements")
-                        .HasForeignKey("CreatedById1")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
                 });
 
             modelBuilder.Entity("Backend.Models.Enrollment", b =>
@@ -632,35 +539,14 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.RoleAlias", "RoleAlias")
+                    b.HasOne("Backend.Models.Role", "Role")
                         .WithMany()
-                        .HasForeignKey("RoleAliasId");
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Group");
 
                     b.Navigation("Member");
-
-                    b.Navigation("RoleAlias");
-                });
-
-            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
-                {
-                    b.HasOne("Backend.Models.Member", "Member")
-                        .WithMany()
-                        .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Member");
-                });
-
-            modelBuilder.Entity("Backend.Models.RoleAlias", b =>
-                {
-                    b.HasOne("Backend.Models.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
 
                     b.Navigation("Role");
                 });
@@ -744,8 +630,6 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.Member", b =>
                 {
-                    b.Navigation("Announcements");
-
                     b.Navigation("Enrollments");
 
                     b.Navigation("GroupMemberships");

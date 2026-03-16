@@ -3,6 +3,7 @@ using System;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(PostgresDbContext))]
-    partial class PostgresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260316181615_AddKeycloakOutboxTasks")]
+    partial class AddKeycloakOutboxTasks
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -115,40 +118,6 @@ namespace Backend.Migrations
                     b.HasIndex("OrganizerId");
 
                     b.ToTable("Activities");
-                });
-
-            modelBuilder.Entity("Backend.Models.Announcement", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("CreatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("CreatedById1")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedById1");
-
-                    b.ToTable("Announcements");
                 });
 
             modelBuilder.Entity("Backend.Models.Enrollment", b =>
@@ -569,17 +538,6 @@ namespace Backend.Migrations
                     b.Navigation("Organizer");
                 });
 
-            modelBuilder.Entity("Backend.Models.Announcement", b =>
-                {
-                    b.HasOne("Backend.Models.Member", "CreatedBy")
-                        .WithMany("Announcements")
-                        .HasForeignKey("CreatedById1")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("CreatedBy");
-                });
-
             modelBuilder.Entity("Backend.Models.Enrollment", b =>
                 {
                     b.HasOne("Backend.Models.Activity", "Activity")
@@ -665,17 +623,6 @@ namespace Backend.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
-                {
-                    b.HasOne("Backend.Models.Member", "Member")
-                        .WithMany()
-                        .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Member");
-                });
-
             modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
                 {
                     b.HasOne("Backend.Models.SpecificationQuestion", "Question")
@@ -744,8 +691,6 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.Member", b =>
                 {
-                    b.Navigation("Announcements");
-
                     b.Navigation("Enrollments");
 
                     b.Navigation("GroupMemberships");

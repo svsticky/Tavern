@@ -1,14 +1,87 @@
 using Backend.Database;
+using Backend.Services;
+using DotNetEnv;
+using Mollie.Api;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+
+Env.Load();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = Environment.GetEnvironmentVariable("KeycloakAuthority"); 
+        options.Audience = $"{Environment.GetEnvironmentVariable("KeycloakClientId")}"; 
+        options.RequireHttpsMetadata = false;
+        
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidIssuer = Environment.GetEnvironmentVariable("KeycloakAuthority")
+        };
+    });
+
+builder.Services.AddHttpClient("KeycloakAdmin", client =>
+{
+    client.BaseAddress = new Uri(Environment.GetEnvironmentVariable("KeycloakAuthority")!.Replace("/realms/", "/admin/realms/"));
+});
+
+builder.Services.AddScoped<KeycloakAPIService>();
+
+builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Paste your JWT token here"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
+builder.Services.AddControllers().AddNewtonsoftJson();
+builder.Services.AddMollieApi(options => 
+{
+    options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? throw new Exception("No Mollie Key initialized");
+});
+builder.Services.AddHostedService<PaymentSyncService>();
+builder.Services.AddHttpClient("KeycloakAdmin", client =>
+{
+    var baseUri = Environment.GetEnvironmentVariable("KeycloakAuthority")!
+        .Replace("/realms/", "/admin/realms/");
+    client.BaseAddress = new Uri(baseUri.EndsWith("/") ? baseUri : baseUri + "/");
+});
+
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<KeycloakAPIService>();
+builder.Services.AddHostedService<KeycloakOutboxWorker>();
 
 WebApplication app = builder.Build();
 
@@ -18,6 +91,9 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
