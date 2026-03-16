@@ -1,5 +1,6 @@
 using Backend.Database;
 using Backend.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Utils;
 
@@ -49,6 +50,8 @@ public static class PaymentUtils
                     .Sum(p => (decimal?)p.Price) ?? 0
             })
             .Where(x => x.PaidSum < x.Enrollment.Price)
+            .Include(e=> e.Enrollment.Member)
+            .Include(e => e.Enrollment.Activity)
             .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
     }
 
@@ -63,6 +66,8 @@ public static class PaymentUtils
                     .Sum(p => (decimal?)p.Price) ?? 0
             })
             .Where(x => x.PaidSum > x.Enrollment.Price)
+            .Include(e=> e.Enrollment.Member)
+            .Include(e => e.Enrollment.Activity)
             .Select(x => new EnrollmentBalance(x.Enrollment, x.PaidSum - x.Enrollment.Price));
     }
 
