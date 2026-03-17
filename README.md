@@ -28,7 +28,7 @@ Some stuff, but also see ARCHITECTURE.md
 
 ## Keycloak
 For keycloak:
-Create a client with authentication and authorization on, take the secret key in the credentials tap and add it to the env, go to client scopes of the client and select the dedicated one, add an user_attribute mapper with as attribute access_level and leave the settings like it is. Do the same for koala_user_id and member_memberships but for member_memberships turn on multivalued.
+Create a client with authentication and authorization on, take the secret key in the credentials tap and add it to the env, go to client scopes of the client and select the dedicated one, add an user_attribute mapper with as attribute access_level and leave the settings like it is. Do the same for koala_user_id, student_number, preffered_language and member_memberships but for member_memberships turn on multivalued.
 
 Go to Realm settings>email and fill in settings for smtp.
 

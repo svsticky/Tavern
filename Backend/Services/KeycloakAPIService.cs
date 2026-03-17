@@ -136,9 +136,11 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             lastName = member.LastName,
             enabled = true,
             attributes = new Dictionary<string, string[]> {
-                { "member_memberships", memberships ?? [] },
                 { "koala_user_id", new[] { member.Id.ToString() } },
-                { "access_level", new [] { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" }}
+                { "access_level", new [] { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" }},
+                { "member_memberships", memberships ?? [] },
+                { "student_number", new [] { member.StudentNumber.ToString() }},
+                { "preffered_language", new [] { member.PreferredLanguage.ToString() } }
             }
         };
     }
