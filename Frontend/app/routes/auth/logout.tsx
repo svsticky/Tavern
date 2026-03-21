@@ -9,7 +9,7 @@ export default function LogoutPage() {
   useEffect(() => {
     if (initialized && keycloak.authenticated) {
       keycloak.logout({
-        redirectUri: window.location.origin + "/login",
+        redirectUri: `${window.location.origin}/login`,
       });
     } else if (initialized && !keycloak.authenticated) {
       navigate("/login", { replace: true });

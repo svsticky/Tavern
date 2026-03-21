@@ -32,8 +32,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       console.log(`request to ${response.url} was successful`);
     }
 
-    if(response.status === 401) {
-      console.log(`request to ${response.url} was unauthorized, redirecting to login page...`);
+    if (response.status === 401) {
+      console.log(
+        `request to ${response.url} was unauthorized, redirecting to login page...`,
+      );
       window.location.href = "/logout";
     }
 
@@ -58,9 +60,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 const keycloak = new Keycloak({
-  url: import.meta.env.KeycloakUrl!,
-  realm: import.meta.env.KeycloakRealm!,
-  clientId: import.meta.env.KeycloakClientId!,
+  url: import.meta.env.KeycloakUrl ?? "http://localhost:8085/",
+  realm: import.meta.env.KeycloakRealm ?? "master",
+  clientId: import.meta.env.KeycloakClientId ?? "react",
 });
 
 export default function App() {

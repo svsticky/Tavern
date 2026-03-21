@@ -1,6 +1,4 @@
 import { useKeycloak } from "@react-keycloak/web";
-import { useEffect } from "react";
-import { getApiActivities } from "~/api";
 
 export function meta() {
   return [
@@ -9,18 +7,9 @@ export function meta() {
   ];
 }
 
-function getActivities(token: string) {
-  return getApiActivities({
-      baseUrl: "https://localhost:8080",
-      headers: {
-          Authorization: `Bearer ${token}`
-      }
-  });
-}
-
 export default function Home() {
   const { keycloak } = useKeycloak();
-  
+
   return (
     <div className="secure-page">
       <div>{`User is ${
