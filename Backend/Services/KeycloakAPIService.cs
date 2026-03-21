@@ -88,12 +88,12 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
     {
         var client = httpClientFactory.CreateClient();
         
-        var url = $"{Environment.GetEnvironmentVariable("KeycloakAuthority")}/protocol/openid-connect/token";
+        var url = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}/protocol/openid-connect/token";
         
         var dict = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
-            { "client_id", Environment.GetEnvironmentVariable("KeycloakClientId")! },
+            { "client_id", Environment.GetEnvironmentVariable("KeycloakBackendClientId")! },
             { "client_secret", Environment.GetEnvironmentVariable("KeycloakClientSecret")! }
         };
 
@@ -136,9 +136,11 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             lastName = member.LastName,
             enabled = true,
             attributes = new Dictionary<string, string[]> {
-                { "member_memberships", memberships ?? [] },
                 { "koala_user_id", new[] { member.Id.ToString() } },
-                { "access_level", new [] { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" }}
+                { "access_level", new [] { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" }},
+                { "member_memberships", memberships ?? [] },
+                { "student_number", new [] { member.StudentNumber.ToString() }},
+                { "preffered_language", new [] { member.PreferredLanguage.ToString() } }
             }
         };
     }
