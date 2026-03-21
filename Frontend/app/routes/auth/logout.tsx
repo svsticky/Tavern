@@ -1,12 +1,24 @@
-import { redirect } from "react-router";
-import { destroySession, getSession } from "../../sessions.server";
-import type { Route } from "../auth/+types/logout";
+import { useKeycloak } from "@react-keycloak/web";
+import { useEffect } from "react";
+import { useNavigate } from "react-router";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-  return redirect("/login", {
-    headers: {
-      "Set-Cookie": await destroySession(session),
-    },
-  });
+export default function LogoutPage() {
+  const { keycloak, initialized } = useKeycloak();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (initialized && keycloak.authenticated) {
+      keycloak.logout({
+        redirectUri: window.location.origin + "/login",
+      });
+    } else if (initialized && !keycloak.authenticated) {
+      navigate("/login", { replace: true });
+    }
+  }, [initialized, keycloak, navigate]);
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-xl font-semibold text-gray-700">Logging out...</p>
+    </div>
+  );
 }

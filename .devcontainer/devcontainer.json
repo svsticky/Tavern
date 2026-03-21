@@ -6,6 +6,12 @@
     "service": "devcontainer",
     "workspaceFolder": "/workspaces",
 
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20" 
+        }
+    },
+
     // Configure tool-specific properties.
     "customizations": {
         "jetbrains": {

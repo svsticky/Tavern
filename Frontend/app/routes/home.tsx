@@ -1,10 +1,6 @@
+import { useKeycloak } from "@react-keycloak/web";
+import { useEffect } from "react";
 import { getApiActivities } from "~/api";
-import { requireAuth } from "~/middleware/auth";
-import type { Route } from "./+types/home";
-
-export async function loader({ request }: Route.LoaderArgs) {
-  return requireAuth(request);
-}
 
 export function meta() {
   return [
@@ -13,20 +9,23 @@ export function meta() {
   ];
 }
 
-export default function Home() {
-  /**
-   * TODO: Swap this out with tanstack query
-   */
-  const getActivities = () => {
-    getApiActivities().then((r) => console.log(r));
-  };
+function getActivities(token: string) {
+  return getApiActivities({
+      baseUrl: "https://localhost:8080",
+      headers: {
+          Authorization: `Bearer ${token}`
+      }
+  });
+}
 
+export default function Home() {
+  const { keycloak } = useKeycloak();
+  
   return (
-    <div>
-      <p>Home</p>
-      <button type="button" onClick={() => getActivities()}>
-        Klik mij
-      </button>
+    <div className="secure-page">
+      <div>{`User is ${
+        !keycloak.authenticated ? "NOT " : ""
+      }authenticated`}</div>
     </div>
   );
 }

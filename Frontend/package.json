@@ -10,9 +10,12 @@
     "openapi-ts": "openapi-ts"
   },
   "dependencies": {
+    "@react-keycloak/web": "^3.4.0",
     "@react-router/node": "7.10.1",
     "@react-router/serve": "7.10.1",
+    "@vitejs/plugin-basic-ssl": "^2.2.0",
     "isbot": "^5.1.31",
+    "keycloak-js": "^26.2.3",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-router": "7.10.1"

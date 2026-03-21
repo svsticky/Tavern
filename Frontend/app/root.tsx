@@ -1,3 +1,5 @@
+import { ReactKeycloakProvider } from "@react-keycloak/web";
+import Keycloak from "keycloak-js";
 import {
   isRouteErrorResponse,
   Links,
@@ -5,21 +7,11 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
 import "./app.css";
 import { client } from "./api/client.gen";
-import { getSession } from "./sessions.server";
-
-export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  return {
-    authToken: session.get("auth_token") ?? null,
-  };
-}
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -35,27 +27,16 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { authToken } = useLoaderData<typeof loader>();
-
-  /**
-   * Configure internal service client using session token
-   * TODO: Get the base url from the .env file
-   */
-  client.setConfig({
-    baseUrl: "http://localhost:8000",
-    headers: {
-      Authorization: authToken ? `Bearer ${authToken}` : undefined,
-    },
-  });
-
-  /**
-   * Interceptor
-   * TODO: if the status code is unauthenticated we redirect the user to the login page
-   */
   client.interceptors.response.use((response) => {
     if (response.status === 200) {
       console.log(`request to ${response.url} was successful`);
     }
+
+    if(response.status === 401) {
+      console.log(`request to ${response.url} was unauthorized, redirecting to login page...`);
+      window.location.href = "/logout";
+    }
+
     return response;
   });
 
@@ -76,8 +57,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const keycloak = new Keycloak({
+  url: import.meta.env.KeycloakUrl!,
+  realm: import.meta.env.KeycloakRealm!,
+  clientId: import.meta.env.KeycloakClientId!,
+});
+
 export default function App() {
-  return <Outlet />;
+  return (
+    <ReactKeycloakProvider authClient={keycloak}>
+      <Outlet />
+    </ReactKeycloakProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
