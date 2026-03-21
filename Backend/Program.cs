@@ -15,6 +15,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
+        options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
         options.RequireHttpsMetadata = false;
         
         options.TokenValidationParameters = new TokenValidationParameters
@@ -86,6 +87,15 @@ builder.Services.AddCors(options =>
 });
 
 
+builder.Services.AddCors(options =>
+   {
+       options.AddDefaultPolicy(policy =>
+           policy.WithOrigins(Environment.GetEnvironmentVariable("HostUrl")!)
+                 .AllowAnyHeader()
+                 .AllowAnyMethod());
+});
+
+
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddHostedService<KeycloakOutboxWorker>();
@@ -98,6 +108,10 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
+app.UseRouting();
+
+app.UseCors();
 
 app.UseRouting();
 
