@@ -194,6 +194,15 @@ namespace Backend.Controllers
                 foreach (var payment in payments)
                 {
                     payment.PaidAt = result.PaidAt?.ToString("O");
+                    if(payment is MembershipPayment)
+                    {
+                        KeyCloakOutboxTask task = new KeyCloakOutboxTask
+                        {
+                            TaskType = KeycloakTaskType.Sync,
+                            KeycoakId = payment.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID")
+                        };
+                        db.KeyCloakOutboxTasks.Add(task);
+                    }
                 }
                 await db.SaveChangesAsync();
             }

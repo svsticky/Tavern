@@ -4,12 +4,15 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Microsoft.AspNetCore.Authorization;
 using Backend.Utils;
+using Backend.Services;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class Members(PostgresDbContext db) : ControllerBase
     {
         // GET: api/activities
@@ -20,6 +23,13 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MemberResponseDTO>>> GetMembers(CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can view members.");
+            }
+
             return await db.Members
                 .Select(m => new MemberResponseDTO
                 {
@@ -56,8 +66,8 @@ namespace Backend.Controllers
                             MemberId = gm.MemberId,
                             MemberName = $"{m.FirstName} {m.LastName}",
                             MembershipYear = gm.MembershipYear,
-                            RoleId = gm.Role != null ? gm.Role.Id : null,
-                            RoleName = gm.Role != null ? gm.Role.Name : null
+                            RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
+                            RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
                         }).ToList()
                 })
                 .ToListAsync(cancellationToken);
@@ -72,6 +82,15 @@ namespace Backend.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<MemberResponseDTO>> GetMember(Guid id, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db);
+
+            if(!isBoard && id != userId)
+            {
+                return Forbid("Only board members can view details of other members.");
+            }
+
             var result = await db.Members
                 .Where(m => m.Id == id)
                 .Select(m => new MemberResponseDTO
@@ -84,7 +103,7 @@ namespace Backend.Controllers
                     PhoneNumber = m.PhoneNumber,
                     Address = m.Address,
                     DateOfBirth = m.DateOfBirth,
-                    Notes = m.Notes,
+                    Notes = isBoard ? m.Notes : null,
                     RegisteredOn = m.RegisteredOn,
                     PreferredLanguage = m.PreferredLanguage,
                     StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
@@ -109,8 +128,8 @@ namespace Backend.Controllers
                             MemberId = gm.MemberId,
                             MemberName = $"{m.FirstName} {m.LastName}",
                             MembershipYear = gm.MembershipYear,
-                            RoleId = gm.Role != null ? gm.Role.Id : null,
-                            RoleName = gm.Role != null ? gm.Role.Name : null
+                            RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
+                            RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
                         }).ToList()
                 })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -126,6 +145,7 @@ namespace Backend.Controllers
         /// </summary>
         /// <param name="memberDto">The member to be added to the database.</param>
         /// <returns>Fully created member in body and api route of where to fetch it in the headers.</returns>
+        [AllowAnonymous]
         [HttpPost]
         public async Task<ActionResult<Member>> PostMember(PostMemberDTO memberDto, CancellationToken cancellationToken)
         {
@@ -159,11 +179,28 @@ namespace Backend.Controllers
                 }
             }
 
-            db.Members.Add(newMember);
-            await db.SaveChangesAsync(cancellationToken);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            return CreatedAtAction(nameof(GetMember), new { id = newMember.Id }, newMember);
+            try
+            {
+                db.Members.Add(newMember);
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = newMember.Id,
+                    TaskType = KeycloakTaskType.Create
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return CreatedAtAction(nameof(GetMember), new { id = newMember.Id }, newMember);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while creating the member.");
+            }
         }
+
 
         // DELETE: api/members/5
         /// <summary>
@@ -176,8 +213,15 @@ namespace Backend.Controllers
         /// member.
         /// </remarks>
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMember(uint id, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteMember(Guid id, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && id != userId)
+            {
+                return Forbid("Only board members can delete other members.");
+            }
+
             Member? member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) return NotFound();
 
@@ -186,10 +230,27 @@ namespace Backend.Controllers
                 return BadRequest("Member has unpaid activities and cannot be deleted.");
             }
 
-            db.Members.Remove(member);
-            await db.SaveChangesAsync(cancellationToken);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            return NoContent();
+            try
+            {
+                db.Members.Remove(member);
+
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Delete
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while deleting the member.");
+            }
         }
 
         // PATCH: api/members/5
@@ -200,8 +261,36 @@ namespace Backend.Controllers
         /// <param name="patchDoc">The patch document containing the changes.</param>
         /// <returns>No Content.</returns>
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchMember(uint id, [FromBody] JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
+        public async Task<IActionResult> PatchMember(Guid id, [FromBody] JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
         {
+            if(patchDoc.Operations.Any(op => 
+                op.path.TrimStart('/').ToLower() == "id" || 
+                op.path.TrimStart('/').ToLower() == "keycloakid"))
+            {
+                return BadRequest("Updating 'id' or 'keycloakid' is not allowed.");
+            }
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);    
+
+            bool isUpdatingSensitiveData = patchDoc.Operations.Any(op => 
+                Member.RestrictedFields.Any(field => op.path.TrimStart('/').ToLower().Equals(field)));
+
+            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db);
+            bool isOwnProfile = id == userId;
+
+            if (!isBoard)
+            {
+                if (!isOwnProfile)
+                {
+                    return Forbid("You can only update your own profile.");
+                }
+
+                if (isUpdatingSensitiveData)
+                {
+                    return Forbid("Only board members can update sensitive member details.");
+                }
+            }
+
             if (patchDoc == null)
                 return BadRequest();
 
@@ -209,14 +298,33 @@ namespace Backend.Controllers
             if (member == null)
                 return NotFound();
 
-            patchDoc.ApplyTo(member, ModelState);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            try
+            {
+                patchDoc.ApplyTo(member, ModelState);
 
-            await db.SaveChangesAsync(cancellationToken);
+                if (!ModelState.IsValid)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return BadRequest(ModelState);
+                }
 
-            return NoContent();
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Sync
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while updating the member.");
+            }
         }
 
         // PUT: api/members/5
@@ -227,29 +335,94 @@ namespace Backend.Controllers
         /// <param name="memberDto">The new details of the member.</param>
         /// <returns>The updated member.</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMember(uint id, MemberUpdateDTO memberDto, CancellationToken cancellationToken)
+        public async Task<IActionResult> PutMember(Guid id, MemberUpdateDTO memberDto, CancellationToken cancellationToken)
         {
             Member? member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) return NotFound();
+            
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            member.StudentNumber = memberDto.StudentNumber;
-            member.FirstName = memberDto.FirstName;
-            member.LastName = memberDto.LastName;
-            member.Email = memberDto.Email;
-            member.PhoneNumber = memberDto.PhoneNumber;
-            member.Address = memberDto.Address;
-            member.DateOfBirth = memberDto.DateOfBirth;
-            member.PreferredLanguage = memberDto.PreferredLanguage;
-            member.Notes = memberDto.Notes;
-            member.Gratie = memberDto.Gratie;
-            member.LidVanVerdienste = memberDto.LidVanVerdienste;
-            member.EreLid = memberDto.EreLid;
-            member.Begunstiger = memberDto.Begunstiger;
-            member.Suspended = memberDto.Suspended;
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && id != userId)
+            {
+                return Forbid("Only board members can update members.");
+            }
 
-            await db.SaveChangesAsync(cancellationToken);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            return NoContent();
+            try
+            {
+                member.StudentNumber = memberDto.StudentNumber;
+                member.FirstName = memberDto.FirstName;
+                member.LastName = memberDto.LastName;
+                member.Email = memberDto.Email;
+                member.PhoneNumber = memberDto.PhoneNumber;
+                member.Address = memberDto.Address;
+                member.DateOfBirth = memberDto.DateOfBirth;
+                member.PreferredLanguage = memberDto.PreferredLanguage;
+                member.Notes = memberDto.Notes;
+                member.Gratie = memberDto.Gratie;
+                member.LidVanVerdienste = memberDto.LidVanVerdienste;
+                member.EreLid = memberDto.EreLid;
+                member.Begunstiger = memberDto.Begunstiger;
+                member.Suspended = memberDto.Suspended;
+
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Sync
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                return NoContent();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while updating the member.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO dto, [FromServices] KeycloakAPIService keycloakService)
+        {
+            var member = await db.Members.FirstOrDefaultAsync(m => m.Email == dto.Email);
+            if (member == null || member.KeycloakId == null)
+            {
+                return Ok("If an account exists, a reset email has been sent.");
+            }
+
+            try 
+            {
+                await keycloakService.SendActionEmail(member.KeycloakId.Value, new[] { "UPDATE_PASSWORD" });
+                return Ok("Reset email sent.");
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Error sending reset email.");
+            }
+        }
+
+        [AllowAnonymous]
+        [HttpPost("{id}/resend-activation")]
+        public async Task<IActionResult> ResendActivation(Guid id, [FromServices] KeycloakAPIService keycloakService)
+        {
+            var member = await db.Members.FindAsync(id);
+            if (member == null || member.KeycloakId == null) return NotFound();
+
+            try 
+            {
+                await keycloakService.SendActionEmail(member.KeycloakId.Value, new[] { "UPDATE_PASSWORD", "VERIFY_EMAIL" });
+                return Ok("Activation email resent.");
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("User is disabled"))
+                {
+                    return BadRequest("Account is disabled. Please contact the board.");
+                }
+                return StatusCode(500, "Error resending email.");
+            }
         }
     }
 }

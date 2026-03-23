@@ -3,11 +3,14 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Backend.Utils;
 
 namespace Backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize]
 public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
 {
     // GET: api/studyenrollments
@@ -18,6 +21,13 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<StudyEnrollment>>> GetStudyEnrollments(CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can view study enrollments.");
+        }
+
         var result = await db.StudyEnrollments
             .Select(se => new StudyEnrollmentResponseDTO
             {
@@ -44,6 +54,8 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     [HttpGet("{id}")]
     public async Task<ActionResult<StudyEnrollment>> GetStudyEnrollment(uint id, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
         var result = await db.StudyEnrollments
             .Where(se => se.Id == id)
             .Select(se => new StudyEnrollmentResponseDTO
@@ -61,6 +73,11 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
 
         if (result is null) return NotFound();
 
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && result.MemberId != userId)
+        {
+            return Forbid("Only board members can view study enrollments of others.");
+        }
+
         return Ok(result);
     }
 
@@ -73,6 +90,13 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<StudyEnrollment>> PostStudyEnrollment(PostStudyEnrollmentDTO enrollmentDto, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can create study enrollments.");
+        }
+
         Member? member = await db.Members.FindAsync(enrollmentDto.MemberId, cancellationToken);
         if (member is null)
             return BadRequest($"Member with ID {enrollmentDto.MemberId} does not exist.");
@@ -114,6 +138,13 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteStudyEnrollment(uint id, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can delete study enrollments.");
+        }
+
         var enrollment = await db.StudyEnrollments.FindAsync(id, cancellationToken);
         if (enrollment is null)
             return NotFound();
@@ -133,6 +164,13 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken cancellationToken)
     {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        {
+            return Forbid("Only board members can change study enrollment statuses.");
+        }
+
         var enrollment = await db.StudyEnrollments.FindAsync([id], cancellationToken);
         if (enrollment is null)
             return NotFound();

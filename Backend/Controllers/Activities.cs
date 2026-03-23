@@ -7,11 +7,13 @@ using Backend.Controllers.DTOs;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using Backend.Utils;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class Activities(PostgresDbContext db) : ControllerBase
     {
         // GET: api/activities
@@ -30,11 +32,23 @@ namespace Backend.Controllers
         /// Fetches a single activity.
         /// </summary>
         /// <param name="id">The id of the activity to fetch.</param>
-        /// <returns>The full activity.</returns> // TODO: perhaps replace this with a DTO to prevent exposing unneeded fields?
+        /// <returns>The full activity.</returns>
         [HttpGet("{id}")]
         public async Task<ActionResult<Activity>> GetActivity(uint id)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
             Activity? activity = await db.Activities.FindAsync(id);
+
+            if(activity == null)
+            {
+                return NotFound();
+            }
+
+            if(activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can view past activities.");
+            }
 
             return activity != null ? activity : NotFound();
         }
@@ -48,6 +62,18 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Activity>> PostActivity(PostActivityDTO activityDto)
         {
+            if(activityDto.DateTimeEnd < activityDto.DateTimeStart)
+            {
+                return BadRequest("Activity cannot end before it starts.");
+            }
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if((activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can create activities for public display.");
+            }
+
             IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
 
             try
@@ -117,8 +143,16 @@ namespace Backend.Controllers
         /// <param name="id">The id of the activity to delete.</param>
         /// <returns>Nothing, really.</returns>
         [HttpDelete("{id}")]
+        
         public async Task<IActionResult> DeleteActivity(uint id)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can delete activities.");
+            }
+
             Activity? activity = await db.Activities.FindAsync(id);
             if (activity == null) return NotFound();
 
@@ -150,6 +184,13 @@ namespace Backend.Controllers
             if (activity == null)
                 return NotFound();
 
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if((activity.ShowInKoala || activity.ShowOnWebsite || patchDoc.Operations.Any(op => op.path == "/showInKoala" || op.path == "/showOnWebsite")) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can update activities for public display.");
+            }
+
             patchDoc.ApplyTo(activity, ModelState);
 
             if (!ModelState.IsValid)
@@ -173,6 +214,13 @@ namespace Backend.Controllers
         {
             var activity = await db.Activities.FindAsync(id);
             if (activity == null) return NotFound();
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if((activity.ShowInKoala || activity.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can update activity posters for public display.");
+            }
 
             string? oldPath = activity.PosterPath;
 
@@ -223,6 +271,18 @@ namespace Backend.Controllers
         {
             Activity? activity = await db.Activities.FindAsync(id);
             if (activity == null) return NotFound();
+
+            if(activityDto.DateTimeEnd < activityDto.DateTimeStart)
+            {
+                return BadRequest("Activity cannot end before it starts.");
+            }
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if((activity.ShowInKoala || activity.ShowOnWebsite || activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can update activities for public display.");
+            }
 
             using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
             
@@ -309,6 +369,12 @@ namespace Backend.Controllers
             if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
                 return NotFound("Activity or poster not found.");
 
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can view posters of past activities.");
+            }
+
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), activity.PosterPath);
 
             if (!System.IO.File.Exists(filePath))
@@ -334,6 +400,12 @@ namespace Backend.Controllers
 
             if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
                 return NotFound("Activity or poster not found.");
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can view posters of past activities.");
+            }
 
             var filePath = Path.Combine(Directory.GetCurrentDirectory(), activity.PosterPath);
 
