@@ -35,7 +35,7 @@ public class PostgresDbContext : DbContext
     public DbSet<RoleAlias> RoleAliases { get; set; }
     /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
     public DbSet<KeyCloakOutboxTask> KeyCloakOutboxTasks { get; set; }
-    /// <summary>Reference to the Membership Payments relational table. </summary>
+    /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
     public DbSet<MembershipPayment> MembershipPayments { get; set; }
     /// <summary>Reference to the Activity Payments relational table. </summary>
     public DbSet<EnrollmentPayment> EnrollmentPayments { get; set; }

@@ -62,9 +62,9 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
 
         if (keycloakId != null)
         {
+            await client.PutAsJsonAsync($"users/{keycloakId}", newUser);
             var actions = new[] { "UPDATE_PASSWORD", "VERIFY_EMAIL" };
             var emailResponse = await client.PutAsJsonAsync($"users/{keycloakId}/execute-actions-email", actions);
-            var errorshit = await emailResponse.Content.ReadAsStringAsync();
             emailResponse.EnsureSuccessStatusCode();
             return Guid.Parse(keycloakId);
         }
@@ -88,12 +88,12 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
     {
         var client = httpClientFactory.CreateClient();
         
-        var url = $"{Environment.GetEnvironmentVariable("KeycloakAuthority")}/protocol/openid-connect/token";
+        var url = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}/protocol/openid-connect/token";
         
         var dict = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
-            { "client_id", Environment.GetEnvironmentVariable("KeycloakClientId")! },
+            { "client_id", Environment.GetEnvironmentVariable("KeycloakBackendClientId")! },
             { "client_secret", Environment.GetEnvironmentVariable("KeycloakClientSecret")! }
         };
 
@@ -135,12 +135,12 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             firstName = member.FirstName,
             lastName = member.LastName,
             enabled = true,
-            attributes = new Dictionary<string, string[]> {
-                { "koala_user_id", new[] { member.Id.ToString() } },
-                { "access_level", new [] { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" }},
-                { "member_memberships", memberships ?? [] },
-                { "student_number", new [] { member.StudentNumber.ToString() }},
-                { "preffered_language", new [] { member.PreferredLanguage.ToString() } }
+            attributes = new Dictionary<string, List<string>> {
+                { "koala_user_id", new List<string> { member.Id.ToString() } },
+                { "access_level", new List<string> { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" } },
+                { "member_memberships", memberships?.ToList() ?? new List<string>() },
+                { "student_number", new List<string> { member.StudentNumber.ToString() } },
+                { "locale", new List<string> { member.PreferredLanguage.ToString() } }
             }
         };
     }
