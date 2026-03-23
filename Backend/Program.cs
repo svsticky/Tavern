@@ -4,8 +4,12 @@ using DotNetEnv;
 using Mollie.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using System.IdentityModel.Tokens.Jwt;
 
 Env.Load();
+
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +89,14 @@ builder.Services.AddCors(options =>
                  .AllowAnyMethod());
 });
 
+builder.Services.AddCors(options =>
+   {
+       options.AddDefaultPolicy(policy =>
+           policy.WithOrigins(Environment.GetEnvironmentVariable("HostUrl")!)
+                 .AllowAnyHeader()
+                 .AllowAnyMethod());
+});
+
 
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
@@ -98,6 +110,10 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
+
+app.UseRouting();
+
+app.UseCors();
 
 app.UseRouting();
 
