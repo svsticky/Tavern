@@ -1,30 +1,48 @@
+import { useKeycloak } from "@react-keycloak/web/lib/useKeycloak";
+import { useEffect, useState } from "react";
+import { getApiAnnouncements, type Announcement } from "~/api";
 import AnnouncementsList from "~/components/AnnouncementsList";
-import type { Announcement } from "~/types/Announcement";
+import { NoContentTile } from "~/components/Tiles/NoContentTile";
 
 export default function AnnouncementsPage() {
-  const announcements: Announcement[] = [
-    {
-      id: 1,
-      title: "Nieuwe activiteiten voor december!",
-      announcement:
-        "We hebben een aantal geweldige nieuwe activiteiten toegevoegd voor de maand december. Van sportieve uitdagingen tot gezellige sociale evenementen. Bekijk de activiteitenpagina voor het volledige overzicht.",
-      announcer: "Bestuur",
-      date: new Date(),
-    },
-    {
-      id: 2,
-      title: "Belangrijke wijziging ledenvergadering",
-      announcement:
-        "Let op! De algemene ledenvergadering van 5 december start om 19:00 uur in plaats van 20:00 uur. De locatie blijft hetzelfde: Clubhuis - Grote Zaal. We hopen jullie allemaal te zien!",
-      announcer: "Secretaris",
-      date: new Date(),
-    },
-  ];
+  const {keycloak, initialized} = useKeycloak();
+  
+  const [loading, setLoading] = useState(true);
+
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+
+  useEffect(() => {
+    async function loadData() {
+      if (!initialized || !keycloak.authenticated) return;
+
+      try {
+        setLoading(true);
+        const announcementsResponse = await getApiAnnouncements();
+
+        if (announcementsResponse.data) {
+          setAnnouncements(announcementsResponse.data as Announcement[]);
+        }
+      } catch (error) {
+        console.error("Error while loading data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [initialized, keycloak.authenticated]);
 
   return (
     <div className="flex flex-col gap-5">
       <p className="text-2xl font-bold">Announcements</p>
-      <AnnouncementsList announcements={announcements} />
+      {loading ? (
+        'Loading...'
+      ) : (
+        announcements.length === 0 ? (
+          <NoContentTile text="Er zijn momenteel geen aankondigingen." />
+        ) : (
+          <AnnouncementsList announcements={announcements} />
+        ))}
     </div>
   );
 }

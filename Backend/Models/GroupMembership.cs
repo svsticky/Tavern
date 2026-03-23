@@ -40,10 +40,10 @@ public class GroupMembership
     /// <summary>
     /// The role of the member in this group membership.
     /// </summary>
-    public uint? RoleId { get; set; } = null;
+    public uint? RoleAliasId { get; set; } = null;
 
     /// <summary>
     /// The role of the member in this group membership.
     /// </summary>
-    public Role? Role { get; set; } = null;
+    public RoleAlias? RoleAlias { get; set; } = null;
 }

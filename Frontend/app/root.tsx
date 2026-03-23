@@ -7,31 +7,25 @@ import {
   ScrollRestoration,
   useLoaderData,
 } from "react-router";
+import { ReactKeycloakProvider } from "@react-keycloak/web";
+import Keycloak from "keycloak-js";
+import { useEffect, useState } from "react";
 
 import "./i18n";
-
+import i18n from "./i18n";
+import { client } from "./api/client.gen";
 import type { Route } from "./+types/root";
 import "./app.css";
-import { useEffect, useState } from "react";
-import { client } from "./api/client.gen";
-import i18n from "./i18n";
-import { getSession } from "./sessions.server";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  return {
-    authToken: session.get("auth_token") ?? null,
-  };
-}
+const keycloak = new Keycloak({
+  url: import.meta.env.KeycloakUrl ?? "http://localhost:8085/",
+  realm: import.meta.env.KeycloakRealm ?? "master",
+  clientId: import.meta.env.KeycloakClientId ?? "react",
+});
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
+  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
   {
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
@@ -39,29 +33,25 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { authToken } = useLoaderData<typeof loader>();
+ useEffect(() => {
+    const interceptor = client.instance.interceptors.response.use(
+      (response) => {
+        if (response.status === 200) {
+          console.log(`request to ${response.config.url} was successful`);
+        }
+        return response;
+      },
+      (error) => {
+        if (error.response && error.response.status === 401) {
+          console.log("Unauthorized, redirecting...");
+          window.location.href = "/logout";
+        }
+        return Promise.reject(error);
+      }
+    );
 
-  /**
-   * Configure internal service client using session token
-   * TODO: Get the base url from the .env file
-   */
-  client.setConfig({
-    baseUrl: "http://localhost:8000",
-    headers: {
-      Authorization: authToken ? `Bearer ${authToken}` : undefined,
-    },
-  });
-
-  /**
-   * Interceptor
-   * TODO: if the status code is unauthenticated we redirect the user to the login page
-   */
-  client.interceptors.response.use((response) => {
-    if (response.status === 200) {
-      console.log(`request to ${response.url} was successful`);
-    }
-    return response;
-  });
+    return () => client.instance.interceptors.response.eject(interceptor);
+  }, []);
 
   return (
     <html lang="en">
@@ -81,15 +71,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const [ready, setReady] = useState(false);
+  const [i18nReady, setI18nReady] = useState(false);
 
   useEffect(() => {
-    i18n.on("initialized", () => setReady(true));
+    if (i18n.isInitialized) {
+      setI18nReady(true);
+    } else {
+      const handleInitialized = () => setI18nReady(true);
+      i18n.on("initialized", handleInitialized);
+      return () => i18n.off("initialized", handleInitialized);
+    }
   }, []);
 
-  if (!ready) return null;
+  if (!i18nReady) return null;
 
-  return <Outlet />;
+  return (
+    <ReactKeycloakProvider 
+      authClient={keycloak}
+      initOptions={{ onLoad: 'check-sso' }}
+    >
+      <Outlet />
+    </ReactKeycloakProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

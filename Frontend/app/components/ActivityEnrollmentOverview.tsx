@@ -1,7 +1,8 @@
 import { CircleCheckBig } from "lucide-react";
-import type { Activity } from "~/types/Activity";
 import { formatDate } from "~/util/date.util";
 import { ListTile } from "./Tiles/ListTile";
+import { NoContentTile } from "./Tiles/NoContentTile";
+import type { Activity } from "~/api";
 
 type ActivityEnrollmentOverviewProps = {
   enrolledActivities: Activity[];
@@ -10,6 +11,12 @@ type ActivityEnrollmentOverviewProps = {
 export default function ActivityEnrollmentOverview({
   enrolledActivities,
 }: ActivityEnrollmentOverviewProps) {
+  if(enrolledActivities.length === 0) {
+    return (
+      <NoContentTile text="Je bent momenteel niet ingeschreven voor activiteiten." />
+    );
+  }
+  
   return (
     <ListTile className="w-full">
       {enrolledActivities.map((activity) => (
@@ -21,9 +28,9 @@ export default function ActivityEnrollmentOverview({
 
           {/* Activity Details */}
           <div>
-            <p className="truncate">{activity.title}</p>
+            <p className="truncate">{activity.name}</p>
             <p className="text-gray-500">
-              {formatDate(activity.startdate, "shortDate")}
+              {formatDate(new Date(activity.dateTimeStart ?? new Date()), "shortDate")}
             </p>
           </div>
         </div>

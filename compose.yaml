@@ -1,4 +1,4 @@
-﻿services:
+services:
   tavern-backend:
     container_name: tavern-backend
     restart: unless-stopped

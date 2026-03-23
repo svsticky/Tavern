@@ -21,5 +21,8 @@
   "settings": "Instellingen",
   "members": "Leden",
   "groups": "Groepen",
-  "payments": "Betalingen"
+  "payments": "Betalingen",
+  "loading_dashboard": "Dashboard laden...",
+  "loading": "Laden...",
+  "paying": "Betalen..."
 }

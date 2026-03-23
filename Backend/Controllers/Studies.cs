@@ -4,11 +4,14 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Backend.Utils;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class Studies(PostgresDbContext db) : ControllerBase
     {
         // GET: api/studies
@@ -45,6 +48,13 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Study>> PostStudy(PostStudyDTO study, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can add studies.");
+            }
+
             var newEntry = db.Studies.Add(new Study
             {
                 Title = study.Title,
@@ -69,6 +79,13 @@ namespace Backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteStudy(uint id, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can delete studies.");
+            }
+
             Study? study = await db.Studies.FindAsync(id, cancellationToken);
             if (study == null) return NotFound();
 
@@ -88,6 +105,13 @@ namespace Backend.Controllers
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchStudy(uint id, [FromBody] JsonPatchDocument<Study> patchDoc, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can change studies.");
+            }
+
             if (patchDoc == null)
                 return BadRequest();
 
@@ -115,6 +139,13 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutStudy(uint id, StudyUpdateDTO studyDto, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can change studies.");
+            }
+
             Study? study = await db.Studies.FindAsync(id, cancellationToken);
             if (study == null) return NotFound();
 

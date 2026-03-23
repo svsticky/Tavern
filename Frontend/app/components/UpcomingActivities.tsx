@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { Activity } from "~/types/Activity";
 import { cn } from "~/util/tailwind.util";
 import ActivityTile from "./Tiles/ActivityTile";
+import type { Activity } from "~/api";
+import Tile from "./Tiles/Tile";
+import { NoContentTile } from "./Tiles/NoContentTile";
 
 interface UpcomingActivitiesProps {
   activities: Activity[];
@@ -45,6 +47,12 @@ export default function UpcomingActivities({
       observer.disconnect();
     };
   }, [activities]);
+
+  if (activities.length === 0) {
+    return (
+      <NoContentTile text="Er zijn momenteel geen aankomende activiteiten." />
+    );
+  }
 
   return (
     <div

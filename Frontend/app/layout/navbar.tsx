@@ -1,3 +1,4 @@
+import { useKeycloak } from "@react-keycloak/web";
 import {
   Bell,
   CalendarDays,
@@ -5,20 +6,23 @@ import {
   SquareArrowOutUpRight,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Outlet } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-
-const profileOptions = {
-  username: "JohnDoe",
-  avatarUrl: "https://cdn.nos.nl/image/2017/07/16/403534/xxl.jpg",
-  options: [
-    { label: "Settings", action: () => alert("Navigating to Settings") },
-    { label: "Logout", action: () => alert("Logging out") },
-  ],
-};
 
 export default function NavBarLayout() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const { keycloak } = useKeycloak();
+
+  const profileOptions = {
+    username: keycloak.tokenParsed?.name || "",
+    avatarUrl: "https://cdn.nos.nl/image/2017/07/16/403534/xxl.jpg",
+    options: [
+      { label: "Settings", action: () => navigate("/settings") },
+      { label: "Logout", action: () => navigate("/logout") },
+    ],
+  };
 
   const navBarItems = [
     {
@@ -49,8 +53,8 @@ export default function NavBarLayout() {
 
   return (
     <div className="min-w-[415px]">
-      <NavBar className="px-[10%]" maxWidthBeforeCompact={1046}>
-        <NavBar.Branding title="Sticky" />
+      <NavBar className="px-[10%]" maxWidthBeforeCompact={900 + profileOptions.username.length * 17}>
+        <NavBar.Branding title="" />
         {navBarItems.map((item) => (
           <NavBar.Item key={item.id} item={item} />
         ))}

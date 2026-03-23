@@ -1,5 +1,6 @@
 import type { CommitteeEnrollment } from "~/types/CommitteeEnrollment";
 import { ListTile } from "./Tiles/ListTile";
+import { NoContentTile } from "./Tiles/NoContentTile";
 
 type CommitteeEnrollmentOverviewProps = {
   committeeEnrollments: CommitteeEnrollment[];
@@ -8,6 +9,12 @@ type CommitteeEnrollmentOverviewProps = {
 export default function CommitteeEnrollmentOverview({
   committeeEnrollments,
 }: CommitteeEnrollmentOverviewProps) {
+  if(committeeEnrollments.length === 0) {
+    return (
+      <NoContentTile text="Je bent momenteel niet ingeschreven voor commissies." />
+    );
+  }
+
   return (
     <ListTile className="w-full">
       {committeeEnrollments.map((committee) => (

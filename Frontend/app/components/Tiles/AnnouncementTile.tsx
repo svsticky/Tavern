@@ -1,8 +1,8 @@
 import { Calendar, Megaphone } from "lucide-react";
-import type { Announcement } from "~/types/Announcement";
 import { formatDate } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
+import type { Announcement } from "~/api";
 
 type AnnouncementTileProps = {
   announcement: Announcement;
@@ -20,12 +20,12 @@ export default function AnnouncementTile({
         <p className="mb-2">{announcement.title}</p>
         <p className="flex gap-1 text-sm text-nowrap text-gray-600">
           <Calendar className="h-5" />
-          {formatDate(announcement.date, "defaultDate")}
+          {formatDate(new Date(announcement.createdAt ?? new Date()), "defaultDate")}
         </p>
       </div>
 
       {/* Announcement content */}
-      <p className="text-gray-600">{announcement.announcement}</p>
+      <p className="text-gray-600">{announcement.content}</p>
 
       {/* Divider */}
       <div className="my-2 h-[0.5px] w-full bg-gray-200" />
@@ -33,7 +33,7 @@ export default function AnnouncementTile({
       {/* Announcer */}
       <p className="flex items-center gap-2 text-gray-600">
         <Megaphone className="h-5" />
-        {announcement.announcer}
+        {`${announcement.createdBy?.firstName} ${announcement.createdBy?.lastName}`}
       </p>
     </Tile>
   );

@@ -4,11 +4,14 @@ using Backend.Database;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Microsoft.AspNetCore.Authorization;
+using Backend.Utils;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class Groups(PostgresDbContext db) : ControllerBase
     {
         // GET: api/groups
@@ -19,6 +22,13 @@ namespace Backend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Group>>> GetGroups(CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can view groups.");
+            }
+
             var result = await db.Groups
                 .Select(c => new GroupResponseDTO
                 {
@@ -33,8 +43,8 @@ namespace Backend.Controllers
                         MemberId = cm.MemberId,
                         MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
                         MembershipYear = cm.MembershipYear,
-                        RoleId = cm.Role != null ? cm.Role.Id : null,
-                        RoleName = cm.Role != null ? cm.Role.Name : null
+                        RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
+                        RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
                     }).ToList()
                 })
                 .ToListAsync(cancellationToken);
@@ -68,8 +78,8 @@ namespace Backend.Controllers
                         MemberId = gm.MemberId,
                         MemberName = $"{gm.Member.FirstName} {gm.Member.LastName}",
                         MembershipYear = gm.MembershipYear,
-                        RoleId = gm.Role != null ? gm.Role.Id : null,
-                        RoleName = gm.Role != null ? gm.Role.Name : null
+                        RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
+                        RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
                     }).ToList()
                 })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -88,6 +98,13 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Group>> PostGroup(PostGroupDTO groupDto, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can create groups.");
+            }
+
             var newEntry = db.Groups.Add(new Group
             {
                 Name = groupDto.Name,
@@ -111,6 +128,13 @@ namespace Backend.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can delete groups.");
+            }
+
             Group? group = await db.Groups.FindAsync(id, cancellationToken);
             if (group == null) return NotFound();
 
@@ -120,24 +144,31 @@ namespace Backend.Controllers
             return NoContent();
         }
 
-        // PATCH: api/activities/5
+        // PATCH: api/groups/5
         /// <summary>
-        /// Partially updates an activity's details.
+        /// Partially updates an groups details.
         /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
+        /// <param name="id">The id of the group to update.</param>
         /// <param name="patchDoc">The patch document containing the changes.</param>
         /// <returns>No Content.</returns>
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken cancellationToken)
+        public async Task<IActionResult> PatchGroup(uint id, [FromBody] JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can update groups.");
+            }
+
             if (patchDoc == null)
                 return BadRequest();
 
-            Activity? activity = await db.Activities.FindAsync(new object[] { id }, cancellationToken);
-            if (activity == null)
+            Group? group = await db.Groups.FindAsync(new object[] { id }, cancellationToken);
+            if (group == null)
                 return NotFound();
 
-            patchDoc.ApplyTo(activity, ModelState);
+            patchDoc.ApplyTo(group, ModelState);
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -157,6 +188,13 @@ namespace Backend.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutGroup(uint id, GroupUpdateDTO groupDto, CancellationToken cancellationToken)
         {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            {
+                return Forbid("Only board members can update groups.");
+            }
+
             Group? group = await db.Groups.FindAsync(id, cancellationToken);
             if (group == null) return NotFound();
 

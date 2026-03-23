@@ -11,10 +11,17 @@ public enum Language { NL, EN }
 [Index(nameof(Email), IsUnique = true)]
 public class Member
 {
+    public static readonly string[] RestrictedFields = new[] { "id", "studentnumber", "firstname", "lastname", "dateofbirth", "notes", "registeredon", "gratie", "lidvanverdienste", "erelid", "begunstiger", "suspended" };
+
     /// <summary>
     /// The unique identifier of a member, assigned incrementally.
     /// </summary>
     public Guid Id { get; set; }
+
+    /// <summary>
+    /// The keycloak id of the member, used for authentication and authorization.
+    /// </summary>
+    public Guid? KeycloakId { get; set; }
 
     /// <summary>
     /// The student number of the member.
@@ -112,4 +119,9 @@ public class Member
     /// Indicates whether the member is suspended.
     /// </summary>
     public bool Suspended { get; set; } = false;
+
+    /// <summary>
+    /// The announcements created by this member.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
 }

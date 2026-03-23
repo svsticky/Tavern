@@ -21,5 +21,8 @@
   "settings": "Settings",
   "members": "Members",
   "groups": "Groups",
-  "payments": "Payments"
+  "payments": "Payments",
+  "loading_dashboard": "Loading dashboard...",
+  "loading": "Loading...",
+  "paying": "Paying..."
 }

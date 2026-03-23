@@ -7,7 +7,7 @@ type MenuBrandingProps = {
 };
 
 export default function MenuBranding({
-  icon = images.sticky_logo_head_white,
+  icon = images.sticky_logo_compact_white,
   title = "Sticky",
 }: MenuBrandingProps) {
   return (

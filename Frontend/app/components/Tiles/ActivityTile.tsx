@@ -1,9 +1,9 @@
 import { Calendar, MapPin, UsersRound } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { Activity } from "~/types/Activity";
 import { formatDate } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
+import type { Activity } from "~/api";
 
 type ActivityTileProps = {
   activity: Activity;
@@ -25,8 +25,7 @@ export default function ActivityTile({
     >
       {/* Poster image */}
       <img
-        src={activity.image}
-        alt={activity.title}
+        alt={activity.name ?? ""}
         className="w-full rounded-t-2xl transition-transform duration-300 group-hover:scale-105"
       />
 
@@ -35,10 +34,10 @@ export default function ActivityTile({
         {/* Title and price */}
         <div className="mb-1 mt-1.5 flex w-full justify-between text-[18px] font-bold">
           <p className="transition-colors duration-300 group-hover:text-(--board-primary) truncate">
-            {activity.title}
+            {activity.name}
           </p>
           <p className="text-nowrap text-(--board-primary)">
-            {activity.price > 0 ? `€${activity.price}` : t("free")}
+            {activity.price ?? 0 > 0 ? `€${activity.price}` : t("free")}
           </p>
         </div>
 
@@ -46,9 +45,9 @@ export default function ActivityTile({
           {/* Date and time */}
           <div className="mt-1 flex items-center gap-1.5">
             <Calendar size={12} />
-            {activity.startdate.getDate()}{" "}
-            {formatDate(activity.startdate, "monthShort")} •{" "}
-            {formatDate(activity.startdate, "timeOnly")}
+            {new Date(activity.dateTimeStart ?? new Date()).getDate()}{" "}
+            {formatDate(new Date(activity.dateTimeStart ?? new Date()), "monthShort")} •{" "}
+            {formatDate(new Date(activity.dateTimeStart ?? new Date()), "timeOnly")}
           </div>
 
           {/* Location */}
@@ -60,7 +59,7 @@ export default function ActivityTile({
           {/* Available spots */}
           <div className="mt-1 flex items-center gap-1.5">
             <UsersRound size={12} />
-            {activity.maxParticipants - activity.numberOfParticipants}{" "}
+            {activity.participantLimit ?? 0 - (activity.enrollments?.length ?? 0)}{" "}
             {t("places_available")}
           </div>
         </div>

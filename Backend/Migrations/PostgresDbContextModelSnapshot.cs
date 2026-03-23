@@ -30,25 +30,125 @@ namespace Backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
+                    b.Property<long>("AllowedAudience")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("AreParticipantsVisible")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("CostCenterId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CostUnitId")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset>("DateTimeEnd")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTimeOffset>("DateTimeStart")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("Description")
+                    b.Property<string>("DutchDescription")
                         .IsRequired()
-                        .HasMaxLength(240)
-                        .HasColumnType("character varying(240)");
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("EnglishDescription")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset?>("EnrollmentDeadline")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GLAccountId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsAdultOnly")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsEnrollable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOpenForPayment")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Location")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<long?>("OrganizerId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ParticipantLimit")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PosterFileName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PosterPath")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("ShowInKoala")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("ShowOnWebsite")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset?>("UnenrollmentDeadline")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long?>("VatRate")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("OrganizerId");
+
                     b.ToTable("Activities");
+                });
+
+            modelBuilder.Entity("Backend.Models.Announcement", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("CreatedById")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("CreatedById1")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById1");
+
+                    b.ToTable("Announcements");
                 });
 
             modelBuilder.Entity("Backend.Models.Enrollment", b =>
@@ -59,11 +159,51 @@ namespace Backend.Migrations
                     b.Property<Guid>("MemberId")
                         .HasColumnType("uuid");
 
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric(18,2)");
+
                     b.HasKey("ActivityId", "MemberId");
 
                     b.HasIndex("MemberId");
 
                     b.ToTable("Enrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.EnrollmentPayment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ActivityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MollieId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaidAt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentIntentUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivityId");
+
+                    b.HasIndex("MemberId");
+
+                    b.ToTable("EnrollmentPayments");
                 });
 
             modelBuilder.Entity("Backend.Models.Group", b =>
@@ -107,7 +247,7 @@ namespace Backend.Migrations
                     b.Property<long>("MembershipYear")
                         .HasColumnType("bigint");
 
-                    b.Property<long?>("RoleId")
+                    b.Property<long?>("RoleAliasId")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
@@ -116,7 +256,7 @@ namespace Backend.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.HasIndex("RoleId");
+                    b.HasIndex("RoleAliasId");
 
                     b.ToTable("GroupMemberships");
                 });
@@ -153,6 +293,9 @@ namespace Backend.Migrations
 
                     b.Property<bool>("Gratie")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("KeycloakId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -193,6 +336,38 @@ namespace Backend.Migrations
                     b.ToTable("Members");
                 });
 
+            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("MemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MollieId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaidAt")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentIntentUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("numeric");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
+
+                    b.ToTable("MembershipPayments");
+                });
+
             modelBuilder.Entity("Backend.Models.Role", b =>
                 {
                     b.Property<long>("Id")
@@ -209,6 +384,99 @@ namespace Backend.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
+                });
+
+            modelBuilder.Entity("Backend.Models.RoleAlias", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<long>("RoleId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("RoleAliases");
+                });
+
+            modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("EnrollmentActivityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("EnrollmentId")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("EnrollmentMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SpecificationQuestionId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpecificationQuestionId");
+
+                    b.HasIndex("EnrollmentActivityId", "EnrollmentMemberId");
+
+                    b.ToTable("SpecificationAnswers");
+                });
+
+            modelBuilder.Entity("Backend.Models.SpecificationQuestion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ActivityId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsMandatory")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPublic")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("QuestionDutch")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("QuestionEnglish")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivityId");
+
+                    b.ToTable("SpecificationQuestions");
                 });
 
             modelBuilder.Entity("Backend.Models.Study", b =>
@@ -267,6 +535,51 @@ namespace Backend.Migrations
                     b.ToTable("StudyEnrollments");
                 });
 
+            modelBuilder.Entity("KeyCloakOutboxTask", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("KeycoakId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TaskType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("KeyCloakOutboxTasks");
+                });
+
+            modelBuilder.Entity("Backend.Models.Activity", b =>
+                {
+                    b.HasOne("Backend.Models.Group", "Organizer")
+                        .WithMany()
+                        .HasForeignKey("OrganizerId");
+
+                    b.Navigation("Organizer");
+                });
+
+            modelBuilder.Entity("Backend.Models.Announcement", b =>
+                {
+                    b.HasOne("Backend.Models.Member", "CreatedBy")
+                        .WithMany("Announcements")
+                        .HasForeignKey("CreatedById1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+                });
+
             modelBuilder.Entity("Backend.Models.Enrollment", b =>
                 {
                     b.HasOne("Backend.Models.Activity", "Activity")
@@ -277,6 +590,25 @@ namespace Backend.Migrations
 
                     b.HasOne("Backend.Models.Member", "Member")
                         .WithMany("Enrollments")
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Activity");
+
+                    b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("Backend.Models.EnrollmentPayment", b =>
+                {
+                    b.HasOne("Backend.Models.Activity", "Activity")
+                        .WithMany()
+                        .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany()
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -300,16 +632,78 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.Role", "Role")
+                    b.HasOne("Backend.Models.RoleAlias", "RoleAlias")
                         .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("RoleAliasId");
 
                     b.Navigation("Group");
 
                     b.Navigation("Member");
 
+                    b.Navigation("RoleAlias");
+                });
+
+            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
+                {
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("Backend.Models.RoleAlias", b =>
+                {
+                    b.HasOne("Backend.Models.Role", "Role")
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
+                {
+                    b.HasOne("Backend.Models.Member", "Member")
+                        .WithMany()
+                        .HasForeignKey("MemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Member");
+                });
+
+            modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
+                {
+                    b.HasOne("Backend.Models.SpecificationQuestion", "Question")
+                        .WithMany()
+                        .HasForeignKey("SpecificationQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Models.Enrollment", "Enrollment")
+                        .WithMany("SpecificationAnswers")
+                        .HasForeignKey("EnrollmentActivityId", "EnrollmentMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Enrollment");
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("Backend.Models.SpecificationQuestion", b =>
+                {
+                    b.HasOne("Backend.Models.Activity", "Activity")
+                        .WithMany("SpecificationQuestions")
+                        .HasForeignKey("ActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Activity");
                 });
 
             modelBuilder.Entity("Backend.Models.StudyEnrollment", b =>
@@ -334,6 +728,13 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.Activity", b =>
                 {
                     b.Navigation("Enrollments");
+
+                    b.Navigation("SpecificationQuestions");
+                });
+
+            modelBuilder.Entity("Backend.Models.Enrollment", b =>
+                {
+                    b.Navigation("SpecificationAnswers");
                 });
 
             modelBuilder.Entity("Backend.Models.Group", b =>
@@ -343,6 +744,8 @@ namespace Backend.Migrations
 
             modelBuilder.Entity("Backend.Models.Member", b =>
                 {
+                    b.Navigation("Announcements");
+
                     b.Navigation("Enrollments");
 
                     b.Navigation("GroupMemberships");

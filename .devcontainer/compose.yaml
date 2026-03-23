@@ -12,6 +12,8 @@ services:
     # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
     # Ports will be exposed through the devcontainer.json, trust
     network_mode: service:db
+    env_file:
+      - .env
 
   db:
     image: postgres:17
