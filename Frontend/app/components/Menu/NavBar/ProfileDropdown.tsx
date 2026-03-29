@@ -85,7 +85,7 @@ export default function ProfileDropdown({
             ${
               compact
                 ? "w-full"
-                : "absolute right-0 mt-3 min-w-40 bg-white rounded-lg"
+                : "absolute right-0 mt-3 min-w-40 bg-white rounded-lg shadow-lg"
             }
           `}
         >

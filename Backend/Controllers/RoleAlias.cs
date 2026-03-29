@@ -54,7 +54,7 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can post role aliases.");
         }
@@ -83,7 +83,7 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can delete role aliases.");
         }
@@ -102,10 +102,10 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
 
             db.RoleAliases.Remove(roleAlias);
 
-            foreach (var memberId in affectedMembers)
+            foreach (var keycloakId in affectedMembers)
             {
                 db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
-                    KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found in affected members list."),
+                    KeycoakId = keycloakId ?? throw new Exception("Member with null KeycloakId found in affected members list."),
                     TaskType = KeycloakTaskType.Sync
                 });
             }
@@ -131,7 +131,7 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can change role aliases.");
         }
@@ -145,7 +145,14 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
         try
         {
             patchDoc.ApplyTo(roleAlias, ModelState);
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            TryValidateModel(roleAlias);
+
+            if (!ModelState.IsValid) 
+            {                
+                await transaction.RollbackAsync(cancellationToken);
+                return BadRequest(ModelState);
+            }
 
             var affectedMembers = await db.GroupMemberships
                 .Where(gm => gm.RoleAliasId == id)
@@ -182,7 +189,7 @@ public class RoleAliases(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can change role aliases.");
         }

@@ -1,4 +1,5 @@
 import { useKeycloak } from "@react-keycloak/web/lib/useKeycloak";
+import { t } from "i18next";
 import { useEffect, useState } from "react";
 import { getApiAnnouncements, type Announcement } from "~/api";
 import AnnouncementsList from "~/components/AnnouncementsList";
@@ -36,7 +37,7 @@ export default function AnnouncementsPage() {
     <div className="flex flex-col gap-5">
       <p className="text-2xl font-bold">Announcements</p>
       {loading ? (
-        'Loading...'
+        t("loading")
       ) : (
         announcements.length === 0 ? (
           <NoContentTile text="Er zijn momenteel geen aankondigingen." />

@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { DeleteApiActivitiesByIdData, DeleteApiActivitiesByIdResponses, DeleteApiAnnouncementsByIdData, DeleteApiAnnouncementsByIdResponses, DeleteApiEnrollmentsByActivityIdByMemberIdData, DeleteApiEnrollmentsByActivityIdByMemberIdResponses, DeleteApiGroupmembershipsByIdData, DeleteApiGroupmembershipsByIdResponses, DeleteApiGroupsByIdData, DeleteApiGroupsByIdResponses, DeleteApiMembersByIdData, DeleteApiMembersByIdResponses, DeleteApiRolealiasesByIdData, DeleteApiRolealiasesByIdResponses, DeleteApiRolesByIdData, DeleteApiRolesByIdResponses, DeleteApiStudiesByIdData, DeleteApiStudiesByIdResponses, DeleteApiStudyenrollmentsByIdData, DeleteApiStudyenrollmentsByIdResponses, GetApiActivitiesByIdData, GetApiActivitiesByIdPosterData, GetApiActivitiesByIdPosterDownloadData, GetApiActivitiesByIdPosterDownloadResponses, GetApiActivitiesByIdPosterResponses, GetApiActivitiesByIdResponses, GetApiActivitiesData, GetApiActivitiesResponses, GetApiAnnouncementsByIdData, GetApiAnnouncementsByIdResponses, GetApiAnnouncementsData, GetApiAnnouncementsResponses, GetApiEnrollmentsByActivityIdByMemberIdData, GetApiEnrollmentsByActivityIdByMemberIdResponses, GetApiEnrollmentsData, GetApiEnrollmentsResponses, GetApiGroupmembershipsByIdData, GetApiGroupmembershipsByIdResponses, GetApiGroupmembershipsData, GetApiGroupmembershipsResponses, GetApiGroupsByIdData, GetApiGroupsByIdResponses, GetApiGroupsData, GetApiGroupsResponses, GetApiMembersByIdData, GetApiMembersByIdResponses, GetApiMembersData, GetApiMembersResponses, GetApiPaymentsEnrollmentByIdData, GetApiPaymentsEnrollmentByIdResponses, GetApiPaymentsEnrollmentData, GetApiPaymentsEnrollmentResponses, GetApiPaymentsMemberByMemberIdStatusData, GetApiPaymentsMemberByMemberIdStatusResponses, GetApiPaymentsMembershipByIdData, GetApiPaymentsMembershipByIdResponses, GetApiPaymentsMembershipData, GetApiPaymentsMembershipResponses, GetApiPaymentsOverpaidData, GetApiPaymentsOverpaidResponses, GetApiPaymentsUnpaidData, GetApiPaymentsUnpaidResponses, GetApiRolealiasesByIdData, GetApiRolealiasesByIdResponses, GetApiRolealiasesData, GetApiRolealiasesResponses, GetApiRolesByIdData, GetApiRolesByIdResponses, GetApiRolesData, GetApiRolesResponses, GetApiStudiesByIdData, GetApiStudiesByIdResponses, GetApiStudiesData, GetApiStudiesResponses, GetApiStudyenrollmentsByIdData, GetApiStudyenrollmentsByIdResponses, GetApiStudyenrollmentsData, GetApiStudyenrollmentsResponses, PatchApiActivitiesByIdData, PatchApiActivitiesByIdResponses, PatchApiAnnouncementsByIdData, PatchApiAnnouncementsByIdResponses, PatchApiAnnouncementsByIdTitleData, PatchApiAnnouncementsByIdTitleResponses, PatchApiEnrollmentsByActivityIdByMemberIdData, PatchApiEnrollmentsByActivityIdByMemberIdResponses, PatchApiGroupmembershipsByIdData, PatchApiGroupmembershipsByIdResponses, PatchApiGroupsByIdData, PatchApiGroupsByIdResponses, PatchApiMembersByIdData, PatchApiMembersByIdResponses, PatchApiRolealiasesByIdData, PatchApiRolealiasesByIdResponses, PatchApiRolesByIdData, PatchApiRolesByIdResponses, PatchApiStudiesByIdData, PatchApiStudiesByIdResponses, PatchApiStudyenrollmentsByIdStatusData, PatchApiStudyenrollmentsByIdStatusResponses, PostApiActivitiesByIdPosterData, PostApiActivitiesByIdPosterResponses, PostApiActivitiesData, PostApiActivitiesResponses, PostApiAnnouncementsData, PostApiAnnouncementsResponses, PostApiEnrollmentsData, PostApiEnrollmentsResponses, PostApiGroupmembershipsData, PostApiGroupmembershipsResponses, PostApiGroupsData, PostApiGroupsResponses, PostApiMembersByIdResendActivationData, PostApiMembersByIdResendActivationResponses, PostApiMembersData, PostApiMembersForgotPasswordData, PostApiMembersForgotPasswordResponses, PostApiMembersResponses, PostApiPaymentsActivityData, PostApiPaymentsActivityResponses, PostApiPaymentsMembershipData, PostApiPaymentsMembershipResponses, PostApiPaymentsWebhookData, PostApiPaymentsWebhookResponses, PostApiRolealiasesData, PostApiRolealiasesResponses, PostApiRolesData, PostApiRolesResponses, PostApiStudiesData, PostApiStudiesResponses, PostApiStudyenrollmentsData, PostApiStudyenrollmentsResponses, PutApiActivitiesByIdData, PutApiActivitiesByIdResponses, PutApiAnnouncementsByIdData, PutApiAnnouncementsByIdResponses, PutApiGroupmembershipsByIdData, PutApiGroupmembershipsByIdResponses, PutApiGroupsByIdData, PutApiGroupsByIdResponses, PutApiMembersByIdData, PutApiMembersByIdResponses, PutApiRolealiasesByIdData, PutApiRolealiasesByIdResponses, PutApiRolesByIdData, PutApiRolesByIdResponses, PutApiStudiesByIdData, PutApiStudiesByIdResponses } from './types.gen';
+import type { DeleteApiActivitiesByIdData, DeleteApiActivitiesByIdResponses, DeleteApiAnnouncementsByIdData, DeleteApiAnnouncementsByIdResponses, DeleteApiEnrollmentsByActivityIdByMemberIdData, DeleteApiEnrollmentsByActivityIdByMemberIdResponses, DeleteApiGroupmembershipsByIdData, DeleteApiGroupmembershipsByIdResponses, DeleteApiGroupsByIdData, DeleteApiGroupsByIdResponses, DeleteApiMembersByIdData, DeleteApiMembersByIdProfilePictureData, DeleteApiMembersByIdProfilePictureResponses, DeleteApiMembersByIdResponses, DeleteApiRolealiasesByIdData, DeleteApiRolealiasesByIdResponses, DeleteApiRolesByIdData, DeleteApiRolesByIdResponses, DeleteApiStudiesByIdData, DeleteApiStudiesByIdResponses, DeleteApiStudyenrollmentsByIdData, DeleteApiStudyenrollmentsByIdResponses, GetApiActivitiesByIdData, GetApiActivitiesByIdPosterData, GetApiActivitiesByIdPosterDownloadData, GetApiActivitiesByIdPosterDownloadResponses, GetApiActivitiesByIdPosterResponses, GetApiActivitiesByIdResponses, GetApiActivitiesData, GetApiActivitiesResponses, GetApiAnnouncementsByIdData, GetApiAnnouncementsByIdResponses, GetApiAnnouncementsData, GetApiAnnouncementsResponses, GetApiEnrollmentsByActivityIdByMemberIdData, GetApiEnrollmentsByActivityIdByMemberIdResponses, GetApiEnrollmentsData, GetApiEnrollmentsResponses, GetApiGroupmembershipsByIdData, GetApiGroupmembershipsByIdResponses, GetApiGroupmembershipsData, GetApiGroupmembershipsResponses, GetApiGroupsByIdData, GetApiGroupsByIdResponses, GetApiGroupsData, GetApiGroupsResponses, GetApiMembersByIdData, GetApiMembersByIdProfilePictureData, GetApiMembersByIdProfilePictureResponses, GetApiMembersByIdResponses, GetApiMembersData, GetApiMembersResponses, GetApiPaymentsEnrollmentByIdData, GetApiPaymentsEnrollmentByIdResponses, GetApiPaymentsEnrollmentData, GetApiPaymentsEnrollmentResponses, GetApiPaymentsMemberByMemberIdStatusData, GetApiPaymentsMemberByMemberIdStatusResponses, GetApiPaymentsMembershipByIdData, GetApiPaymentsMembershipByIdResponses, GetApiPaymentsMembershipData, GetApiPaymentsMembershipResponses, GetApiPaymentsOverpaidData, GetApiPaymentsOverpaidResponses, GetApiPaymentsUnpaidData, GetApiPaymentsUnpaidResponses, GetApiProfilepictureViewByPathData, GetApiProfilepictureViewByPathResponses, GetApiRolealiasesByIdData, GetApiRolealiasesByIdResponses, GetApiRolealiasesData, GetApiRolealiasesResponses, GetApiRolesByIdData, GetApiRolesByIdResponses, GetApiRolesData, GetApiRolesResponses, GetApiStudiesByIdData, GetApiStudiesByIdResponses, GetApiStudiesData, GetApiStudiesResponses, GetApiStudyenrollmentsByIdData, GetApiStudyenrollmentsByIdResponses, GetApiStudyenrollmentsData, GetApiStudyenrollmentsResponses, PatchApiActivitiesByIdData, PatchApiActivitiesByIdResponses, PatchApiAnnouncementsByIdData, PatchApiAnnouncementsByIdResponses, PatchApiAnnouncementsByIdTitleData, PatchApiAnnouncementsByIdTitleResponses, PatchApiEnrollmentsByActivityIdByMemberIdData, PatchApiEnrollmentsByActivityIdByMemberIdResponses, PatchApiGroupmembershipsByIdData, PatchApiGroupmembershipsByIdResponses, PatchApiGroupsByIdData, PatchApiGroupsByIdResponses, PatchApiMembersByIdData, PatchApiMembersByIdResponses, PatchApiRolealiasesByIdData, PatchApiRolealiasesByIdResponses, PatchApiRolesByIdData, PatchApiRolesByIdResponses, PatchApiStudiesByIdData, PatchApiStudiesByIdResponses, PatchApiStudyenrollmentsByIdStatusData, PatchApiStudyenrollmentsByIdStatusResponses, PostApiActivitiesByIdPosterData, PostApiActivitiesByIdPosterResponses, PostApiActivitiesData, PostApiActivitiesResponses, PostApiAnnouncementsData, PostApiAnnouncementsResponses, PostApiEnrollmentsData, PostApiEnrollmentsResponses, PostApiGroupmembershipsData, PostApiGroupmembershipsResponses, PostApiGroupsData, PostApiGroupsResponses, PostApiMembersByIdProfilePictureData, PostApiMembersByIdProfilePictureResponses, PostApiMembersByIdResendActivationData, PostApiMembersByIdResendActivationResponses, PostApiMembersData, PostApiMembersForgotPasswordData, PostApiMembersForgotPasswordResponses, PostApiMembersResponses, PostApiPaymentsActivityData, PostApiPaymentsActivityResponses, PostApiPaymentsMembershipData, PostApiPaymentsMembershipResponses, PostApiPaymentsWebhookData, PostApiPaymentsWebhookResponses, PostApiRolealiasesData, PostApiRolealiasesResponses, PostApiRolesData, PostApiRolesResponses, PostApiStudiesData, PostApiStudiesResponses, PostApiStudyenrollmentsData, PostApiStudyenrollmentsResponses, PutApiActivitiesByIdData, PutApiActivitiesByIdResponses, PutApiAnnouncementsByIdData, PutApiAnnouncementsByIdResponses, PutApiEnrollmentsByActivityIdByMemberIdData, PutApiEnrollmentsByActivityIdByMemberIdResponses, PutApiGroupmembershipsByIdData, PutApiGroupmembershipsByIdResponses, PutApiGroupsByIdData, PutApiGroupsByIdResponses, PutApiMembersByIdData, PutApiMembersByIdResponses, PutApiRolealiasesByIdData, PutApiRolealiasesByIdResponses, PutApiRolesByIdData, PutApiRolesByIdResponses, PutApiStudiesByIdData, PutApiStudiesByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -196,6 +196,16 @@ export const patchApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends b
     }
 });
 
+export const putApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PutApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).put<PutApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/enrollments/{activityId}/{memberId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json-patch+json',
+        ...options.headers
+    }
+});
+
 export const getApiGroupmemberships = <ThrowOnError extends boolean = false>(options?: Options<GetApiGroupmembershipsData, ThrowOnError>) => (options?.client ?? client).get<GetApiGroupmembershipsResponses, unknown, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -365,6 +375,29 @@ export const postApiMembersByIdResendActivation = <ThrowOnError extends boolean 
     ...options
 });
 
+export const deleteApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<DeleteApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/members/{id}/profile-picture',
+    ...options
+});
+
+export const getApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<GetApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).get<GetApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/members/{id}/profile-picture',
+    ...options
+});
+
+export const postApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<PostApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).post<PostApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/members/{id}/profile-picture',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
 export const getApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsMembershipResponses, unknown, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -373,6 +406,7 @@ export const getApiPaymentsMembership = <ThrowOnError extends boolean = false>(o
 });
 
 export const postApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsMembershipResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership',
     ...options,
@@ -404,6 +438,7 @@ export const getApiPaymentsEnrollmentById = <ThrowOnError extends boolean = fals
 });
 
 export const postApiPaymentsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsActivityResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/activity',
     ...options,
@@ -441,6 +476,12 @@ export const getApiPaymentsOverpaid = <ThrowOnError extends boolean = false>(opt
 export const getApiPaymentsMemberByMemberIdStatus = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsMemberByMemberIdStatusData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsMemberByMemberIdStatusResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/member/{memberId}/status',
+    ...options
+});
+
+export const getApiProfilepictureViewByPath = <ThrowOnError extends boolean = false>(options: Options<GetApiProfilepictureViewByPathData, ThrowOnError>) => (options.client ?? client).get<GetApiProfilepictureViewByPathResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/profilepicture/view/{path}',
     ...options
 });
 

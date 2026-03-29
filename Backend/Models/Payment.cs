@@ -12,9 +12,9 @@ public abstract class Payment
 
     public string? PaidAt { get; set; }
 
-    public Guid MemberId { get; set; }
+    public Guid? MemberId { get; set; }
    
-    public Member Member { get; set; } = null!;
+    public Member? Member { get; set; }
 }
 
 public class MembershipPayment : Payment

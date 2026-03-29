@@ -13,12 +13,14 @@ public class Announcement
     /// The title of the announcement.
     /// </summary>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public string Title { get; set; } = null!;
 
     /// <summary>
     /// The content of the announcement.
     /// </summary>
     [StringLength(1000)]
+    [Required(AllowEmptyStrings = false)]
     public string Content { get; set; } = null!;
 
     /// <summary>
@@ -29,7 +31,7 @@ public class Announcement
     /// <summary>
     /// The member id who created the announcement.
     /// </summary>
-    public uint CreatedById { get; set; }
+    public Guid CreatedById { get; set; }
 
     /// <summary>
     /// The member who created the announcement.

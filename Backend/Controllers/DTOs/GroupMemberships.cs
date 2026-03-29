@@ -47,6 +47,17 @@ public class GroupMembershipResponseDTO
     public string? RoleAliasName { get; set; }
 }
 
+public class GroupMembershipSummaryDTO
+{
+    public required MemberSummaryDTO Member { get; set; }
+
+    /// <inheritdoc cref="Models.Group"/>
+    public required string GroupName { get; set; }
+
+    /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
+    public uint MembershipYear { get; set; }
+}
+
 public class GroupMembershipUpdateDTO
 {
     public uint? RoleAliasId { get; set; }

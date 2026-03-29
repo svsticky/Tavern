@@ -5,22 +5,59 @@ import {
   LayoutDashboard,
   SquareArrowOutUpRight,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router";
+import { getApiMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 
 export default function NavBarLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const { keycloak } = useKeycloak();
+  const { keycloak, initialized } = useKeycloak();
+
+  const [imgSrc, setImgSrc] = useState<string>("/profile-picture.svg");
+
+  useEffect(() => {
+      let url: string | null = null;
+      async function loadData() {
+        if (!initialized || !keycloak.authenticated) return;
+  
+        try {
+          var profilePictureResponse = await getApiMembersByIdProfilePicture({
+            path: {
+              id: keycloak.tokenParsed?.UserId ?? 0
+            },
+            responseType: 'blob'
+          })
+        
+          if (profilePictureResponse.data instanceof Blob && profilePictureResponse.status === 200) {
+            url = URL.createObjectURL(profilePictureResponse.data);
+            setImgSrc(url);
+          }
+
+          if(profilePictureResponse.status === 404) {
+            setImgSrc("/profile-picture.svg");
+          }
+        } catch (error) {
+          console.error("Error while loading profile picture:", error);
+        }
+      }
+  
+      loadData();
+
+      return () => {
+        if (url) URL.revokeObjectURL(url);
+      };  
+    }, [initialized, keycloak.authenticated]);
 
   const profileOptions = {
     username: keycloak.tokenParsed?.name || "",
-    avatarUrl: "https://cdn.nos.nl/image/2017/07/16/403534/xxl.jpg",
+    avatarUrl: imgSrc,
     options: [
-      { label: "Settings", action: () => navigate("/settings") },
-      { label: "Logout", action: () => navigate("/logout") },
+      { label: t("settings"), action: () => navigate("/settings") },
+      { label: t("logout"), action: () => navigate("/logout") },
     ],
   };
 
@@ -52,8 +89,8 @@ export default function NavBarLayout() {
   ];
 
   return (
-    <div className="min-w-[415px]">
-      <NavBar className="px-[10%]" maxWidthBeforeCompact={900 + profileOptions.username.length * 17}>
+    <div className="min-w-[320px]">
+      <NavBar className="px-[5%] sm:px-[10%]" maxWidthBeforeCompact={900 + profileOptions.username.length * 17}>
         <NavBar.Branding title="" />
         {navBarItems.map((item) => (
           <NavBar.Item key={item.id} item={item} />
@@ -62,9 +99,9 @@ export default function NavBarLayout() {
           username={profileOptions.username}
           avatarUrl={profileOptions.avatarUrl}
           options={profileOptions.options}
-        ></NavBar.ProfileDropdown>
+        />
       </NavBar>
-      <main className="px-[10%] py-5">
+      <main className="px-[5%] sm:px-[10%] py-5">
         <Outlet />
       </main>
     </div>

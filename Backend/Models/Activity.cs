@@ -18,6 +18,7 @@ public class Activity
     /// The name of the activity.
     /// </summary>
     [StringLength(120)]
+    [Required(AllowEmptyStrings = false)]
     public string Name { get; set; }
 
     /// <summary>

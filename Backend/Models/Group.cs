@@ -23,6 +23,7 @@ public class Group
     /// The name of the Group.
     /// </summary>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public string Name { get; set; }
 
     /// <summary>
@@ -42,7 +43,10 @@ public class Group
     public GroupType Type { get; set; }
 }
 
-public enum PredefinedGroup : uint
+public static class PredefinedGroups
 {
-    Board = 0,
+    public static uint Board =>
+        Environment.GetEnvironmentVariable("BOARD_GROUP_ID") is string id
+            ? uint.Parse(id)
+            : 1;
 }

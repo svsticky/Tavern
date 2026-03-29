@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
+using Backend.Interfaces;
+using Amazon.S3;
 
 Env.Load();
 
@@ -19,6 +21,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
         options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var token = context.Request.Cookies["access_token"];
+
+                if (!string.IsNullOrEmpty(token))
+                {
+                    context.Token = token;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+        
         options.RequireHttpsMetadata = false;
         
         options.TokenValidationParameters = new TokenValidationParameters
@@ -29,11 +47,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = Environment.GetEnvironmentVariable("KeycloakUrl") + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
         };
     });
-
-builder.Services.AddHttpClient("KeycloakAdmin", client =>
-{
-    client.BaseAddress = new Uri($"{Environment.GetEnvironmentVariable("KeycloakUrl")}/admin/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}");
-});
 
 builder.Services.AddScoped<KeycloakAPIService>();
 
@@ -86,7 +99,8 @@ builder.Services.AddCors(options =>
        options.AddDefaultPolicy(policy =>
            policy.WithOrigins(Environment.GetEnvironmentVariable("HostUrl")!)
                  .AllowAnyHeader()
-                 .AllowAnyMethod());
+                 .AllowAnyMethod()
+                 .AllowCredentials());
 });
 
 builder.Services.AddCors(options =>
@@ -97,10 +111,29 @@ builder.Services.AddCors(options =>
                  .AllowAnyMethod());
 });
 
-
+builder.Services.AddHostedService<GroupInitializer>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddHostedService<KeycloakOutboxWorker>();
+var awsOptions = builder.Configuration.GetAWSOptions();
+
+builder.Services.AddDefaultAWSOptions(awsOptions);
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var s3Config = new AmazonS3Config
+    {
+        ServiceURL = Environment.GetEnvironmentVariable("S3_SERVICE_URL") ?? "http://localstack:4566",
+        ForcePathStyle = true,
+        AuthenticationRegion = "us-east-1"
+    };
+
+    return new AmazonS3Client("test", "test", s3Config);
+});
+
+builder.Services.AddScoped<IStorageService, S3StorageService>();
+builder.Services.AddScoped<IFileCompressor, FileCompressor>();
+builder.Services.AddScoped<IStorageService, S3StorageService>();
+builder.Services.AddScoped<IFileCompressor, FileCompressor>();
 
 WebApplication app = builder.Build();
 
@@ -110,10 +143,6 @@ if (app.Environment.IsDevelopment())
 	app.UseSwagger();
 	app.UseSwaggerUI();
 }
-
-app.UseRouting();
-
-app.UseCors();
 
 app.UseRouting();
 

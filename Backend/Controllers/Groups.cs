@@ -20,13 +20,13 @@ namespace Backend.Controllers
         /// </summary>
         /// <returns>Said list.</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Group>>> GetGroups(CancellationToken cancellationToken)
+        public async Task<ActionResult<IEnumerable<GroupResponseDTO>>> GetGroups([FromQuery] GetGroupDTO dto, CancellationToken cancellationToken)
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if((dto.MembershipYear == null || dto.IncludeInactive) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can view groups.");
+                return Forbid();
             }
 
             var result = await db.Groups
@@ -34,17 +34,16 @@ namespace Backend.Controllers
                 {
                     Id = c.Id,
                     Name = c.Name,
-                    GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipResponseDTO
+                    GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipSummaryDTO
                     {
-                        Id = cm.Id,
-                        GroupId = cm.GroupId,
-                        GroupName = cm.Group.Name,
-                        GroupType = cm.Group.Type,
-                        MemberId = cm.MemberId,
-                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                        MembershipYear = cm.MembershipYear,
-                        RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
-                        RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
+                        Member = new MemberSummaryDTO
+                        {
+                            Id = cm.Member.Id,
+                            FirstName = cm.Member.FirstName,
+                            LastName = cm.Member.LastName,
+                        },
+                        GroupName = c.Name,
+                        MembershipYear = cm.MembershipYear
                     }).ToList()
                 })
                 .ToListAsync(cancellationToken);
@@ -59,7 +58,7 @@ namespace Backend.Controllers
         /// <param name="id">The id of the group to fetch.</param>
         /// <returns>The full group.</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Group>> GetGroup(uint id, CancellationToken cancellationToken)
+        public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
         {
             var result = await db.Groups
                 .Where(g => g.Id == id)
@@ -69,17 +68,16 @@ namespace Backend.Controllers
                     Name = g.Name,
                     Active = g.Active,
                     Type = g.Type,
-                    GroupMemberships = g.GroupMemberships.Select(gm => new GroupMembershipResponseDTO
+                    GroupMemberships = g.GroupMemberships.Select(gm => new GroupMembershipSummaryDTO
                     {
-                        Id = gm.Id,
-                        GroupId = gm.GroupId,
+                        Member = new MemberSummaryDTO
+                        {
+                            Id = gm.Member.Id,
+                            FirstName = gm.Member.FirstName,
+                            LastName = gm.Member.LastName
+                        },
                         GroupName = g.Name,
-                        GroupType = g.Type,
-                        MemberId = gm.MemberId,
-                        MemberName = $"{gm.Member.FirstName} {gm.Member.LastName}",
-                        MembershipYear = gm.MembershipYear,
-                        RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
-                        RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
+                        MembershipYear = gm.MembershipYear
                     }).ToList()
                 })
                 .FirstOrDefaultAsync(cancellationToken);
@@ -100,9 +98,14 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can create groups.");
+            }
+
+            if(groupDto.Name.Contains(';') || groupDto.Name.Contains(':'))
+            {
+                return BadRequest("Group names cannot contain ';' or ':'.");
             }
 
             var newEntry = db.Groups.Add(new Group
@@ -130,7 +133,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can delete groups.");
             }
@@ -156,7 +159,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can update groups.");
             }
@@ -164,14 +167,21 @@ namespace Backend.Controllers
             if (patchDoc == null)
                 return BadRequest();
 
-            Group? group = await db.Groups.FindAsync(new object[] { id }, cancellationToken);
+            Group? group = await db.Groups.FindAsync(new [] { id }, cancellationToken);
             if (group == null)
                 return NotFound();
 
             patchDoc.ApplyTo(group, ModelState);
 
+            TryValidateModel(group);
+
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
+
+            if (group.Name.Contains(';') || group.Name.Contains(':'))
+            {
+                return BadRequest("Group names cannot contain ';' or ':'.");
+            }
 
             await db.SaveChangesAsync(cancellationToken);
 
@@ -190,9 +200,14 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
             
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can update groups.");
+            }
+
+            if(groupDto.Name.Contains(';') || groupDto.Name.Contains(':'))
+            {
+                return BadRequest("Group names cannot contain ';' or ':'.");
             }
 
             Group? group = await db.Groups.FindAsync(id, cancellationToken);

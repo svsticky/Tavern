@@ -8,18 +8,19 @@ namespace Backend.Services;
 
 public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpClientFactory)
 {
-    public async Task SyncMemberInKeyCloak(Guid memberId)
+    public async Task SyncMemberInKeyCloak(Guid keycloakId)
     {
-        var member = await db.Members.FindAsync(memberId);
+        var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
 
         if (member == null)
         {
-            throw new Exception($"Member with id {memberId} not found.");
+            throw new Exception($"Member with id {keycloakId} not found.");
         }
 
         var memberships = await db.GroupMemberships
-            .Where(gm => gm.MemberId == memberId && gm.Group.Active)
-            .Select(gm => $"{gm.MembershipYear}:{gm.Group.Name}:{(gm.RoleAlias != null ? gm.RoleAlias.Id : "")}")
+            .Include(gm => gm.RoleAlias!.Role)
+            .Where(gm => gm.MemberId == member.Id && gm.Group.Active)
+            .Select(gm => $"{gm.MembershipYear}:{gm.Group.Id};{gm.Group.Name}:{(gm.RoleAlias != null ? gm.RoleAlias.Id : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Role.Name : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Name : "")}")
             .ToListAsync();
 
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
@@ -135,7 +136,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
                 { "access_level", new List<string> { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" } },
-                { "member_memberships", memberships?.ToList() ?? new List<string>() },
+                { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } }
             }

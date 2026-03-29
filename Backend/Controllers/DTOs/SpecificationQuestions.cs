@@ -7,10 +7,12 @@ public class SpecificationQuestionDTO
 {    
     /// <inheritdoc cref="SpecificationQuestion.QuestionDutch"/>
     [StringLength(200)]
+    [Required(AllowEmptyStrings = false)]
     public required string QuestionDutch { get; set; }
     
     /// <inheritdoc cref="SpecificationQuestion.QuestionEnglish"/>
     [StringLength(200)]
+    [Required(AllowEmptyStrings = false)]
     public required string QuestionEnglish { get; set; }
     
     /// <inheritdoc cref="SpecificationQuestion.Type"/>
@@ -21,6 +23,9 @@ public class SpecificationQuestionDTO
 
     /// <inheritdoc cref="SpecificationQuestion.Options"/>
     public bool IsPublic { get; set; }
+
+    /// <inheritdoc cref="SpecificationQuestion.Options"/>
+    public List<string>? Options { get; set; }
 }
 
 public class PostSpecificationQuestionDTO : SpecificationQuestionDTO

@@ -1,19 +1,20 @@
 services:
   devcontainer:
     container_name: tavern-devcontainer
-    image: tavern-devcontainer # Overwrites image name, image is build from dockerfile
+    image: tavern-devcontainer
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - ..:/workspaces:cached
-    # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    # Ports will be exposed through the devcontainer.json, trust
-    network_mode: service:db
     env_file:
       - .env
+    networks:
+      - tavern-net
+    depends_on:
+      - db
+      - localstack
 
   db:
     image: postgres:17
@@ -26,6 +27,28 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+    networks:
+      - tavern-net
+
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - PERSISTENCE=1
+      - DATA_DIR=/var/lib/localstack/state
+      - LOCALSTACK_ACKNOWLEDGE_ACCOUNT_REQUIREMENT=1
+    volumes:
+      - ./localstack-setup:/etc/localstack/init/ready.d
+      - ./localstack-data:/var/lib/localstack/state
+    networks:
+      - tavern-net
 
 volumes:
   postgres-data:
+  localstack-data:
+
+networks:
+  tavern-net:
+    driver: bridge

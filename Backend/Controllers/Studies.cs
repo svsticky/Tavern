@@ -50,7 +50,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can add studies.");
             }
@@ -81,7 +81,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can delete studies.");
             }
@@ -107,7 +107,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can change studies.");
             }
@@ -120,6 +120,8 @@ namespace Backend.Controllers
                 return NotFound();
 
             patchDoc.ApplyTo(study, ModelState);
+
+            TryValidateModel(study);
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -141,7 +143,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can change studies.");
             }

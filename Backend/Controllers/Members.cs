@@ -7,13 +7,14 @@ using Backend.Controllers.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Backend.Utils;
 using Backend.Services;
+using Backend.Interfaces;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class Members(PostgresDbContext db) : ControllerBase
+    public class Members(PostgresDbContext db, IStorageService storageService, IFileCompressor fileCompressor) : ControllerBase
     {
         // GET: api/activities
         /// <summary>
@@ -25,7 +26,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can view members.");
             }
@@ -39,8 +40,13 @@ namespace Backend.Controllers
                     LastName = m.LastName,
                     Email = m.Email,
                     PhoneNumber = m.PhoneNumber,
-                    Address = m.Address,
+                    Street = m.Street,
+                    HouseNumber = m.HouseNumber,
+                    PostalCode = m.PostalCode,
+                    City = m.City,
                     DateOfBirth = m.DateOfBirth,
+                    ParentPhoneNumber = m.ParentPhoneNumber,
+                    MailSubscriptions = m.MailSubscriptions,
                     Notes = m.Notes,
                     RegisteredOn = m.RegisteredOn,
                     PreferredLanguage = m.PreferredLanguage,
@@ -84,11 +90,11 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db);
+            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db);
 
             if(!isBoard && id != userId)
             {
-                return Forbid("Only board members can view details of other members.");
+                return Forbid();
             }
 
             var result = await db.Members
@@ -101,8 +107,13 @@ namespace Backend.Controllers
                     LastName = m.LastName,
                     Email = m.Email,
                     PhoneNumber = m.PhoneNumber,
-                    Address = m.Address,
+                    Street = m.Street,
+                    HouseNumber = m.HouseNumber,
+                    PostalCode = m.PostalCode,
+                    City = m.City,
                     DateOfBirth = m.DateOfBirth,
+                    ParentPhoneNumber = m.ParentPhoneNumber,
+                    MailSubscriptions = m.MailSubscriptions,
                     Notes = isBoard ? m.Notes : null,
                     RegisteredOn = m.RegisteredOn,
                     PreferredLanguage = m.PreferredLanguage,
@@ -149,6 +160,12 @@ namespace Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Member>> PostMember(PostMemberDTO memberDto, CancellationToken cancellationToken)
         {
+            // if age < 18: require parent phone number
+            if (memberDto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) && string.IsNullOrEmpty(memberDto.ParentPhoneNumber))
+            {
+                return BadRequest("Parent phone number is required for members under 18.");
+            }
+
             var newMember = new Member
             {
                 StudentNumber = memberDto.StudentNumber,
@@ -156,8 +173,13 @@ namespace Backend.Controllers
                 LastName = memberDto.LastName,
                 Email = memberDto.Email,
                 PhoneNumber = memberDto.PhoneNumber,
-                Address = memberDto.Address,
+                Street = memberDto.Street,
+                HouseNumber = memberDto.HouseNumber,
+                PostalCode = memberDto.PostalCode,
+                City = memberDto.City,
                 DateOfBirth = memberDto.DateOfBirth,
+                ParentPhoneNumber = memberDto.ParentPhoneNumber,
+                MailSubscriptions = memberDto.MailSubscriptions,
                 PreferredLanguage = memberDto.PreferredLanguage,
                 RegisteredOn = DateTimeOffset.UtcNow,
                 StudyEnrollments = new List<StudyEnrollment>()
@@ -179,7 +201,7 @@ namespace Backend.Controllers
                 }
             }
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
@@ -217,7 +239,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && id != userId)
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) && id != userId)
             {
                 return Forbid("Only board members can delete other members.");
             }
@@ -230,7 +252,7 @@ namespace Backend.Controllers
                 return BadRequest("Member has unpaid activities and cannot be deleted.");
             }
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
@@ -275,7 +297,7 @@ namespace Backend.Controllers
             bool isUpdatingSensitiveData = patchDoc.Operations.Any(op => 
                 Member.RestrictedFields.Any(field => op.path.TrimStart('/').ToLower().Equals(field)));
 
-            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db);
+            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db);
             bool isOwnProfile = id == userId;
 
             if (!isBoard)
@@ -298,11 +320,18 @@ namespace Backend.Controllers
             if (member == null)
                 return NotFound();
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            if(member.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) && patchDoc.Operations.Any(op => op.path.TrimStart('/').ToLower() == "parentphonenumber" && string.IsNullOrEmpty(op.value?.ToString())))
+            {
+                return BadRequest("Parent phone number is required for members under 18.");
+            }
+
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
                 patchDoc.ApplyTo(member, ModelState);
+
+                TryValidateModel(member);
 
                 if (!ModelState.IsValid)
                 {
@@ -342,12 +371,33 @@ namespace Backend.Controllers
             
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && id != userId)
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) && id != userId)
             {
                 return Forbid("Only board members can update members.");
             }
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) && 
+                (member.StudentNumber != memberDto.StudentNumber ||
+                member.Email != memberDto.Email ||
+                member.PhoneNumber != memberDto.PhoneNumber ||
+                member.Street != memberDto.Street ||
+                member.HouseNumber != memberDto.HouseNumber ||
+                member.PostalCode != memberDto.PostalCode ||
+                member.City != memberDto.City ||
+                member.DateOfBirth != memberDto.DateOfBirth ||
+                member.ParentPhoneNumber != memberDto.ParentPhoneNumber ||
+                member.PreferredLanguage != memberDto.PreferredLanguage))
+            {
+                return Forbid("Only board members can update these member details.");
+            }
+                
+
+            if (memberDto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) && string.IsNullOrEmpty(memberDto.ParentPhoneNumber))
+            {
+                return BadRequest("Parent phone number is required for members under 18.");
+            }
+
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
@@ -356,8 +406,12 @@ namespace Backend.Controllers
                 member.LastName = memberDto.LastName;
                 member.Email = memberDto.Email;
                 member.PhoneNumber = memberDto.PhoneNumber;
-                member.Address = memberDto.Address;
+                member.Street = memberDto.Street;
+                member.HouseNumber = memberDto.HouseNumber;
+                member.PostalCode = memberDto.PostalCode;
+                member.City = memberDto.City;
                 member.DateOfBirth = memberDto.DateOfBirth;
+                member.ParentPhoneNumber = memberDto.ParentPhoneNumber;
                 member.PreferredLanguage = memberDto.PreferredLanguage;
                 member.Notes = memberDto.Notes;
                 member.Gratie = memberDto.Gratie;
@@ -365,6 +419,7 @@ namespace Backend.Controllers
                 member.EreLid = memberDto.EreLid;
                 member.Begunstiger = memberDto.Begunstiger;
                 member.Suspended = memberDto.Suspended;
+                member.MailSubscriptions = memberDto.MailSubscriptions;
 
                 db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
                 {
@@ -423,6 +478,123 @@ namespace Backend.Controllers
                 }
                 return StatusCode(500, "Error resending email.");
             }
+        }
+
+        // POST: api/members/5/profile-picture
+        /// <summary>
+        /// Uploads or updates a member's profile picture. Only the member themselves or board members can perform this action.
+        /// </summary>
+        /// <param name="id">The id of the member whose profile picture is to be updated.</param>
+        /// <param name="image">The new profile picture. If null, the existing profile picture will be deleted.</param>
+        /// <returns>Ok with the path to the new profile picture, or NoContent if the profile picture was deleted.</returns>
+        [HttpPost("{id}/profile-picture")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadProfilePicture(Guid id, IFormFile? image)
+        {
+            var member = await db.Members.FindAsync(id);
+            if (member == null) return NotFound();
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if (id != userId && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
+            {
+                return Forbid("You can only update your own profile picture.");
+            }
+
+            if (image != null && !ExtensionUtils.IsValidProfilePictureExtension(image))
+            {
+                return BadRequest("Invalid file type. Allowed types are: .jpg, .jpeg, .png, .gif, .pdf");
+            }
+
+            string? oldPath = member.ProfilePicturePath;
+
+            using var transaction = await db.Database.BeginTransactionAsync();
+            try
+            {
+                if (image != null)
+                {
+                    var compressedImage = await fileCompressor.CompressFileAsync(image);
+                    string path = await storageService.SaveFileAsync(compressedImage.Stream, compressedImage.ContentType, "profile-pictures");
+                    member.ProfilePicturePath = path;
+                    member.ProfilePictureFileName = image.FileName;
+                }
+                else
+                {
+                    member.ProfilePicturePath = null;
+                    member.ProfilePictureFileName = null;
+                }
+
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                if (!string.IsNullOrEmpty(oldPath))
+                {
+                    await storageService.DeleteFileAsync("profile-pictures", oldPath);
+                }
+
+                return Ok(new { path = member.ProfilePicturePath });
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, "Error uploading profile picture.");
+            }
+        }
+
+        // GET: api/members/5/profile-picture
+        /// <summary>
+        /// Fetches a member's profile picture. Only the member themselves or board members can perform this action.
+        /// </summary>
+        /// <param name="id">The id of the member whose profile picture is to be fetched.</param>
+        /// <returns>The profile picture file.</returns>
+        [HttpGet("{id}/profile-picture")]
+        public async Task<IActionResult> GetProfilePicture(Guid id)
+        {
+            var member = await db.Members.FindAsync(id);
+
+            if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
+                return NotFound("Member or profile picture not found.");
+
+
+            var file = await storageService.GetFileAsync("profile-pictures", member.ProfilePicturePath);
+            if (file == null)
+            {
+                return NotFound("File is no longer present on the server.");
+            }
+
+            return File(file.Stream, file.ContentType);
+        }
+
+        // DELETE: api/members/5/profile-picture
+        /// <summary>
+        /// Deletes a member's profile picture. Only the member themselves or board members can perform this action.
+        /// </summary>
+        /// <param name="id">The id of the member whose profile picture is to be deleted.</param>
+        /// <returns>No content.</returns>
+        [HttpDelete("{id}/profile-picture")]
+        public async Task<IActionResult> DeleteProfilePicture(Guid id)
+        {
+            var member = await db.Members.FindAsync(id);
+            if (member == null) return NotFound();
+
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            if (id != userId && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
+            {
+                return Forbid("You can only delete your own profile picture.");
+            }
+
+            if (string.IsNullOrEmpty(member.ProfilePicturePath)) return NoContent();
+
+            string oldPath = member.ProfilePicturePath;
+
+            member.ProfilePicturePath = null;
+            member.ProfilePictureFileName = null;
+
+            await db.SaveChangesAsync();
+            await storageService.DeleteFileAsync("profile-pictures", oldPath);
+
+            return NoContent();
         }
     }
 }

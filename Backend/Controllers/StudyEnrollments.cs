@@ -23,7 +23,7 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can view study enrollments.");
         }
@@ -73,7 +73,7 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
 
         if (result is null) return NotFound();
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && result.MemberId != userId)
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) && result.MemberId != userId)
         {
             return Forbid("Only board members can view study enrollments of others.");
         }
@@ -92,7 +92,7 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can create study enrollments.");
         }
@@ -140,7 +140,7 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can delete study enrollments.");
         }
@@ -166,7 +166,7 @@ public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can change study enrollment statuses.");
         }

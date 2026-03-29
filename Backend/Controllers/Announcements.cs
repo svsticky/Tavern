@@ -46,7 +46,7 @@ public class Announcements(PostgresDbContext db) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Announcement>> PostAnnouncement(PostAnnouncementDTO announcementDto, CancellationToken cancellationToken)
     {
-        var createdById = uint.Parse(User.Claims.First(c => c.Type == "member_id").Value!);
+        var createdById = Guid.Parse(User.Claims.First(c => c.Type == "member_id").Value!);
         var newEntry = db.Announcements.Add(new Announcement
         {
             Title = announcementDto.Title,
@@ -81,25 +81,6 @@ public class Announcements(PostgresDbContext db) : ControllerBase
         return NoContent();
     }
 
-    // PATCH: api/announcements/5/title
-    /// <summary>
-    /// Updates an announcement's title.
-    /// </summary>
-    /// <param name="id">The id of the announcement to update.</param>
-    /// <param name="newTitle">The new title of the announcement.</param>
-    /// <returns>No Content.</returns>
-    [HttpPatch("{id}/title")]
-    public async Task<IActionResult> PatchAnnouncementTitle(uint id, [FromBody, StringLength(100)] string newTitle, CancellationToken cancellationToken)
-    {
-        Announcement? announcement = await db.Announcements.FindAsync(id, cancellationToken);
-        if (announcement == null) return NotFound();
-
-        announcement.Title = newTitle;
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
-    }
-
     // PATCH: api/announcements/5
     /// <summary>
     /// Partially updates an announcement's details.
@@ -119,8 +100,7 @@ public class Announcements(PostgresDbContext db) : ControllerBase
 
         patchDoc.ApplyTo(announcement, ModelState);
 
-        if (!TryValidateModel(announcement))
-            return BadRequest(ModelState);
+        TryValidateModel(announcement);
 
         if (!ModelState.IsValid)
             return BadRequest(ModelState);

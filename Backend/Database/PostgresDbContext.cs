@@ -54,5 +54,17 @@ public class PostgresDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<MembershipPayment>()
+            .HasOne(p => p.Member)
+            .WithMany()
+            .HasForeignKey(p => p.MemberId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<EnrollmentPayment>()
+            .HasOne(p => p.Member)
+            .WithMany()
+            .HasForeignKey(p => p.MemberId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

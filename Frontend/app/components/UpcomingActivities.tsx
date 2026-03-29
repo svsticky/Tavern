@@ -1,75 +1,65 @@
 import { useEffect, useRef, useState } from "react";
-import { cn } from "~/util/tailwind.util";
 import ActivityTile from "./Tiles/ActivityTile";
-import type { Activity } from "~/api";
-import Tile from "./Tiles/Tile";
+import type { ActivityResponseDto } from "~/api";
 import { NoContentTile } from "./Tiles/NoContentTile";
 
 interface UpcomingActivitiesProps {
-  activities: Activity[];
+  activities: ActivityResponseDto[];
 }
 
-const TILE_WIDTH = 260; // Width of a single activity tile in pixels
-const VERTICAL_COUNT = 3; // Number of activities to show when stacked vertically
+const TILE_MIN_WIDTH = 250; 
+const VERTICAL_STACK_COUNT = 3;
 
-export default function UpcomingActivities({
-  activities,
-}: UpcomingActivitiesProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [visibleActivities, setVisibleActivities] = useState<Activity[]>([]);
-  const [stackVertically, setStackVertically] = useState(false);
+export default function UpcomingActivities({ activities }: UpcomingActivitiesProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [numVisible, setNumVisible] = useState(3);
+  const [isStacked, setIsStacked] = useState(false);
 
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        
+        const fitsSideBySide = Math.floor(width / TILE_MIN_WIDTH);
 
-    const updateVisible = () => {
-      if (!container) return;
+        if (fitsSideBySide < 2) {
+          setIsStacked(true);
+          setNumVisible(VERTICAL_STACK_COUNT);
+        } else {
+          setIsStacked(false);
+          setNumVisible(fitsSideBySide);
+        }
+      }
+    });
 
-      const containerWidth = container.getBoundingClientRect().width;
-      const tilesBesideEachOther = Math.floor(containerWidth / TILE_WIDTH);
-
-      const shouldStack = tilesBesideEachOther <= 1;
-      setStackVertically(shouldStack);
-
-      const count = shouldStack ? VERTICAL_COUNT : tilesBesideEachOther;
-      setVisibleActivities(activities.slice(0, count));
-    };
-
-    // Use ResizeObserver for automatic updates
-    const observer = new ResizeObserver(updateVisible);
-    observer.observe(container);
-
-    // Initial call
-    updateVisible();
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [activities]);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [activities.length]);
 
   if (activities.length === 0) {
-    return (
-      <NoContentTile text="Er zijn momenteel geen aankomende activiteiten." />
-    );
+    return <NoContentTile text="Er zijn momenteel geen aankomende activiteiten." />;
   }
 
+  const displayActivities = activities.slice(0, numVisible);
+
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "flex p-2 gap-5",
-        stackVertically ? "flex-col" : "flex-row",
-      )}
-      style={{ maxWidth: TILE_WIDTH * activities.length }}
-    >
-      {visibleActivities.map((activity) => (
-        <ActivityTile
-          key={activity.id}
-          className="w-full"
-          activity={activity}
-        />
-      ))}
+    <div ref={containerRef} className="w-full">
+      <div 
+        className="grid gap-5 transition-all duration-300"
+        style={{
+          gridTemplateColumns: isStacked 
+            ? "1fr" 
+            : `repeat(${numVisible}, 1fr)`
+        }}
+      >
+        {displayActivities.map((activity) => (
+          <ActivityTile
+            key={activity.id}
+            activity={activity}
+            className="w-full"
+          />
+        ))}
+      </div>
     </div>
   );
 }

@@ -10,26 +10,54 @@ public class PostMemberDTO
 
     /// <inheritdoc cref="Models.Member.FirstName"/>
     [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
     public required string FirstName { get; set; }
 
     /// <inheritdoc cref="Models.Member.LastName"/>
     [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
     public required string LastName { get; set; }
 
     /// <inheritdoc cref="Models.Member.Email"/>
     [StringLength(100)]
+    [EmailAddress]
+    [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
     /// <inheritdoc cref="Models.Member.PhoneNumber"/>
-    [StringLength(20)]
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public required string PhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Address"/>
-    [StringLength(200)]
-    public required string Address { get; set; }
+    /// <inheritdoc cref="Models.Member.Street"/>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string Street { get; set; }
+
+    /// <inheritdoc cref="Models.Member.HouseNumber"/>
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
+    public required string HouseNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.PostalCode"/>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    public required string PostalCode { get; set; }
+
+    /// <inheritdoc cref="Models.Member.City"/>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string City { get; set; }
 
     /// <inheritdoc cref="Models.Member.DateOfBirth"/>
     public required DateTimeOffset DateOfBirth { get; set; }
+    /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>
+    
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
+    public string? ParentPhoneNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
+    public MailSubscriptions MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
@@ -55,16 +83,35 @@ public class MemberResponseDTO
     public required string LastName { get; set; }
 
     /// <inheritdoc cref="Models.Member.Email"/>
+    [EmailAddress]
     public required string Email { get; set; }
 
     /// <inheritdoc cref="Models.Member.PhoneNumber"/>
     public required string PhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Address"/>
-    public required string Address { get; set; }
+    /// <inheritdoc cref="Models.Member.Street"/>
+    [StringLength(40)]
+    public required string Street { get; set; }
+
+    /// <inheritdoc cref="Models.Member.HouseNumber"/>
+    public required string HouseNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.PostalCode"/>
+    [StringLength(10)]
+    public required string PostalCode { get; set; }
+
+    /// <inheritdoc cref="Models.Member.City"/>
+    [StringLength(40)]
+    public required string City { get; set; }
 
     /// <inheritdoc cref="Models.Member.DateOfBirth"/>
     public DateTimeOffset DateOfBirth { get; set; }
+
+    /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>
+    public string? ParentPhoneNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
+    public MailSubscriptions MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.Notes"/>
     public string? Notes { get; set; }
@@ -93,26 +140,55 @@ public class MemberUpdateDTO
 
     /// <inheritdoc cref="Models.Member.FirstName"/>
     [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
     public required string FirstName { get; set; }
 
     /// <inheritdoc cref="Models.Member.LastName"/>
     [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
     public required string LastName { get; set; }
 
     /// <inheritdoc cref="Models.Member.Email"/>
     [StringLength(100)]
+    [EmailAddress]
+    [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
     /// <inheritdoc cref="Models.Member.PhoneNumber"/>
-    [StringLength(20)]
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public required string PhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Address"/>
-    [StringLength(200)]
-    public required string Address { get; set; }
+    /// <inheritdoc cref="Models.Member.Street"/>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string Street { get; set; }
+
+    /// <inheritdoc cref="Models.Member.HouseNumber"/>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
+    public required string HouseNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.PostalCode"/>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    public required string PostalCode { get; set; }
+
+    /// <inheritdoc cref="Models.Member.City"/>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string City { get; set; }
 
     /// <inheritdoc cref="Models.Member.DateOfBirth"/>
     public required DateTimeOffset DateOfBirth { get; set; }
+
+    /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>  
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
+    public string? ParentPhoneNumber { get; set; }
+
+    /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
+    public MailSubscriptions MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.Notes"/>
     public string? Notes { get; set; }
@@ -137,3 +213,11 @@ public class MemberUpdateDTO
 }
 
 public record ForgotPasswordDTO(string Email);
+
+public class MemberSummaryDTO
+{
+    public Guid? Id { get; set; }
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public string? ProfilePicturePath { get; set; }
+}

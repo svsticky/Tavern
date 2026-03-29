@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Backend.Controllers.DTOs;
 
 public class PostRoleAliasDTO
@@ -5,6 +7,8 @@ public class PostRoleAliasDTO
     /// <summary>
     /// The name of the role alias (e.g., "Schatbewaarder").
     /// </summary>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
     /// <summary>
@@ -18,6 +22,8 @@ public class RoleAliasUpdateDTO
     /// <summary>
     /// The updated name of the role alias.
     /// </summary>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
     /// <summary>

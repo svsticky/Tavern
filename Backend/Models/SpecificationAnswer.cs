@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models;
 
@@ -15,22 +16,29 @@ public class SpecificationAnswer
     public uint SpecificationQuestionId { get; set; }
 
     /// <summary>
-    /// The unique identifier of the enrollment for which this answer is provided.
+    /// The unique identifier of the member for which this answer is provided.
     /// </summary>
-    public uint EnrollmentId { get; set; }
+    public required Guid MemberId { get; set; }
+
+    /// <summary>
+    /// The member for which this answer is provided.
+    /// </summary>
+    public Member Member { get; set; } = null!;
 
     /// <summary>
     /// The answer provided for the specification question. The content and format of this answer depend on the type of the associated specification question.
     /// </summary>
+    [StringLength(1000)]
+    [Required(AllowEmptyStrings = false)]
     public required string Answer { get; set; }
 
     /// <summary>
     /// The specification question for which this answer is provided.
     /// </summary>
-    public required SpecificationQuestion Question { get; set; }
+    public SpecificationQuestion Question { get; set; } = null!;
 
     /// <summary>
     /// The enrollment for which this answer is provided.
     /// </summary>
-    [JsonIgnore] public required Enrollment Enrollment { get; set; }
+    [JsonIgnore] public Enrollment Enrollment { get; set; } = null!;
 }

@@ -10,3 +10,8 @@ public class PostActivityPaymentDTO
     public Guid MemberId { get; set; }
     public List<uint> ActivityIds { get; set; } = new();
 }
+
+public class PostPaymentResponse
+{
+    public required string CheckoutUrl { get; set; }
+}

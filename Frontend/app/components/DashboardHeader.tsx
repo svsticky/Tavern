@@ -9,14 +9,14 @@ import { useTranslation } from "react-i18next";
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
-import { getApiEnrollments, getApiGroupmemberships, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type GroupMembership } from "~/api";
+import { getApiEnrollments, getApiGroupmemberships, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type ActivityResponseDto, type GroupMembership } from "~/api";
 import { useEffect, useState } from "react";
 import { useKeycloak } from "@react-keycloak/web";
 import { useNavigate } from "react-router";
 
 type DashboardHeaderProps = {
   name: string;
-  nextActivity?: Activity;
+  nextActivity?: ActivityResponseDto;
 };
 
 export default function DashboardHeader({
@@ -50,12 +50,12 @@ export default function DashboardHeader({
 
         if (enrollmentAmountResponse.data) {
           setPastEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
-            const activityDate = new Date(enrollment.activity?.dateTimeStart ?? new Date());
-            return activityDate < new Date();
+            const activityDate = new Date(enrollment.activity?.dateTimeStart ?? Date.now());
+            return activityDate < new Date(Date.now());
           }).length);
           setComingEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
-            const activityDate = new Date(enrollment.activity?.dateTimeStart ?? new Date());
-            return activityDate > new Date();
+            const activityDate = new Date(enrollment.activity?.dateTimeStart ?? Date.now());
+            return activityDate > new Date(Date.now());
           }).length);
         }
       } catch (error) {
@@ -76,13 +76,14 @@ export default function DashboardHeader({
       setLoadingPayments(true);
       const urlResponse = await postApiPaymentsActivity({
         body: {
-          memberId: keycloak.tokenParsed?.memberId ?? 0,
+          memberId: keycloak.tokenParsed?.UserId ?? 0,
           activityIds: unpaidActivityIds
         }
       });
 
       if (urlResponse.data) {
-        navigate(urlResponse.data);
+        console.log(urlResponse.data);
+        window.location.href = urlResponse.data.checkoutUrl!;
       }
     } catch (error) {
       console.error("Error while initiating payment:", error);
@@ -100,7 +101,7 @@ export default function DashboardHeader({
           <p className="text-2xl font-semibold">Hey {name}!</p>
 
           {/* Stats */}
-          <div className="flex gap-5">
+          <div className="flex flex-col min-[380px]:flex-row gap-5">
             {/* Activity Enrollments */}
             <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
               <p>{t("enrollments")}</p>
@@ -122,12 +123,12 @@ export default function DashboardHeader({
 
           {/* Outstanding Payments */}
           <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between flex-col w-full min-[330px]:flex-row">
               <div>
                 <p>{t("outstanding_payments")}</p>
                 <p>{loading ? t("loading") : `€${outstandingPayments.toFixed(2)}`}</p>
               </div>
-              <Button onClick={payActivities} disabled={loadingPayments || unpaidActivityIds.length === 0}>
+              <Button onClick={payActivities} variant="secondary" disabled={loadingPayments || unpaidActivityIds.length === 0}>
                 {loadingPayments ? t("paying") : t("pay")}
               </Button>
             </div>
@@ -142,17 +143,16 @@ export default function DashboardHeader({
             </div>
             <p className="truncate">{nextActivity.name}</p>
             <div className="flex items-center gap-2">
-              <Calendar /> {formatDate(new Date(nextActivity.dateTimeStart ?? new Date()), "fullDateTime")}
+              <Calendar /> {formatDate(new Date(nextActivity.dateTimeStart ?? Date.now()), "fullDateTime")}
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {nextActivity.participantLimit
-                ? nextActivity.participantLimit -
-                  (nextActivity.enrollments?.length ?? 0)
-                : 0}{" "}
-              {t("of_the")} {nextActivity.participantLimit} {t("available")}
+              {nextActivity.enrollments?.filter(e => !e.isOnWaitingList).length ?? 0}{" "}
+              {nextActivity.participantLimit ? (t("of_the") + ` ${nextActivity.participantLimit} ` + t("available")) + "." : t("enrollments").toLocaleLowerCase() + "."}
             </div>
-            <Button showArrow={true}>{t("view_details")}</Button>
+            <Button variant="secondary" showArrow={true} onClick={() => navigate(`/activities/${nextActivity.id}`)}>
+              {t("view_details")}
+            </Button>
           </Tile>
         )}
       </div>

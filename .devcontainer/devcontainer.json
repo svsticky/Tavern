@@ -19,7 +19,8 @@
         },
         "vscode": {
             "extensions": [
-                "ms-dotnettools.csdevkit"
+                "ms-dotnettools.csdevkit",
+                "cweijan.vscode-database-client2"
             ]
         }
     },

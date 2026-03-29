@@ -1,6 +1,7 @@
 import type { CommitteeEnrollment } from "~/types/CommitteeEnrollment";
 import { ListTile } from "./Tiles/ListTile";
 import { NoContentTile } from "./Tiles/NoContentTile";
+import { t } from "i18next";
 
 type CommitteeEnrollmentOverviewProps = {
   committeeEnrollments: CommitteeEnrollment[];
@@ -11,7 +12,7 @@ export default function CommitteeEnrollmentOverview({
 }: CommitteeEnrollmentOverviewProps) {
   if(committeeEnrollments.length === 0) {
     return (
-      <NoContentTile text="Je bent momenteel niet ingeschreven voor commissies." />
+      <NoContentTile text={t("no_group_enrollments")} />
     );
   }
 

@@ -23,6 +23,7 @@ public class Study
     /// The title of the study.
     /// </summary>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public string Title { get; set; }
 
     /// <summary>

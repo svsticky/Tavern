@@ -28,14 +28,15 @@ public static class PaymentUtils
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
             }) // List of member enrollments with their paid sums
-            .Where(x => x.PaidSum < x.Enrollment.Price) // Filter to only those enrollments where the paid sum is less than the enrollment price
+            .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList) // Filter to only those enrollments where the paid sum is less than the enrollment price, the activity is open for payment, and the enrollment is not on the waiting list
             .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
     }
 
     public static decimal GetUnpaidAmountForEnrollment(Enrollment enrollment, PostgresDbContext db)
     {
         var paidSum = db.EnrollmentPayments
-            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId)
+            .Include(p => p.Activity)
+            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity.IsOpenForPayment && !enrollment.IsOnWaitingList)
             .Sum(p => (decimal?)p.Price) ?? 0;
 
         return enrollment.Price - paidSum;
@@ -53,7 +54,7 @@ public static class PaymentUtils
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
             }) // List of all enrollments with their paid sums
-            .Where(x => x.PaidSum < x.Enrollment.Price) // Filter to only those enrollments where the paid sum is less than the enrollment price
+            .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList) // Filter to only those enrollments where the paid sum is less than the enrollment price, the activity is open for payment, and the enrollment is not on the waiting list
             .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
     }
 
@@ -69,7 +70,7 @@ public static class PaymentUtils
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
             }) // List of all enrollments with their paid sums
-            .Where(x => x.PaidSum > x.Enrollment.Price) // Filter to only those enrollments where the paid sum is greater than the enrollment price
+            .Where(x => x.PaidSum > x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList) // Filter to only those enrollments where the paid sum is greater than the enrollment price, the activity is open for payment, and the enrollment is not on the waiting list
             .Select(x => new EnrollmentBalance(x.Enrollment, x.PaidSum - x.Enrollment.Price));
     }
 

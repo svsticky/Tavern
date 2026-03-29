@@ -29,5 +29,6 @@ public class RoleAlias
     /// The name of the role alias.
     /// </summary>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public string Name { get; set; }
 }

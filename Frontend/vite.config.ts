@@ -16,6 +16,6 @@ export default defineConfig({
   optimizeDeps: {
     include: ["@react-keycloak/web", "keycloak-js"],
   },
-  envPrefix: ['VITE_', 'Keycloak', 'HostUrl', 'KeycloakUrl', 'KeycloakRealm', 'KeycloakClientId'],
+  envPrefix: ['VITE_', 'Keycloak', 'HostUrl', 'KeycloakUrl', 'KeycloakRealm', 'KeycloakClientId', 'BOARD_GROUP_ID', "ApiUrl"],
   plugins: [tailwindcss(), reactRouter(), tsconfigPaths(), basicSsl()],
 });

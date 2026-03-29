@@ -11,6 +11,8 @@ public class KeycloakOutboxWorker(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            bool hadTask = false;
+
             using (var scope = serviceProvider.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
@@ -21,6 +23,8 @@ public class KeycloakOutboxWorker(
                     .OrderBy(t => t.CreatedAt)
                     .FirstOrDefaultAsync(stoppingToken);
 
+                hadTask = task != null;
+
                 if (task != null)
                 {
                     try
@@ -29,13 +33,10 @@ public class KeycloakOutboxWorker(
                         {
                             case KeycloakTaskType.Create:
                                 var member = await db.Members.FindAsync(task.KeycoakId);
-                                if (member != null)
-                                {
-                                    var keycloakId = await syncService.CreateUserInKeycloak(member);
-                                    if (keycloakId != null)
-                                    {
-                                        member.KeycloakId = keycloakId;
-                                        await db.SaveChangesAsync(stoppingToken);
+                                if (member != null) {
+                                    var kId = await syncService.CreateUserInKeycloak(member);
+                                    if (kId != null) {
+                                        member.KeycloakId = kId;
                                     }
                                 }
                                 break;
@@ -43,7 +44,7 @@ public class KeycloakOutboxWorker(
                                 await syncService.SyncMemberInKeyCloak(task.KeycoakId);
                                 break;
                             case KeycloakTaskType.Delete:
-                                var memberToDelete = await db.Members.FindAsync(task.KeycoakId);
+                                var memberToDelete = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == task.KeycoakId);
                                 if(memberToDelete != null && memberToDelete.KeycloakId != null)
                                 {
                                     await syncService.DeleteUserInKeycloak(memberToDelete.KeycloakId.Value);
@@ -68,7 +69,11 @@ public class KeycloakOutboxWorker(
                     }
                 }
             }
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+
+            if (!hadTask)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            }
         }
     }
 }

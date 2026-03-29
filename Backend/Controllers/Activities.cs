@@ -8,13 +8,14 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using Backend.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Backend.Interfaces;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class Activities(PostgresDbContext db) : ControllerBase
+    public class Activities(PostgresDbContext db, IStorageService storageService, IFileCompressor fileCompressor) : ControllerBase
     {
         // GET: api/activities
         /// <summary>
@@ -23,15 +24,54 @@ namespace Backend.Controllers
         /// <param name="onlyEnrolled">If true, only returns activities the user is signed up for.</param>
         /// <param name="includePast">If false (default), only returns future or ongoing activities.</param>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Activity>>> GetActivities([FromQuery] bool includePast = false)
+        public async Task<ActionResult<IEnumerable<ActivityResponseDTO>>> GetActivities([FromQuery] bool includePast = false)
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
             
-            IQueryable<Activity> query = db.Activities;
+            IQueryable<ActivityResponseDTO> query = db.Activities.Select(
+                a => new ActivityResponseDTO
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Price = a.Price,
+                    PosterPath = a.PosterPath,
+                    PosterFileName = a.PosterFileName,
+                    DutchDescription = a.DutchDescription,
+                    EnglishDescription = a.EnglishDescription,
+                    DateTimeStart = a.DateTimeStart,
+                    DateTimeEnd = a.DateTimeEnd,
+                    UnenrollmentDeadline = a.UnenrollmentDeadline,
+                    EnrollmentDeadline = a.EnrollmentDeadline,
+                    Location = a.Location,
+                    ParticipantLimit = a.ParticipantLimit,
+                    OrganizerId = a.OrganizerId,
+                    ShowInKoala = a.ShowInKoala,
+                    ShowOnWebsite = a.ShowOnWebsite,
+                    IsEnrollable = a.IsEnrollable,
+                    AreParticipantsVisible = a.AreParticipantsVisible,
+                    IsAdultOnly = a.IsAdultOnly,
+                    AllowedAudience = a.AllowedAudience,
+                    VatRate = a.VatRate,
+                    GLAccountId = a.GLAccountId,
+                    CostCenterId = a.CostCenterId,
+                    CostUnitId = a.CostUnitId,
+                    Enrollments = a.Enrollments.Select(e => new EnrollmentSummaryDTO
+                        {
+                            IsOnWaitingList = e.IsOnWaitingList,
+                            Member = new MemberSummaryDTO
+                            { 
+                                Id = e.MemberId == userId ? e.MemberId : null,
+                                FirstName = a.AreParticipantsVisible || PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) ? e.Member.FirstName : null, 
+                                LastName = a.AreParticipantsVisible || PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) ? e.Member.LastName : null, 
+                                ProfilePicturePath = a.AreParticipantsVisible || PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) ? e.Member.ProfilePicturePath : null
+                            }
+                        }).ToList()
+                }
+            );
 
-            if(includePast && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(includePast && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can view past activities.");
+                return Forbid();
             }
 
             if (!includePast)
@@ -50,22 +90,63 @@ namespace Backend.Controllers
         /// Fetches a single activity.
         /// </summary>
         /// <param name="id">The id of the activity to fetch.</param>
-        /// <returns>The full activity.</returns>
+        /// <returns>The activity with the given id, or NotFound if it doesn't exist.</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Activity>> GetActivity(uint id)
+        public async Task<ActionResult<ActivityResponseDTO>> GetActivity(uint id)
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            Activity? activity = await db.Activities.FindAsync(id);
+            bool isBoard = PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db);
+
+            ActivityResponseDTO? activity = await db.Activities.Select(
+                a => new ActivityResponseDTO
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Price = a.Price,
+                    PosterPath = a.PosterPath,
+                    PosterFileName = a.PosterFileName,
+                    DutchDescription = a.DutchDescription,
+                    EnglishDescription = a.EnglishDescription,
+                    DateTimeStart = a.DateTimeStart,
+                    DateTimeEnd = a.DateTimeEnd,
+                    UnenrollmentDeadline = a.UnenrollmentDeadline,
+                    EnrollmentDeadline = a.EnrollmentDeadline,
+                    Location = a.Location,
+                    ParticipantLimit = a.ParticipantLimit,
+                    OrganizerId = a.OrganizerId,
+                    ShowInKoala = a.ShowInKoala,
+                    ShowOnWebsite = a.ShowOnWebsite,
+                    IsEnrollable = a.IsEnrollable,
+                    AreParticipantsVisible = a.AreParticipantsVisible,
+                    IsAdultOnly = a.IsAdultOnly,
+                    AllowedAudience = a.AllowedAudience,
+                    VatRate = a.VatRate,
+                    GLAccountId = a.GLAccountId,
+                    CostCenterId = a.CostCenterId,
+                    CostUnitId = a.CostUnitId,
+                    Enrollments = a.Enrollments.Select(e => new EnrollmentSummaryDTO
+                        {
+                            IsOnWaitingList = e.IsOnWaitingList,
+                            Member = new MemberSummaryDTO
+                            { 
+                                Id = e.MemberId == userId ? e.MemberId : null,
+                                FirstName = a.AreParticipantsVisible || isBoard ? e.Member.FirstName : null, 
+                                LastName = a.AreParticipantsVisible || isBoard ? e.Member.LastName : null, 
+                                ProfilePicturePath = a.AreParticipantsVisible || isBoard ? e.Member.ProfilePicturePath : null
+                            }
+                        }).ToList()
+                }
+            ).FirstOrDefaultAsync(a => a.Id == id);
 
             if(activity == null)
             {
                 return NotFound();
             }
 
-            if(activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can view past activities.");
+                return Forbid();
             }
 
             return activity != null ? activity : NotFound();
@@ -87,9 +168,19 @@ namespace Backend.Controllers
 
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if((activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if((activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can create activities for public display.");
+                return Forbid();
+            }
+
+            if(activityDto.ParticipantLimit < 0)
+            {
+                return BadRequest("Participant limit cannot be negative.");
+            }
+
+            if(activityDto.Poster != null && !ExtensionUtils.IsValidPosterExtension(activityDto.Poster))
+            {
+                return BadRequest("Invalid poster file type. Allowed types are: .jpg, .jpeg, .png, .gif, .pdf");
             }
 
             IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
@@ -127,13 +218,17 @@ namespace Backend.Controllers
                     QuestionDutch = q.QuestionDutch, 
                     QuestionEnglish = q.QuestionEnglish,
                     Type = q.Type,
+                    Options = q.Options != null ? string.Join(';', q.Options) : null,
+                    IsMandatory = q.IsMandatory,
+                    IsPublic = q.IsPublic
                 }).ToList();
 
                 if(activityDto.Poster != null)
                 {
                     try
                     {
-                        newActivity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
+                        var compressedImage = await fileCompressor.CompressFileAsync(activityDto.Poster);
+                        newActivity.PosterPath = await storageService.SaveFileAsync(compressedImage.Stream, compressedImage.ContentType, "posters");
                         newActivity.PosterFileName = activityDto.Poster.FileName;
                     }
                     catch (InvalidOperationException ex)
@@ -166,9 +261,9 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can delete activities.");
+                return Forbid();
             }
 
             Activity? activity = await db.Activities.FindAsync(id);
@@ -176,7 +271,7 @@ namespace Backend.Controllers
 
             if(activity.PosterPath != null)
             {
-                System.IO.File.Delete(activity.PosterPath);
+                await storageService.DeleteFileAsync("posters", activity.PosterPath);
             }
 
             db.Activities.Remove(activity);
@@ -202,21 +297,66 @@ namespace Backend.Controllers
             if (activity == null)
                 return NotFound();
 
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if((activity.ShowInKoala || activity.ShowOnWebsite || patchDoc.Operations.Any(op => op.path == "/showInKoala" || op.path == "/showOnWebsite")) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(activity.DateTimeEnd < activity.DateTimeStart)
             {
-                return Forbid("Only board members can update activities for public display.");
+                return BadRequest("Activity cannot end before it starts.");
             }
 
-            patchDoc.ApplyTo(activity, ModelState);
+            if(activity.ParticipantLimit < 0)
+            {
+                return BadRequest("Participant limit cannot be negative.");
+            }
 
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            await db.SaveChangesAsync(cancellationToken);
+            if((activity.ShowInKoala || activity.ShowOnWebsite || patchDoc.Operations.Any(op => op.path.ToLower() == "/showinkoala" || op.path == "/showonwebsite" || op.path == "/isopenforpayment")) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
+            {
+                return Forbid();
+            }
 
-            return NoContent();
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                uint? oldLimit = activity.ParticipantLimit;
+                decimal oldPrice = activity.Price;
+
+                patchDoc.ApplyTo(activity, ModelState);
+
+                TryValidateModel(activity);
+
+                if (!ModelState.IsValid) 
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return BadRequest(ModelState);
+                }
+
+                if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit))
+                {
+                    await ProcessWaitingList(id, activity.ParticipantLimit, cancellationToken);
+                }
+
+                if (oldPrice != activity.Price)
+                {
+                    var enrollmentsToUpdate = await db.Enrollments
+                        .Where(e => e.ActivityId == id && e.Price == oldPrice)
+                        .ToListAsync(cancellationToken);
+
+                    foreach (var enrollment in enrollmentsToUpdate)
+                    {
+                        enrollment.Price = activity.Price;
+                    }
+                }
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return NoContent();
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return StatusCode(500, "An error occurred while updating the activity.");
+            }   
         }
 
         // POST: api/activities/5/poster
@@ -235,9 +375,14 @@ namespace Backend.Controllers
 
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if((activity.ShowInKoala || activity.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if((activity.ShowInKoala || activity.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can update activity posters for public display.");
+                return Forbid();
+            }
+
+            if(poster != null && !ExtensionUtils.IsValidPosterExtension(poster))
+            {
+                return BadRequest("Invalid poster file type. Allowed types are: .jpg, .jpeg, .png, .gif, .pdf");
             }
 
             string? oldPath = activity.PosterPath;
@@ -247,10 +392,9 @@ namespace Backend.Controllers
             {
                 if(poster != null)
                 {
-                    string newFileName = Guid.NewGuid().ToString() + Path.GetExtension(poster.FileName);
-                    string newPath = Path.Combine("Posters", newFileName);
-                    await FileUtils.SaveFileAsync(poster, newPath);
-                    activity.PosterPath = newPath;
+                    var compressedImage = await fileCompressor.CompressFileAsync(poster);
+                    string path = await storageService.SaveFileAsync(compressedImage.Stream, compressedImage.ContentType, "posters");
+                    activity.PosterPath = path;
                     activity.PosterFileName = poster.FileName;
                 }
                 else
@@ -265,7 +409,7 @@ namespace Backend.Controllers
 
                 if (!string.IsNullOrEmpty(oldPath) && System.IO.File.Exists(oldPath))
                 {
-                    System.IO.File.Delete(oldPath);
+                    await storageService.DeleteFileAsync("posters", oldPath);
                 }
 
                 return Ok(new { path = activity.PosterPath });
@@ -290,6 +434,21 @@ namespace Backend.Controllers
             Activity? activity = await db.Activities.FindAsync(id);
             if (activity == null) return NotFound();
 
+            if(activity.DateTimeEnd < activity.DateTimeStart)
+            {
+                return BadRequest("Activity cannot end before it starts.");
+            }
+            
+            if(activityDto.ParticipantLimit < 0)
+            {
+                return BadRequest("Participant limit cannot be negative.");
+            }
+
+            if(activityDto.Poster != null && !ExtensionUtils.IsValidPosterExtension(activityDto.Poster))
+            {
+                return BadRequest("Invalid poster file type. Allowed types are: .jpg, .jpeg, .png, .gif, .pdf");
+            }
+
             if(activityDto.DateTimeEnd < activityDto.DateTimeStart)
             {
                 return BadRequest("Activity cannot end before it starts.");
@@ -297,51 +456,71 @@ namespace Backend.Controllers
 
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if((activity.ShowInKoala || activity.ShowOnWebsite || activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if((activity.ShowInKoala || activity.ShowOnWebsite || activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can update activities for public display.");
+                return Forbid();
             }
 
             using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
-            
-            activity.Name = activityDto.Name;
-            activity.Price = activityDto.Price;
-            activity.DutchDescription = activityDto.DutchDescription;
-            activity.EnglishDescription = activityDto.EnglishDescription;
-            activity.DateTimeStart = activityDto.DateTimeStart;
-            activity.DateTimeEnd = activityDto.DateTimeEnd;
-            activity.UnenrollmentDeadline = activityDto.UnenrollmentDeadline;
-            activity.EnrollmentDeadline = activityDto.EnrollmentDeadline;
-            activity.Location = activityDto.Location;
-            activity.ParticipantLimit = activityDto.ParticipantLimit;
-            activity.OrganizerId = activityDto.OrganizerId;
-            activity.SpecificationQuestions = activityDto.SpecificationQuestions.Select(q => new SpecificationQuestion 
-            { 
-                Activity = activity,
-                QuestionDutch = q.QuestionDutch, 
-                QuestionEnglish = q.QuestionEnglish,
-                Type = q.Type,
-            }).ToList();
-            activity.ShowInKoala = activityDto.ShowInKoala;
-            activity.ShowOnWebsite = activityDto.ShowOnWebsite;
-            activity.IsEnrollable = activityDto.IsEnrollable;
-            activity.AreParticipantsVisible = activityDto.AreParticipantsVisible;
-            activity.IsAdultOnly = activityDto.IsAdultOnly;
-            activity.AllowedAudience = activityDto.AllowedAudience;
-            activity.VatRate = activityDto.VatRate;
-            activity.GLAccountId = activityDto.GLAccountId;
-            activity.CostCenterId = activityDto.CostCenterId;
-            activity.CostUnitId = activityDto.CostUnitId;
 
             try
             {
+                decimal oldPrice = activity.Price;
+
+                activity.Name = activityDto.Name;
+                activity.Price = activityDto.Price;
+                activity.DutchDescription = activityDto.DutchDescription;
+                activity.EnglishDescription = activityDto.EnglishDescription;
+                activity.DateTimeStart = activityDto.DateTimeStart;
+                activity.DateTimeEnd = activityDto.DateTimeEnd;
+                activity.UnenrollmentDeadline = activityDto.UnenrollmentDeadline;
+                activity.EnrollmentDeadline = activityDto.EnrollmentDeadline;
+                activity.Location = activityDto.Location;
+                activity.ParticipantLimit = activityDto.ParticipantLimit;
+                activity.OrganizerId = activityDto.OrganizerId;
+                activity.SpecificationQuestions = activityDto.SpecificationQuestions.Select(q => new SpecificationQuestion 
+                { 
+                    Activity = activity,
+                    QuestionDutch = q.QuestionDutch, 
+                    QuestionEnglish = q.QuestionEnglish,
+                    Type = q.Type,
+                    Options = q.Options != null ? string.Join(';', q.Options) : null,
+                    IsMandatory = q.IsMandatory,
+                    IsPublic = q.IsPublic
+                }).ToList();
+                activity.ShowInKoala = activityDto.ShowInKoala;
+                activity.ShowOnWebsite = activityDto.ShowOnWebsite;
+                activity.IsEnrollable = activityDto.IsEnrollable;
+                activity.AreParticipantsVisible = activityDto.AreParticipantsVisible;
+                activity.IsAdultOnly = activityDto.IsAdultOnly;
+                activity.AllowedAudience = activityDto.AllowedAudience;
+                activity.VatRate = activityDto.VatRate;
+                activity.GLAccountId = activityDto.GLAccountId;
+                activity.CostCenterId = activityDto.CostCenterId;
+                activity.CostUnitId = activityDto.CostUnitId;
+
+                if (oldPrice != activity.Price)
+                {
+                    var enrollmentsToUpdate = await db.Enrollments
+                        .Where(e => e.ActivityId == id && e.Price == oldPrice)
+                        .ToListAsync();
+
+                    foreach (var enrollment in enrollmentsToUpdate)
+                    {
+                        enrollment.Price = activity.Price;
+                    }
+                }
+
+                await db.SaveChangesAsync();
+
                 string? existingPosterPath = activity.PosterPath;
 
                 if(activityDto.Poster != null)
                 {
                     try
                     {
-                        activity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
+                        var compressedImage = await fileCompressor.CompressFileAsync(activityDto.Poster);
+                        activity.PosterPath = await storageService.SaveFileAsync(compressedImage.Stream, compressedImage.ContentType, "posters");
                         activity.PosterFileName = activityDto.Poster.FileName;
                     }
                     catch (InvalidOperationException ex)
@@ -356,6 +535,14 @@ namespace Backend.Controllers
                     activity.PosterPath = null;
                 }
 
+                uint? oldLimit = activity.ParticipantLimit;
+                activity.ParticipantLimit = activityDto.ParticipantLimit;
+
+                if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit))
+                {
+                    await ProcessWaitingList(id, activity.ParticipantLimit, default);
+                }
+
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -365,14 +552,14 @@ namespace Backend.Controllers
                     activity.PosterPath = null;
                     activity.PosterFileName = null;
                 }
+
+                return NoContent();
             }
             catch
             {
                 await transaction.RollbackAsync();
                 return StatusCode(500, "An error occurred while updating the activity.");
             }
-
-            return NoContent();
         }
 
         // GET: api/activities/5/poster
@@ -388,23 +575,18 @@ namespace Backend.Controllers
                 return NotFound("Activity or poster not found.");
 
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can view posters of past activities.");
+                return Forbid();
             }
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), activity.PosterPath);
-
-            if (!System.IO.File.Exists(filePath))
+            var file = await storageService.GetFileAsync("posters", activity.PosterPath);
+            if (file == null)
+            {
                 return NotFound("File is no longer present on the server.");
-
-            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-            if (!provider.TryGetContentType(filePath, out string? contentType))
-            {
-                contentType = "application/octet-stream";
             }
 
-            return PhysicalFile(filePath, contentType);
+            return File(file.Stream, file.ContentType);
         }
 
         // GET: api/activities/5/poster/download
@@ -420,17 +602,42 @@ namespace Backend.Controllers
                 return NotFound("Activity or poster not found.");
 
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
-                return Forbid("Only board members can view posters of past activities.");
+                return Forbid();
             }
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), activity.PosterPath);
-
-            if (!System.IO.File.Exists(filePath))
+            var file = await storageService.GetFileAsync("posters", activity.PosterPath);
+            if (file == null)
+            {
                 return NotFound("File is no longer present on the server.");
+            }
 
-            return PhysicalFile(filePath, "application/octet-stream", activity.PosterFileName);
+            return File(file.Stream, file.ContentType, activity.PosterFileName ?? "poster");
+        }
+
+        private async Task ProcessWaitingList(uint activityId, uint? newLimit, CancellationToken ct)
+        {
+            int currentParticipants = await db.Enrollments
+                .CountAsync(e => e.ActivityId == activityId && !e.IsOnWaitingList, ct);
+
+            int availableSpots = newLimit.HasValue 
+                ? (int)newLimit.Value - currentParticipants 
+                : int.MaxValue;
+
+            if (availableSpots > 0)
+            {
+                var waitingListToPromote = await db.Enrollments
+                    .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
+                    .OrderBy(e => e.RegisteredOn)
+                    .Take(availableSpots)
+                    .ToListAsync(ct);
+
+                foreach (var enrollment in waitingListToPromote)
+                {
+                    enrollment.IsOnWaitingList = false;
+                }
+            }
         }
     }
 }

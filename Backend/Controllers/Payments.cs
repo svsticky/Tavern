@@ -49,7 +49,7 @@ namespace Backend.Controllers
 
         // POST: api/payments/membership
         [HttpPost("membership")]
-        public async Task<ActionResult<PaymentResponse>> PostMembershipPayment(PostMembershipPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
+        public async Task<ActionResult<PostPaymentResponse>> PostMembershipPayment(PostMembershipPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
         {
             Member? member = await db.Members.FindAsync(dto.MemberId);
             if (member == null) return NotFound("Member not found");
@@ -104,12 +104,12 @@ namespace Backend.Controllers
             db.MembershipPayments.Add(payment);
             await db.SaveChangesAsync();
 
-            return Ok(new { checkoutUrl = mollieResponse.Links.Checkout.Href });
+            return Ok(new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href });
         }
 
         // POST: api/activity/membership
         [HttpPost("activity")]
-        public async Task<ActionResult<PaymentResponse>> PostActivityPayment(PostActivityPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
+        public async Task<ActionResult<PostPaymentResponse>> PostActivityPayment(PostActivityPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
         {
             Member? member = await db.Members.FindAsync(dto.MemberId);
             if (member == null) return NotFound("Member not found");
@@ -174,7 +174,7 @@ namespace Backend.Controllers
 
             if(mollieResponse.Links.Checkout == null) throw new Exception("Mollie response did not contain a checkout link");
 
-            return Ok(new { checkoutUrl = mollieResponse.Links.Checkout.Href });
+            return Ok(new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href });
         }
 
         // POST: api/payments/webhook

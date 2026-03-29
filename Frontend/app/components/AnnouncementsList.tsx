@@ -1,6 +1,7 @@
 import type { Announcement } from "~/api";
 import AnnouncementTile from "./Tiles/AnnouncementTile";
 import { NoContentTile } from "./Tiles/NoContentTile";
+import { t } from "i18next";
 
 type AnnouncementsListProps = {
   announcements: Announcement[];
@@ -12,7 +13,7 @@ export default function AnnouncementsList({
 
  if (announcements.length === 0) {
     return (
-      <NoContentTile text="Er zijn momenteel geen aankondigingen." />
+      <NoContentTile text={t("no_announcements")} />
     );
   }
 

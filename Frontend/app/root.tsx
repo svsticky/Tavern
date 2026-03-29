@@ -16,9 +16,14 @@ import i18n from "./i18n";
 import { client } from "./api/client.gen";
 import type { Route } from "./+types/root";
 import "./app.css";
+import { postApiPaymentsMembership } from "./api";
+
+client.setConfig({
+  baseURL: import.meta.env.ApiUrl ?? "https://localhost:8080",
+});
 
 const keycloak = new Keycloak({
-  url: import.meta.env.KeycloakUrl ?? "http://localhost:8085/",
+  url: import.meta.env.KeycloakUrl ?? "https://localhost:8085/",
   realm: import.meta.env.KeycloakRealm ?? "master",
   clientId: import.meta.env.KeycloakClientId ?? "react",
 });
@@ -35,10 +40,11 @@ export const links: Route.LinksFunction = () => [
 export function Layout({ children }: { children: React.ReactNode }) {
  useEffect(() => {
     const interceptor = client.instance.interceptors.response.use(
-      (response) => {
+      async (response) => {
         if (response.status === 200) {
           console.log(`request to ${response.config.url} was successful`);
         }
+          
         return response;
       },
       (error) => {

@@ -35,3 +35,13 @@ export function formatDate(date: Date, format: DateFormatType): string {
       return date.toLocaleDateString();
   }
 }
+
+export const getAssociationYear = (): number => {
+  const nlDateString = new Date().toLocaleString("en-US", { timeZone: "Europe/Amsterdam" });
+  const now = new Date(nlDateString);
+  
+  const year = now.getFullYear();
+  const month = now.getMonth();
+
+  return month >= 7 ? year + 1 : year;
+};

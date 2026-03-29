@@ -9,6 +9,7 @@ public class PostStudyDTO
 {
     /// <inheritdoc cref="Models.Study.Title"/>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
     /// <inheritdoc cref="Models.Study.NominalDurationYears"/>
@@ -22,6 +23,7 @@ public class StudyUpdateDTO
 {
     /// <inheritdoc cref="Models.Study.Title"/>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
     /// <inheritdoc cref="Models.Study.NominalDurationYears"/>

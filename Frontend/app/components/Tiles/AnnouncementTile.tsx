@@ -20,7 +20,7 @@ export default function AnnouncementTile({
         <p className="mb-2">{announcement.title}</p>
         <p className="flex gap-1 text-sm text-nowrap text-gray-600">
           <Calendar className="h-5" />
-          {formatDate(new Date(announcement.createdAt ?? new Date()), "defaultDate")}
+          {formatDate(new Date(announcement.createdAt ?? Date.now()), "defaultDate")}
         </p>
       </div>
 

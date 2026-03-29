@@ -25,7 +25,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!onlyOwnMemberships && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!onlyOwnMemberships && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can view group memberships.");
         }
@@ -79,7 +79,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
         if (result is null) return NotFound();
 
         
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && result.MemberId != userId)
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db) && result.MemberId != userId)
         {
             return Forbid("Only board members can view group memberships.");
         }
@@ -98,10 +98,10 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-        {
-            return Forbid("Only board members can create group memberships.");
-        }
+        // if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
+        // {
+        //     return Forbid();
+        // }
 
         Member? member = await db.Members.FindAsync(membershipDto.MemberId, cancellationToken);
         if (member is null)
@@ -118,7 +118,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
                 return BadRequest($"Role alias with ID {membershipDto.RoleAliasId.Value} does not exist.");
         }
 
-        var transaction = await db. Database.BeginTransactionAsync(cancellationToken);
+        using var transaction = await db. Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
@@ -166,7 +166,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can delete group memberships.");
         }
@@ -175,7 +175,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
         if (membership is null)
             return NotFound();
 
-        var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
@@ -212,7 +212,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can update group memberships.");
         }
@@ -226,14 +226,19 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
 
         var oldMemberId = membership.MemberId;
 
-        var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
             patchDoc.ApplyTo(membership, ModelState);
 
+            TryValidateModel(membership);
+
             if (!ModelState.IsValid)
+            {
+                await transaction.RollbackAsync(cancellationToken);
                 return BadRequest(ModelState);
+            }
 
             db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
             {
@@ -279,7 +284,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
         {
             return Forbid("Only board members can update group memberships.");
         }
@@ -290,7 +295,7 @@ public class GroupMemberships(PostgresDbContext db) : ControllerBase
 
         var oldMemberId = membership.MemberId;
 
-        var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+        using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {

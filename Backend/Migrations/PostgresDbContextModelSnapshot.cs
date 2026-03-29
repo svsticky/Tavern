@@ -133,10 +133,7 @@ namespace Backend.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("CreatedById")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("CreatedById1")
+                    b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Title")
@@ -146,7 +143,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedById1");
+                    b.HasIndex("CreatedById");
 
                     b.ToTable("Announcements");
                 });
@@ -159,8 +156,14 @@ namespace Backend.Migrations
                     b.Property<Guid>("MemberId")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsOnWaitingList")
+                        .HasColumnType("boolean");
+
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("RegisteredOn")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("ActivityId", "MemberId");
 
@@ -180,7 +183,7 @@ namespace Backend.Migrations
                     b.Property<long>("ActivityId")
                         .HasColumnType("bigint");
 
-                    b.Property<Guid>("MemberId")
+                    b.Property<Guid?>("MemberId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("MollieId")
@@ -267,13 +270,13 @@ namespace Backend.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
                     b.Property<bool>("Begunstiger")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
 
                     b.Property<DateTimeOffset>("DateOfBirth")
                         .HasColumnType("timestamp with time zone");
@@ -294,6 +297,11 @@ namespace Backend.Migrations
                     b.Property<bool>("Gratie")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("HouseNumber")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<Guid?>("KeycloakId")
                         .HasColumnType("uuid");
 
@@ -305,19 +313,40 @@ namespace Backend.Migrations
                     b.Property<bool>("LidVanVerdienste")
                         .HasColumnType("boolean");
 
+                    b.Property<long>("MailSubscriptions")
+                        .HasColumnType("bigint");
+
                     b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ParentPhoneNumber")
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
+                        .HasColumnType("text");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
 
                     b.Property<int>("PreferredLanguage")
                         .HasColumnType("integer");
 
+                    b.Property<string>("ProfilePictureFileName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ProfilePicturePath")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset>("RegisteredOn")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
 
                     b.Property<long>("StudentNumber")
                         .HasColumnType("bigint");
@@ -344,7 +373,7 @@ namespace Backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<Guid>("MemberId")
+                    b.Property<Guid?>("MemberId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("MollieId")
@@ -419,21 +448,24 @@ namespace Backend.Migrations
 
                     b.Property<string>("Answer")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<long>("EnrollmentActivityId")
                         .HasColumnType("bigint");
 
-                    b.Property<long>("EnrollmentId")
-                        .HasColumnType("bigint");
-
                     b.Property<Guid>("EnrollmentMemberId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MemberId")
                         .HasColumnType("uuid");
 
                     b.Property<long>("SpecificationQuestionId")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MemberId");
 
                     b.HasIndex("SpecificationQuestionId");
 
@@ -458,6 +490,9 @@ namespace Backend.Migrations
 
                     b.Property<bool>("IsPublic")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Options")
+                        .HasColumnType("text");
 
                     b.Property<string>("QuestionDutch")
                         .IsRequired()
@@ -543,7 +578,7 @@ namespace Backend.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("KeycoakId")
@@ -573,7 +608,7 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Member", "CreatedBy")
                         .WithMany("Announcements")
-                        .HasForeignKey("CreatedById1")
+                        .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -610,8 +645,7 @@ namespace Backend.Migrations
                     b.HasOne("Backend.Models.Member", "Member")
                         .WithMany()
                         .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Activity");
 
@@ -648,8 +682,7 @@ namespace Backend.Migrations
                     b.HasOne("Backend.Models.Member", "Member")
                         .WithMany()
                         .HasForeignKey("MemberId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Member");
                 });
@@ -665,7 +698,7 @@ namespace Backend.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
+            modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
                 {
                     b.HasOne("Backend.Models.Member", "Member")
                         .WithMany()
@@ -673,13 +706,8 @@ namespace Backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Member");
-                });
-
-            modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
-                {
                     b.HasOne("Backend.Models.SpecificationQuestion", "Question")
-                        .WithMany()
+                        .WithMany("Answers")
                         .HasForeignKey("SpecificationQuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -691,6 +719,8 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Enrollment");
+
+                    b.Navigation("Member");
 
                     b.Navigation("Question");
                 });
@@ -751,6 +781,11 @@ namespace Backend.Migrations
                     b.Navigation("GroupMemberships");
 
                     b.Navigation("StudyEnrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.SpecificationQuestion", b =>
+                {
+                    b.Navigation("Answers");
                 });
 
             modelBuilder.Entity("Backend.Models.Study", b =>

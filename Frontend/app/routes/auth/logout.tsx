@@ -1,4 +1,5 @@
 import { useKeycloak } from "@react-keycloak/web";
+import { t } from "i18next";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
 
@@ -18,7 +19,7 @@ export default function LogoutPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen">
-      <p className="text-xl font-semibold text-gray-700">Logging out...</p>
+      <p className="text-xl font-semibold text-gray-700">{t("logging_out")}</p>
     </div>
   );
 }

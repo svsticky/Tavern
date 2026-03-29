@@ -9,7 +9,8 @@ public enum QuestionType
     Boolean,
     Number,
     Date,
-    DateTime
+    DateTime,
+    MultipleChoice
 }
 
 public class SpecificationQuestion
@@ -28,12 +29,14 @@ public class SpecificationQuestion
     /// The question in Dutch.
     /// </summary>
     [StringLength(200)]
+    [Required(AllowEmptyStrings = false)]
     public required string QuestionDutch { get; set; }
     
     /// <summary> 
     /// The question in English.
     /// </summary>
     [StringLength(200)]
+    [Required(AllowEmptyStrings = false)]
     public required string QuestionEnglish { get; set; }
     
     /// <summary>
@@ -56,4 +59,14 @@ public class SpecificationQuestion
     /// </summary>
     [JsonIgnore]
     public required Activity Activity { get; set; }
+
+    /// <summary>
+    /// The collection of answers provided for this specification question. The content and format of these answers depend on the type of this specification question.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<SpecificationAnswer> Answers { get; set; } = new List<SpecificationAnswer>();
+
+    /// <summary>
+    /// The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
+    /// </summary>
+    public string? Options { get; set; }
 }

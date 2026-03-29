@@ -1,14 +1,20 @@
 import { useKeycloak } from "@react-keycloak/web";
+import { t } from "i18next";
+import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getApiActivities, getApiAnnouncements, type Activity } from "~/api";
+import { useNavigate } from "react-router";
+import { getApiActivities, getApiAnnouncements, type Activity, type ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Tiles/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
+import Button from "~/components/UI/Button";
 
 export default function ActivitiesPage() {
   const { keycloak, initialized } = useKeycloak();
 
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   useEffect(() => {
       async function loadData() {
         if (!initialized || !keycloak.authenticated) return;
@@ -19,7 +25,11 @@ export default function ActivitiesPage() {
             query: {
               includePast: false
             }
-          });``
+          });
+
+          if (activitiesResponse.data) {
+            setActivities(activitiesResponse.data as ActivityResponseDto[]);
+          }
         } catch (error) {
           console.error("Error while loading data:", error);
         } finally {
@@ -30,9 +40,22 @@ export default function ActivitiesPage() {
       loadData();
     }, [initialized, keycloak.authenticated]);
 
+  const isInGroup = (keycloak.tokenParsed?.group_memberships ?? []).length > 0;
+
   return (
     <div className="flex flex-col gap-5 w-full">
-      <p className="text-2xl font-bold">Activiteiten</p>
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">{t("activities")}</h1>
+        
+        {isInGroup && (
+          <Button 
+            onClick={() => (navigate("/activities/create"))}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </Button>
+        )}
+      </div>
       {loading ? (
         'Loading...'
       ) : (

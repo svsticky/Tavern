@@ -19,5 +19,6 @@ public class Role
     /// The name of the role.
     /// </summary>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public string Name { get; set; }
 }

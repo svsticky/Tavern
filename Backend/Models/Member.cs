@@ -32,12 +32,14 @@ public class Member
     /// The first name of the member.
     /// </summary>
     [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
     public required string FirstName { get; set; }
 
     /// <summary>
     /// The last name of the member.
     /// </summary>
     [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
     public required string LastName { get; set; }
 
     /// <summary>
@@ -45,25 +47,60 @@ public class Member
     /// </summary>
     [StringLength(100)]
     [EmailAddress]
+    [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
     /// <summary>
     /// The phone number of the member. 
     /// </summary>
-    [StringLength(20)]
-    [Phone]
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public required string PhoneNumber { get; set; }
 
     /// <summary>
-    /// The address of the member.
+    /// Phone number of the member's parent or guardian, if the member is a minor.
     /// </summary>
-    [StringLength(200)]
-    public required string Address { get; set; }
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
+    public string? ParentPhoneNumber { get; set; }
+
+    /// <summary>
+    /// The street of the member.
+    /// </summary>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string Street { get; set; }
+
+    /// <summary>
+    /// The house number of the member.
+    /// </summary>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
+    public required string HouseNumber { get; set; }
+
+    /// <summary>
+    /// The postal code of the member.
+    /// </summary>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    public required string PostalCode { get; set; }
+    
+    /// <summary>
+    /// The city of the member.
+    /// </summary>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string City { get; set; }
 
     /// <summary>
     /// The date of birth of the member.
     /// </summary>
     public DateTimeOffset DateOfBirth { get; set; }
+
+    /// <summary>
+    /// The mail subscriptions of the member.
+    /// </summary>
+    public MailSubscriptions MailSubscriptions { get; set; } = MailSubscriptions.None;
 
     /// <summary>
     /// The notes about the member.
@@ -124,4 +161,14 @@ public class Member
     /// The announcements created by this member.
     /// </summary>
     [JsonIgnore] public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
+
+    /// <summary>
+    /// The path to the profile picture of the member.
+    /// </summary>
+    public string? ProfilePicturePath { get; set; }
+
+    /// <summary>
+    /// The file name of the profile picture of the member.
+    /// </summary>
+    public string? ProfilePictureFileName { get; set; }
 }

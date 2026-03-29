@@ -50,7 +50,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can create roles.");
             }
@@ -79,7 +79,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can delete roles.");
             }
@@ -105,7 +105,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can change roles.");
             }
@@ -118,6 +118,8 @@ namespace Backend.Controllers
                 return NotFound();
 
             patchDoc.ApplyTo(role, ModelState);
+
+            TryValidateModel(role);
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -139,7 +141,7 @@ namespace Backend.Controllers
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
             
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
             {
                 return Forbid("Only board members can change roles.");
             }

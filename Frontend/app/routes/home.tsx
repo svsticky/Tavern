@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type Announcement, type GroupMembership } from "~/api";
+import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GroupMembership } from "~/api";
 import ActivityEnrollmentOverview from "~/components/ActivityEnrollmentOverview";
 import AnnouncementsList from "~/components/AnnouncementsList";
 import CommitteeEnrollmentOverview from "~/components/CommitteeEnrollmentOverview";
@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const { keycloak, initialized } = useKeycloak();
   const navigate = useNavigate();
 
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [committees, setCommittees] = useState<CommitteeEnrollment[]>([]);
 
@@ -40,7 +40,7 @@ export default function DashboardPage() {
         }
 
         if (activitiesResponse.data) {
-          setActivities(activitiesResponse.data as Activity[]);
+          setActivities(activitiesResponse.data as ActivityResponseDto[]);
         }
 
         const committeesResponse = await getApiGroupmemberships({
@@ -82,19 +82,20 @@ export default function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
-          <div className="flex flex-col w-full gap-y-5 col-span-4 lg:col-span-3">
+          <div className="flex flex-col w-full gap-y-8 col-span-4 lg:col-span-3">
+            
             {/* Upcoming Activities */}
-            <div className="w-full">
+            <div className="flex flex-col w-full gap-y-3"> {/* Toegevoegd: flex flex-col en gap-y-3 */}
               <div className="flex w-full justify-between items-center">
                 <p className="font-semibold text-lg">
                   {t("upcoming_activities")}
                 </p>
                 <Button
                   showArrow
-                  className="bg-transparent p-0 hover:bg-transparent hover:text-(--board-primary-light)"
+                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
                   onClick={() => navigate("/activities")}
                 >
-                  Bekijk alles
+                  {t("show_all")}
                 </Button>
               </div>
               <UpcomingActivities activities={activities} />
@@ -108,14 +109,15 @@ export default function DashboardPage() {
                 </p>
                 <Button
                   showArrow
-                  className="bg-transparent p-0 hover:bg-transparent hover:text-(--board-primary-light)"
+                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
                   onClick={() => navigate("/announcements")}
                 >
-                  Bekijk alles
+                  {t("show_all")}
                 </Button>
               </div>
               <AnnouncementsList announcements={announcements} />
             </div>
+            
           </div>
 
           {/* Enrollments and Committees */}
@@ -123,7 +125,7 @@ export default function DashboardPage() {
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview 
               enrolledActivities={activities.filter(a => 
-                a.enrollments?.some(e => e.memberId === keycloak.tokenParsed?.UserId)
+                a.enrollments?.some(e => e.member.id === keycloak.tokenParsed?.UserId)
               )} 
             />
 

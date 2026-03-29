@@ -39,4 +39,14 @@ public class Enrollment
     /// The answers for the specification questions associated with this enrollment.
     /// </summary>
     [JsonIgnore] public virtual ICollection<SpecificationAnswer> SpecificationAnswers { get; set; }
+
+    /// <summary>
+    /// The date and time at which the enrollment was placed.
+    /// </summary>
+    public DateTime RegisteredOn { get; set; }
+
+    /// <summary>
+    /// If the enrollment is placed on a waiting list due to the associated activity being fully booked, this field indicates the position of the enrollment on the waiting list. 
+    /// </summary>
+    public bool IsOnWaitingList { get; set; }
 }

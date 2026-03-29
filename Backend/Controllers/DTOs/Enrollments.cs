@@ -4,4 +4,11 @@ public class PostEnrollmentDTO
 {
     public uint ActivityId { get; set; }
     public Guid MemberId { get; set; }
+    public List<PostSpecificationAnswerDTO>? SpecificationAnswers { get; set; }
+}
+
+public class EnrollmentSummaryDTO
+{
+    public required bool IsOnWaitingList { get; set; }
+    public required MemberSummaryDTO Member { get; set; }
 }
