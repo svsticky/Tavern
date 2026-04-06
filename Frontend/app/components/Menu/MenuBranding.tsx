@@ -4,15 +4,17 @@ import images from "~/constants/images";
 type MenuBrandingProps = {
   icon?: string;
   title?: string;
+  homepage?: string;
 };
 
 export default function MenuBranding({
   icon = images.sticky_logo_compact_white,
   title = "Sticky",
+  homepage = "/"
 }: MenuBrandingProps) {
   return (
     <NavLink
-      to="/"
+      to={homepage}
       className="flex items-center gap-x-3 text-xl font-semibold text-white no-underline"
     >
       <img src={icon} alt="Logo" className="h-10 w-auto" />

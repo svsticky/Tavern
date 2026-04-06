@@ -74,7 +74,7 @@ namespace Backend.Controllers
 
         // DELETE: api/activities/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteActivity(uint id)
+        public async Task<ActionResult> DeleteActivity(uint id)
         {
             try
             {
@@ -93,7 +93,7 @@ namespace Backend.Controllers
 
         // PATCH: api/activities/5
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken ct)
+        public async Task<ActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken ct)
         {
             try
             {
@@ -117,7 +117,7 @@ namespace Backend.Controllers
         // POST: api/activities/5/poster
         [HttpPost("{id}/poster")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadPoster(uint id, IFormFile? poster)
+        public async Task<ActionResult> UploadPoster(uint id, IFormFile? poster)
         {
             try
             {
@@ -141,7 +141,7 @@ namespace Backend.Controllers
         // PUT: api/activities/5
         [HttpPut("{id}")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> PutActivity(uint id, [FromForm] PutActivityDTO dto)
+        public async Task<ActionResult> PutActivity(uint id, [FromForm] PutActivityDTO dto)
         {
             try
             {
@@ -164,7 +164,7 @@ namespace Backend.Controllers
 
         // GET: api/activities/5/poster
         [HttpGet("{id}/poster")]
-        public async Task<IActionResult> GetPoster(uint id)
+        public async Task<ActionResult<FileStreamResult>> GetPoster(uint id)
         {
             try
             {
@@ -183,7 +183,7 @@ namespace Backend.Controllers
 
         // GET: api/activities/5/poster/download
         [HttpGet("{id}/poster/download")]
-        public async Task<IActionResult> DownloadPoster(uint id)
+        public async Task<ActionResult<FileStreamResult>> DownloadPoster(uint id)
         {
             try
             {

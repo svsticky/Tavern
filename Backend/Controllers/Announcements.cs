@@ -50,7 +50,7 @@ public class AnnouncementsController : ControllerBase
 
     // DELETE: api/announcements/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteAnnouncement(uint id, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteAnnouncement(uint id, CancellationToken cancellationToken)
     {
         try
         {
@@ -65,7 +65,7 @@ public class AnnouncementsController : ControllerBase
 
     // PATCH: api/announcements/5
     [HttpPatch("{id}")]
-    public async Task<IActionResult> PatchAnnouncement(uint id, [FromBody] JsonPatchDocument<Announcement> patchDoc, CancellationToken cancellationToken)
+    public async Task<ActionResult> PatchAnnouncement(uint id, [FromBody] JsonPatchDocument<Announcement> patchDoc, CancellationToken cancellationToken)
     {
         if (patchDoc == null)
             return BadRequest();
@@ -87,7 +87,7 @@ public class AnnouncementsController : ControllerBase
 
     // PUT: api/announcements/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutAnnouncement(uint id, UpdateAnnouncementDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult> PutAnnouncement(uint id, UpdateAnnouncementDTO dto, CancellationToken cancellationToken)
     {
         try
         {

@@ -38,7 +38,7 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
     {
         var paidSum = db.EnrollmentPayments
             .Include(p => p.Activity)
-            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity.IsOpenForPayment && !enrollment.IsOnWaitingList)
+            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity != null && p.Activity.IsOpenForPayment && !enrollment.IsOnWaitingList)
             .Sum(p => (decimal?)p.Price) ?? 0;
 
         return enrollment.Price - paidSum;

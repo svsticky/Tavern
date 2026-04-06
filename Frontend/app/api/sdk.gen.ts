@@ -72,6 +72,7 @@ export const putApiActivitiesById = <ThrowOnError extends boolean = false>(optio
 });
 
 export const getApiActivitiesByIdPoster = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdPosterData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdPosterResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/activities/{id}/poster',
     ...options
@@ -89,6 +90,7 @@ export const postApiActivitiesByIdPoster = <ThrowOnError extends boolean = false
 });
 
 export const getApiActivitiesByIdPosterDownload = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdPosterDownloadData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdPosterDownloadResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/activities/{id}/poster/download',
     ...options
@@ -356,18 +358,21 @@ export const deleteApiMembersByIdProfilePicture = <ThrowOnError extends boolean 
 });
 
 export const getApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<GetApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).get<GetApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/members/{id}/profile-picture',
     ...options
 });
 
 export const getApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsMembershipResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership',
     ...options
 });
 
 export const postApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsMembershipResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership',
     ...options,
@@ -378,24 +383,28 @@ export const postApiPaymentsMembership = <ThrowOnError extends boolean = false>(
 });
 
 export const getApiPaymentsMembershipById = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsMembershipByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsMembershipByIdResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership/{id}',
     ...options
 });
 
 export const getApiPaymentsEnrollment = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsEnrollmentData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsEnrollmentResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/enrollment',
     ...options
 });
 
 export const getApiPaymentsEnrollmentById = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsEnrollmentByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsEnrollmentByIdResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/enrollment/{id}',
     ...options
 });
 
 export const postApiPaymentsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsActivityResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/activity',
     ...options,
@@ -417,12 +426,14 @@ export const postApiPaymentsWebhook = <ThrowOnError extends boolean = false>(opt
 });
 
 export const getApiPaymentsUnpaid = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsUnpaidData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsUnpaidResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/unpaid',
     ...options
 });
 
 export const getApiPaymentsOverpaid = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsOverpaidData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsOverpaidResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/overpaid',
     ...options
@@ -435,6 +446,7 @@ export const getApiPaymentsMemberByMemberIdStatus = <ThrowOnError extends boolea
 });
 
 export const getApiProfilepictureViewByPath = <ThrowOnError extends boolean = false>(options: Options<GetApiProfilepictureViewByPathData, ThrowOnError>) => (options.client ?? client).get<GetApiProfilepictureViewByPathResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/profilepicture/view/{path}',
     ...options
@@ -612,12 +624,14 @@ export const putApiStudiesById = <ThrowOnError extends boolean = false>(options:
 });
 
 export const getApiStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<GetApiStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).get<GetApiStudyenrollmentsResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studyenrollments',
     ...options
 });
 
 export const postApiStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<PostApiStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostApiStudyenrollmentsResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studyenrollments',
     ...options,
@@ -634,6 +648,7 @@ export const deleteApiStudyenrollmentsById = <ThrowOnError extends boolean = fal
 });
 
 export const getApiStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<GetApiStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiStudyenrollmentsByIdResponses, unknown, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studyenrollments/{id}',
     ...options

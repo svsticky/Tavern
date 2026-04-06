@@ -25,6 +25,7 @@ public class StudiesController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<Study>>> GetStudies(CancellationToken ct)
     {
         return Ok(await _service.GetStudies(ct));
@@ -38,7 +39,7 @@ public class StudiesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostStudy(PostStudyDTO dto, CancellationToken ct)
+    public async Task<ActionResult> PostStudy(PostStudyDTO dto, CancellationToken ct)
     {
         try
         {
@@ -56,7 +57,7 @@ public class StudiesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteStudy(uint id, CancellationToken ct)
+    public async Task<ActionResult> DeleteStudy(uint id, CancellationToken ct)
     {
         try
         {
@@ -74,7 +75,7 @@ public class StudiesController : ControllerBase
     }
 
     [HttpPatch("{id}")]
-    public async Task<IActionResult> PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, CancellationToken ct)
+    public async Task<ActionResult> PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, CancellationToken ct)
     {
         try
         {
@@ -92,7 +93,7 @@ public class StudiesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutStudy(uint id, StudyUpdateDTO dto, CancellationToken ct)
+    public async Task<ActionResult> PutStudy(uint id, StudyUpdateDTO dto, CancellationToken ct)
     {
         try
         {

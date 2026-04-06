@@ -38,7 +38,7 @@ public class RoleAliasesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostRoleAlias(PostRoleAliasDTO dto, CancellationToken ct)
+    public async Task<ActionResult> PostRoleAlias(PostRoleAliasDTO dto, CancellationToken ct)
     {
         try
         {
@@ -56,7 +56,7 @@ public class RoleAliasesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteRoleAlias(uint id, CancellationToken ct)
+    public async Task<ActionResult> DeleteRoleAlias(uint id, CancellationToken ct)
     {
         try
         {
@@ -74,7 +74,7 @@ public class RoleAliasesController : ControllerBase
     }
 
     [HttpPatch("{id}")]
-    public async Task<IActionResult> PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, CancellationToken ct)
+    public async Task<ActionResult> PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, CancellationToken ct)
     {
         try
         {
@@ -92,7 +92,7 @@ public class RoleAliasesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutRoleAlias(uint id, RoleAliasUpdateDTO dto, CancellationToken ct)
+    public async Task<ActionResult> PutRoleAlias(uint id, RoleAliasUpdateDTO dto, CancellationToken ct)
     {
         try
         {

@@ -115,31 +115,69 @@ namespace Backend.Services
                 throw new ArgumentException("Parent phone number required for minors.");
             }
 
-            var member = new Member
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            
+            try
             {
-                StudentNumber = dto.StudentNumber,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber,
-                Street = dto.Street,
-                HouseNumber = dto.HouseNumber,
-                PostalCode = dto.PostalCode,
-                City = dto.City,
-                DateOfBirth = dto.DateOfBirth,
-                ParentPhoneNumber = dto.ParentPhoneNumber,
-                MailSubscriptions = dto.MailSubscriptions,
-                PreferredLanguage = dto.PreferredLanguage,
-                RegisteredOn = DateTimeOffset.UtcNow,
-                StudyEnrollments = new List<StudyEnrollment>()
-            };
+                var member = new Member
+                {
+                    StudentNumber = dto.StudentNumber,
+                    FirstName = dto.FirstName,
+                    LastName = dto.LastName,
+                    Email = dto.Email,
+                    PhoneNumber = dto.PhoneNumber,
+                    Street = dto.Street,
+                    HouseNumber = dto.HouseNumber,
+                    PostalCode = dto.PostalCode,
+                    City = dto.City,
+                    DateOfBirth = dto.DateOfBirth,
+                    ParentPhoneNumber = dto.ParentPhoneNumber,
+                    MailSubscriptions = dto.MailSubscriptions,
+                    PreferredLanguage = dto.PreferredLanguage,
+                    RegisteredOn = DateTimeOffset.UtcNow,
+                    StudyEnrollments = new List<StudyEnrollment>()
+                };
 
-            StateValidateUtils.Validate(member);
+                StateValidateUtils.Validate(member);
 
-            db.Members.Add(member);
-            await db.SaveChangesAsync(cancellationToken);
+                db.Members.Add(member);
+                await db.SaveChangesAsync(cancellationToken);
+                
+                if (dto.StudyEnrollments != null)
+                {
+                    foreach (var se in dto.StudyEnrollments)
+                    {
+                        var enrollment = new StudyEnrollment
+                        {
+                            MemberId = member.Id,
+                            StudyId = se.StudyId,
+                            EnrollmentDate = se.EnrollmentDate,
+                            Status = se.Status
+                        };
 
-            return member;
+                        StateValidateUtils.Validate(enrollment);
+
+                        db.StudyEnrollments.Add(enrollment);
+                    }
+
+                }
+
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.Id,
+                    TaskType = KeycloakTaskType.Create
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+                return member;
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
 
         public async Task<bool> DeleteMember(Guid id, Guid userId, CancellationToken cancellationToken)
@@ -161,10 +199,27 @@ namespace Backend.Services
             var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
             if (member == null) return false;
 
-            patchDoc.ApplyTo(member);
-            StateValidateUtils.Validate(member);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            
+            try
+            {
+                patchDoc.ApplyTo(member);
+                StateValidateUtils.Validate(member);
 
-            await db.SaveChangesAsync(cancellationToken);
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Sync
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
 
             return true;
         }
@@ -174,23 +229,41 @@ namespace Backend.Services
             var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
             if (member == null) return false;
 
-            member.StudentNumber = dto.StudentNumber;
-            member.FirstName = dto.FirstName;
-            member.LastName = dto.LastName;
-            member.Email = dto.Email;
-            member.PhoneNumber = dto.PhoneNumber;
-            member.Street = dto.Street;
-            member.HouseNumber = dto.HouseNumber;
-            member.PostalCode = dto.PostalCode;
-            member.City = dto.City;
-            member.DateOfBirth = dto.DateOfBirth;
-            member.ParentPhoneNumber = dto.ParentPhoneNumber;
-            member.PreferredLanguage = dto.PreferredLanguage;
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            StateValidateUtils.Validate(member);
+            try
+            {
+                member.StudentNumber = dto.StudentNumber;
+                member.FirstName = dto.FirstName;
+                member.LastName = dto.LastName;
+                member.Email = dto.Email;
+                member.PhoneNumber = dto.PhoneNumber;
+                member.Street = dto.Street;
+                member.HouseNumber = dto.HouseNumber;
+                member.PostalCode = dto.PostalCode;
+                member.City = dto.City;
+                member.DateOfBirth = dto.DateOfBirth;
+                member.ParentPhoneNumber = dto.ParentPhoneNumber;
+                member.PreferredLanguage = dto.PreferredLanguage;
 
-            await db.SaveChangesAsync(cancellationToken);
-            return true;
+                StateValidateUtils.Validate(member);
+
+                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                {
+                    KeycoakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
+                    TaskType = KeycloakTaskType.Sync
+                });
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
         }
 
         public async Task<FileResultDto?> GetProfilePictureFile(string path)

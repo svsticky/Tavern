@@ -5,10 +5,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from "react-router";
-import { ReactKeycloakProvider } from "@react-keycloak/web";
-import Keycloak from "keycloak-js";
 import { useEffect, useState } from "react";
 
 import "./i18n";
@@ -16,16 +13,9 @@ import i18n from "./i18n";
 import { client } from "./api/client.gen";
 import type { Route } from "./+types/root";
 import "./app.css";
-import { postApiPaymentsMembership } from "./api";
 
 client.setConfig({
   baseURL: import.meta.env.ApiUrl ?? "https://localhost:8081",
-});
-
-const keycloak = new Keycloak({
-  url: import.meta.env.KeycloakUrl ?? "https://localhost:8085/",
-  realm: import.meta.env.KeycloakRealm ?? "master",
-  clientId: import.meta.env.KeycloakClientId ?? "react",
 });
 
 export const links: Route.LinksFunction = () => [
@@ -38,27 +28,6 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
- useEffect(() => {
-    const interceptor = client.instance.interceptors.response.use(
-      async (response) => {
-        if (response.status === 200) {
-          console.log(`request to ${response.config.url} was successful`);
-        }
-          
-        return response;
-      },
-      (error) => {
-        if (error.response && error.response.status === 401) {
-          console.log("Unauthorized, redirecting...");
-          window.location.href = "/logout";
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => client.instance.interceptors.response.eject(interceptor);
-  }, []);
-
   return (
     <html lang="en">
       <head>
@@ -92,12 +61,7 @@ export default function App() {
   if (!i18nReady) return null;
 
   return (
-    <ReactKeycloakProvider 
-      authClient={keycloak}
-      initOptions={{ onLoad: 'check-sso' }}
-    >
-      <Outlet />
-    </ReactKeycloakProvider>
+    <Outlet />
   );
 }
 

@@ -71,7 +71,7 @@ public class EnrollmentsController : ControllerBase
 
     // DELETE: api/enrollments/1/{memberId}
     [HttpDelete("{activityId}/{memberId}")]
-    public async Task<IActionResult> DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
     {
         try
         {
@@ -90,7 +90,7 @@ public class EnrollmentsController : ControllerBase
 
     // PUT: api/enrollments/1/{memberId}
     [HttpPut("{activityId}/{memberId}")]
-    public async Task<IActionResult> PutEnrollment(
+    public async Task<ActionResult> PutEnrollment(
         uint activityId,
         Guid memberId,
         PostEnrollmentDTO dto,
@@ -117,7 +117,7 @@ public class EnrollmentsController : ControllerBase
 
     // PATCH: api/enrollments/1/{memberId}
     [HttpPatch("{activityId}/{memberId}")]
-    public async Task<IActionResult> PatchEnrollment(
+    public async Task<ActionResult> PatchEnrollment(
         uint activityId,
         Guid memberId,
         [FromBody] JsonPatchDocument<Enrollment> patchDoc,

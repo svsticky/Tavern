@@ -24,7 +24,7 @@ public class StudyEnrollmentsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetStudyEnrollments(CancellationToken ct)
+    public async Task<ActionResult<IEnumerable<StudyEnrollmentResponseDTO>>> GetStudyEnrollments(CancellationToken ct)
     {
         try
         {
@@ -38,7 +38,7 @@ public class StudyEnrollmentsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetStudyEnrollment(uint id, CancellationToken ct)
+    public async Task<ActionResult<StudyEnrollmentResponseDTO>> GetStudyEnrollment(uint id, CancellationToken ct)
     {
         try
         {
@@ -52,7 +52,7 @@ public class StudyEnrollmentsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostStudyEnrollment(PostStudyEnrollmentDTO dto, CancellationToken ct)
+    public async Task<ActionResult<StudyEnrollmentResponseDTO>> PostStudyEnrollment(PostStudyEnrollmentDTO dto, CancellationToken ct)
     {
         try
         {
@@ -70,7 +70,7 @@ public class StudyEnrollmentsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteStudyEnrollment(uint id, CancellationToken ct)
+    public async Task<ActionResult> DeleteStudyEnrollment(uint id, CancellationToken ct)
     {
         try
         {
@@ -88,7 +88,7 @@ public class StudyEnrollmentsController : ControllerBase
     }
 
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken ct)
+    public async Task<ActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken ct)
     {
         try
         {

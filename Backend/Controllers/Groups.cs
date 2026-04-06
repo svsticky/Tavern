@@ -89,7 +89,7 @@ public class GroupsController : ControllerBase
 
     // DELETE: api/groups/5
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
     {
         try
         {
@@ -115,7 +115,7 @@ public class GroupsController : ControllerBase
 
     // PATCH: api/groups/5
     [HttpPatch("{id}")]
-    public async Task<IActionResult> PatchGroup(
+    public async Task<ActionResult> PatchGroup(
         uint id,
         [FromBody] JsonPatchDocument<Group> patchDoc,
         CancellationToken cancellationToken)
@@ -151,7 +151,7 @@ public class GroupsController : ControllerBase
 
     // PUT: api/groups/5
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutGroup(
+    public async Task<ActionResult> PutGroup(
         uint id,
         GroupUpdateDTO groupDto,
         CancellationToken cancellationToken)

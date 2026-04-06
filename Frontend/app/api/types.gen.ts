@@ -86,6 +86,19 @@ export type Enrollment = {
     isOnWaitingList?: boolean;
 };
 
+export type EnrollmentPayment = {
+    id?: number;
+    price?: number;
+    mollieId: string | null;
+    paymentIntentUrl: string | null;
+    paidAt?: string | null;
+    memberId?: string | null;
+    member?: Member;
+    exactEntryId?: string | null;
+    activityId?: number | null;
+    activity?: Activity;
+};
+
 export type EnrollmentSummaryDto = {
     isOnWaitingList: boolean;
     member: MemberSummaryDto;
@@ -256,6 +269,17 @@ export type MemberUpdateDto = {
     suspended?: boolean;
 };
 
+export type MembershipPayment = {
+    id?: number;
+    price?: number;
+    mollieId: string | null;
+    paymentIntentUrl: string | null;
+    paidAt?: string | null;
+    memberId?: string | null;
+    member?: Member;
+    exactEntryId?: string | null;
+};
+
 export type Operation = {
     operationType?: OperationType;
     path?: string | null;
@@ -313,6 +337,10 @@ export type PostMemberDto = {
 
 export type PostMembershipPaymentDto = {
     memberId?: string;
+};
+
+export type PostPaymentResponse = {
+    checkoutUrl: string | null;
 };
 
 export type PostRoleAliasDto = {
@@ -604,8 +632,10 @@ export type GetApiActivitiesByIdPosterResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type GetApiActivitiesByIdPosterResponse = GetApiActivitiesByIdPosterResponses[keyof GetApiActivitiesByIdPosterResponses];
 
 export type PostApiActivitiesByIdPosterData = {
     body?: {
@@ -638,8 +668,10 @@ export type GetApiActivitiesByIdPosterDownloadResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type GetApiActivitiesByIdPosterDownloadResponse = GetApiActivitiesByIdPosterDownloadResponses[keyof GetApiActivitiesByIdPosterDownloadResponses];
 
 export type GetApiAnnouncementsData = {
     body?: never;
@@ -1169,8 +1201,10 @@ export type GetApiMembersByIdProfilePictureResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type GetApiMembersByIdProfilePictureResponse = GetApiMembersByIdProfilePictureResponses[keyof GetApiMembersByIdProfilePictureResponses];
 
 export type GetApiPaymentsMembershipData = {
     body?: never;
@@ -1183,8 +1217,10 @@ export type GetApiPaymentsMembershipResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Array<MembershipPayment>;
 };
+
+export type GetApiPaymentsMembershipResponse = GetApiPaymentsMembershipResponses[keyof GetApiPaymentsMembershipResponses];
 
 export type PostApiPaymentsMembershipData = {
     body?: PostMembershipPaymentDto;
@@ -1197,8 +1233,10 @@ export type PostApiPaymentsMembershipResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: PostPaymentResponse;
 };
+
+export type PostApiPaymentsMembershipResponse = PostApiPaymentsMembershipResponses[keyof PostApiPaymentsMembershipResponses];
 
 export type GetApiPaymentsMembershipByIdData = {
     body?: never;
@@ -1213,8 +1251,10 @@ export type GetApiPaymentsMembershipByIdResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: MembershipPayment;
 };
+
+export type GetApiPaymentsMembershipByIdResponse = GetApiPaymentsMembershipByIdResponses[keyof GetApiPaymentsMembershipByIdResponses];
 
 export type GetApiPaymentsEnrollmentData = {
     body?: never;
@@ -1227,8 +1267,10 @@ export type GetApiPaymentsEnrollmentResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Array<EnrollmentPayment>;
 };
+
+export type GetApiPaymentsEnrollmentResponse = GetApiPaymentsEnrollmentResponses[keyof GetApiPaymentsEnrollmentResponses];
 
 export type GetApiPaymentsEnrollmentByIdData = {
     body?: never;
@@ -1243,8 +1285,10 @@ export type GetApiPaymentsEnrollmentByIdResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: EnrollmentPayment;
 };
+
+export type GetApiPaymentsEnrollmentByIdResponse = GetApiPaymentsEnrollmentByIdResponses[keyof GetApiPaymentsEnrollmentByIdResponses];
 
 export type PostApiPaymentsActivityData = {
     body?: PostActivityPaymentDto;
@@ -1257,8 +1301,10 @@ export type PostApiPaymentsActivityResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: PostPaymentResponse;
 };
+
+export type PostApiPaymentsActivityResponse = PostApiPaymentsActivityResponses[keyof PostApiPaymentsActivityResponses];
 
 export type PostApiPaymentsWebhookData = {
     body?: {
@@ -1287,8 +1333,10 @@ export type GetApiPaymentsUnpaidResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Array<unknown>;
 };
+
+export type GetApiPaymentsUnpaidResponse = GetApiPaymentsUnpaidResponses[keyof GetApiPaymentsUnpaidResponses];
 
 export type GetApiPaymentsOverpaidData = {
     body?: never;
@@ -1301,8 +1349,10 @@ export type GetApiPaymentsOverpaidResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Array<unknown>;
 };
+
+export type GetApiPaymentsOverpaidResponse = GetApiPaymentsOverpaidResponses[keyof GetApiPaymentsOverpaidResponses];
 
 export type GetApiPaymentsMemberByMemberIdStatusData = {
     body?: never;
@@ -1333,8 +1383,10 @@ export type GetApiProfilepictureViewByPathResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
+
+export type GetApiProfilepictureViewByPathResponse = GetApiProfilepictureViewByPathResponses[keyof GetApiProfilepictureViewByPathResponses];
 
 export type PostApiProfilepictureByIdProfilePictureData = {
     body?: {
@@ -1669,8 +1721,10 @@ export type GetApiStudyenrollmentsResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Array<StudyEnrollmentResponseDto>;
 };
+
+export type GetApiStudyenrollmentsResponse = GetApiStudyenrollmentsResponses[keyof GetApiStudyenrollmentsResponses];
 
 export type PostApiStudyenrollmentsData = {
     body?: PostStudyEnrollmentDto;
@@ -1683,8 +1737,10 @@ export type PostApiStudyenrollmentsResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StudyEnrollmentResponseDto;
 };
+
+export type PostApiStudyenrollmentsResponse = PostApiStudyenrollmentsResponses[keyof PostApiStudyenrollmentsResponses];
 
 export type DeleteApiStudyenrollmentsByIdData = {
     body?: never;
@@ -1715,8 +1771,10 @@ export type GetApiStudyenrollmentsByIdResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: StudyEnrollmentResponseDto;
 };
+
+export type GetApiStudyenrollmentsByIdResponse = GetApiStudyenrollmentsByIdResponses[keyof GetApiStudyenrollmentsByIdResponses];
 
 export type PatchApiStudyenrollmentsByIdStatusData = {
     body?: StudyStatus;

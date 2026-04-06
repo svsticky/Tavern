@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
+using Backend.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -17,7 +18,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/membership
         [HttpGet("membership")]
-        public async Task<IActionResult> GetMembershipPayments(CancellationToken ct)
+        public async Task<ActionResult<IEnumerable<MembershipPayment>>> GetMembershipPayments(CancellationToken ct)
         {
             var result = await _paymentService.GetMembershipPayments(ct);
             return Ok(result);
@@ -25,7 +26,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/membership/5
         [HttpGet("membership/{id}")]
-        public async Task<IActionResult> GetMembershipPayment(uint id, CancellationToken ct)
+        public async Task<ActionResult<MembershipPayment>> GetMembershipPayment(uint id, CancellationToken ct)
         {
             var result = await _paymentService.GetMembershipPayment(id, ct);
             return result != null ? Ok(result) : NotFound();
@@ -33,7 +34,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/enrollment
         [HttpGet("enrollment")]
-        public async Task<IActionResult> GetEnrollmentPayments(CancellationToken ct)
+        public async Task<ActionResult<IEnumerable<EnrollmentPayment>>> GetEnrollmentPayments(CancellationToken ct)
         {
             var result = await _paymentService.GetEnrollmentPayments(ct);
             return Ok(result);
@@ -41,7 +42,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/enrollment/5
         [HttpGet("enrollment/{id}")]
-        public async Task<IActionResult> GetEnrollmentPayment(uint id, CancellationToken ct)
+        public async Task<ActionResult<EnrollmentPayment>> GetEnrollmentPayment(uint id, CancellationToken ct)
         {
             var result = await _paymentService.GetEnrollmentPayment(id, ct);
             return result != null ? Ok(result) : NotFound();
@@ -49,7 +50,7 @@ namespace Backend.Controllers
 
         // POST: api/payments/membership
         [HttpPost("membership")]
-        public async Task<IActionResult> PostMembershipPayment(
+        public async Task<ActionResult<PostPaymentResponse>> PostMembershipPayment(
             PostMembershipPaymentDTO dto,
             [FromServices] Mollie.Api.Client.Abstract.IPaymentClient paymentClient
         )
@@ -67,7 +68,7 @@ namespace Backend.Controllers
 
         // POST: api/payments/activity
         [HttpPost("activity")]
-        public async Task<IActionResult> PostActivityPayment(
+        public async Task<ActionResult<PostPaymentResponse>> PostActivityPayment(
             PostActivityPaymentDTO dto,
             [FromServices] Mollie.Api.Client.Abstract.IPaymentClient paymentClient
         )
@@ -86,7 +87,7 @@ namespace Backend.Controllers
         // POST: api/payments/webhook
         [HttpPost("webhook")]
         [Consumes("application/x-www-form-urlencoded")]
-        public async Task<IActionResult> MollieWebhook(
+        public async Task<ActionResult> MollieWebhook(
             [FromForm] string id,
             [FromServices] IPaymentWebhookService webhookService
         )
@@ -97,7 +98,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/unpaid
         [HttpGet("unpaid")]
-        public IActionResult GetUnpaid()
+        public async Task<ActionResult<IEnumerable<object?>>> GetUnpaid()
         {
             var result = _paymentService.GetUnpaid();
             return Ok(result);
@@ -105,7 +106,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/overpaid
         [HttpGet("overpaid")]
-        public IActionResult GetOverpaid()
+        public async Task<ActionResult<IEnumerable<object?>>> GetOverpaid()
         {
             var result = _paymentService.GetOverpaid();
             return Ok(result);
@@ -113,7 +114,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/member/{memberId}/status
         [HttpGet("member/{memberId}/status")]
-        public async Task<IActionResult> GetMemberPaymentStatus(Guid memberId, CancellationToken ct)
+        public async Task<ActionResult<object?>> GetMemberPaymentStatus(Guid memberId, CancellationToken ct)
         {
             try
             {

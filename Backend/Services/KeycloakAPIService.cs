@@ -2,7 +2,6 @@ using System.Net.Http.Headers;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
-using Backend.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -66,6 +65,9 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         if (keycloakId != null)
         {
             await client.PutAsJsonAsync($"users/{keycloakId}", newUser);
+
+            SendActionEmail(Guid.Parse(keycloakId), new[] { "UPDATE_PASSWORD", "VERIFY_EMAIL" }).Wait();
+
             return Guid.Parse(keycloakId);
         }
 

@@ -18,7 +18,7 @@ namespace Backend.Controllers
 
         // GET: api/profilepicture/view/{path}
         [HttpGet("view/{path}")]
-        public async Task<IActionResult> GetProfilePictureByPath(string path)
+        public async Task<ActionResult<FileStreamResult>> GetProfilePictureByPath(string path)
         {
             var result = await _service.GetProfilePictureByPath(path);
 
@@ -31,7 +31,7 @@ namespace Backend.Controllers
         // POST: api/profilepicture/{id}/profile-picture
         [HttpPost("{id}/profile-picture")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadProfilePicture(Guid id, IFormFile? image)
+        public async Task<ActionResult> UploadProfilePicture(Guid id, IFormFile? image)
         {
             Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 

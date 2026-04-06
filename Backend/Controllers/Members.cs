@@ -76,7 +76,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMember(Guid id, CancellationToken cancellationToken)
+        public async Task<ActionResult> DeleteMember(Guid id, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
 
@@ -101,7 +101,7 @@ namespace Backend.Controllers
         }
 
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
+        public async Task<ActionResult> PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
 
@@ -122,7 +122,7 @@ namespace Backend.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutMember(Guid id, MemberUpdateDTO dto, CancellationToken cancellationToken)
+        public async Task<ActionResult> PutMember(Guid id, MemberUpdateDTO dto, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
 
@@ -147,7 +147,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("{id}/profile-picture")]
-        public async Task<IActionResult> GetProfilePicture(Guid id)
+        public async Task<ActionResult<FileContentResult>> GetProfilePicture(Guid id)
         {
             var member = await memberService.GetMemberEntity(id);
             if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
@@ -161,7 +161,7 @@ namespace Backend.Controllers
         }
 
         [HttpDelete("{id}/profile-picture")]
-        public async Task<IActionResult> DeleteProfilePicture(Guid id)
+        public async Task<ActionResult> DeleteProfilePicture(Guid id)
         {
             var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 

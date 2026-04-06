@@ -18,11 +18,4 @@ html,
 body {
   @apply bg-white dark:bg-gray-950;
 
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
-    --board-primary-light: #8a5336ff;
-    --board-primary: #914015ff;
-    --board-primary-dark: #923d0fff;
-    --board-secondary: blue;
-  }
 }

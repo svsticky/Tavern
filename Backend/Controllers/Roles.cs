@@ -38,7 +38,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> PostRole(PostRoleDTO dto, CancellationToken ct)
+    public async Task<ActionResult> PostRole(PostRoleDTO dto, CancellationToken ct)
     {
         try
         {
@@ -56,7 +56,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteRole(uint id, CancellationToken ct)
+    public async Task<ActionResult> DeleteRole(uint id, CancellationToken ct)
     {
         try
         {
@@ -74,7 +74,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPatch("{id}")]
-    public async Task<IActionResult> PatchRole(uint id, JsonPatchDocument<Role> patchDoc, CancellationToken ct)
+    public async Task<ActionResult> PatchRole(uint id, JsonPatchDocument<Role> patchDoc, CancellationToken ct)
     {
         try
         {
@@ -92,7 +92,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutRole(uint id, RoleUpdateDTO dto, CancellationToken ct)
+    public async Task<ActionResult> PutRole(uint id, RoleUpdateDTO dto, CancellationToken ct)
     {
         try
         {

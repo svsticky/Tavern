@@ -12,7 +12,7 @@ namespace Backend.Controllers;
 public class SpecificationAnswers(ISpecificationAnswerService service) : ControllerBase
 {
     [HttpPatch("{answerId}")]
-    public async Task<IActionResult> PatchSpecificationAnswer(uint answerId, [FromBody] JsonPatchDocument<SpecificationAnswer> patchDoc, CancellationToken ct)
+    public async Task<ActionResult> PatchSpecificationAnswer(uint answerId, [FromBody] JsonPatchDocument<SpecificationAnswer> patchDoc, CancellationToken ct)
     {
         if (patchDoc == null)
             return BadRequest("Invalid patch document.");

@@ -86,11 +86,11 @@ namespace Backend.Services
         {
             return new
             {
-                GLAccount = payment.Activity.GLAccountId ?? payment.Activity.Organizer?.DefaultGLAccount,
-                Description = $"{payment.Activity.Organizer?.Name ?? ""} | {payment.Activity.Name}",
-                VATCode = MapVat(payment.Activity.VatRate),
-                CostCenter = payment.Activity.CostCenterId ?? payment.Activity.Organizer?.DefaultCostCenter,
-                CostUnit = payment.Activity.CostUnitId ?? payment.Activity.Organizer?.DefaultCostUnit,
+                GLAccount = payment.Activity?.GLAccountId ?? payment.Activity?.Organizer?.DefaultGLAccount,
+                Description = $"{payment.Activity?.Organizer?.Name ?? ""} | {payment.Activity?.Name}",
+                VATCode = MapVat(payment.Activity?.VatRate),
+                CostCenter = payment.Activity?.CostCenterId ?? payment.Activity?.Organizer?.DefaultCostCenter,
+                CostUnit = payment.Activity?.CostUnitId ?? payment.Activity?.Organizer?.DefaultCostUnit,
                 AmountDC = payment.Price
             };
         }
