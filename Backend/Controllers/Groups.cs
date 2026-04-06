@@ -1,225 +1,184 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Backend.Interfaces;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
-using Backend.Utils;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Controllers
+namespace Backend.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class GroupsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class Groups(PostgresDbContext db) : ControllerBase
+    private readonly IGroupService _groupService;
+
+    public GroupsController(IGroupService groupService)
     {
-        // GET: api/groups
-        /// <summary>
-        /// Lists all groups in the database.
-        /// </summary>
-        /// <returns>Said list.</returns>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<GroupResponseDTO>>> GetGroups([FromQuery] GetGroupDTO dto, CancellationToken cancellationToken)
+        _groupService = groupService;
+    }
+
+    private Guid GetUserId()
+    {
+        return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    }
+
+    // GET: api/groups
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<GroupResponseDTO>>> GetGroups(
+        [FromQuery] GetGroupDTO dto,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var userId = GetUserId();
 
-            if((dto.MembershipYear == null || dto.IncludeInactive) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid();
-            }
-
-            var result = await db.Groups
-                .Select(c => new GroupResponseDTO
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipSummaryDTO
-                    {
-                        Member = new MemberSummaryDTO
-                        {
-                            Id = cm.Member.Id,
-                            FirstName = cm.Member.FirstName,
-                            LastName = cm.Member.LastName,
-                        },
-                        GroupName = c.Name,
-                        MembershipYear = cm.MembershipYear
-                    }).ToList()
-                })
-                .ToListAsync(cancellationToken);
-
+            var result = await _groupService.GetGroups(userId, dto, cancellationToken);
             return Ok(result);
         }
-
-        // GET: api/groups/5
-        /// <summary>
-        /// Fetches a single group.
-        /// </summary>
-        /// <param name="id">The id of the group to fetch.</param>
-        /// <returns>The full group.</returns>
-        [HttpGet("{id}")]
-        public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            var result = await db.Groups
-                .Where(g => g.Id == id)
-                .Select(g => new GroupResponseDTO
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Active = g.Active,
-                    Type = g.Type,
-                    GroupMemberships = g.GroupMemberships.Select(gm => new GroupMembershipSummaryDTO
-                    {
-                        Member = new MemberSummaryDTO
-                        {
-                            Id = gm.Member.Id,
-                            FirstName = gm.Member.FirstName,
-                            LastName = gm.Member.LastName
-                        },
-                        GroupName = g.Name,
-                        MembershipYear = gm.MembershipYear
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (result == null) return NotFound();
-
-            return Ok(result);
+            return Forbid(ex.Message);
         }
+    }
 
-        // POST: api/groups
-        /// <summary>
-        /// Creates a new group with a unique ID assigned by the database.
-        /// </summary>
-        /// <param name="group">The group to be added to the database.</param>
-        /// <returns>Fully created group in body and api route of where to fetch it in the headers.</returns>
-        [HttpPost]
-        public async Task<ActionResult<Group>> PostGroup(PostGroupDTO groupDto, CancellationToken cancellationToken)
+    // GET: api/groups/5
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
+    {
+        var result = await _groupService.GetGroup(id, cancellationToken);
+
+        if (result == null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    // POST: api/groups
+    [HttpPost]
+    public async Task<ActionResult<Group>> PostGroup(
+        PostGroupDTO groupDto,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var userId = GetUserId();
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can create groups.");
-            }
+            var created = await _groupService.CreateGroup(groupDto, userId, cancellationToken);
 
-            if(groupDto.Name.Contains(';') || groupDto.Name.Contains(':'))
-            {
-                return BadRequest("Group names cannot contain ';' or ':'.");
-            }
-
-            var newEntry = db.Groups.Add(new Group
-            {
-                Name = groupDto.Name,
-                Type = groupDto.Type
-            });
-            await db.SaveChangesAsync(cancellationToken);
-
-            return CreatedAtAction(nameof(GetGroup), new { id = newEntry.Entity.Id }, newEntry.Entity);
+            return CreatedAtAction(
+                nameof(GetGroup),
+                new { id = created.Id },
+                created
+            );
         }
-
-        // DELETE: api/groups/5
-        /// <summary>
-        /// Deletes a group.
-        /// </summary>
-        /// <param name="id">The id of the group to delete.</param>
-        /// <returns>Nothing, really.</returns>
-        /// <remarks>
-        /// Deleting a group will also delete all enrollments and group enrollments associated with said
-        /// group.
-        /// </remarks>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            return Forbid(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can delete groups.");
-            }
+    // DELETE: api/groups/5
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = GetUserId();
 
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
-
-            db.Groups.Remove(group);
-            await db.SaveChangesAsync(cancellationToken);
+            await _groupService.DeleteGroup(id, userId, cancellationToken);
 
             return NoContent();
         }
-
-        // PATCH: api/groups/5
-        /// <summary>
-        /// Partially updates an groups details.
-        /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="patchDoc">The patch document containing the changes.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchGroup(uint id, [FromBody] JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can update groups.");
-            }
+    // PATCH: api/groups/5
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> PatchGroup(
+        uint id,
+        [FromBody] JsonPatchDocument<Group> patchDoc,
+        CancellationToken cancellationToken)
+    {
+        if (patchDoc == null)
+            return BadRequest();
 
-            if (patchDoc == null)
-                return BadRequest();
+        try
+        {
+            var userId = GetUserId();
 
-            Group? group = await db.Groups.FindAsync(new [] { id }, cancellationToken);
-            if (group == null)
-                return NotFound();
-
-            patchDoc.ApplyTo(group, ModelState);
-
-            TryValidateModel(group);
-
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            if (group.Name.Contains(';') || group.Name.Contains(':'))
-            {
-                return BadRequest("Group names cannot contain ';' or ':'.");
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
+            await _groupService.PatchGroup(id, userId, patchDoc, cancellationToken);
 
             return NoContent();
         }
-
-        // PUT: api/groups/5
-        /// <summary>
-        /// Updates a group's details.
-        /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="groupDto">The new details of the group.</param>
-        /// <returns>No Content.</returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutGroup(uint id, GroupUpdateDTO groupDto, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can update groups.");
-            }
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
+        }
+    }
 
-            if(groupDto.Name.Contains(';') || groupDto.Name.Contains(':'))
-            {
-                return BadRequest("Group names cannot contain ';' or ':'.");
-            }
+    // PUT: api/groups/5
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutGroup(
+        uint id,
+        GroupUpdateDTO groupDto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = GetUserId();
 
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
-
-            group.Name = groupDto.Name;
-            group.Active = groupDto.Active;
-            group.Type = groupDto.Type;
-
-            await db.SaveChangesAsync(cancellationToken);
+            await _groupService.UpdateGroup(id, userId, groupDto, cancellationToken);
 
             return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ex.Message);
         }
     }
 }

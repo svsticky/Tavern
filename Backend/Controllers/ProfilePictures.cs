@@ -1,34 +1,54 @@
-using Microsoft.AspNetCore.Mvc;
-using Backend.Database;
-using Microsoft.EntityFrameworkCore;
-using Backend.Utils;
 using Backend.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class ProfilePictureController(IStorageService storageService) : ControllerBase
+    public class ProfilePictureController : ControllerBase
     {
+        private readonly IProfilePictureService _service;
+
+        public ProfilePictureController(IProfilePictureService service)
+        {
+            _service = service;
+        }
+
         // GET: api/profilepicture/view/{path}
-        /// <summary>
-        /// Retrieves a profile picture by its path.
-        /// </summary>
         [HttpGet("view/{path}")]
         public async Task<IActionResult> GetProfilePictureByPath(string path)
         {
-            var decodedPath = Uri.UnescapeDataString(path);
-            
-            var file = await storageService.GetFileAsync("profile-pictures", decodedPath);
-            if (file == null)
-            {
-                return NotFound();
-            }
+            var result = await _service.GetProfilePictureByPath(path);
 
-            return File(file.Stream, file.ContentType);
+            if (result == null)
+                return NotFound();
+
+            return File(result.Value.Stream, result.Value.ContentType);
         }
 
+        // POST: api/profilepicture/{id}/profile-picture
+        [HttpPost("{id}/profile-picture")]
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadProfilePicture(Guid id, IFormFile? image)
+        {
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            try
+            {
+                var path = await _service.UploadProfilePicture(id, userId, image);
+
+                return Ok(new { path });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

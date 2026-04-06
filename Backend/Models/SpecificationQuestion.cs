@@ -58,7 +58,7 @@ public class SpecificationQuestion
     /// The activity to which this specification question belongs.
     /// </summary>
     [JsonIgnore]
-    public required Activity Activity { get; set; }
+    public Activity Activity { get; set; } = null!;
 
     /// <summary>
     /// The collection of answers provided for this specification question. The content and format of these answers depend on the type of this specification question.

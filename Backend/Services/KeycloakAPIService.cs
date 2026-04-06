@@ -1,12 +1,14 @@
 using System.Net.Http.Headers;
 using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models;
 using Backend.Utils;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;
 
-public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpClientFactory)
+public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpClientFactory, [FromServices] IPaymentValidationService paymentValidationService)
 {
     public async Task SyncMemberInKeyCloak(Guid keycloakId)
     {
@@ -135,7 +137,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             enabled = true,
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
-                { "access_level", new List<string> { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" } },
+                { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPayment(member) ? "full" : "not_paid" } },
                 { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } }

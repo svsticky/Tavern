@@ -1,3 +1,5 @@
+namespace Backend.Models;
+
 public enum KeycloakTaskType { Create, Sync, Delete }
 
 public class KeyCloakOutboxTask

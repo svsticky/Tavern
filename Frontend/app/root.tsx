@@ -19,7 +19,7 @@ import "./app.css";
 import { postApiPaymentsMembership } from "./api";
 
 client.setConfig({
-  baseURL: import.meta.env.ApiUrl ?? "https://localhost:8080",
+  baseURL: import.meta.env.ApiUrl ?? "https://localhost:8081",
 });
 
 const keycloak = new Keycloak({

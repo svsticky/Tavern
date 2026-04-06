@@ -1,16 +1,23 @@
 import { useKeycloak } from "@react-keycloak/web/lib/useKeycloak";
 import { t } from "i18next";
+import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getApiAnnouncements, type Announcement } from "~/api";
+import { useNavigate } from "react-router";
+import { getApiAnnouncements, type GetAnnouncementDto } from "~/api";
 import AnnouncementsList from "~/components/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
+import Button from "~/components/UI/Button";
+import { PageHeader } from "~/components/UI/PageHeader";
+import { isInGroupWithId } from "~/util/group.util";
 
 export default function AnnouncementsPage() {
   const {keycloak, initialized} = useKeycloak();
   
   const [loading, setLoading] = useState(true);
 
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState<GetAnnouncementDto[]>([]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function loadData() {
@@ -21,7 +28,7 @@ export default function AnnouncementsPage() {
         const announcementsResponse = await getApiAnnouncements();
 
         if (announcementsResponse.data) {
-          setAnnouncements(announcementsResponse.data as Announcement[]);
+          setAnnouncements(announcementsResponse.data as GetAnnouncementDto[]);
         }
       } catch (error) {
         console.error("Error while loading data:", error);
@@ -34,16 +41,26 @@ export default function AnnouncementsPage() {
   }, [initialized, keycloak.authenticated]);
 
   return (
-    <div className="flex flex-col gap-5">
-      <p className="text-2xl font-bold">Announcements</p>
+    <>
+      <div className="flex justify-between items-center">
+        <PageHeader title={t("announcements")}
+          action={isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) && (
+          <Button 
+            onClick={() => (navigate("/announcements/create"))}
+            className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </Button>
+        )} />
+      </div>
       {loading ? (
         t("loading")
       ) : (
         announcements.length === 0 ? (
-          <NoContentTile text="Er zijn momenteel geen aankondigingen." />
+          <NoContentTile text={t("no_announcements")} />
         ) : (
           <AnnouncementsList announcements={announcements} />
         ))}
-    </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ActivityTile from "./Tiles/ActivityTile";
 import type { ActivityResponseDto } from "~/api";
+import { t } from "i18next";
 import { NoContentTile } from "./Tiles/NoContentTile";
 
 interface UpcomingActivitiesProps {
@@ -37,7 +38,7 @@ export default function UpcomingActivities({ activities }: UpcomingActivitiesPro
   }, [activities.length]);
 
   if (activities.length === 0) {
-    return <NoContentTile text="Er zijn momenteel geen aankomende activiteiten." />;
+    return <NoContentTile text={t("no_upcoming_activities")} />;
   }
 
   const displayActivities = activities.slice(0, numVisible);

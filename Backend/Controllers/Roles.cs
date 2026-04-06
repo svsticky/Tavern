@@ -1,159 +1,111 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Backend.Interfaces;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
-using Backend.Utils;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Controllers
+namespace Backend.Controllers;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class RolesController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class Roles(PostgresDbContext db) : ControllerBase
+    private readonly IRoleService _service;
+
+    public RolesController(IRoleService service)
     {
-        // GET: api/roles
-        /// <summary>
-        /// Lists all roles in the database.
-        /// </summary>
-        /// <returns>Said list.</returns>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Role>>> GetRoles(CancellationToken cancellationToken)
+        _service = service;
+    }
+
+    private Guid GetUserId()
+    {
+        return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<Role>>> GetRoles(CancellationToken ct)
+    {
+        return Ok(await _service.GetRoles(ct));
+    }
+
+    [HttpGet("{id}")]
+    public async Task<ActionResult<Role>> GetRole(uint id, CancellationToken ct)
+    {
+        var role = await _service.GetRole(id, ct);
+        return role != null ? Ok(role) : NotFound();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> PostRole(PostRoleDTO dto, CancellationToken ct)
+    {
+        try
         {
-            return await db.Roles.ToListAsync(cancellationToken);
+            var result = await _service.CreateRole(dto, GetUserId(), ct);
+            return CreatedAtAction(nameof(GetRole), new { id = result.Id }, result);
         }
-
-        // GET: api/roles/5
-        /// <summary>
-        /// Fetches a single role.
-        /// </summary>
-        /// <param name="id">The id of the role to fetch.</param>
-        /// <returns>The full role.</returns>
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Role>> GetRole(uint id, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            Role? role = await db.Roles.FindAsync(id, cancellationToken);
-
-            return role != null ? role : NotFound();
+            return Forbid(ex.Message);
         }
-
-        // POST: api/roles
-        /// <summary>
-        /// Creates a new role with a unique ID assigned by the database.
-        /// </summary>
-        /// <param name="roleDto">The role to be added to the database.</param>
-        /// <returns>Fully created role in body and api route of where to fetch it in the headers.</returns>
-        [HttpPost]
-        public async Task<ActionResult<Role>> PostRole(PostRoleDTO roleDto, CancellationToken cancellationToken)
+        catch (Exception ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can create roles.");
-            }
-
-            var newEntry = db.Roles.Add(new Role
-            {
-                Name = roleDto.Name
-            });
-            await db.SaveChangesAsync(cancellationToken);
-
-            return CreatedAtAction(nameof(GetRole), new { id = newEntry.Entity.Id }, newEntry.Entity);
+            return BadRequest(ex.Message);
         }
+    }
 
-        // DELETE: api/roles/5
-        /// <summary>
-        /// Deletes a role.
-        /// </summary>
-        /// <param name="id">The id of the role to delete.</param>
-        /// <returns>Nothing, really.</returns>
-        /// <remarks>
-        /// Deleting a role will also delete all enrollments and role enrollments associated with said
-        /// role.
-        /// </remarks>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteRole(uint id, CancellationToken cancellationToken)
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteRole(uint id, CancellationToken ct)
+    {
+        try
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can delete roles.");
-            }
-
-            Role? role = await db.Roles.FindAsync(id, cancellationToken);
-            if (role == null) return NotFound();
-
-            db.Roles.Remove(role);
-            await db.SaveChangesAsync(cancellationToken);
-
+            await _service.DeleteRole(id, GetUserId(), ct);
             return NoContent();
         }
-
-        // PATCH: api/roles/5
-        /// <summary>
-        /// Partially updates a role's details.
-        /// </summary>
-        /// <param name="id">The id of the role to update.</param>
-        /// <param name="patchDoc">The patch document containing the changes.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchRole(uint id, [FromBody] JsonPatchDocument<Role> patchDoc, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can change roles.");
-            }
-
-            if (patchDoc == null)
-                return BadRequest();
-
-            Role? role = await db.Roles.FindAsync(new [] { id }, cancellationToken);
-            if (role == null)
-                return NotFound();
-
-            patchDoc.ApplyTo(role, ModelState);
-
-            TryValidateModel(role);
-
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            await db.SaveChangesAsync(cancellationToken);
-
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> PatchRole(uint id, JsonPatchDocument<Role> patchDoc, CancellationToken ct)
+    {
+        try
+        {
+            await _service.PatchRole(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
-
-        // PUT: api/roles/5
-        /// <summary>
-        /// Updates a role's details.
-        /// </summary>
-        /// <param name="id">The id of the role to update.</param>
-        /// <param name="roleDto">The new details of the role.</param>
-        /// <returns>No Content.</returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutRole(uint id, RoleUpdateDTO roleDto, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-            {
-                return Forbid("Only board members can change roles.");
-            }
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-            Role? role = await db.Roles.FindAsync(id, cancellationToken);
-            if (role == null) return NotFound();
-
-            role.Name = roleDto.Name;
-
-            await db.SaveChangesAsync(cancellationToken);
-
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutRole(uint id, RoleUpdateDTO dto, CancellationToken ct)
+    {
+        try
+        {
+            await _service.UpdateRole(id, dto, GetUserId(), ct);
             return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 }

@@ -1,12 +1,15 @@
 import { useKeycloak } from "@react-keycloak/web";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
 import { client } from "~/api/client.gen";
 import { postApiPaymentsMembership } from "~/api/sdk.gen";
+import Button from "~/components/UI/Button";
 import i18n from "~/i18n";
 
 export default function AuthenticatedLayout() {
   const { keycloak, initialized } = useKeycloak();
+
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialized || !client.instance) return;
@@ -25,13 +28,18 @@ export default function AuthenticatedLayout() {
     }
 
     if (keycloak.tokenParsed?.access_level === "not_paid") {
+      console.log("User has not paid for membership, redirecting to payment page...");
       postApiPaymentsMembership({
         body: { memberId: keycloak.tokenParsed?.UserId ?? "" }
       }).then(res => {
+        console.log("Received response from payment API:", res);
         if (res.data?.checkoutUrl) {
-          window.location.href = res.data.checkoutUrl;
+          console.log("Redirecting to checkout URL:", res.data.checkoutUrl);
+          setPaymentUrl(res.data.checkoutUrl);
         }
       });
+
+      return;
     }
 
     const resInterceptor = client.instance.interceptors.response.use(
@@ -55,6 +63,24 @@ export default function AuthenticatedLayout() {
   }, [initialized, keycloak.token]);
 
   if (!initialized) return null;
+
+  if (keycloak.tokenParsed?.access_level === "not_paid") {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold mb-4">{i18n.t("membership_payment_required")}</h1>
+        <p className="mb-6">{i18n.t("membership_payment_description")}</p>
+        {paymentUrl && (
+          <Button
+            onClick={() => keycloak.logout({
+              redirectUri: paymentUrl 
+            })} 
+          >
+            {i18n.t("pay")}
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   if (!keycloak.authenticated) {
     return <Navigate to="/login" replace />;

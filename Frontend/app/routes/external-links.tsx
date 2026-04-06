@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import * as Icons from "lucide-react";
 import ExternalLinkTile from "~/components/Tiles/ExternalLinkTile";
+import { PageHeader } from "~/components/UI/PageHeader";
 
 export default function ExternalLinksPage() {
   const links = [
@@ -106,8 +107,8 @@ export default function ExternalLinksPage() {
   ]; // To do: Should be fetched from new contentful
 
   return (
-    <div className="flex flex-col gap-5">
-      <h1 className="text-2xl font-bold">{t("external_links")}</h1>
+    <>
+      <PageHeader title={t("external_links")} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {links.map((link) => {
@@ -126,6 +127,6 @@ export default function ExternalLinksPage() {
           );
         })}
       </div>
-    </div>
+    </>
   );
 }

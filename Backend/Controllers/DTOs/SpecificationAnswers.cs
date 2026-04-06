@@ -10,3 +10,10 @@ public class PostSpecificationAnswerDTO
     [Required(AllowEmptyStrings = false)]
     public string Answer { get; set; } = string.Empty;
 }
+
+public class SpecificationAnswerResponseDTO
+{
+    public uint QuestionId { get; set; }
+    public uint AnswerId { get; set; }
+    public string Answer { get; set; } = string.Empty;
+}

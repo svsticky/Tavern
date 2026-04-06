@@ -31,23 +31,19 @@ services:
       - tavern-net
 
   localstack:
-    image: localstack/localstack:latest
+    image: localstack/localstack:3.0
+    container_name: tavern-localstack
     ports:
       - "4566:4566"
     environment:
       - SERVICES=s3
-      - PERSISTENCE=1
-      - DATA_DIR=/var/lib/localstack/state
-      - LOCALSTACK_ACKNOWLEDGE_ACCOUNT_REQUIREMENT=1
     volumes:
-      - ./localstack-setup:/etc/localstack/init/ready.d
-      - ./localstack-data:/var/lib/localstack/state
+      - ./localstack-setup/:/etc/localstack/init/ready.d/
     networks:
       - tavern-net
 
 volumes:
   postgres-data:
-  localstack-data:
 
 networks:
   tavern-net:

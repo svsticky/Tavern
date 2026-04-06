@@ -15,6 +15,8 @@ public abstract class Payment
     public Guid? MemberId { get; set; }
    
     public Member? Member { get; set; }
+
+    public Guid? ExactEntryId { get; set; }
 }
 
 public class MembershipPayment : Payment
@@ -24,9 +26,9 @@ public class MembershipPayment : Payment
 
 public class EnrollmentPayment : Payment
 {
-    public uint ActivityId { get; set; }
+    public uint? ActivityId { get; set; }
 
-    public Activity Activity { get; set; } = null!;
+    public Activity? Activity { get; set; } = null!;
 }
 
 public record EnrollmentBalance(

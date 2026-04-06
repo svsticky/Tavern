@@ -41,6 +41,24 @@ public class Group
     /// The type of the Group (E.G. Committee, Working Group).
     /// </summary>
     public GroupType Type { get; set; }
+
+    /// <summary>
+    /// The default GL account for the group, used for financial transactions.
+    /// </summary>
+    [StringLength(20)]
+    public string? DefaultGLAccount { get; set; }
+
+    /// <summary>
+    /// The default cost center for the group, used for financial transactions.
+    /// </summary>
+    [StringLength(20)]
+    public string? DefaultCostCenter { get; set; }
+
+    /// <summary>
+    /// The default cost unit for the group, used for financial transactions.
+    /// </summary>
+    [StringLength(20)]
+    public string? DefaultCostUnit { get; set; }
 }
 
 public static class PredefinedGroups

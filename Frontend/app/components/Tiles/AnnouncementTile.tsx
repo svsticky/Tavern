@@ -1,11 +1,16 @@
-import { Calendar, Megaphone } from "lucide-react";
+import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { formatDate } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
-import type { Announcement } from "~/api";
+import type { GetAnnouncementDto } from "~/api";
+import Markdown from "~/components/UI/Markdown";
+import { useKeycloak } from "@react-keycloak/web";
+import { isInGroupWithId } from "~/util/group.util";
+import { useNavigate } from "react-router";
+import { t } from "i18next";
 
 type AnnouncementTileProps = {
-  announcement: Announcement;
+  announcement: GetAnnouncementDto;
   className?: string;
 };
 
@@ -13,28 +18,50 @@ export default function AnnouncementTile({
   announcement,
   className,
 }: AnnouncementTileProps) {
+  const { keycloak } = useKeycloak();
+  const navigate = useNavigate();
+
+  const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
+
   return (
-    <Tile className={cn("rounded-2xl border border-gray-200", className)}>
-      {/* Title and date */}
-      <div className="flex w-full justify-between">
-        <p className="mb-2">{announcement.title}</p>
-        <p className="flex gap-1 text-sm text-nowrap text-gray-600">
-          <Calendar className="h-5" />
-          {formatDate(new Date(announcement.createdAt ?? Date.now()), "defaultDate")}
-        </p>
+    <Tile className={cn("rounded-2xl border border-gray-200 p-6", className)}>
+      {/* Header: Title (Links) | Date & Edit (Rechts) */}
+      <div className="flex w-full justify-between items-start mb-4 gap-4">
+        <h3 className="font-bold text-lg leading-tight">{announcement.title}</h3>
+        
+        <div className="flex items-center gap-3 shrink-0">
+          <p className="flex items-center gap-1 text-sm text-gray-500 font-medium whitespace-nowrap">
+            <Calendar className="w-4 h-4" />
+            {formatDate(new Date(announcement.createdAt ?? Date.now()), "defaultDate")}
+          </p>
+
+          {isBoard && (
+            <button
+              onClick={() => navigate(`/announcements/edit/${announcement.id}`)}
+              className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-(--board-primary) transition-colors border border-gray-100 hover:cursor-pointer"
+              title={t("edit")}
+            >
+              <PencilIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Announcement content */}
-      <p className="text-gray-600">{announcement.content}</p>
+      <div className="prose prose-sm max-w-none mb-4">
+        <Markdown>{announcement.content ?? ""}</Markdown>
+      </div>
 
       {/* Divider */}
-      <div className="my-2 h-[0.5px] w-full bg-gray-200" />
+      <div className="my-4 h-[1px] w-full bg-gray-100" />
 
       {/* Announcer */}
-      <p className="flex items-center gap-2 text-gray-600">
-        <Megaphone className="h-5" />
-        {`${announcement.createdBy?.firstName} ${announcement.createdBy?.lastName}`}
-      </p>
+      <div className="flex items-center">
+        <p className="flex items-center gap-2 text-sm text-gray-600 font-semibold">
+          <Megaphone className="w-4 h-4 text-(--board-primary)" />
+          {announcement.createdByName}
+        </p>
+      </div>
     </Tile>
   );
 }

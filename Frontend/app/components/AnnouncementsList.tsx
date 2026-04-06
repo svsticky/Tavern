@@ -1,10 +1,10 @@
-import type { Announcement } from "~/api";
+import type { GetAnnouncementDto } from "~/api";
 import AnnouncementTile from "./Tiles/AnnouncementTile";
-import { NoContentTile } from "./Tiles/NoContentTile";
 import { t } from "i18next";
+import { NoContentTile } from "./Tiles/NoContentTile";
 
 type AnnouncementsListProps = {
-  announcements: Announcement[];
+  announcements: GetAnnouncementDto[];
 };
 
 export default function AnnouncementsList({

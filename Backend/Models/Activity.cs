@@ -169,4 +169,9 @@ public class Activity
     /// The cost unit associated with this activity for financial tracking. Dutch: Kostendrager
     /// </summary>
     public string? CostUnitId { get; set; } = null;
+
+    /// <summary>
+    /// The payment deadline for the activity.
+    /// </summary>
+    public required DateTimeOffset PaymentDeadline { get; set; }
 }

@@ -1,132 +1,102 @@
 using Backend.Controllers.DTOs;
-using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class Announcements(PostgresDbContext db) : ControllerBase
+public class AnnouncementsController : ControllerBase
 {
-    // GET: api/announcements
-    /// <summary>
-    /// Lists all announcements in the database.
-    /// </summary>
-    /// <returns>Said list.</returns>
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<Announcement>>> GetAnnouncements(CancellationToken cancellationToken)
+    private readonly IAnnouncementService _announcementService;
+
+    public AnnouncementsController(IAnnouncementService announcementService)
     {
-        return await db.Announcements.ToListAsync(cancellationToken);
+        _announcementService = announcementService;
+    }
+
+    // GET: api/announcements
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<GetAnnouncementDTO>>> GetAnnouncements(CancellationToken cancellationToken)
+    {
+        var announcements = await _announcementService.GetAnnouncements(cancellationToken);
+        return Ok(announcements);
     }
 
     // GET: api/announcements/5
-    /// <summary>
-    /// Fetches a single announcement.
-    /// </summary>
-    /// <param name="id">The id of the announcement to fetch.</param>
-    /// <returns>The full announcement.</returns>
     [HttpGet("{id}")]
     public async Task<ActionResult<Announcement>> GetAnnouncement(uint id, CancellationToken cancellationToken)
     {
-        Announcement? announcement = await db.Announcements.FindAsync(id, cancellationToken);
+        var announcement = await _announcementService.GetAnnouncement(id, cancellationToken);
 
-        return announcement != null ? announcement : NotFound();
+        if (announcement == null)
+            return NotFound();
+
+        return Ok(announcement);
     }
 
     // POST: api/announcements
-    /// <summary>
-    /// Creates a new announcement with a unique ID assigned by the database.
-    /// </summary>
-    /// <param name="announcementDto">The announcement to be added to the database.</param>
-    /// <returns>Fully created announcement in body and api route of where to fetch it in the headers.</returns>
     [HttpPost]
-    public async Task<ActionResult<Announcement>> PostAnnouncement(PostAnnouncementDTO announcementDto, CancellationToken cancellationToken)
+    public async Task<ActionResult<Announcement>> PostAnnouncement(PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        var createdById = Guid.Parse(User.Claims.First(c => c.Type == "member_id").Value!);
-        var newEntry = db.Announcements.Add(new Announcement
-        {
-            Title = announcementDto.Title,
-            Content = announcementDto.Content,
-            CreatedById = createdById,
-            CreatedAt = DateTime.UtcNow
-        });
-        await db.SaveChangesAsync(cancellationToken);
+        var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        return CreatedAtAction(nameof(GetAnnouncement), new { id = newEntry.Entity.Id }, newEntry.Entity);
+        var created = await _announcementService.CreateAnnouncement(userId, dto, cancellationToken);
+
+        return CreatedAtAction(nameof(GetAnnouncement), new { id = created.Id }, created);
     }
 
     // DELETE: api/announcements/5
-    /// <summary>
-    /// Deletes an announcement.
-    /// </summary>
-    /// <param name="id">The id of the announcement to delete.</param>
-    /// <returns>Nothing, really.</returns>
-    /// <remarks>
-    /// Deleting an announcement will also delete all enrollments and role enrollments associated with said
-    /// announcement.
-    /// </remarks>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAnnouncement(uint id, CancellationToken cancellationToken)
     {
-        Announcement? announcement = await db.Announcements.FindAsync(id, cancellationToken);
-        if (announcement == null) return NotFound();
-
-        db.Announcements.Remove(announcement);
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
+        try
+        {
+            await _announcementService.DeleteAnnouncement(id, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     // PATCH: api/announcements/5
-    /// <summary>
-    /// Partially updates an announcement's details.
-    /// </summary>
-    /// <param name="id">The id of the announcement to update.</param>
-    /// <param name="patchDoc">The patch document containing the changes.</param>
-    /// <returns>No Content.</returns>
     [HttpPatch("{id}")]
     public async Task<IActionResult> PatchAnnouncement(uint id, [FromBody] JsonPatchDocument<Announcement> patchDoc, CancellationToken cancellationToken)
     {
         if (patchDoc == null)
             return BadRequest();
 
-        Announcement? announcement = await db.Announcements.FindAsync(new object[] { id }, cancellationToken);
-        if (announcement == null)
+        try
+        {
+            await _announcementService.PatchAnnouncement(id, patchDoc, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
             return NotFound();
-
-        patchDoc.ApplyTo(announcement, ModelState);
-
-        TryValidateModel(announcement);
-
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
+        }
+        catch (ArgumentException)
+        {
+            return BadRequest();
+        }
     }
 
     // PUT: api/announcements/5
-    /// <summary>
-    /// Updates an announcement.
-    /// </summary>
-    /// <param name="id">The id of the announcement to update.</param>
-    /// <param name="announcementDto">The updated announcement data.</param>
-    /// <returns>No Content.</returns>
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutAnnouncement(uint id, UpdateAnnouncementDTO announcementDto, CancellationToken cancellationToken)
+    public async Task<IActionResult> PutAnnouncement(uint id, UpdateAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        Announcement? announcement = await db.Announcements.FindAsync(id, cancellationToken);
-        if (announcement == null) return NotFound();
-
-        announcement.Title = announcementDto.Title;
-        announcement.Content = announcementDto.Content;
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
+        try
+        {
+            await _announcementService.UpdateAnnouncement(id, dto, cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 }

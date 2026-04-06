@@ -41,17 +41,57 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                 var mollieStatus = await paymentClient.GetPaymentAsync(payment.MollieId);
                 if (mollieStatus.Status == "paid")
                 {
-                    payment.PaidAt = mollieStatus.PaidAt?.ToString("O");
+                    Payment fullPayment;
+
+                    if(payment is MembershipPayment)
+                    {
+                        fullPayment = await db.MembershipPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
+                    }
+                    else
+                    {
+                        fullPayment = await db.EnrollmentPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
+                    }
+
+                    var transaction = await db.Database.BeginTransactionAsync();
+
+                    try
+                    {
+                        if(fullPayment.Member != null)
+                        {
+                            if(fullPayment.Member.KeycloakId == null) throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status.");
+
+                            db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                            {
+                                KeycoakId = fullPayment.Member.KeycloakId.Value,
+                                TaskType = KeycloakTaskType.Sync,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                        }
+                        payment.PaidAt = mollieStatus.PaidAt?.ToString("O");
+
+                        db.ExactOutboxTasks.Add(new ExactOutboxTask
+                        {
+                            PaymentId = payment.Id,
+                            TaskType = payment is MembershipPayment ? ExactTaskType.MembershipPayment : ExactTaskType.EnrollmentPayment
+                        });
+
+                        await db.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                    }
                 }
                 
                 if (mollieStatus.Status == "expired" || mollieStatus.Status == "canceled")
                 {
                     // If the payment is expired or canceled, we can remove it from our database as it can no longer be paid.
                     db.Remove(payment);
+                    await db.SaveChangesAsync();
                 }
             }
             catch (Exception) { }
         }
-        await db.SaveChangesAsync();
     }
 }

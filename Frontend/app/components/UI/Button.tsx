@@ -5,7 +5,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   className?: string;
   showArrow?: boolean;
   arrowDirection?: "left" | "right";
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "danger";
   children: React.ReactNode;
 };
 
@@ -21,6 +21,7 @@ export default function Button({
   const variants = {
     primary: "bg-(--board-primary) text-white hover:bg-(--board-primary-dark) shadow-sm hover:bg-(--board-primary-light)",
     secondary: "bg-white text-(--board-primary) border border-gray-200 hover:bg-gray-50",
+    danger: "bg-red-600 text-white hover:bg-red-700 shadow-sm",
   };
 
   const Icon = arrowDirection === "left" ? ArrowLeft : ArrowRight;

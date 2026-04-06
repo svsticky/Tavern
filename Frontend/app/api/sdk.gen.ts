@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { DeleteApiActivitiesByIdData, DeleteApiActivitiesByIdResponses, DeleteApiAnnouncementsByIdData, DeleteApiAnnouncementsByIdResponses, DeleteApiEnrollmentsByActivityIdByMemberIdData, DeleteApiEnrollmentsByActivityIdByMemberIdResponses, DeleteApiGroupmembershipsByIdData, DeleteApiGroupmembershipsByIdResponses, DeleteApiGroupsByIdData, DeleteApiGroupsByIdResponses, DeleteApiMembersByIdData, DeleteApiMembersByIdProfilePictureData, DeleteApiMembersByIdProfilePictureResponses, DeleteApiMembersByIdResponses, DeleteApiRolealiasesByIdData, DeleteApiRolealiasesByIdResponses, DeleteApiRolesByIdData, DeleteApiRolesByIdResponses, DeleteApiStudiesByIdData, DeleteApiStudiesByIdResponses, DeleteApiStudyenrollmentsByIdData, DeleteApiStudyenrollmentsByIdResponses, GetApiActivitiesByIdData, GetApiActivitiesByIdPosterData, GetApiActivitiesByIdPosterDownloadData, GetApiActivitiesByIdPosterDownloadResponses, GetApiActivitiesByIdPosterResponses, GetApiActivitiesByIdResponses, GetApiActivitiesData, GetApiActivitiesResponses, GetApiAnnouncementsByIdData, GetApiAnnouncementsByIdResponses, GetApiAnnouncementsData, GetApiAnnouncementsResponses, GetApiEnrollmentsByActivityIdByMemberIdData, GetApiEnrollmentsByActivityIdByMemberIdResponses, GetApiEnrollmentsData, GetApiEnrollmentsResponses, GetApiGroupmembershipsByIdData, GetApiGroupmembershipsByIdResponses, GetApiGroupmembershipsData, GetApiGroupmembershipsResponses, GetApiGroupsByIdData, GetApiGroupsByIdResponses, GetApiGroupsData, GetApiGroupsResponses, GetApiMembersByIdData, GetApiMembersByIdProfilePictureData, GetApiMembersByIdProfilePictureResponses, GetApiMembersByIdResponses, GetApiMembersData, GetApiMembersResponses, GetApiPaymentsEnrollmentByIdData, GetApiPaymentsEnrollmentByIdResponses, GetApiPaymentsEnrollmentData, GetApiPaymentsEnrollmentResponses, GetApiPaymentsMemberByMemberIdStatusData, GetApiPaymentsMemberByMemberIdStatusResponses, GetApiPaymentsMembershipByIdData, GetApiPaymentsMembershipByIdResponses, GetApiPaymentsMembershipData, GetApiPaymentsMembershipResponses, GetApiPaymentsOverpaidData, GetApiPaymentsOverpaidResponses, GetApiPaymentsUnpaidData, GetApiPaymentsUnpaidResponses, GetApiProfilepictureViewByPathData, GetApiProfilepictureViewByPathResponses, GetApiRolealiasesByIdData, GetApiRolealiasesByIdResponses, GetApiRolealiasesData, GetApiRolealiasesResponses, GetApiRolesByIdData, GetApiRolesByIdResponses, GetApiRolesData, GetApiRolesResponses, GetApiStudiesByIdData, GetApiStudiesByIdResponses, GetApiStudiesData, GetApiStudiesResponses, GetApiStudyenrollmentsByIdData, GetApiStudyenrollmentsByIdResponses, GetApiStudyenrollmentsData, GetApiStudyenrollmentsResponses, PatchApiActivitiesByIdData, PatchApiActivitiesByIdResponses, PatchApiAnnouncementsByIdData, PatchApiAnnouncementsByIdResponses, PatchApiAnnouncementsByIdTitleData, PatchApiAnnouncementsByIdTitleResponses, PatchApiEnrollmentsByActivityIdByMemberIdData, PatchApiEnrollmentsByActivityIdByMemberIdResponses, PatchApiGroupmembershipsByIdData, PatchApiGroupmembershipsByIdResponses, PatchApiGroupsByIdData, PatchApiGroupsByIdResponses, PatchApiMembersByIdData, PatchApiMembersByIdResponses, PatchApiRolealiasesByIdData, PatchApiRolealiasesByIdResponses, PatchApiRolesByIdData, PatchApiRolesByIdResponses, PatchApiStudiesByIdData, PatchApiStudiesByIdResponses, PatchApiStudyenrollmentsByIdStatusData, PatchApiStudyenrollmentsByIdStatusResponses, PostApiActivitiesByIdPosterData, PostApiActivitiesByIdPosterResponses, PostApiActivitiesData, PostApiActivitiesResponses, PostApiAnnouncementsData, PostApiAnnouncementsResponses, PostApiEnrollmentsData, PostApiEnrollmentsResponses, PostApiGroupmembershipsData, PostApiGroupmembershipsResponses, PostApiGroupsData, PostApiGroupsResponses, PostApiMembersByIdProfilePictureData, PostApiMembersByIdProfilePictureResponses, PostApiMembersByIdResendActivationData, PostApiMembersByIdResendActivationResponses, PostApiMembersData, PostApiMembersForgotPasswordData, PostApiMembersForgotPasswordResponses, PostApiMembersResponses, PostApiPaymentsActivityData, PostApiPaymentsActivityResponses, PostApiPaymentsMembershipData, PostApiPaymentsMembershipResponses, PostApiPaymentsWebhookData, PostApiPaymentsWebhookResponses, PostApiRolealiasesData, PostApiRolealiasesResponses, PostApiRolesData, PostApiRolesResponses, PostApiStudiesData, PostApiStudiesResponses, PostApiStudyenrollmentsData, PostApiStudyenrollmentsResponses, PutApiActivitiesByIdData, PutApiActivitiesByIdResponses, PutApiAnnouncementsByIdData, PutApiAnnouncementsByIdResponses, PutApiEnrollmentsByActivityIdByMemberIdData, PutApiEnrollmentsByActivityIdByMemberIdResponses, PutApiGroupmembershipsByIdData, PutApiGroupmembershipsByIdResponses, PutApiGroupsByIdData, PutApiGroupsByIdResponses, PutApiMembersByIdData, PutApiMembersByIdResponses, PutApiRolealiasesByIdData, PutApiRolealiasesByIdResponses, PutApiRolesByIdData, PutApiRolesByIdResponses, PutApiStudiesByIdData, PutApiStudiesByIdResponses } from './types.gen';
+import type { DeleteApiActivitiesByIdData, DeleteApiActivitiesByIdResponses, DeleteApiAnnouncementsByIdData, DeleteApiAnnouncementsByIdResponses, DeleteApiEnrollmentsByActivityIdByMemberIdData, DeleteApiEnrollmentsByActivityIdByMemberIdResponses, DeleteApiGroupmembershipsByIdData, DeleteApiGroupmembershipsByIdResponses, DeleteApiGroupsByIdData, DeleteApiGroupsByIdResponses, DeleteApiMembersByIdData, DeleteApiMembersByIdProfilePictureData, DeleteApiMembersByIdProfilePictureResponses, DeleteApiMembersByIdResponses, DeleteApiRolealiasesByIdData, DeleteApiRolealiasesByIdResponses, DeleteApiRolesByIdData, DeleteApiRolesByIdResponses, DeleteApiStudiesByIdData, DeleteApiStudiesByIdResponses, DeleteApiStudyenrollmentsByIdData, DeleteApiStudyenrollmentsByIdResponses, GetApiActivitiesByIdData, GetApiActivitiesByIdPosterData, GetApiActivitiesByIdPosterDownloadData, GetApiActivitiesByIdPosterDownloadResponses, GetApiActivitiesByIdPosterResponses, GetApiActivitiesByIdResponses, GetApiActivitiesData, GetApiActivitiesResponses, GetApiAnnouncementsByIdData, GetApiAnnouncementsByIdResponses, GetApiAnnouncementsData, GetApiAnnouncementsResponses, GetApiEnrollmentsByActivityIdByMemberIdData, GetApiEnrollmentsByActivityIdByMemberIdResponses, GetApiEnrollmentsData, GetApiEnrollmentsResponses, GetApiGroupmembershipsByIdData, GetApiGroupmembershipsByIdResponses, GetApiGroupmembershipsData, GetApiGroupmembershipsResponses, GetApiGroupsByIdData, GetApiGroupsByIdResponses, GetApiGroupsData, GetApiGroupsResponses, GetApiMembersByIdData, GetApiMembersByIdProfilePictureData, GetApiMembersByIdProfilePictureResponses, GetApiMembersByIdResponses, GetApiMembersData, GetApiMembersResponses, GetApiPaymentsEnrollmentByIdData, GetApiPaymentsEnrollmentByIdResponses, GetApiPaymentsEnrollmentData, GetApiPaymentsEnrollmentResponses, GetApiPaymentsMemberByMemberIdStatusData, GetApiPaymentsMemberByMemberIdStatusResponses, GetApiPaymentsMembershipByIdData, GetApiPaymentsMembershipByIdResponses, GetApiPaymentsMembershipData, GetApiPaymentsMembershipResponses, GetApiPaymentsOverpaidData, GetApiPaymentsOverpaidResponses, GetApiPaymentsUnpaidData, GetApiPaymentsUnpaidResponses, GetApiProfilepictureViewByPathData, GetApiProfilepictureViewByPathResponses, GetApiRolealiasesByIdData, GetApiRolealiasesByIdResponses, GetApiRolealiasesData, GetApiRolealiasesResponses, GetApiRolesByIdData, GetApiRolesByIdResponses, GetApiRolesData, GetApiRolesResponses, GetApiStudiesByIdData, GetApiStudiesByIdResponses, GetApiStudiesData, GetApiStudiesResponses, GetApiStudyenrollmentsByIdData, GetApiStudyenrollmentsByIdResponses, GetApiStudyenrollmentsData, GetApiStudyenrollmentsResponses, PatchApiActivitiesByIdData, PatchApiActivitiesByIdResponses, PatchApiAnnouncementsByIdData, PatchApiAnnouncementsByIdResponses, PatchApiEnrollmentsByActivityIdByMemberIdData, PatchApiEnrollmentsByActivityIdByMemberIdResponses, PatchApiGroupmembershipsByIdData, PatchApiGroupmembershipsByIdResponses, PatchApiGroupsByIdData, PatchApiGroupsByIdResponses, PatchApiMembersByIdData, PatchApiMembersByIdResponses, PatchApiRolealiasesByIdData, PatchApiRolealiasesByIdResponses, PatchApiRolesByIdData, PatchApiRolesByIdResponses, PatchApiSpecificationanswersByAnswerIdData, PatchApiSpecificationanswersByAnswerIdResponses, PatchApiStudiesByIdData, PatchApiStudiesByIdResponses, PatchApiStudyenrollmentsByIdStatusData, PatchApiStudyenrollmentsByIdStatusResponses, PostApiActivitiesByIdPosterData, PostApiActivitiesByIdPosterResponses, PostApiActivitiesData, PostApiActivitiesResponses, PostApiAnnouncementsData, PostApiAnnouncementsResponses, PostApiEnrollmentsData, PostApiEnrollmentsResponses, PostApiGroupmembershipsData, PostApiGroupmembershipsResponses, PostApiGroupsData, PostApiGroupsResponses, PostApiMembersData, PostApiMembersResponses, PostApiPaymentsActivityData, PostApiPaymentsActivityResponses, PostApiPaymentsMembershipData, PostApiPaymentsMembershipResponses, PostApiPaymentsWebhookData, PostApiPaymentsWebhookResponses, PostApiProfilepictureByIdProfilePictureData, PostApiProfilepictureByIdProfilePictureResponses, PostApiRolealiasesData, PostApiRolealiasesResponses, PostApiRolesData, PostApiRolesResponses, PostApiStudiesData, PostApiStudiesResponses, PostApiStudyenrollmentsData, PostApiStudyenrollmentsResponses, PutApiActivitiesByIdData, PutApiActivitiesByIdResponses, PutApiAnnouncementsByIdData, PutApiAnnouncementsByIdResponses, PutApiEnrollmentsByActivityIdByMemberIdData, PutApiEnrollmentsByActivityIdByMemberIdResponses, PutApiGroupmembershipsByIdData, PutApiGroupmembershipsByIdResponses, PutApiGroupsByIdData, PutApiGroupsByIdResponses, PutApiMembersByIdData, PutApiMembersByIdResponses, PutApiRolealiasesByIdData, PutApiRolealiasesByIdResponses, PutApiRolesByIdData, PutApiRolesByIdResponses, PutApiStudiesByIdData, PutApiStudiesByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -25,7 +25,7 @@ export const getApiActivities = <ThrowOnError extends boolean = false>(options?:
     ...options
 });
 
-export const postApiActivities = <ThrowOnError extends boolean = false>(options: Options<PostApiActivitiesData, ThrowOnError>) => (options.client ?? client).post<PostApiActivitiesResponses, unknown, ThrowOnError>({
+export const postApiActivities = <ThrowOnError extends boolean = false>(options?: Options<PostApiActivitiesData, ThrowOnError>) => (options?.client ?? client).post<PostApiActivitiesResponses, unknown, ThrowOnError>({
     ...formDataBodySerializer,
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -33,7 +33,7 @@ export const postApiActivities = <ThrowOnError extends boolean = false>(options:
     ...options,
     headers: {
         'Content-Type': null,
-        ...options.headers
+        ...options?.headers
     }
 });
 
@@ -138,16 +138,6 @@ export const patchApiAnnouncementsById = <ThrowOnError extends boolean = false>(
 export const putApiAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<PutApiAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiAnnouncementsByIdResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/announcements/{id}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json-patch+json',
-        ...options.headers
-    }
-});
-
-export const patchApiAnnouncementsByIdTitle = <ThrowOnError extends boolean = false>(options: Options<PatchApiAnnouncementsByIdTitleData, ThrowOnError>) => (options.client ?? client).patch<PatchApiAnnouncementsByIdTitleResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements/{id}/title',
     ...options,
     headers: {
         'Content-Type': 'application/json-patch+json',
@@ -359,22 +349,6 @@ export const putApiMembersById = <ThrowOnError extends boolean = false>(options:
     }
 });
 
-export const postApiMembersForgotPassword = <ThrowOnError extends boolean = false>(options?: Options<PostApiMembersForgotPasswordData, ThrowOnError>) => (options?.client ?? client).post<PostApiMembersForgotPasswordResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/forgot-password',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json-patch+json',
-        ...options?.headers
-    }
-});
-
-export const postApiMembersByIdResendActivation = <ThrowOnError extends boolean = false>(options: Options<PostApiMembersByIdResendActivationData, ThrowOnError>) => (options.client ?? client).post<PostApiMembersByIdResendActivationResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}/resend-activation',
-    ...options
-});
-
 export const deleteApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<DeleteApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/members/{id}/profile-picture',
@@ -387,26 +361,13 @@ export const getApiMembersByIdProfilePicture = <ThrowOnError extends boolean = f
     ...options
 });
 
-export const postApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<PostApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).post<PostApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
-    ...formDataBodySerializer,
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}/profile-picture',
-    ...options,
-    headers: {
-        'Content-Type': null,
-        ...options.headers
-    }
-});
-
 export const getApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsMembershipResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership',
     ...options
 });
 
 export const postApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsMembershipResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership',
     ...options,
@@ -417,28 +378,24 @@ export const postApiPaymentsMembership = <ThrowOnError extends boolean = false>(
 });
 
 export const getApiPaymentsMembershipById = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsMembershipByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsMembershipByIdResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/membership/{id}',
     ...options
 });
 
 export const getApiPaymentsEnrollment = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsEnrollmentData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsEnrollmentResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/enrollment',
     ...options
 });
 
 export const getApiPaymentsEnrollmentById = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsEnrollmentByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsEnrollmentByIdResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/enrollment/{id}',
     ...options
 });
 
 export const postApiPaymentsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsActivityResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/activity',
     ...options,
@@ -460,14 +417,12 @@ export const postApiPaymentsWebhook = <ThrowOnError extends boolean = false>(opt
 });
 
 export const getApiPaymentsUnpaid = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsUnpaidData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsUnpaidResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/unpaid',
     ...options
 });
 
 export const getApiPaymentsOverpaid = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsOverpaidData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsOverpaidResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/payments/overpaid',
     ...options
@@ -485,6 +440,17 @@ export const getApiProfilepictureViewByPath = <ThrowOnError extends boolean = fa
     ...options
 });
 
+export const postApiProfilepictureByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<PostApiProfilepictureByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).post<PostApiProfilepictureByIdProfilePictureResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/profilepicture/{id}/profile-picture',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
 export const getApiRolealiases = <ThrowOnError extends boolean = false>(options?: Options<GetApiRolealiasesData, ThrowOnError>) => (options?.client ?? client).get<GetApiRolealiasesResponses, unknown, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -493,7 +459,6 @@ export const getApiRolealiases = <ThrowOnError extends boolean = false>(options?
 });
 
 export const postApiRolealiases = <ThrowOnError extends boolean = false>(options?: Options<PostApiRolealiasesData, ThrowOnError>) => (options?.client ?? client).post<PostApiRolealiasesResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/rolealiases',
     ...options,
@@ -544,7 +509,6 @@ export const getApiRoles = <ThrowOnError extends boolean = false>(options?: Opti
 });
 
 export const postApiRoles = <ThrowOnError extends boolean = false>(options?: Options<PostApiRolesData, ThrowOnError>) => (options?.client ?? client).post<PostApiRolesResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/roles',
     ...options,
@@ -587,6 +551,16 @@ export const putApiRolesById = <ThrowOnError extends boolean = false>(options: O
     }
 });
 
+export const patchApiSpecificationanswersByAnswerId = <ThrowOnError extends boolean = false>(options: Options<PatchApiSpecificationanswersByAnswerIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiSpecificationanswersByAnswerIdResponses, unknown, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/api/specificationanswers/{answerId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json-patch+json',
+        ...options.headers
+    }
+});
+
 export const getApiStudies = <ThrowOnError extends boolean = false>(options?: Options<GetApiStudiesData, ThrowOnError>) => (options?.client ?? client).get<GetApiStudiesResponses, unknown, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -595,7 +569,6 @@ export const getApiStudies = <ThrowOnError extends boolean = false>(options?: Op
 });
 
 export const postApiStudies = <ThrowOnError extends boolean = false>(options?: Options<PostApiStudiesData, ThrowOnError>) => (options?.client ?? client).post<PostApiStudiesResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studies',
     ...options,
@@ -639,14 +612,12 @@ export const putApiStudiesById = <ThrowOnError extends boolean = false>(options:
 });
 
 export const getApiStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<GetApiStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).get<GetApiStudyenrollmentsResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studyenrollments',
     ...options
 });
 
 export const postApiStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<PostApiStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostApiStudyenrollmentsResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studyenrollments',
     ...options,
@@ -663,7 +634,6 @@ export const deleteApiStudyenrollmentsById = <ThrowOnError extends boolean = fal
 });
 
 export const getApiStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<GetApiStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiStudyenrollmentsByIdResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/studyenrollments/{id}',
     ...options

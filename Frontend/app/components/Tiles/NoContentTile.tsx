@@ -1,4 +1,3 @@
-import React from "react";
 import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
 

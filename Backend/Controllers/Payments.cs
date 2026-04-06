@@ -1,254 +1,129 @@
-using Microsoft.AspNetCore.Mvc;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
-using Mollie.Api.Client.Abstract;
-using Mollie.Api.Models.Payment.Response;
-using Backend.Utils;
+using Backend.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class Payments(PostgresDbContext db) : ControllerBase
+    public class PaymentsController : ControllerBase
     {
-        private string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
+        private readonly IPaymentService _paymentService;
+
+        public PaymentsController(IPaymentService paymentService)
+        {
+            _paymentService = paymentService;
+        }
 
         // GET: api/payments/membership
         [HttpGet("membership")]
-        public async Task<ActionResult<IEnumerable<MembershipPayment>>> GetMembershipPayments(CancellationToken ct)
+        public async Task<IActionResult> GetMembershipPayments(CancellationToken ct)
         {
-            return await db.MembershipPayments.Include(p => p.Member).ToListAsync(ct);
+            var result = await _paymentService.GetMembershipPayments(ct);
+            return Ok(result);
         }
 
         // GET: api/payments/membership/5
         [HttpGet("membership/{id}")]
-        public async Task<ActionResult<MembershipPayment>> GetMembershipPayment(uint id, CancellationToken ct)
+        public async Task<IActionResult> GetMembershipPayment(uint id, CancellationToken ct)
         {
-            MembershipPayment? payment = await db.MembershipPayments.FindAsync(id, ct);
-
-            return payment != null ? payment : NotFound();
+            var result = await _paymentService.GetMembershipPayment(id, ct);
+            return result != null ? Ok(result) : NotFound();
         }
 
         // GET: api/payments/enrollment
         [HttpGet("enrollment")]
-        public async Task<ActionResult<IEnumerable<EnrollmentPayment>>> GetEnrollmentPayments(CancellationToken ct)
+        public async Task<IActionResult> GetEnrollmentPayments(CancellationToken ct)
         {
-            return await db.EnrollmentPayments.Include(p => p.Member).Include(p => p.Activity).ToListAsync(ct);
+            var result = await _paymentService.GetEnrollmentPayments(ct);
+            return Ok(result);
         }
 
-        // GET: api/payments/enrollment/membership/5
+        // GET: api/payments/enrollment/5
         [HttpGet("enrollment/{id}")]
-        public async Task<ActionResult<EnrollmentPayment>> GetEnrollmentPayment(uint id, CancellationToken ct)
+        public async Task<IActionResult> GetEnrollmentPayment(uint id, CancellationToken ct)
         {
-            EnrollmentPayment? payment = await db.EnrollmentPayments.FindAsync(id, ct);
-
-            return payment != null ? payment : NotFound();
-        }        
+            var result = await _paymentService.GetEnrollmentPayment(id, ct);
+            return result != null ? Ok(result) : NotFound();
+        }
 
         // POST: api/payments/membership
         [HttpPost("membership")]
-        public async Task<ActionResult<PostPaymentResponse>> PostMembershipPayment(PostMembershipPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
+        public async Task<IActionResult> PostMembershipPayment(
+            PostMembershipPaymentDTO dto,
+            [FromServices] Mollie.Api.Client.Abstract.IPaymentClient paymentClient
+        )
         {
-            Member? member = await db.Members.FindAsync(dto.MemberId);
-            if (member == null) return NotFound("Member not found");
-
-            List<MembershipPayment> existingPayments = await db.MembershipPayments.Where(p => p.MemberId == dto.MemberId).ToListAsync();
-           
-            foreach (MembershipPayment existingPayment in existingPayments)
+            try
             {
-                if (existingPayment.PaidAt == null) 
-                {
-                    // Payment isn't paid yet, check if it's expired
-                    PaymentResponse molliePayment = await paymentClient.GetPaymentAsync(existingPayment.MollieId);
-                    if (molliePayment.Status == "expired" || molliePayment.Status == "canceled")
-                    {
-                        // Payment is expired, we can remove it and create a new one
-                        db.MembershipPayments.Remove(existingPayment);
-                    }
-                    else
-                    {
-                        // Payment isn't expired, return the existing payment link
-                        return Ok(new { existingPayment.PaymentIntentUrl });
-                    }
-                }
-                else
-                {
-                    return BadRequest("Member has already payed for a membership, if you think this is an error please contact support.");
-                }
+                var result = await _paymentService.CreateMembershipPayment(dto, paymentClient);
+                return Ok(result);
             }
-
-            var amount = new Mollie.Api.Models.Amount(Mollie.Api.Models.Currency.EUR, 7.50m);
-            var request = new Mollie.Api.Models.Payment.Request.PaymentRequest
+            catch (Exception ex)
             {
-                Amount = amount,
-                Description = $"Membership payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = $"{_frontendUrl}",
-                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
-                Metadata = $"membership_{dto.MemberId}"
-            };
-
-            var mollieResponse = await paymentClient.CreatePaymentAsync(request);
-
-            if(mollieResponse.Links.Checkout == null) return BadRequest("Mollie response did not contain a checkout link");
-
-            var payment = new MembershipPayment
-            {
-                MemberId = dto.MemberId,
-                Price = 7.50m,
-                MollieId = mollieResponse.Id,
-                PaymentIntentUrl = mollieResponse.Links.Checkout.Href
-            };
-
-            db.MembershipPayments.Add(payment);
-            await db.SaveChangesAsync();
-
-            return Ok(new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href });
+                return BadRequest(ex.Message);
+            }
         }
 
-        // POST: api/activity/membership
+        // POST: api/payments/activity
         [HttpPost("activity")]
-        public async Task<ActionResult<PostPaymentResponse>> PostActivityPayment(PostActivityPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
+        public async Task<IActionResult> PostActivityPayment(
+            PostActivityPaymentDTO dto,
+            [FromServices] Mollie.Api.Client.Abstract.IPaymentClient paymentClient
+        )
         {
-            Member? member = await db.Members.FindAsync(dto.MemberId);
-            if (member == null) return NotFound("Member not found");
-
-            List<Enrollment> enrollments = await db.Enrollments
-                .Include(e => e.Activity)
-                .Where(e => dto.ActivityIds.Contains(e.ActivityId))
-                .ToListAsync();
-            if (enrollments.Count != dto.ActivityIds.Count) return NotFound("One or more enrollments not found");
-
-            var enrollmentBalances = await db.Enrollments
-                .Where(e => dto.ActivityIds.Contains(e.ActivityId) && e.MemberId == dto.MemberId)
-                .Select(e => new
-                {
-                    Enrollment = e,
-                    Activity = e.Activity,
-                    PaidSum = db.EnrollmentPayments
-                        .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
-                        .Sum(p => (decimal?)p.Price) ?? 0
-                })
-                .ToListAsync();
-
-            var totalPrice = enrollmentBalances.Sum(e => Math.Max(0, e.Enrollment.Price - e.PaidSum));
-            var amount = new Mollie.Api.Models.Amount(Mollie.Api.Models.Currency.EUR, totalPrice);
-            var request = new Mollie.Api.Models.Payment.Request.PaymentRequest
+            try
             {
-                Amount = amount,
-                Description = $"Activity payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = $"{_frontendUrl}",
-                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
-                Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
-            };
-
-            var mollieResponse = await paymentClient.CreatePaymentAsync(request);
-
-            foreach (var enrollment in enrollments)
-            {
-                if(!enrollment.Activity.IsOpenForPayment)
-                {
-                    return BadRequest($"Activity {enrollment.Activity.Name} is not open for payment");
-                }
-
-                decimal price = PaymentUtils.GetUnpaidAmountForEnrollment(enrollment, db);
-
-                if(price <= 0) continue; // No need to create a payment for free activities
-
-                if (mollieResponse.Links.Checkout == null) return BadRequest("Mollie response did not contain a checkout link");
-
-                EnrollmentPayment payment = new EnrollmentPayment
-                {
-                    MemberId = dto.MemberId,
-                    ActivityId = enrollment.ActivityId,
-                    Price = price,
-                    MollieId = mollieResponse.Id,
-                    PaymentIntentUrl = mollieResponse.Links.Checkout.Href
-                };
-
-                db.EnrollmentPayments.Add(payment);
+                var result = await _paymentService.CreateActivityPayment(dto, paymentClient);
+                return Ok(result);
             }
-
-            await db.SaveChangesAsync();
-
-            if(mollieResponse.Links.Checkout == null) throw new Exception("Mollie response did not contain a checkout link");
-
-            return Ok(new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href });
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // POST: api/payments/webhook
         [HttpPost("webhook")]
         [Consumes("application/x-www-form-urlencoded")]
-        public async Task<IActionResult> MollieWebhook([FromForm] string id, [FromServices] IPaymentClient paymentClient)
+        public async Task<IActionResult> MollieWebhook(
+            [FromForm] string id,
+            [FromServices] IPaymentWebhookService webhookService
+        )
         {
-            PaymentResponse result = await paymentClient.GetPaymentAsync(id);
-
-            var payments = await db.MembershipPayments.Where(p => p.MollieId == id).Cast<Payment>().ToListAsync();
-            payments.AddRange(await db.EnrollmentPayments.Where(p => p.MollieId == id).Cast<Payment>().ToListAsync());
-
-            if (payments.Count == 0) return NotFound();
-
-            if (result.Status == "paid")
-            {
-                foreach (var payment in payments)
-                {
-                    payment.PaidAt = result.PaidAt?.ToString("O");
-                    if(payment is MembershipPayment)
-                    {
-                        KeyCloakOutboxTask task = new KeyCloakOutboxTask
-                        {
-                            TaskType = KeycloakTaskType.Sync,
-                            KeycoakId = payment.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID")
-                        };
-                        db.KeyCloakOutboxTasks.Add(task);
-                    }
-                }
-                await db.SaveChangesAsync();
-            }
-
+            await webhookService.HandleWebhookAsync(id);
             return Ok();
         }
 
         // GET: api/payments/unpaid
         [HttpGet("unpaid")]
-        public ActionResult<IEnumerable<EnrollmentBalance>> GetAllUnpaid(CancellationToken ct)
+        public IActionResult GetUnpaid()
         {
-            var unpaid = PaymentUtils.GetAllUnpaidEnrollments(db);
-            return Ok(unpaid);
+            var result = _paymentService.GetUnpaid();
+            return Ok(result);
         }
 
         // GET: api/payments/overpaid
         [HttpGet("overpaid")]
-        public ActionResult<IEnumerable<EnrollmentBalance>> GetAllOverpaid(CancellationToken ct)
+        public IActionResult GetOverpaid()
         {
-            var overpaid = PaymentUtils.GetAllOverpaidEnrollments(db);
-            return Ok(overpaid);
+            var result = _paymentService.GetOverpaid();
+            return Ok(result);
         }
 
         // GET: api/payments/member/{memberId}/status
         [HttpGet("member/{memberId}/status")]
-        public async Task<ActionResult> GetMemberPaymentStatus(Guid memberId, CancellationToken ct)
+        public async Task<IActionResult> GetMemberPaymentStatus(Guid memberId, CancellationToken ct)
         {
-            var member = await db.Members
-                .Include(m => m.StudyEnrollments)
-                .ThenInclude(se => se.Study)
-                .Include(m => m.Enrollments)
-                .FirstOrDefaultAsync(m => m.Id == memberId, ct);
-
-            if (member == null) return NotFound("Member not found");
-
-            var unpaid = PaymentUtils.GetUnpaidEnrollmentsForMember(member, db);
-            var hasPaidMembership = PaymentUtils.HasPaidMembershipPayment(member, db);
-            var hasPaidEverything = !unpaid.Any();
-
-            return Ok(new
+            try
             {
-                MemberId = member.Id,
-                HasPaidMembership = hasPaidMembership,
-                HasPaidAllActivities = hasPaidEverything,
-                UnpaidEnrollments = unpaid
-            });
+                var result = await _paymentService.GetMemberPaymentStatus(memberId, ct);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
         }
     }
 }

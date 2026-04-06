@@ -3,10 +3,11 @@ import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getApiActivities, getApiAnnouncements, type Activity, type ActivityResponseDto } from "~/api";
+import { getApiActivities, type ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Tiles/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
+import { PageHeader } from "~/components/UI/PageHeader";
 
 export default function ActivitiesPage() {
   const { keycloak, initialized } = useKeycloak();
@@ -43,24 +44,23 @@ export default function ActivitiesPage() {
   const isInGroup = (keycloak.tokenParsed?.group_memberships ?? []).length > 0;
 
   return (
-    <div className="flex flex-col gap-5 w-full">
+    <>
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{t("activities")}</h1>
-        
-        {isInGroup && (
+        <PageHeader title={t("activities")} 
+          action={isInGroup && (
           <Button 
             onClick={() => (navigate("/activities/create"))}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors font-medium shadow-sm"
+            className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"
           >
             <PlusIcon className="w-5 h-5" />
           </Button>
-        )}
+        )} />
       </div>
       {loading ? (
         'Loading...'
       ) : (
       activities.length === 0 ? (
-          <NoContentTile text="Er zijn momenteel geen aankomende activiteiten." />
+          <NoContentTile text={t("no_upcoming_activities")} />
         ) : (
           <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
             {activities.map((activity) => (
@@ -72,6 +72,6 @@ export default function ActivitiesPage() {
             ))}
           </div>
         ))}
-    </div>
+    </>
   );
 }

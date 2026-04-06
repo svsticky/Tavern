@@ -38,7 +38,7 @@ public class Enrollment
     /// <summary>
     /// The answers for the specification questions associated with this enrollment.
     /// </summary>
-    [JsonIgnore] public virtual ICollection<SpecificationAnswer> SpecificationAnswers { get; set; }
+    public virtual ICollection<SpecificationAnswer> SpecificationAnswers { get; set; }
 
     /// <summary>
     /// The date and time at which the enrollment was placed.

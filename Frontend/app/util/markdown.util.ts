@@ -24,7 +24,7 @@ export const formatForWhatsApp = (markdown: string | undefined | null): string =
     .replace(/\[(.*?)\]\((.*?)\)/g, '$1 ($2)')
 
     // 6. Lists (- of *) -> •
-    .replace(/^\s*[\-\*]\s+/gm, '• ')
+    .replace(/^\s*[\-\*]\s+/gm, '- ')
 
     // 7. Horizontal lines
     .replace(/^[\-\*_]{3,}$/gm, '')

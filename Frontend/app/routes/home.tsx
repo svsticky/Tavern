@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GroupMembership } from "~/api";
+import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementDto, type GroupMembership } from "~/api";
 import ActivityEnrollmentOverview from "~/components/ActivityEnrollmentOverview";
 import AnnouncementsList from "~/components/AnnouncementsList";
 import CommitteeEnrollmentOverview from "~/components/CommitteeEnrollmentOverview";
@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
-  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcements, setAnnouncements] = useState<GetAnnouncementDto[]>([]);
   const [committees, setCommittees] = useState<CommitteeEnrollment[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function DashboardPage() {
         const announcementsResponse = await getApiAnnouncements();
 
         if (announcementsResponse.data) {
-          setAnnouncements(announcementsResponse.data as Announcement[]);
+          setAnnouncements(announcementsResponse.data as GetAnnouncementDto[]);
         }
 
         if (activitiesResponse.data) {

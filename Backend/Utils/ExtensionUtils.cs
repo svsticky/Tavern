@@ -2,8 +2,8 @@ namespace Backend.Utils;
 
 public static class ExtensionUtils
 {
-    private static readonly string[] _allowedPosterExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".pdf" };
-    private static readonly string[] _allowedPosterMimeTypes = { "image/jpeg", "image/png", "image/gif", "application/pdf" };
+    private static readonly string[] _allowedPosterExtensions = { ".jpg", ".jpeg", ".png", ".gif" };
+    private static readonly string[] _allowedPosterMimeTypes = { "image/jpeg", "image/png", "image/gif" };
 
     private static readonly string[] _allowedProfilePictureExtensions = { ".jpg", ".jpeg", ".png" };
     private static readonly string[] _allowedProfilePictureMimeTypes = { "image/jpeg", "image/png" };

@@ -5,13 +5,16 @@ import {
   getApiMembersById, 
   getApiMembersByIdProfilePicture, 
   patchApiMembersById, 
-  postApiMembersByIdProfilePicture,
+  postApiProfilepictureByIdProfilePicture, 
   type MemberResponseDto
 } from "~/api";
 import Input from "~/components/UI/Input";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
 import i18n from "~/i18n";
+import { PageHeader } from "~/components/UI/PageHeader";
+import { FormSection } from "~/components/UI/Form/FormSection";
+import { FormHeader } from "~/components/UI/Form/FormHeader";
 
 enum Language { NL = 0, EN = 1 }
 
@@ -50,32 +53,16 @@ export default function SettingsPage() {
   useEffect(() => {
     const validateForm = () => {
       const { email, phoneNumber, street, houseNumber, postalCode, city, parentPhoneNumber, preferredLanguage } = formData;
-      
-      const basicFieldsFilled = 
-        !!email && 
-        !!phoneNumber && 
-        !!street && 
-        !!houseNumber && 
-        !!postalCode && 
-        !!city &&
-        preferredLanguage !== undefined;
-
+      const basicFieldsFilled = !!(email && phoneNumber && street && houseNumber && postalCode && city && preferredLanguage !== undefined);
       const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
       let parentPhoneValid = true;
       if (member?.dateOfBirth) {
-        const birthDate = new Date(member.dateOfBirth);
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        
-        if (age < 18) {
-          parentPhoneValid = !!parentPhoneNumber && parentPhoneNumber.trim().length > 0;
-        }
+        const age = new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
+        if (age < 18) parentPhoneValid = !!parentPhoneNumber?.trim();
       }
-
       setIsFormValid(basicFieldsFilled && emailValid && parentPhoneValid);
     };
-
     validateForm();
   }, [formData, member]);
 
@@ -86,12 +73,12 @@ export default function SettingsPage() {
       try {
         const res = await getApiMembersById({ path: { id: userId } });
         if (res.data) {
-          setMember(res.data as MemberResponseDto);
+          setMember(res.data);
           setFormData({
             email: res.data.email || "",
             phoneNumber: res.data.phoneNumber || "",
             street: res.data.street || "",
-            houseNumber: res.data.houseNumber.toString() || "",
+            houseNumber: res.data.houseNumber || "",
             postalCode: res.data.postalCode || "",
             city: res.data.city || "",
             parentPhoneNumber: res.data.parentPhoneNumber || "",
@@ -100,15 +87,11 @@ export default function SettingsPage() {
           });
         }
 
-        const profilePictureResponse = await getApiMembersByIdProfilePicture({
-          path: { id: userId },
-          responseType: 'blob'
-        });
-    
-        if (profilePictureResponse.data instanceof Blob && profilePictureResponse.status === 200) {
-          url = URL.createObjectURL(profilePictureResponse.data);
+        const ppRes = await getApiMembersByIdProfilePicture({ path: { id: userId }, responseType: 'blob' });
+        if (ppRes.data instanceof Blob && ppRes.status === 200) {
+          url = URL.createObjectURL(ppRes.data);
           setProfilePictureSrc(url);
-        } else if(profilePictureResponse.status === 404) {
+        } else {
           setProfilePictureSrc("/profile-picture.svg");
         }
       } catch (err) {
@@ -124,40 +107,33 @@ export default function SettingsPage() {
   const handleSubscriptionChange = (flag: number, checked: boolean) => {
     setFormData(prev => ({
       ...prev,
-      mailSubscriptions: checked 
-        ? prev.mailSubscriptions | flag 
-        : prev.mailSubscriptions & ~flag
+      mailSubscriptions: checked ? prev.mailSubscriptions | flag : prev.mailSubscriptions & ~flag
     }));
   };
 
   const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
-
     setSaving(true);
-
     try {
-      await postApiMembersByIdProfilePicture({
+      await postApiProfilepictureByIdProfilePicture({
         path: { id: userId },
         body: { image: file }
       });
-
       window.location.reload();
     } catch (err) {
       console.error("Failed to upload profile picture:", err);
     } finally {
-
       setSaving(false);
     }
   }; 
 
-   const handleChangePassword = async () => {
+  const handleChangePassword = async () => {
     if (keycloak) {
       const url = await keycloak.createLoginUrl({
         action: 'UPDATE_PASSWORD',
         redirectUri: window.location.href
       });
-
       window.location.href = url;
     }
   }; 
@@ -180,23 +156,22 @@ export default function SettingsPage() {
           { op: "replace", path: "/mailSubscriptions", value: formData.mailSubscriptions }
         ]
       });
-
       i18n.changeLanguage(formData.preferredLanguage === Language.NL ? "nl" : "en");
     } catch (err) {
-        console.error("Error while saving settings:", err);
+      console.error("Error saving settings:", err);
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return t("loading") + "...";
+  if (loading) return t("loading");
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-8">{t("settings")}</h1>
+    <>
+      <PageHeader title={t("settings")} />
       
       <div className="flex flex-col lg:flex-row gap-12">
-        {/* Left: Profilepicture section */}
+        {/* Left: Profile Picture */}
         <div className="flex flex-col items-center lg:w-48">
           <div 
             className="relative w-40 h-40 group cursor-pointer"
@@ -205,7 +180,7 @@ export default function SettingsPage() {
             <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-(--board-primary) shadow-md border-4 border-white transition-transform group-hover:scale-105">
               <img 
                 src={profilePictureSrc || "/profile-picture.svg"} 
-                className={profilePictureSrc ? "w-full h-full object-cover" : "w-2/3 h-2/3 opacity-80"}
+                className={profilePictureSrc && profilePictureSrc !== "/profile-picture.svg" ? "w-full h-full object-cover" : "w-2/3 h-2/3 opacity-80"}
                 alt="Profile"
               />
             </div>
@@ -213,30 +188,32 @@ export default function SettingsPage() {
               {t("change")}
             </div>
           </div>
-          <input type="file" ref={fileInputRef} hidden accept="image/*" onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleProfilePictureUpload(e)} />
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            hidden 
+            accept="image/*" 
+            onChange={handleProfilePictureUpload} 
+          />
           
           <div className="mt-6 text-center">
             <h2 className="font-bold text-xl">{member?.firstName} {member?.lastName}</h2>
-            <p className="text-gray-500">{member?.studentNumber}</p>
+            <p className="text-gray-500 font-mono text-sm">{member?.studentNumber}</p>
           </div>
         </div>
 
         {/* Right: Forms */}
-        <div className="flex-1 space-y-10">
+        <div className="flex-1 space-y-12">
           
-          {/* Contact Details */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2"><h3 className="font-bold border-b pb-2 uppercase text-xs text-gray-500">{t("contact_details")}</h3></div>
+          <FormSection title={t("contact_details")}>
             <Input 
               label={t("email")} 
-              type="email" 
-              required
+              type="email" required
               value={formData.email} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} 
             />
             <Input 
-              label={t("phone_number")} 
-              required
+              label={t("phone_number")} required
               value={formData.phoneNumber} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, phoneNumber: e.target.value})} 
             />
@@ -246,25 +223,22 @@ export default function SettingsPage() {
               value={formData.parentPhoneNumber} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, parentPhoneNumber: e.target.value})} 
             />
-          </section>
+          </FormSection>
 
-          {/* Address */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-3"><h3 className="font-bold border-b pb-2 uppercase text-xs text-gray-500">{t("address")}</h3></div>
+          <FormSection title={t("address")} columns={3}>
             <div className="md:col-span-2">
-                <Input label={t("street")} required value={formData.street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, street: e.target.value})} />
+              <Input label={t("street")} required value={formData.street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, street: e.target.value})} />
             </div>
             <Input label={t("house_number")} required value={formData.houseNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, houseNumber: e.target.value})} />
             <Input label={t("postal_code")} required value={formData.postalCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, postalCode: e.target.value})} />
             <div className="md:col-span-2">
-                <Input label={t("city")} required value={formData.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, city: e.target.value})} />
+              <Input label={t("city")} required value={formData.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, city: e.target.value})} />
             </div>
-          </section>
+          </FormSection>
 
-          {/* Mail Subscriptions */}
           <section>
-            <h3 className="font-bold border-b pb-2 uppercase text-xs text-gray-500 mb-4">{t("mail_subscriptions")}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 rounded-xl">
+            <FormHeader title={t("mail_subscriptions")} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
               <Checkbox 
                 label={t("general_member_meetings")} 
                 checked={(formData.mailSubscriptions & MailSubscriptions.GeneralMemberMeetings) !== 0}
@@ -293,10 +267,9 @@ export default function SettingsPage() {
             </div>
           </section>
 
-          {/* Preferences & Security */}
-          <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <FormSection columns={2}>
             <div>
-              <h3 className="font-bold uppercase text-xs text-gray-500 mb-3">{t("preferred_language")}</h3>
+              <FormHeader title={t("preferred_language")} border={false} />
               <div className="flex gap-2">
                 <Button 
                   variant={formData.preferredLanguage === Language.NL ? "primary" : "secondary"}
@@ -315,22 +288,22 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <h3 className="font-bold uppercase text-xs text-gray-500 mb-3">{t("security")}</h3>
+              <FormHeader title={t("security")} border={false} />
               <Button variant="secondary" className="w-full" onClick={handleChangePassword}>
                 {t("change_password")}
               </Button>
             </div>
-          </section>
+          </FormSection>
 
           <Button 
             onClick={handleSaveSettings} 
-            disabled={saving || !isFormValid} // Knop is uitgeschakeld als form niet valide is
-            className={`w-full ${!isFormValid ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={saving || !isFormValid}
+            className="w-full"
           >
             {saving ? t("saving") : t("save")}
           </Button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

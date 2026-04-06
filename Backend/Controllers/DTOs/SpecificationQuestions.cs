@@ -33,3 +33,15 @@ public class PostSpecificationQuestionDTO : SpecificationQuestionDTO
     /// <inheritdoc cref="SpecificationQuestion.ActivityId"/>
     public required uint ActivityId { get; set; }
 }
+
+public class GetSpecificationQuestionResponseDTO : SpecificationQuestionDTO
+{
+    /// <inheritdoc cref="SpecificationQuestion.Id"/>
+    public uint Id { get; set; }
+}
+
+public class UpdateSpecificationQuestionDTO : SpecificationQuestionDTO
+{
+    /// <inheritdoc cref="SpecificationQuestion.Id"/>
+    public uint? Id { get; set; } 
+}

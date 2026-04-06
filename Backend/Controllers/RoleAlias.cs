@@ -1,231 +1,111 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Backend.Interfaces;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
-using Backend.Utils;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class RoleAliases(PostgresDbContext db) : ControllerBase
+public class RoleAliasesController : ControllerBase
 {
-    // GET: api/rolealiases
-    /// <summary>
-    /// Lists all role aliases in the database.
-    /// </summary>
-    /// <returns>Said list.</returns>
+    private readonly IRoleAliasService _service;
+
+    public RoleAliasesController(IRoleAliasService service)
+    {
+        _service = service;
+    }
+
+    private Guid GetUserId()
+    {
+        return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    }
+
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<RoleAlias>>> GetRoleAliases(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<RoleAlias>>> GetRoleAliases(CancellationToken ct)
     {
-        return await db.RoleAliases
-            .Include(ra => ra.Role)
-            .ToListAsync(cancellationToken);
+        return Ok(await _service.GetRoleAliases(ct));
     }
 
-    // GET: api/rolealiases/5
-    /// <summary>
-    /// Fetches a single role alias.
-    /// </summary>
-    /// <param name="id">The id of the role alias to fetch.</param>
-    /// <returns>The full role alias.</returns>
     [HttpGet("{id}")]
-    public async Task<ActionResult<RoleAlias>> GetRoleAlias(uint id, CancellationToken cancellationToken)
+    public async Task<ActionResult<RoleAlias>> GetRoleAlias(uint id, CancellationToken ct)
     {
-        var roleAlias = await db.RoleAliases
-            .Include(ra => ra.Role)
-            .FirstOrDefaultAsync(ra => ra.Id == id, cancellationToken);
-
-        return roleAlias != null ? roleAlias : NotFound();
+        var result = await _service.GetRoleAlias(id, ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
-    // POST: api/rolealiases
-    /// <summary>
-    /// Creates a new role alias.
-    /// </summary>
-    /// <param name="roleAliasDto">The role alias to be added.</param>
-    /// <returns>The created role alias.</returns>
     [HttpPost]
-    public async Task<ActionResult<RoleAlias>> PostRoleAlias(PostRoleAliasDTO roleAliasDto, CancellationToken cancellationToken)
+    public async Task<IActionResult> PostRoleAlias(PostRoleAliasDTO dto, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
+        try
         {
-            return Forbid("Only board members can post role aliases.");
+            var result = await _service.CreateRoleAlias(dto, GetUserId(), ct);
+            return CreatedAtAction(nameof(GetRoleAlias), new { id = result.Id }, result);
         }
-
-        var role = await db.Roles.FindAsync(roleAliasDto.RoleId, cancellationToken);
-        if (role == null) return BadRequest($"Role with ID {roleAliasDto.RoleId} does not exist.");
-
-        var newEntry = db.RoleAliases.Add(new RoleAlias
+        catch (UnauthorizedAccessException ex)
         {
-            Name = roleAliasDto.Name,
-            RoleId = roleAliasDto.RoleId
-        });
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        return CreatedAtAction(nameof(GetRoleAlias), new { id = newEntry.Entity.Id }, newEntry.Entity);
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
-    // DELETE: api/rolealiases/5
-    /// <summary>
-    /// Deletes a role alias.
-    /// </summary>
-    /// <param name="id">The id of the role alias to delete.</param>
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteRoleAlias(uint id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteRoleAlias(uint id, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-        {
-            return Forbid("Only board members can delete role aliases.");
-        }
-
-        var roleAlias = await db.RoleAliases.FindAsync(id, cancellationToken);
-        if (roleAlias == null) return NotFound();
-
-        using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            var affectedMembers = await db.GroupMemberships
-                .Where(gm => gm.RoleAliasId == id)
-                .Select(gm => gm.Member.KeycloakId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-
-            db.RoleAliases.Remove(roleAlias);
-
-            foreach (var keycloakId in affectedMembers)
-            {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
-                    KeycoakId = keycloakId ?? throw new Exception("Member with null KeycloakId found in affected members list."),
-                    TaskType = KeycloakTaskType.Sync
-                });
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
+            await _service.DeleteRoleAlias(id, GetUserId(), ct);
             return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            return StatusCode(500, $"Error during delete: {ex.Message}");
+            return NotFound(ex.Message);
         }
     }
 
-    // PATCH: api/rolealiases/5
-    /// <summary>
-    /// Partially updates a role alias.
-    /// </summary>
     [HttpPatch("{id}")]
-    public async Task<IActionResult> PatchRoleAlias(uint id, [FromBody] JsonPatchDocument<RoleAlias> patchDoc, CancellationToken cancellationToken)
+    public async Task<IActionResult> PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-        {
-            return Forbid("Only board members can change role aliases.");
-        }
-
-        if (patchDoc == null) return BadRequest();
-
-        var roleAlias = await db.RoleAliases.FindAsync(new [] { id }, cancellationToken);
-        if (roleAlias == null) return NotFound();
-
-        using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            patchDoc.ApplyTo(roleAlias, ModelState);
-
-            TryValidateModel(roleAlias);
-
-            if (!ModelState.IsValid) 
-            {                
-                await transaction.RollbackAsync(cancellationToken);
-                return BadRequest(ModelState);
-            }
-
-            var affectedMembers = await db.GroupMemberships
-                .Where(gm => gm.RoleAliasId == id)
-                .Select(gm => gm.Member.KeycloakId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-
-            foreach (var memberId in affectedMembers)
-            {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
-                    KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found in affected members list."),
-                    TaskType = KeycloakTaskType.Sync
-                });
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
+            await _service.PatchRoleAlias(id, patchDoc, GetUserId(), ct);
             return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
-    // PUT: api/rolealiases/5
-    /// <summary>
-    /// Updates a role alias details.
-    /// </summary>
     [HttpPut("{id}")]
-    public async Task<IActionResult> PutRoleAlias(uint id, RoleAliasUpdateDTO roleAliasDto, CancellationToken cancellationToken)
+    public async Task<IActionResult> PutRoleAlias(uint id, RoleAliasUpdateDTO dto, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroups.Board, db))
-        {
-            return Forbid("Only board members can change role aliases.");
-        }
-
-        var roleAlias = await db.RoleAliases.FindAsync(id, cancellationToken);
-        if (roleAlias == null) return NotFound();
-
-        using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
-            roleAlias.Name = roleAliasDto.Name;
-            roleAlias.RoleId = roleAliasDto.RoleId;
-
-            var affectedMembers = await db.GroupMemberships
-                .Where(gm => gm.RoleAliasId == id)
-                .Select(gm => gm.Member.KeycloakId)
-                .Distinct()
-                .ToListAsync(cancellationToken);
-
-            foreach (var memberId in affectedMembers)
-            {
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask { 
-                    KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found in affected members list."), 
-                    TaskType = KeycloakTaskType.Sync 
-                });
-            }
-
-            await db.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
+            await _service.UpdateRoleAlias(id, dto, GetUserId(), ct);
             return NoContent();
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync(cancellationToken);
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 }

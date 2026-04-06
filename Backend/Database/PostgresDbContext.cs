@@ -35,6 +35,8 @@ public class PostgresDbContext : DbContext
     public DbSet<RoleAlias> RoleAliases { get; set; }
     /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
     public DbSet<KeyCloakOutboxTask> KeyCloakOutboxTasks { get; set; }
+    /// <summary>Reference to the ExactOutboxTasks relational table. </summary>
+    public DbSet<ExactOutboxTask> ExactOutboxTasks { get; set; }
     /// <summary>Reference to the Membership Payments relational table. </summary>
     public DbSet<MembershipPayment> MembershipPayments { get; set; }
     /// <summary>Reference to the Activity Payments relational table. </summary>
@@ -55,16 +57,31 @@ public class PostgresDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<MembershipPayment>()
-            .HasOne(p => p.Member)
-            .WithMany()
-            .HasForeignKey(p => p.MemberId)
-            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<Payment>().UseTpcMappingStrategy();
 
-        modelBuilder.Entity<EnrollmentPayment>()
-            .HasOne(p => p.Member)
-            .WithMany()
-            .HasForeignKey(p => p.MemberId)
-            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<MembershipPayment>(entity =>
+        {
+            entity.ToTable("MembershipPayments");
+            
+            entity.HasOne(p => p.Member)
+                .WithMany()
+                .HasForeignKey(p => p.MemberId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<EnrollmentPayment>(entity =>
+        {
+            entity.ToTable("EnrollmentPayments");
+
+            entity.HasOne(p => p.Member)
+                .WithMany()
+                .HasForeignKey(p => p.MemberId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(p => p.Activity)
+                .WithMany()
+                .HasForeignKey(p => p.ActivityId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
     }
 }

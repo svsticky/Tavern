@@ -1,7 +1,7 @@
 import type { CommitteeEnrollment } from "~/types/CommitteeEnrollment";
 import { ListTile } from "./Tiles/ListTile";
-import { NoContentTile } from "./Tiles/NoContentTile";
 import { t } from "i18next";
+import { NoContentTile } from "./Tiles/NoContentTile";
 
 type CommitteeEnrollmentOverviewProps = {
   committeeEnrollments: CommitteeEnrollment[];
