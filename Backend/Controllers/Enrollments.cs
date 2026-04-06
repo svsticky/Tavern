@@ -19,9 +19,11 @@ public class EnrollmentsController : ControllerBase
 
     // GET: api/enrollments
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Enrollment>>> GetEnrollments(CancellationToken cancellationToken)
-    {
-        var enrollments = await _enrollmentService.GetEnrollments(cancellationToken);
+    public async Task<ActionResult<IEnumerable<Enrollment>>> GetEnrollments(bool ownEnrollments, CancellationToken cancellationToken)
+    {   
+        var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        var enrollments = await _enrollmentService.GetEnrollments(cancellationToken, ownEnrollments ? userId : null);
         return Ok(enrollments);
     }
 

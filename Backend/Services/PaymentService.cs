@@ -159,12 +159,12 @@ namespace Backend.Services
             return new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href };
         }
 
-        public object GetUnpaid()
+        public IEnumerable<EnrollmentBalance> GetUnpaid()
         {
             return paymentValidationService.GetAllUnpaidEnrollments();
         }
 
-        public object GetOverpaid()
+        public IEnumerable<EnrollmentBalance> GetOverpaid()
         {
             return paymentValidationService.GetAllOverpaidEnrollments();
         }

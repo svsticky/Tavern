@@ -24,11 +24,16 @@ public class EnrollmentService : IEnrollmentService
         _paymentValidationService = paymentValidationService;
     }
 
-    public async Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken)
+    public async Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken, Guid? memberId = null)
     {
-        return await _db.Enrollments
-            .Include(e => e.Activity)
-            .ToListAsync(cancellationToken);
+        var query = _db.Enrollments.Include(e => e.Activity).AsQueryable();
+
+        if (memberId.HasValue)
+        {
+            query = query.Where(e => e.MemberId == memberId.Value);
+        }
+
+        return await query.ToListAsync(cancellationToken);
     }
 
     public async Task<Enrollment?> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)

@@ -86,6 +86,11 @@ export type Enrollment = {
     isOnWaitingList?: boolean;
 };
 
+export type EnrollmentBalance = {
+    enrollment?: Enrollment;
+    balance?: number;
+};
+
 export type EnrollmentPayment = {
     id?: number;
     price?: number;
@@ -132,7 +137,6 @@ export type Group = {
     type?: GroupType;
     defaultGLAccount?: string | null;
     defaultCostCenter?: string | null;
-    defaultCostUnit?: string | null;
 };
 
 export type GroupMembership = {
@@ -632,10 +636,8 @@ export type GetApiActivitiesByIdPosterResponses = {
     /**
      * OK
      */
-    200: Blob | File;
+    200: unknown;
 };
-
-export type GetApiActivitiesByIdPosterResponse = GetApiActivitiesByIdPosterResponses[keyof GetApiActivitiesByIdPosterResponses];
 
 export type PostApiActivitiesByIdPosterData = {
     body?: {
@@ -668,10 +670,8 @@ export type GetApiActivitiesByIdPosterDownloadResponses = {
     /**
      * OK
      */
-    200: Blob | File;
+    200: unknown;
 };
-
-export type GetApiActivitiesByIdPosterDownloadResponse = GetApiActivitiesByIdPosterDownloadResponses[keyof GetApiActivitiesByIdPosterDownloadResponses];
 
 export type GetApiAnnouncementsData = {
     body?: never;
@@ -774,7 +774,9 @@ export type PutApiAnnouncementsByIdResponses = {
 export type GetApiEnrollmentsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        ownEnrollments?: boolean;
+    };
     url: '/api/enrollments';
 };
 
@@ -1201,10 +1203,8 @@ export type GetApiMembersByIdProfilePictureResponses = {
     /**
      * OK
      */
-    200: Blob | File;
+    200: unknown;
 };
-
-export type GetApiMembersByIdProfilePictureResponse = GetApiMembersByIdProfilePictureResponses[keyof GetApiMembersByIdProfilePictureResponses];
 
 export type GetApiPaymentsMembershipData = {
     body?: never;
@@ -1333,7 +1333,7 @@ export type GetApiPaymentsUnpaidResponses = {
     /**
      * OK
      */
-    200: Array<unknown>;
+    200: Array<EnrollmentBalance>;
 };
 
 export type GetApiPaymentsUnpaidResponse = GetApiPaymentsUnpaidResponses[keyof GetApiPaymentsUnpaidResponses];
@@ -1349,7 +1349,7 @@ export type GetApiPaymentsOverpaidResponses = {
     /**
      * OK
      */
-    200: Array<unknown>;
+    200: Array<EnrollmentBalance>;
 };
 
 export type GetApiPaymentsOverpaidResponse = GetApiPaymentsOverpaidResponses[keyof GetApiPaymentsOverpaidResponses];
@@ -1383,10 +1383,8 @@ export type GetApiProfilepictureViewByPathResponses = {
     /**
      * OK
      */
-    200: Blob | File;
+    200: unknown;
 };
-
-export type GetApiProfilepictureViewByPathResponse = GetApiProfilepictureViewByPathResponses[keyof GetApiProfilepictureViewByPathResponses];
 
 export type PostApiProfilepictureByIdProfilePictureData = {
     body?: {

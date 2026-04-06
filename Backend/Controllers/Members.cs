@@ -147,7 +147,7 @@ namespace Backend.Controllers
         }
 
         [HttpGet("{id}/profile-picture")]
-        public async Task<ActionResult<FileContentResult>> GetProfilePicture(Guid id)
+        public async Task<IActionResult> GetProfilePicture(Guid id)
         {
             var member = await memberService.GetMemberEntity(id);
             if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))

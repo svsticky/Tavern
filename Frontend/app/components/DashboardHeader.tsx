@@ -46,7 +46,11 @@ export default function DashboardHeader({
           setUnpaidActivityIds(outstandingPaymentsResponse.data.map(payment => payment.enrollment?.activityId ?? 0));
         }
 
-        const enrollmentAmountResponse = await getApiEnrollments();
+        const enrollmentAmountResponse = await getApiEnrollments({
+            query: {
+                ownEnrollments: true
+            }
+        });
 
         if (enrollmentAmountResponse.data) {
           setPastEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {

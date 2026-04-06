@@ -90,7 +90,7 @@ namespace Backend.Services
                 Description = $"{payment.Activity?.Organizer?.Name ?? ""} | {payment.Activity?.Name}",
                 VATCode = MapVat(payment.Activity?.VatRate),
                 CostCenter = payment.Activity?.CostCenterId ?? payment.Activity?.Organizer?.DefaultCostCenter,
-                CostUnit = payment.Activity?.CostUnitId ?? payment.Activity?.Organizer?.DefaultCostUnit,
+                CostUnit = payment.Activity?.CostUnitId,
                 AmountDC = payment.Price
             };
         }

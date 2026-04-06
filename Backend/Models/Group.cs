@@ -53,12 +53,6 @@ public class Group
     /// </summary>
     [StringLength(20)]
     public string? DefaultCostCenter { get; set; }
-
-    /// <summary>
-    /// The default cost unit for the group, used for financial transactions.
-    /// </summary>
-    [StringLength(20)]
-    public string? DefaultCostUnit { get; set; }
 }
 
 public static class PredefinedGroups

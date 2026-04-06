@@ -72,7 +72,6 @@ export const putApiActivitiesById = <ThrowOnError extends boolean = false>(optio
 });
 
 export const getApiActivitiesByIdPoster = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdPosterData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdPosterResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/activities/{id}/poster',
     ...options
@@ -90,7 +89,6 @@ export const postApiActivitiesByIdPoster = <ThrowOnError extends boolean = false
 });
 
 export const getApiActivitiesByIdPosterDownload = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdPosterDownloadData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdPosterDownloadResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/activities/{id}/poster/download',
     ...options
@@ -358,7 +356,6 @@ export const deleteApiMembersByIdProfilePicture = <ThrowOnError extends boolean 
 });
 
 export const getApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<GetApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).get<GetApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/members/{id}/profile-picture',
     ...options
@@ -446,7 +443,6 @@ export const getApiPaymentsMemberByMemberIdStatus = <ThrowOnError extends boolea
 });
 
 export const getApiProfilepictureViewByPath = <ThrowOnError extends boolean = false>(options: Options<GetApiProfilepictureViewByPathData, ThrowOnError>) => (options.client ?? client).get<GetApiProfilepictureViewByPathResponses, unknown, ThrowOnError>({
-    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/profilepicture/view/{path}',
     ...options

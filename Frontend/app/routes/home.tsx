@@ -84,23 +84,6 @@ export default function DashboardPage() {
         <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
           <div className="flex flex-col w-full gap-y-8 col-span-4 lg:col-span-3">
             
-            {/* Upcoming Activities */}
-            <div className="flex flex-col w-full gap-y-3"> {/* Toegevoegd: flex flex-col en gap-y-3 */}
-              <div className="flex w-full justify-between items-center">
-                <p className="font-semibold text-lg">
-                  {t("upcoming_activities")}
-                </p>
-                <Button
-                  showArrow
-                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  onClick={() => navigate("/activities")}
-                >
-                  {t("show_all")}
-                </Button>
-              </div>
-              <UpcomingActivities activities={activities} />
-            </div>
-
             {/* Announcements */}
             <div className="flex flex-col w-full gap-y-3">
               <div className="flex w-full justify-between items-center">
@@ -118,6 +101,22 @@ export default function DashboardPage() {
               <AnnouncementsList announcements={announcements} />
             </div>
             
+            {/* Upcoming Activities */}
+            <div className="flex flex-col w-full gap-y-3"> {/* Toegevoegd: flex flex-col en gap-y-3 */}
+              <div className="flex w-full justify-between items-center">
+                <p className="font-semibold text-lg">
+                  {t("upcoming_activities")}
+                </p>
+                <Button
+                  showArrow
+                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
+                  onClick={() => navigate("/activities")}
+                >
+                  {t("show_all")}
+                </Button>
+              </div>
+              <UpcomingActivities activities={activities} />
+            </div>
           </div>
 
           {/* Enrollments and Committees */}

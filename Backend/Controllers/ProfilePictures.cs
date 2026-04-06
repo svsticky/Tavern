@@ -18,7 +18,7 @@ namespace Backend.Controllers
 
         // GET: api/profilepicture/view/{path}
         [HttpGet("view/{path}")]
-        public async Task<ActionResult<FileStreamResult>> GetProfilePictureByPath(string path)
+        public async Task<IActionResult> GetProfilePictureByPath(string path)
         {
             var result = await _service.GetProfilePictureByPath(path);
 

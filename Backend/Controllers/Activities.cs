@@ -164,7 +164,7 @@ namespace Backend.Controllers
 
         // GET: api/activities/5/poster
         [HttpGet("{id}/poster")]
-        public async Task<ActionResult<FileStreamResult>> GetPoster(uint id)
+        public async Task<IActionResult> GetPoster(uint id)
         {
             try
             {
@@ -183,7 +183,7 @@ namespace Backend.Controllers
 
         // GET: api/activities/5/poster/download
         [HttpGet("{id}/poster/download")]
-        public async Task<ActionResult<FileStreamResult>> DownloadPoster(uint id)
+        public async Task<IActionResult> DownloadPoster(uint id)
         {
             try
             {

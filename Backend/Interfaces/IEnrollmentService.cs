@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 
 public interface IEnrollmentService
 {
-    Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken);
+    Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken, Guid? memberId = null);
 
     Task<Enrollment?> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken);
 

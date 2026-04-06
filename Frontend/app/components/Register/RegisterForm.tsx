@@ -8,6 +8,7 @@ import { getApiStudies, postApiMembers, postApiPaymentsMembership, type MailSubs
 import Button from "../UI/Button";
 import { cn } from "~/util/tailwind.util";
 import { useNavigate } from "react-router";
+import i18n from "~/i18n";
 
 export default function RegisterForm({ className }: { className?: string }) {
     const [loading, setLoading] = useState(false);
@@ -104,6 +105,9 @@ export default function RegisterForm({ className }: { className?: string }) {
         if (!isFormValid) return;
 
         setLoading(true);
+
+        const isDutch = i18n.language.startsWith('nl');
+
         try {
             const payload: PostMemberDto = {
                 firstName: formData.firstname,
@@ -117,7 +121,7 @@ export default function RegisterForm({ className }: { className?: string }) {
                 city: formData.city,
                 studentNumber: parseInt(formData.studentNumber),
                 parentPhoneNumber: formData.parentPhone || null,
-                preferredLanguage: 0,
+                preferredLanguage: isDutch ? 0 : 1,
                 mailSubscriptions: calculateMailSubscriptions() as MailSubscriptions,
                 studyEnrollments: selectedStudies.map(id => ({
                     studyId: id,
