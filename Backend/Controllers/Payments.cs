@@ -98,7 +98,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/unpaid
         [HttpGet("unpaid")]
-        public async Task<ActionResult<IEnumerable<EnrollmentBalance>>> GetUnpaid()
+        public ActionResult<IEnumerable<EnrollmentBalance>> GetUnpaid()
         {
             var result = _paymentService.GetUnpaid();
             return Ok(result);
@@ -106,7 +106,7 @@ namespace Backend.Controllers
 
         // GET: api/payments/overpaid
         [HttpGet("overpaid")]
-        public async Task<ActionResult<IEnumerable<EnrollmentBalance>>> GetOverpaid()
+        public ActionResult<IEnumerable<EnrollmentBalance>> GetOverpaid()
         {
             var result = _paymentService.GetOverpaid();
             return Ok(result);
