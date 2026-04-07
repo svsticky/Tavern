@@ -97,6 +97,11 @@ export default function ActivityFormPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if(!activity){
+      return;
+    }
+
     const fd = new FormData(e.currentTarget);
     const audienceFlags = fd.getAll("AudienceBit").reduce((acc, val) => acc + Number(val), 0);
 
@@ -116,23 +121,23 @@ export default function ActivityFormPage() {
         EnrollmentDeadline: fd.get("EnrollmentDeadline") ? new Date(fd.get("EnrollmentDeadline") as string).toISOString() : undefined,
         UnenrollmentDeadline: fd.get("UnenrollmentDeadline") ? new Date(fd.get("UnenrollmentDeadline") as string).toISOString() : undefined,
 
-        ShowInKoala: isBoard ? fd.get("ShowInKoala") === "on" : (activity?.showInKoala ?? false),
-        ShowOnWebsite: isBoard ? fd.get("ShowOnWebsite") === "on" : (activity?.showOnWebsite ?? false),
-        IsEnrollable: isBoard ? fd.get("IsEnrollable") === "on" : (activity?.isEnrollable ?? false),
+        ShowInKoala: isBoard ? fd.get("ShowInKoala") === "on" : false,
+        ShowOnWebsite: isBoard ? fd.get("ShowOnWebsite") === "on" : false,
+        IsEnrollable: isBoard ? fd.get("IsEnrollable") === "on" : false,
         AreParticipantsVisible: fd.get("AreParticipantsVisible") === "on",
         IsAdultOnly: fd.get("IsAdultOnly") === "on",
 
         AllowedAudience: audienceFlags as TargetAudience,
 
-        VatRate: isBoard ? (fd.get("VatRate") ? Number(fd.get("VatRate")) : undefined) : (activity?.vatRate ?? undefined),
-        GLAccountId: isBoard ? (fd.get("GLAccountId") as string || undefined) : (activity?.glAccountId ?? undefined),
-        CostCenterId: isBoard ? (fd.get("CostCenterId") as string || undefined) : (activity?.costCenterId ?? undefined),
+        VatRate: isBoard ? (fd.get("VatRate") ? Number(fd.get("VatRate")) : undefined) : undefined,
+        GLAccountId: isBoard ? (fd.get("GLAccountId") as string || undefined) : undefined,
+        CostCenterId: isBoard ? (fd.get("CostCenterId") as string || undefined) : undefined,
 
         Poster: (fd.get("Poster") as File)?.size > 0 ? (fd.get("Poster") as File) : undefined,
 
         SpecificationQuestionsJson: JSON.stringify(questions),
 
-        PaymentDeadline: isBoard ? (fd.get("PaymentDeadline") ? new Date(fd.get("PaymentDeadline") as string).toISOString() : undefined) : (activity?.paymentDeadline ?? undefined)
+        PaymentDeadline: isBoard ? (fd.get("PaymentDeadline") ? new Date(fd.get("PaymentDeadline") as string).toISOString() : undefined) : undefined
       }
     };
 
@@ -147,13 +152,14 @@ export default function ActivityFormPage() {
       navigate("/activities");
     } catch (error) {
       console.error(error);
-      alert(t("error_saving"));
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) return t("loading");
+
+  if (isEdit && !activity) return t("failed_fetching");
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -181,10 +187,10 @@ export default function ActivityFormPage() {
           <div>
             <FormHeader title={t("target_audience")} border />
             <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl mt-4">
-              <Checkbox label={t("year_1")} name="AudienceBit" value="1" defaultChecked={isEdit ? !!(activity!.allowedAudience ?? 0 & 1) : true} />
-              <Checkbox label={t("year_2")} name="AudienceBit" value="2" defaultChecked={isEdit ? !!(activity!.allowedAudience ?? 0 & 2) : true} />
-              <Checkbox label={t("year_3_plus")} name="AudienceBit" value="4" defaultChecked={isEdit ? !!(activity!.allowedAudience ?? 0 & 4) : true} />
-              <Checkbox label={t("masters")} name="AudienceBit" value="8" defaultChecked={isEdit ? !!(activity!.allowedAudience ?? 0 & 8) : true} />
+              <Checkbox label={t("year_1")} name="AudienceBit" value="1" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 1) : true} />
+              <Checkbox label={t("year_2")} name="AudienceBit" value="2" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 2) : true} />
+              <Checkbox label={t("year_3_plus")} name="AudienceBit" value="4" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 4) : true} />
+              <Checkbox label={t("masters")} name="AudienceBit" value="8" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 8) : true} />
             </div>
           </div>
           <div>

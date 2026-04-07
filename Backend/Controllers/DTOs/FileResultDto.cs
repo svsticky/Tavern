@@ -2,6 +2,6 @@ namespace Backend.Controllers.DTOs;
 
 public class FileResultDto
 {
-    public Stream Stream { get; set; } = default!;
-    public string ContentType { get; set; } = default!;
+    public required Stream Stream { get; set; }
+    public required string ContentType { get; set; }
 }

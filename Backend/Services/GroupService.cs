@@ -31,6 +31,8 @@ public class GroupService : IGroupService
             {
                 Id = c.Id,
                 Name = c.Name,
+                Type = c.Type,
+                Active = c.Active,
                 GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipSummaryDTO
                 {
                     Member = new MemberSummaryDTO

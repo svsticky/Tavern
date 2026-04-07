@@ -13,7 +13,7 @@ public class PostSpecificationAnswerDTO
 
 public class SpecificationAnswerResponseDTO
 {
-    public uint QuestionId { get; set; }
-    public uint AnswerId { get; set; }
-    public string Answer { get; set; } = string.Empty;
+    public required uint QuestionId { get; set; }
+    public required uint AnswerId { get; set; }
+    public required string Answer { get; set; }
 }

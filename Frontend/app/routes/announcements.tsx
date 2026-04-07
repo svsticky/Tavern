@@ -3,7 +3,7 @@ import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { getApiAnnouncements, type GetAnnouncementDto } from "~/api";
+import { getApiAnnouncements, type GetAnnouncementResponseDto } from "~/api";
 import AnnouncementsList from "~/components/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
@@ -15,7 +15,7 @@ export default function AnnouncementsPage() {
   
   const [loading, setLoading] = useState(true);
 
-  const [announcements, setAnnouncements] = useState<GetAnnouncementDto[]>([]);
+  const [announcements, setAnnouncements] = useState<GetAnnouncementResponseDto[]>([]);
 
   const navigate = useNavigate();
 
@@ -28,7 +28,7 @@ export default function AnnouncementsPage() {
         const announcementsResponse = await getApiAnnouncements();
 
         if (announcementsResponse.data) {
-          setAnnouncements(announcementsResponse.data as GetAnnouncementDto[]);
+          setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
         }
       } catch (error) {
         console.error("Error while loading data:", error);

@@ -2,15 +2,15 @@ import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { formatDate } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
-import type { GetAnnouncementDto } from "~/api";
 import Markdown from "~/components/UI/Markdown";
 import { useKeycloak } from "@react-keycloak/web";
 import { isInGroupWithId } from "~/util/group.util";
 import { useNavigate } from "react-router";
 import { t } from "i18next";
+import type { GetAnnouncementResponseDto } from "~/api";
 
 type AnnouncementTileProps = {
-  announcement: GetAnnouncementDto;
+  announcement: GetAnnouncementResponseDto;
   className?: string;
 };
 
@@ -32,7 +32,7 @@ export default function AnnouncementTile({
         <div className="flex items-center gap-3 shrink-0">
           <p className="flex items-center gap-1 text-sm text-gray-500 font-medium whitespace-nowrap">
             <Calendar className="w-4 h-4" />
-            {formatDate(new Date(announcement.createdAt ?? Date.now()), "defaultDate")}
+            {formatDate(new Date(announcement.createdAt), "defaultDate")}
           </p>
 
           {isBoard && (
@@ -49,7 +49,7 @@ export default function AnnouncementTile({
 
       {/* Announcement content */}
       <div className="prose prose-sm max-w-none mb-4">
-        <Markdown>{announcement.content ?? ""}</Markdown>
+        <Markdown>{announcement.content}</Markdown>
       </div>
 
       {/* Divider */}

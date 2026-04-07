@@ -22,19 +22,19 @@ public class GetGroupDTO
 public class GroupResponseDTO
 {
     /// <inheritdoc cref="Models.Group.Id"/>
-    public uint Id { get; set; }
+    public required uint Id { get; set; }
 
     /// <inheritdoc cref="Models.Group.Name"/>
     public required string Name { get; set; }
 
     /// <inheritdoc cref="Models.Group.Active"/>
-    public bool Active { get; set; } = true;
+    public required bool Active { get; set; } = true;
 
     /// <inheritdoc cref="Models.Group.GroupMemberships"/>
-    public List<GroupMembershipSummaryDTO> GroupMemberships { get; set; } = new();
+    public required List<GroupMembershipSummaryDTO> GroupMemberships { get; set; } = new();
 
     /// <inheritdoc cref="Models.Group.Type"/>
-    public Models.GroupType Type { get; set; }
+    public required Models.GroupType Type { get; set; }
 }
 
 public class GroupUpdateDTO

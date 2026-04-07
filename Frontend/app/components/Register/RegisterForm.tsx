@@ -56,7 +56,7 @@ export default function RegisterForm({ className }: { className?: string }) {
     };
 
     const isFormValid = useMemo(() => {
-        const birthDateValue = formData.birthDate ? new Date(formData.birthDate) : null;
+        const birthDateValue = new Date(formData.birthDate);
         let isAdult = false;
         
         if (birthDateValue && !isNaN(birthDateValue.getTime())) {
@@ -132,16 +132,16 @@ export default function RegisterForm({ className }: { className?: string }) {
 
             var response = await postApiMembers({ body: payload });
 
-            if(response.status === 201) {
+            if(response.status === 201 && response.data) {
                 if(!studies.some(s => selectedStudies.includes(s.id!) && s.type === 1)) {
                     var paymentResponse = await postApiPaymentsMembership({
                         body: {
-                            memberId: response.data?.id,
+                            memberId: response.data.id,
                         }
                     });
                     
-                    if(paymentResponse.status === 200 && paymentResponse.data?.checkoutUrl) {
-                        window.location.href = paymentResponse.data?.checkoutUrl;
+                    if(paymentResponse.status === 200 && paymentResponse.data) {
+                        window.location.href = paymentResponse.data.checkoutUrl;
                     }
                 }
                 else{

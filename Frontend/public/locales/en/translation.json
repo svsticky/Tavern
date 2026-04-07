@@ -138,7 +138,7 @@
   "book_discounts": "Book discounts",
   "book_discounts_description": "As a member of the study association, you can get discounts on study books.",
   "cheap_activities": "Cheap activities",
-  "cheap_activities_description": "Our association organizes many activities from cheap drinks and fun parties to educational workshops and lectures.",
+  "cheap_activities_description": "Our association organizes many activities from free drinks and fun parties to educational workshops and lectures.",
   "networking": "Networking",
   "networking_description": "By joining our association, you will meet many fellow students and expand your network.",
   "introduction_week": "Introduction week",
@@ -146,5 +146,6 @@
   "labor_market_orientation": "Labor market orientation",
   "labor_market_orientation_description": "Our association offers labor market orientation sessions to help students prepare for their future careers.",
   "members_description": "We have a diverse group of about 2000 members, including bachelor and master students from various study programs. Our members are active in organizing activities, participating in committees and enjoying the social aspect of our association.",
-  "questions": "Questions"
+  "questions": "Questions",
+  "failed_fetching": "Failed fetching data."
 }

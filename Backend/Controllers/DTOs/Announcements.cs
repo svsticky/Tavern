@@ -28,7 +28,7 @@ public class UpdateAnnouncementDTO
     public required string Content { get; set; }
 }
 
-public class GetAnnouncementDTO
+public class GetAnnouncementResponseDTO
 {
     public required uint Id { get; set; }
     public required string Title { get; set; }

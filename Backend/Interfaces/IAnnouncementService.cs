@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 
 public interface IAnnouncementService
 {
-    Task<IEnumerable<GetAnnouncementDTO>> GetAnnouncements(CancellationToken cancellationToken);
+    Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(CancellationToken cancellationToken);
 
     Task<Announcement?> GetAnnouncement(uint id, CancellationToken cancellationToken);
 

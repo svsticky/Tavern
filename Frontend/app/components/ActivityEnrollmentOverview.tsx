@@ -33,7 +33,7 @@ export default function ActivityEnrollmentOverview({
             <div>
               <p className="truncate">{activity.name}</p>
               <p className="text-gray-500">
-                {formatDate(new Date(activity.dateTimeStart ?? Date.now()), "shortDate")}
+                {formatDate(new Date(activity.dateTimeStart), "shortDate")}
               </p>
             </div>
           </div>

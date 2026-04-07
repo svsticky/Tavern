@@ -166,6 +166,8 @@ export default function SettingsPage() {
 
   if (loading) return t("loading");
 
+  if (!member) return t("failed_fetching");
+
   return (
     <>
       <PageHeader title={t("settings")} />

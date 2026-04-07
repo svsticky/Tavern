@@ -10,17 +10,17 @@ export type Activity = {
     price?: number;
     posterFileName?: string | null;
     posterPath?: string | null;
-    dutchDescription?: string | null;
-    englishDescription?: string | null;
+    dutchDescription?: string;
+    englishDescription?: string;
     dateTimeStart?: string;
     dateTimeEnd?: string;
     unenrollmentDeadline?: string | null;
     enrollmentDeadline?: string | null;
-    location?: string | null;
+    location?: string;
     participantLimit?: number | null;
     organizerId?: number | null;
     organizer?: Group;
-    specificationQuestions?: Array<SpecificationQuestion> | null;
+    specificationQuestions?: Array<SpecificationQuestion>;
     showInKoala?: boolean;
     showOnWebsite?: boolean;
     isEnrollable?: boolean;
@@ -29,7 +29,7 @@ export type Activity = {
     allowedAudience?: TargetAudience;
     isOpenForPayment?: boolean;
     vatRate?: number | null;
-    enrollments?: Array<Enrollment> | null;
+    enrollments?: Array<Enrollment>;
     glAccountId?: string | null;
     costCenterId?: string | null;
     costUnitId?: string | null;
@@ -37,33 +37,33 @@ export type Activity = {
 };
 
 export type ActivityResponseDto = {
-    id?: number;
-    name?: string | null;
-    price?: number;
+    id: number;
+    name: string;
+    price: number;
     posterPath?: string | null;
     posterFileName?: string | null;
-    dutchDescription?: string | null;
-    englishDescription?: string | null;
-    dateTimeStart?: string;
-    dateTimeEnd?: string;
+    dutchDescription: string;
+    englishDescription: string;
+    dateTimeStart: string;
+    dateTimeEnd: string;
     unenrollmentDeadline?: string | null;
     enrollmentDeadline?: string | null;
-    location?: string | null;
+    location: string;
     participantLimit?: number | null;
     organizerId?: number | null;
-    showInKoala?: boolean;
-    showOnWebsite?: boolean;
-    isEnrollable?: boolean;
-    areParticipantsVisible?: boolean;
-    isAdultOnly?: boolean;
+    showInKoala: boolean;
+    showOnWebsite: boolean;
+    isEnrollable: boolean;
+    areParticipantsVisible: boolean;
+    isAdultOnly: boolean;
     allowedAudience?: TargetAudience;
     vatRate?: number | null;
     glAccountId?: string | null;
     costCenterId?: string | null;
     costUnitId?: string | null;
-    enrollments?: Array<EnrollmentSummaryDto> | null;
-    specificationQuestions?: Array<GetSpecificationQuestionResponseDto> | null;
-    paymentDeadline?: string;
+    enrollments: Array<EnrollmentSummaryDto>;
+    specificationQuestions: Array<GetSpecificationQuestionResponseDto>;
+    paymentDeadline: string | null;
 };
 
 export type Announcement = {
@@ -76,26 +76,26 @@ export type Announcement = {
 };
 
 export type Enrollment = {
-    activityId?: number;
+    activityId: number;
     activity?: Activity;
     memberId?: string;
     member?: Member;
     price?: number;
-    specificationAnswers?: Array<SpecificationAnswer> | null;
+    specificationAnswers?: Array<SpecificationAnswer>;
     registeredOn?: string;
     isOnWaitingList?: boolean;
 };
 
 export type EnrollmentBalance = {
-    enrollment?: Enrollment;
-    balance?: number;
+    enrollment: Enrollment;
+    balance: number;
 };
 
 export type EnrollmentPayment = {
     id?: number;
     price?: number;
-    mollieId: string | null;
-    paymentIntentUrl: string | null;
+    mollieId: string;
+    paymentIntentUrl: string;
     paidAt?: string | null;
     memberId?: string | null;
     member?: Member;
@@ -110,11 +110,11 @@ export type EnrollmentSummaryDto = {
     specificationAnswers?: Array<SpecificationAnswerResponseDto> | null;
 };
 
-export type GetAnnouncementDto = {
+export type GetAnnouncementResponseDto = {
     id: number;
-    title: string | null;
-    content: string | null;
-    createdByName: string | null;
+    title: string;
+    content: string;
+    createdByName: string;
     createdById: string;
     createdAt: string;
 };
@@ -122,18 +122,18 @@ export type GetAnnouncementDto = {
 export type GetSpecificationQuestionResponseDto = {
     questionDutch: string;
     questionEnglish: string;
-    type?: QuestionType;
-    isMandatory?: boolean;
-    isPublic?: boolean;
+    type: QuestionType;
+    isMandatory: boolean;
+    isPublic: boolean;
     options?: Array<string> | null;
-    id?: number;
+    id: number;
 };
 
 export type Group = {
     id?: number;
     name: string;
     active?: boolean;
-    groupMemberships?: Array<GroupMembership> | null;
+    groupMemberships?: Array<GroupMembership>;
     type?: GroupType;
     defaultGLAccount?: string | null;
     defaultCostCenter?: string | null;
@@ -151,21 +151,21 @@ export type GroupMembership = {
 };
 
 export type GroupMembershipResponseDto = {
-    id?: number;
+    id: number;
     memberId: string;
-    memberName: string | null;
+    memberName: string;
     groupId: number;
-    groupName: string | null;
-    groupType?: GroupType;
-    membershipYear?: number;
+    groupName: string;
+    groupType: GroupType;
+    membershipYear: number;
     roleAliasId?: number | null;
     roleAliasName?: string | null;
 };
 
 export type GroupMembershipSummaryDto = {
     member: MemberSummaryDto;
-    groupName: string | null;
-    membershipYear?: number;
+    groupName: string;
+    membershipYear: number;
 };
 
 export type GroupMembershipUpdateDto = {
@@ -173,11 +173,11 @@ export type GroupMembershipUpdateDto = {
 };
 
 export type GroupResponseDto = {
-    id?: number;
-    name: string | null;
-    active?: boolean;
-    groupMemberships?: Array<GroupMembershipSummaryDto> | null;
-    type?: GroupType;
+    id: number;
+    name: string;
+    active: boolean;
+    groupMemberships: Array<GroupMembershipSummaryDto>;
+    type: GroupType;
 };
 
 export type GroupType = 0 | 1;
@@ -209,16 +209,16 @@ export type Member = {
     mailSubscriptions?: MailSubscriptions;
     notes?: string | null;
     registeredOn?: string;
-    studyEnrollments?: Array<StudyEnrollment> | null;
-    enrollments?: Array<Enrollment> | null;
-    groupMemberships?: Array<GroupMembership> | null;
+    studyEnrollments?: Array<StudyEnrollment>;
+    enrollments?: Array<Enrollment>;
+    groupMemberships?: Array<GroupMembership>;
     preferredLanguage?: Language;
     gratie?: boolean;
     lidVanVerdienste?: boolean;
     ereLid?: boolean;
     begunstiger?: boolean;
     suspended?: boolean;
-    announcements?: Array<Announcement> | null;
+    announcements?: Array<Announcement>;
     profilePicturePath?: string | null;
     profilePictureFileName?: string | null;
 };
@@ -226,22 +226,22 @@ export type Member = {
 export type MemberResponseDto = {
     id?: string;
     studentNumber?: number;
-    firstName: string | null;
-    lastName: string | null;
-    email: string | null;
-    phoneNumber: string | null;
-    street: string | null;
-    houseNumber: string | null;
-    postalCode: string | null;
-    city: string | null;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phoneNumber: string;
+    street: string;
+    houseNumber: string;
+    postalCode: string;
+    city: string;
     dateOfBirth?: string;
     parentPhoneNumber?: string | null;
     mailSubscriptions?: MailSubscriptions;
     notes?: string | null;
     registeredOn?: string;
     preferredLanguage?: Language;
-    studyEnrollments?: Array<StudyEnrollmentResponseDto> | null;
-    groupMemberships?: Array<GroupMembershipResponseDto> | null;
+    studyEnrollments?: Array<StudyEnrollmentResponseDto>;
+    groupMemberships?: Array<GroupMembershipResponseDto>;
 };
 
 export type MemberSummaryDto = {
@@ -276,8 +276,8 @@ export type MemberUpdateDto = {
 export type MembershipPayment = {
     id?: number;
     price?: number;
-    mollieId: string | null;
-    paymentIntentUrl: string | null;
+    mollieId: string;
+    paymentIntentUrl: string;
     paidAt?: string | null;
     memberId?: string | null;
     member?: Member;
@@ -296,7 +296,7 @@ export type OperationType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export type PostActivityPaymentDto = {
     memberId?: string;
-    activityIds?: Array<number> | null;
+    activityIds?: Array<number>;
 };
 
 export type PostAnnouncementDto = {
@@ -344,7 +344,7 @@ export type PostMembershipPaymentDto = {
 };
 
 export type PostPaymentResponse = {
-    checkoutUrl: string | null;
+    checkoutUrl: string;
 };
 
 export type PostRoleAliasDto = {
@@ -408,9 +408,9 @@ export type SpecificationAnswer = {
 };
 
 export type SpecificationAnswerResponseDto = {
-    questionId?: number;
-    answerId?: number;
-    answer?: string | null;
+    questionId: number;
+    answerId: number;
+    answer: string;
 };
 
 export type SpecificationQuestion = {
@@ -422,7 +422,7 @@ export type SpecificationQuestion = {
     isMandatory?: boolean;
     isPublic?: boolean;
     activity?: Activity;
-    answers?: Array<SpecificationAnswer> | null;
+    answers?: Array<SpecificationAnswer>;
     options?: string | null;
 };
 
@@ -431,7 +431,7 @@ export type Study = {
     title: string;
     nominalDurationYears?: number;
     type?: StudyType;
-    enrollments?: Array<StudyEnrollment> | null;
+    enrollments?: Array<StudyEnrollment>;
 };
 
 export type StudyEnrollment = {
@@ -446,14 +446,14 @@ export type StudyEnrollment = {
 };
 
 export type StudyEnrollmentResponseDto = {
-    id?: number;
+    id: number;
     memberId?: string | null;
     memberName?: string | null;
     studyId?: number | null;
     studyTitle?: string | null;
-    enrollmentDate?: string;
+    enrollmentDate: string;
     completionDate?: string | null;
-    status?: StudyStatus;
+    status: StudyStatus;
 };
 
 export type StudyStatus = 0 | 1 | 2;
@@ -684,7 +684,7 @@ export type GetApiAnnouncementsResponses = {
     /**
      * OK
      */
-    200: Array<GetAnnouncementDto>;
+    200: Array<GetAnnouncementResponseDto>;
 };
 
 export type GetApiAnnouncementsResponse = GetApiAnnouncementsResponses[keyof GetApiAnnouncementsResponses];

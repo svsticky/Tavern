@@ -30,7 +30,7 @@ export default function AnswerQuestionsTile({
 
   enrollmentAnswers.forEach((a) => {
     if (a.questionId !== undefined) {
-      existing[a.questionId] = a.answer ?? "";
+      existing[a.questionId] = a.answer;
     }
   });
 

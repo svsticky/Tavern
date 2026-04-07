@@ -22,26 +22,26 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
   const posterUrl = `${import.meta.env.ApiUrl}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 
-  const startDate = new Date(activity.dateTimeStart ?? "");
-  const endDate = new Date(activity.dateTimeEnd ?? "");
+  const startDate = new Date(activity.dateTimeStart);
+  const endDate = new Date(activity.dateTimeEnd);
 
-  const startDateString = activity.dateTimeStart ? startDate.toLocaleDateString('nl-NL', {
+  const startDateString = startDate.toLocaleDateString('nl-NL', {
     day: 'numeric', month: 'long', year: 'numeric'
-  }) : 'TBA';
+  });
 
-  const startTimeString = activity.dateTimeStart ? startDate.toLocaleTimeString('nl-NL', {
+  const startTimeString = startDate.toLocaleTimeString('nl-NL', {
     hour: '2-digit', minute: '2-digit'
-  }) : 'TBA';
+  });
 
-  const endDateString = activity.dateTimeEnd ? endDate.toLocaleDateString('nl-NL', {
+  const endDateString = endDate.toLocaleDateString('nl-NL', {
     day: 'numeric', month: 'long', year: 'numeric'
-  }) : 'TBA';
+  });
 
-  const endTimeString = activity.dateTimeEnd ? endDate.toLocaleTimeString('nl-NL', {
+  const endTimeString = endDate.toLocaleTimeString('nl-NL', {
     hour: '2-digit', minute: '2-digit'
-  }) : 'TBA';
+  });
 
-  const isEnrolled = activity.enrollments?.some(e => e.member.id === keycloak.tokenParsed?.UserId) ?? false;
+  const isEnrolled = activity.enrollments.some(e => e.member.id === keycloak.tokenParsed?.UserId);
 
   const handleAddToCalendar = () => {
     const title = encodeURIComponent(activity.name || 'Activiteit');
@@ -134,17 +134,18 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
         throw new Error("Update failed");
       }
 
-      const updatedEnrollments = activity.enrollments?.map(e => 
-        e.member.id === keycloak.tokenParsed?.UserId 
-          ? { 
-              ...e, 
-              specificationAnswers: Object.entries(answers).map(([qId, ans]) => ({
-                questionId: Number(qId),
-                answer: String(ans)
-              })) 
-            }
-          : e
-      );
+      const updatedEnrollments = activity.enrollments.map(e => {
+        if (e.member.id === keycloak.tokenParsed?.UserId) {
+          return {
+            ...e,
+            specificationAnswers: e.specificationAnswers?.map(existingAns => ({
+              ...existingAns,
+              answer: answers[existingAns.questionId] ?? existingAns.answer
+            }))
+          };
+        }
+        return e;
+      });
 
       setActivity && setActivity({ ...activity, enrollments: updatedEnrollments });
     } catch (error) {
@@ -169,7 +170,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
         }
       });
 
-      activity.enrollments = activity.enrollments?.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
+      activity.enrollments = activity.enrollments.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
       setActivity && setActivity({ ...activity });
     } catch (error) {
       console.error("Error while unenrolling:", error);
@@ -180,8 +181,8 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
 
   const handleCopyForWhatsapp = async (lang: "NL" | "EN") => {
     const text = lang === "NL" ?
-      `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Locatie: ${activity.location || 'TBA'} | Prijs: ${activity.price === 0 ? 'Gratis' : `€ ${activity.price?.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}` :
-      `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Location: ${activity.location || 'TBA'} | Price: ${activity.price === 0 ? 'Free' : `€ ${activity.price?.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
+      `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Locatie: ${activity.location || 'TBA'} | Prijs: ${activity.price === 0 || activity.price == null ? 'Gratis' : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}` :
+      `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Location: ${activity.location || 'TBA'} | Price: ${activity.price === 0 || activity.price == null ? 'Free' : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
 
     try {
       await navigator.clipboard.writeText(text);
@@ -228,7 +229,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           {hasPoster && (
               <img
                 src={posterUrl}
-                alt={activity.name ?? ""}
+                alt={activity.name}
                 onLoad={() => setPosterStatus("loaded")}
                 onError={() => setPosterStatus("error")}
                 className={`w-full h-full object-cover transition-opacity duration-500 ${
@@ -247,7 +248,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
             {activity.name}
           </h1>
           <p className="text-2xl font-semibold text-slate-800">
-            {activity.price === 0 ? 'Gratis' : `€ ${activity.price?.toFixed(2)}`}
+            {activity.price === 0 || activity.price == null ? 'Gratis' : `€ ${activity.price.toFixed(2)}`}
           </p>
         </section>
 
@@ -310,12 +311,12 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
                 : t("none")
             }
           />
-          <InfoItem icon={<Users size={18}/>} label={t("participants")} value={`${activity.enrollments?.filter(e => !e.isOnWaitingList).length ?? 0}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ''}`} />
+          <InfoItem icon={<Users size={18}/>} label={t("participants")} value={`${activity.enrollments?.filter(e => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ''}`} />
         </div>
 
         <AnswerQuestionsTile
-          questions={activity.specificationQuestions ?? []}
-          answers={activity.enrollments?.find(e => e.member.id === keycloak.tokenParsed?.UserId)?.specificationAnswers ?? []}
+          questions={activity.specificationQuestions}
+          answers={activity.enrollments.find(e => e.member.id === keycloak.tokenParsed?.UserId)?.specificationAnswers ?? []}
           onChange={(answers) => setAnswers(answers)}
           disabled={submitting || activity.enrollmentDeadline ? new Date(Date.now()) > new Date(activity.enrollmentDeadline!) : false}
         />
@@ -324,21 +325,20 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
 <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
   {isEnrolled ? (
     <div className="flex flex-col gap-3">
-      {/* Toon alleen de update knop als er daadwerkelijk vragen zijn */}
-      {(activity.specificationQuestions?.length ?? 0) > 0 && (
+      {(activity.specificationQuestions.length) > 0 && (
         <Button 
           variant='primary' 
           onClick={handleUpdateEnrollment} 
           disabled={submitting}
         >
-          {submitting ? t("saving") : t("Antwoorden bijwerken")}
+          {submitting ? t("saving") : t("update_answers")}
         </Button>
       )}
       
       <Button 
         variant='danger' 
         onClick={handleUnenrollment} 
-        disabled={submitting || (activity.unenrollmentDeadline ? new Date() > new Date(activity.unenrollmentDeadline) : false)}
+        disabled={submitting || (activity.unenrollmentDeadline ? new Date(Date.now()) > new Date(activity.unenrollmentDeadline) : false)}
       >
         {t("sign_out")}{submitting && ('...')}
       </Button>
@@ -349,7 +349,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
       onClick={handleEnrollment} 
       disabled={submitting}
     >
-      {activity.participantLimit && activity.participantLimit <= (activity.enrollments?.length ?? 0) ? t("sign_in_on_waitlist") : t("sign_in")}
+      {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length) ? t("sign_in_on_waitlist") : t("sign_in")}
       {submitting && ('...')}
     </Button>
   )}

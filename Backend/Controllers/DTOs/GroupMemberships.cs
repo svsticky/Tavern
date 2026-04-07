@@ -20,7 +20,7 @@ public class PostGroupMembershipDTO
 public class GroupMembershipResponseDTO
 {
     /// <inheritdoc cref="Models.GroupMembership.Id"/>
-    public uint Id { get; set; }
+    public required uint Id { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
     public required Guid MemberId { get; set; }
@@ -35,10 +35,10 @@ public class GroupMembershipResponseDTO
     public required string GroupName { get; set; }
 
     /// <inheritdoc cref="Models.Group.Active"/>
-    public GroupType GroupType { get; set; }
+    public required GroupType GroupType { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
-    public uint MembershipYear { get; set; }
+    public required uint MembershipYear { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.RoleAliasId"/>
     public uint? RoleAliasId { get; set; }
@@ -55,7 +55,7 @@ public class GroupMembershipSummaryDTO
     public required string GroupName { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
-    public uint MembershipYear { get; set; }
+    public required uint MembershipYear { get; set; }
 }
 
 public class GroupMembershipUpdateDTO

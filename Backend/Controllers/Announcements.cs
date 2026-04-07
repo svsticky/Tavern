@@ -19,7 +19,7 @@ public class AnnouncementsController : ControllerBase
 
     // GET: api/announcements
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<GetAnnouncementDTO>>> GetAnnouncements(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<GetAnnouncementResponseDTO>>> GetAnnouncements(CancellationToken cancellationToken)
     {
         var announcements = await _announcementService.GetAnnouncements(cancellationToken);
         return Ok(announcements);

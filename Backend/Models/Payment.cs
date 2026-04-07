@@ -31,7 +31,8 @@ public class EnrollmentPayment : Payment
     public Activity? Activity { get; set; } = null!;
 }
 
-public record EnrollmentBalance(
-    Enrollment Enrollment, 
-    decimal Balance
-);
+public class EnrollmentBalance
+{
+    public required Enrollment Enrollment { get; set; }
+    public required decimal Balance { get; set; }
+}

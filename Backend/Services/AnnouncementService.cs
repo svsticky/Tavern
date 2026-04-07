@@ -16,13 +16,13 @@ public class AnnouncementService : IAnnouncementService
         _db = db;
     }
 
-    public async Task<IEnumerable<GetAnnouncementDTO>> GetAnnouncements(CancellationToken cancellationToken)
+    public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(CancellationToken cancellationToken)
     {
         var announcements = await _db.Announcements
             .Include(a => a.CreatedBy)
             .ToListAsync(cancellationToken);
 
-        return announcements.Select(a => new GetAnnouncementDTO
+        return announcements.Select(a => new GetAnnouncementResponseDTO
         {
             Id = a.Id,
             Title = a.Title,

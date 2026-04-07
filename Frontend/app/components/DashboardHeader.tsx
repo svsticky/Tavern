@@ -43,7 +43,7 @@ export default function DashboardHeader({
 
         if (outstandingPaymentsResponse.data) {
           setOutstandingPayments(outstandingPaymentsResponse.data.reduce((total, payment) => total + (payment.balance || 0), 0));
-          setUnpaidActivityIds(outstandingPaymentsResponse.data.map(payment => payment.enrollment?.activityId ?? 0));
+          setUnpaidActivityIds(outstandingPaymentsResponse.data.map(payment => payment.enrollment.activityId));
         }
 
         const enrollmentAmountResponse = await getApiEnrollments({
@@ -87,7 +87,7 @@ export default function DashboardHeader({
 
       if (urlResponse.data) {
         console.log(urlResponse.data);
-        window.location.href = urlResponse.data.checkoutUrl!;
+        window.location.href = urlResponse.data.checkoutUrl;
       }
     } catch (error) {
       console.error("Error while initiating payment:", error);
@@ -147,11 +147,11 @@ export default function DashboardHeader({
             </div>
             <p className="truncate">{nextActivity.name}</p>
             <div className="flex items-center gap-2">
-              <Calendar /> {formatDate(new Date(nextActivity.dateTimeStart ?? Date.now()), "fullDateTime")}
+              <Calendar /> {formatDate(new Date(nextActivity.dateTimeStart), "fullDateTime")}
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {nextActivity.enrollments?.filter(e => !e.isOnWaitingList).length ?? 0}{" "}
+              {nextActivity.enrollments.filter(e => !e.isOnWaitingList).length}{" "}
               {nextActivity.participantLimit ? (t("of_the") + ` ${nextActivity.participantLimit} ` + t("available")) + "." : t("enrollments").toLocaleLowerCase() + "."}
             </div>
             <Button variant="secondary" showArrow={true} onClick={() => navigate(`/activities/${nextActivity.id}`)}>

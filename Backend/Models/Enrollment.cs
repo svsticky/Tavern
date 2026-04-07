@@ -2,7 +2,6 @@
 
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace Backend.Models;
 
@@ -12,7 +11,7 @@ public class Enrollment
     /// <summary>
     /// Reference to the unique identifier of the activity which is enrolled for.
     /// </summary>
-    public uint ActivityId { get; set; }
+    public required uint ActivityId { get; set; }
 
     /// <summary>
     /// The activity which is enrolled for.

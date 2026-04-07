@@ -18,7 +18,6 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
-  const canEdit = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) || (!activity?.showInKoala && !activity?.showOnWebsite && activity?.organizerId && isInGroupWithId(keycloak.tokenParsed, activity?.organizerId) && new Date(activity.dateTimeStart ?? new Date()) > new Date(Date.now()));
 
   useEffect(() => {
     async function loadData() {
@@ -43,10 +42,16 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
     loadData();
   }, [initialized, keycloak.authenticated, params.id]);
 
+  if(loading) return t("loading");
+  
+  if(activity == null) return t("failed_fetching");
+  
+  const canEdit = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && isInGroupWithId(keycloak.tokenParsed, activity.organizerId) && new Date(activity.dateTimeStart) > new Date(Date.now()));
+
   return (
     <div className="flex flex-col w-full">
       <PageHeader 
-        title={activity?.name ?? t("activity")} 
+        title={activity.name} 
         backTo="/activities"
         action={canEdit && activity && (
           <Button 
@@ -59,25 +64,19 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         )}
       />
 
-      {loading ? (
-        t("loading")
-      ) : !activity ? (
-        <div className="py-10 text-center text-red-500">{t("activity_not_found")}</div>
-      ) : (
         <div className="space-y-6">
           <ActivityDetailsTile activity={activity} setActivity={setActivity} />
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ActivityParticipantsTile 
-              members={!activity.areParticipantsVisible ? [] : activity.enrollments?.filter(e => !e.isOnWaitingList).map(e => e.member) ?? []} 
+              members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => !e.isOnWaitingList).map(e => e.member) ?? []} 
             />
             <ActivityParticipantsTile 
               title={t("waiting_list")} 
-              members={!activity.areParticipantsVisible ? [] : activity.enrollments?.filter(e => e.isOnWaitingList).map(e => e.member) ?? []} 
+              members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => e.isOnWaitingList).map(e => e.member) ?? []} 
             />
           </div>
         </div>
-      )}
     </div>
   );
 }

@@ -16,13 +16,13 @@ public class SpecificationQuestionDTO
     public required string QuestionEnglish { get; set; }
     
     /// <inheritdoc cref="SpecificationQuestion.Type"/>
-    public QuestionType Type { get; set; }
+    public required QuestionType Type { get; set; }
 
     /// <inheritdoc cref="SpecificationQuestion.IsMandatory"/>
-    public bool IsMandatory { get; set; }
+    public required bool IsMandatory { get; set; }
 
     /// <inheritdoc cref="SpecificationQuestion.Options"/>
-    public bool IsPublic { get; set; }
+    public required bool IsPublic { get; set; }
 
     /// <inheritdoc cref="SpecificationQuestion.Options"/>
     public List<string>? Options { get; set; }
@@ -37,7 +37,7 @@ public class PostSpecificationQuestionDTO : SpecificationQuestionDTO
 public class GetSpecificationQuestionResponseDTO : SpecificationQuestionDTO
 {
     /// <inheritdoc cref="SpecificationQuestion.Id"/>
-    public uint Id { get; set; }
+    public required uint Id { get; set; }
 }
 
 public class UpdateSpecificationQuestionDTO : SpecificationQuestionDTO

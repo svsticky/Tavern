@@ -124,6 +124,10 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     return new AmazonS3Client("test", "test", s3Config);
 });
 
+builder.Services.AddSwaggerGen(options => {
+    options.SupportNonNullableReferenceTypes();
+});
+
 builder.Services.AddScoped<IStorageService, S3StorageService>();
 builder.Services.AddScoped<IFileCompressor, FileCompressor>();
 builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();

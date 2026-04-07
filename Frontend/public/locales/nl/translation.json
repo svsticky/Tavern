@@ -138,7 +138,7 @@
   "book_discounts": "Boekenkortingen",
   "book_discounts_description": "Als lid van de studievereniging kun je korting krijgen op studieboeken.",
   "cheap_activities": "Goedkope activiteiten",
-  "cheap_activities_description": "Onze vereniging organiseert veel activiteiten van goedgekope dranken en leuke feestjes tot educatieve workshops en lezingen.",
+  "cheap_activities_description": "Onze vereniging organiseert veel activiteiten van gratis borrels en leuke feestjes tot educatieve workshops en lezingen.",
   "networking": "Networking",
   "networking_description": "Door mee te doen met onze vereniging, ontmoet je veel medestudenten en breid je netwerk uit.",
   "introduction_week": "Introductie week",
@@ -146,5 +146,6 @@
   "labor_market_orientation": "Arbeidsmarktoriëntatie",
   "labor_market_orientation_description": "Onze vereniging biedt arbeidsmarktoriëntatie aan om studenten te helpen zich voor te bereiden op hun toekomstige carrière.",
   "members_description": "We hebben een divers groep van ongeveer 2000 leden, inclusief bachelor- en masterstudenten uit verschillende studieprogramma's. Onze leden zijn actief in het organiseren van activiteiten, het deelnemen aan commissies en het genieten van het sociale aspect van onze vereniging.",
-  "questions": "Vragen"
+  "questions": "Vragen",
+  "failed_fetching": "Fout bij het ophalen van gegevens."
 }

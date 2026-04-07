@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementDto, type GroupMembership } from "~/api";
+import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementResponseDto, type GroupMembership } from "~/api";
 import ActivityEnrollmentOverview from "~/components/ActivityEnrollmentOverview";
 import AnnouncementsList from "~/components/AnnouncementsList";
 import CommitteeEnrollmentOverview from "~/components/CommitteeEnrollmentOverview";
@@ -17,7 +17,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
-  const [announcements, setAnnouncements] = useState<GetAnnouncementDto[]>([]);
+  const [announcements, setAnnouncements] = useState<GetAnnouncementResponseDto[]>([]);
   const [committees, setCommittees] = useState<CommitteeEnrollment[]>([]);
 
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ export default function DashboardPage() {
         const announcementsResponse = await getApiAnnouncements();
 
         if (announcementsResponse.data) {
-          setAnnouncements(announcementsResponse.data as GetAnnouncementDto[]);
+          setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
         }
 
         if (activitiesResponse.data) {
@@ -51,8 +51,8 @@ export default function DashboardPage() {
 
         if (committeesResponse.data) {
           setCommittees(committeesResponse.data.map(c => ({
-            id: c.id ?? 0,
-            name: c.groupName ?? "",
+            id: c.id,
+            name: c.groupName,
             role: c.roleAliasName ?? "",
             icon: "https://www.svgrepo.com/show/509977/group.svg"
           })));
@@ -124,7 +124,7 @@ export default function DashboardPage() {
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview 
               enrolledActivities={activities.filter(a => 
-                a.enrollments?.some(e => e.member.id === keycloak.tokenParsed?.UserId)
+                a.enrollments.some(e => e.member.id === keycloak.tokenParsed?.UserId)
               )} 
             />
 

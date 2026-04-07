@@ -31,7 +31,7 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
             })
             .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable() 
-            .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
+            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
     public decimal GetUnpaidAmountForEnrollment(Enrollment enrollment)
@@ -58,7 +58,7 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
             })
             .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable()
-            .Select(x => new EnrollmentBalance(x.Enrollment, x.Enrollment.Price - x.PaidSum));
+            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
     public IEnumerable<EnrollmentBalance> GetAllOverpaidEnrollments()
@@ -75,7 +75,7 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
             })
             .Where(x => x.PaidSum > x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable()
-            .Select(x => new EnrollmentBalance(x.Enrollment, x.PaidSum - x.Enrollment.Price));
+            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.PaidSum - x.Enrollment.Price });
     }
 
     public bool MemberHasPaidAllActivities(Member member)

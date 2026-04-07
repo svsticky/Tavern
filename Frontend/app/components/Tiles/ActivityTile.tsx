@@ -24,12 +24,12 @@ export default function ActivityTile({
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
-  const canEdit = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) || (!activity?.showInKoala && !activity?.showOnWebsite && activity?.organizerId && isInGroupWithId(keycloak.tokenParsed, activity?.organizerId) && new Date(activity.dateTimeStart ?? new Date()) > new Date(Date.now()));
+  const canEdit = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && isInGroupWithId(keycloak.tokenParsed, activity.organizerId) && new Date(activity.dateTimeStart) > new Date(Date.now()));
   const posterUrl = `${import.meta.env.ApiUrl}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 
-  const startDate = new Date(activity.dateTimeStart ?? "");
-  const endDate = new Date(activity.dateTimeEnd ?? "");
+  const startDate = new Date(activity.dateTimeStart);
+  const endDate = new Date(activity.dateTimeEnd);
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -75,7 +75,7 @@ export default function ActivityTile({
           {hasPoster && (
               <img
                 src={posterUrl}
-                alt={activity.name ?? ""}
+                alt={activity.name}
                 loading="lazy"
                 onLoad={() => setStatus("loaded")}
                 onError={() => setStatus("error")}
@@ -120,8 +120,8 @@ export default function ActivityTile({
             <div className="mt-1 flex items-center gap-1.5">
               <UsersRound size={12} />
               {activity.participantLimit 
-                ? (activity.participantLimit - (activity.enrollments?.length ?? 0)) + " " + t("places_available") 
-                : (activity.enrollments?.filter((e) => !e.isOnWaitingList).length ?? 0) + " " + t("participants")}
+                ? (activity.participantLimit - (activity.enrollments.length)) + " " + t("places_available") 
+                : (activity.enrollments.filter((e) => !e.isOnWaitingList).length) + " " + t("participants")}
             </div>
           </div>
         </div>
