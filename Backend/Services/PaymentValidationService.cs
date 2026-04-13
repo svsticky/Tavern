@@ -26,10 +26,10 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
         return db.MembershipPayments.Any(p => p.MemberId == member.Id && p.PaidAt != null);
     }
 
-    public IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Member member)
+    public IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid memberId)
     {
         return db.Enrollments
-            .Where(e => e.MemberId == member.Id)
+            .Where(e => e.MemberId == memberId)
             .Include(e => e.Member)
             .Include(e => e.Activity)
             .Select(e => new 
@@ -90,6 +90,6 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
 
     public bool MemberHasPaidAllActivities(Member member)
     {
-        return !GetUnpaidEnrollmentsForMember(member).Any();
+        return !GetUnpaidEnrollmentsForMember(member.Id).Any();
     }
 }

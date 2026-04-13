@@ -72,7 +72,11 @@ export default function Finances() {
             console.error("Error while marking as paid:", error);
         } finally {
             // TO DO: Refactor to avoid duplicate code with useEffect, also use toast
-            const unpaidBalances = await getApiPaymentsUnpaid();
+            const unpaidBalances = await getApiPaymentsUnpaid({
+                query: {
+                    allUsers: true,
+                }
+            });
             if(unpaidBalances.data) {
                 setUnpaidBalances(unpaidBalances.data.filter(b => b.balance !== 0));
                 const totalUnpaidAmount = unpaidBalances.data.reduce((sum, payment) => sum + payment.balance, 0);
@@ -116,7 +120,11 @@ export default function Finances() {
                 });
                 setExpiredActivities(expiredActivitiesResponse.data || []);
 
-                const unpaidBalances = await getApiPaymentsUnpaid();
+                const unpaidBalances = await getApiPaymentsUnpaid({
+                    query: {
+                        allUsers: true,
+                    }
+                });
                 
                 if(unpaidBalances.data) {
                     setUnpaidBalances(unpaidBalances.data.filter(b => b.balance !== 0));

@@ -1338,7 +1338,9 @@ export type PostApiPaymentsWebhookResponses = {
 export type GetApiPaymentsUnpaidData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        allUsers?: boolean;
+    };
     url: '/api/payments/unpaid';
 };
 

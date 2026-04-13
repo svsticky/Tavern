@@ -10,10 +10,12 @@ namespace Backend.Controllers
     public class PaymentsController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
+        private readonly IPermissionService _permissionService;
 
-        public PaymentsController(IPaymentService paymentService)
+        public PaymentsController(IPaymentService paymentService, IPermissionService permissionService)
         {
             _paymentService = paymentService;
+            _permissionService = permissionService;
         }
 
         // GET: api/payments/membership
@@ -98,9 +100,23 @@ namespace Backend.Controllers
 
         // GET: api/payments/unpaid
         [HttpGet("unpaid")]
-        public ActionResult<IEnumerable<EnrollmentBalance>> GetUnpaid()
+        public ActionResult<IEnumerable<EnrollmentBalance>> GetUnpaid(bool allUsers = false)
         {
-            var result = _paymentService.GetUnpaid();
+            var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
+
+            if(userId == null)
+            {
+                return BadRequest("UserId claim is missing");
+            }
+
+            bool isBoard = _permissionService.IsInGroupInCurrentYear(Guid.Parse(userId), uint.Parse(Environment.GetEnvironmentVariable("BOARD_GROUP_ID")!));
+
+            if(allUsers && !isBoard)
+            {
+                return Forbid("Only board members can view all unpaid enrollments");
+            }
+            
+            var result = _paymentService.GetUnpaid(Guid.Parse(userId), allUsers);
             return Ok(result);
         }
 

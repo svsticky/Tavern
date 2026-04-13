@@ -114,7 +114,7 @@ namespace Backend.Services
 
             var enrollments = await db.Enrollments
                 .Include(e => e.Activity)
-                .Where(e => dto.ActivityIds.Contains(e.ActivityId))
+                .Where(e => dto.ActivityIds.Contains(e.ActivityId) && e.MemberId == dto.MemberId)
                 .ToListAsync();
 
             if (enrollments.Count != dto.ActivityIds.Count)
@@ -175,9 +175,16 @@ namespace Backend.Services
             return new PostPaymentResponse { CheckoutUrl = mollieResponse?.Links.Checkout?.Href ?? "" };
         }
 
-        public IEnumerable<EnrollmentBalance> GetUnpaid()
+        public IEnumerable<EnrollmentBalance> GetUnpaid(Guid userId, bool allUsers = false)
         {
-            return paymentValidationService.GetAllUnpaidEnrollments();
+            if (allUsers)
+            {
+                return paymentValidationService.GetAllUnpaidEnrollments();
+            }
+            else
+            {
+                return paymentValidationService.GetUnpaidEnrollmentsForMember(userId);
+            }
         }
 
         public IEnumerable<EnrollmentBalance> GetOverpaid()
@@ -195,7 +202,7 @@ namespace Backend.Services
 
             if (member == null) throw new Exception("Member not found");
 
-            var unpaid = paymentValidationService.GetUnpaidEnrollmentsForMember(member);
+            var unpaid = paymentValidationService.GetUnpaidEnrollmentsForMember(member.Id);
             var hasPaidMembership = paymentValidationService.HasPaidMembershipPayment(member.Id);
 
             return new
