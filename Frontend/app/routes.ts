@@ -15,7 +15,7 @@ export default [
         route("activities/create", "routes/edit-activity.tsx", { id: "create-activity" }),
         route("activities/edit/:id", "routes/edit-activity.tsx", { id: "edit-activity" }),
         route("activities/:id", "routes/activity.tsx"),
-        route("settings", "routes/settings.tsx"),
+        route("account", "routes/account.tsx"),
         route("external-links", "routes/external-links.tsx"),
         route("announcements/create", "routes/edit-announcement.tsx", { id: "create-announcement" }),
         route("announcements/edit/:id", "routes/edit-announcement.tsx", { id: "edit-announcement" }),

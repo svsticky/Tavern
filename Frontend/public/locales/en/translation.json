@@ -159,5 +159,6 @@
   "finances_overview": "Finances overview",
   "finances": "Finances",
   "confirm_mail": "Confirm your email",
-  "confirm_mail_description": "A confirmation email has been sent to set your password. Click the link in that email to confirm your email address and set your password. If you don't receive an email, you can click on forgot password on the login page to have the email resent."
+  "confirm_mail_description": "A confirmation email has been sent to set your password. Click the link in that email to confirm your email address and set your password. If you don't receive an email, you can click on forgot password on the login page to have the email resent.",
+  "account": "Account"
 }

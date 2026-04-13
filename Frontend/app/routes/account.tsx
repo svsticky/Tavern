@@ -27,7 +27,7 @@ enum MailSubscriptions {
   TeacherMails = 16
 }
 
-export default function SettingsPage() {
+export default function AccountPage() {
   const { keycloak } = useKeycloak();
   const userId = keycloak.tokenParsed?.UserId;
 
@@ -155,7 +155,7 @@ export default function SettingsPage() {
     }
   }; 
 
-  const handleSaveSettings = async () => {
+  const handleSaveAccount = async () => {
     if (!userId) return;
     setSaving(true);
 
@@ -177,7 +177,7 @@ export default function SettingsPage() {
         });
         i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
       } catch (err) {
-        console.error("Error saving settings:", err);
+        console.error("Error saving account:", err);
         throw err;
       } finally {
         setSaving(false);
@@ -197,7 +197,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader title={t("settings")} />
+      <PageHeader title={t("account")} />
       
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Left: Profile Picture */}
@@ -325,7 +325,7 @@ export default function SettingsPage() {
           </FormSection>
 
           <Button 
-            onClick={handleSaveSettings} 
+            onClick={handleSaveAccount} 
             disabled={saving || !isFormValid}
             className="w-full"
           >

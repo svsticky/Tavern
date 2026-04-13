@@ -59,7 +59,7 @@ export default function NavBarLayout() {
     username: keycloak.tokenParsed?.name || "",
     avatarUrl: imgSrc,
     options: [
-      { label: t("settings"), action: () => navigate("/settings") },
+      { label: t("account"), action: () => navigate("/account") },
       ...(isBoard ? [{ label: `${t("activity")} ${t("management")}`, action: () => navigate("/admin/activities") }] : []),
       ...(isBoard ? [{ label: `${t("member")} ${t("management")}`, action: () => navigate("/admin/members") }] : []),
       ...(isBoard ? [{ label: `${t("group")} ${t("management")}`, action: () => navigate("/admin/groups") }] : []),
