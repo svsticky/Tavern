@@ -4,7 +4,7 @@ namespace Backend.Interfaces;
 
 public interface IPaymentValidationService
 {
-    bool HasPaidMembershipPayment(Member member);
+    bool HasPaidMembershipPayment(Guid member);
     IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Member member);
     decimal GetUnpaidAmountForEnrollment(Enrollment enrollment);
     IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments();

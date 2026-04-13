@@ -29,6 +29,7 @@ export default [
       ]),
     ]),
     
+    route("confirm-mail", "routes/confirm-mail.tsx"),
 
     route("login", "routes/auth/login.tsx"),
     route("logout", "routes/auth/logout.tsx"),

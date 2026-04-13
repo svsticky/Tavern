@@ -37,12 +37,20 @@ export default function RegisterForm({ className }: { className?: string }) {
 
     useEffect(() => {
         const fetchStudies = async () => {
-            setLoading(true);
-            const response = await getApiStudies();
-            if (response.data) {
-                setStudies(response.data);
+            try{
+                setLoading(true);
+                const response = await getApiStudies();
+                if (response.data) {
+                    setStudies(response.data);
+                }
             }
-            setLoading(false);
+            catch(error){
+                console.error("Failed to fetch studies", error);
+                toast.error(t("failed_to_load_studies"));
+            }
+            finally{
+                setLoading(false);
+            };
         };
         fetchStudies();
     }, []);
@@ -153,7 +161,7 @@ export default function RegisterForm({ className }: { className?: string }) {
                         }
                     }
                     else{
-                        navigate("/");
+                        navigate("/confirm-mail");
                     }
                 }
             } catch (error) {

@@ -139,7 +139,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             enabled = true,
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
-                { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPayment(member) ? "full" : "not_paid" } },
+                { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPayment(member.Id) ? "full" : "not_paid" } },
                 { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } }

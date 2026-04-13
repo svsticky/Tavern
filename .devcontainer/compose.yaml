@@ -1,7 +1,6 @@
 services:
   devcontainer:
     container_name: tavern-devcontainer
-    image: tavern-devcontainer
     build:
       context: .
       dockerfile: Dockerfile
@@ -21,6 +20,7 @@ services:
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data/
+      - /home/rens/Downloads:/
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres

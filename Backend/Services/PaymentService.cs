@@ -79,7 +79,7 @@ namespace Backend.Services
             {
                 Amount = new Amount(Currency.EUR, 7.50m),
                 Description = $"Membership payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = _frontendUrl,
+                RedirectUrl = $"{_frontendUrl}/confirm-mail",
                 WebhookUrl = string.IsNullOrEmpty(_ngrokUrl) ? 
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/api/payments/webhook")
                     : $"{_ngrokUrl}/api/payments/webhook",
@@ -196,7 +196,7 @@ namespace Backend.Services
             if (member == null) throw new Exception("Member not found");
 
             var unpaid = paymentValidationService.GetUnpaidEnrollmentsForMember(member);
-            var hasPaidMembership = paymentValidationService.HasPaidMembershipPayment(member);
+            var hasPaidMembership = paymentValidationService.HasPaidMembershipPayment(member.Id);
 
             return new
             {

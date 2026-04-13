@@ -53,7 +53,7 @@ public class EnrollmentService : IEnrollmentService
             if (member == null)
                 throw new KeyNotFoundException("Member not found.");
 
-            if (!_paymentValidationService.HasPaidMembershipPayment(member))
+            if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
                 throw new ArgumentException("Member does not have a paid membership payment.");
 
             if (member.Suspended)

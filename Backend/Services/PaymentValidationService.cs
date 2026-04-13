@@ -7,8 +7,18 @@ namespace Backend.Services;
 
 public class PaymentValidationService(PostgresDbContext db) : IPaymentValidationService
 {
-    public bool HasPaidMembershipPayment(Member member)
+    public bool HasPaidMembershipPayment(Guid memberId)
     {
+         var member = db.Members
+            .Include(m => m.StudyEnrollments)
+            .ThenInclude(se => se.Study)
+            .FirstOrDefault(m => m.Id == memberId);
+
+        if (member == null)
+        {
+            throw new Exception($"Member with id {memberId} not found.");
+        }
+
         bool isMaster = member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master);
         
         if (isMaster) return true;

@@ -157,5 +157,7 @@
   "overdue_payment_subtitle": "Hieronder vind je een overzicht van leden die een achterstallige betaling hebben voor activiteiten die al hebben plaatsgevonden.",
   "finances_activity_overview": "Activiteiten overzicht",
   "finances_overview": "Financiën overzicht",
-  "finances": "Financiën"
+  "finances": "Financiën",
+  "confirm_mail": "Bevestig je e-mail",
+  "confirm_mail_description": "Er is een email gestuurd om je wachtwoord in te stellen naar je e-mailadres. Klik op de link in die e-mail om je e-mailadres te bevestigen en je wachtwoord in te stellen. Mocht je geen e-mail ontvangen, kan je op wachtwoord vergeten klikken op de inlog pagina om de e-mail opnieuw te laten sturen."
 }

@@ -233,7 +233,7 @@ export default function ActivityFormPage() {
                     <Input label={t("vat_rate")} name="VatRate" type="number" defaultValue={activity?.vatRate} />
                     <Input label={t("gl_account_id")} name="GLAccountId" defaultValue={activity?.glAccountId} />
                     <Input label={t("cost_center_id")} name="CostCenterId" defaultValue={activity?.costCenterId} />
-                    <Input label={t("payment_deadline")} name="PaymentDeadline" type="date" defaultValue={formatDateOnly(activity?.paymentDeadline ?? "")} required />
+                    <Input label={t("payment_deadline")} name="PaymentDeadline" type="date" defaultValue={formatDateOnly(activity?.paymentDeadline ?? "")} />
                   </>
                 )}
               </FormSection>
