@@ -9,26 +9,26 @@ namespace Backend.Interfaces;
 public abstract class AbstractMailService
 {
     public abstract Task SendEmailAsync(PostMailDTO dto, Guid UserId, CancellationToken ct);
-    private readonly Dictionary<string, string> _roleMailMap;
+    private readonly Dictionary<uint, string> _roleMailMap;
 
     protected readonly PostgresDbContext _db;
 
     public AbstractMailService(PostgresDbContext db)
     {
         _db = db;
-        _roleMailMap = new Dictionary<string, string>();
+        _roleMailMap = new Dictionary<uint, string>();
         IDictionary allVars = Environment.GetEnvironmentVariables();
 
         foreach (DictionaryEntry de in allVars)
         {
             string key = de.Key.ToString()!;
             
-            if (key.StartsWith("ROLEMAP_"))
+            if (key.StartsWith("ROLEMAILMAP_"))
             {
-                string roleName = key.Replace("ROLEMAP_", "");
+                string roleId = key.Replace("ROLEMAILMAP_", "");
                 string email = de.Value?.ToString() ?? "";
                 
-                _roleMailMap.Add(roleName, email);
+                _roleMailMap.Add(uint.Parse(roleId), email);
             }
         }
     }
@@ -55,7 +55,7 @@ public abstract class AbstractMailService
             return null!;
         }
 
-        return new MailRecipient { Mail = _roleMailMap[role.Name], Name = $"{sender.FirstName} {sender.LastName}" };
+        return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
     }
 
     protected async Task<MailRecipient[]> ExtractRecipients(MailRecipient[]? recipients = null, uint? activityId = null, CancellationToken ct = default)
