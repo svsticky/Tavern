@@ -1,6 +1,6 @@
 namespace Backend.Models;
 
-public enum AccountingToolTaskType { EnrollmentPayment, MembershipPayment }
+public enum AccountingToolTaskType { EnrollmentPayment, MembershipPayment, MollieFeePayment }
 
 public class AccountingToolOutboxTask
 {

@@ -201,8 +201,21 @@ namespace Backend.Services
             if (!paymentValidationService.MemberHasPaidAllActivities(member))
                 throw new InvalidOperationException("Member has unpaid activities.");
 
-            db.Members.Remove(member);
-            await db.SaveChangesAsync(cancellationToken);
+            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                db.Members.Remove(member);
+                await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath ?? "");
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
 
             return true;
         }

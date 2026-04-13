@@ -100,7 +100,7 @@ export type EnrollmentPayment = {
     paidAt?: string | null;
     memberId?: string | null;
     member?: Member;
-    exactEntryId?: string | null;
+    accountingToolEntryId?: string | null;
     manuallyMarkedAsPaid?: boolean;
     activityId?: number | null;
     activity?: Activity;
@@ -285,7 +285,7 @@ export type MembershipPayment = {
     paidAt?: string | null;
     memberId?: string | null;
     member?: Member;
-    exactEntryId?: string | null;
+    accountingToolEntryId?: string | null;
     manuallyMarkedAsPaid?: boolean;
 };
 

@@ -30,7 +30,13 @@ namespace Backend.Services
                 .Cast<Payment>()
                 .ToListAsync();
 
-            var payments = membershipPayments.Concat(enrollmentPayments).ToList();
+            var mollieFeePayments = await db.MollieFeePayments
+                .Include(p => p.Member)
+                .Where(p => p.MollieId == id)
+                .Cast<Payment>()
+                .ToListAsync();
+
+            var payments = membershipPayments.Concat(enrollmentPayments).Concat(mollieFeePayments).ToList();
 
             if (!payments.Any())
                 throw new Exception("Payment not found");

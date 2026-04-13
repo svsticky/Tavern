@@ -78,6 +78,7 @@ namespace Backend.Services
             {
                 EnrollmentPayment ep => BuildEnrollmentLine(ep),
                 MembershipPayment mp => BuildMembershipLine(mp),
+                MollieFeePayment mfp => BuildMollieFeeLine(mfp),
                 _ => throw new Exception("Unsupported payment type")
             };
         }
@@ -101,6 +102,17 @@ namespace Backend.Services
             {
                 GLAccount = _membershipGLAccount,
                 Description = "Lidmaatschap",
+                VATCode = "0",
+                AmountDC = payment.Price
+            };
+        }
+
+        private object BuildMollieFeeLine(MollieFeePayment payment)
+        {
+            return new
+            {
+                GLAccount = Environment.GetEnvironmentVariable("MOLLIE_FEE_GL_ACCOUNT") ?? throw new Exception("MOLLIE_FEE_GL_ACCOUNT environment variable is not set"),
+                Description = "Mollie fee",
                 VATCode = "0",
                 AmountDC = payment.Price
             };

@@ -20,6 +20,8 @@ namespace Backend.Services
 
         private readonly string? _ngrokUrl = Environment.GetEnvironmentVariable("NGROK_URL");
 
+        private readonly decimal _mollieFee = Environment.GetEnvironmentVariable("MOLLIE_FEE") != null ? decimal.Parse(Environment.GetEnvironmentVariable("MOLLIE_FEE")!) : 0.00m;
+
         public async Task<List<MembershipPayment>> GetMembershipPayments(CancellationToken ct)
         {
             return await db.MembershipPayments
@@ -134,7 +136,7 @@ namespace Backend.Services
             {
                 var request = new PaymentRequest
                 {
-                    Amount = new Amount(Currency.EUR, totalPrice),
+                    Amount = new Amount(Currency.EUR, totalPrice + _mollieFee),
                     Description = $"Activity payment for {member.FirstName} {member.LastName}",
                     RedirectUrl = _frontendUrl,
                     WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/api/payments/webhook",
@@ -145,6 +147,17 @@ namespace Backend.Services
 
                 if (mollieResponse.Links.Checkout == null)
                     throw new Exception("No checkout URL from Mollie");
+
+                MollieFeePayment mollieFeePayment = new MollieFeePayment
+                {
+                    MemberId = dto.MemberId,
+                    Price = _mollieFee,
+                    MollieId = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Id,
+                    PaymentIntentUrl = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Links.Checkout!.Href,
+                    PaidAt = dto.ManuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
+                };
+
+                db.MollieFeePayments.Add(mollieFeePayment);
             }
 
             foreach (var enrollment in enrollments)

@@ -38,3 +38,8 @@ public class EnrollmentBalance
     public required Enrollment Enrollment { get; set; }
     public required decimal Balance { get; set; }
 }
+
+public class MollieFeePayment : Payment
+{
+    
+}

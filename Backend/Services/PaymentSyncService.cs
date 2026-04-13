@@ -31,8 +31,9 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
 
         var pendingMembershipPayments = await db.MembershipPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingEnrollmentPayments = await db.EnrollmentPayments.Where(p => p.PaidAt == null).ToListAsync();
+        var pendingMollieFeePayments = await db.MollieFeePayments.Where(p => p.PaidAt == null).ToListAsync();
 
-        var pendingPayments = pendingMembershipPayments.Cast<Payment>().Concat(pendingEnrollmentPayments.Cast<Payment>());
+        var pendingPayments = pendingMembershipPayments.Cast<Payment>().Concat(pendingMollieFeePayments.Cast<Payment>()).Concat(pendingEnrollmentPayments.Cast<Payment>());
 
         foreach (var payment in pendingPayments)
         {
@@ -47,9 +48,17 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                     {
                         fullPayment = await db.MembershipPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
                     }
-                    else
+                    else if (payment is MollieFeePayment)
+                    {
+                        fullPayment = await db.MollieFeePayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
+                    }
+                    else if (payment is EnrollmentPayment)
                     {
                         fullPayment = await db.EnrollmentPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
+                    }
+                    else
+                    {
+                        throw new Exception("Unknown payment type");
                     }
 
                     var transaction = await db.Database.BeginTransactionAsync();
@@ -72,7 +81,7 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                         db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                         {
                             PaymentId = payment.Id,
-                            TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : AccountingToolTaskType.EnrollmentPayment
+                            TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : payment is MollieFeePayment ? AccountingToolTaskType.MollieFeePayment : AccountingToolTaskType.EnrollmentPayment
                         });
 
                         await db.SaveChangesAsync();
