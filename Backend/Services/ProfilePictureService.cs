@@ -29,7 +29,7 @@ namespace Backend.Services
 
             // Authorization check
             if (memberId != userId &&
-                !permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+                !permissionService.IsBoardMember(userId))
             {
                 throw new UnauthorizedAccessException("You can only update your own profile picture.");
             }

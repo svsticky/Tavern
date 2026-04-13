@@ -68,7 +68,7 @@ public class EnrollmentService : IEnrollmentService
             if (activity == null)
                 throw new KeyNotFoundException("Activity not found.");
 
-            bool isBoardMember = _permissionService.IsInGroupInCurrentYear(member.Id, PredefinedGroups.Board);
+            bool isBoardMember = _permissionService.IsBoardMember(member.Id);
 
             var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
             if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)

@@ -17,11 +17,6 @@ namespace Backend.Controllers
             return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
         }
 
-        private bool IsBoard(Guid userId)
-        {
-            return permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board);
-        }
-
         [HttpGet]
         public async Task<ActionResult<IEnumerable<MemberResponseDTO>>> GetMembers([FromQuery] GetMembersDto dto, CancellationToken cancellationToken)
         {
@@ -41,7 +36,7 @@ namespace Backend.Controllers
         public async Task<ActionResult<MemberResponseDTO>> GetMember(Guid id, CancellationToken cancellationToken)
         {
             var userId = GetUserId();
-            var isBoard = IsBoard(userId);
+            var isBoard = permissionService.IsBoardMember(userId);
 
             try
             {
@@ -80,7 +75,7 @@ namespace Backend.Controllers
         {
             var userId = GetUserId();
 
-            if (!IsBoard(userId) && id != userId)
+            if (!permissionService.IsBoardMember(userId) && id != userId)
                 return Forbid();
 
             try
@@ -126,7 +121,7 @@ namespace Backend.Controllers
         {
             var userId = GetUserId();
 
-            if (!IsBoard(userId) && id != userId)
+            if (!permissionService.IsBoardMember(userId) && id != userId)
                 return Forbid();
 
             try
@@ -165,7 +160,7 @@ namespace Backend.Controllers
         {
             var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-            if (id != userId && !memberService.IsBoard(userId))
+            if (id != userId && !permissionService.IsBoardMember(userId))
                 return Forbid("You can only delete your own profile picture.");
 
             var success = await memberService.DeleteProfilePicture(id);

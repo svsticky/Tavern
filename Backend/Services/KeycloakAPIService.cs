@@ -9,6 +9,11 @@ namespace Backend.Services;
 
 public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpClientFactory, [FromServices] IPaymentValidationService paymentValidationService)
 {
+    private readonly string _keycloakUrl = Environment.GetEnvironmentVariable("KeycloakUrl")!;
+    private readonly string _keycloakRealm = Environment.GetEnvironmentVariable("KeycloakRealm")!;
+    private readonly string _keycloakBackendClientId = Environment.GetEnvironmentVariable("KeycloakBackendClientId")!;
+    private readonly string _keycloakClientSecret = Environment.GetEnvironmentVariable("KeycloakClientSecret")!;
+
     public async Task SyncMemberInKeyCloak(Guid keycloakId)
     {
         var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
@@ -90,13 +95,13 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
     {
         var client = httpClientFactory.CreateClient();
         
-        var url = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}/protocol/openid-connect/token";
+        var url = $"{_keycloakUrl}/realms/{_keycloakRealm}/protocol/openid-connect/token";
         
         var dict = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
-            { "client_id", Environment.GetEnvironmentVariable("KeycloakBackendClientId")! },
-            { "client_secret", Environment.GetEnvironmentVariable("KeycloakClientSecret")! }
+            { "client_id", _keycloakBackendClientId },
+            { "client_secret", _keycloakClientSecret }
         };
 
         var content = new FormUrlEncodedContent(dict);

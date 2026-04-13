@@ -50,7 +50,7 @@ namespace Backend.Services
             if (result == null)
                 return null;
 
-            if (!IsBoardMember(userId) && result.MemberId != userId)
+            if (!permissionService.IsBoardMember(userId) && result.MemberId != userId)
                 throw new UnauthorizedAccessException("Only board members can view study enrollments of others.");
 
             return result;
@@ -120,15 +120,10 @@ namespace Backend.Services
 
         private void EnsureBoardMember(Guid userId)
         {
-            if (!IsBoardMember(userId))
+            if (!permissionService.IsBoardMember(userId))
             {
                 throw new UnauthorizedAccessException("Only board members can perform this action.");
             }
-        }
-
-        private bool IsBoardMember(Guid userId)
-        {
-            return permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board);
         }
     }
 }

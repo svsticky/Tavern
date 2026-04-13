@@ -17,4 +17,6 @@ public interface IPermissionService
     bool IsInRole(Member member, uint roleId, uint year, uint? groupId = null);
     
     bool IsBoardMember(Guid memberId);
+    public void EnsureBoardMember(Guid userId);
+
 }

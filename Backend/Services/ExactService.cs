@@ -1,3 +1,4 @@
+using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using System.Net.Http.Headers;
@@ -9,6 +10,7 @@ namespace Backend.Services
     public class ExactService : IAccountingToolService
     {
         private readonly HttpClient _http;
+        private readonly PostgresDbContext _db;
 
         private readonly string _division = Environment.GetEnvironmentVariable("EXACT_DIVISION")!;
 
@@ -16,9 +18,10 @@ namespace Backend.Services
 
         private readonly string _membershipGLAccount = Environment.GetEnvironmentVariable("EXACT_MEMBERSHIP_GL_ACCOUNT")!;
 
-        public ExactService(HttpClient http)
+        public ExactService(HttpClient http, PostgresDbContext db)
         {
             _http = http;
+            _db = db;
         }
 
         public async Task<Guid> SyncPaymentAsync(Payment payment, CancellationToken ct)
@@ -100,7 +103,7 @@ namespace Backend.Services
         {
             return new
             {
-                GLAccount = _membershipGLAccount,
+                GLAccount = _db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = "Lidmaatschap",
                 VATCode = "0",
                 AmountDC = payment.Price
@@ -111,7 +114,7 @@ namespace Backend.Services
         {
             return new
             {
-                GLAccount = Environment.GetEnvironmentVariable("MOLLIE_FEE_GL_ACCOUNT") ?? throw new Exception("MOLLIE_FEE_GL_ACCOUNT environment variable is not set"),
+                GLAccount = _db.Settings.Where(s => s.Name == "MollieFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = "Mollie fee",
                 VATCode = "0",
                 AmountDC = payment.Price

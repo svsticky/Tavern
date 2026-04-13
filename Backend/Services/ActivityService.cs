@@ -32,7 +32,7 @@ public class ActivityService : IActivityService
 
     public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto)
     {
-        bool isBoard = _permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board);
+        bool isBoard = _permissionService.IsBoardMember(userId);
 
         if (dto.IncludePast && !isBoard)
             throw new UnauthorizedAccessException();
@@ -71,9 +71,9 @@ public class ActivityService : IActivityService
                     Member = new MemberSummaryDTO
                     {
                         Id = e.MemberId == userId ? e.MemberId : null,
-                        FirstName = a.AreParticipantsVisible || _permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board) ? e.Member.FirstName : null,
-                        LastName = a.AreParticipantsVisible || _permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board) ? e.Member.LastName : null,
-                        ProfilePicturePath = a.AreParticipantsVisible || _permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board) ? e.Member.ProfilePicturePath : null
+                        FirstName = a.AreParticipantsVisible || _permissionService.IsBoardMember(userId) ? e.Member.FirstName : null,
+                        LastName = a.AreParticipantsVisible || _permissionService.IsBoardMember(userId) ? e.Member.LastName : null,
+                        ProfilePicturePath = a.AreParticipantsVisible || _permissionService.IsBoardMember(userId) ? e.Member.ProfilePicturePath : null
                     },
                     SpecificationAnswers = e.SpecificationAnswers.Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic).Select(sa => new SpecificationAnswerResponseDTO
                     {
@@ -127,7 +127,7 @@ public class ActivityService : IActivityService
 
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
-        bool isBoard = _permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board);
+        bool isBoard = _permissionService.IsBoardMember(userId);
 
         var activity = await _db.Activities.Select(a => new ActivityResponseDTO
         {
@@ -204,7 +204,7 @@ public class ActivityService : IActivityService
             throw new ArgumentException("Activity cannot end before it starts.");
 
         if ((dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null) &&
-            !_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+            !_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException();
 
         if (dto.ParticipantLimit < 0)
@@ -283,7 +283,7 @@ public class ActivityService : IActivityService
 
     public async Task DeleteActivity(Guid userId, uint id)
     {
-        if (!_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+        if (!_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException();
 
         var activity = await _db.Activities.FindAsync(id);
@@ -309,7 +309,7 @@ public class ActivityService : IActivityService
         if ((activity.ShowInKoala 
                 || activity.ShowOnWebsite 
                 || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase))) &&
-                !_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+                !_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException();
 
 
@@ -354,7 +354,7 @@ public class ActivityService : IActivityService
             throw new KeyNotFoundException();
 
         if ((activity.ShowInKoala || activity.ShowOnWebsite) &&
-            !_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+            !_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException();
 
         if (poster != null && !ExtensionUtils.IsValidPosterExtension(poster))
@@ -412,7 +412,7 @@ public class ActivityService : IActivityService
             throw new ArgumentException("Invalid poster file type.");
 
         if ((activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null) &&
-            !_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+            !_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException();
 
         using var transaction = await _db.Database.BeginTransactionAsync();
@@ -497,7 +497,7 @@ public class ActivityService : IActivityService
             return null;
 
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow &&
-            !_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+            !_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException();
 
         var file = await _storageService.GetFileAsync("posters", activity.PosterPath);

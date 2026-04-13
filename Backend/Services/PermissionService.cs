@@ -1,8 +1,6 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils;
-using Microsoft.EntityFrameworkCore;
 using System.Runtime.InteropServices;
 
 namespace Backend.Services;
@@ -84,6 +82,14 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
 
     public bool IsBoardMember(Guid memberId)
     {
-        return IsInGroupInCurrentYear(memberId, PredefinedGroups.Board);
+        return IsInGroupInCurrentYear(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0"));
+    }
+
+    public void EnsureBoardMember(Guid userId)
+    {
+        if (!IsBoardMember(userId))
+        {
+            throw new UnauthorizedAccessException("Only board members can perform this action.");
+        }
     }
 }

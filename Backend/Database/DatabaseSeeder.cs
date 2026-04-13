@@ -3,23 +3,44 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;
 
-public class GroupInitializer : IHostedService
+public class GroupInitializer(IServiceScopeFactory scopeFactory) : IHostedService
 {
-    private readonly IServiceScopeFactory _scopeFactory;
-
-    public GroupInitializer(IServiceScopeFactory scopeFactory)
-    {
-        _scopeFactory = scopeFactory;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using var scope = _scopeFactory.CreateScope();
+        using var scope = scopeFactory.CreateScope();
+
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
 
-        await db.Database.MigrateAsync(cancellationToken);
+        string boardGroupId = await EnsureSettingExists(db, "BoardGroupId", "1");
+        
+        await EnsureGroupExists(db, "BoardGroupId", GroupType.Committee, uint.Parse(boardGroupId));
 
-        await EnsureGroupExists(db, "Board", GroupType.Committee, PredefinedGroups.Board);
+        await EnsureSettingExists(db, "MollieFee", "0.39");
+
+        await EnsureSettingExists(db, "MollieFeeGlAccount", "5007");
+
+        await EnsureSettingExists(db, "MembershipGLAccount", "8000");
+
+        await EnsureSettingExists(db, "MollieApiKey", string.Empty);
+    }
+
+    private static async Task<string> EnsureSettingExists(PostgresDbContext db, string name, string defaultValue)
+    {
+        var setting = await db.Settings.FindAsync(name);
+
+        if (setting != null)
+        {
+            return setting.Value;
+        }
+
+        db.Settings.Add(new Setting
+        {
+            Name = name,
+            Value = defaultValue
+        });
+
+        await db.SaveChangesAsync();
+        return defaultValue;
     }
 
     private static async Task EnsureGroupExists(

@@ -36,7 +36,7 @@ public abstract class AbstractMailService
 
     protected async Task<MailRecipient> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
-        int boardGroupId = int.Parse(Environment.GetEnvironmentVariable("BOARD_GROUP_ID")!);
+        int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
 
         Role? role = await _db.GroupMemberships
             .Where(gm => gm.MemberId == userId && gm.GroupId == boardGroupId)

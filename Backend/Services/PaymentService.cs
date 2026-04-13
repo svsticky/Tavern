@@ -17,10 +17,7 @@ namespace Backend.Services
     {
         private readonly string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
         private readonly string _backendUrl = Environment.GetEnvironmentVariable("ApiUrl")!;
-
         private readonly string? _ngrokUrl = Environment.GetEnvironmentVariable("NGROK_URL");
-
-        private readonly decimal _mollieFee = Environment.GetEnvironmentVariable("MOLLIE_FEE") != null ? decimal.Parse(Environment.GetEnvironmentVariable("MOLLIE_FEE")!) : 0.00m;
 
         public async Task<List<MembershipPayment>> GetMembershipPayments(CancellationToken ct)
         {
@@ -136,7 +133,7 @@ namespace Backend.Services
             {
                 var request = new PaymentRequest
                 {
-                    Amount = new Amount(Currency.EUR, totalPrice + _mollieFee),
+                    Amount = new Amount(Currency.EUR, totalPrice + db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault()),
                     Description = $"Activity payment for {member.FirstName} {member.LastName}",
                     RedirectUrl = _frontendUrl,
                     WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/api/payments/webhook",
@@ -151,7 +148,7 @@ namespace Backend.Services
                 MollieFeePayment mollieFeePayment = new MollieFeePayment
                 {
                     MemberId = dto.MemberId,
-                    Price = _mollieFee,
+                    Price = db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault(),
                     MollieId = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Id,
                     PaymentIntentUrl = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Links.Checkout!.Href,
                     PaidAt = dto.ManuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null

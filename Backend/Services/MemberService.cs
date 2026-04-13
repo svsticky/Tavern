@@ -16,7 +16,7 @@ namespace Backend.Services
     {
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
-            if (!permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+            if (!permissionService.IsBoardMember(userId))
                 throw new UnauthorizedAccessException("Only board members can view members.");
 
             var query = db.Members.AsQueryable();
@@ -328,11 +328,6 @@ namespace Backend.Services
         public async Task<Member?> GetMemberEntity(Guid id)
         {
             return await db.Members.FindAsync(id);
-        }
-
-        public bool IsBoard(Guid userId)
-        {
-            return permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board);
         }
     }
 }

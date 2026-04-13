@@ -24,7 +24,7 @@ namespace Backend.Services
 
         public async Task<Study> CreateStudy(PostStudyDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardMember(userId);
 
             var study = new Study
             {
@@ -43,7 +43,7 @@ namespace Backend.Services
 
         public async Task DeleteStudy(uint id, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardMember(userId);
 
             var study = await db.Studies.FindAsync(id, ct);
             if (study == null)
@@ -55,7 +55,7 @@ namespace Backend.Services
 
         public async Task PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardMember(userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
@@ -73,7 +73,7 @@ namespace Backend.Services
 
         public async Task UpdateStudy(uint id, StudyUpdateDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardMember(userId);
 
             var study = await db.Studies.FindAsync(id, ct);
             if (study == null)
@@ -86,14 +86,6 @@ namespace Backend.Services
             StateValidateUtils.Validate(study);
 
             await db.SaveChangesAsync(ct);
-        }
-
-        private void EnsureBoardMember(Guid userId)
-        {
-            if (!permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
-            {
-                throw new UnauthorizedAccessException("Only board members can perform this action.");
-            }
         }
     }
 }

@@ -21,7 +21,7 @@ public class GroupService : IGroupService
     public async Task<IEnumerable<GroupResponseDTO>> GetGroups(Guid userId, GetGroupDTO dto, CancellationToken cancellationToken)
     {
         if ((dto.MembershipYear == null || dto.IncludeInactive) &&
-            !_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+            !_permissionService.IsBoardMember(userId))
         {
             throw new UnauthorizedAccessException();
         }
@@ -75,7 +75,7 @@ public class GroupService : IGroupService
 
     public async Task<Group> CreateGroup(PostGroupDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+        if (!_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can create groups.");
 
         if (dto.Name.Contains(';') || dto.Name.Contains(':'))
@@ -97,7 +97,7 @@ public class GroupService : IGroupService
 
     public async Task DeleteGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+        if (!_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can delete groups.");
 
         var group = await _db.Groups.FindAsync(id, cancellationToken);
@@ -110,7 +110,7 @@ public class GroupService : IGroupService
 
     public async Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+        if (!_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can update groups.");
 
         if (patchDoc == null)
@@ -132,7 +132,7 @@ public class GroupService : IGroupService
 
     public async Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
+        if (!_permissionService.IsBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can update groups.");
 
         if (dto.Name.Contains(';') || dto.Name.Contains(':'))

@@ -109,7 +109,7 @@ namespace Backend.Controllers
                 return BadRequest("UserId claim is missing");
             }
 
-            bool isBoard = _permissionService.IsInGroupInCurrentYear(Guid.Parse(userId), uint.Parse(Environment.GetEnvironmentVariable("BOARD_GROUP_ID")!));
+            bool isBoard = _permissionService.IsBoardMember(Guid.Parse(userId));
 
             if(allUsers && !isBoard)
             {

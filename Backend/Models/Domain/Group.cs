@@ -54,11 +54,3 @@ public class Group
     [StringLength(20)]
     public string? DefaultCostCenter { get; set; }
 }
-
-public static class PredefinedGroups
-{
-    public static uint Board =>
-        Environment.GetEnvironmentVariable("BOARD_GROUP_ID") is string id
-            ? uint.Parse(id)
-            : 1;
-}

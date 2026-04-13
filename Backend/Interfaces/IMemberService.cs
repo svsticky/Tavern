@@ -22,7 +22,5 @@ namespace Backend.Interfaces
         Task<FileResultDto?> GetProfilePictureFile(string path);
  
         Task<bool> DeleteProfilePicture(Guid id);
-        
-        bool IsBoard(Guid userId);
     }
 }
