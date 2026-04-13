@@ -9,6 +9,9 @@ import Button from "../UI/Button";
 import { cn } from "~/util/tailwind.util";
 import { useNavigate } from "react-router";
 import i18n from "~/i18n";
+import Form from "../UI/Form/Form";
+import { mailSubscriptionMap } from "~/types/MailSubscriptionMap";
+import toast from "react-hot-toast";
 
 export default function RegisterForm({ className }: { className?: string }) {
     const [loading, setLoading] = useState(false);
@@ -90,14 +93,18 @@ export default function RegisterForm({ className }: { className?: string }) {
         teacher: false,
     });
 
-    const calculateMailSubscriptions = (): number => {
+    const handleSubscriptionChange = (key: keyof typeof subscriptions) => {
+        setSubscriptions(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const calculateMailSubscriptions = (): MailSubscriptions => {
         let total = 0;
         if (subscriptions.general) total |= 1;
         if (subscriptions.company) total |= 2;
         if (subscriptions.monday) total |= 4;
         if (subscriptions.lectures) total |= 8;
         if (subscriptions.teacher) total |= 16;
-        return total;
+        return mailSubscriptionMap[total];
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -108,56 +115,65 @@ export default function RegisterForm({ className }: { className?: string }) {
 
         const isDutch = i18n.language.startsWith('nl');
 
-        try {
-            const payload: PostMemberDto = {
-                firstName: formData.firstname,
-                lastName: formData.lastname,
-                email: formData.email,
-                phoneNumber: formData.phone,
-                dateOfBirth: new Date(formData.birthDate).toISOString(),
-                street: formData.street,
-                houseNumber: formData.houseNumber,
-                postalCode: formData.postalCode,
-                city: formData.city,
-                studentNumber: parseInt(formData.studentNumber),
-                parentPhoneNumber: formData.parentPhone || null,
-                preferredLanguage: isDutch ? 0 : 1,
-                mailSubscriptions: calculateMailSubscriptions() as MailSubscriptions,
-                studyEnrollments: selectedStudies.map(id => ({
-                    studyId: id,
-                    memberId: "00000000-0000-0000-0000-000000000000",
-                    enrollmentDate: new Date().toISOString(),
-                }))
-            };
+        const registerProcess = async () => {
+            try {
+                const payload: PostMemberDto = {
+                    firstName: formData.firstname,
+                    lastName: formData.lastname,
+                    email: formData.email,
+                    phoneNumber: formData.phone,
+                    dateOfBirth: new Date(formData.birthDate).toISOString(),
+                    street: formData.street,
+                    houseNumber: formData.houseNumber,
+                    postalCode: formData.postalCode,
+                    city: formData.city,
+                    studentNumber: parseInt(formData.studentNumber),
+                    parentPhoneNumber: formData.parentPhone || null,
+                    preferredLanguage: isDutch ? "NL" : "EN",
+                    mailSubscriptions: calculateMailSubscriptions(),
+                    studyEnrollments: selectedStudies.map(id => ({
+                        studyId: id,
+                        memberId: "00000000-0000-0000-0000-000000000000",
+                        enrollmentDate: new Date().toISOString(),
+                    }))
+                };
 
-            var response = await postApiMembers({ body: payload });
+                var response = await postApiMembers({ body: payload });
 
-            if(response.status === 201 && response.data) {
-                if(!studies.some(s => selectedStudies.includes(s.id!) && s.type === 1)) {
-                    var paymentResponse = await postApiPaymentsMembership({
-                        body: {
-                            memberId: response.data.id,
+                if(response.status === 201 && response.data) {
+                    if(!studies.some(s => selectedStudies.includes(s.id!) && s.type === 'Master')) {
+                        var paymentResponse = await postApiPaymentsMembership({
+                            body: {
+                                memberId: response.data.id,
+                            }
+                        });
+                        
+                        if(paymentResponse.status === 200 && paymentResponse.data) {
+                            window.location.href = paymentResponse.data.checkoutUrl;
                         }
-                    });
-                    
-                    if(paymentResponse.status === 200 && paymentResponse.data) {
-                        window.location.href = paymentResponse.data.checkoutUrl;
+                    }
+                    else{
+                        navigate("/");
                     }
                 }
-                else{
-                    navigate("/");
-                }
+            } catch (error) {
+                console.error("Registratie mislukt", error);
+                throw error;
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error("Registratie mislukt", error);
-        } finally {
-            setLoading(false);
         }
+
+        toast.promise(registerProcess(), {
+            loading: t("registering"),
+            success: t("registration_successful"),
+            error: t("registration_failed")
+        });
     };
 
     return (
         <Tile className={cn("shadow-xl border border-gray-200 bg-white", className)}>
-            <form className="space-y-6" onSubmit={handleSubmit} >
+            <Form onSubmit={handleSubmit} >
                 <FormSection title={t("personal_information")}>
                     <Input label={t("first_name")} name="firstname" value={formData.firstname} onChange={handleInputChange} disabled={loading} required />
                     <Input label={t("last_name")} name="lastname" value={formData.lastname} onChange={handleInputChange} disabled={loading} required />
@@ -194,11 +210,11 @@ export default function RegisterForm({ className }: { className?: string }) {
                 </FormSection>
 
                 <FormSection title={t("mail_subscriptions")}>
-                    <Checkbox label={t("general_member_meetings")} disabled={loading} />
-                    <Checkbox label={t("company_mails")} disabled={loading} />
-                    <Checkbox label={t("monday_morning_mails")} disabled={loading} />
-                    <Checkbox label={t("lectures_workshops")} disabled={loading} />
-                    <Checkbox label={t("teacher_mails")} disabled={loading} />
+                    <Checkbox label={t("general_member_meetings")} disabled={loading} checked={subscriptions.general} onChange={() => handleSubscriptionChange("general")} />
+                    <Checkbox label={t("company_mails")} disabled={loading} checked={subscriptions.company} onChange={() => handleSubscriptionChange("company")} />
+                    <Checkbox label={t("monday_morning_mails")} disabled={loading} checked={subscriptions.monday} onChange={() => handleSubscriptionChange("monday")} />
+                    <Checkbox label={t("lectures_workshops")} disabled={loading} checked={subscriptions.lectures} onChange={() => handleSubscriptionChange("lectures")} />
+                    <Checkbox label={t("teacher_mails")} disabled={loading} checked={subscriptions.teacher} onChange={() => handleSubscriptionChange("teacher")} />
                 </FormSection>
 
                 <Button 
@@ -208,7 +224,7 @@ export default function RegisterForm({ className }: { className?: string }) {
                 >
                     {t("become_member")}
                 </Button>
-            </form>
+            </Form>
         </Tile>
     );
 }

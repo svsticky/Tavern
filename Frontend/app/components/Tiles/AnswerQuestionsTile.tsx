@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { GetSpecificationQuestionResponseDto, SpecificationAnswerResponseDto, SpecificationQuestion } from "~/api";
 import Tile from "./Tile";
 import { useKeycloak } from "@react-keycloak/web";
-import { QuestionTypeEnum } from "~/types/QuestionTypeEnum";
 import Input from "../UI/Input";
 import { t } from "i18next";
 
@@ -53,7 +52,7 @@ export default function AnswerQuestionsTile({
     const value = answers[id] || "";
 
     switch (q.type) {
-      case QuestionTypeEnum.String:
+      case 'String':
         return (
           <Input
             className="input"
@@ -63,7 +62,7 @@ export default function AnswerQuestionsTile({
           />
         );
 
-      case QuestionTypeEnum.Boolean:
+      case 'Boolean':
         return (
           <Input
             type="checkbox"
@@ -73,7 +72,7 @@ export default function AnswerQuestionsTile({
           />
         );
         
-      case QuestionTypeEnum.Number:
+      case 'Number':
         return (
           <Input
             type="number"
@@ -84,7 +83,7 @@ export default function AnswerQuestionsTile({
           />
         );
 
-      case QuestionTypeEnum.Date:
+      case 'Date':
         return (
           <Input
             type="date"
@@ -95,7 +94,7 @@ export default function AnswerQuestionsTile({
           />
         );
 
-      case QuestionTypeEnum.DateTime:
+      case 'DateTime':
         return (
           <Input
             type="datetime-local"
@@ -106,7 +105,7 @@ export default function AnswerQuestionsTile({
           />
         );
 
-      case QuestionTypeEnum.MultipleChoice:
+      case 'MultipleChoice':
         const options = q.options ?? [];
 
         return (

@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
+import BorderedTile from "./BorderedTile";
 
 type Props = {
   children: React.ReactNode;
@@ -11,7 +12,7 @@ export function ListTile({ children, className }: Props) {
   const items = React.Children.toArray(children);
 
   return (
-    <Tile className={cn("rounded-xl border border-gray-200 p-0", className)}>
+    <BorderedTile className={className} noPadding>
       <div className="flex flex-col">
         {items.map((child, index) => (
           <div
@@ -25,6 +26,6 @@ export function ListTile({ children, className }: Props) {
           </div>
         ))}
       </div>
-    </Tile>
+    </BorderedTile>
   );
 }

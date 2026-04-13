@@ -14,12 +14,25 @@ namespace Backend.Services
         IStorageService storageService
     ) : IMemberService
     {
-        public async Task<List<MemberResponseDTO>> GetMembers(Guid userId, CancellationToken cancellationToken)
+        public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
             if (!permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board))
                 throw new UnauthorizedAccessException("Only board members can view members.");
 
-            return await db.Members
+            var query = db.Members.AsQueryable();
+
+            if (!string.IsNullOrEmpty(dto.Search))
+            {
+                query = query.Where(m => m.FirstName.Contains(dto.Search) || m.LastName.Contains(dto.Search) || m.Email.Contains(dto.Search) || m.StudentNumber.ToString().Contains(dto.Search) || m.PhoneNumber.Contains(dto.Search));
+            }
+
+            int pageSize = dto.PageSize > 0 ? dto.PageSize : 50;
+            int skip = (dto.Page > 0 ? dto.Page - 1 : 0) * pageSize;
+
+            return await query
+                .OrderBy(m => m.LastName)
+                .Skip(skip)
+                .Take(pageSize)
                 .Select(m => new MemberResponseDTO
                 {
                     Id = m.Id,

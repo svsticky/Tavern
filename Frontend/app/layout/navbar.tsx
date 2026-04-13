@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router";
 import { getApiMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
+import { isInGroupWithId } from "~/util/group.util";
 
 export default function NavBarLayout() {
   const { t } = useTranslation();
@@ -52,11 +53,17 @@ export default function NavBarLayout() {
       };  
     }, [initialized, keycloak.authenticated]);
 
+  const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
+
   const profileOptions = {
     username: keycloak.tokenParsed?.name || "",
     avatarUrl: imgSrc,
     options: [
       { label: t("settings"), action: () => navigate("/settings") },
+      ...(isBoard ? [{ label: `${t("activity")} ${t("management")}`, action: () => navigate("/admin/activities") }] : []),
+      ...(isBoard ? [{ label: `${t("member")} ${t("management")}`, action: () => navigate("/admin/members") }] : []),
+      ...(isBoard ? [{ label: `${t("group")} ${t("management")}`, action: () => navigate("/admin/groups") }] : []),
+      ...(isBoard ? [{ label: `${t("finances")}`, action: () => navigate("/admin/finances") }] : []),
       { label: t("logout"), action: () => navigate("/logout") },
     ],
   };

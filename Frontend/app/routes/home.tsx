@@ -1,5 +1,6 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementResponseDto, type GroupMembership } from "~/api";
@@ -29,7 +30,8 @@ export default function DashboardPage() {
         setLoading(true);
         const activitiesResponse = await getApiActivities({
           query: {
-            includePast: false
+            IncludePast: false,
+            IncludeFuture: true,
           }
         });
 
@@ -59,6 +61,7 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error("Error while loading data:", error);
+        toast.error(t("loading_failed"));
       } finally {
         setLoading(false);
       }

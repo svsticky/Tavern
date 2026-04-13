@@ -221,3 +221,10 @@ public class MemberSummaryDTO
     public string? LastName { get; set; }
     public string? ProfilePicturePath { get; set; }
 }
+
+public class GetMembersDto
+{
+    public string? Search { get; set; }
+    public int PageSize { get; set; } = 20;
+    public int Page { get; set; } = 0;
+}

@@ -2,6 +2,7 @@ import { useKeycloak } from "@react-keycloak/web/lib/useKeycloak";
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { getApiAnnouncements, type GetAnnouncementResponseDto } from "~/api";
 import AnnouncementsList from "~/components/AnnouncementsList";
@@ -32,6 +33,7 @@ export default function AnnouncementsPage() {
         }
       } catch (error) {
         console.error("Error while loading data:", error);
+        toast.error(t("loading_failed"));
       } finally {
         setLoading(false);
       }

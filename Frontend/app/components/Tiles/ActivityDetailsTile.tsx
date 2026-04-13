@@ -10,6 +10,8 @@ import { isInGroupWithId } from '~/util/group.util';
 import { formatForGoogleCalendar, formatForWhatsApp } from '~/util/markdown.util';
 import Markdown from 'react-markdown';
 import AnswerQuestionsTile from './AnswerQuestionsTile';
+import toast from 'react-hot-toast';
+import BorderedTile from './BorderedTile';
 
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
@@ -67,92 +69,110 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
       return;
     }
 
-    try {
-      setSubmitting(true);
+    const enrollmentProcess = async () => {
+      try {
+        setSubmitting(true);
 
-      const response = await postApiEnrollments({
-        body: {
-          activityId: activity.id,
-          memberId: keycloak.tokenParsed.UserId,
-          specificationAnswers: Object.entries(answers).map(([questionId, answer]) => ({
-            questionId: Number(questionId),
-            answer
-          }))
+        const response = await postApiEnrollments({
+          body: {
+            activityId: activity.id,
+            memberId: keycloak.tokenParsed?.UserId,
+            specificationAnswers: Object.entries(answers).map(([questionId, answer]) => ({
+              questionId: Number(questionId),
+              answer
+            }))
+          }
+        });
+
+        if (response.data) {
+          const newEnrollment = {
+            isOnWaitingList: response.data.isOnWaitingList,
+            memberId: keycloak.tokenParsed?.UserId,
+            activityId: activity.id,
+            member: {
+              id: keycloak.tokenParsed?.UserId,
+              firstName: keycloak.tokenParsed?.given_name,
+              lastName: keycloak.tokenParsed?.family_name,
+              profilePicturePath: response.data.member?.profilePicturePath
+            },
+            specificationAnswers: response.data.specificationAnswers
+          } as any;
+
+          activity.enrollments = activity.enrollments
+            ? [...activity.enrollments, newEnrollment]
+            : [newEnrollment];
+
+          setActivity && setActivity({ ...activity });
         }
-      });
 
-      if (response.data) {
-        const newEnrollment = {
-          isOnWaitingList: response.data.isOnWaitingList,
-          memberId: keycloak.tokenParsed.UserId,
-          activityId: activity.id,
-          member: {
-            id: keycloak.tokenParsed.UserId,
-            firstName: keycloak.tokenParsed?.given_name || '',
-            lastName: keycloak.tokenParsed?.family_name || '',
-            profilePicturePath: response.data.member?.profilePicturePath
-          },
-          specificationAnswers: response.data.specificationAnswers
-        } as any;
-
-        activity.enrollments = activity.enrollments
-          ? [...activity.enrollments, newEnrollment]
-          : [newEnrollment];
-
-        setActivity && setActivity({ ...activity });
+      } catch (error) {
+        console.error("Error while enrolling:", error);
+        throw error;
+      } finally {
+        setSubmitting(false);
       }
-
-    } catch (error) {
-      console.error("Error while enrolling:", error);
-    } finally {
-      setSubmitting(false);
     }
+
+    toast.promise(enrollmentProcess(), {
+      loading: t("signing_in"),
+      success: t("enrollment_successful"),
+      error: t("enrollment_failed")
+    });
   };
 
   const handleUpdateEnrollment = async () => {
     if (!initialized || !keycloak.authenticated || !activity.id || !keycloak.tokenParsed?.UserId) return;
 
-    try {
-      setSubmitting(true);
+    const updateProcess = async () => {
+      try {
+        setSubmitting(true);
 
-      const response = await putApiEnrollmentsByActivityIdByMemberId({
-        path: {
-          activityId: activity.id,
-          memberId: keycloak.tokenParsed.UserId
-        },
-        body: {
-          activityId: activity.id,
-          memberId: keycloak.tokenParsed.UserId,
-          specificationAnswers: Object.entries(answers).map(([questionId, answer]) => ({
-            questionId: Number(questionId),
-            answer: String(answer)
-          }))
-        }
-      });
-
-      if (response.error) {
-        throw new Error("Update failed");
-      }
-
-      const updatedEnrollments = activity.enrollments.map(e => {
-        if (e.member.id === keycloak.tokenParsed?.UserId) {
-          return {
-            ...e,
-            specificationAnswers: e.specificationAnswers?.map(existingAns => ({
-              ...existingAns,
-              answer: answers[existingAns.questionId] ?? existingAns.answer
+        const response = await putApiEnrollmentsByActivityIdByMemberId({
+          path: {
+            activityId: activity.id,
+            memberId: keycloak.tokenParsed?.UserId
+          },
+          body: {
+            activityId: activity.id,
+            memberId: keycloak.tokenParsed?.UserId,
+            specificationAnswers: Object.entries(answers).map(([questionId, answer]) => ({
+              questionId: Number(questionId),
+              answer: String(answer)
             }))
-          };
-        }
-        return e;
-      });
+          }
+        });
 
-      setActivity && setActivity({ ...activity, enrollments: updatedEnrollments });
-    } catch (error) {
-      console.error("Error while updating enrollment:", error);
-    } finally {
-      setSubmitting(false);
+        if (response.error) {
+          throw new Error("Update failed");
+        }
+
+        const updatedEnrollments = activity.enrollments.map(e => {
+          if (e.member.id === keycloak.tokenParsed?.UserId) {
+            return {
+              ...e,
+              specificationAnswers: e.specificationAnswers?.map(existingAns => ({
+                ...existingAns,
+                answer: answers[existingAns.questionId] ?? existingAns.answer
+              }))
+            };
+          }
+          return e;
+        });
+
+        setActivity && setActivity({ ...activity, enrollments: updatedEnrollments });
+      } catch (error) {
+        console.error("Error while updating enrollment:", error);
+        throw error;
+      } finally {
+        setSubmitting(false);
+      }
     }
+
+    toast.promise(updateProcess(), {
+      loading: t("saving"),
+      success: t("answers_updated"),
+      error: t("update_failed")
+    });
   };
 
   const handleUnenrollment = async () => {
@@ -160,23 +180,32 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
       return;
     }
 
-    try {
-      setSubmitting(true);
-      
-      await deleteApiEnrollmentsByActivityIdByMemberId({
-        path: {
-          activityId: activity.id,
-          memberId: keycloak.tokenParsed.UserId
-        }
-      });
+    const unenrollmentProcess = async () => {
+      try {
+        setSubmitting(true);
+        
+        await deleteApiEnrollmentsByActivityIdByMemberId({
+          path: {
+            activityId: activity.id,
+            memberId: keycloak.tokenParsed?.UserId
+          }
+        });
 
-      activity.enrollments = activity.enrollments.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
-      setActivity && setActivity({ ...activity });
-    } catch (error) {
-      console.error("Error while unenrolling:", error);
-    } finally {
-      setSubmitting(false);
+        activity.enrollments = activity.enrollments.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
+        setActivity && setActivity({ ...activity });
+      } catch (error) {
+        console.error("Error while unenrolling:", error);
+        throw error;
+      } finally {
+        setSubmitting(false);
+      }
     }
+
+    toast.promise(unenrollmentProcess(), {
+      loading: t("signing_out"),
+      success: t("unenrollment_successful"),
+      error: t("unenrollment_failed")
+    });
   };
 
   const handleCopyForWhatsapp = async (lang: "NL" | "EN") => {
@@ -184,11 +213,11 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
       `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Locatie: ${activity.location || 'TBA'} | Prijs: ${activity.price === 0 || activity.price == null ? 'Gratis' : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}` :
       `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Location: ${activity.location || 'TBA'} | Price: ${activity.price === 0 || activity.price == null ? 'Free' : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
 
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error("Copy failed:", err);
-    }
+    toast.promise(navigator.clipboard.writeText(text), {
+      loading: t("copying"),
+      success: t("copy_successful"),
+      error: t("copy_failed")
+    });
   };
 
   return (
@@ -252,7 +281,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           </p>
         </section>
 
-        <Tile className="bg-white border border-slate-200 shadow-sm">
+        <BorderedTile>
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-slate-900">{t("description")}</h3>
 
@@ -291,7 +320,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
                   : activity.englishDescription || "No description available."}
               </Markdown>
             </div>
-        </Tile>
+        </BorderedTile>
 
         {/* Info Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-6 gap-x-4 p-2">
@@ -322,42 +351,42 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
         />
 
         {/* Actions */}
-<div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-  {isEnrolled ? (
-    <div className="flex flex-col gap-3">
-      {(activity.specificationQuestions.length) > 0 && (
-        <Button 
-          variant='primary' 
-          onClick={handleUpdateEnrollment} 
-          disabled={submitting}
-        >
-          {submitting ? t("saving") : t("update_answers")}
-        </Button>
-      )}
-      
-      <Button 
-        variant='danger' 
-        onClick={handleUnenrollment} 
-        disabled={submitting || (activity.unenrollmentDeadline ? new Date(Date.now()) > new Date(activity.unenrollmentDeadline) : false)}
-      >
-        {t("sign_out")}{submitting && ('...')}
-      </Button>
-    </div>
-  ) : (
-    <Button 
-      variant='primary' 
-      onClick={handleEnrollment} 
-      disabled={submitting}
-    >
-      {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length) ? t("sign_in_on_waitlist") : t("sign_in")}
-      {submitting && ('...')}
-    </Button>
-  )}
-  
-  <Button variant='secondary' className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700" onClick={handleAddToCalendar}>
-    <div className='flex items-center gap-2'><Calendar size={18} />{t("add_to_calendar")}</div>
-  </Button>
-</div>
+        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
+          {isEnrolled ? (
+            <div className="flex flex-col gap-3">
+              {(activity.specificationQuestions.length) > 0 && (
+                <Button 
+                  variant='primary' 
+                  onClick={handleUpdateEnrollment} 
+                  disabled={submitting}
+                >
+                  {submitting ? t("saving") : t("update_answers")}
+                </Button>
+              )}
+              
+              <Button 
+                variant='danger' 
+                onClick={handleUnenrollment} 
+                disabled={submitting || (activity.unenrollmentDeadline ? new Date(Date.now()) > new Date(activity.unenrollmentDeadline) : false)}
+              >
+                {t("sign_out")}{submitting && ('...')}
+              </Button>
+            </div>
+          ) : (
+            <Button 
+              variant='primary' 
+              onClick={handleEnrollment} 
+              disabled={submitting}
+            >
+              {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length) ? t("sign_in_on_waitlist") : t("sign_in")}
+              {submitting && ('...')}
+            </Button>
+          )}
+          
+          <Button variant='secondary' className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700" onClick={handleAddToCalendar}>
+            <div className='flex items-center gap-2'><Calendar size={18} />{t("add_to_calendar")}</div>
+          </Button>
+        </div>
       </div>
     </div>
   );

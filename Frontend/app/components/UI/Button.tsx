@@ -38,7 +38,7 @@ export default function Button({
     >
       {showArrow && arrowDirection === "left" && <Icon className="shrink-0" size={16} />}
       
-      <span>{children}</span>
+      {children}
       
       {showArrow && arrowDirection === "right" && <Icon className="shrink-0" size={16} />}
     </button>

@@ -10,6 +10,7 @@ import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { isInGroupWithId } from "~/util/group.util";
 import { PageHeader } from "~/components/UI/PageHeader";
+import toast from "react-hot-toast";
 
 export default function ActivityPage({ params }: Route.LoaderArgs) {
   const { keycloak, initialized } = useKeycloak();
@@ -34,6 +35,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         }
       } catch (error) {
         console.error("Error while loading data:", error);
+        toast.error(t("loading_failed"));
       } finally {
         setLoading(false);
       }
@@ -64,19 +66,17 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         )}
       />
 
-        <div className="space-y-6">
-          <ActivityDetailsTile activity={activity} setActivity={setActivity} />
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ActivityParticipantsTile 
-              members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => !e.isOnWaitingList).map(e => e.member) ?? []} 
-            />
-            <ActivityParticipantsTile 
-              title={t("waiting_list")} 
-              members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => e.isOnWaitingList).map(e => e.member) ?? []} 
-            />
-          </div>
-        </div>
+      <div className="space-y-6 w-full">
+        <ActivityDetailsTile activity={activity} setActivity={setActivity} />
+        
+        <ActivityParticipantsTile 
+          members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => !e.isOnWaitingList).map(e => e.member) ?? []} 
+        />
+        <ActivityParticipantsTile 
+          title={t("waiting_list")} 
+          members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => e.isOnWaitingList).map(e => e.member) ?? []} 
+        />
+      </div>
     </div>
   );
 }

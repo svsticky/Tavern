@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models;
 using Mollie.Api.Models.Payment.Request;
+using Mollie.Api.Models.Payment.Response;
 
 namespace Backend.Services
 {
@@ -15,6 +16,9 @@ namespace Backend.Services
     ) : IPaymentService
     {
         private readonly string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
+        private readonly string _backendUrl = Environment.GetEnvironmentVariable("ApiUrl")!;
+
+        private readonly string? _ngrokUrl = Environment.GetEnvironmentVariable("NGROK_URL");
 
         public async Task<List<MembershipPayment>> GetMembershipPayments(CancellationToken ct)
         {
@@ -76,7 +80,9 @@ namespace Backend.Services
                 Amount = new Amount(Currency.EUR, 7.50m),
                 Description = $"Membership payment for {member.FirstName} {member.LastName}",
                 RedirectUrl = _frontendUrl,
-                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
+                WebhookUrl = string.IsNullOrEmpty(_ngrokUrl) ? 
+                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/api/payments/webhook")
+                    : $"{_ngrokUrl}/api/payments/webhook",
                 Metadata = $"membership_{dto.MemberId}"
             };
 
@@ -118,19 +124,28 @@ namespace Backend.Services
                 paymentValidationService.GetUnpaidAmountForEnrollment(e)
             );
 
-            var request = new PaymentRequest
+            PaymentResponse? mollieResponse = null;
+
+            if (dto.ManuallyMarkedAsPaid)
             {
-                Amount = new Amount(Currency.EUR, totalPrice),
-                Description = $"Activity payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = _frontendUrl,
-                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
-                Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
-            };
+                // TO DO: Check if board
+            }
+            else
+            {
+                var request = new PaymentRequest
+                {
+                    Amount = new Amount(Currency.EUR, totalPrice),
+                    Description = $"Activity payment for {member.FirstName} {member.LastName}",
+                    RedirectUrl = _frontendUrl,
+                    WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/api/payments/webhook",
+                    Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
+                };
 
-            var mollieResponse = await paymentClient.CreatePaymentAsync(request);
+                mollieResponse = await paymentClient.CreatePaymentAsync(request);
 
-            if (mollieResponse.Links.Checkout == null)
-                throw new Exception("No checkout URL from Mollie");
+                if (mollieResponse.Links.Checkout == null)
+                    throw new Exception("No checkout URL from Mollie");
+            }
 
             foreach (var enrollment in enrollments)
             {
@@ -145,8 +160,9 @@ namespace Backend.Services
                     MemberId = dto.MemberId,
                     ActivityId = enrollment.ActivityId,
                     Price = price,
-                    MollieId = mollieResponse.Id,
-                    PaymentIntentUrl = mollieResponse.Links.Checkout.Href
+                    MollieId = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Id,
+                    PaymentIntentUrl = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Links.Checkout!.Href,
+                    PaidAt = dto.ManuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
                 };
 
                 StateValidateUtils.Validate(payment);
@@ -156,7 +172,7 @@ namespace Backend.Services
 
             await db.SaveChangesAsync();
 
-            return new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href };
+            return new PostPaymentResponse { CheckoutUrl = mollieResponse?.Links.Checkout?.Href ?? "" };
         }
 
         public IEnumerable<EnrollmentBalance> GetUnpaid()

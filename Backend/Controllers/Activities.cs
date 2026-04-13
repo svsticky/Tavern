@@ -19,11 +19,11 @@ namespace Backend.Controllers
 
         // GET: api/activities
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ActivityResponseDTO>>> GetActivities([FromQuery] bool includePast = false)
+        public async Task<ActionResult<IEnumerable<ActivityResponseDTO>>> GetActivities([FromQuery] GetActivitiesDTO dto)
         {
             try
             {
-                var result = await service.GetActivities(GetUserId(), includePast);
+                var result = await service.GetActivities(GetUserId(), dto);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)

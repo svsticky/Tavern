@@ -147,5 +147,15 @@
   "labor_market_orientation_description": "Onze vereniging biedt arbeidsmarktoriëntatie aan om studenten te helpen zich voor te bereiden op hun toekomstige carrière.",
   "members_description": "We hebben een divers groep van ongeveer 2000 leden, inclusief bachelor- en masterstudenten uit verschillende studieprogramma's. Onze leden zijn actief in het organiseren van activiteiten, het deelnemen aan commissies en het genieten van het sociale aspect van onze vereniging.",
   "questions": "Vragen",
-  "failed_fetching": "Fout bij het ophalen van gegevens."
+  "failed_fetching": "Fout bij het ophalen van gegevens.",
+  "total_unpaid": "Totaal openstaand",
+  "open_payments": "openstaande betalingen",
+  "expired_activities": "Verlopen activiteiten",
+  "expired_activities_subtitle": "Hieronder vind je een overzicht van activiteiten die nog niet op betaalbaar staan maar waarvan de activiteit al heeft plaatsgevonden.",
+  "go_to_activity": "Ga naar activiteit",
+  "overdue_payment": "Achterstallige betaling",
+  "overdue_payment_subtitle": "Hieronder vind je een overzicht van leden die een achterstallige betaling hebben voor activiteiten die al hebben plaatsgevonden.",
+  "finances_activity_overview": "Activiteiten overzicht",
+  "finances_overview": "Financiën overzicht",
+  "finances": "Financiën"
 }

@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { cn } from "~/util/tailwind.util";
 import MenuBranding from "../MenuBranding";
 import MenuContent from "../MenuContent";
 import MenuFooter from "../MenuFooter";
 import MenuItem from "../MenuItem";
+import { useLocation } from "react-router";
 
 type DropdownMenuProps = {
   color?: string | undefined;
@@ -17,9 +18,15 @@ export default function DropdownMenu({
   children,
 }: DropdownMenuProps) {
   const childrenArray = React.Children.toArray(children);
+  const location = useLocation();
   const [isNavBarOpen, setIsNavBarOpen] = useState(false);
 
   const toggleNavBar = () => setIsNavBarOpen((prev) => !prev);
+
+  useEffect(() => {
+    setIsNavBarOpen(false);
+  }, [location.pathname]);
+
   return (
     <header
       className={cn(

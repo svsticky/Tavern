@@ -67,7 +67,7 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                                 CreatedAt = DateTime.UtcNow
                             });
                         }
-                        payment.PaidAt = mollieStatus.PaidAt?.ToString("O");
+                        payment.PaidAt = mollieStatus.PaidAt;
 
                         db.ExactOutboxTasks.Add(new ExactOutboxTask
                         {

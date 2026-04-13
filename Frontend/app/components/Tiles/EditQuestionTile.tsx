@@ -4,6 +4,7 @@ import Tile from "~/components/Tiles/Tile";
 import Checkbox from "~/components/UI/Checkbox";
 import Input from "~/components/UI/Input";
 import Select from "~/components/UI/Select";
+import BorderedTile from "./BorderedTile";
 
 interface Props {
   question: Partial<GetSpecificationQuestionResponseDto>;
@@ -13,7 +14,7 @@ interface Props {
 
 export default function EditQuestionTile({ question, onRemove, onUpdate }: Props) {
   return (
-    <Tile className="border border-gray-100 group relative">
+    <BorderedTile className="group relative">
       <button 
         type="button" 
         onClick={onRemove}
@@ -64,7 +65,7 @@ export default function EditQuestionTile({ question, onRemove, onUpdate }: Props
         </div>
       </div>
 
-      {question.type === 5 && (
+      {question.type === 'MultipleChoice' && (
         <div className="mt-4">
           <Input 
             label={t("options_semicolon_separated")}
@@ -76,6 +77,6 @@ export default function EditQuestionTile({ question, onRemove, onUpdate }: Props
           />
         </div>
       )}
-    </Tile>
+    </BorderedTile>
   );
 }

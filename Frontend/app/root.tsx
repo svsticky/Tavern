@@ -7,7 +7,7 @@ import {
   ScrollRestoration,
 } from "react-router";
 import { useEffect, useState } from "react";
-
+import { Toaster } from 'react-hot-toast';
 import "./i18n";
 import i18n from "./i18n";
 import { client } from "./api/client.gen";
@@ -47,8 +47,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     if (i18n.isInitialized) {
       setI18nReady(true);
     } else {
@@ -61,7 +63,10 @@ export default function App() {
   if (!i18nReady) return null;
 
   return (
-    <Outlet />
+    <>
+      {isClient && <Toaster position="bottom-right" />}
+      <Outlet />
+    </>
   );
 }
 

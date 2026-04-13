@@ -64,6 +64,7 @@ export type ActivityResponseDto = {
     enrollments: Array<EnrollmentSummaryDto>;
     specificationQuestions: Array<GetSpecificationQuestionResponseDto>;
     paymentDeadline: string | null;
+    isOpenForPayment: boolean;
 };
 
 export type Announcement = {
@@ -100,6 +101,7 @@ export type EnrollmentPayment = {
     memberId?: string | null;
     member?: Member;
     exactEntryId?: string | null;
+    manuallyMarkedAsPaid?: boolean;
     activityId?: number | null;
     activity?: Activity;
 };
@@ -108,6 +110,7 @@ export type EnrollmentSummaryDto = {
     isOnWaitingList: boolean;
     member: MemberSummaryDto;
     specificationAnswers?: Array<SpecificationAnswerResponseDto> | null;
+    price?: number | null;
 };
 
 export type GetAnnouncementResponseDto = {
@@ -180,7 +183,7 @@ export type GroupResponseDto = {
     type: GroupType;
 };
 
-export type GroupType = 0 | 1;
+export type GroupType = 'Committee' | 'WorkingGroup';
 
 export type GroupUpdateDto = {
     name: string;
@@ -188,9 +191,9 @@ export type GroupUpdateDto = {
     type: GroupType;
 };
 
-export type Language = 0 | 1;
+export type Language = 'NL' | 'EN';
 
-export type MailSubscriptions = 0 | 1 | 2 | 4 | 8 | 16 | 31;
+export type MailSubscriptions = 'None' | 'GeneralMemberMeetings' | 'CompanyMails' | 'MondayMorningMails' | 'LecturesAndWorkshops' | 'TeacherMails' | 'All';
 
 export type Member = {
     id?: string;
@@ -221,6 +224,7 @@ export type Member = {
     announcements?: Array<Announcement>;
     profilePicturePath?: string | null;
     profilePictureFileName?: string | null;
+    joinedOn?: string;
 };
 
 export type MemberResponseDto = {
@@ -282,6 +286,7 @@ export type MembershipPayment = {
     memberId?: string | null;
     member?: Member;
     exactEntryId?: string | null;
+    manuallyMarkedAsPaid?: boolean;
 };
 
 export type Operation = {
@@ -292,11 +297,12 @@ export type Operation = {
     value?: unknown;
 };
 
-export type OperationType = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type OperationType = 'Add' | 'Remove' | 'Replace' | 'Move' | 'Copy' | 'Test' | 'Invalid';
 
 export type PostActivityPaymentDto = {
     memberId?: string;
     activityIds?: Array<number>;
+    manuallyMarkedAsPaid?: boolean;
 };
 
 export type PostAnnouncementDto = {
@@ -374,7 +380,7 @@ export type PostStudyEnrollmentDto = {
     status?: StudyStatus;
 };
 
-export type QuestionType = 0 | 1 | 2 | 3 | 4 | 5;
+export type QuestionType = 'String' | 'Boolean' | 'Number' | 'Date' | 'DateTime' | 'MultipleChoice';
 
 export type Role = {
     id?: number;
@@ -456,9 +462,9 @@ export type StudyEnrollmentResponseDto = {
     status: StudyStatus;
 };
 
-export type StudyStatus = 0 | 1 | 2;
+export type StudyStatus = 'Enrolled' | 'Completed' | 'DroppedOut';
 
-export type StudyType = 0 | 1;
+export type StudyType = 'Bachelor' | 'Master';
 
 export type StudyUpdateDto = {
     title: string;
@@ -466,7 +472,7 @@ export type StudyUpdateDto = {
     type: StudyType;
 };
 
-export type TargetAudience = 0 | 1 | 2 | 4 | 8 | 15;
+export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'All';
 
 export type UpdateAnnouncementDto = {
     title: string;
@@ -477,7 +483,10 @@ export type GetApiActivitiesData = {
     body?: never;
     path?: never;
     query?: {
-        includePast?: boolean;
+        IncludePast?: boolean;
+        IncludeFuture?: boolean;
+        Year?: number;
+        OpenForPayment?: boolean;
     };
     url: '/api/activities';
 };
@@ -1079,7 +1088,11 @@ export type PutApiGroupsByIdResponses = {
 export type GetApiMembersData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        Search?: string;
+        PageSize?: number;
+        Page?: number;
+    };
     url: '/api/members';
 };
 

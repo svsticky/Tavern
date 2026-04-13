@@ -15,8 +15,9 @@ import i18n from "~/i18n";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
-
-enum Language { NL = 0, EN = 1 }
+import Tile from "~/components/Tiles/Tile";
+import Form from "~/components/UI/Form/Form";
+import toast from "react-hot-toast";
 
 enum MailSubscriptions {
   GeneralMemberMeetings = 1,
@@ -44,7 +45,7 @@ export default function SettingsPage() {
     postalCode: "",
     city: "",
     parentPhoneNumber: "",
-    preferredLanguage: Language.NL,
+    preferredLanguage: "NL",
     mailSubscriptions: 0
   });
 
@@ -82,7 +83,7 @@ export default function SettingsPage() {
             postalCode: res.data.postalCode || "",
             city: res.data.city || "",
             parentPhoneNumber: res.data.parentPhoneNumber || "",
-            preferredLanguage: res.data.preferredLanguage as number,
+            preferredLanguage: res.data.preferredLanguage ?? "EN",
             mailSubscriptions: Number(res.data.mailSubscriptions) || 0
           });
         }
@@ -95,12 +96,15 @@ export default function SettingsPage() {
           setProfilePictureSrc("/profile-picture.svg");
         }
       } catch (err) {
-        console.error("Fout bij laden:", err);
+        console.error("Error while loading user data:", err);
+        toast.error(t("loading_profile_failed"));
       } finally {
         setLoading(false);
       }
     }
+    
     loadUser();
+    
     return () => { if (url) URL.revokeObjectURL(url); };  
   }, [userId]);
 
@@ -115,17 +119,27 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
     setSaving(true);
-    try {
-      await postApiProfilepictureByIdProfilePicture({
-        path: { id: userId },
-        body: { image: file }
-      });
-      window.location.reload();
-    } catch (err) {
-      console.error("Failed to upload profile picture:", err);
-    } finally {
-      setSaving(false);
-    }
+    
+    const saveProcess = async () => {
+      try {
+        await postApiProfilepictureByIdProfilePicture({
+          path: { id: userId },
+          body: { image: file }
+        });
+        window.location.reload();
+      } catch (err) {
+        console.error("Failed to upload profile picture:", err);
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    toast.promise(saveProcess(), {
+      loading: t("uploading_profile_picture"),
+      success: t("upload_successful"),
+      error: t("upload_failed")
+    });
   }; 
 
   const handleChangePassword = async () => {
@@ -136,32 +150,45 @@ export default function SettingsPage() {
       });
       window.location.href = url;
     }
+    else{
+      window.location.href = "/logout";
+    }
   }; 
 
   const handleSaveSettings = async () => {
     if (!userId) return;
     setSaving(true);
-    try {
-      await patchApiMembersById({
-        path: { id: userId },
-        body: [
-          { op: "replace", path: "/email", value: formData.email },
-          { op: "replace", path: "/phoneNumber", value: formData.phoneNumber },
-          { op: "replace", path: "/street", value: formData.street },
-          { op: "replace", path: "/houseNumber", value: formData.houseNumber },
-          { op: "replace", path: "/postalCode", value: formData.postalCode },
-          { op: "replace", path: "/city", value: formData.city },
-          { op: "replace", path: "/parentPhoneNumber", value: formData.parentPhoneNumber },
-          { op: "replace", path: "/preferredLanguage", value: formData.preferredLanguage },
-          { op: "replace", path: "/mailSubscriptions", value: formData.mailSubscriptions }
-        ]
-      });
-      i18n.changeLanguage(formData.preferredLanguage === Language.NL ? "nl" : "en");
-    } catch (err) {
-      console.error("Error saving settings:", err);
-    } finally {
-      setSaving(false);
-    }
+
+    const saveProcess = async () => {
+      try {
+        await patchApiMembersById({
+          path: { id: userId },
+          body: [
+            { op: "replace", path: "/email", value: formData.email },
+            { op: "replace", path: "/phoneNumber", value: formData.phoneNumber },
+            { op: "replace", path: "/street", value: formData.street },
+            { op: "replace", path: "/houseNumber", value: formData.houseNumber },
+            { op: "replace", path: "/postalCode", value: formData.postalCode },
+            { op: "replace", path: "/city", value: formData.city },
+            { op: "replace", path: "/parentPhoneNumber", value: formData.parentPhoneNumber },
+            { op: "replace", path: "/preferredLanguage", value: formData.preferredLanguage },
+            { op: "replace", path: "/mailSubscriptions", value: formData.mailSubscriptions }
+          ]
+        });
+        i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
+      } catch (err) {
+        console.error("Error saving settings:", err);
+        throw err;
+      } finally {
+        setSaving(false);
+      }
+    };
+
+    toast.promise(saveProcess(), {
+      loading: t("saving"),
+      success: t("save_successful"),
+      error: t("save_failed")
+    });
   };
 
   if (loading) return t("loading");
@@ -205,7 +232,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Right: Forms */}
-        <div className="flex-1 space-y-12">
+        <Form className="w-full">
           
           <FormSection title={t("contact_details")}>
             <Input 
@@ -240,7 +267,7 @@ export default function SettingsPage() {
 
           <section>
             <FormHeader title={t("mail_subscriptions")} />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 rounded-2xl border border-gray-100">
+            <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
               <Checkbox 
                 label={t("general_member_meetings")} 
                 checked={(formData.mailSubscriptions & MailSubscriptions.GeneralMemberMeetings) !== 0}
@@ -266,7 +293,7 @@ export default function SettingsPage() {
                 checked={(formData.mailSubscriptions & MailSubscriptions.TeacherMails) !== 0}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSubscriptionChange(MailSubscriptions.TeacherMails, e.target.checked)}
               />
-            </div>
+            </Tile>
           </section>
 
           <FormSection columns={2}>
@@ -274,16 +301,16 @@ export default function SettingsPage() {
               <FormHeader title={t("preferred_language")} border={false} />
               <div className="flex gap-2">
                 <Button 
-                  variant={formData.preferredLanguage === Language.NL ? "primary" : "secondary"}
+                  variant={formData.preferredLanguage === "NL" ? "primary" : "secondary"}
                   className="flex-1"
-                  onClick={() => setFormData({...formData, preferredLanguage: Language.NL})}
+                  onClick={() => setFormData({...formData, preferredLanguage: "NL"})}
                 >
                   {t("dutch")}
                 </Button>
                 <Button 
-                  variant={formData.preferredLanguage === Language.EN ? "primary" : "secondary"}
+                  variant={formData.preferredLanguage === "EN" ? "primary" : "secondary"}
                   className="flex-1"
-                  onClick={() => setFormData({...formData, preferredLanguage: Language.EN})}
+                  onClick={() => setFormData({...formData, preferredLanguage: "EN"})}
                 >
                   {t("english")}
                 </Button>
@@ -304,7 +331,7 @@ export default function SettingsPage() {
           >
             {saving ? t("saving") : t("save")}
           </Button>
-        </div>
+        </Form>
       </div>
     </>
   );

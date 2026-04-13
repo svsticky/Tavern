@@ -23,12 +23,12 @@ namespace Backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MemberResponseDTO>>> GetMembers(CancellationToken cancellationToken)
+        public async Task<ActionResult<IEnumerable<MemberResponseDTO>>> GetMembers([FromQuery] GetMembersDto dto, CancellationToken cancellationToken)
         {
             try
             {
                 var userId = GetUserId();
-                var result = await memberService.GetMembers(userId, cancellationToken);
+                var result = await memberService.GetMembers(dto, userId, cancellationToken);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException ex)

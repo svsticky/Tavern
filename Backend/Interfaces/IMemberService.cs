@@ -6,7 +6,7 @@ namespace Backend.Interfaces
 {
     public interface IMemberService
     {
-        Task<List<MemberResponseDTO>> GetMembers(Guid userId, CancellationToken cancellationToken);
+        Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken);
         Task<MemberResponseDTO?> GetMember(Guid id, Guid userId, bool isBoard, CancellationToken cancellationToken);
 
         Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken);

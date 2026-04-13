@@ -41,7 +41,7 @@ export default function ActivityTile({
     <Link to={`/activities/${activity.id}`} className="no-underline text-inherit">
       <Tile
         className={cn(
-          "group relative block w-60 cursor-pointer overflow-hidden rounded-2xl p-0 transition-all hover:shadow-md",
+          "group relative block w-60 cursor-pointer overflow-hidden p-0 transition-all hover:shadow-md",
           className,
         )}
       >

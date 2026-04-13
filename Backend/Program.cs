@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using System.IdentityModel.Tokens.Jwt;
 using Backend.Interfaces;
 using Amazon.S3;
+using Microsoft.AspNetCore.HttpOverrides;
+using Backend.Filters;
 
 Env.Load();
 
@@ -17,6 +19,15 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -52,10 +63,15 @@ builder.Services.AddScoped<KeycloakAPIService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddNewtonsoftJson(options =>
+{
+    options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+});
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.AddSwaggerGen(c =>
 {
+    c.SupportNonNullableReferenceTypes();
+    
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -80,6 +96,10 @@ builder.Services.AddSwaggerGen(c =>
             new string[] {}
         }
     });
+
+    c.SchemaFilter<EnumSchemaFilter>();
+
+    c.SupportNonNullableReferenceTypes();
 });
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
 builder.Services.AddControllers().AddNewtonsoftJson();
@@ -124,10 +144,6 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     return new AmazonS3Client("test", "test", s3Config);
 });
 
-builder.Services.AddSwaggerGen(options => {
-    options.SupportNonNullableReferenceTypes();
-});
-
 builder.Services.AddScoped<IStorageService, S3StorageService>();
 builder.Services.AddScoped<IFileCompressor, FileCompressor>();
 builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();
@@ -151,6 +167,8 @@ builder.Services.AddScoped<IStudyService, StudyService>();
 builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
 
 WebApplication app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

@@ -2,6 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { getApiActivities, type ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Tiles/ActivityTile";
@@ -24,7 +25,8 @@ export default function ActivitiesPage() {
           setLoading(true);
           const activitiesResponse = await getApiActivities({
             query: {
-              includePast: false
+              IncludePast: false,
+              IncludeFuture: true,
             }
           });
 
@@ -33,6 +35,7 @@ export default function ActivitiesPage() {
           }
         } catch (error) {
           console.error("Error while loading data:", error);
+          toast.error(t("loading_failed"));
         } finally {
           setLoading(false);
         }
@@ -49,6 +52,7 @@ export default function ActivitiesPage() {
         <PageHeader title={t("activities")} 
           action={isInGroup && (
           <Button 
+            variant="secondary"
             onClick={() => (navigate("/activities/create"))}
             className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"
           >

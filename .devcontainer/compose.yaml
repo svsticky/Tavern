@@ -42,6 +42,21 @@ services:
     networks:
       - tavern-net
 
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command:
+      - "http"
+      - "devcontainer:8080" 
+    ports:
+      - "4040:4040" 
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    networks:
+      - tavern-net
+    depends_on:
+      - devcontainer
+
 volumes:
   postgres-data:
 

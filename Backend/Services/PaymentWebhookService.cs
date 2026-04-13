@@ -43,7 +43,7 @@ namespace Backend.Services
                 {
                     foreach (var payment in payments)
                     {
-                        payment.PaidAt = result.PaidAt?.ToString("O");
+                        payment.PaidAt = result.PaidAt;
 
                         if (payment is MembershipPayment membershipPayment)
                         {

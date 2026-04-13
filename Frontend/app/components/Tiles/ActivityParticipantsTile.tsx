@@ -17,7 +17,7 @@ export default function ActivityParticipantsTile({ title, members }: { title?: s
         </span>
       </h2>
       
-      <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
         {members?.map((member, idx) => (
           <ParticipantTile key={idx} member={member} />
         ))}

@@ -30,11 +30,11 @@ public class ActivityService : IActivityService
         _permissionService = permissionService;
     }
 
-    public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, bool includePast)
+    public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto)
     {
         bool isBoard = _permissionService.IsInGroupInCurrentYear(userId, PredefinedGroups.Board);
 
-        if (includePast && !isBoard)
+        if (dto.IncludePast && !isBoard)
             throw new UnauthorizedAccessException();
 
         IQueryable<ActivityResponseDTO> query = _db.Activities
@@ -80,7 +80,8 @@ public class ActivityService : IActivityService
                         QuestionId = sa.SpecificationQuestionId,
                         AnswerId = sa.Id,
                         Answer = sa.Answer
-                    }).ToList()
+                    }).ToList(),
+                    Price = isBoard ? e.Price : null
                 }).ToList(),
                 SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
                 {
@@ -94,13 +95,31 @@ public class ActivityService : IActivityService
                         ? q.Options.Split(new[] { ';' }, StringSplitOptions.None).ToList()
                         : null
                 }).ToList(),
-                PaymentDeadline = isBoard ? a.PaymentDeadline : default
+                PaymentDeadline = isBoard ? a.PaymentDeadline : default,
+                IsOpenForPayment = a.IsOpenForPayment
             });
 
-        if (!includePast)
+        if (!dto.IncludePast)
         {
             DateTime now = DateTime.UtcNow;
             query = query.Where(a => a.DateTimeEnd > now && a.ShowInKoala);
+        }
+
+        if(!dto.IncludeFuture)
+        {
+            DateTime now = DateTime.UtcNow;
+            query = query.Where(a => a.DateTimeStart < now && a.ShowInKoala);
+        }
+
+        if (dto.Year.HasValue)
+        {
+            query = query.Where(a => a.DateTimeStart.Year == dto.Year.Value);
+        }
+
+        if(dto.OpenForPayment.HasValue)
+        {
+            DateTime now = DateTime.UtcNow;
+            query = query.Where(a => a.IsOpenForPayment == dto.OpenForPayment.Value);
         }
 
         return await query.OrderBy(a => a.DateTimeStart).ToListAsync();
@@ -151,7 +170,8 @@ public class ActivityService : IActivityService
                     QuestionId = sa.SpecificationQuestionId,
                     AnswerId = sa.Id,
                     Answer = sa.Answer
-                }).ToList()
+                }).ToList(),
+                Price = isBoard ? e.Price : null
             }).ToList(),
             SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
             {
@@ -165,7 +185,8 @@ public class ActivityService : IActivityService
                     ? q.Options.Split(new[] { ';' }, StringSplitOptions.None).ToList()
                     : null
             }).ToList(),
-            PaymentDeadline = isBoard ? a.PaymentDeadline : default
+            PaymentDeadline = isBoard ? a.PaymentDeadline : default,
+            IsOpenForPayment = a.IsOpenForPayment
         }).FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)

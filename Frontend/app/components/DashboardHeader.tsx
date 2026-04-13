@@ -13,6 +13,7 @@ import { getApiEnrollments, getApiGroupmemberships, getApiPaymentsUnpaid, postAp
 import { useEffect, useState } from "react";
 import { useKeycloak } from "@react-keycloak/web";
 import { useNavigate } from "react-router";
+import toast from "react-hot-toast";
 
 type DashboardHeaderProps = {
   name: string;
@@ -65,6 +66,8 @@ export default function DashboardHeader({
       } catch (error) {
         console.error("Error while loading outstanding payments:", error);
         setOutstandingPayments(0);
+
+        toast.error(t("dashboard_data_load_error"));
       } finally {
         setLoading(false);
       }

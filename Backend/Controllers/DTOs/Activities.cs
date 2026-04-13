@@ -84,6 +84,8 @@ public class ActivityResponseDTO
     public required List<GetSpecificationQuestionResponseDTO> SpecificationQuestions { get; set; } = new();
 
     public required DateTimeOffset? PaymentDeadline { get; set; }
+
+    public required bool IsOpenForPayment { get; set; }
 }
 
 public class PostActivityDTO : BaseActivityDTO<SpecificationQuestionDTO>
@@ -92,4 +94,12 @@ public class PostActivityDTO : BaseActivityDTO<SpecificationQuestionDTO>
 
 public class PutActivityDTO : BaseActivityDTO<UpdateSpecificationQuestionDTO>
 {
+}
+
+public class GetActivitiesDTO
+{
+    public bool IncludePast { get; set; } = false;
+    public bool IncludeFuture { get; set; } = true;
+    public uint? Year { get; set; }
+    public bool? OpenForPayment { get; set; }
 }

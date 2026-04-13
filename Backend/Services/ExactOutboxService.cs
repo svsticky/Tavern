@@ -9,6 +9,12 @@ public class ExactOutboxWorker(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if(!Environment.GetEnvironmentVariable("EnableExactOutboxWorker")?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? true)
+        {
+            logger.LogInformation("Exact outbox worker is disabled. Exiting.");
+            return;
+        }
+
         while (!stoppingToken.IsCancellationRequested)
         {
             bool hadTask = false;

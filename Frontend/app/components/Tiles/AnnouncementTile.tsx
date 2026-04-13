@@ -24,7 +24,7 @@ export default function AnnouncementTile({
   const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
 
   return (
-    <Tile className={cn("rounded-2xl border border-gray-200 p-6", className)}>
+    <Tile className={cn("border border-gray-200 p-6", className)}>
       {/* Header: Title (Links) | Date & Edit (Rechts) */}
       <div className="flex w-full justify-between items-start mb-4 gap-4">
         <h3 className="font-bold text-lg leading-tight">{announcement.title}</h3>

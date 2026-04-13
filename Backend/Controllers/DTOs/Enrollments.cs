@@ -12,4 +12,5 @@ public class EnrollmentSummaryDTO
     public required bool IsOnWaitingList { get; set; }
     public required MemberSummaryDTO Member { get; set; }
     public List<SpecificationAnswerResponseDTO>? SpecificationAnswers { get; set; }
+    public decimal? Price { get; set; }
 }

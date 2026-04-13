@@ -7,6 +7,8 @@ import Button from "~/components/UI/Button";
 import { t } from "i18next";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import { PageHeader } from "~/components/UI/PageHeader";
+import Form from "~/components/UI/Form/Form";
+import toast from "react-hot-toast";
 
 export default function AnnouncementFormPage() {
   const { id } = useParams();
@@ -36,18 +38,28 @@ export default function AnnouncementFormPage() {
     };
 
     setSaving(true);
-    try {
-      if (isEdit) {
-        await putApiAnnouncementsById({ path: { id: Number(id) }, body });
-      } else {
-        await postApiAnnouncements({ body });
+
+    const submitProcess = async () => {
+      try {
+        if (isEdit) {
+          await putApiAnnouncementsById({ path: { id: Number(id) }, body });
+        } else {
+          await postApiAnnouncements({ body });
+        }
+        navigate("/announcements");
+      } catch (error) {
+        console.error(error);
+        throw error;
+      } finally {
+        setSaving(false);
       }
-      navigate("/announcements");
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setSaving(false);
-    }
+    };
+
+    toast.promise(submitProcess(), {
+      loading: isEdit ? t("updating") : t("creating"),
+      success: isEdit ? t("update_successful") : t("creation_successful"),
+      error: isEdit ? t("update_failed") : t("creation_failed")
+    });
   };
 
   if (loading) return <div className="p-8 text-center">{t("loading")}...</div>;
@@ -59,7 +71,7 @@ export default function AnnouncementFormPage() {
         backTo="/announcements" 
       />
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <Form onSubmit={handleSubmit}>
         <FormSection title={t("announcement_details")} columns={1}>
           <Input 
             label={t("title")} 
@@ -79,7 +91,7 @@ export default function AnnouncementFormPage() {
         <Button type="submit" disabled={saving} className="w-full">
           {saving ? t("saving") : isEdit ? t("update") : t("create")}
         </Button>
-      </form>
+      </Form>
     </div>
   );
 }

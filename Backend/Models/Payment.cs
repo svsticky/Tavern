@@ -10,13 +10,15 @@ public abstract class Payment
 
     public required string PaymentIntentUrl { get; set; }
 
-    public string? PaidAt { get; set; }
+    public DateTimeOffset? PaidAt { get; set; }
 
     public Guid? MemberId { get; set; }
    
     public Member? Member { get; set; }
 
     public Guid? ExactEntryId { get; set; }
+
+    public bool ManuallyMarkedAsPaid { get; set; } = false;
 }
 
 public class MembershipPayment : Payment

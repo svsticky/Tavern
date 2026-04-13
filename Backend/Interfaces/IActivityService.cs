@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 
 public interface IActivityService
 {
-    Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, bool includePast);
+    Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto);
 
     Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id);
 
