@@ -1,4 +1,4 @@
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;

@@ -1,3 +1,5 @@
+using Backend.Models.Domain;
+
 namespace Backend.Models;
 
 [Flags]

@@ -1,6 +1,6 @@
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;

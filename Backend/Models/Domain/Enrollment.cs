@@ -3,7 +3,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Backend.Models;
+namespace Backend.Models.Domain;
 
 [PrimaryKey(nameof(ActivityId), nameof(MemberId))]
 public class Enrollment

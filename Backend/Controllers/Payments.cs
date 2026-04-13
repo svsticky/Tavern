@@ -1,6 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -115,7 +115,7 @@ namespace Backend.Controllers
             {
                 return Forbid("Only board members can view all unpaid enrollments");
             }
-            
+
             var result = _paymentService.GetUnpaid(Guid.Parse(userId), allUsers);
             return Ok(result);
         }

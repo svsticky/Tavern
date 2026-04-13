@@ -24,7 +24,7 @@ namespace Backend.Migrations
 
             modelBuilder.HasSequence("PaymentSequence");
 
-            modelBuilder.Entity("Backend.Models.AccountingToolOutboxTask", b =>
+            modelBuilder.Entity("Backend.Models.Domain.AccountingToolOutboxTask", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -51,7 +51,7 @@ namespace Backend.Migrations
                     b.ToTable("AccountingToolOutboxTasks");
                 });
 
-            modelBuilder.Entity("Backend.Models.Activity", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Activity", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -149,7 +149,7 @@ namespace Backend.Migrations
                     b.ToTable("Activities");
                 });
 
-            modelBuilder.Entity("Backend.Models.Announcement", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Announcement", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -180,7 +180,7 @@ namespace Backend.Migrations
                     b.ToTable("Announcements");
                 });
 
-            modelBuilder.Entity("Backend.Models.Enrollment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Enrollment", b =>
                 {
                     b.Property<long>("ActivityId")
                         .HasColumnType("bigint");
@@ -204,7 +204,7 @@ namespace Backend.Migrations
                     b.ToTable("Enrollments");
                 });
 
-            modelBuilder.Entity("Backend.Models.Group", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Group", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -236,7 +236,7 @@ namespace Backend.Migrations
                     b.ToTable("Groups");
                 });
 
-            modelBuilder.Entity("Backend.Models.GroupMembership", b =>
+            modelBuilder.Entity("Backend.Models.Domain.GroupMembership", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -267,7 +267,7 @@ namespace Backend.Migrations
                     b.ToTable("GroupMemberships");
                 });
 
-            modelBuilder.Entity("Backend.Models.KeyCloakOutboxTask", b =>
+            modelBuilder.Entity("Backend.Models.Domain.KeycloakOutboxTask", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -278,7 +278,7 @@ namespace Backend.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("KeycoakId")
+                    b.Property<Guid>("KeycloakId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("RetryCount")
@@ -289,10 +289,10 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("KeyCloakOutboxTasks");
+                    b.ToTable("KeycloakOutboxTasks");
                 });
 
-            modelBuilder.Entity("Backend.Models.Member", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Member", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -396,7 +396,7 @@ namespace Backend.Migrations
                     b.ToTable("Members");
                 });
 
-            modelBuilder.Entity("Backend.Models.Payment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Payment", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -437,7 +437,7 @@ namespace Backend.Migrations
                     b.UseTpcMappingStrategy();
                 });
 
-            modelBuilder.Entity("Backend.Models.Role", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Role", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -455,7 +455,7 @@ namespace Backend.Migrations
                     b.ToTable("Roles");
                 });
 
-            modelBuilder.Entity("Backend.Models.RoleAlias", b =>
+            modelBuilder.Entity("Backend.Models.Domain.RoleAlias", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -478,7 +478,7 @@ namespace Backend.Migrations
                     b.ToTable("RoleAliases");
                 });
 
-            modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
+            modelBuilder.Entity("Backend.Models.Domain.SpecificationAnswer", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -514,7 +514,7 @@ namespace Backend.Migrations
                     b.ToTable("SpecificationAnswers");
                 });
 
-            modelBuilder.Entity("Backend.Models.SpecificationQuestion", b =>
+            modelBuilder.Entity("Backend.Models.Domain.SpecificationQuestion", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -554,7 +554,7 @@ namespace Backend.Migrations
                     b.ToTable("SpecificationQuestions");
                 });
 
-            modelBuilder.Entity("Backend.Models.Study", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Study", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -578,7 +578,7 @@ namespace Backend.Migrations
                     b.ToTable("Studies");
                 });
 
-            modelBuilder.Entity("Backend.Models.StudyEnrollment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.StudyEnrollment", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -610,9 +610,9 @@ namespace Backend.Migrations
                     b.ToTable("StudyEnrollments");
                 });
 
-            modelBuilder.Entity("Backend.Models.EnrollmentPayment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.EnrollmentPayment", b =>
                 {
-                    b.HasBaseType("Backend.Models.Payment");
+                    b.HasBaseType("Backend.Models.Domain.Payment");
 
                     b.Property<long?>("ActivityId")
                         .HasColumnType("bigint");
@@ -622,23 +622,23 @@ namespace Backend.Migrations
                     b.ToTable("EnrollmentPayments", (string)null);
                 });
 
-            modelBuilder.Entity("Backend.Models.MembershipPayment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.MembershipPayment", b =>
                 {
-                    b.HasBaseType("Backend.Models.Payment");
+                    b.HasBaseType("Backend.Models.Domain.Payment");
 
                     b.ToTable("MembershipPayments", (string)null);
                 });
 
-            modelBuilder.Entity("Backend.Models.MollieFeePayment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.MollieFeePayment", b =>
                 {
-                    b.HasBaseType("Backend.Models.Payment");
+                    b.HasBaseType("Backend.Models.Domain.Payment");
 
                     b.ToTable("MollieFeePayments");
                 });
 
-            modelBuilder.Entity("Backend.Models.AccountingToolOutboxTask", b =>
+            modelBuilder.Entity("Backend.Models.Domain.AccountingToolOutboxTask", b =>
                 {
-                    b.HasOne("Backend.Models.Payment", "Payment")
+                    b.HasOne("Backend.Models.Domain.Payment", "Payment")
                         .WithMany()
                         .HasForeignKey("PaymentId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -647,18 +647,18 @@ namespace Backend.Migrations
                     b.Navigation("Payment");
                 });
 
-            modelBuilder.Entity("Backend.Models.Activity", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Activity", b =>
                 {
-                    b.HasOne("Backend.Models.Group", "Organizer")
+                    b.HasOne("Backend.Models.Domain.Group", "Organizer")
                         .WithMany()
                         .HasForeignKey("OrganizerId");
 
                     b.Navigation("Organizer");
                 });
 
-            modelBuilder.Entity("Backend.Models.Announcement", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Announcement", b =>
                 {
-                    b.HasOne("Backend.Models.Member", "CreatedBy")
+                    b.HasOne("Backend.Models.Domain.Member", "CreatedBy")
                         .WithMany("Announcements")
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -667,15 +667,15 @@ namespace Backend.Migrations
                     b.Navigation("CreatedBy");
                 });
 
-            modelBuilder.Entity("Backend.Models.Enrollment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Enrollment", b =>
                 {
-                    b.HasOne("Backend.Models.Activity", "Activity")
+                    b.HasOne("Backend.Models.Domain.Activity", "Activity")
                         .WithMany("Enrollments")
                         .HasForeignKey("ActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.Member", "Member")
+                    b.HasOne("Backend.Models.Domain.Member", "Member")
                         .WithMany("Enrollments")
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -686,21 +686,21 @@ namespace Backend.Migrations
                     b.Navigation("Member");
                 });
 
-            modelBuilder.Entity("Backend.Models.GroupMembership", b =>
+            modelBuilder.Entity("Backend.Models.Domain.GroupMembership", b =>
                 {
-                    b.HasOne("Backend.Models.Group", "Group")
+                    b.HasOne("Backend.Models.Domain.Group", "Group")
                         .WithMany("GroupMemberships")
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.Member", "Member")
+                    b.HasOne("Backend.Models.Domain.Member", "Member")
                         .WithMany("GroupMemberships")
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.RoleAlias", "RoleAlias")
+                    b.HasOne("Backend.Models.Domain.RoleAlias", "RoleAlias")
                         .WithMany()
                         .HasForeignKey("RoleAliasId");
 
@@ -711,9 +711,9 @@ namespace Backend.Migrations
                     b.Navigation("RoleAlias");
                 });
 
-            modelBuilder.Entity("Backend.Models.Payment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Payment", b =>
                 {
-                    b.HasOne("Backend.Models.Member", "Member")
+                    b.HasOne("Backend.Models.Domain.Member", "Member")
                         .WithMany()
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.SetNull);
@@ -721,9 +721,9 @@ namespace Backend.Migrations
                     b.Navigation("Member");
                 });
 
-            modelBuilder.Entity("Backend.Models.RoleAlias", b =>
+            modelBuilder.Entity("Backend.Models.Domain.RoleAlias", b =>
                 {
-                    b.HasOne("Backend.Models.Role", "Role")
+                    b.HasOne("Backend.Models.Domain.Role", "Role")
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -732,21 +732,21 @@ namespace Backend.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Backend.Models.SpecificationAnswer", b =>
+            modelBuilder.Entity("Backend.Models.Domain.SpecificationAnswer", b =>
                 {
-                    b.HasOne("Backend.Models.Member", "Member")
+                    b.HasOne("Backend.Models.Domain.Member", "Member")
                         .WithMany()
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.SpecificationQuestion", "Question")
+                    b.HasOne("Backend.Models.Domain.SpecificationQuestion", "Question")
                         .WithMany("Answers")
                         .HasForeignKey("SpecificationQuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.Enrollment", "Enrollment")
+                    b.HasOne("Backend.Models.Domain.Enrollment", "Enrollment")
                         .WithMany("SpecificationAnswers")
                         .HasForeignKey("EnrollmentActivityId", "EnrollmentMemberId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -759,9 +759,9 @@ namespace Backend.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("Backend.Models.SpecificationQuestion", b =>
+            modelBuilder.Entity("Backend.Models.Domain.SpecificationQuestion", b =>
                 {
-                    b.HasOne("Backend.Models.Activity", "Activity")
+                    b.HasOne("Backend.Models.Domain.Activity", "Activity")
                         .WithMany("SpecificationQuestions")
                         .HasForeignKey("ActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -770,15 +770,15 @@ namespace Backend.Migrations
                     b.Navigation("Activity");
                 });
 
-            modelBuilder.Entity("Backend.Models.StudyEnrollment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.StudyEnrollment", b =>
                 {
-                    b.HasOne("Backend.Models.Member", "Member")
+                    b.HasOne("Backend.Models.Domain.Member", "Member")
                         .WithMany("StudyEnrollments")
                         .HasForeignKey("MemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Backend.Models.Study", "Study")
+                    b.HasOne("Backend.Models.Domain.Study", "Study")
                         .WithMany("Enrollments")
                         .HasForeignKey("StudyId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -789,9 +789,9 @@ namespace Backend.Migrations
                     b.Navigation("Study");
                 });
 
-            modelBuilder.Entity("Backend.Models.EnrollmentPayment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.EnrollmentPayment", b =>
                 {
-                    b.HasOne("Backend.Models.Activity", "Activity")
+                    b.HasOne("Backend.Models.Domain.Activity", "Activity")
                         .WithMany()
                         .HasForeignKey("ActivityId")
                         .OnDelete(DeleteBehavior.SetNull);
@@ -799,24 +799,24 @@ namespace Backend.Migrations
                     b.Navigation("Activity");
                 });
 
-            modelBuilder.Entity("Backend.Models.Activity", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Activity", b =>
                 {
                     b.Navigation("Enrollments");
 
                     b.Navigation("SpecificationQuestions");
                 });
 
-            modelBuilder.Entity("Backend.Models.Enrollment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Enrollment", b =>
                 {
                     b.Navigation("SpecificationAnswers");
                 });
 
-            modelBuilder.Entity("Backend.Models.Group", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Group", b =>
                 {
                     b.Navigation("GroupMemberships");
                 });
 
-            modelBuilder.Entity("Backend.Models.Member", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Member", b =>
                 {
                     b.Navigation("Announcements");
 
@@ -827,12 +827,12 @@ namespace Backend.Migrations
                     b.Navigation("StudyEnrollments");
                 });
 
-            modelBuilder.Entity("Backend.Models.SpecificationQuestion", b =>
+            modelBuilder.Entity("Backend.Models.Domain.SpecificationQuestion", b =>
                 {
                     b.Navigation("Answers");
                 });
 
-            modelBuilder.Entity("Backend.Models.Study", b =>
+            modelBuilder.Entity("Backend.Models.Domain.Study", b =>
                 {
                     b.Navigation("Enrollments");
                 });

@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models;
+namespace Backend.Models.Domain;
 
 /// <summary>
 /// A role alias for a member in a committee. E.g.: "Fotofeut" or "Man van Geld".

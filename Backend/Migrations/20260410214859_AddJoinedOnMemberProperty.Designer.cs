@@ -270,7 +270,7 @@ namespace Backend.Migrations
                     b.ToTable("GroupMemberships");
                 });
 
-            modelBuilder.Entity("Backend.Models.KeyCloakOutboxTask", b =>
+            modelBuilder.Entity("Backend.Models.KeycloakOutboxTask", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -281,7 +281,7 @@ namespace Backend.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("KeycoakId")
+                    b.Property<Guid>("KeycloakId")
                         .HasColumnType("uuid");
 
                     b.Property<int>("RetryCount")
@@ -292,7 +292,7 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("KeyCloakOutboxTasks");
+                    b.ToTable("KeycloakOutboxTasks");
                 });
 
             modelBuilder.Entity("Backend.Models.Member", b =>

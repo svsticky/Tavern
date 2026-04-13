@@ -1,4 +1,4 @@
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;
@@ -34,7 +34,7 @@ public class PostgresDbContext : DbContext
     /// <summary>Reference to the RoleAliases relational table. </summary>
     public DbSet<RoleAlias> RoleAliases { get; set; }
     /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
-    public DbSet<KeyCloakOutboxTask> KeyCloakOutboxTasks { get; set; }
+    public DbSet<KeycloakOutboxTask> KeycloakOutboxTasks { get; set; }
     /// <summary>Reference to the ExactOutboxTasks relational table. </summary>
     public DbSet<AccountingToolOutboxTask> AccountingToolOutboxTasks { get; set; }
     /// <summary>Reference to the Membership Payments relational table. </summary>

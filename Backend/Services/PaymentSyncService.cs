@@ -1,5 +1,5 @@
 using Backend.Database;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 
@@ -69,9 +69,9 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                         {
                             if(fullPayment.Member.KeycloakId == null) throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status.");
 
-                            db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                            db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                             {
-                                KeycoakId = fullPayment.Member.KeycloakId.Value,
+                                KeycloakId = fullPayment.Member.KeycloakId.Value,
                                 TaskType = KeycloakTaskType.Sync,
                                 CreatedAt = DateTime.UtcNow
                             });

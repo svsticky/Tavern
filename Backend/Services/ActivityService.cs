@@ -1,7 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Backend.Utils;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;

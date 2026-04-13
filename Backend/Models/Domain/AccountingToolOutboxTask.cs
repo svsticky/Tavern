@@ -1,4 +1,4 @@
-namespace Backend.Models;
+namespace Backend.Models.Domain;
 
 public enum AccountingToolTaskType { EnrollmentPayment, MembershipPayment, MollieFeePayment }
 

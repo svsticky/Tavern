@@ -1,7 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -107,9 +107,9 @@ public class GroupMembershipService : IGroupMembershipService
 
             var entry = _db.GroupMemberships.Add(membership);
 
-            _db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
             {
-                KeycoakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                KeycloakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
                 TaskType = KeycloakTaskType.Sync
             });
 
@@ -143,9 +143,9 @@ public class GroupMembershipService : IGroupMembershipService
         {
             _db.GroupMemberships.Remove(membership);
 
-            _db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
             {
-                KeycoakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                KeycloakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
                 TaskType = KeycloakTaskType.Sync
             });
 
@@ -186,9 +186,9 @@ public class GroupMembershipService : IGroupMembershipService
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            _db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
             {
-                KeycoakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                KeycloakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
                 TaskType = KeycloakTaskType.Sync
             });
 
@@ -197,9 +197,9 @@ public class GroupMembershipService : IGroupMembershipService
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    _db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                     {
-                        KeycoakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
+                        KeycloakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
                         TaskType = KeycloakTaskType.Sync
                     });
                 }
@@ -244,9 +244,9 @@ public class GroupMembershipService : IGroupMembershipService
 
             StateValidateUtils.Validate(membership);
 
-            _db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
             {
-                KeycoakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
+                KeycloakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
                 TaskType = KeycloakTaskType.Sync
             });
 
@@ -255,9 +255,9 @@ public class GroupMembershipService : IGroupMembershipService
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    _db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                     {
-                        KeycoakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
+                        KeycloakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
                         TaskType = KeycloakTaskType.Sync
                     });
                 }

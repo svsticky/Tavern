@@ -1,4 +1,4 @@
-using Backend.Models;
+using Backend.Models.Domain;
 
 namespace Backend.Utils;
 

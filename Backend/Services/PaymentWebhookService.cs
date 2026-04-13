@@ -1,6 +1,6 @@
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models.Payment.Response;
@@ -53,14 +53,14 @@ namespace Backend.Services
 
                         if (payment is MembershipPayment membershipPayment)
                         {
-                            var task = new KeyCloakOutboxTask
+                            var task = new KeycloakOutboxTask
                             {
                                 TaskType = KeycloakTaskType.Sync,
-                                KeycoakId = membershipPayment.Member?.KeycloakId 
+                                KeycloakId = membershipPayment.Member?.KeycloakId 
                                     ?? throw new Exception("Member does not have a Keycloak ID")
                             };
 
-                            db.KeyCloakOutboxTasks.Add(task);
+                            db.KeycloakOutboxTasks.Add(task);
                         }
 
                         if (_isUsingAccountingTool)

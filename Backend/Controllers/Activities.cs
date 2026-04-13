@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.JsonPatch;
-using Backend.Models;
+using Backend.Models.Domain;
 using Backend.Controllers.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Backend.Interfaces;

@@ -1,4 +1,4 @@
-using Backend.Models;
+using Backend.Models.Domain;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers.DTOs;

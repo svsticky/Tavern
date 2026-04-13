@@ -1,7 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -175,9 +175,9 @@ namespace Backend.Services
 
                 }
 
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                 {
-                    KeycoakId = member.Id,
+                    KeycloakId = member.Id,
                     TaskType = KeycloakTaskType.Create
                 });
 
@@ -232,9 +232,9 @@ namespace Backend.Services
                 patchDoc.ApplyTo(member);
                 StateValidateUtils.Validate(member);
 
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                 {
-                    KeycoakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
+                    KeycloakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
                     TaskType = KeycloakTaskType.Sync
                 });
 
@@ -274,9 +274,9 @@ namespace Backend.Services
 
                 StateValidateUtils.Validate(member);
 
-                db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                 {
-                    KeycoakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
+                    KeycloakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
                     TaskType = KeycloakTaskType.Sync
                 });
 

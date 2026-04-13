@@ -50,19 +50,19 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KeyCloakOutboxTasks",
+                name: "KeycloakOutboxTasks",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    KeycoakId = table.Column<Guid>(type: "uuid", nullable: false),
+                    KeycloakId = table.Column<Guid>(type: "uuid", nullable: false),
                     TaskType = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RetryCount = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KeyCloakOutboxTasks", x => x.Id);
+                    table.PrimaryKey("PK_KeycloakOutboxTasks", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -527,7 +527,7 @@ namespace Backend.Migrations
                 name: "GroupMemberships");
 
             migrationBuilder.DropTable(
-                name: "KeyCloakOutboxTasks");
+                name: "KeycloakOutboxTasks");
 
             migrationBuilder.DropTable(
                 name: "MembershipPayments");

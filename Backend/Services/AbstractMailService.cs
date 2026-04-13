@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
+using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;

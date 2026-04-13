@@ -1,3 +1,4 @@
+using Backend.Models.Domain;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers.DTOs;
@@ -10,7 +11,7 @@ public class PostGroupDTO
     public required string Name { get; set; }
 
     /// <inheritdoc cref="Models.Group.Type"/>
-    public required Models.GroupType Type { get; set; }
+    public required GroupType Type { get; set; }
 }
 
 public class GetGroupDTO
@@ -34,7 +35,7 @@ public class GroupResponseDTO
     public required List<GroupMembershipSummaryDTO> GroupMemberships { get; set; } = new();
 
     /// <inheritdoc cref="Models.Group.Type"/>
-    public required Models.GroupType Type { get; set; }
+    public required GroupType Type { get; set; }
 }
 
 public class GroupUpdateDTO
@@ -48,5 +49,5 @@ public class GroupUpdateDTO
     public required bool Active { get; set; }
 
     /// <inheritdoc cref="Models.Group.Type"/>
-    public required Models.GroupType Type { get; set; }
+    public required GroupType Type { get; set; }
 }

@@ -1,7 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -69,9 +69,9 @@ namespace Backend.Services
 
                 foreach (var keycloakId in affectedMembers)
                 {
-                    db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                     {
-                        KeycoakId = keycloakId ?? throw new Exception("Member with null KeycloakId found"),
+                        KeycloakId = keycloakId ?? throw new Exception("Member with null KeycloakId found"),
                         TaskType = KeycloakTaskType.Sync
                     });
                 }
@@ -112,9 +112,9 @@ namespace Backend.Services
 
                 foreach (var memberId in affectedMembers)
                 {
-                    db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                     {
-                        KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found"),
+                        KeycloakId = memberId ?? throw new Exception("Member with null KeycloakId found"),
                         TaskType = KeycloakTaskType.Sync
                     });
                 }
@@ -153,9 +153,9 @@ namespace Backend.Services
 
                 foreach (var memberId in affectedMembers)
                 {
-                    db.KeyCloakOutboxTasks.Add(new KeyCloakOutboxTask
+                    db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                     {
-                        KeycoakId = memberId ?? throw new Exception("Member with null KeycloakId found"),
+                        KeycloakId = memberId ?? throw new Exception("Member with null KeycloakId found"),
                         TaskType = KeycloakTaskType.Sync
                     });
                 }

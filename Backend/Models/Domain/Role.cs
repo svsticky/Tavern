@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Models;
+namespace Backend.Models.Domain;
 
 /// <summary>
 /// A role for a member in a committee. E.g.: "Chair" or "Treasurer".

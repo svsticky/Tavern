@@ -1,5 +1,5 @@
 using Backend.Interfaces;
-using Backend.Models;
+using Backend.Models.Domain;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;

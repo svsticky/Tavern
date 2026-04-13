@@ -1,7 +1,7 @@
 #pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor => Will be saturated by EFCore
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Models;
+namespace Backend.Models.Domain;
 
 public enum StudyStatus
 {
