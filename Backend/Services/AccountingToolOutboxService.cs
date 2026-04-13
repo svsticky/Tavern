@@ -7,11 +7,14 @@ public class AccountingToolOutboxWorker(
     IServiceProvider serviceProvider,
     ILogger<AccountingToolOutboxWorker> logger) : BackgroundService
 {
+    private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE") != null;
+
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if(!Environment.GetEnvironmentVariable("USE_EXACT_API")?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? true)
+        if(!_isUsingAccountingTool)
         {
-            logger.LogInformation("Exact outbox worker is disabled. Exiting.");
+            logger.LogInformation("Accounting tool outbox worker is disabled. Exiting.");
             return;
         }
 

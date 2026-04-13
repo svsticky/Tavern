@@ -12,7 +12,7 @@ namespace Backend.Services
         IPaymentClient paymentClient
     ) : IPaymentWebhookService
     {
-        private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("USE_EXACT_API") == "true";
+        private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE") != null;
 
         public async Task HandleWebhookAsync(string id)
         {

@@ -149,9 +149,26 @@ builder.Services.AddScoped<IFileCompressor, FileCompressor>();
 builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 
-if(Environment.GetEnvironmentVariable("USE_EXACT_API")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
+string? mailProvider = Environment.GetEnvironmentVariable("MAIL_SERVICE");
+
+switch(mailProvider)
 {
-    builder.Services.AddScoped<IAccountingToolService, ExactService>();
+    case "MAILGUN":
+        builder.Services.AddScoped<AbstractMailService, MailgunService>();
+        break;
+    default:
+        break;
+}
+
+string? accountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE");
+
+switch(accountingTool)
+{
+    case "EXACT":
+        builder.Services.AddScoped<IAccountingToolService, ExactService>();
+        break;
+    default:
+        break;
 }
 
 builder.Services.AddScoped<IActivityService, ActivityService>();
