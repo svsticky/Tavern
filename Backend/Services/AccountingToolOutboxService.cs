@@ -3,13 +3,13 @@ using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 
-public class ExactOutboxWorker(
+public class AccountingToolOutboxWorker(
     IServiceProvider serviceProvider,
-    ILogger<ExactOutboxWorker> logger) : BackgroundService
+    ILogger<AccountingToolOutboxWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if(!Environment.GetEnvironmentVariable("EnableExactOutboxWorker")?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? true)
+        if(!Environment.GetEnvironmentVariable("USE_EXACT_API")?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? true)
         {
             logger.LogInformation("Exact outbox worker is disabled. Exiting.");
             return;
@@ -22,9 +22,9 @@ public class ExactOutboxWorker(
             using (var scope = serviceProvider.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-                var exactService = scope.ServiceProvider.GetRequiredService<IExactService>();
+                var exactService = scope.ServiceProvider.GetRequiredService<IAccountingToolService>();
 
-                var task = await db.ExactOutboxTasks
+                var task = await db.AccountingToolOutboxTasks
                     .Where(t => t.CreatedAt <= DateTime.UtcNow)
                     .OrderBy(t => t.CreatedAt)
                     .FirstOrDefaultAsync(stoppingToken);
@@ -37,8 +37,8 @@ public class ExactOutboxWorker(
                     {
                         Payment? payment = task.TaskType switch
                         {
-                            ExactTaskType.EnrollmentPayment => await db.EnrollmentPayments.FindAsync(task.PaymentId, stoppingToken),
-                            ExactTaskType.MembershipPayment => await db.MembershipPayments.FindAsync(task.PaymentId, stoppingToken),
+                            AccountingToolTaskType.EnrollmentPayment => await db.EnrollmentPayments.FindAsync(task.PaymentId, stoppingToken),
+                            AccountingToolTaskType.MembershipPayment => await db.MembershipPayments.FindAsync(task.PaymentId, stoppingToken),
                             _ => throw new Exception("Unknown task type")
                         };
 
@@ -46,10 +46,10 @@ public class ExactOutboxWorker(
                         {
                             var id = await exactService.SyncPaymentAsync(payment, stoppingToken);
 
-                            payment.ExactEntryId = id;
+                            payment.AccountingToolEntryId = id;
                         }
 
-                        db.ExactOutboxTasks.Remove(task);
+                        db.AccountingToolOutboxTasks.Remove(task);
                         await db.SaveChangesAsync(stoppingToken);
                     }
                     catch (Exception ex)

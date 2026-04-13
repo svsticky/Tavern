@@ -16,7 +16,7 @@ public abstract class Payment
    
     public Member? Member { get; set; }
 
-    public Guid? ExactEntryId { get; set; }
+    public Guid? AccountingToolEntryId { get; set; }
 
     public bool ManuallyMarkedAsPaid { get; set; } = false;
 }

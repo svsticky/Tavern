@@ -36,7 +36,7 @@ public class PostgresDbContext : DbContext
     /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
     public DbSet<KeyCloakOutboxTask> KeyCloakOutboxTasks { get; set; }
     /// <summary>Reference to the ExactOutboxTasks relational table. </summary>
-    public DbSet<ExactOutboxTask> ExactOutboxTasks { get; set; }
+    public DbSet<AccountingToolOutboxTask> AccountingToolOutboxTasks { get; set; }
     /// <summary>Reference to the Membership Payments relational table. </summary>
     public DbSet<MembershipPayment> MembershipPayments { get; set; }
     /// <summary>Reference to the Activity Payments relational table. </summary>

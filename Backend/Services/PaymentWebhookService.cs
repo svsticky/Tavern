@@ -12,7 +12,7 @@ namespace Backend.Services
         IPaymentClient paymentClient
     ) : IPaymentWebhookService
     {
-        private readonly bool _isUsingExact = Environment.GetEnvironmentVariable("USE_EXACT_API") == "true";
+        private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("USE_EXACT_API") == "true";
 
         public async Task HandleWebhookAsync(string id)
         {
@@ -57,12 +57,12 @@ namespace Backend.Services
                             db.KeyCloakOutboxTasks.Add(task);
                         }
 
-                        if (_isUsingExact)
+                        if (_isUsingAccountingTool)
                         {
-                            db.ExactOutboxTasks.Add(new ExactOutboxTask
+                            db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                             {
                                 PaymentId = payment.Id,
-                                TaskType = payment is MembershipPayment ? ExactTaskType.MembershipPayment : ExactTaskType.EnrollmentPayment
+                                TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : AccountingToolTaskType.EnrollmentPayment
                             });
                         }
                         

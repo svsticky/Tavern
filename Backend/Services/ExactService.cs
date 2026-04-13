@@ -6,7 +6,7 @@ using System.Text.Json;
 
 namespace Backend.Services
 {
-    public class ExactService : IExactService
+    public class ExactService : IAccountingToolService
     {
         private readonly HttpClient _http;
 

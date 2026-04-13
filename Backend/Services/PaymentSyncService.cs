@@ -69,10 +69,10 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                         }
                         payment.PaidAt = mollieStatus.PaidAt;
 
-                        db.ExactOutboxTasks.Add(new ExactOutboxTask
+                        db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                         {
                             PaymentId = payment.Id,
-                            TaskType = payment is MembershipPayment ? ExactTaskType.MembershipPayment : ExactTaskType.EnrollmentPayment
+                            TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : AccountingToolTaskType.EnrollmentPayment
                         });
 
                         await db.SaveChangesAsync();

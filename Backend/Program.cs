@@ -127,7 +127,7 @@ builder.Services.AddHostedService<GroupInitializer>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddHostedService<KeycloakOutboxWorker>();
-builder.Services.AddHostedService<ExactOutboxWorker>();
+builder.Services.AddHostedService<AccountingToolOutboxWorker>();
 
 var awsOptions = builder.Configuration.GetAWSOptions();
 
@@ -148,7 +148,11 @@ builder.Services.AddScoped<IStorageService, S3StorageService>();
 builder.Services.AddScoped<IFileCompressor, FileCompressor>();
 builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<IExactService, ExactService>();
+
+if(Environment.GetEnvironmentVariable("USE_EXACT_API")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
+{
+    builder.Services.AddScoped<IAccountingToolService, ExactService>();
+}
 
 builder.Services.AddScoped<IActivityService, ActivityService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
