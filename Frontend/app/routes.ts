@@ -20,6 +20,7 @@ export default [
         route("announcements/create", "routes/edit-announcement.tsx", { id: "create-announcement" }),
         route("announcements/edit/:id", "routes/edit-announcement.tsx", { id: "edit-announcement" }),
 
+        route("admin", "routes/admin/index.tsx"),
         route("admin/finances", "routes/admin/finances.tsx"),
         route("admin/activities", "routes/admin/activities.tsx"),
         route("admin/members", "routes/admin/members.tsx"),

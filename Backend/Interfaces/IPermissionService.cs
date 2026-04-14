@@ -3,9 +3,7 @@ using Backend.Models.Domain;
 namespace Backend.Interfaces;
 
 public interface IPermissionService
-{
-    uint GetCurrentFinancialYear();
-    
+{    
     bool IsInGroupInCurrentYear(Guid memberId, uint groupId);
     bool IsInGroupInCurrentYear(Member member, uint groupId);
     bool IsInGroup(Guid memberId, uint groupId, uint year);

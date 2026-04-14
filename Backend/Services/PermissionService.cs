@@ -1,33 +1,19 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Utils;
 using System.Runtime.InteropServices;
 
 namespace Backend.Services;
 
 public class PermissionService(PostgresDbContext db) : IPermissionService
 {
-    public uint GetCurrentFinancialYear()
-    {
-        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
-            ? "W. Europe Standard Time" 
-            : "Europe/Amsterdam";
-        
-        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
-
-        // Boekjaar loopt van augustus tot augustus
-        return nowInNetherlands.Month >= 8 
-            ? (uint)nowInNetherlands.Year + 1 
-            : (uint)nowInNetherlands.Year;
-    }
-
     #region Group Checks
     public bool IsInGroupInCurrentYear(Guid memberId, uint groupId) 
-        => IsInGroup(memberId, groupId, GetCurrentFinancialYear());
+        => IsInGroup(memberId, groupId, YearUtils.GetCurrentFinancialYear());
 
     public bool IsInGroupInCurrentYear(Member member, uint groupId) 
-        => IsInGroup(member, groupId, GetCurrentFinancialYear());
+        => IsInGroup(member, groupId, YearUtils.GetCurrentFinancialYear());
 
     public bool IsInGroup(Guid memberId, uint groupId, uint year)
     {
@@ -47,10 +33,10 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
 
     #region Role Checks
     public bool IsInRoleInCurrentYear(Guid memberId, uint roleId, uint? groupId = null)
-        => IsInRole(memberId, roleId, GetCurrentFinancialYear(), groupId);
+        => IsInRole(memberId, roleId, YearUtils.GetCurrentFinancialYear(), groupId);
 
     public bool IsInRoleInCurrentYear(Member member, uint roleId, uint? groupId = null)
-        => IsInRole(member, roleId, GetCurrentFinancialYear(), groupId);
+        => IsInRole(member, roleId, YearUtils.GetCurrentFinancialYear(), groupId);
 
     public bool IsInRole(Guid memberId, uint roleId, uint year, uint? groupId = null)
     {

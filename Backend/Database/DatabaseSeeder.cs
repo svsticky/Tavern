@@ -1,4 +1,5 @@
 using Backend.Models.Domain;
+using Backend.Utils;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;
@@ -22,6 +23,8 @@ public class GroupInitializer(IServiceScopeFactory scopeFactory) : IHostedServic
         await EnsureSettingExists(db, "MembershipGLAccount", "8000");
 
         await EnsureSettingExists(db, "MollieApiKey", string.Empty);
+
+        await EnsureBoardAccountExists(db);
     }
 
     private static async Task<string> EnsureSettingExists(PostgresDbContext db, string name, string defaultValue)
@@ -63,6 +66,57 @@ public class GroupInitializer(IServiceScopeFactory scopeFactory) : IHostedServic
 
             await db.SaveChangesAsync();
         }
+    }
+
+    private static async Task EnsureBoardAccountExists(PostgresDbContext db)
+    {
+        uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
+
+        string backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL") ?? throw new Exception("BACKUP_ACCOUNT_EMAIL environment variable is not set");
+
+        if(string.IsNullOrEmpty(backupEmail))
+        {
+            return;
+        }
+
+        var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == YearUtils.GetCurrentFinancialYear());
+            if (!hasBoardMembers)
+            {
+                var backupMember = new Member
+                {
+                    Id = Guid.NewGuid(),
+                    PhoneNumber = "0600000000",
+                    Street = "Street",
+                    HouseNumber = "1",
+                    PostalCode = "1234AB",
+                    City = "City",
+                    FirstName = "Backup",
+                    LastName = "Account",
+                    Email = backupEmail
+                };
+
+                db.Members.Add(backupMember);
+                await db.SaveChangesAsync();
+
+                db.GroupMemberships.Add(new GroupMembership
+                {
+                    GroupId = boardGroupId,
+                    MemberId = backupMember.Id,
+                    RoleAliasId = null
+                });
+
+                await db.SaveChangesAsync();
+            }
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+        await transaction.CommitAsync();
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
