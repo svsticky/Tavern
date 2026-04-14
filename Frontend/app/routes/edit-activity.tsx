@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { 
   getApiActivitiesById,
   type ActivityResponseDto,
@@ -15,6 +15,7 @@ import EditParticipantsTile from "./edit-participants-tile";
 export default function ActivityFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
+  const { pathname } = useLocation();
 
   const { keycloak } = useKeycloak();
   const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
@@ -53,7 +54,7 @@ export default function ActivityFormPage() {
     <div className="">
       <PageHeader 
         title={isEdit ? t("edit_activity") : t("create_activity")} 
-        backTo={isEdit ? `/activities/${id}` : "/activities"} 
+        backTo={`${pathname.startsWith("/admin") ? '/admin' : ''}${isEdit ? `/activities/${id}` : "/activities"}`} 
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

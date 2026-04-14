@@ -22,6 +22,7 @@ const formatDateOnly = (isoString?: string) => isoString ? isoString.substring(0
 
 export default function EditActivityForm({ activity, id, isBoard }: { activity: ActivityResponseDto | null; id: string | undefined; isBoard: boolean }) {
     const navigate = useNavigate();
+    const { pathname } = window.location;
 
     const isEdit = !!id;
 
@@ -131,7 +132,10 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
             console.log("Creating activity with payload:", payload);
             await postApiActivities(payload);
             }
-            navigate("/activities");
+            
+            const redirectPath = `${pathname.startsWith("/admin") ? '/admin' : ''}/activities`;
+
+            navigate(redirectPath);
         } catch (error) {
             console.error(error);
             throw error;

@@ -95,7 +95,7 @@ export default function Activities() {
           className="w-full sm:w-auto" 
           onClick={(e) => {
             e.stopPropagation();
-            navigate(`/activities/${act.id}`);
+            navigate(`/admin/activities/${act.id}`);
           }}
         >
           {t("view_activity")}

@@ -20,10 +20,6 @@ export const PageHeader = ({
       onBack();
       return;
     }
-
-    if (window.history.length > 1) {
-      navigate(-1);
-    } 
     else if (backTo) {
       navigate(backTo);
     }

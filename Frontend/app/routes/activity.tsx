@@ -15,6 +15,7 @@ import toast from "react-hot-toast";
 export default function ActivityPage({ params }: Route.LoaderArgs) {
   const { keycloak, initialized } = useKeycloak();
   const navigate = useNavigate();
+  const { pathname } = window.location;
 
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
@@ -54,10 +55,10 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
     <div className="flex flex-col w-full">
       <PageHeader 
         title={activity.name} 
-        backTo="/activities"
+        backTo={`${pathname.startsWith("/admin") ? '/admin' : ''}/activities`}
         action={canEdit && activity && (
           <Button 
-            onClick={() => navigate(`/activities/edit/${activity.id}`)}
+            onClick={() => navigate(`${pathname.startsWith("/admin") ? '/admin' : ''}/activities/edit/${activity.id}`)}
             variant="secondary"
             className="flex items-center px-2"
           >

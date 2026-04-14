@@ -72,7 +72,7 @@ public class GroupInitializer(IServiceScopeFactory scopeFactory) : IHostedServic
     {
         uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
 
-        string backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL") ?? throw new Exception("BACKUP_ACCOUNT_EMAIL environment variable is not set");
+        string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
 
         if(string.IsNullOrEmpty(backupEmail))
         {
