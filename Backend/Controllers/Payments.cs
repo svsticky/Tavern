@@ -109,7 +109,7 @@ namespace Backend.Controllers
                 return BadRequest("UserId claim is missing");
             }
 
-            bool isBoard = _permissionService.IsBoardMember(Guid.Parse(userId));
+            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(Guid.Parse(userId));
 
             if(allUsers && !isBoard)
             {

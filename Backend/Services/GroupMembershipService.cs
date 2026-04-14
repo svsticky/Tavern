@@ -21,7 +21,7 @@ public class GroupMembershipService : IGroupMembershipService
     public async Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(Guid userId, bool onlyOwnMemberships, CancellationToken cancellationToken)
     {
         if (!onlyOwnMemberships &&
-            !_permissionService.IsBoardMember(userId))
+            !_permissionService.IsBoardOrCandidateBoardMember(userId))
         {
             throw new UnauthorizedAccessException("Only board members can view group memberships.");
         }
@@ -64,7 +64,7 @@ public class GroupMembershipService : IGroupMembershipService
         if (result == null)
             return null;
 
-        if (!_permissionService.IsBoardMember(userId)
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId)
             && result.MemberId != userId)
         {
             throw new UnauthorizedAccessException("Only board members can view group memberships.");
@@ -75,7 +75,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task<GroupMembership> CreateGroupMembership(PostGroupMembershipDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardMember(userId))
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
             throw new UnauthorizedAccessException();
 
         var member = await _db.Members.FindAsync(dto.MemberId, cancellationToken)
@@ -127,7 +127,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task DeleteGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardMember(userId))
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can delete group memberships.");
 
         var membership = await _db.GroupMemberships
@@ -161,7 +161,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task PatchGroupMembership(uint id, Guid userId, JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardMember(userId))
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can update group memberships.");
 
         if (patchDoc == null)
@@ -217,7 +217,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task UpdateGroupMembership(uint id, Guid userId, GroupMembershipUpdateDTO dto, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardMember(userId))
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
             throw new UnauthorizedAccessException("Only board members can update group memberships.");
 
         var membership = await _db.GroupMemberships

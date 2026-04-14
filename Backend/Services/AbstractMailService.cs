@@ -4,6 +4,7 @@ using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections;
+using System.Text.RegularExpressions;
 
 namespace Backend.Interfaces;
 
@@ -84,5 +85,14 @@ public abstract class AbstractMailService
             }
         }
         return resultRecipients;
+    }
+
+    protected string StripHtml(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+        text = Regex.Replace(text, @"<(?:br\/?|\/p)>", "\r\n", RegexOptions.IgnoreCase);
+        text = Regex.Replace(text, @"<[^>]*>", string.Empty);
+        text = Regex.Replace(text, @" +", " ");
+        return Regex.Replace(text, @"[\r\n]{2,}", "\r\n").Trim();
     }
 }

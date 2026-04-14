@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;
 
-public class GroupInitializer(IServiceScopeFactory scopeFactory) : IHostedService
+public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -14,15 +14,19 @@ public class GroupInitializer(IServiceScopeFactory scopeFactory) : IHostedServic
 
         string boardGroupId = await EnsureSettingExists(db, "BoardGroupId", "1");
         
-        await EnsureGroupExists(db, "BoardGroupId", GroupType.Committee, uint.Parse(boardGroupId));
+        string candidateBoardGroupId = await EnsureSettingExists(db, "CandidateBoardGroupId", "2");
+        
+        await EnsureGroupExists(db, "Board", GroupType.Committee, uint.Parse(boardGroupId));
+        
+        await EnsureGroupExists(db, "Candidate Board", GroupType.Committee, uint.Parse(candidateBoardGroupId));
 
         await EnsureSettingExists(db, "MollieFee", "0.39");
 
         await EnsureSettingExists(db, "MollieFeeGlAccount", "5007");
 
-        await EnsureSettingExists(db, "MembershipGLAccount", "8000");
+        await EnsureSettingExists(db, "MollieFeeCostUnit", "TRX");
 
-        await EnsureSettingExists(db, "MollieApiKey", string.Empty);
+        await EnsureSettingExists(db, "MembershipGLAccount", "8000");
 
         await EnsureBoardAccountExists(db);
     }

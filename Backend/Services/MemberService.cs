@@ -16,7 +16,7 @@ namespace Backend.Services
     {
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
-            if (!permissionService.IsBoardMember(userId))
+            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
                 throw new UnauthorizedAccessException("Only board members can view members.");
 
             var query = db.Members.AsQueryable();

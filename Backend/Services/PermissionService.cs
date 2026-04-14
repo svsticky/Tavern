@@ -73,7 +73,21 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
 
     public void EnsureBoardMember(Guid userId)
     {
-        if (!IsBoardMember(userId))
+        if (!IsBoardMember(userId)!)
+        {
+            throw new UnauthorizedAccessException("Only board members can perform this action.");
+        }
+    }
+
+    public bool IsBoardOrCandidateBoardMember(Guid memberId)
+    {
+        return IsInGroupInCurrentYear(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0")) || 
+               IsInGroupInCurrentYear(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "0"));
+    }
+
+    public void EnsureBoardOrCandidateBoardMember(Guid userId)
+    {
+        if (!IsBoardOrCandidateBoardMember(userId)!)
         {
             throw new UnauthorizedAccessException("Only board members can perform this action.");
         }

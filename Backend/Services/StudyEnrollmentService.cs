@@ -50,7 +50,7 @@ namespace Backend.Services
             if (result == null)
                 return null;
 
-            if (!permissionService.IsBoardMember(userId) && result.MemberId != userId)
+            if (!permissionService.IsBoardOrCandidateBoardMember(userId) && result.MemberId != userId)
                 throw new UnauthorizedAccessException("Only board members can view study enrollments of others.");
 
             return result;
@@ -120,7 +120,7 @@ namespace Backend.Services
 
         private void EnsureBoardMember(Guid userId)
         {
-            if (!permissionService.IsBoardMember(userId))
+            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
             {
                 throw new UnauthorizedAccessException("Only board members can perform this action.");
             }

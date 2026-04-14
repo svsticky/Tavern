@@ -123,7 +123,7 @@ builder.Services.AddCors(options =>
                  .AllowCredentials());
 });
 
-builder.Services.AddHostedService<GroupInitializer>();
+builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddHostedService<KeycloakOutboxWorker>();
@@ -155,6 +155,9 @@ switch(mailProvider)
 {
     case "MAILGUN":
         builder.Services.AddScoped<AbstractMailService, MailgunService>();
+        break;
+    case "SMTP":
+        builder.Services.AddScoped<AbstractMailService, SMTPMailService>();
         break;
     default:
         break;

@@ -87,5 +87,13 @@ public class PostgresDbContext : DbContext
                 .HasForeignKey(p => p.ActivityId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
+
+        modelBuilder.Entity<Enrollment>(entity =>
+        {
+            entity.HasOne(e => e.Member)
+                .WithMany(m => m.Enrollments)
+                .HasForeignKey(e => e.MemberId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
     }
 }

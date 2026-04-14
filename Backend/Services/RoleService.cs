@@ -86,7 +86,7 @@ namespace Backend.Services
 
         private void EnsureBoardMember(Guid userId)
         {
-            if (!permissionService.IsBoardMember(userId))
+            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
             {
                 throw new UnauthorizedAccessException("Only board members can perform this action.");
             }
