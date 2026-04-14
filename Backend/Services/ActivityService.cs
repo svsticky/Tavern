@@ -219,6 +219,11 @@ public class ActivityService : IActivityService
                 ? new List<SpecificationQuestionDTO>()
                 : JsonConvert.DeserializeObject<List<SpecificationQuestionDTO>>(dto.SpecificationQuestionsJson);
 
+        var organizerMembers = await _db.GroupMemberships
+            .Where(gm => gm.GroupId == dto.OrganizerId)
+            .Select(gm => gm.Member)
+            .ToListAsync();
+
         if (questions == null)
             throw new ArgumentException("Invalid specification questions format.");
 
@@ -267,6 +272,19 @@ public class ActivityService : IActivityService
             }
 
             StateValidateUtils.Validate(activity);
+
+            foreach(var member in organizerMembers)
+            {
+                _db.Enrollments.Add(new Enrollment
+                {
+                    ActivityId = activity.Id,
+                    Activity = activity,
+                    Member = member,
+                    Price = activity.Price,
+                    IsOnWaitingList = false,
+                    RegisteredOn = DateTime.UtcNow
+                });
+            }
 
             _db.Activities.Add(activity);
             await _db.SaveChangesAsync();
