@@ -19,16 +19,15 @@ public abstract class AbstractMailService
     {
         _db = db;
         _roleMailMap = new Dictionary<uint, string>();
-        IDictionary allVars = Environment.GetEnvironmentVariables();
+        
+        var settings = _db.Settings.ToList();
 
-        foreach (DictionaryEntry de in allVars)
+        foreach (Setting setting in settings)
         {
-            string key = de.Key.ToString()!;
-            
-            if (key.StartsWith("ROLEMAILMAP_"))
+            if (setting.Name.StartsWith("ROLEMAILMAP_"))
             {
-                string roleId = key.Replace("ROLEMAILMAP_", "");
-                string email = de.Value?.ToString() ?? "";
+                string roleId = setting.Name.Replace("ROLEMAILMAP_", "");
+                string email = setting.Value;
                 
                 _roleMailMap.Add(uint.Parse(roleId), email);
             }
