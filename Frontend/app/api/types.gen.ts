@@ -193,6 +193,11 @@ export type GroupUpdateDto = {
 
 export type Language = 'NL' | 'EN';
 
+export type MailRecipient = {
+    mail?: string;
+    name?: string;
+};
+
 export type MailSubscriptions = 'None' | 'GeneralMemberMeetings' | 'CompanyMails' | 'MondayMorningMails' | 'LecturesAndWorkshops' | 'TeacherMails' | 'All';
 
 export type Member = {
@@ -299,6 +304,13 @@ export type Operation = {
 
 export type OperationType = 'Add' | 'Remove' | 'Replace' | 'Move' | 'Copy' | 'Test' | 'Invalid';
 
+export type PostActivityMailDto = {
+    subject: string;
+    htmlContent: string;
+    activityId: number;
+    includeWaitingList?: boolean;
+};
+
 export type PostActivityPaymentDto = {
     memberId?: string;
     activityIds?: Array<number>;
@@ -326,6 +338,12 @@ export type PostGroupMembershipDto = {
     groupId: number;
     membershipYear: number;
     roleAliasId?: number | null;
+};
+
+export type PostMailDto = {
+    subject: string;
+    htmlContent: string;
+    recipients: Array<MailRecipient>;
 };
 
 export type PostMemberDto = {
@@ -1079,6 +1097,34 @@ export type PutApiGroupsByIdData = {
 };
 
 export type PutApiGroupsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiMailsNormalData = {
+    body?: PostMailDto;
+    path?: never;
+    query?: never;
+    url: '/api/mails/normal';
+};
+
+export type PostApiMailsNormalResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiMailsActivityData = {
+    body?: PostActivityMailDto;
+    path?: never;
+    query?: never;
+    url: '/api/mails/activity';
+};
+
+export type PostApiMailsActivityResponses = {
     /**
      * OK
      */

@@ -22,36 +22,17 @@ public class MailsController : ControllerBase
         return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
     }
     
-    [HttpPost]
-    public async Task<ActionResult> PostMail(AbstractPostMailDTO dto, CancellationToken ct)
+    [HttpPost("normal")]
+    public async Task<ActionResult> PostNormalMail(PostMailDTO dto, CancellationToken ct)
     {
-        try
-        {
-            Guid userId = GetUserId();
+        await _service.SendEmailAsync(dto, GetUserId(), ct);
+        return Ok();
+    }
 
-            switch (dto)
-            {
-                case PostMailDTO normalMail:
-                    await _service.SendEmailAsync(normalMail, userId, ct);
-                    break;
-
-                case PostActivityMailDTO activityMail:
-                    await _service.SendEmailAsync(activityMail, userId, ct);
-                    break;
-
-                default:
-                    return BadRequest("Unknown mail type.");
-            }
-
-            return Ok();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(ex.Message);
-        }
+    [HttpPost("activity")]
+    public async Task<ActionResult> PostActivityMail(PostActivityMailDTO dto, CancellationToken ct)
+    {
+        await _service.SendEmailAsync(dto, GetUserId(), ct);
+        return Ok();
     }
 }

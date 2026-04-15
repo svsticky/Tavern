@@ -54,7 +54,7 @@ public abstract class AbstractMailService
 
     public async Task SendEmailAsync(PostActivityMailDTO dto, Guid userId, CancellationToken ct)
     {
-        MailRecipient[] recipients = await GetRecipientsFromActivity(dto.ActivityId, ct);
+        MailRecipient[] recipients = await GetRecipientsFromActivity(dto.ActivityId, dto.IncludeWaitingList, ct);
 
         await SendEmailAsync(new PostMailDTO
         {
@@ -88,11 +88,11 @@ public abstract class AbstractMailService
         return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
     }
 
-    protected async Task<MailRecipient[]> GetRecipientsFromActivity(uint activityId, CancellationToken ct)
+    protected async Task<MailRecipient[]> GetRecipientsFromActivity(uint activityId, bool includeWaitingList, CancellationToken ct)
     {
         MailRecipient[] resultRecipients = Array.Empty<MailRecipient>();
 
-        Activity? activity = await _db.Activities.Include(a => a.Enrollments).ThenInclude(e => e.Member).FirstOrDefaultAsync(a => a.Id == activityId, ct);
+        Activity? activity = await _db.Activities.Where(a => a.Id == activityId).Include(a => a.Enrollments.Where(e => includeWaitingList || !e.IsOnWaitingList)).ThenInclude(e => e.Member).FirstOrDefaultAsync(ct);
         if(activity == null)
         {
             throw new InvalidOperationException("Activity not found");

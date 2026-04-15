@@ -17,4 +17,5 @@ public class PostMailDTO : AbstractPostMailDTO
 public class PostActivityMailDTO : AbstractPostMailDTO
 {
     public required uint ActivityId { get; set; }
+    public bool IncludeWaitingList { get; set; }
 }

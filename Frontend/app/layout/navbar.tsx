@@ -53,7 +53,7 @@ export default function NavBarLayout() {
       };  
     }, [initialized, keycloak.authenticated]);
 
-  const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
+  const isBoard = isInGroupWithId(keycloak.tokenParsed, 1);
 
   const profileOptions = {
     username: keycloak.tokenParsed?.name || "",

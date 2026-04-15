@@ -46,7 +46,7 @@ export default function AnnouncementsPage() {
     <>
       <div className="flex justify-between items-center">
         <PageHeader title={t("announcements")}
-          action={isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) && (
+          action={isInGroupWithId(keycloak.tokenParsed, 1) && (
           <Button 
             onClick={() => (navigate("/announcements/create"))}
             className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"

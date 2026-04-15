@@ -11,6 +11,7 @@ import EditActivityForm from "~/components/EditActivityForm";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { isInGroupWithId } from "~/util/group.util";
 import EditParticipantsTile from "./edit-participants-tile";
+import SendActivityMailComponent from "~/components/SendActivityMailComponent";
 
 export default function ActivityFormPage() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ export default function ActivityFormPage() {
   const { pathname } = useLocation();
 
   const { keycloak } = useKeycloak();
-  const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
+  const isBoard = isInGroupWithId(keycloak.tokenParsed, 1);
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -61,7 +62,10 @@ export default function ActivityFormPage() {
         <EditActivityForm activity={activity} id={id} isBoard={isBoard} /> 
 
         {isBoard && isEdit && activity && 
-          <EditParticipantsTile activity={activity} />
+          <div className="flex flex-col gap-4">
+            <SendActivityMailComponent activityId={activity.id} />
+            <EditParticipantsTile activity={activity} />
+          </div>
         }
       </div>
     </div>

@@ -21,7 +21,7 @@ export default function AnnouncementTile({
   const { keycloak } = useKeycloak();
   const navigate = useNavigate();
 
-  const isBoard = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID);
+  const isBoard = isInGroupWithId(keycloak.tokenParsed, 1);
 
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>

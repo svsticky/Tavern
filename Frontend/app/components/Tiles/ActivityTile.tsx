@@ -24,7 +24,7 @@ export default function ActivityTile({
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
-  const canEdit = isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && isInGroupWithId(keycloak.tokenParsed, activity.organizerId) && new Date(activity.dateTimeStart) > new Date(Date.now()));
+  const canEdit = isInGroupWithId(keycloak.tokenParsed, 1) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && isInGroupWithId(keycloak.tokenParsed, activity.organizerId) && new Date(activity.dateTimeStart) > new Date(Date.now()));
   const posterUrl = `${import.meta.env.ApiUrl}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 

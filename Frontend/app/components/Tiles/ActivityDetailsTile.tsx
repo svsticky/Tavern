@@ -285,7 +285,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-slate-900">{t("description")}</h3>
 
-            {isInGroupWithId(keycloak.tokenParsed, import.meta.env.BOARD_GROUP_ID) && (
+            {isInGroupWithId(keycloak.tokenParsed, 1) && (
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
