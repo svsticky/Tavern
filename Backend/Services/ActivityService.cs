@@ -2,10 +2,12 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Projections;
 using Backend.Utils;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
+using Backend.QueryExtensions;
 
 namespace Backend.Services;
 
@@ -37,162 +39,26 @@ public class ActivityService : IActivityService
         if (dto.IncludePast && !isBoard)
             throw new UnauthorizedAccessException();
 
-        IQueryable<ActivityResponseDTO> query = _db.Activities
-            .Include(a => a.SpecificationQuestions)
-            .Select(a => new ActivityResponseDTO
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Price = a.Price,
-                PosterPath = a.PosterPath,
-                PosterFileName = a.PosterFileName,
-                DutchDescription = a.DutchDescription,
-                EnglishDescription = a.EnglishDescription,
-                DateTimeStart = a.DateTimeStart,
-                DateTimeEnd = a.DateTimeEnd,
-                UnenrollmentDeadline = a.UnenrollmentDeadline,
-                EnrollmentDeadline = a.EnrollmentDeadline,
-                Location = a.Location,
-                ParticipantLimit = a.ParticipantLimit,
-                OrganizerId = a.OrganizerId,
-                ShowInKoala = a.ShowInKoala,
-                ShowOnWebsite = a.ShowOnWebsite,
-                IsEnrollable = a.IsEnrollable,
-                AreParticipantsVisible = a.AreParticipantsVisible,
-                IsAdultOnly = a.IsAdultOnly,
-                AllowedAudience = a.AllowedAudience,
-                VatRate = a.VatRate,
-                GLAccountId = a.GLAccountId,
-                CostCenterId = a.CostCenterId,
-                CostUnitId = a.CostUnitId,
-                Enrollments = a.Enrollments.Select(e => new EnrollmentSummaryDTO
-                {
-                    IsOnWaitingList = e.IsOnWaitingList,
-                    Member = new MemberSummaryDTO
-                    {
-                        Id = e.MemberId == userId ? e.MemberId : null,
-                        FirstName = a.AreParticipantsVisible || _permissionService.IsBoardOrCandidateBoardMember(userId) ? e.Member.FirstName : null,
-                        LastName = a.AreParticipantsVisible || _permissionService.IsBoardOrCandidateBoardMember(userId) ? e.Member.LastName : null,
-                        ProfilePicturePath = a.AreParticipantsVisible || _permissionService.IsBoardOrCandidateBoardMember(userId) ? e.Member.ProfilePicturePath : null
-                    },
-                    SpecificationAnswers = e.SpecificationAnswers.Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic).Select(sa => new SpecificationAnswerResponseDTO
-                    {
-                        QuestionId = sa.SpecificationQuestionId,
-                        AnswerId = sa.Id,
-                        Answer = sa.Answer
-                    }).ToList(),
-                    Price = isBoard ? e.Price : null
-                }).ToList(),
-                SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
-                {
-                    Id = q.Id,
-                    QuestionDutch = q.QuestionDutch,
-                    QuestionEnglish = q.QuestionEnglish,
-                    Type = q.Type,
-                    IsMandatory = q.IsMandatory,
-                    IsPublic = q.IsPublic,
-                    Options = q.Options != null
-                        ? q.Options.Split(new[] { ';' }, StringSplitOptions.None).ToList()
-                        : null
-                }).ToList(),
-                PaymentDeadline = isBoard ? a.PaymentDeadline : default,
-                IsOpenForPayment = a.IsOpenForPayment
-            });
+        var query = _db.Activities
+            .AsNoTracking()
+            .Select(ActivityProjections.ToDto(userId, isBoard))
+            .Filter(dto);
 
-        if (!dto.IncludePast)
-        {
-            DateTime now = DateTime.UtcNow;
-            query = query.Where(a => a.DateTimeEnd > now && a.ShowInKoala);
-        }
-
-        if(!dto.IncludeFuture)
-        {
-            DateTime now = DateTime.UtcNow;
-            query = query.Where(a => a.DateTimeStart < now && a.ShowInKoala);
-        }
-
-        if (dto.Year.HasValue)
-        {
-            query = query.Where(a => a.DateTimeStart.Year == dto.Year.Value);
-        }
-
-        if(dto.OpenForPayment.HasValue)
-        {
-            DateTime now = DateTime.UtcNow;
-            query = query.Where(a => a.IsOpenForPayment == dto.OpenForPayment.Value);
-        }
-
-        return await query.OrderBy(a => a.DateTimeStart).ToListAsync();
+        return await query
+            .OrderBy(a => a.DateTimeStart)
+            .ToListAsync();
     }
 
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
-        var activity = await _db.Activities.Select(a => new ActivityResponseDTO
-        {
-            Id = a.Id,
-            Name = a.Name,
-            Price = a.Price,
-            PosterPath = a.PosterPath,
-            PosterFileName = a.PosterFileName,
-            DutchDescription = a.DutchDescription,
-            EnglishDescription = a.EnglishDescription,
-            DateTimeStart = a.DateTimeStart,
-            DateTimeEnd = a.DateTimeEnd,
-            UnenrollmentDeadline = a.UnenrollmentDeadline,
-            EnrollmentDeadline = a.EnrollmentDeadline,
-            Location = a.Location,
-            ParticipantLimit = a.ParticipantLimit,
-            OrganizerId = a.OrganizerId,
-            ShowInKoala = a.ShowInKoala,
-            ShowOnWebsite = a.ShowOnWebsite,
-            IsEnrollable = a.IsEnrollable,
-            AreParticipantsVisible = a.AreParticipantsVisible,
-            IsAdultOnly = a.IsAdultOnly,
-            AllowedAudience = a.AllowedAudience,
-            VatRate = a.VatRate,
-            GLAccountId = a.GLAccountId,
-            CostCenterId = a.CostCenterId,
-            CostUnitId = a.CostUnitId,
-            Enrollments = a.Enrollments.Select(e => new EnrollmentSummaryDTO
-            {
-                IsOnWaitingList = e.IsOnWaitingList,
-                Member = new MemberSummaryDTO
-                {
-                    Id = e.MemberId == userId ? e.MemberId : null,
-                    FirstName = a.AreParticipantsVisible || isBoard ? e.Member.FirstName : null,
-                    LastName = a.AreParticipantsVisible || isBoard ? e.Member.LastName : null,
-                    ProfilePicturePath = a.AreParticipantsVisible || isBoard ? e.Member.ProfilePicturePath : null
-                },
-                SpecificationAnswers = e.SpecificationAnswers.Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic).Select(sa => new SpecificationAnswerResponseDTO
-                {
-                    QuestionId = sa.SpecificationQuestionId,
-                    AnswerId = sa.Id,
-                    Answer = sa.Answer
-                }).ToList(),
-                Price = isBoard ? e.Price : null
-            }).ToList(),
-            SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
-            {
-                Id = q.Id,
-                QuestionDutch = q.QuestionDutch,
-                QuestionEnglish = q.QuestionEnglish,
-                Type = q.Type,
-                IsMandatory = q.IsMandatory,
-                IsPublic = q.IsPublic,
-                Options = q.Options != null
-                    ? q.Options.Split(new[] { ';' }, StringSplitOptions.None).ToList()
-                    : null
-            }).ToList(),
-            PaymentDeadline = isBoard ? a.PaymentDeadline : default,
-            IsOpenForPayment = a.IsOpenForPayment
-        }).FirstOrDefaultAsync(a => a.Id == id);
+        var activity = await _db.Activities.Select(ActivityProjections.ToDto(userId, isBoard)).FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)
             return null;
 
-        if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && isBoard)
+        if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !isBoard)
             throw new UnauthorizedAccessException();
 
         return activity;
@@ -203,9 +69,8 @@ public class ActivityService : IActivityService
         if (dto.DateTimeEnd < dto.DateTimeStart)
             throw new ArgumentException("Activity cannot end before it starts.");
 
-        if ((dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null) &&
-            !_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+        if (dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         if (dto.ParticipantLimit < 0)
             throw new ArgumentException("Participant limit cannot be negative.");
@@ -301,8 +166,7 @@ public class ActivityService : IActivityService
 
     public async Task DeleteActivity(Guid userId, uint id)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var activity = await _db.Activities.FindAsync(id);
         if (activity == null)
@@ -324,11 +188,10 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        if ((activity.ShowInKoala 
+        if (activity.ShowInKoala 
                 || activity.ShowOnWebsite 
-                || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase))) &&
-                !_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+                || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
 
         using var transaction = await _db.Database.BeginTransactionAsync(ct);
@@ -371,9 +234,10 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        if ((activity.ShowInKoala || activity.ShowOnWebsite) &&
-            !_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+        if (activity.ShowInKoala || activity.ShowOnWebsite)
+        {
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        }
 
         if (poster != null && !ExtensionUtils.IsValidPosterExtension(poster))
             throw new ArgumentException("Invalid poster file.");
@@ -429,9 +293,8 @@ public class ActivityService : IActivityService
         if (dto.Poster != null && !ExtensionUtils.IsValidPosterExtension(dto.Poster))
             throw new ArgumentException("Invalid poster file type.");
 
-        if ((activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null) &&
-            !_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+        if (activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -514,9 +377,8 @@ public class ActivityService : IActivityService
         if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
             return null;
 
-        if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow &&
-            !_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+        if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var file = await _storageService.GetFileAsync("posters", activity.PosterPath);
 
