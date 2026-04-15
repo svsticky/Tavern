@@ -12,25 +12,11 @@ public class MailgunService(PostgresDbContext db) : AbstractMailService(db)
     private readonly string _publicKey = Environment.GetEnvironmentVariable("MAILGUN_PUBLIC_KEY")!;
     private readonly string _apiBaseUrl = Environment.GetEnvironmentVariable("MAILGUN_API_BASE_URL")!;
 
-    public override async Task SendEmailAsync(PostMailDTO dto, Guid userId, CancellationToken ct)
+    protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
-        MailRecipient[] recipients = await ExtractRecipients(dto.Recipients, dto.ActivityId, ct);
-
-        if(recipients.Length == 0)
-        {
-            return;
-        }
-
-        MailRecipient? from = await GetSenderInfo(userId, ct);
-
-        if(from == null)
-        {
-            throw new InvalidOperationException("Sender information could not be retrieved");
-        }
-
         using var client = new MailgunClient(_apiBaseUrl, _privateKey, _publicKey);
         
-        MailgunMessage message = CreateMessage(from, recipients, dto.Subject, dto.HtmlContent);
+        MailgunMessage message = CreateMessage(from, to, subject, htmlContent);
 
         await client.SendMessageAsync(message);
     }

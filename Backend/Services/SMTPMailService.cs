@@ -15,32 +15,21 @@ public class SMTPMailService(PostgresDbContext db) : AbstractMailService(db)
     private readonly string? _user = Environment.GetEnvironmentVariable("SMTP_USER");
     private readonly string? _pass = Environment.GetEnvironmentVariable("SMTP_PASS");
 
-    public override async Task SendEmailAsync(PostMailDTO dto, Guid userId, CancellationToken ct)
+    protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
-        MailRecipient[] recipients = await ExtractRecipients(dto.Recipients, dto.ActivityId, ct);
-
-        if (recipients.Length == 0) return;
-
-        MailRecipient? from = await GetSenderInfo(userId, ct);
-
-        if(from == null)
-        {
-            throw new InvalidOperationException("Sender information could not be retrieved");
-        }
-
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(from.Name, from.Mail));
-        message.Subject = dto.Subject;
+        message.Subject = subject;
 
-        foreach (var recipient in recipients)
+        foreach (var recipient in to)
         {
             message.Bcc.Add(new MailboxAddress(recipient.Name, recipient.Mail));
         }
 
         var bodyBuilder = new BodyBuilder
         {
-            HtmlBody = dto.HtmlContent,
-            TextBody = StripHtml(dto.HtmlContent)
+            HtmlBody = htmlContent,
+            TextBody = StripHtml(htmlContent)
         };
 
         message.Body = bodyBuilder.ToMessageBody();

@@ -2,12 +2,19 @@ using Backend.Models;
 
 namespace Backend.Controllers.DTOs;
 
-public class PostMailDTO
+public abstract class AbstractPostMailDTO
 {
-    public MailRecipient[]? Recipients { get; set; } = null!;
-    public uint? ActivityId { get; set; }
+    public required string Subject { get; set; }
 
-    public string Subject { get; set; } = null!;
+    public required string HtmlContent { get; set; }
+}
 
-    public string HtmlContent { get; set; } = null!;
+public class PostMailDTO : AbstractPostMailDTO
+{
+    public required MailRecipient[] Recipients { get; set; }
+}
+
+public class PostActivityMailDTO : AbstractPostMailDTO
+{
+    public required uint ActivityId { get; set; }
 }

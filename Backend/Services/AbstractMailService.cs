@@ -10,7 +10,8 @@ namespace Backend.Interfaces;
 
 public abstract class AbstractMailService
 {
-    public abstract Task SendEmailAsync(PostMailDTO dto, Guid UserId, CancellationToken ct);
+    protected abstract Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct);
+    
     private readonly Dictionary<uint, string> _roleMailMap;
 
     protected readonly PostgresDbContext _db;
@@ -34,6 +35,35 @@ public abstract class AbstractMailService
         }
     }
 
+    public async Task SendEmailAsync(PostMailDTO dto, Guid UserId, CancellationToken ct)
+    {
+        if(dto.Recipients.Length == 0)
+        {
+            return;
+        }
+
+        MailRecipient? from = await GetSenderInfo(UserId, ct);
+
+        if(from == null)
+        {
+            throw new InvalidOperationException("Sender information could not be retrieved");
+        }
+
+        await SendEmailCoreAsync(from, dto.Recipients, dto.Subject, dto.HtmlContent, ct);
+    }
+
+    public async Task SendEmailAsync(PostActivityMailDTO dto, Guid userId, CancellationToken ct)
+    {
+        MailRecipient[] recipients = await GetRecipientsFromActivity(dto.ActivityId, ct);
+
+        await SendEmailAsync(new PostMailDTO
+        {
+            Recipients = recipients,
+            Subject = dto.Subject,
+            HtmlContent = dto.HtmlContent
+        }, userId, ct);
+    }
+
     protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
         int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
@@ -46,7 +76,7 @@ public abstract class AbstractMailService
 
         if(role == null)
         {
-            throw new InvalidOperationException("User is not a member of the board group or has no role assigned");
+            throw new UnauthorizedAccessException("User does not have permission to send mails");
         }
 
         Member? sender = await _db.Members.FindAsync(userId, ct);
@@ -58,27 +88,19 @@ public abstract class AbstractMailService
         return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
     }
 
-    protected async Task<MailRecipient[]> ExtractRecipients(MailRecipient[]? recipients = null, uint? activityId = null, CancellationToken ct = default)
+    protected async Task<MailRecipient[]> GetRecipientsFromActivity(uint activityId, CancellationToken ct)
     {
-        MailRecipient[] resultRecipients = recipients ?? Array.Empty<MailRecipient>();
+        MailRecipient[] resultRecipients = Array.Empty<MailRecipient>();
 
-        if(recipients == null || recipients.Length == 0)
+        Activity? activity = await _db.Activities.Include(a => a.Enrollments).ThenInclude(e => e.Member).FirstOrDefaultAsync(a => a.Id == activityId, ct);
+        if(activity == null)
         {
-            if(activityId == null)
-            {
-                throw new InvalidOperationException("Either recipient mails or activity ID must be provided");
-            }
+            throw new InvalidOperationException("Activity not found");
+        }
 
-            Activity? activity = await _db.Activities.Include(a => a.Enrollments).ThenInclude(e => e.Member).FirstOrDefaultAsync(a => a.Id == activityId, ct);
-            if(activity == null)
-            {
-                throw new InvalidOperationException("Activity not found");
-            }
-
-            foreach(var enrollment in activity.Enrollments)
-            {
-                resultRecipients = resultRecipients.Append(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" }).ToArray();
-            }
+        foreach(var enrollment in activity.Enrollments)
+        {
+            resultRecipients = resultRecipients.Append(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" }).ToArray();
         }
         return resultRecipients;
     }
