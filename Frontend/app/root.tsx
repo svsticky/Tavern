@@ -13,6 +13,7 @@ import i18n from "./i18n";
 import { client } from "./api/client.gen";
 import type { Route } from "./+types/root";
 import "./app.css";
+import FaviconHandler from "./components/FavIconHandler";
 
 client.setConfig({
   baseURL: import.meta.env.ApiUrl ?? "https://localhost:8081",
@@ -64,6 +65,7 @@ export default function App() {
 
   return (
     <>
+      <FaviconHandler />
       {isClient && <Toaster position="bottom-right" />}
       <Outlet />
     </>

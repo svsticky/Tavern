@@ -3,7 +3,6 @@ using Backend.Database;
 using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Collections;
 using System.Text.RegularExpressions;
 
 namespace Backend.Interfaces;
