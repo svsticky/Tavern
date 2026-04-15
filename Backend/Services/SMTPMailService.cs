@@ -21,7 +21,12 @@ public class SMTPMailService(PostgresDbContext db) : AbstractMailService(db)
 
         if (recipients.Length == 0) return;
 
-        MailRecipient from = await GetSenderInfo(userId, ct);
+        MailRecipient? from = await GetSenderInfo(userId, ct);
+
+        if(from == null)
+        {
+            throw new InvalidOperationException("Sender information could not be retrieved");
+        }
 
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(from.Name, from.Mail));

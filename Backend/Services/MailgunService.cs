@@ -21,7 +21,12 @@ public class MailgunService(PostgresDbContext db) : AbstractMailService(db)
             return;
         }
 
-        MailRecipient from = await GetSenderInfo(userId, ct);
+        MailRecipient? from = await GetSenderInfo(userId, ct);
+
+        if(from == null)
+        {
+            throw new InvalidOperationException("Sender information could not be retrieved");
+        }
 
         using var client = new MailgunClient(_apiBaseUrl, _privateKey, _publicKey);
         

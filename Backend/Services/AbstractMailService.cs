@@ -4,6 +4,7 @@ using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using Backend.Utils;
 
 namespace Backend.Interfaces;
 
@@ -33,26 +34,25 @@ public abstract class AbstractMailService
         }
     }
 
-    protected async Task<MailRecipient> GetSenderInfo(Guid userId, CancellationToken ct = default)
+    protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
         int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
+        int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
 
         Role? role = await _db.GroupMemberships
-            .Where(gm => gm.MemberId == userId && gm.GroupId == boardGroupId)
+            .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
             .Select(gm => gm.RoleAlias != null ? gm.RoleAlias.Role : null)
             .FirstOrDefaultAsync(ct);
 
         if(role == null)
         {
-            // to do: throw exception that user does not have a role in the board group and therefore cannot send emails
-            return null!;
+            throw new InvalidOperationException("User is not a member of the board group or has no role assigned");
         }
 
         Member? sender = await _db.Members.FindAsync(userId, ct);
-        if(sender == null)        
+        if(sender == null)
         {
-            // to do: throw exception that sender member record was not found
-            return null!;
+            return null;
         }
 
         return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
@@ -66,15 +66,13 @@ public abstract class AbstractMailService
         {
             if(activityId == null)
             {
-                // to do: throw exception that either recipient mails or activity ID must be provided
-                return null!;
+                throw new InvalidOperationException("Either recipient mails or activity ID must be provided");
             }
 
             Activity? activity = await _db.Activities.Include(a => a.Enrollments).ThenInclude(e => e.Member).FirstOrDefaultAsync(a => a.Id == activityId, ct);
             if(activity == null)
             {
-                // to do: throw activity not found exception
-                return null!;
+                throw new InvalidOperationException("Activity not found");
             }
 
             foreach(var enrollment in activity.Enrollments)
