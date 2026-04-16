@@ -10,7 +10,7 @@ import {
 import EditActivityForm from "~/components/EditActivityForm";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { isInGroupWithId } from "~/util/group.util";
-import EditParticipantsTile from "../components/Tiles/edit-participants-tile";
+import EditParticipantsTile from "../components/Tiles/EditParticipantsTile";
 import SendActivityMailComponent from "~/components/SendActivityMailComponent";
 
 export default function ActivityFormPage() {
