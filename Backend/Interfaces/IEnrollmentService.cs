@@ -17,4 +17,6 @@ public interface IEnrollmentService
     Task UpdateEnrollment(uint activityId, Guid memberId, PostEnrollmentDTO dto, CancellationToken cancellationToken);
 
     Task PatchEnrollment(uint activityId, Guid memberId, JsonPatchDocument<Enrollment> patchDoc, CancellationToken cancellationToken);
+    void PromoteFromWaitingList(uint activityId, CancellationToken ct);
+    void PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct);
 }

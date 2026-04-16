@@ -1,7 +1,7 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils;
+using Backend.Validators;
 
 namespace Backend.Services
 {
@@ -9,7 +9,7 @@ namespace Backend.Services
         PostgresDbContext db,
         IStorageService storageService,
         IPermissionService permissionService,
-        IFileCompressor fileCompressor
+        IFileCompressService fileCompressor
     ) : IProfilePictureService
     {
         public async Task<(Stream Stream, string ContentType)?> GetProfilePictureByPath(string path)
@@ -35,9 +35,9 @@ namespace Backend.Services
             }
 
             // Validate file
-            if (image != null && !ExtensionUtils.IsValidProfilePictureExtension(image))
+            if (image != null)
             {
-                throw new Exception("Invalid file type. Allowed types are: .jpg, .jpeg, .png, .gif");
+                ExtensionValidator.ValidateProfilePictureExtension(image);
             }
 
             string? oldPath = member.ProfilePicturePath;

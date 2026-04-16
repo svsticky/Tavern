@@ -700,6 +700,22 @@ export type GetApiActivitiesByIdPosterDownloadResponses = {
     200: unknown;
 };
 
+export type GetApiActivitiesByIdEnrollmentsExportData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/activities/{id}/enrollments/export';
+};
+
+export type GetApiActivitiesByIdEnrollmentsExportResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetApiAnnouncementsData = {
     body?: never;
     path?: never;

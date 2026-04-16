@@ -8,6 +8,23 @@ public class KeycloakOutboxWorker(
     IServiceProvider serviceProvider, 
     ILogger<KeycloakOutboxWorker> logger) : BackgroundService
 {
+    public void EnqueueTask(KeycloakTaskType taskType, Guid keycloakId)
+    {
+        using var scope = serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
+
+        var task = new KeycloakOutboxTask
+        {
+            TaskType = taskType,
+            KeycloakId = keycloakId,
+            CreatedAt = DateTime.UtcNow,
+            RetryCount = 0
+        };
+
+        db.KeycloakOutboxTasks.Add(task);
+        db.SaveChanges();
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Keycloak outbox worker started.");

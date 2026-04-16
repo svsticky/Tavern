@@ -4,7 +4,8 @@ using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
-using Backend.Utils;
+using Backend.Validators;
+using Backend.Utils.DateTime;
 
 namespace Backend.Interfaces;
 
@@ -16,11 +17,14 @@ public abstract class AbstractMailService
 
     protected readonly PostgresDbContext _db;
 
-    public AbstractMailService(PostgresDbContext db)
+    protected readonly IPaymentValidationService _paymentValidationService;
+
+    public AbstractMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService)
     {
         _db = db;
+        _paymentValidationService = paymentValidationService;
         _roleMailMap = new Dictionary<uint, string>();
-        
+
         var settings = _db.Settings.ToList();
 
         foreach (Setting setting in settings)
@@ -64,13 +68,45 @@ public abstract class AbstractMailService
         }, userId, ct);
     }
 
+    public void SendOutstandingPaymentMails()
+    {
+        var unpaidEnrollmentBalances = _paymentValidationService.GetAllUnpaidEnrollments();
+
+        if (unpaidEnrollmentBalances.Count() == 0) return;
+
+        var memberEnrollmentBalances = unpaidEnrollmentBalances
+            .GroupBy(ueb => ueb.Enrollment.Member)
+            .ToDictionary(g => g.Key, g => g.ToArray());
+
+        foreach (var kvp in memberEnrollmentBalances)
+        {
+            Member member = kvp.Key;
+            EnrollmentBalance[] balances = kvp.Value;
+            Language language = member.PreferredLanguage;
+
+            string subject = language switch
+            {
+                Language.NL => "Openstaande betalingen voor activiteiten",
+                Language.EN => "Outstanding payments for activities",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+
+            string htmlContent = language switch
+            {
+                Language.NL => $"Beste {member.FirstName},<br><br>Je hebt nog openstaande betalingen voor de volgende activiteiten:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Gelieve deze zo snel mogelijk te voldoen op https://koala.svsticky.nl.<br><br>Met vriendelijke groet,<br>Het bestuur",
+                Language.EN => $"Dear {member.FirstName},<br><br>You have outstanding payments for the following activities:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Please settle these as soon as possible at https://koala.svsticky.nl.<br><br>Best regards,<br>The board",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+        }
+    }
+
     protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
         int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
         int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
 
         Role? role = await _db.GroupMemberships
-            .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
+            .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear())
             .Select(gm => gm.RoleAlias != null ? gm.RoleAlias.Role : null)
             .FirstOrDefaultAsync(ct);
 

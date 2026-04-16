@@ -33,7 +33,7 @@ namespace Backend.Services
                 Type = dto.Type
             };
 
-            StateValidateUtils.Validate(study);
+            StateValidator.Validate(study);
 
             db.Studies.Add(study);
             await db.SaveChangesAsync(ct);
@@ -66,7 +66,7 @@ namespace Backend.Services
 
             patchDoc.ApplyTo(study);
 
-            StateValidateUtils.Validate(study);
+            StateValidator.Validate(study);
 
             await db.SaveChangesAsync(ct);
         }
@@ -83,7 +83,7 @@ namespace Backend.Services
             study.NominalDurationYears = dto.NominalDurationYears;
             study.Type = dto.Type;
 
-            StateValidateUtils.Validate(study);
+            StateValidator.Validate(study);
 
             await db.SaveChangesAsync(ct);
         }

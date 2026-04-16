@@ -1,6 +1,6 @@
 namespace Backend.Interfaces;
 
-public interface IFileCompressor
+public interface IFileCompressService
 {
     Task<(Stream Stream, string ContentType)> CompressFileAsync(IFormFile file);
 }

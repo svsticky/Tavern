@@ -1,8 +1,8 @@
 using System.Runtime.InteropServices;
 
-namespace Backend.Utils;
+namespace Backend.Utils.DateTime;
 
-public static class YearUtils
+public static class FinancialYearUtils
 {
     public static uint GetCurrentFinancialYear()
     {
@@ -11,7 +11,7 @@ public static class YearUtils
             : "Europe/Amsterdam";
         
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+        System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(System.DateTime.UtcNow, tz);
 
         return nowInNetherlands.Month >= 8 
             ? (uint)nowInNetherlands.Year + 1 

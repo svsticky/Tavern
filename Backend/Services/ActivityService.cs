@@ -3,11 +3,12 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Projections;
-using Backend.Utils;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Backend.QueryExtensions;
+using System.Text;
 
 namespace Backend.Services;
 
@@ -15,21 +16,24 @@ public class ActivityService : IActivityService
 {
     private readonly PostgresDbContext _db;
     private readonly IStorageService _storageService;
-    private readonly IFileCompressor _fileCompressor;
+    private readonly IFileCompressService _fileCompressor;
     private readonly IPermissionService _permissionService;
+    private readonly IEnrollmentService _enrollmentService;
 
     private readonly string[] _restrictedPaths = new[] { "/showInKoala", "/showOnWebsite", "/paymentDeadline" };
 
     public ActivityService(
         PostgresDbContext db,
         IStorageService storageService,
-        IFileCompressor fileCompressor,
-        IPermissionService permissionService)
+        IFileCompressService fileCompressor,
+        IPermissionService permissionService,
+        IEnrollmentService enrollmentService)
     {
         _db = db;
         _storageService = storageService;
         _fileCompressor = fileCompressor;
         _permissionService = permissionService;
+        _enrollmentService = enrollmentService;
     }
 
     public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto)
@@ -75,8 +79,10 @@ public class ActivityService : IActivityService
         if (dto.ParticipantLimit < 0)
             throw new ArgumentException("Participant limit cannot be negative.");
 
-        if (dto.Poster != null && !ExtensionUtils.IsValidPosterExtension(dto.Poster))
-            throw new ArgumentException("Invalid poster file type.");
+        if (dto.Poster != null)
+        {
+            ExtensionValidator.ValidatePosterExtension(dto.Poster);
+        }
 
         using var transaction = await _db.Database.BeginTransactionAsync();
 
@@ -136,7 +142,7 @@ public class ActivityService : IActivityService
                 activity.PosterFileName = dto.Poster.FileName;
             }
 
-            StateValidateUtils.Validate(activity);
+            StateValidator.Validate(activity);
 
             foreach(var member in organizerMembers)
             {
@@ -200,13 +206,17 @@ public class ActivityService : IActivityService
         {
             uint? oldLimit = activity.ParticipantLimit;
             decimal oldPrice = activity.Price;
+            var oldAudience = activity.AllowedAudience;
 
             patchDoc.ApplyTo(activity);
 
-            StateValidateUtils.Validate(activity);
+            StateValidator.Validate(activity);
 
-            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit))
+            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
+                || activity.AllowedAudience != oldAudience)
+            {
                 await ProcessWaitingList(id, activity.ParticipantLimit, ct);
+            }
 
             if (oldPrice != activity.Price)
             {
@@ -239,8 +249,8 @@ public class ActivityService : IActivityService
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
 
-        if (poster != null && !ExtensionUtils.IsValidPosterExtension(poster))
-            throw new ArgumentException("Invalid poster file.");
+        if (poster != null)
+            ExtensionValidator.ValidatePosterExtension(poster);
 
         string? oldPath = activity.PosterPath;
 
@@ -290,8 +300,8 @@ public class ActivityService : IActivityService
         if (dto.ParticipantLimit < 0)
             throw new ArgumentException("Participant limit cannot be negative.");
 
-        if (dto.Poster != null && !ExtensionUtils.IsValidPosterExtension(dto.Poster))
-            throw new ArgumentException("Invalid poster file type.");
+        if (dto.Poster != null)
+            ExtensionValidator.ValidatePosterExtension(dto.Poster);
 
         if (activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -310,6 +320,7 @@ public class ActivityService : IActivityService
             decimal oldPrice = activity.Price;
             uint? oldLimit = activity.ParticipantLimit;
             string? existingPosterPath = activity.PosterPath;
+            var oldAudience = activity.AllowedAudience;
 
             activity.Name = dto.Name;
             activity.Price = dto.Price;
@@ -352,10 +363,13 @@ public class ActivityService : IActivityService
                 activity.PosterFileName = dto.Poster.FileName;
             }
 
-            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit))
+            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
+                || activity.AllowedAudience != oldAudience)
+            {
                 await ProcessWaitingList(id, activity.ParticipantLimit, default);
+            }
 
-            StateValidateUtils.Validate(activity);
+            StateValidator.Validate(activity);
 
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
@@ -392,6 +406,62 @@ public class ActivityService : IActivityService
         );
     }
 
+    public async Task<(byte[] Content, string FileName)> GetEnrollmentsCsv(Guid userId, uint activityId, CancellationToken ct)
+    {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+        Member? member = await _db.Members.FirstOrDefaultAsync(m => m.Id == userId, ct);
+
+        if(member == null)
+            throw new UnauthorizedAccessException("User not found");
+
+        Language language = member.PreferredLanguage;
+
+        var activity = await _db.Activities
+            .Include(a => a.SpecificationQuestions)
+            .Include(a => a.Enrollments)
+                .ThenInclude(e => e.Member)
+            .Include(a => a.Enrollments)
+                .ThenInclude(e => e.SpecificationAnswers)
+            .FirstOrDefaultAsync(a => a.Id == activityId, ct);
+
+        if (activity == null) throw new KeyNotFoundException("Activity not found");
+
+        var csv = new StringBuilder();
+
+        var header = language == Language.NL ? new List<string> { "Voornaam", "Achternaam", "Op Wachtlijst" } : new List<string> { "First Name", "Last Name", "On Waiting List" };
+        foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
+        {
+            header.Add(language == Language.NL ? question.QuestionDutch : question.QuestionEnglish);
+        }
+        csv.AppendLine(string.Join(";", header));
+
+        foreach (var enrollment in activity.Enrollments.OrderBy(e => e.RegisteredOn)
+            .OrderBy(e => e.IsOnWaitingList)
+            .ThenBy(e => e.RegisteredOn))
+        {
+            var row = new List<string>
+            {
+                enrollment.Member.FirstName,
+                enrollment.Member.LastName,
+                enrollment.IsOnWaitingList ? "True" : "False"
+            };
+
+            foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
+            {
+                var answer = enrollment.SpecificationAnswers
+                    .FirstOrDefault(a => a.SpecificationQuestionId == question.Id)?.Answer ?? "";
+                
+                row.Add(answer.Replace(";", ",")); 
+            }
+
+            csv.AppendLine(string.Join(";", row));
+        }
+
+        var fileName = $"Enrollments_{activity.Name}.csv";
+        return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
+    }
+
     private async Task ProcessWaitingList(uint activityId, uint? newLimit, CancellationToken ct)
     {
         int currentParticipants = await _db.Enrollments
@@ -403,14 +473,7 @@ public class ActivityService : IActivityService
 
         if (availableSpots > 0)
         {
-            var waitingList = await _db.Enrollments
-                .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
-                .OrderBy(e => e.RegisteredOn)
-                .Take(availableSpots)
-                .ToListAsync(ct);
-
-            foreach (var e in waitingList)
-                e.IsOnWaitingList = false;
+            _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
         }
     }
 

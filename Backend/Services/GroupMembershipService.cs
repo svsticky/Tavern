@@ -11,11 +11,13 @@ public class GroupMembershipService : IGroupMembershipService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
+    private readonly KeycloakOutboxWorker _keycloakOutboxWorker;
 
-    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService)
+    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxService)
     {
         _db = db;
         _permissionService = permissionService;
+        _keycloakOutboxWorker = keycloakOutboxService;
     }
 
     public async Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(Guid userId, bool onlyOwnMemberships, CancellationToken cancellationToken)
@@ -28,18 +30,7 @@ public class GroupMembershipService : IGroupMembershipService
 
         return await _db.GroupMemberships
             .Where(gm => !onlyOwnMemberships || gm.MemberId == userId)
-            .Select(cm => new GroupMembershipResponseDTO
-            {
-                Id = cm.Id,
-                MemberId = cm.MemberId,
-                MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                GroupId = cm.GroupId,
-                GroupName = cm.Group.Name,
-                GroupType = cm.Group.Type,
-                MembershipYear = cm.MembershipYear,
-                RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
-                RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
-            })
+            .Select(GroupMembershipProjections.ToDto())
             .ToListAsync(cancellationToken);
     }
 
@@ -47,18 +38,7 @@ public class GroupMembershipService : IGroupMembershipService
     {
         var result = await _db.GroupMemberships
             .Where(cm => cm.Id == id)
-            .Select(cm => new GroupMembershipResponseDTO
-            {
-                Id = cm.Id,
-                MemberId = cm.MemberId,
-                MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                GroupId = cm.GroupId,
-                GroupName = cm.Group.Name,
-                GroupType = cm.Group.Type,
-                MembershipYear = cm.MembershipYear,
-                RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
-                RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
-            })
+            .Select(GroupMembershipProjections.ToDto())
             .FirstOrDefaultAsync(cancellationToken);
 
         if (result == null)
@@ -103,15 +83,11 @@ public class GroupMembershipService : IGroupMembershipService
                 RoleAliasId = dto.RoleAliasId
             };
 
-            StateValidateUtils.Validate(membership);
+            StateValidator.Validate(membership);
 
             var entry = _db.GroupMemberships.Add(membership);
 
-            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-            {
-                KeycloakId = member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
-                TaskType = KeycloakTaskType.Sync
-            });
+            _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -143,11 +119,7 @@ public class GroupMembershipService : IGroupMembershipService
         {
             _db.GroupMemberships.Remove(membership);
 
-            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-            {
-                KeycloakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
-                TaskType = KeycloakTaskType.Sync
-            });
+            _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -182,26 +154,18 @@ public class GroupMembershipService : IGroupMembershipService
         {
             patchDoc.ApplyTo(membership);
 
-            StateValidateUtils.Validate(membership);
+            StateValidator.Validate(membership);
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-            {
-                KeycloakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
-                TaskType = KeycloakTaskType.Sync
-            });
+            _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
 
             if (oldMemberId != membership.MemberId)
             {
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                    {
-                        KeycloakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
-                        TaskType = KeycloakTaskType.Sync
-                    });
+                    _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."));
                 }
             }
 
@@ -242,24 +206,16 @@ public class GroupMembershipService : IGroupMembershipService
 
             membership.RoleAliasId = dto.RoleAliasId;
 
-            StateValidateUtils.Validate(membership);
+            StateValidator.Validate(membership);
 
-            _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-            {
-                KeycloakId = membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."),
-                TaskType = KeycloakTaskType.Sync
-            });
+            _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
 
             if (oldMemberId != membership.MemberId)
             {
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    _db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                    {
-                        KeycloakId = oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."),
-                        TaskType = KeycloakTaskType.Sync
-                    });
+                    _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."));
                 }
             }
 

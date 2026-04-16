@@ -8,7 +8,7 @@ public interface IAnnouncementService
 {
     Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(CancellationToken cancellationToken);
 
-    Task<Announcement?> GetAnnouncement(uint id, CancellationToken cancellationToken);
+    Task<GetAnnouncementResponseDTO?> GetAnnouncement(uint id, CancellationToken cancellationToken);
 
     Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken);
 

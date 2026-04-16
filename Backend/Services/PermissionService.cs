@@ -1,8 +1,7 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils;
-using System.Runtime.InteropServices;
+using Backend.Utils.DateTime;
 
 namespace Backend.Services;
 
@@ -10,10 +9,10 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
 {
     #region Group Checks
     public bool IsInGroupInCurrentYear(Guid memberId, uint groupId) 
-        => IsInGroup(memberId, groupId, YearUtils.GetCurrentFinancialYear());
+        => IsInGroup(memberId, groupId, FinancialYearUtils.GetCurrentFinancialYear());
 
     public bool IsInGroupInCurrentYear(Member member, uint groupId) 
-        => IsInGroup(member, groupId, YearUtils.GetCurrentFinancialYear());
+        => IsInGroup(member, groupId, FinancialYearUtils.GetCurrentFinancialYear());
 
     public bool IsInGroup(Guid memberId, uint groupId, uint year)
     {
@@ -33,10 +32,10 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
 
     #region Role Checks
     public bool IsInRoleInCurrentYear(Guid memberId, uint roleId, uint? groupId = null)
-        => IsInRole(memberId, roleId, YearUtils.GetCurrentFinancialYear(), groupId);
+        => IsInRole(memberId, roleId, FinancialYearUtils.GetCurrentFinancialYear(), groupId);
 
     public bool IsInRoleInCurrentYear(Member member, uint roleId, uint? groupId = null)
-        => IsInRole(member, roleId, YearUtils.GetCurrentFinancialYear(), groupId);
+        => IsInRole(member, roleId, FinancialYearUtils.GetCurrentFinancialYear(), groupId);
 
     public bool IsInRole(Guid memberId, uint roleId, uint year, uint? groupId = null)
     {

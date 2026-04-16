@@ -199,5 +199,24 @@ namespace Backend.Controllers
                 return Forbid();
             }
         }
+
+        [HttpGet("{id}/enrollments/export")]
+        public async Task<IActionResult> ExportEnrollments(uint id, CancellationToken ct)
+        {
+            try
+            {
+                var result = await service.GetEnrollmentsCsv(GetUserId(), id, ct);
+                
+                return File(result.Content, "text/csv", result.FileName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+        }
     }
 }

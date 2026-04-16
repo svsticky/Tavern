@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Interfaces;
 
-public static class StateValidateUtils
+public static class StateValidator
 {
     public static void Validate<T>(T obj)
     {

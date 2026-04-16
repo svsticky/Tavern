@@ -12,6 +12,9 @@
         <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.26" />
         <PackageReference Include="AWSSDK.S3" Version="4.0.19.1" />
         <PackageReference Include="DotNetEnv" Version="3.1.1" />
+        <PackageReference Include="Hangfire" Version="1.8.23" />
+        <PackageReference Include="Hangfire.AspNetCore" Version="1.8.23" />
+        <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
         <PackageReference Include="Mailgun.Net" Version="0.1.16" />
         <PackageReference Include="MailKit" Version="4.15.1" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />

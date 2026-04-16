@@ -31,7 +31,7 @@ namespace Backend.Services
                 Name = dto.Name
             };
 
-            StateValidateUtils.Validate(role);
+            StateValidator.Validate(role);
 
             db.Roles.Add(role);
             await db.SaveChangesAsync(ct);
@@ -64,7 +64,7 @@ namespace Backend.Services
 
             patchDoc.ApplyTo(role);
 
-            StateValidateUtils.Validate(role);
+            StateValidator.Validate(role);
 
             await db.SaveChangesAsync(ct);
         }
@@ -79,7 +79,7 @@ namespace Backend.Services
 
             role.Name = dto.Name;
 
-            StateValidateUtils.Validate(role);
+            StateValidator.Validate(role);
 
             await db.SaveChangesAsync(ct);
         }

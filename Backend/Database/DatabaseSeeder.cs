@@ -1,5 +1,6 @@
 using Backend.Models.Domain;
-using Backend.Utils;
+using Backend.Utils.DateTime;
+using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;
@@ -86,7 +87,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         var transaction = await db.Database.BeginTransactionAsync();
         try
         {
-            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == YearUtils.GetCurrentFinancialYear());
+            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear());
             if (!hasBoardMembers)
             {
                 var backupMember = new Member

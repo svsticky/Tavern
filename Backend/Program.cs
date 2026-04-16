@@ -10,6 +10,8 @@ using Backend.Interfaces;
 using Amazon.S3;
 using Microsoft.AspNetCore.HttpOverrides;
 using Backend.Filters;
+using Hangfire;
+using Hangfire.PostgreSql;
 
 Env.Load();
 
@@ -126,7 +128,8 @@ builder.Services.AddCors(options =>
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
-builder.Services.AddHostedService<KeycloakOutboxWorker>();
+builder.Services.AddSingleton<KeycloakOutboxWorker>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<KeycloakOutboxWorker>());
 builder.Services.AddHostedService<AccountingToolOutboxWorker>();
 
 var awsOptions = builder.Configuration.GetAWSOptions();
@@ -145,7 +148,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 });
 
 builder.Services.AddScoped<IStorageService, S3StorageService>();
-builder.Services.AddScoped<IFileCompressor, FileCompressor>();
+builder.Services.AddScoped<IFileCompressService, FileCompressService>();
 builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 
@@ -190,6 +193,15 @@ builder.Services.AddScoped<IStudyEnrollmentService, StudyEnrollmentService>();
 builder.Services.AddScoped<IStudyService, StudyService>();
 builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
 
+builder.Services.AddHangfire(config => config
+    .UsePostgreSqlStorage(options => 
+    {
+        options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("Postgresql"));
+    })
+    .UseRecommendedSerializerSettings());
+
+builder.Services.AddHangfireServer();
+
 WebApplication app = builder.Build();
 
 app.UseForwardedHeaders();
@@ -211,4 +223,18 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseHangfireDashboard();
+
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    
+    recurringJobManager.AddOrUpdate<AbstractMailService>(
+        "outstanding-payments-mail", 
+        service => service.SendOutstandingPaymentMails(), 
+        "0 10 * * 5" // Each Friday at 10:00 AM
+    );
+}
+
 app.Run();

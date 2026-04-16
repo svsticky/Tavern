@@ -1,7 +1,7 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 
 namespace Backend.Services;
@@ -37,12 +37,12 @@ public class SpecificationAnswerService(
         patchDoc.ApplyTo(answer);
 
         var newAnswer = patchDoc.Operations.FirstOrDefault(op => op.path.ToLower() == "/answer")?.value?.ToString();
-        if (newAnswer != null && !AnswerValidateUtils.IsValidAnswer(newAnswer, answer.Question.Type, answer.Question.Options))
+        if (newAnswer != null)
         {
-            throw new InvalidOperationException("Invalid answer provided.");
+            AnswerValidator.IsValidAnswer(newAnswer, answer.Question.Type, answer.Question.Options);
         }
 
-        StateValidateUtils.Validate(answer);
+        StateValidator.Validate(answer);
 
         await db.SaveChangesAsync();
     }

@@ -4,7 +4,7 @@ using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
-public class FileCompressor : IFileCompressor
+public class FileCompressService : IFileCompressService
 {
     private const int _maxWidth = 1280;
 

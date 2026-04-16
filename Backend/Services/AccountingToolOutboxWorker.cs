@@ -9,6 +9,20 @@ public class AccountingToolOutboxWorker(
 {
     private readonly bool _isEnabled = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE"));
 
+    public void EnqueueTask(AccountingToolTaskType taskType, uint paymentId, PostgresDbContext db)
+    {
+        var task = new AccountingToolOutboxTask
+        {
+            TaskType = taskType,
+            PaymentId = paymentId,
+            CreatedAt = DateTime.UtcNow,
+            RetryCount = 0
+        };
+
+        db.AccountingToolOutboxTasks.Add(task);
+        db.SaveChanges();
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_isEnabled)

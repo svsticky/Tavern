@@ -76,7 +76,7 @@ namespace Backend.Services
                 Status = dto.Status
             };
 
-            StateValidateUtils.Validate(enrollment);
+            StateValidator.Validate(enrollment);
 
             db.StudyEnrollments.Add(enrollment);
             await db.SaveChangesAsync(ct);
@@ -112,7 +112,7 @@ namespace Backend.Services
             if (enrollment == null)
                 throw new Exception("Enrollment not found");
 
-            StateValidateUtils.Validate(enrollment);
+            StateValidator.Validate(enrollment);
 
             enrollment.Status = newStatus;
             await db.SaveChangesAsync(ct);

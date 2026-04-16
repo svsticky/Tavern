@@ -98,7 +98,7 @@ namespace Backend.Services
                 PaymentIntentUrl = mollieResponse.Links.Checkout.Href
             };
 
-            StateValidateUtils.Validate(payment);
+            StateValidator.Validate(payment);
 
             db.MembershipPayments.Add(payment);
             await db.SaveChangesAsync();
@@ -175,7 +175,7 @@ namespace Backend.Services
                     PaidAt = dto.ManuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
                 };
 
-                StateValidateUtils.Validate(payment);
+                StateValidator.Validate(payment);
 
                 db.EnrollmentPayments.Add(payment);
             }

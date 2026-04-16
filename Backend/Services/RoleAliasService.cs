@@ -40,7 +40,7 @@ namespace Backend.Services
                 RoleId = dto.RoleId
             };
 
-            StateValidateUtils.Validate(entity);
+            StateValidator.Validate(entity);
 
             db.RoleAliases.Add(entity);
             await db.SaveChangesAsync(ct);
@@ -102,7 +102,7 @@ namespace Backend.Services
             {
                 patchDoc.ApplyTo(roleAlias);
 
-                StateValidateUtils.Validate(roleAlias);
+                StateValidator.Validate(roleAlias);
 
                 var affectedMembers = await db.GroupMemberships
                     .Where(gm => gm.RoleAliasId == id)
@@ -143,7 +143,7 @@ namespace Backend.Services
                 roleAlias.Name = dto.Name;
                 roleAlias.RoleId = dto.RoleId;
 
-                StateValidateUtils.Validate(roleAlias);
+                StateValidator.Validate(roleAlias);
 
                 var affectedMembers = await db.GroupMemberships
                     .Where(gm => gm.RoleAliasId == id)

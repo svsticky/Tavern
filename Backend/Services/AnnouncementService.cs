@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,30 +17,20 @@ public class AnnouncementService : IAnnouncementService
         _db = db;
     }
 
-    public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(CancellationToken cancellationToken)
-    {
-        var announcements = await _db.Announcements
-            .Include(a => a.CreatedBy)
-            .ToListAsync(cancellationToken);
-
-        return announcements.Select(a => new GetAnnouncementResponseDTO
-        {
-            Id = a.Id,
-            Title = a.Title,
-            Content = a.Content,
-            CreatedById = a.CreatedById,
-            CreatedAt = a.CreatedAt,
-            CreatedByName = a.CreatedBy != null
-                ? $"{a.CreatedBy.FirstName} {a.CreatedBy.LastName}"
-                : "Unknown"
-        });
-    }
-
-    public async Task<Announcement?> GetAnnouncement(uint id, CancellationToken cancellationToken)
+    public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(CancellationToken ct)
     {
         return await _db.Announcements
-            .Include(a => a.CreatedBy)
-            .FirstOrDefaultAsync(a => a.Id == id, cancellationToken);
+            .AsNoTracking()
+            .Select(AnnouncementProjections.ToDto())
+            .ToListAsync(ct);
+    }
+
+    public async Task<GetAnnouncementResponseDTO?> GetAnnouncement(uint id, CancellationToken ct)
+    {
+        return await _db.Announcements
+            .AsNoTracking()
+            .Select(AnnouncementProjections.ToDto())
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 
     public async Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken)
@@ -52,7 +43,7 @@ public class AnnouncementService : IAnnouncementService
             CreatedAt = DateTime.UtcNow
         };
 
-        StateValidateUtils.Validate(announcement);
+        StateValidator.Validate(announcement);
 
         _db.Announcements.Add(announcement);
         await _db.SaveChangesAsync(cancellationToken);
@@ -73,8 +64,7 @@ public class AnnouncementService : IAnnouncementService
 
     public async Task PatchAnnouncement(uint id, JsonPatchDocument<Announcement> patchDoc, CancellationToken cancellationToken)
     {
-        if (patchDoc == null)
-            throw new ArgumentException("Patch document cannot be null");
+        ArgumentNullException.ThrowIfNull(patchDoc);
 
         var announcement = await _db.Announcements.FindAsync(new object[] { id }, cancellationToken);
 
@@ -82,7 +72,7 @@ public class AnnouncementService : IAnnouncementService
             throw new KeyNotFoundException();
 
         patchDoc.ApplyTo(announcement);
-        StateValidateUtils.Validate(announcement);
+        StateValidator.Validate(announcement);
 
         await _db.SaveChangesAsync(cancellationToken);
     }
@@ -97,7 +87,7 @@ public class AnnouncementService : IAnnouncementService
         announcement.Title = dto.Title;
         announcement.Content = dto.Content;
 
-        StateValidateUtils.Validate(announcement);
+        StateValidator.Validate(announcement);
 
         await _db.SaveChangesAsync(cancellationToken);
     }

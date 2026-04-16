@@ -151,7 +151,7 @@ namespace Backend.Services
                     StudyEnrollments = new List<StudyEnrollment>()
                 };
 
-                StateValidateUtils.Validate(member);
+                StateValidator.Validate(member);
 
                 db.Members.Add(member);
                 await db.SaveChangesAsync(cancellationToken);
@@ -168,7 +168,7 @@ namespace Backend.Services
                             Status = se.Status
                         };
 
-                        StateValidateUtils.Validate(enrollment);
+                        StateValidator.Validate(enrollment);
 
                         db.StudyEnrollments.Add(enrollment);
                     }
@@ -230,7 +230,7 @@ namespace Backend.Services
             try
             {
                 patchDoc.ApplyTo(member);
-                StateValidateUtils.Validate(member);
+                StateValidator.Validate(member);
 
                 db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                 {
@@ -272,7 +272,7 @@ namespace Backend.Services
                 member.ParentPhoneNumber = dto.ParentPhoneNumber;
                 member.PreferredLanguage = dto.PreferredLanguage;
 
-                StateValidateUtils.Validate(member);
+                StateValidator.Validate(member);
 
                 db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
                 {

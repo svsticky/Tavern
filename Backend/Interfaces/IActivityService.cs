@@ -21,4 +21,6 @@ public interface IActivityService
     Task PutActivity(Guid userId, uint id, PutActivityDTO dto);
 
     Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid userId, uint id, bool download);
+
+    Task<(byte[] Content, string FileName)> GetEnrollmentsCsv(Guid userId, uint activityId, CancellationToken ct);
 }

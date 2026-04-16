@@ -87,7 +87,7 @@ public class GroupService : IGroupService
             Type = dto.Type
         };
 
-        StateValidateUtils.Validate(group);
+        StateValidator.Validate(group);
 
         _db.Groups.Add(group);
         await _db.SaveChangesAsync(cancellationToken);
@@ -122,7 +122,7 @@ public class GroupService : IGroupService
 
         patchDoc.ApplyTo(group);
 
-        StateValidateUtils.Validate(group);
+        StateValidator.Validate(group);
 
         if (group.Name.Contains(';') || group.Name.Contains(':'))
             throw new ArgumentException("Group names cannot contain ';' or ':'.");
@@ -146,7 +146,7 @@ public class GroupService : IGroupService
         group.Active = dto.Active;
         group.Type = dto.Type;
 
-        StateValidateUtils.Validate(group);
+        StateValidator.Validate(group);
 
         await _db.SaveChangesAsync(cancellationToken);
     }

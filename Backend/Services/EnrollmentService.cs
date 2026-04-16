@@ -3,7 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using Backend.Models.Domain;
-using Backend.Utils;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -27,7 +27,7 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken, Guid? memberId = null)
     {
-        var query = _db.Enrollments.Include(e => e.Activity).AsQueryable();
+        var query = _db.Enrollments.AsQueryable();
 
         if (memberId.HasValue)
         {
@@ -87,18 +87,7 @@ public class EnrollmentService : IEnrollmentService
                 .Select(q => q.Id)
                 .ToList();
 
-            var providedQuestionIds = providedAnswers.Select(a => a.QuestionId).ToList();
-
-            var validQuestionIds = activity.SpecificationQuestions.Select(q => q.Id).ToHashSet();
-
-            if (providedAnswers.Any(a => !validQuestionIds.Contains(a.QuestionId)))
-                throw new ArgumentException("Invalid specification question(s) provided.");
-
-            if (mandatoryQuestionIds.Except(providedQuestionIds).Any())
-                throw new ArgumentException("Missing mandatory specification answers.");
-
-            if (providedAnswers.Any(a => !AnswerValidateUtils.IsValidAnswer(a.Answer, activity.SpecificationQuestions.First(q => q.Id == a.QuestionId).Type, activity.SpecificationQuestions.First(q => q.Id == a.QuestionId).Options)))
-                throw new ArgumentException("One or more provided answers are invalid.");
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions);
 
             int currentParticipants = activity.Enrollments.Count(e => !e.IsOnWaitingList);
 
@@ -121,7 +110,7 @@ public class EnrollmentService : IEnrollmentService
                 }).ToList()
             };
 
-            StateValidateUtils.Validate(enrollment);
+            StateValidator.Validate(enrollment);
 
             _db.Enrollments.Add(enrollment);
             await _db.SaveChangesAsync(cancellationToken);
@@ -163,22 +152,12 @@ public class EnrollmentService : IEnrollmentService
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
             _db.Enrollments.Remove(enrollment);
 
-            await _db.SaveChangesAsync(cancellationToken);
-
             if (!wasOnWaitingList)
             {
-                var next = await _db.Enrollments
-                    .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
-                    .OrderBy(e => e.RegisteredOn)
-                    .FirstOrDefaultAsync(cancellationToken);
-
-                if (next != null)
-                {
-                    next.IsOnWaitingList = false;
-                    await _db.SaveChangesAsync(cancellationToken);
-                }
+                PromoteFromWaitingList(activityId, cancellationToken);
             }
 
+            await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch
@@ -213,18 +192,7 @@ public class EnrollmentService : IEnrollmentService
 
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
 
-            var validQuestionIds = activity.SpecificationQuestions.Select(q => q.Id).ToHashSet();
-            var mandatoryQuestionIds = activity.SpecificationQuestions.Where(q => q.IsMandatory).Select(q => q.Id).ToList();
-            var providedQuestionIds = providedAnswers.Select(a => a.QuestionId).ToList();
-
-            if (providedAnswers.Any(a => !validQuestionIds.Contains(a.QuestionId)))
-                throw new ArgumentException("Invalid specification question(s).");
-
-            if (mandatoryQuestionIds.Except(providedQuestionIds).Any())
-                throw new ArgumentException("Missing mandatory answers.");
-
-            if (providedAnswers.Any(a => !AnswerValidateUtils.IsValidAnswer(a.Answer, activity.SpecificationQuestions.First(q => q.Id == a.QuestionId).Type, activity.SpecificationQuestions.First(q => q.Id == a.QuestionId).Options)))
-                throw new ArgumentException("One or more provided answers are invalid.");
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions);
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
 
@@ -236,7 +204,7 @@ public class EnrollmentService : IEnrollmentService
                 Enrollment = enrollment
             }).ToList();
 
-            StateValidateUtils.Validate(enrollment);
+            StateValidator.Validate(enrollment);
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -250,8 +218,7 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task PatchEnrollment(uint activityId, Guid memberId, JsonPatchDocument<Enrollment> patchDoc, CancellationToken cancellationToken)
     {
-        if (patchDoc == null)
-            throw new ArgumentException("Patch document cannot be null");
+        ArgumentNullException.ThrowIfNull(patchDoc);
 
         if (patchDoc.Operations.Any(op =>
             op.path.Equals("/activityid", StringComparison.OrdinalIgnoreCase) ||
@@ -267,8 +234,29 @@ public class EnrollmentService : IEnrollmentService
             throw new KeyNotFoundException();
 
         patchDoc.ApplyTo(enrollment);
-        StateValidateUtils.Validate(enrollment);
+        StateValidator.Validate(enrollment);
 
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public void PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct)
+    {
+        var next = _db.Enrollments
+            .Include(e => e.Member)
+            .Include(e => e.Activity)
+            .Where(e => e.ActivityId == activityId && e.IsOnWaitingList && TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
+            .OrderBy(e => e.RegisteredOn)
+            .Take(numberToPromote)
+            .ToList();
+
+        foreach (var enrollment in next)
+        {
+            enrollment.IsOnWaitingList = false;
+        }
+    }
+
+    public void PromoteFromWaitingList(uint activityId, CancellationToken ct)
+    {
+        PromoteFromWaitingList(activityId, 1, ct);
     }
 }
