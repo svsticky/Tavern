@@ -1,4 +1,5 @@
 using Backend.Models.Domain;
+using Backend.Services;
 using Backend.Utils.DateTime;
 using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
@@ -29,7 +30,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "MembershipGLAccount", "8000");
 
-        await EnsureBoardAccountExists(db);
+        var keycloakOutboxWorker = scope.ServiceProvider.GetRequiredService<KeycloakOutboxWorker>();
+
+        await EnsureBoardAccountExists(db, keycloakOutboxWorker);
     }
 
     private static async Task<string> EnsureSettingExists(PostgresDbContext db, string name, string defaultValue)
@@ -73,7 +76,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         }
     }
 
-    private static async Task EnsureBoardAccountExists(PostgresDbContext db)
+    private static async Task EnsureBoardAccountExists(PostgresDbContext db, KeycloakOutboxWorker keycloakOutboxWorker)
     {
         uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
 
@@ -104,7 +107,6 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 };
 
                 db.Members.Add(backupMember);
-                await db.SaveChangesAsync();
 
                 db.GroupMemberships.Add(new GroupMembership
                 {
@@ -113,15 +115,16 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     RoleAliasId = null
                 });
 
+                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);
+
                 await db.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
         }
         catch
         {
             await transaction.RollbackAsync();
-            throw;
         }
-        await transaction.CommitAsync();
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

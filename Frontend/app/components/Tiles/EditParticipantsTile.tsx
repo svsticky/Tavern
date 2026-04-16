@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { getApiActivitiesByIdEnrollmentsExport, type ActivityResponseDto } from "~/api";
+import { deleteApiEnrollmentsByActivityIdByMemberId, getApiActivitiesByIdEnrollmentsExport, type ActivityResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
@@ -41,6 +41,19 @@ export default function editParticipantsTile({activity}: {activity: ActivityResp
         error: t("download_failed"),
       });
     }
+
+    const handleUnenroll = (memberId: string) => {
+      const handleUnenrollAction = async () => {
+        try {
+          const response = await deleteApiEnrollmentsByActivityIdByMemberId({
+            path: { activityId: activity.id, memberId: memberId },
+          });
+        } catch (error) {
+          console.error("Error unenrolling participant:", error);
+        }
+      }
+    }
+
     return (
         <div className="lg:col-span-1 space-y-6">
             <BorderedTile>
@@ -73,7 +86,7 @@ export default function editParticipantsTile({activity}: {activity: ActivityResp
                             </div>
                             
                             <Button variant="danger" className="shrink-0 whitespace-nowrap">
-                              Unenroll
+                              {t("unenroll")}
                             </Button>
                           </div>
                       </BorderedTile>
@@ -96,13 +109,13 @@ export default function editParticipantsTile({activity}: {activity: ActivityResp
     
                               <Button variant="secondary" className="flex-1 w-full overflow-hidden">
                                 <span className="truncate block w-full px-1">
-                                  Move to participants
+                                  {t("move_to_participants")}
                                 </span>
                               </Button>
                               
                               <Button variant="danger" className="flex-1 w-full overflow-hidden">
                                 <span className="truncate block w-full px-1">
-                                  Unenroll
+                                  {t("unenroll")}
                                 </span>
                               </Button>
                               
@@ -114,7 +127,9 @@ export default function editParticipantsTile({activity}: {activity: ActivityResp
                   }
                 </div>
 
-                <Button variant="secondary" className="mt-4">Enroll member</Button>
+                <Button variant="secondary" className="mt-4">
+                  {t("enroll_member")}
+                </Button>
               </div>
             </BorderedTile>
           </div>
