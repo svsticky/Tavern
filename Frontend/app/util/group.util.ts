@@ -1,5 +1,6 @@
 import type { KeycloakTokenParsed } from "keycloak-js";
 import { getAssociationYear } from "./date.util";
+import { useApp } from "~/context/AppContext";
 
 export const isInGroupWithName = (
   tokenParsed: KeycloakTokenParsed | undefined,
@@ -46,3 +47,19 @@ export const isInGroupWithId = (
     );
   });
 };
+
+export const isBoard = (tokenParsed: KeycloakTokenParsed | undefined): boolean => {
+  const { boardGroupId } = useApp();
+
+  if(!boardGroupId) return false;
+
+  return isInGroupWithId(tokenParsed, boardGroupId);
+}
+
+export const isBoardOrCandidateBoard = (tokenParsed: KeycloakTokenParsed | undefined): boolean => {
+  const { boardGroupId, candidateBoardGroupId } = useApp();
+
+  if(!boardGroupId || !candidateBoardGroupId) return false;
+
+  return isInGroupWithId(tokenParsed, boardGroupId) || isInGroupWithId(tokenParsed, candidateBoardGroupId);
+}

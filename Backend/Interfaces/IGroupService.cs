@@ -17,4 +17,8 @@ public interface IGroupService
     Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken);
 
     Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken);
+
+    Task<uint> GetBoardGroupId(CancellationToken cancellationToken);
+
+    Task<uint> GetCandidateBoardGroupId(CancellationToken cancellationToken);
 }

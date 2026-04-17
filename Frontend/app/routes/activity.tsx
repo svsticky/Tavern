@@ -8,7 +8,7 @@ import Button from "~/components/UI/Button";
 import { useNavigate } from "react-router";
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
-import { isInGroupWithId } from "~/util/group.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { PageHeader } from "~/components/UI/PageHeader";
 import toast from "react-hot-toast";
 
@@ -49,7 +49,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
   
   if(activity == null) return t("failed_fetching");
   
-  const canEdit = isInGroupWithId(keycloak.tokenParsed, 1) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && isInGroupWithId(keycloak.tokenParsed, activity.organizerId) && new Date(activity.dateTimeStart) > new Date(Date.now()));
+  const canEdit = isBoardOrCandidateBoard(keycloak.tokenParsed) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && new Date(activity.dateTimeStart) > new Date(Date.now()));
 
   return (
     <div className="flex flex-col w-full">

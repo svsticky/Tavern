@@ -9,7 +9,7 @@ import AnnouncementsList from "~/components/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { isInGroupWithId } from "~/util/group.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 export default function AnnouncementsPage() {
   const {keycloak, initialized} = useKeycloak();
@@ -46,7 +46,7 @@ export default function AnnouncementsPage() {
     <>
       <div className="flex justify-between items-center">
         <PageHeader title={t("announcements")}
-          action={isInGroupWithId(keycloak.tokenParsed, 1) && (
+          action={isBoardOrCandidateBoard(keycloak.tokenParsed) && (
           <Button 
             onClick={() => (navigate("/announcements/create"))}
             className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"

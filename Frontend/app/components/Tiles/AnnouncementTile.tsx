@@ -4,7 +4,7 @@ import { cn } from "~/util/tailwind.util";
 import Tile from "./Tile";
 import Markdown from "~/components/UI/Markdown";
 import { useKeycloak } from "@react-keycloak/web";
-import { isInGroupWithId } from "~/util/group.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { useNavigate } from "react-router";
 import { t } from "i18next";
 import type { GetAnnouncementResponseDto } from "~/api";
@@ -21,7 +21,7 @@ export default function AnnouncementTile({
   const { keycloak } = useKeycloak();
   const navigate = useNavigate();
 
-  const isBoard = isInGroupWithId(keycloak.tokenParsed, 1);
+  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
 
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>

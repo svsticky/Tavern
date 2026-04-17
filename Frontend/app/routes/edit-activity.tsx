@@ -9,7 +9,7 @@ import {
 } from "~/api";
 import EditActivityForm from "~/components/EditActivityForm";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { isInGroupWithId } from "~/util/group.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 import EditParticipantsTile from "../components/Tiles/EditParticipantsTile";
 import SendActivityMailComponent from "~/components/SendActivityMailComponent";
 
@@ -19,7 +19,7 @@ export default function ActivityFormPage() {
   const { pathname } = useLocation();
 
   const { keycloak } = useKeycloak();
-  const isBoard = isInGroupWithId(keycloak.tokenParsed, 1);
+  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
 
   const [loading, setLoading] = useState<boolean>(true);
 

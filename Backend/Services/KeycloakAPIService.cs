@@ -23,21 +23,32 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             throw new Exception($"Member with id {keycloakId} not found.");
         }
 
+        var client = httpClientFactory.CreateClient("KeycloakAdmin");
+        var tokenResponse = await GetServiceAccountToken();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
+
+        var currentKeycloakUser = await client.GetFromJsonAsync<System.Text.Json.JsonElement>($"users/{keycloakId}");
+        string? currentEmail = currentKeycloakUser.GetProperty("email").GetString();
+
+        bool emailChanged = !string.Equals(currentEmail, member.Email, StringComparison.OrdinalIgnoreCase);
+
         var memberships = await db.GroupMemberships
             .Include(gm => gm.RoleAlias!.Role)
             .Where(gm => gm.MemberId == member.Id && gm.Group.Active)
             .Select(gm => $"{gm.MembershipYear}:{gm.Group.Id};{gm.Group.Name}:{(gm.RoleAlias != null ? gm.RoleAlias.Id : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Role.Name : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Name : "")}")
             .ToListAsync();
 
-        var client = httpClientFactory.CreateClient("KeycloakAdmin");
-
-        var tokenResponse = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updatedUser = MapToKeycloakUser(member, memberships.ToArray());
+        var updatedUser = MapToKeycloakUser(member, memberships.ToArray(), emailVerified: emailChanged ? false : null);
 
         var response = await client.PutAsJsonAsync($"users/{member.KeycloakId}", updatedUser);
         response.EnsureSuccessStatusCode();
+
+        if (emailChanged)
+        {
+            await SendActionEmail(keycloakId, new[] { "VERIFY_EMAIL" });
+        }
     }
 
     public async Task<Guid?> CreateUserInKeycloak(Member member)
@@ -133,7 +144,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         }
     }
 
-    private object MapToKeycloakUser(Member member, string[]? memberships = null)
+    private object MapToKeycloakUser(Member member, string[]? memberships = null, bool? emailVerified = null)
     {
         return new
         {
@@ -142,6 +153,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
             firstName = member.FirstName,
             lastName = member.LastName,
             enabled = true,
+            emailVerified = emailVerified,
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
                 { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPayment(member.Id) ? "full" : "not_paid" } },

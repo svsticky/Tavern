@@ -150,4 +150,22 @@ public class GroupService : IGroupService
 
         await _db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<uint> GetBoardGroupId(CancellationToken cancellationToken)
+    {
+        var setting = await _db.Settings.FindAsync(new [] { "BoardGroupId" }, cancellationToken);
+        if (setting == null || !uint.TryParse(setting.Value, out uint boardGroupId))
+            throw new KeyNotFoundException("BoardGroupId setting is missing or invalid.");
+
+        return boardGroupId;
+    }
+
+    public async Task<uint> GetCandidateBoardGroupId(CancellationToken cancellationToken)
+    {
+        var setting = await _db.Settings.FindAsync(new[] { "CandidateBoardGroupId" }, cancellationToken);
+        if (setting == null || !uint.TryParse(setting.Value, out uint candidateBoardGroupId))
+            throw new KeyNotFoundException("CandidateBoardGroupId setting is missing or invalid.");
+
+        return candidateBoardGroupId;
+    }
 }

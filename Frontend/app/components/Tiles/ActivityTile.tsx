@@ -7,7 +7,7 @@ import { type ActivityResponseDto } from "~/api";
 import { useState } from "react";
 import { useKeycloak } from "@react-keycloak/web";
 import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
-import { isInGroupWithId } from "~/util/group.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 type ActivityTileProps = {
   activity: ActivityResponseDto;
@@ -24,7 +24,7 @@ export default function ActivityTile({
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
 
-  const canEdit = isInGroupWithId(keycloak.tokenParsed, 1) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && isInGroupWithId(keycloak.tokenParsed, activity.organizerId) && new Date(activity.dateTimeStart) > new Date(Date.now()));
+  const canEdit = isBoardOrCandidateBoard(keycloak.tokenParsed) || (!activity.showInKoala && !activity.showOnWebsite && activity.organizerId && new Date(activity.dateTimeStart) > new Date(Date.now()));
   const posterUrl = `${import.meta.env.ApiUrl}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 

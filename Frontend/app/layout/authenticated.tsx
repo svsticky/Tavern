@@ -2,14 +2,17 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
 import { client } from "~/api/client.gen";
-import { postApiPaymentsMembership } from "~/api/sdk.gen";
+import { getApiGroupsBoard, postApiPaymentsMembership } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
+import { useApp } from "~/context/AppContext";
 import i18n from "~/i18n";
 
 export default function AuthenticatedLayout() {
   const { keycloak, initialized } = useKeycloak();
 
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+
+  const { boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId } = useApp();
 
   useEffect(() => {
     if (!initialized || !client.instance) return;
@@ -42,6 +45,28 @@ export default function AuthenticatedLayout() {
       return;
     }
 
+    if (boardGroupId === null) {
+      getApiGroupsBoard() 
+        .then(res => {
+          if (res.data) {
+            setBoardGroupId(res.data);
+            console.log("Board Group ID geladen:", res.data);
+          }
+        })
+        .catch(err => console.error("Could not fetch board group ID", err));
+    }
+
+    if(candidateBoardGroupId === null) {
+      getApiGroupsBoard() 
+        .then(res => {
+          if (res.data) {
+            setCandidateBoardGroupId(res.data);
+            console.log("Candidate Board Group ID geladen:", res.data);
+          }
+        })
+        .catch(err => console.error("Could not fetch candidate board group ID", err));
+    }
+
     const resInterceptor = client.instance.interceptors.response.use(
       async (response) => {
         return response;
@@ -60,7 +85,7 @@ export default function AuthenticatedLayout() {
       client.instance.interceptors.request.eject(reqInterceptor);
       client.instance.interceptors.response.eject(resInterceptor);
     };
-  }, [initialized, keycloak.token]);
+  }, [initialized, keycloak.token, boardGroupId, candidateBoardGroupId]);
 
   if (!initialized) return null;
 

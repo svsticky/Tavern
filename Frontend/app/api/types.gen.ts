@@ -1119,6 +1119,38 @@ export type PutApiGroupsByIdResponses = {
     200: unknown;
 };
 
+export type GetApiGroupsBoardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/groups/board';
+};
+
+export type GetApiGroupsBoardResponses = {
+    /**
+     * OK
+     */
+    200: number;
+};
+
+export type GetApiGroupsBoardResponse = GetApiGroupsBoardResponses[keyof GetApiGroupsBoardResponses];
+
+export type GetApiGroupsCandidateBoardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/groups/candidate-board';
+};
+
+export type GetApiGroupsCandidateBoardResponses = {
+    /**
+     * OK
+     */
+    200: number;
+};
+
+export type GetApiGroupsCandidateBoardResponse = GetApiGroupsCandidateBoardResponses[keyof GetApiGroupsCandidateBoardResponses];
+
 export type PostApiMailsNormalData = {
     body?: PostMailDto;
     path?: never;

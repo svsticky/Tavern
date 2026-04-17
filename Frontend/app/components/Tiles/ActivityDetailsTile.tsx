@@ -6,7 +6,7 @@ import { useState } from 'react';
 import Button from '../UI/Button';
 import { t } from 'i18next';
 import { formatDate } from '~/util/date.util';
-import { isInGroupWithId } from '~/util/group.util';
+import { isBoardOrCandidateBoard } from '~/util/group.util';
 import { formatForGoogleCalendar, formatForWhatsApp } from '~/util/markdown.util';
 import Markdown from 'react-markdown';
 import AnswerQuestionsTile from './AnswerQuestionsTile';
@@ -285,7 +285,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-bold text-slate-900">{t("description")}</h3>
 
-            {isInGroupWithId(keycloak.tokenParsed, 1) && (
+            {isBoardOrCandidateBoard(keycloak.tokenParsed) && (
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
