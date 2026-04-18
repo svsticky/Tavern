@@ -34,6 +34,8 @@ public class EnrollmentService : IEnrollmentService
             query = query.Where(e => e.MemberId == memberId.Value);
         }
 
+        // To do: if member id == null, ensure board or candidate board
+
         return await query.ToListAsync(cancellationToken);
     }
 
@@ -70,15 +72,16 @@ public class EnrollmentService : IEnrollmentService
 
             bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(member.Id);
 
-            var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
-            if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
-                throw new ArgumentException("Enrollment deadline has passed.");
+            if (!isBoardMember)
+            {
+                await EnsureActivityEnrollmentsCanBeChanged(activity, isBoardMember, cancellationToken);
+                
+                if (!TargetAudienceHelper.IsMemberInTargetAudience(member, activity.AllowedAudience))
+                    throw new UnauthorizedAccessException("Member is not in the target audience for this activity.");
+            }
 
             if (activity.Enrollments.Any(e => e.MemberId == dto.MemberId))
                 throw new ArgumentException("Member is already enrolled (or on waiting list).");
-
-            if (!isBoardMember && !TargetAudienceHelper.IsMemberInTargetAudience(member, activity.AllowedAudience))
-                throw new ArgumentException("Member is not in the target audience for this activity.");
 
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
 
@@ -144,10 +147,15 @@ public class EnrollmentService : IEnrollmentService
                 throw new KeyNotFoundException();
 
             // to do: check if it is own enrollment or if user is board member
+            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(memberId);
 
-            var enrollmentDeadline = enrollment.Activity.EnrollmentDeadline ?? enrollment.Activity.DateTimeEnd;
-            
-            // To do: check if enrollmentdeadline passed, and if so, only allow deletion if user is board member
+            if (!isBoardMember)
+            {
+                await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);
+                
+                if(memberId != enrollment.MemberId)
+                    throw new UnauthorizedAccessException("Members can only delete their own enrollments.");
+            }
 
             bool wasOnWaitingList = enrollment.IsOnWaitingList;
 
@@ -192,10 +200,18 @@ public class EnrollmentService : IEnrollmentService
             if (activity == null)
                 throw new KeyNotFoundException("Activity not found.");
 
-            var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
-
             bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(memberId);
 
+            if (!isBoard)
+            {
+                await EnsureActivityEnrollmentsCanBeChanged(activity, isBoard, cancellationToken);
+                
+                if(memberId != enrollment.MemberId)
+                    throw new UnauthorizedAccessException("Members can only update their own enrollments.");
+            }
+            
+            var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
+            
             EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
@@ -237,6 +253,16 @@ public class EnrollmentService : IEnrollmentService
         if (enrollment == null)
             throw new KeyNotFoundException();
 
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(memberId);
+
+        if(!isBoardMember)
+        {
+            await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);
+            
+            if(memberId != enrollment.MemberId)
+                throw new UnauthorizedAccessException("Members can only update their own enrollments.");
+        }
+
         patchDoc.ApplyTo(enrollment);
         StateValidator.Validate(enrollment);
 
@@ -264,5 +290,31 @@ public class EnrollmentService : IEnrollmentService
     public void PromoteFromWaitingList(uint activityId, CancellationToken ct)
     {
         PromoteFromWaitingList(activityId, 1, ct);
+    }
+
+    private async Task EnsureActivityEnrollmentsCanBeChanged(Activity activity, bool isBoardMember, CancellationToken cancellationToken)
+    {
+        if (!activity.ShowInKoala)
+        {
+            throw new UnauthorizedAccessException("Activity is not visible for enrollment.");
+        }
+
+        if (!activity.IsEnrollable)
+        {
+            if(activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
+            {
+                activity.IsEnrollable = true;
+                activity.EnrollOpenDate = null;
+                await _db.SaveChangesAsync(cancellationToken);
+            }
+            else
+            {
+                throw new UnauthorizedAccessException("Activity is not open for enrollment.");
+            }
+        }
+
+        var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
+        if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
+            throw new UnauthorizedAccessException("Enrollment deadline has passed.");
     }
 }

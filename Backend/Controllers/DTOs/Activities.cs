@@ -31,6 +31,8 @@ public abstract class BaseActivityDTO<TQuestion>
 
     public DateTimeOffset? EnrollmentDeadline { get; set; }
 
+    public DateTimeOffset? EnrollOpenDate { get; set; }
+
     [StringLength(200)]
     public required string Location { get; set; }
 
@@ -66,6 +68,7 @@ public class ActivityResponseDTO
     public required DateTimeOffset DateTimeEnd { get; set; }
     public DateTimeOffset? UnenrollmentDeadline { get; set; }
     public DateTimeOffset? EnrollmentDeadline { get; set; }
+    public DateTimeOffset? EnrollOpenDate { get; set; }
     public required string Location { get; set; }
     public uint? ParticipantLimit { get; set; }
     public uint? OrganizerId { get; set; }

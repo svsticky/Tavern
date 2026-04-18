@@ -85,6 +85,11 @@ public class Activity
     public DateTimeOffset? EnrollmentDeadline { get; set; }
 
     /// <summary>
+    /// The date and time at which the activity will be open for enrolling.
+    /// </summary>
+    public DateTimeOffset? EnrollOpenDate { get; set; }
+
+    /// <summary>
     /// The location where the activity will take place.
     /// </summary>
     [StringLength(200)]

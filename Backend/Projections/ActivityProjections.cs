@@ -21,6 +21,7 @@ public static class ActivityProjections
             DateTimeEnd = a.DateTimeEnd,
             UnenrollmentDeadline = a.UnenrollmentDeadline,
             EnrollmentDeadline = a.EnrollmentDeadline,
+            EnrollOpenDate = a.EnrollOpenDate,
             Location = a.Location,
             ParticipantLimit = a.ParticipantLimit,
             OrganizerId = a.OrganizerId,

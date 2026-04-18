@@ -347,12 +347,14 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           <InfoItem icon={<Users size={18}/>} label={t("participants")} value={`${activity.enrollments?.filter(e => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ''}`} />
         </div>
 
-        <AnswerQuestionsTile
-          questions={activity.specificationQuestions}
-          answers={activity.enrollments.find(e => e.member.id === keycloak.tokenParsed?.UserId)?.specificationAnswers ?? []}
-          onChange={(answers) => setAnswers(answers)}
-          disabled={submitting || activity.enrollmentDeadline ? new Date(Date.now()) > new Date(activity.enrollmentDeadline!) : false}
-        />
+        {activity.isEnrollable && (
+          <AnswerQuestionsTile
+            questions={activity.specificationQuestions}
+            answers={activity.enrollments.find(e => e.member.id === keycloak.tokenParsed?.UserId)?.specificationAnswers ?? []}
+            onChange={(answers) => setAnswers(answers)}
+            disabled={submitting || activity.enrollmentDeadline ? new Date(Date.now()) > new Date(activity.enrollmentDeadline!) : false}
+          />
+        )}
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
@@ -376,7 +378,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
                 {t("sign_out")}{submitting && ('...')}
               </Button>
             </div>
-          ) : (
+          ) : activity.isEnrollable && (
             <Button 
               variant='primary' 
               onClick={handleEnrollment} 

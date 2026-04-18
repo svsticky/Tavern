@@ -228,4 +228,11 @@ public class GetMembersDto
     public string? Search { get; set; }
     public int PageSize { get; set; } = 20;
     public int Page { get; set; } = 0;
+    public uint? StudyId { get; set; }
+    public bool? Gratie { get; set; }
+    public bool? LidVanVerdienste { get; set; }
+    public bool? EreLid { get; set; }
+    public bool? Begunstiger { get; set; }
+    public bool? Suspended { get; set; }
+    public StudyType? StudyType { get; set; }
 }

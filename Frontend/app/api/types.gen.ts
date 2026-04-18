@@ -16,6 +16,7 @@ export type Activity = {
     dateTimeEnd?: string;
     unenrollmentDeadline?: string | null;
     enrollmentDeadline?: string | null;
+    enrollOpenDate?: string | null;
     location?: string;
     participantLimit?: number | null;
     organizerId?: number | null;
@@ -48,6 +49,7 @@ export type ActivityResponseDto = {
     dateTimeEnd: string;
     unenrollmentDeadline?: string | null;
     enrollmentDeadline?: string | null;
+    enrollOpenDate?: string | null;
     location: string;
     participantLimit?: number | null;
     organizerId?: number | null;
@@ -531,6 +533,7 @@ export type PostApiActivitiesData = {
         DateTimeEnd: string;
         UnenrollmentDeadline?: string;
         EnrollmentDeadline?: string;
+        EnrollOpenDate?: string;
         Location: string;
         ParticipantLimit?: number;
         OrganizerId?: number;
@@ -622,6 +625,7 @@ export type PutApiActivitiesByIdData = {
         DateTimeEnd: string;
         UnenrollmentDeadline?: string;
         EnrollmentDeadline?: string;
+        EnrollOpenDate?: string;
         Location: string;
         ParticipantLimit?: number;
         OrganizerId?: number;
@@ -1188,6 +1192,13 @@ export type GetApiMembersData = {
         Search?: string;
         PageSize?: number;
         Page?: number;
+        StudyId?: number;
+        Gratie?: boolean;
+        LidVanVerdienste?: boolean;
+        EreLid?: boolean;
+        Begunstiger?: boolean;
+        Suspended?: boolean;
+        StudyType?: StudyType;
     };
     url: '/api/members';
 };

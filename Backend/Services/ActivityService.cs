@@ -7,8 +7,8 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
-using Backend.QueryExtensions;
 using System.Text;
+using Backend.Utils.DateTime;
 
 namespace Backend.Services;
 
@@ -20,7 +20,7 @@ public class ActivityService : IActivityService
     private readonly IPermissionService _permissionService;
     private readonly IEnrollmentService _enrollmentService;
 
-    private readonly string[] _restrictedPaths = new[] { "/showInKoala", "/showOnWebsite", "/paymentDeadline" };
+    private readonly string[] _restrictedPaths = new[] { "/showInKoala", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
     public ActivityService(
         PostgresDbContext db,
@@ -43,10 +43,15 @@ public class ActivityService : IActivityService
         if (dto.IncludePast && !isBoard)
             throw new UnauthorizedAccessException();
 
+        var userGroupIds = await _db.GroupMemberships
+            .Where(gm => gm.MemberId == userId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear())
+            .Select(gm => gm.GroupId)
+            .ToListAsync();
+
         var query = _db.Activities
             .AsNoTracking()
-            .Select(ActivityProjections.ToDto(userId, isBoard))
-            .Filter(dto);
+            .Filter(dto, isBoard, userGroupIds)
+            .Select(ActivityProjections.ToDto(userId, isBoard));
 
         return await query
             .OrderBy(a => a.DateTimeStart)
@@ -57,15 +62,28 @@ public class ActivityService : IActivityService
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
-        var activity = await _db.Activities.Select(ActivityProjections.ToDto(userId, isBoard)).FirstOrDefaultAsync(a => a.Id == id);
+        var activity = await _db.Activities.FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)
             return null;
 
+        if(!activity.IsEnrollable && activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
+        {
+            activity.IsEnrollable = true;
+            activity.EnrollOpenDate = null;
+            await _db.SaveChangesAsync();
+        }
+
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !isBoard)
             throw new UnauthorizedAccessException();
 
-        return activity;
+        if (!activity.ShowInKoala && isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
+            throw new UnauthorizedAccessException();
+
+        return await _db.Activities
+            .Where(a => a.Id == id)
+            .Select(ActivityProjections.ToDto(userId, isBoard))
+            .FirstOrDefaultAsync();
     }
 
     public async Task<Activity> CreateActivity(Guid userId, PostActivityDTO dto)
@@ -82,6 +100,11 @@ public class ActivityService : IActivityService
         if (dto.Poster != null)
         {
             ExtensionValidator.ValidatePosterExtension(dto.Poster);
+        }
+
+        if (dto.IsEnrollable)
+        {
+            dto.EnrollOpenDate = null;
         }
 
         using var transaction = await _db.Database.BeginTransactionAsync();
@@ -110,6 +133,7 @@ public class ActivityService : IActivityService
                 DateTimeEnd = dto.DateTimeEnd,
                 UnenrollmentDeadline = dto.UnenrollmentDeadline,
                 EnrollmentDeadline = dto.EnrollmentDeadline,
+                EnrollOpenDate = dto.EnrollOpenDate,
                 Location = dto.Location,
                 ParticipantLimit = dto.ParticipantLimit,
                 OrganizerId = dto.OrganizerId,
@@ -210,6 +234,11 @@ public class ActivityService : IActivityService
 
             patchDoc.ApplyTo(activity);
 
+            if (activity.IsEnrollable)
+            {
+                activity.EnrollOpenDate = null;
+            }
+
             StateValidator.Validate(activity);
 
             if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
@@ -303,7 +332,7 @@ public class ActivityService : IActivityService
         if (dto.Poster != null)
             ExtensionValidator.ValidatePosterExtension(dto.Poster);
 
-        if (activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null)
+        if (activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null || dto.EnrollOpenDate != null)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         using var transaction = await _db.Database.BeginTransactionAsync();
@@ -330,6 +359,7 @@ public class ActivityService : IActivityService
             activity.DateTimeEnd = dto.DateTimeEnd;
             activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;
             activity.EnrollmentDeadline = dto.EnrollmentDeadline;
+            activity.EnrollOpenDate = dto.IsEnrollable ? null : dto.EnrollOpenDate;
             activity.Location = dto.Location;
             activity.ParticipantLimit = dto.ParticipantLimit;
             activity.OrganizerId = dto.OrganizerId;

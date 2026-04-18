@@ -10,6 +10,9 @@ import { useNavigate } from "react-router";
 import { getApiMembers, type MemberResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import toast from "react-hot-toast";
+import Modal from "~/components/UI/Modal";
+import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay";
+import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
 const PAGE_SIZE = 20;
 
@@ -19,6 +22,8 @@ export default function Members() {
   const [members, setMembers] = useState<MemberResponseDto[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<MembersFilterDto | null>(null);
   
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -28,7 +33,14 @@ export default function Members() {
     try {
       setLoading(true);
       const response = await getApiMembers({ 
-        query: { Page: pageNum, PageSize: PAGE_SIZE, Search: search } 
+        query: { Page: pageNum, PageSize: PAGE_SIZE, Search: search, 
+          StudyId: filters?.studyId || undefined, 
+          Gratie: filters?.gratie || undefined, 
+          LidVanVerdienste: filters?.lidVanVerdienste || undefined, 
+          EreLid: filters?.ereLid || undefined, 
+          Begunstiger: filters?.begunstiger || undefined, 
+          Suspended: filters?.suspended || undefined, 
+          StudyType: filters?.studyType || undefined } 
       });
       
       if (response.data) {
@@ -45,7 +57,14 @@ export default function Members() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters]);
+
+  const applyFilters = (newFilters: MembersFilterDto) => {
+    console.log(newFilters);
+    setFilters(newFilters);
+    console.log(filters);
+    setIsFiltersOpen(false);
+  };
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -59,7 +78,7 @@ export default function Members() {
     setPage(1);
     setHasMore(true);
     fetchMembers(1, debouncedSearchQuery, true);
-  }, [debouncedSearchQuery, fetchMembers]);
+  }, [debouncedSearchQuery, filters, fetchMembers]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -133,7 +152,7 @@ export default function Members() {
             />
           </div>
 
-          <Button variant="secondary" className="h-[42px]">
+          <Button variant="secondary" className="h-[42px]" onClick={() => setIsFiltersOpen(true)}>
             {t("filters")}
           </Button>
           
@@ -147,6 +166,14 @@ export default function Members() {
           <span className="text-slate-400 text-sm">{loading ? t("loading_more") : hasMore ? t("load_more") : members.length === 0 ? t("no_data") : t("no_more_members")}</span>
         </div>
       </BorderedTile>
+      
+      <Modal 
+        isOpen={isFiltersOpen} 
+        onClose={() => setIsFiltersOpen(false)} 
+        title={t("filter_members")}
+      >
+        <FilterMemberOverlay filters={filters} onFilter={applyFilters} />
+      </Modal>
     </div>
   );
 }

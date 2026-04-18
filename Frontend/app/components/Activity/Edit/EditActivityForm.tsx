@@ -108,6 +108,7 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
             DateTimeEnd: new Date(fd.get("DateTimeEnd") as string).toISOString(),
             EnrollmentDeadline: fd.get("EnrollmentDeadline") ? new Date(fd.get("EnrollmentDeadline") as string).toISOString() : undefined,
             UnenrollmentDeadline: fd.get("UnenrollmentDeadline") ? new Date(fd.get("UnenrollmentDeadline") as string).toISOString() : undefined,
+            EnrollOpenDate: fd.get("EnrollOpenDate") ? new Date(fd.get("EnrollOpenDate") as string).toISOString() : undefined,
 
             ShowInKoala: isBoard ? fd.get("ShowInKoala") === "on" : false,
             ShowOnWebsite: isBoard ? fd.get("ShowOnWebsite") === "on" : false,
@@ -175,6 +176,9 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
                 <Input label={t("datetime_end")} name="DateTimeEnd" type="datetime-local" defaultValue={formatForInput(activity?.dateTimeEnd)} required />
                 <Input label={t("enrollment_deadline")} name="EnrollmentDeadline" type="datetime-local" defaultValue={formatForInput(activity?.enrollmentDeadline ?? "")} />
                 <Input label={t("unenrollment_deadline")} name="UnenrollmentDeadline" type="datetime-local" defaultValue={formatForInput(activity?.unenrollmentDeadline ?? "")} />
+                {isBoard && (
+                    <Input label={t("enroll_open_date")} name="EnrollOpenDate" type="datetime-local" defaultValue={formatForInput(activity?.enrollOpenDate ?? "")} />
+                )}
                 </FormSection>
 
                 <FormSection columns={2}>

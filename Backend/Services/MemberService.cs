@@ -19,12 +19,7 @@ namespace Backend.Services
             if (!permissionService.IsBoardOrCandidateBoardMember(userId))
                 throw new UnauthorizedAccessException("Only board members can view members.");
 
-            var query = db.Members.AsQueryable();
-
-            if (!string.IsNullOrEmpty(dto.Search))
-            {
-                query = query.Where(m => m.FirstName.Contains(dto.Search) || m.LastName.Contains(dto.Search) || m.Email.Contains(dto.Search) || m.StudentNumber.ToString().Contains(dto.Search) || m.PhoneNumber.Contains(dto.Search));
-            }
+            var query = db.Members.AsQueryable().Filter(dto);
 
             int pageSize = dto.PageSize > 0 ? dto.PageSize : 50;
             int skip = (dto.Page > 0 ? dto.Page - 1 : 0) * pageSize;
