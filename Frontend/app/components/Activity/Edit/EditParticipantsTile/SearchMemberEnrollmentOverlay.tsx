@@ -9,15 +9,21 @@ export default function SearchMemberEnrollmentOverlay({ activityId, onEnrolled, 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MemberSummaryDto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(true);
 
   useEffect(() => {
     const searchMembers = async () => {
-      if (query.length < 2) {
-        setResults([]);
-        return;
+      setSearching(true);
+      try {
+        const res = await getApiMembers({ query: { Search: query } });
+        if (res.data) {
+          setResults(res.data);
+        }
+      } catch (error) {
+        console.error("Search error:", error);
+      } finally {
+        setSearching(false);
       }
-      const res = await getApiMembers({ query: { Search: query } });
-      if (res.data) setResults(res.data);
     };
 
     const timer = setTimeout(searchMembers, 300); 
@@ -60,9 +66,11 @@ export default function SearchMemberEnrollmentOverlay({ activityId, onEnrolled, 
             </Button>
           </div>
         ))}
-        {query.length >= 2 && results.length === 0 && (
+        {results.length === 0 && (searching ? (
+          <p className="text-center py-4 text-slate-400 text-sm">{t("searching")}</p>
+        ) : results.length === 0 && !searching && (
           <p className="text-center py-4 text-slate-400 text-sm">{t("no_members_found")}</p>
-        )}
+        ))}
       </div>
     </div>
   );
