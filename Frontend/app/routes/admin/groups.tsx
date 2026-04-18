@@ -107,8 +107,7 @@ export default function Groups() {
       <BorderedTile>
         <div className="flex flex-col sm:flex-row items-center w-full gap-4">
           <div className="flex flex-col flex-1 w-full sm:w-auto">
-            <span className="text-sm text-slate-400">{t("search")}</span>
-            <Input placeholder={t("search_groups")} className="bg-slate-100 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} />
+            <Input label={t("search")} placeholder={t("search_groups")} className="bg-slate-100 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} />
           </div>
         </div>
       </BorderedTile>

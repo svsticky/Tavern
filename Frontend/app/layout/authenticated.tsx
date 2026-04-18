@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
 import { client } from "~/api/client.gen";
-import { getApiGroupsBoard, postApiPaymentsMembership } from "~/api/sdk.gen";
+import { getApiSettingsById, postApiPaymentsMembership } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
 import i18n from "~/i18n";
@@ -46,22 +46,44 @@ export default function AuthenticatedLayout() {
     }
 
     if (boardGroupId === null) {
-      getApiGroupsBoard() 
+      getApiSettingsById({
+        query: {
+          id: "BoardGroupId"
+        },
+        path: {
+          id: "BoardGroupId"
+        }
+      })
         .then(res => {
           if (res.data) {
-            setBoardGroupId(res.data);
-            console.log("Board Group ID geladen:", res.data);
+            if (!res.data.value || isNaN(parseInt(res.data.value))) {
+              console.error("Invalid board group ID:", res.data.value);
+              return;
+            }
+            setBoardGroupId(parseInt(res.data.value));
+            console.log("Board group id loaded:", res.data);
           }
         })
         .catch(err => console.error("Could not fetch board group ID", err));
     }
 
     if(candidateBoardGroupId === null) {
-      getApiGroupsBoard() 
+      getApiSettingsById({
+        query: {
+          id: "CandidateBoardGroupId"
+        },
+        path: {
+          id: "CandidateBoardGroupId"
+        }
+      })
         .then(res => {
           if (res.data) {
-            setCandidateBoardGroupId(res.data);
-            console.log("Candidate Board Group ID geladen:", res.data);
+            if (!res.data.value || isNaN(parseInt(res.data.value))) {
+              console.error("Invalid candidate board group ID:", res.data.value);
+              return;
+            }
+            setCandidateBoardGroupId(parseInt(res.data.value));
+            console.log("Candidate Board Group ID loaded:", res.data);
           }
         })
         .catch(err => console.error("Could not fetch candidate board group ID", err));

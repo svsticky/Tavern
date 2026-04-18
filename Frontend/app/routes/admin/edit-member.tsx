@@ -27,6 +27,7 @@ import Select from "~/components/UI/Select";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
 import BorderedTile from "~/components/Tiles/BorderedTile";
+import { PageHeader } from "~/components/UI/PageHeader";
 
 export default function AdminMemberEditPage() {
   const { id: memberId } = useParams<{ id: string }>();
@@ -319,6 +320,7 @@ export default function AdminMemberEditPage() {
 
   return (
     <>      
+      <PageHeader title="" backTo="/admin/members" />
       <div className="flex flex-col lg:flex-row gap-12">
         <div className="flex flex-col items-center lg:w-48">
           <div 

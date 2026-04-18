@@ -64,6 +64,7 @@ export default function NavBarLayout() {
       ...(isBoard ? [{ label: `${t("member")} ${t("management")}`, action: () => navigate("/admin/members") }] : []),
       ...(isBoard ? [{ label: `${t("group")} ${t("management")}`, action: () => navigate("/admin/groups") }] : []),
       ...(isBoard ? [{ label: `${t("finances")}`, action: () => navigate("/admin/finances") }] : []),
+      ...(isBoard ? [{ label: `${t("koala_settings")}`, action: () => navigate("/admin/settings") }] : []),
       { label: t("logout"), action: () => navigate("/logout") },
     ],
   };

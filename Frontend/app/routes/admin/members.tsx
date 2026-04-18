@@ -153,8 +153,8 @@ export default function Members() {
         <div className="flex flex-col sm:flex-row items-end w-full gap-4">
           
           <div className="flex flex-col flex-1 w-full sm:w-auto">
-            <span className="text-sm text-slate-400 mb-1">{t("search")}</span>
             <Input 
+              label={t("search")}
               placeholder={t("search_members")} 
               className="bg-slate-100 w-full" 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} 

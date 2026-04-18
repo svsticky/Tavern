@@ -189,7 +189,7 @@ export type GroupResponseDto = {
     type: GroupType;
 };
 
-export type GroupType = 'Committee' | 'WorkingGroup';
+export type GroupType = 'Committee' | 'WorkingGroup' | 'Dispute';
 
 export type GroupUpdateDto = {
     name: string;
@@ -425,6 +425,11 @@ export type RoleAliasUpdateDto = {
 
 export type RoleUpdateDto = {
     name: string;
+};
+
+export type Setting = {
+    name?: string;
+    value?: string;
 };
 
 export type SpecificationAnswer = {
@@ -1165,38 +1170,6 @@ export type GetApiGroupsByIdGroupPictureResponses = {
     200: unknown;
 };
 
-export type GetApiGroupsBoardData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/groups/board';
-};
-
-export type GetApiGroupsBoardResponses = {
-    /**
-     * OK
-     */
-    200: number;
-};
-
-export type GetApiGroupsBoardResponse = GetApiGroupsBoardResponses[keyof GetApiGroupsBoardResponses];
-
-export type GetApiGroupsCandidateBoardData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/groups/candidate-board';
-};
-
-export type GetApiGroupsCandidateBoardResponses = {
-    /**
-     * OK
-     */
-    200: number;
-};
-
-export type GetApiGroupsCandidateBoardResponse = GetApiGroupsCandidateBoardResponses[keyof GetApiGroupsCandidateBoardResponses];
-
 export type PostApiMailsNormalData = {
     body?: PostMailDto;
     path?: never;
@@ -1770,6 +1743,114 @@ export type PutApiRolesByIdData = {
 };
 
 export type PutApiRolesByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/settings';
+};
+
+export type GetApiSettingsResponses = {
+    /**
+     * OK
+     */
+    200: Array<Setting>;
+};
+
+export type GetApiSettingsResponse = GetApiSettingsResponses[keyof GetApiSettingsResponses];
+
+export type PostApiSettingsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        id?: string;
+        value?: string;
+    };
+    url: '/api/settings';
+};
+
+export type PostApiSettingsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type DeleteApiSettingsByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        id?: string;
+    };
+    url: '/api/settings/{id}';
+};
+
+export type DeleteApiSettingsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiSettingsByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        id?: string;
+    };
+    url: '/api/settings/{id}';
+};
+
+export type GetApiSettingsByIdResponses = {
+    /**
+     * OK
+     */
+    200: Setting;
+};
+
+export type GetApiSettingsByIdResponse = GetApiSettingsByIdResponses[keyof GetApiSettingsByIdResponses];
+
+export type PatchApiSettingsByIdData = {
+    body?: Array<Operation>;
+    path: {
+        id: string;
+    };
+    query?: {
+        id?: string;
+    };
+    url: '/api/settings/{id}';
+};
+
+export type PatchApiSettingsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PutApiSettingsByIdData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: {
+        id?: string;
+        value?: string;
+    };
+    url: '/api/settings/{id}';
+};
+
+export type PutApiSettingsByIdResponses = {
     /**
      * OK
      */

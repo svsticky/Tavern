@@ -220,40 +220,4 @@ public class GroupsController : ControllerBase
             return StatusCode(500, ex.Message);
         }
     }
-
-    // GET: api/groups/board
-    [HttpGet("board")]
-    public async Task<ActionResult<uint>> GetBoardGroupId(CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await _groupService.GetBoardGroupId(cancellationToken);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
-    }
-
-    // GET: api/groups/candidate-board
-    [HttpGet("candidate-board")]
-    public async Task<ActionResult<uint>> GetCandidateBoardGroupId(CancellationToken cancellationToken)
-    {
-        try
-        {
-            return await _groupService.GetCandidateBoardGroupId(cancellationToken);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, ex.Message);
-        }
-    }
 }

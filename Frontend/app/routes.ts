@@ -29,6 +29,7 @@ export default [
         route("admin/members/:id", "routes/admin/edit-member.tsx"),
         route("admin/groups", "routes/admin/groups.tsx"),
         route("admin/groups/:id", "routes/admin/edit-group.tsx"),
+        route("admin/settings", "routes/admin/settings.tsx"),
       ]),
     ]),
     

@@ -192,6 +192,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IStudyEnrollmentService, StudyEnrollmentService>();
 builder.Services.AddScoped<IStudyService, StudyService>();
 builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 builder.Services.AddHangfire(config => config
     .UsePostgreSqlStorage(options => 
