@@ -1,7 +1,7 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { getApiActivitiesById, type ActivityResponseDto } from "~/api";
-import ActivityDetailsTile from "~/components/Tiles/ActivityDetailsTile";
-import ActivityParticipantsTile from "~/components/Tiles/ActivityParticipantsTile";
+import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile";
+import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/activity";
 import Button from "~/components/UI/Button";
@@ -71,11 +71,11 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
         
         <ActivityParticipantsTile 
-          members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => !e.isOnWaitingList).map(e => e.member) ?? []} 
+          enrollments={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => !e.isOnWaitingList) ?? []} 
         />
         <ActivityParticipantsTile 
           title={t("waiting_list")} 
-          members={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => e.isOnWaitingList).map(e => e.member) ?? []} 
+          enrollments={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => e.isOnWaitingList) ?? []} 
         />
       </div>
     </div>

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { getApiActivities, type ActivityResponseDto } from "~/api";
-import ActivityTile from "~/components/Tiles/ActivityTile";
+import ActivityTile from "~/components/Activity/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";

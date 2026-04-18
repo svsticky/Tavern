@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import type { GetSpecificationQuestionResponseDto, SpecificationAnswerResponseDto, SpecificationQuestion } from "~/api";
-import Tile from "./Tile";
 import { useKeycloak } from "@react-keycloak/web";
 import Input from "../UI/Input";
 import { t } from "i18next";
+import Tile from "../Tiles/Tile";
 
 type Props = {
   questions: GetSpecificationQuestionResponseDto[];

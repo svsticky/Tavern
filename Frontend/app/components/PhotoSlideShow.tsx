@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Tile from "./Tile";
+import Tile from "./Tiles/Tile";
 
 interface PhotoSlideshowProps {
     images: string[];

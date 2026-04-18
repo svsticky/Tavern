@@ -7,11 +7,11 @@ import {
   getApiActivitiesById,
   type ActivityResponseDto,
 } from "~/api";
-import EditActivityForm from "~/components/EditActivityForm";
+import EditActivityForm from "~/components/Activity/Edit/EditActivityForm";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
-import EditParticipantsTile from "../components/Tiles/EditParticipantsTile";
-import SendActivityMailComponent from "~/components/SendActivityMailComponent";
+import EditParticipantsTile from "../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
+import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent";
 
 export default function ActivityFormPage() {
   const { id } = useParams();

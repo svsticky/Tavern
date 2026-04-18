@@ -1,21 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import BorderedTile from './Tiles/BorderedTile';
-import Form from './UI/Form/Form';
-import Button from './UI/Button';
+import BorderedTile from '../../Tiles/BorderedTile';
+import Form from '../../UI/Form/Form';
+import Button from '../../UI/Button';
 import { t } from 'i18next';
-import { FormSection } from './UI/Form/FormSection';
-import { NoContentTile } from './Tiles/NoContentTile';
-import EditQuestionTile from './Tiles/EditQuestionTile';
-import { FormHeader } from './UI/Form/FormHeader';
-import Checkbox from './UI/Checkbox';
-import Input from './UI/Input';
-import Select from './UI/Select';
-import TextArea from './UI/TextArea';
+import { FormSection } from '../../UI/Form/FormSection';
+import { NoContentTile } from '../../Tiles/NoContentTile';
+import { FormHeader } from '../../UI/Form/FormHeader';
+import Checkbox from '../../UI/Checkbox';
+import Input from '../../UI/Input';
+import Select from '../../UI/Select';
+import TextArea from '../../UI/TextArea';
 import { getApiGroups, postApiActivities, putApiActivitiesById, type ActivityResponseDto, type GetSpecificationQuestionResponseDto, type GroupResponseDto } from '~/api';
 import { useNavigate } from 'react-router';
 import { audienceMap } from '~/types/AudienceMap';
 import toast from 'react-hot-toast';
 import { getAssociationYear } from '~/util/date.util';
+import EditQuestionTile from './EditQuestionTile';
 
 const formatForInput = (isoString?: string) => isoString ? isoString.substring(0, 16) : "";
 const formatDateOnly = (isoString?: string) => isoString ? isoString.substring(0, 10) : "";
@@ -33,26 +33,32 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
     const [questions, setQuestions] = useState<Partial<GetSpecificationQuestionResponseDto>[]>([]);
 
     useEffect(() => {
-    async function loadData() {
-      try {
-        const groupsRes = await getApiGroups({ 
-          query: { IncludeInactive: false, MembershipYear: getAssociationYear() } 
-        });
-        if (groupsRes.data) setGroups(groupsRes.data);
-      } catch (error) {
-        console.error("Error loading data:", error);
-        toast.error(t("loading_failed"));
-      } finally {
-        setLoading(false);
-      }
-    }
+        if (activity?.specificationQuestions) {
+            setQuestions(activity.specificationQuestions);
+        }
+    }, [activity]);
 
-    if(isEdit) {
-        setFormValid(true);
-    }
-    
-    loadData();
-  }, [id, isEdit]);
+    useEffect(() => {
+        async function loadData() {
+        try {
+            const groupsRes = await getApiGroups({ 
+            query: { IncludeInactive: false, MembershipYear: getAssociationYear() } 
+            });
+            if (groupsRes.data) setGroups(groupsRes.data);
+        } catch (error) {
+            console.error("Error loading data:", error);
+            toast.error(t("loading_failed"));
+        } finally {
+            setLoading(false);
+        }
+        }
+
+        if(isEdit) {
+            setFormValid(true);
+        }
+        
+        loadData();
+    }, [id, isEdit]);
 
     const handleFormChange = (e: React.FormEvent<HTMLFormElement>) => {
         const fd = new FormData(e.currentTarget);
@@ -126,11 +132,11 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
         const submitProcess = async () => {
         try {
             if (isEdit) {
-            console.log("Updating activity with payload:", payload);
-            await putApiActivitiesById({ path: { id: Number(id) }, ...payload });
+                console.log("Updating activity with payload:", payload);
+                await putApiActivitiesById({ path: { id: Number(id) }, ...payload });
             } else {
-            console.log("Creating activity with payload:", payload);
-            await postApiActivities(payload);
+                console.log("Creating activity with payload:", payload);
+                await postApiActivities(payload);
             }
             
             const redirectPath = `${pathname.startsWith("/admin") ? '/admin' : ''}/activities`;
@@ -150,6 +156,8 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
         error: isEdit ? t("activity_update_failed") : t("activity_creation_failed")
         });
     };
+
+  if (loading) return t("loading");
 
   return (
     <div className="lg:col-span-2">
@@ -243,16 +251,16 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
                     </Button>
                     </div>
                     {questions.map((q, index) => (
-                    <EditQuestionTile 
-                        key={index}
-                        question={q}
-                        onRemove={() => removeQuestion(index)}
-                        onUpdate={(field, value) => updateQuestion(index, field, value)}
-                    />
+                        <EditQuestionTile 
+                            key={index}
+                            question={q}
+                            onRemove={() => removeQuestion(index)}
+                            onUpdate={(field, value) => updateQuestion(index, field, value)}
+                        />
                     ))}
 
                     {questions.length === 0 && (
-                    <NoContentTile text={t("no_specification_questions_yet")} />
+                        <NoContentTile text={t("no_specification_questions_yet")} />
                     )}
                 </div>
                 </FormSection>

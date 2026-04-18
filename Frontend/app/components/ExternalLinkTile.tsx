@@ -1,7 +1,7 @@
 import { cn } from "~/util/tailwind.util";
-import Tile from "./Tile"; // Zorg dat het pad klopt
+import Tile from "./Tiles/Tile"; // Zorg dat het pad klopt
 import type { ReactNode } from "react";
-import BorderedTile from "./BorderedTile";
+import BorderedTile from "./Tiles/BorderedTile";
 
 type ExternalLinkTileProps = {
   title: string;

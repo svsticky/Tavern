@@ -142,5 +142,20 @@ namespace Backend.Controllers
                 return NotFound(ex.Message);
             }
         }
+
+        // GET: api/payments/export?startDate=2024-01-01&endDate=2024-12-31
+        [HttpGet("export")]
+        public async Task<ActionResult> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
+        {            
+            try
+            {                
+                var (content, fileName) = await _paymentService.ExportPaymentsToCsv(startDate, endDate, ct);
+                return File(content, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

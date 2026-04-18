@@ -2,7 +2,7 @@ import { Calendar, ImageIcon, MapPin, UsersRound, PencilIcon } from "lucide-reac
 import { useTranslation } from "react-i18next";
 import { formatDate } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
-import Tile from "./Tile";
+import Tile from "../Tiles/Tile";
 import { type ActivityResponseDto } from "~/api";
 import { useState } from "react";
 import { useKeycloak } from "@react-keycloak/web";

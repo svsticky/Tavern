@@ -7,6 +7,7 @@ using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models;
 using Mollie.Api.Models.Payment.Request;
 using Mollie.Api.Models.Payment.Response;
+using System.Text;
 
 namespace Backend.Services
 {
@@ -104,6 +105,82 @@ namespace Backend.Services
             await db.SaveChangesAsync();
 
             return new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href };
+        }
+
+        public async Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
+        {
+            var startDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, "W. Europe Standard Time").Date.ToUniversalTime();
+            var endDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, "W. Europe Standard Time").Date.ToUniversalTime();
+
+            var enrollmentPayments = await db.EnrollmentPayments
+                .Include(p => p.Activity)
+                    .ThenInclude(a => a!.Organizer)
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .ToListAsync(ct);
+
+            var membershipPayments = await db.MembershipPayments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .ToListAsync(ct);
+
+            var mollieFeePayments = await db.MollieFeePayments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .ToListAsync(ct);
+
+            var csv = new StringBuilder();
+            
+            var invoiceDate = endDate.AddDays(-1).ToString("dd-MM-yyyy");
+            var periodLabel = $"ideal - {startDate:dd-MM-yyyy} / {endDate:dd-MM-yyyy}";
+            var paymentsCondition = db.Settings.Where(s => s.Name == "MolliePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
+            var mollieRelationCode = db.Settings.Where(s => s.Name == "MollieRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
+            csv.AppendLine($"factuurdatum;{invoiceDate};{periodLabel};{paymentsCondition};{mollieRelationCode}");
+
+            foreach (var p in enrollmentPayments)
+            {
+                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
+                var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
+                var activityName = p.Activity?.Name ?? "Unknown Activity";
+                var costCenter = p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter ?? "";
+                var costUnit = p.Activity?.CostUnitId ?? "";
+                var VATCode = p.Activity?.VatRate?.ToString() ?? "";
+                var price = p.Price;
+
+                var description = $"{groupName} | {activityName}";
+                csv.AppendLine($";{glAccount};{description};{VATCode};{price};{costCenter};{costUnit}");
+            }
+
+            foreach (var p in membershipPayments)
+            {
+                var glAccount = db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault() ?? "8000";
+                var description = "Lidmaatschap";
+                var VATCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+                var price = p.Price;
+                
+                csv.AppendLine($";{glAccount};{description};{VATCode};{price};;");
+            }
+
+            var groupedFees = mollieFeePayments
+                .GroupBy(p => p.Price)
+                .Select(g => new {
+                    UnitPrice = g.Key,
+                    Count = g.Count(),
+                    TotalPrice = g.Sum(p => p.Price)
+                });
+
+            var mollieFeeGLAccount = db.Settings.FirstOrDefault(s => s.Name == "MollieFeeGLAccount")?.Value ?? "5007";
+            var mollieFeeCostCenter = db.Settings.FirstOrDefault(s => s.Name == "MollieFeeCostCenter")?.Value ?? "TRX";
+            var vatCode = db.Settings.FirstOrDefault(s => s.Name == "MollieFeeVATCode")?.Value ?? "21";
+
+            foreach (var group in groupedFees)
+            {
+                var description = $"Transaction costs {group.UnitPrice:N2} x {group.Count}";
+                
+                var totalPrice = group.TotalPrice;
+
+                csv.AppendLine($";{mollieFeeGLAccount};{description};{vatCode};{totalPrice};{mollieFeeCostCenter};;");
+            }
+
+            var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
+            return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
         }
 
         public async Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, IPaymentClient paymentClient)

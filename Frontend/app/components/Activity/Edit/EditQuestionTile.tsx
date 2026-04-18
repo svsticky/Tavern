@@ -4,7 +4,7 @@ import Tile from "~/components/Tiles/Tile";
 import Checkbox from "~/components/UI/Checkbox";
 import Input from "~/components/UI/Input";
 import Select from "~/components/UI/Select";
-import BorderedTile from "./BorderedTile";
+import BorderedTile from "../../Tiles/BorderedTile";
 
 interface Props {
   question: Partial<GetSpecificationQuestionResponseDto>;

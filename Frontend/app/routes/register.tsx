@@ -2,9 +2,9 @@ import { t } from "i18next";
 import { House } from "lucide-react";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 import RegisterForm from "~/components/Register/RegisterForm";
-import RegisterPhotos from "~/components/Tiles/PhotoSLideshow";
+import RegisterPhotos from "~/components/PhotoSlideShow";
 import RegisterReasons from "~/components/Register/RegisterReasons";
-import PhotoSlideshow from "~/components/Tiles/PhotoSLideshow";
+import PhotoSlideshow from "~/components/PhotoSlideShow";
 
 export default function Register() {
   const navBarItems = [

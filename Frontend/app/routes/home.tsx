@@ -4,12 +4,12 @@ import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementResponseDto, type GroupMembership } from "~/api";
-import ActivityEnrollmentOverview from "~/components/ActivityEnrollmentOverview";
-import AnnouncementsList from "~/components/AnnouncementsList";
+import ActivityEnrollmentOverview from "~/components/Activity/ActivityEnrollmentOverview";
+import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import CommitteeEnrollmentOverview from "~/components/CommitteeEnrollmentOverview";
 import DashboardHeader from "~/components/DashboardHeader";
 import Button from "~/components/UI/Button";
-import UpcomingActivities from "~/components/UpcomingActivities";
+import UpcomingActivities from "~/components/Activity/UpcomingActivities";
 import type { CommitteeEnrollment } from "~/types/CommitteeEnrollment";
 
 export default function DashboardPage() {

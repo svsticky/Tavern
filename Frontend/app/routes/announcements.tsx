@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { getApiAnnouncements, type GetAnnouncementResponseDto } from "~/api";
-import AnnouncementsList from "~/components/AnnouncementsList";
+import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";

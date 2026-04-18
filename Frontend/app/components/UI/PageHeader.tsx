@@ -19,14 +19,13 @@ export const PageHeader = ({
     if (onBack) {
       onBack();
       return;
-    }
-    else if (backTo) {
+    } else if (backTo) {
       navigate(backTo);
     }
   };
 
   return (
-    <div className="mb-4 flex flex-row justify-between items-end w-full"> 
+    <div className="mb-4 flex flex-row justify-between items-start w-full gap-4"> 
       <div className="flex flex-col items-start">
         {(backTo || onBack) && (
           <Button
@@ -38,11 +37,11 @@ export const PageHeader = ({
             {t("back")}
           </Button>
         )}
-        <h1 className="text-2xl font-bold leading-none">{title}</h1>
+        <h1 className="text-2xl font-bold leading-tight">{title}</h1>
       </div>
       
       {action && (
-        <div className="flex items-center">
+        <div className="flex items-center flex-shrink-0">
           {action}
         </div>
       )}

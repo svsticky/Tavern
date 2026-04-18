@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { t } from "i18next";
-import BorderedTile from "./Tiles/BorderedTile";
-import Checkbox from "./UI/Checkbox";
-import Button from "./UI/Button";
-import Input from "./UI/Input";
+import BorderedTile from "../../Tiles/BorderedTile";
+import Checkbox from "../../UI/Checkbox";
+import Button from "../../UI/Button";
+import Input from "../../UI/Input";
 import toast from "react-hot-toast";
 import { postApiMailsActivity } from "~/api";
-import HtmlEditor from "./UI/HtmlEditor";
+import HtmlEditor from "../../UI/HtmlEditor";
 
 export default function SendActivityMailComponent({ activityId }: { activityId: number }) {
     const [loading, setLoading] = useState<boolean>(false);

@@ -14,7 +14,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
 }
 
-export default function DataTable<T>({ data, columns, emptyText, onRowClick }: DataTableProps<T>) {
+export default function DataTableTile<T>({ data, columns, emptyText, onRowClick }: DataTableProps<T>) {
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse block lg:table">

@@ -24,11 +24,23 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "MollieFee", "0.39");
 
-        await EnsureSettingExists(db, "MollieFeeGlAccount", "5007");
+        await EnsureSettingExists(db, "MollieFeeGLAccount", "5007");
 
         await EnsureSettingExists(db, "MollieFeeCostUnit", "TRX");
 
         await EnsureSettingExists(db, "MembershipGLAccount", "8000");
+        
+        await EnsureSettingExists(db, "ActivityGLAccount", "7001");
+
+        await EnsureSettingExists(db, "MolliePaymentsCondition", "2");
+
+        await EnsureSettingExists(db, "MollieRelationCode", "473");
+
+        await EnsureSettingExists(db, "ExactExportBatchSize", "TRX");
+
+        await EnsureSettingExists(db, "MembershipVATCode", "0");
+
+        await EnsureSettingExists(db, "MollieFeeVATCode", "21");
 
         var keycloakOutboxWorker = scope.ServiceProvider.GetRequiredService<KeycloakOutboxWorker>();
 

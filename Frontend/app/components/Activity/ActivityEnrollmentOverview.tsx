@@ -1,10 +1,10 @@
 import { CircleCheckBig } from "lucide-react";
 import { formatDate } from "~/util/date.util";
-import { ListTile } from "./Tiles/ListTile";
+import { ListTile } from "../Tiles/ListTile";
 import type { Activity, ActivityResponseDto } from "~/api";
 import { t } from "i18next";
 import { Link } from "react-router";
-import { NoContentTile } from "./Tiles/NoContentTile";
+import { NoContentTile } from "../Tiles/NoContentTile";
 
 type ActivityEnrollmentOverviewProps = {
   enrolledActivities: ActivityResponseDto[];

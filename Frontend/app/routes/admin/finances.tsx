@@ -1,15 +1,18 @@
 import { t } from "i18next";
 import { Calendar, CheckCircle, ChevronDown, Euro, MessageCircle, UserMinus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getApiActivities, getApiPaymentsOverpaid, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type ActivityResponseDto, type Enrollment, type EnrollmentBalance, type Member } from "~/api";
+import toast from "react-hot-toast";
+import { getApiActivities, getApiPaymentsExport, getApiPaymentsOverpaid, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type ActivityResponseDto, type Enrollment, type EnrollmentBalance, type Member } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
+import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { formatDate } from "~/util/date.util";
 
 export default function Finances() {
     const [loading, setLoading] = useState(true);
+    const [exporting, setExporting] = useState(false);
     const [totalUnpaid, setTotalUnpaid] = useState(0);
     const [openPayments, setOpenPayments] = useState(0);
     const [expiredActivities, setExpiredActivities] = useState<ActivityResponseDto[] | null>(null);
@@ -17,6 +20,8 @@ export default function Finances() {
     const [membersWithOverduePayment, setMembersWithOverduePayment] = useState<{member: Member, enrollments: EnrollmentBalance[]}[] | null>(null);
     const [unpaidBalances, setUnpaidBalances] = useState<EnrollmentBalance[] | null>(null);
     const [overpaidBalances, setOverpaidBalances] = useState<EnrollmentBalance[] | null>(null);
+    const [exportStartDate, setExportStartDate] = useState<string>("");
+    const [exportEndDate, setExportEndDate] = useState<string>("");
 
     const handleWhatsAppClick = ({member, enrollments}: {member: Member, enrollments: EnrollmentBalance[]}) => {
         const unpaidEnrollments = enrollments.filter(e => 
@@ -106,6 +111,42 @@ export default function Finances() {
         }
     };
 
+    const handleExport = () => {
+        const exportAction = async () => {
+            try {
+                setExporting(true);
+                const response = await getApiPaymentsExport({
+                    query: {
+                        startDate: exportStartDate,
+                        endDate: exportEndDate,
+                    },
+                    responseType: "blob",
+                });
+                
+                const blob = new Blob([response.data as any], { type: "text/csv" });
+                const url = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement("a");
+                link.href = url;
+                link.setAttribute("download", `payments_${exportStartDate}_to_${exportEndDate}.csv`);
+                document.body.appendChild(link);
+                link.click();
+
+                link.parentNode?.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error("Error while exporting payments:", error);
+            } finally {
+                setExporting(false);
+            }
+        }
+        toast.promise(exportAction(), {
+            loading: t("exporting"),
+            success: t("export_success"),
+            error: t("export_failed"),
+        });
+    };
+
     useEffect(() => {
         const fetchData = async () => {
             try{
@@ -179,7 +220,22 @@ export default function Finances() {
 
     return (
         <>
-            <PageHeader title={t("finances")} backTo="/" />
+            <PageHeader title={t("finances")} backTo="/" action={
+                <div className="flex flex-col sm:flex-row items-end gap-2">
+                    <Input type="date" label={t("start_date")} name="start_date" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExportStartDate(e.target.value)} />
+                    <Input type="date" label={t("end_date")} name="end_date" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setExportEndDate(e.target.value)} />
+                    <div className="w-full sm:w-auto">
+                        <Button 
+                            variant="secondary" 
+                            className="w-full"
+                            disabled={exportStartDate === "" || exportEndDate === "" || exporting} 
+                            onClick={handleExport}
+                        >
+                            {t("export")}{exporting && "..."}
+                        </Button>
+                    </div>
+                </div>
+            } />
             <div className="flex flex-col gap-4 w-full"> 
                 <div className="flex flex-col sm:flex-row gap-4 w-full">
                     <BorderedTile title={t("total_unpaid")} icon={Euro} className="flex-1">
@@ -208,7 +264,7 @@ export default function Finances() {
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-slate-500">Geen overbetalingen</p>
+                            <p className="text-sm text-slate-500">{t("no_overpaid_balances")}</p>
                         )}
                     </BorderedTile>
                 </div>
@@ -239,14 +295,14 @@ export default function Finances() {
                                 className="bg-gray-100"
                                 children={
                                     <div className="text-xs flex gap-2 items-center">
-                                        <span className="ml-4 text-(--board-primary) font-bold">Openstaand: €{unpaidBalances?.filter(b => b.enrollment?.activityId === activity.id).reduce((sum, balance) => sum + balance.balance, 0).toFixed(2)}</span>
+                                        <span className="ml-4 text-(--board-primary) font-bold">{t("outstanding")}: €{unpaidBalances?.filter(b => b.enrollment?.activityId === activity.id).reduce((sum, balance) => sum + balance.balance, 0).toFixed(2)}</span>
                                     </div>
                                 }
                                 
                                 collapsibleContent={
                                     <div className="flex flex-col gap-3">
                                         <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                                            Onbetaalde leden (8)
+                                            {t("unpaid_members")} ({membersWithOverduePayment?.length || 0})
                                         </span>
                                         {membersWithOverduePayment?.map((memberWithOverduePayment) => {
                                             const member = memberWithOverduePayment.member;
@@ -270,7 +326,7 @@ export default function Finances() {
                                                             onClick={() => handleMarkAsPaid(member, memberWithOverduePayment.enrollments)} 
                                                             disabled={loading}
                                                         >
-                                                            Markeer als betaald
+                                                            {t("mark_as_paid")}
                                                         </Button>
                                                     </div>
                                                 </div>
@@ -319,7 +375,7 @@ export default function Finances() {
                                                     <div key={index} className="text-sm text-slate-600">
                                                         • {enrollment.enrollment.activity.name} - €{enrollment.balance.toFixed(2)} 
                                                         <span className="text-xs text-slate-400 ml-1">
-                                                            (Vervaldatum: {formatDate(new Date(enrollment.enrollment.activity?.paymentDeadline || ""), "shortDate")})
+                                                            ({t("due_date")}: {formatDate(new Date(enrollment.enrollment.activity?.paymentDeadline || ""), "shortDate")})
                                                         </span>
                                                     </div>
                                                 )

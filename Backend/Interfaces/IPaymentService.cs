@@ -18,5 +18,7 @@ namespace Backend.Interfaces
         IEnumerable<EnrollmentBalance> GetOverpaid();
 
         Task<object> GetMemberPaymentStatus(Guid memberId, CancellationToken ct);
+
+        Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct);
     }
 }

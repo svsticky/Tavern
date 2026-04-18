@@ -1,7 +1,7 @@
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { formatDate } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
-import Tile from "./Tile";
+import Tile from "../Tiles/Tile";
 import Markdown from "~/components/UI/Markdown";
 import { useKeycloak } from "@react-keycloak/web";
 import { isBoardOrCandidateBoard } from "~/util/group.util";

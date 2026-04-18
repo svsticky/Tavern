@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import * as Icons from "lucide-react";
-import ExternalLinkTile from "~/components/Tiles/ExternalLinkTile";
+import ExternalLinkTile from "~/components/ExternalLinkTile";
 import { PageHeader } from "~/components/UI/PageHeader";
 
 export default function ExternalLinksPage() {

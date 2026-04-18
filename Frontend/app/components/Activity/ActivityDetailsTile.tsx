@@ -1,6 +1,6 @@
 import { Calendar, Clock, MapPin, Users, Image as ImageIcon } from 'lucide-react';
 import { deleteApiEnrollmentsByActivityIdByMemberId, postApiEnrollments, putApiEnrollmentsByActivityIdByMemberId, type ActivityResponseDto } from '~/api';
-import Tile from './Tile';
+import Tile from '../Tiles/Tile';
 import { useKeycloak } from '@react-keycloak/web';
 import { useState } from 'react';
 import Button from '../UI/Button';
@@ -9,9 +9,9 @@ import { formatDate } from '~/util/date.util';
 import { isBoardOrCandidateBoard } from '~/util/group.util';
 import { formatForGoogleCalendar, formatForWhatsApp } from '~/util/markdown.util';
 import Markdown from 'react-markdown';
-import AnswerQuestionsTile from './AnswerQuestionsTile';
 import toast from 'react-hot-toast';
-import BorderedTile from './BorderedTile';
+import BorderedTile from '../Tiles/BorderedTile';
+import AnswerQuestionsTile from './AnswerQuestionsTile';
 
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
@@ -184,12 +184,16 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
       try {
         setSubmitting(true);
         
-        await deleteApiEnrollmentsByActivityIdByMemberId({
+        const response = await deleteApiEnrollmentsByActivityIdByMemberId({
           path: {
             activityId: activity.id,
             memberId: keycloak.tokenParsed?.UserId
           }
         });
+        
+        if (response.error) {
+          throw new Error("Unenrollment failed");
+        }
 
         activity.enrollments = activity.enrollments.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
         setActivity && setActivity({ ...activity });

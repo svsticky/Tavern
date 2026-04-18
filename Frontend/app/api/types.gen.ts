@@ -1479,6 +1479,23 @@ export type GetApiPaymentsMemberByMemberIdStatusResponses = {
     200: unknown;
 };
 
+export type GetApiPaymentsExportData = {
+    body?: never;
+    path?: never;
+    query?: {
+        startDate?: string;
+        endDate?: string;
+    };
+    url: '/api/payments/export';
+};
+
+export type GetApiPaymentsExportResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetApiProfilepictureViewByPathData = {
     body?: never;
     path: {

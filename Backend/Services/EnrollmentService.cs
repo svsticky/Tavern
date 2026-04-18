@@ -244,8 +244,10 @@ public class EnrollmentService : IEnrollmentService
         var next = _db.Enrollments
             .Include(e => e.Member)
             .Include(e => e.Activity)
-            .Where(e => e.ActivityId == activityId && e.IsOnWaitingList && TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
+            .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
             .OrderBy(e => e.RegisteredOn)
+            .AsEnumerable()
+            .Where(e => TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
             .Take(numberToPromote)
             .ToList();
 

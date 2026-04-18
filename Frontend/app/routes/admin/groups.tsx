@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { Mail, Phone, TrendingUp } from "lucide-react";
-import type { Column } from "~/components/DataTable";
-import DataTable from "~/components/DataTable";
+import type { Column } from "~/components/Tiles/DataTableTile";
+import DataTable from "~/components/Tiles/DataTableTile";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Button from "~/components/UI/Button";

@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import ActivityTile from "./Tiles/ActivityTile";
+import ActivityTile from "./ActivityTile";
 import type { ActivityResponseDto } from "~/api";
 import { t } from "i18next";
-import { NoContentTile } from "./Tiles/NoContentTile";
+import { NoContentTile } from "../Tiles/NoContentTile";
 
 interface UpcomingActivitiesProps {
   activities: ActivityResponseDto[];
