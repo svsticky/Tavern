@@ -4,6 +4,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import Input from "../UI/Input";
 import { t } from "i18next";
 import Tile from "../Tiles/Tile";
+import Select from "../UI/Select";
 
 type Props = {
   questions: GetSpecificationQuestionResponseDto[];
@@ -109,16 +110,12 @@ export default function AnswerQuestionsTile({
         const options = q.options ?? [];
 
         return (
-          <select
+          <Select
             className="input"
             value={value}
             onChange={e => setValue(id, e.target.value)}
-          >
-            <option value="">--</option>
-            {options.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
+            options={options.map(opt => ({ label: opt, value: opt }))}
+          />
         );
 
       default:

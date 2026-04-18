@@ -10,6 +10,7 @@ import { useNavigate } from "react-router";
 import Button from "~/components/UI/Button";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import toast from "react-hot-toast";
+import Select from "~/components/UI/Select";
 
 export default function Activities() {
   const navigate = useNavigate();
@@ -115,14 +116,8 @@ export default function Activities() {
             <Input placeholder={t("search_activities")} className="bg-slate-100 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} />
           </div>
           <div className="flex flex-col w-full sm:w-auto">
-            <span className="text-sm text-slate-400">{t("year")}</span>
-            <select className="bg-slate-100 border p-2 rounded-lg h-[42px]" style={{ minWidth: "150px" }} value={year} onChange={(e) => setYear(Number(e.target.value))}>
-              {yearsSince2007.map((y) => (
-                <option key={y} value={y}>
-                  {t("season")} {y - 1}/{y}
-                </option>
-              ))}
-            </select>
+            <Select options={yearsSince2007.map((y) => ({ label: `${t("season")} ${y - 1}/${y}`, value: y }))} label={t("year")} style={{ minWidth: "150px" }} value={year} onChange={(e) => setYear(Number(e.target.value))}>
+            </Select>
           </div>
         </div>
       </BorderedTile>

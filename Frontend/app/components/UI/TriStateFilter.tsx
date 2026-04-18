@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import Tile from "../Tiles/Tile";
 
 export default function TriStateFilter({ 
   label, 
@@ -10,7 +11,7 @@ export default function TriStateFilter({
   onChange: (val: boolean | null) => void 
 }){
     return (
-    <div className="flex items-center justify-between p-2 bg-slate-50 rounded-lg">
+    <Tile className="flex items-center justify-between p-2 bg-slate-50">
         <span className="text-sm font-medium text-slate-700">{label}</span>
         <div className="flex gap-1 bg-slate-200 p-1 rounded-md">
         <button
@@ -32,6 +33,6 @@ export default function TriStateFilter({
             {t("all")}
         </button>
         </div>
-    </div>
+    </Tile>
     );
 }
