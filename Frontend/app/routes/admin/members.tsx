@@ -104,7 +104,9 @@ export default function Members() {
     {
       header: t("name"),
       render: (m) => (
-        <span>{m.firstName} {m.lastName}</span>
+        <div className="flex items-center gap-2 text-slate-500">
+          <span>{m.firstName} {m.lastName}</span>
+        </div>
       ),
     },
     {

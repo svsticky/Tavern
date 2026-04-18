@@ -43,3 +43,8 @@ public class StudyEnrollmentResponseDTO
     /// <inheritdoc cref="Models.StudyEnrollment.Status"/>
     public required StudyStatus Status { get; set; }
 }
+
+public class GetStudyEnrollmentsDTO
+{
+    public Guid? MemberId { get; set; }
+}

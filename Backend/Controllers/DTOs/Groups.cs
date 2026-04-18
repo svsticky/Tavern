@@ -12,6 +12,8 @@ public class PostGroupDTO
 
     /// <inheritdoc cref="Models.Group.Type"/>
     public required GroupType Type { get; set; }
+
+    public required IFormFile GroupPicture { get; set; }
 }
 
 public class GetGroupDTO
@@ -36,6 +38,8 @@ public class GroupResponseDTO
 
     /// <inheritdoc cref="Models.Group.Type"/>
     public required GroupType Type { get; set; }
+
+    public string? GroupPicturePath;
 }
 
 public class GroupUpdateDTO

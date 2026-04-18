@@ -1,5 +1,4 @@
 import { NavLink } from "react-router";
-import images from "~/constants/images";
 
 type MenuBrandingProps = {
   icon?: string;
@@ -8,7 +7,7 @@ type MenuBrandingProps = {
 };
 
 export default function MenuBranding({
-  icon = images.sticky_logo_compact_white,
+  icon = import.meta.env.LOGO_URL,
   title = "Sticky",
   homepage = "/"
 }: MenuBrandingProps) {

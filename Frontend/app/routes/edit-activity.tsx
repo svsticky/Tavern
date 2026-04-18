@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useLocation, useParams } from "react-router";
 import { 
   getApiActivitiesById,
   type ActivityResponseDto,

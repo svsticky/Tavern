@@ -76,15 +76,29 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         if (!exists)
         {
-            db.Groups.Add(new Group
-            {
-                Id = id,
-                Name = name,
-                Type = type,
-                Active = true
-            });
+            var transaction = await db.Database.BeginTransactionAsync();
 
-            await db.SaveChangesAsync();
+            try
+            {
+                db.Groups.Add(new Group
+                {
+                    Id = id,
+                    Name = name,
+                    Type = type,
+                    Active = true
+                });
+
+                await db.SaveChangesAsync();
+
+                await db.Database.ExecuteSqlRawAsync($@"
+                    SELECT setval(pg_get_serial_sequence('""Groups""', 'Id'), (SELECT MAX(""Id"") FROM ""Groups""));
+                ");
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+            }
         }
     }
 
@@ -130,6 +144,12 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);
 
                 await db.SaveChangesAsync();
+
+                await db.Database.ExecuteSqlRawAsync($@"
+                    SELECT setval(pg_get_serial_sequence('""GroupMemberships""', 'Id'), 
+                    COALESCE((SELECT MAX(""Id"") FROM ""GroupMemberships""), 1));
+                ");
+
                 await transaction.CommitAsync();
             }
         }

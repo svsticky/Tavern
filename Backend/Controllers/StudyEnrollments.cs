@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -24,11 +25,11 @@ public class StudyEnrollmentsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StudyEnrollmentResponseDTO>>> GetStudyEnrollments(CancellationToken ct)
+    public async Task<ActionResult<IEnumerable<StudyEnrollmentResponseDTO>>> GetStudyEnrollments([FromQuery] GetStudyEnrollmentsDTO dto, CancellationToken ct)
     {
         try
         {
-            var result = await _service.GetStudyEnrollments(GetUserId(), ct);
+            var result = await _service.GetStudyEnrollments(dto, GetUserId(), ct);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -87,12 +88,12 @@ public class StudyEnrollmentsController : ControllerBase
         }
     }
 
-    [HttpPatch("{id}/status")]
-    public async Task<ActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken ct)
+    [HttpPatch("{id}")]
+    public async Task<ActionResult> PatchStudy(uint id, [FromBody] JsonPatchDocument<StudyEnrollment> patchDoc, CancellationToken ct)
     {
         try
         {
-            await _service.UpdateStatus(id, newStatus, GetUserId(), ct);
+            await _service.PatchStudy(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException ex)

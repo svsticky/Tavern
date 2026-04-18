@@ -132,6 +132,18 @@ public class MemberResponseDTO
     /// Groups where the member is a part of.
     /// </summary>
     public List<GroupMembershipResponseDTO> GroupMemberships { get; set; } = new();
+
+    /// <inheritdoc cref="Models.Member.Gratie"/>
+    public bool Gratie { get; set; }
+
+    /// <inheritdoc cref="Models.Member.LidVanVerdienste"/>
+    public bool LidVanVerdienste { get; set; }
+    /// <inheritdoc cref="Models.Member.EreLid"/>
+    public bool EreLid { get; set; }
+    /// <inheritdoc cref="Models.Member.Begunstiger"/>
+    public bool Begunstiger { get; set; }
+    /// <inheritdoc cref="Models.Member.Suspended"/>
+    public bool Suspended { get; set; }
 }
 
 public class MemberUpdateDTO
@@ -236,4 +248,5 @@ public class GetMembersDto
     public bool? Suspended { get; set; }
     public bool? Inactive { get; set; }
     public StudyType? StudyType { get; set; }
+    
 }

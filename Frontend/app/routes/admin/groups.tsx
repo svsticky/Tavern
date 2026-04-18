@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { Mail, Phone, TrendingUp } from "lucide-react";
+import { Mail, Phone, PlusIcon, TrendingUp } from "lucide-react";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
 import Input from "~/components/UI/Input";
@@ -10,6 +10,8 @@ import { useNavigate } from "react-router";
 import { getApiGroups, type GroupResponseDto, type MemberResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import toast from "react-hot-toast";
+import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay";
+import Modal from "~/components/UI/Modal";
 
 export default function Groups() {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ export default function Groups() {
   const [filteredGroups, setFilteredGroups] = useState<GroupResponseDto[] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [createGroupModalIsOpen, setCreateGroupModalIsOpen] = useState(false);
+
   useEffect(() => {
     const fetchGroups = async () => {
       try{
@@ -27,7 +31,7 @@ export default function Groups() {
         
         if(response.data) {
           setGroups(response.data);
-            setFilteredGroups(response.data);
+          setFilteredGroups(response.data);
         }
 
       } catch (error) {
@@ -72,13 +76,13 @@ export default function Groups() {
     {
         header: "",
         className: "w-full sm:w-px whitespace-nowrap text-right",
-        render: (act) => (
+        render: (group) => (
         <Button 
           variant="secondary"
           className="w-full sm:w-auto" 
           onClick={(e) => {
           e.stopPropagation();
-          navigate(`/admin/groups/${act.id}`);
+          navigate(`/admin/groups/${group.id}`);
           }}
         >
             {t("view_group")}
@@ -89,17 +93,22 @@ export default function Groups() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <PageHeader title={t("groups")} backTo="/" />
+      <PageHeader title={t("groups")} backTo="/"
+        action={
+          <Button 
+            variant="secondary"
+            onClick={() => setCreateGroupModalIsOpen(true)}
+            className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </Button>
+        } />
 
       <BorderedTile>
         <div className="flex flex-col sm:flex-row items-center w-full gap-4">
           <div className="flex flex-col flex-1 w-full sm:w-auto">
             <span className="text-sm text-slate-400">{t("search")}</span>
             <Input placeholder={t("search_groups")} className="bg-slate-100 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} />
-          </div>
-          <div className="flex flex-col w-full sm:w-auto">
-            <span className="text-sm hidden sm:block">&nbsp;</span>
-            <Button variant="primary">{t("new")}</Button>
           </div>
         </div>
       </BorderedTile>
@@ -109,6 +118,9 @@ export default function Groups() {
           <DataTable data={filteredGroups ?? []} columns={columns} />
         </BorderedTile>
       )}
+      <Modal title={t("create_group")} isOpen={createGroupModalIsOpen} onClose={() => setCreateGroupModalIsOpen(false)}>
+        <CreateGroupOverlay onSuccess={() => window.location.reload()} />
+      </Modal>
     </div>
   );
 }

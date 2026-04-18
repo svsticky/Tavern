@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services
@@ -11,11 +12,21 @@ namespace Backend.Services
         IPermissionService permissionService
     ) : IStudyEnrollmentService
     {
-        public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(Guid userId, CancellationToken ct)
+        public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct)
         {
             EnsureBoardMember(userId);
 
-            return await db.StudyEnrollments
+            var query = db.StudyEnrollments
+                .Include(se => se.Member)
+                .Include(se => se.Study)
+                .AsQueryable();
+
+            if (dto.MemberId != null)
+            {
+                query = query.Where(se => se.MemberId == dto.MemberId);
+            }
+
+            return await query
                 .Select(se => new StudyEnrollmentResponseDTO
                 {
                     Id = se.Id,
@@ -85,6 +96,7 @@ namespace Backend.Services
             {
                 Id = enrollment.Id,
                 MemberId = enrollment.MemberId,
+                StudyTitle = study.Title,
                 StudyId = enrollment.StudyId,
                 EnrollmentDate = enrollment.EnrollmentDate,
                 CompletionDate = enrollment.CompletionDate,
@@ -104,18 +116,46 @@ namespace Backend.Services
             await db.SaveChangesAsync(ct);
         }
 
-        public async Task UpdateStatus(uint id, StudyStatus newStatus, Guid userId, CancellationToken ct)
+        public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
             EnsureBoardMember(userId);
-
+            
             var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
-            if (enrollment == null)
-                throw new Exception("Enrollment not found");
 
-            StateValidator.Validate(enrollment);
+            ArgumentNullException.ThrowIfNull(enrollment, nameof(enrollment));
 
-            enrollment.Status = newStatus;
-            await db.SaveChangesAsync(ct);
+            var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            try
+            {
+                var oldStatus = enrollment.Status;
+
+                patchDoc.ApplyTo(enrollment);
+
+                if(oldStatus != enrollment.Status)
+                {
+                    switch(enrollment.Status)
+                    {
+                        case StudyStatus.DroppedOut:
+                        case StudyStatus.Enrolled:
+                            enrollment.CompletionDate = null;
+                            break;
+                        case StudyStatus.Completed:
+                            enrollment.CompletionDate = DateTime.UtcNow;
+                            break;
+                    }
+                }
+
+                StateValidator.Validate(enrollment);
+
+                await db.SaveChangesAsync(ct);
+                await transaction.CommitAsync(ct);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
+            }            
         }
 
         private void EnsureBoardMember(Guid userId)

@@ -1,11 +1,12 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace Backend.Interfaces
 {
     public interface IStudyEnrollmentService
     {
-        Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(Guid userId, CancellationToken ct);
+        Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct);
 
         Task<StudyEnrollmentResponseDTO?> GetStudyEnrollment(uint id, Guid userId, CancellationToken ct);
 
@@ -13,6 +14,6 @@ namespace Backend.Interfaces
 
         Task DeleteStudyEnrollment(uint id, Guid userId, CancellationToken ct);
 
-        Task UpdateStatus(uint id, StudyStatus newStatus, Guid userId, CancellationToken ct);
+        Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct);
     }
 }

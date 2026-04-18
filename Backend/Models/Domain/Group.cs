@@ -8,7 +8,8 @@ namespace Backend.Models.Domain;
 public enum GroupType
 {
     Committee,
-    WorkingGroup
+    WorkingGroup,
+    Dispute
 }
 
 [PrimaryKey(nameof(Id))]
@@ -53,4 +54,7 @@ public class Group
     /// </summary>
     [StringLength(20)]
     public string? DefaultCostCenter { get; set; }
+
+    public string? GroupPicturePath { get; set; }
+    public string? GroupPictureFileName { get; set; }
 }

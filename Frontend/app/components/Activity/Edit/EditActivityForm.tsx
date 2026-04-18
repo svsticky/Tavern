@@ -132,15 +132,18 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
 
         const submitProcess = async () => {
         try {
+            let id;
             if (isEdit) {
                 console.log("Updating activity with payload:", payload);
                 await putApiActivitiesById({ path: { id: Number(id) }, ...payload });
+                id = activity?.id;
             } else {
                 console.log("Creating activity with payload:", payload);
-                await postApiActivities(payload);
+                const response = await postApiActivities(payload);
+                id = response.data?.id;
             }
             
-            const redirectPath = `${pathname.startsWith("/admin") ? '/admin' : ''}/activities`;
+            const redirectPath = `${pathname.startsWith("/admin") ? '/admin' : ''}/activities/${id}`;
 
             navigate(redirectPath);
         } catch (error) {

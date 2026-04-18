@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -58,7 +59,7 @@ public class GroupsController : ControllerBase
     // POST: api/groups
     [HttpPost]
     public async Task<ActionResult<Group>> PostGroup(
-        PostGroupDTO groupDto,
+        [FromForm] PostGroupDTO groupDto,
         CancellationToken cancellationToken)
     {
         try
@@ -85,6 +86,44 @@ public class GroupsController : ControllerBase
         {
             return StatusCode(500, ex.Message);
         }
+    }
+
+    // POST: api/profilepicture/{id}/profile-picture
+    [HttpPost("{id}/profile-picture")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult> UploadProfilePicture(uint id, IFormFile? image)
+    {
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+        try
+        {
+            var path = await _groupService.UploadGroupPicture(id, userId, image);
+
+            return Ok(new { path });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // GET: api/groups/5/group-picture
+    [HttpGet("{id}/group-picture")]
+    public async Task<IActionResult> GetProfilePicture(uint id, CancellationToken cancellationToken)
+    {
+        var group = await _groupService.GetGroup(id, cancellationToken);
+        if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
+            return NotFound("Group or group picture not found.");
+
+        var file = await _groupService.GetGroupPictureFile(group.GroupPicturePath);
+        if (file == null)
+            return NotFound("File is no longer present on the server.");
+
+        return File(file.Stream, file.ContentType);
     }
 
     // DELETE: api/groups/5

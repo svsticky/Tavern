@@ -144,6 +144,8 @@ export type Group = {
     type?: GroupType;
     defaultGLAccount?: string | null;
     defaultCostCenter?: string | null;
+    groupPicturePath?: string | null;
+    groupPictureFileName?: string | null;
 };
 
 export type GroupMembership = {
@@ -255,6 +257,11 @@ export type MemberResponseDto = {
     preferredLanguage?: Language;
     studyEnrollments?: Array<StudyEnrollmentResponseDto>;
     groupMemberships?: Array<GroupMembershipResponseDto>;
+    gratie?: boolean;
+    lidVanVerdienste?: boolean;
+    ereLid?: boolean;
+    begunstiger?: boolean;
+    suspended?: boolean;
 };
 
 export type MemberSummaryDto = {
@@ -330,11 +337,6 @@ export type PostEnrollmentDto = {
     activityId?: number;
     memberId?: string;
     specificationAnswers?: Array<PostSpecificationAnswerDto> | null;
-};
-
-export type PostGroupDto = {
-    name: string;
-    type: GroupType;
 };
 
 export type PostGroupMembershipDto = {
@@ -1044,7 +1046,11 @@ export type GetApiGroupsResponses = {
 export type GetApiGroupsResponse = GetApiGroupsResponses[keyof GetApiGroupsResponses];
 
 export type PostApiGroupsData = {
-    body?: PostGroupDto;
+    body?: {
+        Name: string;
+        Type: GroupType;
+        GroupPicture: Blob | File;
+    };
     path?: never;
     query?: never;
     url: '/api/groups';
@@ -1119,6 +1125,40 @@ export type PutApiGroupsByIdData = {
 };
 
 export type PutApiGroupsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiGroupsByIdProfilePictureData = {
+    body?: {
+        image?: Blob | File;
+    };
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/groups/{id}/profile-picture';
+};
+
+export type PostApiGroupsByIdProfilePictureResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiGroupsByIdGroupPictureData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/groups/{id}/group-picture';
+};
+
+export type GetApiGroupsByIdGroupPictureResponses = {
     /**
      * OK
      */
@@ -1851,7 +1891,9 @@ export type PutApiStudiesByIdResponses = {
 export type GetApiStudyenrollmentsData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        MemberId?: string;
+    };
     url: '/api/studyenrollments';
 };
 
@@ -1914,16 +1956,16 @@ export type GetApiStudyenrollmentsByIdResponses = {
 
 export type GetApiStudyenrollmentsByIdResponse = GetApiStudyenrollmentsByIdResponses[keyof GetApiStudyenrollmentsByIdResponses];
 
-export type PatchApiStudyenrollmentsByIdStatusData = {
-    body?: StudyStatus;
+export type PatchApiStudyenrollmentsByIdData = {
+    body?: Array<Operation>;
     path: {
         id: number;
     };
     query?: never;
-    url: '/api/studyenrollments/{id}/status';
+    url: '/api/studyenrollments/{id}';
 };
 
-export type PatchApiStudyenrollmentsByIdStatusResponses = {
+export type PatchApiStudyenrollmentsByIdResponses = {
     /**
      * OK
      */

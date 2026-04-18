@@ -116,8 +116,7 @@ export default function Activities() {
             <Input placeholder={t("search_activities")} className="bg-slate-100 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} />
           </div>
           <div className="flex flex-col w-full sm:w-auto">
-            <Select options={yearsSince2007.map((y) => ({ label: `${t("season")} ${y - 1}/${y}`, value: y }))} label={t("year")} style={{ minWidth: "150px" }} value={year} onChange={(e) => setYear(Number(e.target.value))}>
-            </Select>
+            <Select options={yearsSince2007.map((y) => ({ label: `${y - 1}/${y}`, value: y }))} label={t("year")} style={{ minWidth: "150px" }} value={year} onChange={(e) => setYear(Number(e.target.value))} />
           </div>
         </div>
       </BorderedTile>

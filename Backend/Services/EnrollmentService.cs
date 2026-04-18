@@ -149,6 +149,8 @@ public class EnrollmentService : IEnrollmentService
             // to do: check if it is own enrollment or if user is board member
             bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(memberId);
 
+            // to do: if not board and unenroll deadline is over: don't accept it (and remove the check for enrollmentdeadline)
+
             if (!isBoardMember)
             {
                 await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);

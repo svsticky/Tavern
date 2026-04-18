@@ -52,6 +52,14 @@ export default function App() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    const primaryLight = import.meta.env.VITE_BOARD_PRIMARY_LIGHT;
+    const primary = import.meta.env.VITE_BOARD_PRIMARY;
+    const primaryDark = import.meta.env.VITE_BOARD_PRIMARY_DARK;
+
+    if (primaryLight) document.documentElement.style.setProperty('--board-primary-light', primaryLight);
+    if (primary)      document.documentElement.style.setProperty('--board-primary', primary);
+    if (primaryDark)  document.documentElement.style.setProperty('--board-primary-dark', primaryDark);
+
     setIsClient(true);
     if (i18n.isInitialized) {
       setI18nReady(true);
