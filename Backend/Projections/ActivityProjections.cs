@@ -53,7 +53,9 @@ public static class ActivityProjections
                         AnswerId = sa.Id,
                         Answer = sa.Answer
                     }).ToList(),
-                Price = isBoard ? e.Price : null
+                Price = isBoard ? e.Price : null,
+                ActivityId = a.Id,
+                MemberId = isBoard || e.MemberId == userId ? e.MemberId : null
             }).ToList(),
 
             SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO

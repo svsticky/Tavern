@@ -13,4 +13,6 @@ public class EnrollmentSummaryDTO
     public required MemberSummaryDTO Member { get; set; }
     public List<SpecificationAnswerResponseDTO>? SpecificationAnswers { get; set; }
     public decimal? Price { get; set; }
+    public required uint ActivityId { get; set; }
+    public Guid? MemberId { get; set; }
 }

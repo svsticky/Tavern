@@ -87,7 +87,9 @@ public class EnrollmentService : IEnrollmentService
                 .Select(q => q.Id)
                 .ToList();
 
-            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions);
+            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
 
             int currentParticipants = activity.Enrollments.Count(e => !e.IsOnWaitingList);
 
@@ -192,7 +194,9 @@ public class EnrollmentService : IEnrollmentService
 
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
 
-            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions);
+            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(memberId);
+
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
 

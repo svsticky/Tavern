@@ -111,6 +111,8 @@ export type EnrollmentSummaryDto = {
     member: MemberSummaryDto;
     specificationAnswers?: Array<SpecificationAnswerResponseDto> | null;
     price?: number | null;
+    activityId: number;
+    memberId?: string | null;
 };
 
 export type GetAnnouncementResponseDto = {

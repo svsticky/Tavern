@@ -49,8 +49,6 @@ export default function ActivityFormPage() {
 
   if (isEdit && !activity) return t("failed_fetching");
 
-
-
   return (
     <div className="">
       <PageHeader 
@@ -64,7 +62,7 @@ export default function ActivityFormPage() {
         {isBoard && isEdit && activity && 
           <div className="flex flex-col gap-4">
             <SendActivityMailComponent activityId={activity.id} />
-            <EditParticipantsTile activity={activity} />
+            <EditParticipantsTile activity={activity} setActivity={setActivity} />
           </div>
         }
       </div>
