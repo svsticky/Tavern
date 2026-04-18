@@ -1198,6 +1198,7 @@ export type GetApiMembersData = {
         EreLid?: boolean;
         Begunstiger?: boolean;
         Suspended?: boolean;
+        Inactive?: boolean;
         StudyType?: StudyType;
     };
     url: '/api/members';

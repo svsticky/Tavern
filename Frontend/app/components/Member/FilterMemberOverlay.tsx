@@ -18,6 +18,7 @@ export default function FilterMemberOverlay({ filters, onFilter }: { filters: Me
   const [ereLid, setEreLid] = useState<boolean | null>(filters?.ereLid ?? null);
   const [begunstiger, setBegunstiger] = useState<boolean | null>(filters?.begunstiger ?? null);
   const [suspended, setSuspended] = useState<boolean | null>(filters?.suspended ?? null);
+  const [inactive, setInactive] = useState<boolean | null>(filters?.inactive ?? null);
   const [studyType, setStudyType] = useState<StudyType | null>(filters?.studyType ?? null);
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function FilterMemberOverlay({ filters, onFilter }: { filters: Me
         ereLid,
         begunstiger,
         suspended,
+        inactive,
         studyType
     })
   };
@@ -63,6 +65,7 @@ export default function FilterMemberOverlay({ filters, onFilter }: { filters: Me
     setEreLid(null);
     setBegunstiger(null);
     setSuspended(null);
+    setInactive(null);
     setStudyType(null);
   };
 
@@ -80,12 +83,6 @@ export default function FilterMemberOverlay({ filters, onFilter }: { filters: Me
           ]}
         />
 
-        <TriStateFilter label={t("gratie")} value={gratie} onChange={setGratie} />
-        <TriStateFilter label={t("lid_van_verdienste")} value={lidVanVerdienste} onChange={setLidVanVerdienste} />
-        <TriStateFilter label={t("ere_lid")} value={ereLid} onChange={setEreLid} />
-        <TriStateFilter label={t("begunstiger")} value={begunstiger} onChange={setBegunstiger} />
-        <TriStateFilter label={t("suspended")} value={suspended} onChange={setSuspended} />
-
         <Select 
           label={t("study")}
           value={study?.id ?? ""}
@@ -95,6 +92,13 @@ export default function FilterMemberOverlay({ filters, onFilter }: { filters: Me
           }
           disabled={loading || studies.length === 0}
         />
+
+        <TriStateFilter label={t("gratie")} value={gratie} onChange={setGratie} />
+        <TriStateFilter label={t("lid_van_verdienste")} value={lidVanVerdienste} onChange={setLidVanVerdienste} />
+        <TriStateFilter label={t("ere_lid")} value={ereLid} onChange={setEreLid} />
+        <TriStateFilter label={t("begunstiger")} value={begunstiger} onChange={setBegunstiger} />
+        <TriStateFilter label={t("suspended")} value={suspended} onChange={setSuspended} />
+        <TriStateFilter label={t("inactive")} value={inactive} onChange={setInactive} />
       </div>
 
       <div className="flex gap-2 pt-4">

@@ -7,5 +7,6 @@ export type MembersFilterDto = {
     ereLid: boolean | null,
     begunstiger: boolean | null,
     suspended: boolean | null,
+    inactive: boolean | null,
     studyType: StudyType | null
 }

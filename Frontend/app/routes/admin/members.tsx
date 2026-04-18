@@ -40,7 +40,8 @@ export default function Members() {
           EreLid: filters?.ereLid || undefined, 
           Begunstiger: filters?.begunstiger || undefined, 
           Suspended: filters?.suspended || undefined, 
-          StudyType: filters?.studyType || undefined } 
+          Inactive: filters?.inactive || undefined,
+          StudyType: filters?.studyType || undefined }
       });
       
       if (response.data) {

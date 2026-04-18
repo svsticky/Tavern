@@ -234,5 +234,6 @@ public class GetMembersDto
     public bool? EreLid { get; set; }
     public bool? Begunstiger { get; set; }
     public bool? Suspended { get; set; }
+    public bool? Inactive { get; set; }
     public StudyType? StudyType { get; set; }
 }

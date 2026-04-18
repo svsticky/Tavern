@@ -44,6 +44,13 @@ public static class MemberQueryExtensions
             query = query.Where(m => m.Suspended == dto.Suspended.Value);
         }
 
+        if(dto.Inactive.HasValue)
+        {
+            query = dto.Inactive.Value 
+                ? query.Where(m => m.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate < now)) 
+                : query.Where(m => m.StudyEnrollments.Any(se => se.CompletionDate == null || se.CompletionDate >= now));
+        }
+
         if(dto.StudyType.HasValue)
         {
             query = query.Where(m => m.StudyEnrollments.Any(se => se.Study.Type == dto.StudyType.Value));
