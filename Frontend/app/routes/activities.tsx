@@ -1,6 +1,6 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
-import { CalendarDaysIcon, PlusIcon } from "lucide-react";
+import { CalendarDaysIcon, DownloadIcon, PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
@@ -10,6 +10,7 @@ import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { generateA3Pdf } from "~/util/pdf.util";
 
 export default function ActivitiesPage() {
   const { keycloak, initialized } = useKeycloak();
@@ -108,6 +109,28 @@ export default function ActivitiesPage() {
     }
   };
 
+  const downloadPosters = async () => {
+    const posterUrls = activities
+      .filter(a => a.showInKoala && a.posterPath) 
+      .map(a => `${import.meta.env.ApiUrl}/api/activities/${a.id}/poster`);
+
+    if (posterUrls.length === 0) {
+      toast.error(t("no_posters_found"));
+      return;
+    }
+
+    const toastId = toast.loading(t("generating_pdf..."));
+
+    try {
+      await generateA3Pdf(posterUrls, keycloak.token ?? "");
+
+      toast.success(t("pdf_downloaded"), { id: toastId });
+    } catch (error) {
+      console.error(error);
+      toast.error(t("pdf_failed"), { id: toastId });
+    }
+  };
+
   return (
     <>
       <div className="flex justify-between items-center">
@@ -116,6 +139,15 @@ export default function ActivitiesPage() {
             <div className="flex items-center gap-2">
           {isBoard && (
             <>
+              <Button
+                variant="secondary"
+                onClick={downloadPosters}
+                className="text-xs px-3 py-1"
+                title="Download Koala Posters"
+              >
+                <DownloadIcon size={18} className="mr-1" />
+                {t("download_posters")}
+              </Button>
               <Button
                 variant="secondary"
                 onClick={() => copyWeekOverview("NL")}
@@ -138,7 +170,7 @@ export default function ActivitiesPage() {
           <Button 
             variant="secondary"
             onClick={() => (navigate("/activities/create"))}
-            className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"
+            className="items-center px-3 py-1"
           >
             <PlusIcon className="w-5 h-5" />
           </Button>
