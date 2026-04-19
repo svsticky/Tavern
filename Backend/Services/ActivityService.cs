@@ -142,6 +142,7 @@ public class ActivityService : IActivityService
                 IsEnrollable = dto.IsEnrollable,
                 AreParticipantsVisible = dto.AreParticipantsVisible,
                 IsAdultOnly = dto.IsAdultOnly,
+                IsWeeklyDrinks = dto.IsWeeklyDrinks,
                 AllowedAudience = dto.AllowedAudience,
                 VatRate = dto.VatRate,
                 GLAccountId = dto.GLAccountId,
@@ -368,6 +369,7 @@ public class ActivityService : IActivityService
             activity.IsEnrollable = dto.IsEnrollable;
             activity.AreParticipantsVisible = dto.AreParticipantsVisible;
             activity.IsAdultOnly = dto.IsAdultOnly;
+            activity.IsWeeklyDrinks = dto.IsWeeklyDrinks;
             activity.AllowedAudience = dto.AllowedAudience;
             activity.VatRate = dto.VatRate;
             activity.GLAccountId = dto.GLAccountId;

@@ -30,6 +30,7 @@ public static class ActivityProjections
             IsEnrollable = a.IsEnrollable,
             AreParticipantsVisible = a.AreParticipantsVisible,
             IsAdultOnly = a.IsAdultOnly,
+            IsWeeklyDrinks = a.IsWeeklyDrinks,
             AllowedAudience = a.AllowedAudience,
             VatRate = a.VatRate,
             GLAccountId = a.GLAccountId,

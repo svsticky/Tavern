@@ -115,6 +115,7 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
             IsEnrollable: isBoard ? fd.get("IsEnrollable") === "on" : false,
             AreParticipantsVisible: fd.get("AreParticipantsVisible") === "on",
             IsAdultOnly: fd.get("IsAdultOnly") === "on",
+            IsWeeklyDrinks: fd.get("IsWeeklyDrinks") === "on",
 
             AllowedAudience: audienceMap[audienceFlags],
 
@@ -175,13 +176,14 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
                 </FormSection>
 
                 <FormSection title={t("planning_enrollment")} columns={2}>
-                <Input label={t("datetime_start")} name="DateTimeStart" type="datetime-local" defaultValue={formatForInput(activity?.dateTimeStart)} required />
-                <Input label={t("datetime_end")} name="DateTimeEnd" type="datetime-local" defaultValue={formatForInput(activity?.dateTimeEnd)} required />
-                <Input label={t("enrollment_deadline")} name="EnrollmentDeadline" type="datetime-local" defaultValue={formatForInput(activity?.enrollmentDeadline ?? "")} />
-                <Input label={t("unenrollment_deadline")} name="UnenrollmentDeadline" type="datetime-local" defaultValue={formatForInput(activity?.unenrollmentDeadline ?? "")} />
-                {isBoard && (
-                    <Input label={t("enroll_open_date")} name="EnrollOpenDate" type="datetime-local" defaultValue={formatForInput(activity?.enrollOpenDate ?? "")} />
-                )}
+                    <Input label={t("datetime_start")} name="DateTimeStart" type="datetime-local" defaultValue={formatForInput(activity?.dateTimeStart)} required />
+                    <Input label={t("datetime_end")} name="DateTimeEnd" type="datetime-local" defaultValue={formatForInput(activity?.dateTimeEnd)} required />
+                    <Input label={t("enrollment_deadline")} name="EnrollmentDeadline" type="datetime-local" defaultValue={formatForInput(activity?.enrollmentDeadline ?? "")} />
+                    <Input label={t("unenrollment_deadline")} name="UnenrollmentDeadline" type="datetime-local" defaultValue={formatForInput(activity?.unenrollmentDeadline ?? "")} />
+                    {isBoard && (
+                        <Input label={t("enroll_open_date")} name="EnrollOpenDate" type="datetime-local" defaultValue={formatForInput(activity?.enrollOpenDate ?? "")} />
+                    )}
+                    <Checkbox label={t("weekly_drinks")} name="IsWeeklyDrinks" defaultChecked={activity?.isWeeklyDrinks ?? false} />
                 </FormSection>
 
                 <FormSection columns={2}>
@@ -211,12 +213,12 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
 
                 <FormSection title={t("finance_capacity")} columns={2}>
                 <Input label={t("price")} name="Price" type="number" step="0.01" defaultValue={activity?.price} />
-                <Input label={t("participant_limit")} name="ParticipantLimit" type="number" defaultValue={activity?.participantLimit} />
+                <Input label={t("participant_limit")} name="ParticipantLimit" type="number" defaultValue={activity?.participantLimit ?? ""} />
                 {isBoard && (
                     <>
-                    <Input label={t("vat_rate")} name="VatRate" type="number" defaultValue={activity?.vatRate} />
-                    <Input label={t("gl_account_id")} name="GLAccountId" defaultValue={activity?.glAccountId} />
-                    <Input label={t("cost_center_id")} name="CostCenterId" defaultValue={activity?.costCenterId} />
+                    <Input label={t("vat_rate")} name="VatRate" type="number" defaultValue={activity?.vatRate ?? ""} />
+                    <Input label={t("gl_account_id")} name="GLAccountId" defaultValue={activity?.glAccountId ?? ""} />
+                    <Input label={t("cost_center_id")} name="CostCenterId" defaultValue={activity?.costCenterId ?? ""} />
                     <Input label={t("payment_deadline")} name="PaymentDeadline" type="date" defaultValue={formatDateOnly(activity?.paymentDeadline ?? "")} />
                     </>
                 )}

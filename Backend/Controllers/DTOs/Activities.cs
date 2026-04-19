@@ -42,11 +42,12 @@ public abstract class BaseActivityDTO<TQuestion>
 
     public string? SpecificationQuestionsJson { get; set; }
 
-    public bool ShowInKoala { get; set; } = true;
-    public bool ShowOnWebsite { get; set; } = true;
-    public bool IsEnrollable { get; set; } = true;
-    public bool AreParticipantsVisible { get; set; }
-    public bool IsAdultOnly { get; set; }
+    public required bool ShowInKoala { get; set; }
+    public required bool ShowOnWebsite { get; set; }
+    public required bool IsEnrollable { get; set; }
+    public required bool AreParticipantsVisible { get; set; }
+    public required bool IsAdultOnly { get; set; }
+    public bool IsWeeklyDrinks { get; set; } = false;
     public TargetAudience AllowedAudience { get; set; } = TargetAudience.All;
     public uint? VatRate { get; set; }
     public string? GLAccountId { get; set; }
@@ -78,6 +79,7 @@ public class ActivityResponseDTO
     public required bool AreParticipantsVisible { get; set; }
     public required bool IsAdultOnly { get; set; }
     public TargetAudience AllowedAudience { get; set; }
+    public required bool IsWeeklyDrinks { get; set; }
     public uint? VatRate { get; set; }
     public string? GLAccountId { get; set; }
     public string? CostCenterId { get; set; }

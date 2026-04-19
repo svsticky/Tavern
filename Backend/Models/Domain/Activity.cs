@@ -141,6 +141,11 @@ public class Activity
     public bool IsAdultOnly { get; set; }
 
     /// <summary>
+    /// Whether the activity belongs to the weekly drinks or not.
+    /// </summary>
+    public bool IsWeeklyDrinks { get; set; } = false;
+
+    /// <summary>
     /// Bitflag representing which student years/levels are allowed to enroll.
     /// </summary>
     public TargetAudience AllowedAudience { get; set; }
