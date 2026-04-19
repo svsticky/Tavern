@@ -16,5 +16,7 @@
 html,
 body {
   @apply bg-white;
-
+  a:not([class]) {
+    @apply text-(--board-primary) underline decoration-transparent transition-colors hover:text-(--board-primary-light) hover:decoration-current hover:cursor-pointer;
+  }
 }

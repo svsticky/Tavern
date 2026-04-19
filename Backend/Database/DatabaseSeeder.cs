@@ -1,7 +1,6 @@
 using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Utils.DateTime;
-using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Database;
@@ -142,6 +141,16 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 });
 
                 keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);
+
+                db.MembershipPayments.Add(new MembershipPayment
+                {
+                    MollieId = "",
+                    PaymentIntentUrl = "",
+                    Price = 7.50m,
+                    PaidAt = DateTime.UtcNow,
+                    MemberId = backupMember.Id,
+                    ManuallyMarkedAsPaid = true
+                });
 
                 await db.SaveChangesAsync();
 

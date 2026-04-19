@@ -28,7 +28,8 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
         var currentKeycloakUser = await client.GetFromJsonAsync<System.Text.Json.JsonElement>($"users/{keycloakId}");
-        string? currentEmail = currentKeycloakUser.GetProperty("email").GetString();
+
+        string currentEmail = currentKeycloakUser.GetProperty("email").GetString()!;
 
         bool emailChanged = !string.Equals(currentEmail, member.Email, StringComparison.OrdinalIgnoreCase);
 
@@ -40,14 +41,15 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updatedUser = MapToKeycloakUser(member, memberships.ToArray(), emailVerified: emailChanged ? false : null);
+        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray());
 
         var response = await client.PutAsJsonAsync($"users/{member.KeycloakId}", updatedUser);
         response.EnsureSuccessStatusCode();
 
         if (emailChanged)
         {
-            await SendActionEmail(keycloakId, new[] { "VERIFY_EMAIL" });
+            member.Email = currentEmail;
+            await db.SaveChangesAsync();
         }
     }
 
@@ -57,37 +59,23 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var newUser = MapToKeycloakUser(member);
+        var newUser = MapToKeycloakUser(member, member.Email, true);
         var response = await client.PostAsJsonAsync("users", newUser);
         
-        string? keycloakId = null;
-
         if (response.IsSuccessStatusCode)
         {
-            // User created
-            keycloakId = response.Headers.Location?.Segments.Last();
-        }
-        else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
-        {
-            // User was already created, so continue for sending the mail
-            var searchResponse = await client.GetFromJsonAsync<List<KeycloakUserResponse>>($"users?email={member.Email}");
-            keycloakId = searchResponse?.FirstOrDefault()?.Id;
+            var id = response.Headers.Location?.Segments.Last();
+            if (id != null && Guid.TryParse(id, out var keycloakId))            
+            {
+                return keycloakId;
+            }
         }
         else
         {
             response.EnsureSuccessStatusCode();
         }
 
-        if (keycloakId != null)
-        {
-            await client.PutAsJsonAsync($"users/{keycloakId}", newUser);
-
-            SendActionEmail(Guid.Parse(keycloakId), new[] { "UPDATE_PASSWORD", "VERIFY_EMAIL" }).Wait();
-
-            return Guid.Parse(keycloakId);
-        }
-
-        return null;
+        throw new Exception("Unexpected error creating user in Keycloak.");
     }
 
     private class KeycloakUserResponse { public string Id { get; set; } = default!; }
@@ -144,12 +132,12 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         }
     }
 
-    private object MapToKeycloakUser(Member member, string[]? memberships = null, bool? emailVerified = null)
+    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
     {
         return new
         {
             username = member.Email,
-            email = member.Email,
+            email = currentEmail,
             firstName = member.FirstName,
             lastName = member.LastName,
             enabled = true,

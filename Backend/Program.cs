@@ -47,6 +47,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
 
                 return Task.CompletedTask;
+            },
+
+            OnTokenValidated = async context =>
+            {
+                var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
+                
+                var keycloakIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email) 
+                                 ?? context.Principal?.FindFirst("email");
+
+                if (keycloakIdClaim != null && Guid.TryParse(keycloakIdClaim.Value, out var keycloakId))
+                {
+                    var member = await dbContext.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
+
+                    if (member != null && emailClaim != null)
+                    {
+                        var newEmail = emailClaim.Value;
+
+                        if (!string.Equals(member.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+                        {
+                            member.Email = newEmail;
+                            await dbContext.SaveChangesAsync();
+                        }
+                    }
+                }
             }
         };
         

@@ -38,11 +38,11 @@ export default function EditMemberPage() {
   const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>([]);
   const [availableStudies, setAvailableStudies] = useState<Study[]>([]);
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
+  const [email, setEmail] = useState("");
 
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     studentNumber: 0,
     phoneNumber: "",
     street: "",
@@ -120,7 +120,6 @@ export default function EditMemberPage() {
           setFormData({
             firstName: memberResponse.data.firstName || "",
             lastName: memberResponse.data.lastName || "",
-            email: memberResponse.data.email || "",
             studentNumber: Number(memberResponse.data.studentNumber) || 0,
             phoneNumber: memberResponse.data.phoneNumber || "",
             street: memberResponse.data.street || "",
@@ -138,6 +137,8 @@ export default function EditMemberPage() {
             suspended: !!memberResponse.data.suspended,
             dateOfBirth: memberResponse.data.dateOfBirth ? new Date(memberResponse.data.dateOfBirth).toISOString().split('T')[0] : ""
           });
+
+          setEmail(memberResponse.data.email);
         }
 
         const studyEnrollmentsResponse = await getApiStudyenrollments({ query: { MemberId: memberId } });
@@ -351,9 +352,9 @@ export default function EditMemberPage() {
           <FormSection title={t("personal_info")} columns={2}>
             <Input label={t("first_name")} value={formData.firstName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, firstName: e.target.value})} />
             <Input label={t("last_name")} value={formData.lastName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, lastName: e.target.value})} />
-            <Input label={t("email")} type="email" value={formData.email} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} />
             <Input label={t("student_number")} type="number" value={formData.studentNumber.toString()} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, studentNumber: parseInt(e.target.value)})} />
             <Input label={t("date_of_birth")} type="date" value={formData.dateOfBirth} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, dateOfBirth: e.target.value})} />
+            <Input className="border-transparent bg-transparent p-0 cursor-default text-gray-900 disabled:text-gray-900" label={t("email")} type="email" value={email} disabled />
           </FormSection>
 
           {/* Contact & Adres */}
@@ -363,6 +364,10 @@ export default function EditMemberPage() {
             <div className="md:col-span-2 grid grid-cols-3 gap-4">
                <div className="col-span-2"><Input label={t("street")} value={formData.street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, street: e.target.value})} /></div>
                <Input label={t("house_number")} value={formData.houseNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, houseNumber: e.target.value})} />
+            </div>
+            <Input label={t("postal_code")} required value={formData.postalCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, postalCode: e.target.value})} />
+            <div className="md:col-span-2">
+              <Input label={t("city")} required value={formData.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, city: e.target.value})} />
             </div>
           </FormSection>
 

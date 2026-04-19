@@ -1,8 +1,23 @@
 import { t } from "i18next";
+import { useEffect } from "react";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-import { PageHeader } from "~/components/UI/PageHeader";
 
 export default function ConfirmMail() {
+  
+  useEffect(() => {
+  const redirectAction = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const baseUrl = `${import.meta.env.KeycloakUrl}/realms/${import.meta.env.KeycloakRealm}/login-actions/reset-credentials`;
+      
+      const clientId = `${import.meta.env.KeycloakClientId}`;
+      const redirectUri = encodeURIComponent(window.location.origin + "/"); 
+
+      window.location.href = `${baseUrl}?client_id=${clientId}&tab_id=...&redirect_uri=${redirectUri}`;
+    };
+    redirectAction();
+  }, []);
+
   return (
     <>
         <section id="home">
@@ -12,8 +27,7 @@ export default function ConfirmMail() {
         </section>
 
         <div className="p-4">
-            <PageHeader title={t("confirm_mail")} />
-            <p className="text-lg">{t("confirm_mail_description")}</p>
+            <p className="text-lg">{t("loading")}...</p>
         </div>
     </>
   );

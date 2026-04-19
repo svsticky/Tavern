@@ -221,6 +221,8 @@ namespace Backend.Services
             if (member == null) return false;
 
             var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            patchDoc.Operations.RemoveAll(op => op.path.Equals("/email", StringComparison.OrdinalIgnoreCase));
             
             try
             {
@@ -257,7 +259,6 @@ namespace Backend.Services
                 member.StudentNumber = dto.StudentNumber;
                 member.FirstName = dto.FirstName;
                 member.LastName = dto.LastName;
-                member.Email = dto.Email;
                 member.PhoneNumber = dto.PhoneNumber;
                 member.Street = dto.Street;
                 member.HouseNumber = dto.HouseNumber;

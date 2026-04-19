@@ -38,7 +38,6 @@ export default function AccountPage() {
   const [profilePictureSrc, setProfilePictureSrc] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    email: "",
     phoneNumber: "",
     street: "",
     houseNumber: "",
@@ -53,16 +52,15 @@ export default function AccountPage() {
 
   useEffect(() => {
     const validateForm = () => {
-      const { email, phoneNumber, street, houseNumber, postalCode, city, parentPhoneNumber, preferredLanguage } = formData;
-      const basicFieldsFilled = !!(email && phoneNumber && street && houseNumber && postalCode && city && preferredLanguage !== undefined);
-      const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      const { phoneNumber, street, houseNumber, postalCode, city, parentPhoneNumber, preferredLanguage } = formData;
+      const basicFieldsFilled = !!(phoneNumber && street && houseNumber && postalCode && city && preferredLanguage !== undefined);
 
       let parentPhoneValid = true;
       if (member?.dateOfBirth) {
         const age = new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear();
         if (age < 18) parentPhoneValid = !!parentPhoneNumber?.trim();
       }
-      setIsFormValid(basicFieldsFilled && emailValid && parentPhoneValid);
+      setIsFormValid(basicFieldsFilled && parentPhoneValid);
     };
     validateForm();
   }, [formData, member]);
@@ -76,7 +74,6 @@ export default function AccountPage() {
         if (res.data) {
           setMember(res.data);
           setFormData({
-            email: res.data.email || "",
             phoneNumber: res.data.phoneNumber || "",
             street: res.data.street || "",
             houseNumber: res.data.houseNumber || "",
@@ -155,6 +152,19 @@ export default function AccountPage() {
     }
   }; 
 
+  const handleChangeEmail = async () => {
+    if (keycloak) {
+      const url = await keycloak.createLoginUrl({
+        action: 'UPDATE_EMAIL',
+        redirectUri: window.location.href
+      });
+      window.location.href = url;
+    }
+    else{
+      window.location.href = "/logout";
+    }
+  }; 
+
   const handleSaveAccount = async () => {
     if (!userId) return;
     setSaving(true);
@@ -164,7 +174,6 @@ export default function AccountPage() {
         await patchApiMembersById({
           path: { id: userId },
           body: [
-            { op: "replace", path: "/email", value: formData.email },
             { op: "replace", path: "/phoneNumber", value: formData.phoneNumber },
             { op: "replace", path: "/street", value: formData.street },
             { op: "replace", path: "/houseNumber", value: formData.houseNumber },
@@ -236,12 +245,6 @@ export default function AccountPage() {
           
           <FormSection title={t("contact_details")}>
             <Input 
-              label={t("email")} 
-              type="email" required
-              value={formData.email} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, email: e.target.value})} 
-            />
-            <Input 
               label={t("phone_number")} required
               value={formData.phoneNumber} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, phoneNumber: e.target.value})} 
@@ -252,6 +255,25 @@ export default function AccountPage() {
               value={formData.parentPhoneNumber} 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, parentPhoneNumber: e.target.value})} 
             />
+            <div className="flex items-end gap-4 w-full">
+              <div className="flex-1">
+                <Input 
+                  label={t("email")} 
+                  type="email" 
+                  value={member.email} 
+                  disabled 
+                  className="border-transparent bg-transparent p-0 cursor-default text-gray-900 disabled:text-gray-900"
+                />
+              </div>
+
+              <div className="pb-1"> 
+                <a 
+                  onClick={handleChangeEmail} 
+                >
+                  {t("change_email")}
+                </a>
+              </div> 
+            </div>
           </FormSection>
 
           <FormSection title={t("address")} columns={3}>
