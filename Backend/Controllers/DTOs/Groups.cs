@@ -33,9 +33,6 @@ public class GroupResponseDTO
     /// <inheritdoc cref="Models.Group.Active"/>
     public required bool Active { get; set; } = true;
 
-    /// <inheritdoc cref="Models.Group.GroupMemberships"/>
-    public required List<GroupMembershipSummaryDTO> GroupMemberships { get; set; } = new();
-
     /// <inheritdoc cref="Models.Group.Type"/>
     public required GroupType Type { get; set; }
 

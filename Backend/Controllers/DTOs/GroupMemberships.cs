@@ -23,10 +23,10 @@ public class GroupMembershipResponseDTO
     public required uint Id { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
-    public required Guid MemberId { get; set; }
+    public Guid? MemberId { get; set; }
 
     /// <inheritdoc cref="Models.Member"/>
-    public required string MemberName { get; set; }
+    public string? MemberName { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.GroupId"/>
     public required uint GroupId { get; set; }
@@ -34,7 +34,7 @@ public class GroupMembershipResponseDTO
     /// <inheritdoc cref="Models.Group"/>
     public required string GroupName { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Active"/>
+    /// <inheritdoc cref="Models.Group.Type"/>
     public required GroupType GroupType { get; set; }
 
     /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
@@ -47,18 +47,14 @@ public class GroupMembershipResponseDTO
     public string? RoleAliasName { get; set; }
 }
 
-public class GroupMembershipSummaryDTO
-{
-    public required MemberSummaryDTO Member { get; set; }
-
-    /// <inheritdoc cref="Models.Group"/>
-    public required string GroupName { get; set; }
-
-    /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
-    public required uint MembershipYear { get; set; }
-}
-
 public class GroupMembershipUpdateDTO
 {
     public uint? RoleAliasId { get; set; }
+}
+
+public class GetGroupMembershipsDTO
+{
+    public uint? GroupId { get; set; }
+    public uint? MembershipYear { get; set; }
+    public Guid? MemberId { get; set; }
 }

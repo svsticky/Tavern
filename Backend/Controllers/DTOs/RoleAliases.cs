@@ -31,3 +31,8 @@ public class RoleAliasUpdateDTO
     /// </summary>
     public uint RoleId { get; set; }
 }
+
+public class GetRoleAliasDTO
+{
+    public uint? GroupId { get; set; }
+}

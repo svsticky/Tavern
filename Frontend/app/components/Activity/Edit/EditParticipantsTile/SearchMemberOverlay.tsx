@@ -5,10 +5,9 @@ import { getApiMembers, postApiEnrollments, type Member, type MemberSummaryDto }
 import Input from "~/components/UI/Input";
 import Button from "~/components/UI/Button";
 
-export default function SearchMemberEnrollmentOverlay({ activityId, onEnrolled, onClose }: { activityId: number, onEnrolled: (member: Member, isOnWaitingList: boolean, price: number) => void, onClose: () => void }) {
+export default function SearchMemberOverlay({ selectText, onSelect, loading }: { selectText: string, onSelect: (member: Member) => void, loading: boolean }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MemberSummaryDto[]>([]);
-  const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(true);
 
   useEffect(() => {
@@ -30,22 +29,6 @@ export default function SearchMemberEnrollmentOverlay({ activityId, onEnrolled, 
     return () => clearTimeout(timer);
   }, [query]);
 
-  const handleEnroll = async (member: Member) => {
-    setLoading(true); 
-    try {
-      await postApiEnrollments({
-        body: { activityId, memberId: member.id }
-      });
-      toast.success(t("member_enrolled_success"));
-      onEnrolled(member, false, 0);
-      onClose();
-    } catch (err) {
-      toast.error(t("enroll_failed"));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-4">
       <Input 
@@ -61,8 +44,8 @@ export default function SearchMemberEnrollmentOverlay({ activityId, onEnrolled, 
             <div className="min-w-0">
               <p className="font-medium truncate">{member.firstName} {member.lastName}</p>
             </div>
-            <Button variant="secondary" onClick={() => handleEnroll({ street: "", email: "", phoneNumber: "", houseNumber: "", postalCode: "", city: "", ...member } as Member)} disabled={loading}>
-              {t("enroll")}
+            <Button variant="secondary" onClick={() => onSelect({ street: "", email: "", phoneNumber: "", houseNumber: "", postalCode: "", city: "", ...member } as Member)} disabled={loading}>
+              {selectText}
             </Button>
           </div>
         ))}

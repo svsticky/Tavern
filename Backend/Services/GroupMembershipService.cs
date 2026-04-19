@@ -20,16 +20,31 @@ public class GroupMembershipService : IGroupMembershipService
         _keycloakOutboxWorker = keycloakOutboxService;
     }
 
-    public async Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(Guid userId, bool onlyOwnMemberships, CancellationToken cancellationToken)
+    public async Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(GetGroupMembershipsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if (!onlyOwnMemberships &&
-            !_permissionService.IsBoardOrCandidateBoardMember(userId))
+        var query = _db.GroupMemberships.AsQueryable();
+
+        if (dto.GroupId != null)
         {
-            throw new UnauthorizedAccessException("Only board members can view group memberships.");
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            query = query.Where(gm => gm.GroupId == dto.GroupId);
         }
 
-        return await _db.GroupMemberships
-            .Where(gm => !onlyOwnMemberships || gm.MemberId == userId)
+        if (dto.MembershipYear != null)
+        {
+            query = query.Where(gm => gm.MembershipYear == dto.MembershipYear);
+        }
+
+        if (dto.MemberId != null)
+        {
+            if(dto.MemberId != userId)
+            {
+                _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            }
+            query = query.Where(gm => gm.MemberId == dto.MemberId);
+        }
+
+        return await query
             .Select(GroupMembershipProjections.ToDto())
             .ToListAsync(cancellationToken);
     }

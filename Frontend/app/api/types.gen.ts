@@ -161,20 +161,14 @@ export type GroupMembership = {
 
 export type GroupMembershipResponseDto = {
     id: number;
-    memberId: string;
-    memberName: string;
+    memberId?: string | null;
+    memberName?: string | null;
     groupId: number;
     groupName: string;
     groupType: GroupType;
     membershipYear: number;
     roleAliasId?: number | null;
     roleAliasName?: string | null;
-};
-
-export type GroupMembershipSummaryDto = {
-    member: MemberSummaryDto;
-    groupName: string;
-    membershipYear: number;
 };
 
 export type GroupMembershipUpdateDto = {
@@ -185,7 +179,6 @@ export type GroupResponseDto = {
     id: number;
     name: string;
     active: boolean;
-    groupMemberships: Array<GroupMembershipSummaryDto>;
     type: GroupType;
 };
 
@@ -935,7 +928,9 @@ export type GetApiGroupmembershipsData = {
     body?: never;
     path?: never;
     query?: {
-        onlyOwnMemberships?: boolean;
+        GroupId?: number;
+        MembershipYear?: number;
+        MemberId?: string;
     };
     url: '/api/groupmemberships';
 };
@@ -1136,24 +1131,6 @@ export type PutApiGroupsByIdResponses = {
     200: unknown;
 };
 
-export type PostApiGroupsByIdProfilePictureData = {
-    body?: {
-        image?: Blob | File;
-    };
-    path: {
-        id: number;
-    };
-    query?: never;
-    url: '/api/groups/{id}/profile-picture';
-};
-
-export type PostApiGroupsByIdProfilePictureResponses = {
-    /**
-     * OK
-     */
-    200: unknown;
-};
-
 export type GetApiGroupsByIdGroupPictureData = {
     body?: never;
     path: {
@@ -1164,6 +1141,24 @@ export type GetApiGroupsByIdGroupPictureData = {
 };
 
 export type GetApiGroupsByIdGroupPictureResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiGroupsByIdGroupPictureData = {
+    body?: {
+        image?: Blob | File;
+    };
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/groups/{id}/group-picture';
+};
+
+export type PostApiGroupsByIdGroupPictureResponses = {
     /**
      * OK
      */

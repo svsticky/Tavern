@@ -88,10 +88,10 @@ public class GroupsController : ControllerBase
         }
     }
 
-    // POST: api/profilepicture/{id}/profile-picture
-    [HttpPost("{id}/profile-picture")]
+    // POST: api/groups/{id}/group-picture
+    [HttpPost("{id}/group-picture")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult> UploadProfilePicture(uint id, IFormFile? image)
+    public async Task<ActionResult> UploadGroupPicture(uint id, IFormFile? image)
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
@@ -113,7 +113,7 @@ public class GroupsController : ControllerBase
 
     // GET: api/groups/5/group-picture
     [HttpGet("{id}/group-picture")]
-    public async Task<IActionResult> GetProfilePicture(uint id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetGroupPicture(uint id, CancellationToken cancellationToken)
     {
         var group = await _groupService.GetGroup(id, cancellationToken);
         if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))

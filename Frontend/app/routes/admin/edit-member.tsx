@@ -29,7 +29,7 @@ import DataTableTile from "~/components/Tiles/DataTableTile";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import { PageHeader } from "~/components/UI/PageHeader";
 
-export default function AdminMemberEditPage() {
+export default function EditMemberPage() {
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

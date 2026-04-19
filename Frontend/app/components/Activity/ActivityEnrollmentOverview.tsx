@@ -31,8 +31,8 @@ export default function ActivityEnrollmentOverview({
 
             {/* Activity Details */}
             <div>
-              <p className="truncate">{activity.name}</p>
-              <p className="text-gray-500">
+              <p className="truncate mt-[-2.5px]">{activity.name}</p>
+              <p className="text-gray-500 mt-[-2.5px]">
                 {formatDate(new Date(activity.dateTimeStart), "shortDate")}
               </p>
             </div>

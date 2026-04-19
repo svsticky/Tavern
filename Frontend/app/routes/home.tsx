@@ -3,14 +3,13 @@ import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementResponseDto, type GroupMembership } from "~/api";
+import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, getApiGroupmembershipsById, getApiPaymentsUnpaid, type Activity, type ActivityResponseDto, type Announcement, type GetAnnouncementResponseDto, type GroupMembership, type GroupMembershipResponseDto } from "~/api";
 import ActivityEnrollmentOverview from "~/components/Activity/ActivityEnrollmentOverview";
 import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
-import CommitteeEnrollmentOverview from "~/components/CommitteeEnrollmentOverview";
+import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import DashboardHeader from "~/components/DashboardHeader";
 import Button from "~/components/UI/Button";
 import UpcomingActivities from "~/components/Activity/UpcomingActivities";
-import type { CommitteeEnrollment } from "~/types/CommitteeEnrollment";
 
 export default function DashboardPage() {
   const { t } = useTranslation();
@@ -19,7 +18,7 @@ export default function DashboardPage() {
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [announcements, setAnnouncements] = useState<GetAnnouncementResponseDto[]>([]);
-  const [committees, setCommittees] = useState<CommitteeEnrollment[]>([]);
+  const [groupMemberships, setGroupMemberships] = useState<GroupMembershipResponseDto[]>([]);
 
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -47,17 +46,12 @@ export default function DashboardPage() {
 
         const committeesResponse = await getApiGroupmemberships({
           query: {
-            onlyOwnMemberships: true
+            MemberId: keycloak.tokenParsed?.UserId
           }
         });
 
         if (committeesResponse.data) {
-          setCommittees(committeesResponse.data.map(c => ({
-            id: c.id,
-            name: c.groupName,
-            role: c.roleAliasName ?? "",
-            icon: "https://www.svgrepo.com/show/509977/group.svg"
-          })));
+          setGroupMemberships(committeesResponse.data);
         }
       } catch (error) {
         console.error("Error while loading data:", error);
@@ -132,7 +126,7 @@ export default function DashboardPage() {
             />
 
             <p className="text-md">{t("my_committees")}</p>
-            <CommitteeEnrollmentOverview committeeEnrollments={committees} />
+            <GroupMembershipOverview groupMemberships={groupMemberships} />
           </div>
         </div>
       )}

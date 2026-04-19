@@ -38,17 +38,6 @@ public class GroupService : IGroupService
                 Name = c.Name,
                 Type = c.Type,
                 Active = c.Active,
-                GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipSummaryDTO
-                {
-                    Member = new MemberSummaryDTO
-                    {
-                        Id = cm.Member.Id,
-                        FirstName = cm.Member.FirstName,
-                        LastName = cm.Member.LastName,
-                    },
-                    GroupName = c.Name,
-                    MembershipYear = cm.MembershipYear
-                }).ToList(),
                 GroupPicturePath = c.GroupPicturePath
             })
             .ToListAsync(cancellationToken);
@@ -58,23 +47,14 @@ public class GroupService : IGroupService
     {
         return await _db.Groups
             .Where(g => g.Id == id)
+            .Include(g => g.GroupMemberships)
+            .ThenInclude(gm => gm.Member)
             .Select(g => new GroupResponseDTO
             {
                 Id = g.Id,
                 Name = g.Name,
                 Active = g.Active,
                 Type = g.Type,
-                GroupMemberships = g.GroupMemberships.Select(gm => new GroupMembershipSummaryDTO
-                {
-                    Member = new MemberSummaryDTO
-                    {
-                        Id = gm.Member.Id,
-                        FirstName = gm.Member.FirstName,
-                        LastName = gm.Member.LastName
-                    },
-                    GroupName = g.Name,
-                    MembershipYear = gm.MembershipYear
-                }).ToList(),
                 GroupPicturePath = g.GroupPicturePath
             })
             .FirstOrDefaultAsync(cancellationToken);

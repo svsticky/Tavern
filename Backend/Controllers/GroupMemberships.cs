@@ -27,14 +27,14 @@ public class GroupMembershipsController : ControllerBase
     // GET: api/groupMemberships
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GroupMembershipResponseDTO>>> GetGroupMemberships(
-        [FromQuery] bool onlyOwnMemberships = false,
+        [FromQuery] GetGroupMembershipsDTO dto,
         CancellationToken cancellationToken = default)
     {
         try
         {
             var userId = GetUserId();
 
-            var result = await _groupMembershipService.GetGroupMemberships(userId, onlyOwnMemberships, cancellationToken);
+            var result = await _groupMembershipService.GetGroupMemberships(dto, userId, cancellationToken);
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)

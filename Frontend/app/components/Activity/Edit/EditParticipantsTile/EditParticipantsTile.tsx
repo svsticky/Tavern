@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { deleteApiEnrollmentsByActivityIdByMemberId, getApiActivitiesByIdEnrollmentsExport, type ActivityResponseDto, type Member } from "~/api";
+import { deleteApiEnrollmentsByActivityIdByMemberId, getApiActivitiesByIdEnrollmentsExport, postApiEnrollments, type ActivityResponseDto, type Member } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
@@ -8,10 +8,11 @@ import EditParticipantTile from "./EditParticipantTile";
 import EditWaitinglistParticipantTile from "./EditWaitinglistParticipantTile";
 import Modal from "~/components/UI/Modal";
 import { useState } from "react";
-import SearchMemberEnrollmentOverlay from "./SearchMemberEnrollmentOverlay";
+import SearchMemberOverlay from "./SearchMemberOverlay";
 
 export default function EditParticipantsTile({activity, setActivity}: {activity: ActivityResponseDto; setActivity: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>}) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
   
     const enrollments = activity?.enrollments.filter(e => !e.isOnWaitingList) ?? [];
     const waitingList = activity?.enrollments.filter(e => e.isOnWaitingList) ?? [];
@@ -49,15 +50,34 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
     }
 
     const handleEnrollment = async (member: Member, isOnWaitingList: boolean, price: number) => {
-      activity.enrollments.push({
-        memberId: member.id,
-        member: member,
-        activityId: activity.id,
-        isOnWaitingList: isOnWaitingList,
-        price: price
-      });
-      setActivity({ ...activity });
+      
     }
+
+    const handleEnroll = async (member: Member) => {
+      setLoading(true); 
+      try {
+        const enrollment = await postApiEnrollments({
+          body: { activityId: activity.id, memberId: member.id }
+        });
+
+        if(enrollment.data) {
+          toast.success(t("member_enrolled_success"));
+            activity.enrollments.push({
+            memberId: member.id,
+            member: member,
+            activityId: activity.id,
+            isOnWaitingList: enrollment.data.isOnWaitingList ?? false,
+            price: enrollment.data.price
+          });
+          setActivity({ ...activity });
+          setIsSearchOpen(false);
+        }
+      } catch (err) {
+        toast.error(t("enroll_failed"));
+      } finally {
+        setLoading(false);
+      }
+    };
 
     const handleUnenroll = (memberId: string) => {
       activity.enrollments = activity.enrollments.filter(e => e.memberId !== memberId);
@@ -105,10 +125,10 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
           onClose={() => setIsSearchOpen(false)} 
           title={t("enroll_member")}
         >
-          <SearchMemberEnrollmentOverlay 
-            activityId={activity.id} 
-            onClose={() => setIsSearchOpen(false)}
-            onEnrolled={handleEnrollment}
+          <SearchMemberOverlay 
+            selectText={t("enroll")}
+            onSelect={handleEnroll}
+            loading={loading}
           />
         </Modal>
       </div>

@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 
 public interface IGroupMembershipService
 {
-    Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(Guid userId, bool onlyOwnMemberships, CancellationToken cancellationToken);
+    Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(GetGroupMembershipsDTO dto, Guid userId, CancellationToken cancellationToken);
 
     Task<GroupMembershipResponseDTO?> GetGroupMembership(uint id, Guid userId, CancellationToken cancellationToken);
 

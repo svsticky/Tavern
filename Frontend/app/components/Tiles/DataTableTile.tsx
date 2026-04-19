@@ -2,7 +2,7 @@ import { t } from "i18next";
 import type { ReactNode } from "react";
 
 export interface Column<T> {
-  header: string;
+  header: React.ReactNode | string;
   render: (item: T) => ReactNode;
   className?: string;
 }
