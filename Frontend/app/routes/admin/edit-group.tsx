@@ -327,7 +327,7 @@ export default function EditGroupPage() {
 
   return (
     <>      
-      <PageHeader title="" backTo="/admin/members" />
+      <PageHeader title="" backTo="/admin/groups" />
       <div className="flex flex-col lg:flex-row gap-12">
         <div className="flex flex-col items-center lg:w-48">
           <div 
