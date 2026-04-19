@@ -11,7 +11,14 @@ public static class MemberQueryExtensions
 
         if (!string.IsNullOrEmpty(dto.Search))
         {
-            query = query.Where(m => $"{m.FirstName} {m.LastName} {m.Email} {m.StudentNumber} {m.PhoneNumber}".Contains(dto.Search));
+            var search = dto.Search.Trim().ToLower();
+
+            query = query.Where(m => 
+                (m.FirstName + " " + m.LastName).ToLower().Contains(search) ||
+                m.Email.ToLower().Contains(search) ||
+                m.StudentNumber.ToString().Contains(search) ||
+                m.PhoneNumber.Contains(search)
+            );
         }
 
         if (dto.StudyId.HasValue)

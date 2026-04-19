@@ -27,9 +27,10 @@ import BorderedTile from "~/components/Tiles/BorderedTile";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { getAssociationYear } from "~/util/date.util";
 import Modal from "~/components/UI/Modal";
-import SearchMemberOverlay from "~/components/Activity/Edit/EditParticipantsTile/SearchMemberOverlay";
+import SearchMemberOverlay from "~/components/Member/SearchMemberOverlay";
 import Select from "~/components/UI/Select";
 import { PlusIcon } from "lucide-react";
+import CreateRoleOverlay from "~/components/Roles/CreateRoleOverlay";
 
 export default function EditGroupPage() {
   const params = useParams();
@@ -40,11 +41,15 @@ export default function EditGroupPage() {
   const [groupPictureSrc, setGroupPictureSrc] = useState<string | null>(null);
   const [enrollments, setEnrollments] = useState<GroupMembershipResponseDto[]>([]);
   const [roleAliases, setRoleAliases] = useState<RoleAlias[]>([]);
-  const [modalIsOpen, setModalIsOpen] = useState(false);
+  const [addEnrollmentModalIsOpen, setAddEnrollmentModalIsOpen] = useState(false);
+  const [addRoleModalIsOpen, setAddRoleModalIsOpen] = useState(false);
+  const [loadingMemberships, setLoadingMemberships] = useState(false);
+  const [loadingChangeRole, setLoadingChangeRole] = useState(false);
 
   const [formData, setFormData] = useState({
     Name: "",
     Type: "",
+    Active: false,
   });
 
   const [selectedYear, setSelectedYear] = useState(getAssociationYear());
@@ -60,16 +65,19 @@ export default function EditGroupPage() {
         header: t("role"),
         render: (item) => (
         <select
-            value={item.roleAliasName || "-"}
-            onChange={(e) => handleUpdateRole(item.id, parseInt(e.target.value))}
+            value={typeof item.roleAliasId === 'number' ? item.roleAliasId : "none"}
+            onChange={(e) => handleUpdateRole(item.id, e.target.value === "none" ? null : parseInt(e.target.value))}
             className={`text-xs font-semibold px-2 py-1 rounded-full border-none cursor-pointer focus:ring-2 focus:ring-blue-500`}
-            disabled={loading}
+            disabled={loading || loadingChangeRole || loadingMemberships}
         >
-            {roleAliases.map((alias) => (
-                <option key={alias.id} value={alias.id}>
-                    {alias.name}
-                </option>
-            ))}
+            <>
+                <option value="null"></option>
+                {roleAliases.map((alias) => (
+                    <option key={alias.id} value={alias.id}>
+                        {alias.name}
+                    </option>
+                ))}
+            </>
         </select>
         ),
     },
@@ -89,7 +97,7 @@ export default function EditGroupPage() {
             <Button
                 variant="secondary"
                 className="h-[38px] px-3 flex items-center justify-center"
-                onClick={() => setModalIsOpen(true)}
+                onClick={() => setAddEnrollmentModalIsOpen(true)}
                 type="button"
             >
                 <PlusIcon className="w-4 h-4" />
@@ -122,6 +130,7 @@ export default function EditGroupPage() {
           setFormData({
             Name: groupResponse.data.name,
             Type: groupResponse.data.type,
+            Active: groupResponse.data.active
           });
         }
 
@@ -150,6 +159,7 @@ export default function EditGroupPage() {
     async function loadMemberships() {
       if (!id) return;
       try {
+        setLoadingMemberships(true);
         const groupMembershipsResponse = await getApiGroupmemberships(
             {
                 query: {
@@ -165,7 +175,7 @@ export default function EditGroupPage() {
         console.log("Failed to load group data:", err);
         toast.error(t("loading_failed"));
       } finally {
-        setLoading(false);
+        setLoadingMemberships(false);
       }
     }
     loadMemberships();
@@ -270,9 +280,9 @@ export default function EditGroupPage() {
                 }
             });
             if (res.data) {
-                setEnrollments(prev => [...prev, res.data as GroupMembershipResponseDto]);
+                setEnrollments(prev => [...prev, { membershipYear: selectedYear, memberId: member.id!, groupId: id, memberName: member.firstName + " " + member.lastName, groupName: res.data.group!.name, groupType: res.data.group!.type!, id: res.data.id! }]);
                 toast.success(t("enrollment_added"));
-                setModalIsOpen(false);
+                setAddEnrollmentModalIsOpen(false);
             }
         } catch (err) {
             console.error("Failed to add enrollment:", err);
@@ -290,14 +300,14 @@ export default function EditGroupPage() {
     });
   };
 
-    const handleUpdateRole = async (enrollmentId: number, newRoleAliasId: number) => {
+    const handleUpdateRole = async (enrollmentId: number, newRoleAliasId: number | null) => {
         const saveProcess = async () => {
             try{
-                setLoading(true);
+                setLoadingChangeRole(true);
                 const response = await patchApiGroupmembershipsById({
                     path: { id: enrollmentId },
                     body: [
-                        { op: "replace", path: "/status", value: newRoleAliasId  }
+                        { op: "replace", path: "/roleAliasId", value: newRoleAliasId  }
                     ] as any
                 });
 
@@ -305,14 +315,14 @@ export default function EditGroupPage() {
                 
                 setEnrollments(prev => prev.map(e => 
                     e.id === enrollmentId 
-                        ? { ...e, status: newRoleAliasId as any } 
+                        ? { ...e, roleAliasId: newRoleAliasId as any } 
                         : e
                 ));
             } catch (err) {
                 console.error("Failed to update enrollment role:", err);
                 throw err;
             } finally {
-                setLoading(false);
+                setLoadingChangeRole(false);
             }
         };
 
@@ -322,6 +332,11 @@ export default function EditGroupPage() {
             error: t("role_update_failed")
         });
     };
+
+    const handleRoleAliasAdded = (roleAlias: RoleAlias) => {
+        setRoleAliases(prev => [...prev, roleAlias]);
+        setAddRoleModalIsOpen(false);
+    }
 
   if (loading) return t("loading") + "...";
 
@@ -359,6 +374,7 @@ export default function EditGroupPage() {
             <Input label={t("group_name")} value={formData.Name} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, Name: e.target.value})} />
             <Select label={t("group_type")} value={formData.Type} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({...formData, Type: e.target.value})} 
                 options={[{ value: "Committee", label: t("committee") }, { value: "WorkingGroup", label: t("working_group") }, { value: "Dispute", label: t("dispute") }]} />
+            <Input label={t("active")} type="checkbox" checked={formData.Active} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, Active: e.target.checked})} />
           </FormSection>
 
           <Button 
@@ -369,22 +385,31 @@ export default function EditGroupPage() {
           </Button>
 
             <section>
-                <FormHeader title={t("group_enrollments")} />
+                <FormHeader title={t("group_enrollments")}>
+                    <Button variant="secondary" onClick={() => setAddRoleModalIsOpen(true)} type="button">
+                        {t("add_role")}
+                    </Button>
+                </FormHeader>
                 <BorderedTile>
                     <DataTableTile
-                        data={enrollments}
+                        data={loadingMemberships ? [] : enrollments}
                         columns={enrollmentColumns}
                         emptyText={t("no_enrollments_found")}
                     />
                 </BorderedTile>
             </section>
         </Form>
-        <Modal isOpen={modalIsOpen} onClose={() => setModalIsOpen(false)} title={t("add_enrollment")}>
+
+        <Modal isOpen={addEnrollmentModalIsOpen} onClose={() => setAddEnrollmentModalIsOpen(false)} title={t("add_enrollment")}>
             <SearchMemberOverlay
                 selectText={t("enroll")}
                 onSelect={handleAddEnrollment}
                 loading={loading}
              />
+        </Modal>
+
+        <Modal isOpen={addRoleModalIsOpen} onClose={() => setAddRoleModalIsOpen(false)} title={t("add_role")}>
+            <CreateRoleOverlay onRoleAliasCreated={handleRoleAliasAdded} />
         </Modal>
       </div>
     </>

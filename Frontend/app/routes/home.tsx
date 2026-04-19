@@ -125,7 +125,7 @@ export default function DashboardPage() {
               )} 
             />
 
-            <p className="text-md">{t("my_committees")}</p>
+            <p className="text-md">{t("my_groups")}</p>
             <GroupMembershipOverview groupMemberships={groupMemberships} />
           </div>
         </div>

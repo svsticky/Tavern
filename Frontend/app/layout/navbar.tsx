@@ -60,9 +60,9 @@ export default function NavBarLayout() {
     avatarUrl: imgSrc,
     options: [
       { label: t("account"), action: () => navigate("/account") },
-      ...(isBoard ? [{ label: `${t("activity")} ${t("management")}`, action: () => navigate("/admin/activities") }] : []),
-      ...(isBoard ? [{ label: `${t("member")} ${t("management")}`, action: () => navigate("/admin/members") }] : []),
-      ...(isBoard ? [{ label: `${t("group")} ${t("management")}`, action: () => navigate("/admin/groups") }] : []),
+      ...(isBoard ? [{ label: `${t("all_activities")}`, action: () => navigate("/admin/activities") }] : []),
+      ...(isBoard ? [{ label: `${t("members")}`, action: () => navigate("/admin/members") }] : []),
+      ...(isBoard ? [{ label: `${t("groups")}`, action: () => navigate("/admin/groups") }] : []),
       ...(isBoard ? [{ label: `${t("finances")}`, action: () => navigate("/admin/finances") }] : []),
       ...(isBoard ? [{ label: `${t("koala_settings")}`, action: () => navigate("/admin/settings") }] : []),
       { label: t("logout"), action: () => navigate("/logout") },

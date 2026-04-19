@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { t } from "i18next";
-import toast from "react-hot-toast";
 import { getApiMembers, postApiEnrollments, type Member, type MemberSummaryDto } from "~/api";
 import Input from "~/components/UI/Input";
 import Button from "~/components/UI/Button";

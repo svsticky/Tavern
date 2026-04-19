@@ -8,7 +8,7 @@ import EditParticipantTile from "./EditParticipantTile";
 import EditWaitinglistParticipantTile from "./EditWaitinglistParticipantTile";
 import Modal from "~/components/UI/Modal";
 import { useState } from "react";
-import SearchMemberOverlay from "./SearchMemberOverlay";
+import SearchMemberOverlay from "../../../Member/SearchMemberOverlay";
 
 export default function EditParticipantsTile({activity, setActivity}: {activity: ActivityResponseDto; setActivity: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>}) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);

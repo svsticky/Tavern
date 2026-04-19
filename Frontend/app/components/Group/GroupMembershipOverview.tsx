@@ -38,7 +38,7 @@ export default function GroupMembershipOverview({
 
           {/* Group Details */}
           <div>
-            <p className="truncate mt-[-2.5px]">{groupMembership.groupName} - {groupMembership.membershipYear}</p>
+            <p className="truncate mt-[-2.5px]">{groupMembership.groupName} - {`${groupMembership.membershipYear - 1}/${groupMembership.membershipYear}`}</p>
             <p className="text-gray-500 mt-[-2.5px]">{groupMembership.roleAliasName}</p>
           </div>
         </div>
