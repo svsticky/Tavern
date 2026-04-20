@@ -154,11 +154,7 @@ export const getApiEnrollments = <ThrowOnError extends boolean = false>(options?
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/enrollments',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json-patch+json',
-        ...options?.headers
-    }
+    ...options
 });
 
 export const postApiEnrollments = <ThrowOnError extends boolean = false>(options?: Options<PostApiEnrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostApiEnrollmentsResponses, unknown, ThrowOnError>({
@@ -186,11 +182,7 @@ export const getApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boo
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/api/enrollments/{activityId}/{memberId}',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json-patch+json',
-        ...options.headers
-    }
+    ...options
 });
 
 export const patchApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PatchApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({

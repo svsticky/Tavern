@@ -27,27 +27,41 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if(dto.FromMemberId == null || dto.FromMemberId != userId)
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
+        if (dto.FromMemberId == null || dto.FromMemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-        return await _db.Enrollments
+        var enrollments = await _db.Enrollments
+            .Include(e => e.Activity)
+            .Include(e => e.Member)
+            .Include(e => e.SpecificationAnswers)
+                .ThenInclude(sa => sa.Question)
             .AsNoTracking()
             .Filter(dto)
-            .Select(EnrollmentProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
             .ToListAsync(cancellationToken);
+
+        return enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard).Compile()(e));
     }
 
     public async Task<EnrollmentResponseDTO?> GetEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if(dto.MemberId != userId)
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
+        if (dto.MemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var enrollment = await _db.Enrollments
             .Include(e => e.Activity)
-            .Select(EnrollmentProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
-            .FirstOrDefaultAsync(e => e.Activity!.Id == dto.ActivityId && e.Member!.Id == dto.MemberId, cancellationToken);
+            .Include(e => e.Member)
+            .Include(e => e.SpecificationAnswers)
+                .ThenInclude(sa => sa.Question)
+            .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
         
-        return enrollment;
+        if (enrollment == null)
+            return null;
+
+        return EnrollmentProjections.ToDto(userId, isBoard).Compile()(enrollment);
     }
 
     public async Task<EnrollmentResponseDTO> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken)

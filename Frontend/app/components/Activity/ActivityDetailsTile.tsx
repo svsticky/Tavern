@@ -43,7 +43,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
     hour: '2-digit', minute: '2-digit'
   });
 
-  const isEnrolled = activity.enrollments?.some(e => e.member.id === keycloak.tokenParsed?.UserId);
+  const isEnrolled = activity.enrollments.some(e => e.member.id === keycloak.tokenParsed?.UserId);
 
   const handleAddToCalendar = () => {
     const title = encodeURIComponent(activity.name || 'Activiteit');
@@ -146,7 +146,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           throw new Error("Update failed");
         }
 
-        const updatedEnrollments = activity.enrollments?.map(e => {
+        const updatedEnrollments = activity.enrollments.map(e => {
           if (e.member.id === keycloak.tokenParsed?.UserId) {
             return {
               ...e,
@@ -195,7 +195,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           throw new Error("Unenrollment failed");
         }
 
-        activity.enrollments = activity.enrollments?.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
+        activity.enrollments = activity.enrollments.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
         setActivity && setActivity({ ...activity });
       } catch (error) {
         console.error("Error while unenrolling:", error);
@@ -344,13 +344,13 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
                 : t("none")
             }
           />
-          <InfoItem icon={<Users size={18}/>} label={t("participants")} value={`${activity.enrollments?.filter(e => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ''}`} />
+          <InfoItem icon={<Users size={18}/>} label={t("participants")} value={`${activity.enrollments.filter(e => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ''}`} />
         </div>
 
         {activity.isEnrollable && (
           <AnswerQuestionsTile
             questions={activity.specificationQuestions}
-            answers={activity.enrollments?.find(e => e.member.id === keycloak.tokenParsed?.UserId)?.specificationAnswers ?? []}
+            answers={activity.enrollments.find(e => e.member.id === keycloak.tokenParsed?.UserId)?.specificationAnswers ?? []}
             onChange={(answers) => setAnswers(answers)}
             disabled={submitting || activity.enrollmentDeadline ? new Date(Date.now()) > new Date(activity.enrollmentDeadline!) : false}
           />
@@ -384,7 +384,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
               onClick={handleEnrollment} 
               disabled={submitting}
             >
-              {activity.participantLimit && activity.participantLimit <= (activity.enrollments?.length || 0) ? t("sign_in_on_waitlist") : t("sign_in")}
+              {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length || 0) ? t("sign_in_on_waitlist") : t("sign_in")}
               {submitting && ('...')}
             </Button>
           )}

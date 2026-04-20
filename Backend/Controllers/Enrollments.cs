@@ -19,7 +19,7 @@ public class EnrollmentsController : ControllerBase
 
     // GET: api/enrollments
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<EnrollmentResponseDTO>>> GetEnrollments(GetEnrollmentsDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<EnrollmentResponseDTO>>> GetEnrollments([FromQuery] GetEnrollmentsDTO dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -40,7 +40,7 @@ public class EnrollmentsController : ControllerBase
 
     // GET: api/enrollments/1/{memberId}
     [HttpGet("{activityId}/{memberId}")]
-    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment(EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment([FromQuery] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
     {
         try
         {

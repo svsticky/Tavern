@@ -51,26 +51,35 @@ public class ActivityService : IActivityService
             .ToListAsync();
 
         // Filter activities based on the provided criteria and the user's permissions
-        var query = _db.Activities
+        var activities = await _db.Activities
+            .Include(a => a.Enrollments)
+                .ThenInclude(e => e.Member)
+            .Include(a => a.SpecificationQuestions)
+            .Include(a => a.Enrollments)
+                .ThenInclude(e => e.SpecificationAnswers) 
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds)
-            .Select(ActivityProjections.ToDto(userId, isBoard));
-
-        return await query
-            .OrderBy(a => a.DateTimeStart)
             .ToListAsync();
+
+        return activities.Select(a => ActivityProjections.ToDto(userId, isBoard).Compile()(a));
     }
 
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
-        var activity = await _db.Activities.FirstOrDefaultAsync(a => a.Id == id);
+        var activity = await _db.Activities
+            .Include(a => a.SpecificationQuestions)
+            .Include(a => a.Enrollments)
+                .ThenInclude(e => e.Member)
+            .Include(a => a.Enrollments)
+                .ThenInclude(e => e.SpecificationAnswers)
+                    .ThenInclude(sa => sa.Question) 
+            .FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)
             return null;
 
-        // Check if the activity should be open for enrollment based on the EnrollOpenDate, if the activity is not already enrollable
         if(!activity.IsEnrollable && activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
         {
             activity.IsEnrollable = true;
@@ -78,18 +87,13 @@ public class ActivityService : IActivityService
             await _db.SaveChangesAsync();
         }
 
-        // Only board members can see past activities 
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !isBoard)
             throw new UnauthorizedAccessException();
 
-        // Only board members or members of the organizer group can see activities that are not shown in Koala, even if the activity is in the future
         if (!activity.ShowInKoala && isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
             throw new UnauthorizedAccessException();
 
-        return await _db.Activities
-            .Where(a => a.Id == id)
-            .Select(ActivityProjections.ToDto(userId, isBoard))
-            .FirstOrDefaultAsync();
+        return ActivityProjections.ToDto(userId, isBoard).Compile()(activity);
     }
 
     public async Task<Activity> CreateActivity(Guid userId, PostActivityDTO dto)

@@ -85,9 +85,9 @@ public class ActivityResponseDTO
     public string? CostCenterId { get; set; }
     public string? CostUnitId { get; set; }
     
-    public List<EnrollmentResponseDTO>? Enrollments { get; set; }
+    public required List<EnrollmentResponseDTO> Enrollments { get; set; }
 
-    public required List<GetSpecificationQuestionResponseDTO> SpecificationQuestions { get; set; } = new();
+    public required List<GetSpecificationQuestionResponseDTO> SpecificationQuestions { get; set; }
 
     public DateTimeOffset? PaymentDeadline { get; set; }
 

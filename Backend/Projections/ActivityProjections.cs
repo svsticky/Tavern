@@ -6,7 +6,7 @@ namespace Backend.Projections;
 
 public static class ActivityProjections
 {
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeEnrollments = true)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
     {
         return a => new ActivityResponseDTO
         {
@@ -37,7 +37,7 @@ public static class ActivityProjections
             CostCenterId = a.CostCenterId,
             CostUnitId = a.CostUnitId,
 
-            Enrollments = a.Enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard).Compile()(e)).ToList(),
+            Enrollments = a.Enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard, true).Compile()(e)).ToList(),
 
             SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
             {

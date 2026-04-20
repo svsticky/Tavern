@@ -6,7 +6,7 @@ namespace Backend.Projections;
 
 public static class EnrollmentProjections
 {
-    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool excludeActivity = false)
     {
         return e => new EnrollmentResponseDTO
         {
@@ -27,7 +27,7 @@ public static class EnrollmentProjections
                     Answer = sa.Answer
                 }).ToList(),
             Price = isBoard ? e.Price : null,
-            Activity = ActivityProjections.ToDto(userId, isBoard, false).Compile()(e.Activity)
+            Activity = excludeActivity ? null! : ActivityProjections.ToDto(userId, isBoard).Compile()(e.Activity)
         };
     }
 }

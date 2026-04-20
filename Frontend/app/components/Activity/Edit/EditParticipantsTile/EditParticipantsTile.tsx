@@ -14,8 +14,8 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [loading, setLoading] = useState(false);
   
-    const enrollments = activity.enrollments?.filter(e => !e.isOnWaitingList) ?? [];
-    const waitingList = activity.enrollments?.filter(e => e.isOnWaitingList) ?? [];
+    const enrollments = activity.enrollments.filter(e => !e.isOnWaitingList) ?? [];
+    const waitingList = activity.enrollments.filter(e => e.isOnWaitingList) ?? [];
 
     const handleDownloadEnrollments = () => {
       const handleDownloadAction = async () => {
@@ -58,7 +58,7 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
 
         if(enrollment.data) {
           toast.success(t("member_enrolled_success"));
-          activity.enrollments?.push({
+          activity.enrollments.push({
             member: enrollment.data.member,
             activity: enrollment.data.activity,
             isOnWaitingList: enrollment.data.isOnWaitingList,
@@ -75,12 +75,12 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
     };
 
     const handleUnenroll = (memberId: string) => {
-      activity.enrollments = activity.enrollments?.filter(e => e.member.id !== memberId);
+      activity.enrollments = activity.enrollments.filter(e => e.member.id !== memberId);
       setActivity({ ...activity });
     }
 
     const handleMoveToParticipants = (memberId: string) => {
-      const enrollment = activity.enrollments?.find(e => e.member.id === memberId);
+      const enrollment = activity.enrollments.find(e => e.member.id === memberId);
       if (enrollment) {
         enrollment.isOnWaitingList = false;
         setActivity({ ...activity });

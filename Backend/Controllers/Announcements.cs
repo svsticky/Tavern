@@ -25,7 +25,7 @@ public class AnnouncementsController : ControllerBase
         {
             var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
             var announcements = await _announcementService.GetAnnouncements(userId, cancellationToken);
-            return Forbid();
+            return Ok(announcements);
         }
         catch (UnauthorizedAccessException)
         {

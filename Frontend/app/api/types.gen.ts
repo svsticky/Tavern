@@ -65,7 +65,7 @@ export type ActivityResponseDto = {
     glAccountId?: string | null;
     costCenterId?: string | null;
     costUnitId?: string | null;
-    enrollments?: Array<EnrollmentResponseDto> | null;
+    enrollments: Array<EnrollmentResponseDto>;
     specificationQuestions: Array<GetSpecificationQuestionResponseDto>;
     paymentDeadline?: string | null;
     isOpenForPayment?: boolean | null;
@@ -130,10 +130,6 @@ export type GetAnnouncementResponseDto = {
     createdByName: string;
     createdById?: string | null;
     createdAt: string;
-};
-
-export type GetEnrollmentsDto = {
-    fromMemberId?: string | null;
 };
 
 export type GetSpecificationQuestionResponseDto = {
@@ -825,9 +821,11 @@ export type PutApiAnnouncementsByIdResponses = {
 };
 
 export type GetApiEnrollmentsData = {
-    body?: GetEnrollmentsDto;
+    body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        FromMemberId?: string;
+    };
     url: '/api/enrollments';
 };
 
@@ -874,12 +872,15 @@ export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
 };
 
 export type GetApiEnrollmentsByActivityIdByMemberIdData = {
-    body?: EnrollmentKeyDto;
+    body?: never;
     path: {
         activityId: string;
         memberId: string;
     };
-    query?: never;
+    query?: {
+        ActivityId?: number;
+        MemberId?: string;
+    };
     url: '/api/enrollments/{activityId}/{memberId}';
 };
 

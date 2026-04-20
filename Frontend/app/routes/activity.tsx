@@ -71,11 +71,11 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
         
         <ActivityParticipantsTile 
-          enrollments={!activity.areParticipantsVisible ? [] : activity.enrollments?.filter(e => !e.isOnWaitingList) ?? []} 
+          enrollments={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => !e.isOnWaitingList) ?? []} 
         />
         <ActivityParticipantsTile 
           title={t("waiting_list")} 
-          enrollments={!activity.areParticipantsVisible ? [] : activity.enrollments?.filter(e => e.isOnWaitingList) ?? []} 
+          enrollments={!activity.areParticipantsVisible ? [] : activity.enrollments.filter(e => e.isOnWaitingList) ?? []} 
         />
       </div>
     </div>

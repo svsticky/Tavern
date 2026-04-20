@@ -48,8 +48,8 @@ export default function DashboardHeader({
         }
 
         const enrollmentAmountResponse = await getApiEnrollments({
-            body: {
-              fromMemberId: keycloak.tokenParsed?.UserId
+            query: {
+              FromMemberId: keycloak.tokenParsed?.UserId
             }
         });
 
@@ -154,7 +154,7 @@ export default function DashboardHeader({
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {nextActivity.enrollments?.filter(e => !e.isOnWaitingList).length}{" "}
+              {nextActivity.enrollments.filter(e => !e.isOnWaitingList).length}{" "}
               {nextActivity.participantLimit ? (t("of_the") + ` ${nextActivity.participantLimit} ` + t("available")) + "." : t("enrollments").toLocaleLowerCase() + "."}
             </div>
             <Button variant="secondary" showArrow={true} onClick={() => navigate(`/activities/${nextActivity.id}`)}>
