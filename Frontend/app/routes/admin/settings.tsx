@@ -19,7 +19,6 @@ import Form from "~/components/UI/Form/Form";
 import Select from "~/components/UI/Select";
 import toast from "react-hot-toast";
 import { PlusIcon, TrashIcon } from "lucide-react";
-import BorderedTile from "~/components/Tiles/BorderedTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
@@ -171,21 +170,6 @@ export default function SettingsPage() {
         </div>
 
         <Form>
-
-          <FormSection title={t("financial_mollie")} columns={2}>
-            <Input 
-              label={t("mollie_fee")} 
-              type="number" step="0.01"
-              value={settings["MollieFee"] || ""} 
-              onChange={(e) => handleChange("MollieFee", e.target.value)} 
-            />
-            <Input 
-              label={t("mollie_fee_gl_account")} 
-              value={settings["MollieFeeGLAccount"] || ""} 
-              onChange={(e) => handleChange("MollieFeeGLAccount", e.target.value)} 
-            />
-          </FormSection>
-
           <FormSection title={t("internal_identifiers")} columns={2}>
             <Select 
               label={t("board_group")} 
@@ -198,6 +182,61 @@ export default function SettingsPage() {
               value={settings["CandidateBoardGroupId"] || ""} 
               onChange={(e) => handleChange("CandidateBoardGroupId", e.target.value)}
               options={groupOptions}
+            />
+          </FormSection>
+          
+          <FormSection title={t("finances")} columns={2}>
+            <Input 
+              label={t("mollie_fee")} 
+              type="number" step="0.01"
+              value={settings["MollieFee"] || ""} 
+              onChange={(e) => handleChange("MollieFee", e.target.value)} 
+            />
+            <Input 
+              label={t("mollie_fee_vat_code")} 
+              type="number" step="1"
+              value={settings["MollieFeeVATCode"] || ""} 
+              onChange={(e) => handleChange("MollieFeeVATCode", e.target.value)} 
+            />
+            <Input 
+              label={t("membership_price")} 
+              type="number" step="0.01"
+              value={settings["MembershipPrice"] || ""} 
+              onChange={(e) => handleChange("MembershipPrice", e.target.value)} 
+            />
+            <Input 
+              label={t("membership_vat_code")} 
+              type="number" step="1"
+              value={settings["MembershipVATCode"] || ""} 
+              onChange={(e) => handleChange("MembershipVATCode", e.target.value)} 
+            />
+          </FormSection>
+
+          <FormSection title={t("accounting")} columns={2}>
+            <Input 
+              label={t("membership_gl_account")} 
+              value={settings["MembershipGLAccount"] || ""} 
+              onChange={(e) => handleChange("MembershipGLAccount", e.target.value)} 
+            />
+            <Input 
+              label={t("activity_gl_account")} 
+              value={settings["ActivityGLAccount"] || ""} 
+              onChange={(e) => handleChange("ActivityGLAccount", e.target.value)} 
+            />
+            <Input 
+              label={t("mollie_fee_gl_account")} 
+              value={settings["MollieFeeGLAccount"] || ""} 
+              onChange={(e) => handleChange("MollieFeeGLAccount", e.target.value)} 
+            />
+            <Input 
+              label={t("mollie_relation_code")} 
+              value={settings["MollieRelationCode"] || ""} 
+              onChange={(e) => handleChange("MollieRelationCode", e.target.value)} 
+            />
+            <Input 
+              label={t("mollie_payments_condition")} 
+              value={settings["MolliePaymentsCondition"] || ""} 
+              onChange={(e) => handleChange("MolliePaymentsCondition", e.target.value)} 
             />
           </FormSection>
 
@@ -231,7 +270,7 @@ export default function SettingsPage() {
                     const role = availableRoles.find(r => r.id?.toString() === roleId);
                     
                     return (
-                      <div className="flex items-start gap-4 w-full">
+                      <div key={key} className="flex items-start gap-4 w-full">
                         <div className="flex-1 min-w-0">
                             <Input 
                             label={`${t("email_address_for")} ${role?.name || roleId}`}

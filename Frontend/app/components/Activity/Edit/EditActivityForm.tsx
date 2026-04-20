@@ -165,7 +165,7 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
   if (loading) return t("loading");
 
   return (
-    <div className={isEdit && isBoard && "lg:col-span-2" || ""}>
+    <div className={isEdit && isBoard && "lg:col-span-2 max-w-4xl" || ""}>
         <BorderedTile>
             <Form onSubmit={handleSubmit} onChange={handleFormChange}>
                 <FormSection title={t("basic_information")}>

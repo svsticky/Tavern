@@ -110,7 +110,7 @@ namespace Backend.Services
             var payment = new MembershipPayment
             {
                 MemberId = dto.MemberId,
-                Price = 7.50m,
+                Price = decimal.TryParse((await db.Settings.FindAsync("MembershipPrice"))?.Value ?? "7.50", out var price) ? price : 7.50m,
                 MollieId = mollieResponse.Id,
                 PaymentIntentUrl = mollieResponse.Links.Checkout.Href
             };
