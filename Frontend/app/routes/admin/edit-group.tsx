@@ -12,6 +12,7 @@ import {
   postApiGroupsByIdGroupPicture, 
   type GroupMembershipResponseDto, 
   type Member,
+  type MemberResponseDto,
   type RoleAlias,
 } from "~/api";
 import Input from "~/components/UI/Input";
@@ -267,7 +268,7 @@ export default function EditGroupPage() {
     });
   };
 
-  const handleAddEnrollment = async (member: Member) => {
+  const handleAddEnrollment = async (member: MemberResponseDto) => {
     if (!id || !member || !member.id) return;
     const executeProcess = async () => {
         try {

@@ -3,13 +3,13 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { 
   deleteApiEnrollmentsByActivityIdByMemberId, 
-  patchApiEnrollmentsByActivityIdByMemberId, 
-  type EnrollmentSummaryDto 
+  patchApiEnrollmentsByActivityIdByMemberId,
+  type EnrollmentResponseDto, 
 } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 
-export default function EditWaitinglistParticipantTile({ enrollment, onUnenroll, onMoveToParticipants }: { enrollment: EnrollmentSummaryDto; onUnenroll: () => void; onMoveToParticipants: () => void }) {
+export default function EditWaitinglistParticipantTile({ enrollment, onUnenroll, onMoveToParticipants }: { enrollment: EnrollmentResponseDto; onUnenroll: () => void; onMoveToParticipants: () => void }) {
   const [loading, setLoading] = useState(false);
 
   const handleUnenroll = () => {
@@ -17,7 +17,7 @@ export default function EditWaitinglistParticipantTile({ enrollment, onUnenroll,
       try {
         setLoading(true);
         const response = await deleteApiEnrollmentsByActivityIdByMemberId({
-          path: { activityId: enrollment.activityId, memberId: enrollment.memberId! },
+          path: { activityId: `$${enrollment.activity.id}`, memberId: enrollment.member.id! },
         });
 
         if (response.error) throw new Error("Failed to unenroll");
@@ -43,7 +43,7 @@ export default function EditWaitinglistParticipantTile({ enrollment, onUnenroll,
       try {
         setLoading(true);
         const response = await patchApiEnrollmentsByActivityIdByMemberId({
-          path: { activityId: enrollment.activityId, memberId: enrollment.memberId! },
+          path: { ActivityId: enrollment.activity.id!, MemberId: enrollment.member.id! },
           body: [
             { op: "replace", path: "/isOnWaitingList", value: false }
            ]

@@ -72,78 +72,80 @@ public class PostMemberDTO
 public class MemberResponseDTO
 {
     /// <inheritdoc cref="Models.Member.Id"/>
-    public Guid Id { get; set; }
+    public Guid? Id { get; set; }
 
     /// <inheritdoc cref="Models.Member.StudentNumber"/>
-    public uint StudentNumber { get; set; }
+    public uint? StudentNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.FirstName"/>
-    public required string FirstName { get; set; }
+    public string? FirstName { get; set; }
 
     /// <inheritdoc cref="Models.Member.LastName"/>
-    public required string LastName { get; set; }
+    public string? LastName { get; set; }
 
     /// <inheritdoc cref="Models.Member.Email"/>
     [EmailAddress]
-    public required string Email { get; set; }
+    public string? Email { get; set; }
 
     /// <inheritdoc cref="Models.Member.PhoneNumber"/>
-    public required string PhoneNumber { get; set; }
+    public string? PhoneNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.Street"/>
     [StringLength(40)]
-    public required string Street { get; set; }
+    public string? Street { get; set; }
 
     /// <inheritdoc cref="Models.Member.HouseNumber"/>
-    public required string HouseNumber { get; set; }
+    public string? HouseNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.PostalCode"/>
     [StringLength(10)]
-    public required string PostalCode { get; set; }
+    public string? PostalCode { get; set; }
 
     /// <inheritdoc cref="Models.Member.City"/>
     [StringLength(40)]
-    public required string City { get; set; }
+    public string? City { get; set; }
 
     /// <inheritdoc cref="Models.Member.DateOfBirth"/>
-    public DateTimeOffset DateOfBirth { get; set; }
+    public DateTimeOffset? DateOfBirth { get; set; }
 
     /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>
     public string? ParentPhoneNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
-    public MailSubscriptions MailSubscriptions { get; set; }
+    public MailSubscriptions? MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.Notes"/>
     public string? Notes { get; set; }
 
     /// <inheritdoc cref="Models.Member.RegisteredOn"/>
-    public DateTimeOffset RegisteredOn { get; set; }
+    public DateTimeOffset? RegisteredOn { get; set; }
 
     /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
-    public Language PreferredLanguage { get; set; }
+    public Language? PreferredLanguage { get; set; }
 
     /// <summary>
     /// Studies where the member is enrolled.
     /// </summary>
-    public List<StudyEnrollmentResponseDTO> StudyEnrollments { get; set; } = new();
+    public List<StudyEnrollmentResponseDTO>? StudyEnrollments { get; set; }
 
     /// <summary>
     /// Groups where the member is a part of.
     /// </summary>
-    public List<GroupMembershipResponseDTO> GroupMemberships { get; set; } = new();
+    public List<GroupMembershipResponseDTO>? GroupMemberships { get; set; }
 
     /// <inheritdoc cref="Models.Member.Gratie"/>
-    public bool Gratie { get; set; }
+    public bool? Gratie { get; set; }
 
     /// <inheritdoc cref="Models.Member.LidVanVerdienste"/>
-    public bool LidVanVerdienste { get; set; }
+    public bool? LidVanVerdienste { get; set; }
     /// <inheritdoc cref="Models.Member.EreLid"/>
-    public bool EreLid { get; set; }
+    public bool? EreLid { get; set; }
     /// <inheritdoc cref="Models.Member.Begunstiger"/>
-    public bool Begunstiger { get; set; }
+    public bool? Begunstiger { get; set; }
     /// <inheritdoc cref="Models.Member.Suspended"/>
-    public bool Suspended { get; set; }
+    public bool? Suspended { get; set; }
+
+    public string? ProfilePicturePath { get; set; }
 }
 
 public class MemberUpdateDTO

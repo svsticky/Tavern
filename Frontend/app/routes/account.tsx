@@ -260,7 +260,7 @@ export default function AccountPage() {
                 <Input 
                   label={t("email")} 
                   type="email" 
-                  value={member.email} 
+                  value={member.email!} 
                   disabled 
                   className="border-transparent bg-transparent p-0 cursor-default text-gray-900 disabled:text-gray-900"
                 />

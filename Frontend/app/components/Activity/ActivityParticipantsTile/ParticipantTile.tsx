@@ -1,8 +1,8 @@
-import type { EnrollmentSummaryDto } from "~/api/types.gen";
+import type { EnrollmentResponseDto } from "~/api/types.gen";
 import Tile from "../../Tiles/Tile";
 import { useState, useEffect } from "react";
 
-export default function ParticipantTile({ enrollment }: { enrollment: EnrollmentSummaryDto }) {  
+export default function ParticipantTile({ enrollment }: { enrollment: EnrollmentResponseDto }) {  
   const imageUrl = `${import.meta.env.ApiUrl}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 

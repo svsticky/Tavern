@@ -9,7 +9,7 @@ import { useTranslation } from "react-i18next";
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
-import { getApiEnrollments, getApiGroupmemberships, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type ActivityResponseDto, type GroupMembership } from "~/api";
+import { getApiEnrollments, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type ActivityResponseDto, type GroupMembership } from "~/api";
 import { useEffect, useState } from "react";
 import { useKeycloak } from "@react-keycloak/web";
 import { useNavigate } from "react-router";
@@ -48,18 +48,18 @@ export default function DashboardHeader({
         }
 
         const enrollmentAmountResponse = await getApiEnrollments({
-            query: {
-                ownEnrollments: true
+            body: {
+              fromMemberId: keycloak.tokenParsed?.UserId
             }
         });
 
         if (enrollmentAmountResponse.data) {
           setPastEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
-            const activityDate = new Date(enrollment.activity?.dateTimeStart ?? Date.now());
+            const activityDate = new Date(enrollment.activity.dateTimeStart);
             return activityDate < new Date(Date.now());
           }).length);
           setComingEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
-            const activityDate = new Date(enrollment.activity?.dateTimeStart ?? Date.now());
+            const activityDate = new Date(enrollment.activity.dateTimeStart);
             return activityDate >= new Date(Date.now());
           }).length);
         }
@@ -154,7 +154,7 @@ export default function DashboardHeader({
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {nextActivity.enrollments.filter(e => !e.isOnWaitingList).length}{" "}
+              {nextActivity.enrollments?.filter(e => !e.isOnWaitingList).length}{" "}
               {nextActivity.participantLimit ? (t("of_the") + ` ${nextActivity.participantLimit} ` + t("available")) + "." : t("enrollments").toLocaleLowerCase() + "."}
             </div>
             <Button variant="secondary" showArrow={true} onClick={() => navigate(`/activities/${nextActivity.id}`)}>

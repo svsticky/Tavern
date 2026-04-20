@@ -1,10 +1,10 @@
-import type { Enrollment, EnrollmentSummaryDto, MemberSummaryDto } from "~/api";
+import type { Enrollment, EnrollmentResponseDto } from "~/api";
 import ParticipantTile from "./ParticipantTile";
 import Tile from "../../Tiles/Tile";
 import { t } from "i18next";
 
-export default function ActivityParticipantsTile({ title, enrollments }: { title?: string; enrollments: EnrollmentSummaryDto[] }) {
-  const count = enrollments?.length ?? 0;
+export default function ActivityParticipantsTile({ title, enrollments }: { title?: string; enrollments: EnrollmentResponseDto[] }) {
+  const count = enrollments.length;
 
   if (count === 0) return null;
 
@@ -18,7 +18,7 @@ export default function ActivityParticipantsTile({ title, enrollments }: { title
       </h2>
       
       <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
-        {enrollments?.map((enrollment, idx) => (
+        {enrollments.map((enrollment, idx) => (
           <ParticipantTile key={idx} enrollment={enrollment} />
         ))}
       </div>

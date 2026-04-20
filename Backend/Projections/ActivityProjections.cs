@@ -6,7 +6,7 @@ namespace Backend.Projections;
 
 public static class ActivityProjections
 {
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeEnrollments = true)
     {
         return a => new ActivityResponseDTO
         {
@@ -37,28 +37,7 @@ public static class ActivityProjections
             CostCenterId = a.CostCenterId,
             CostUnitId = a.CostUnitId,
 
-            Enrollments = a.Enrollments.Select(e => new EnrollmentSummaryDTO
-            {
-                IsOnWaitingList = e.IsOnWaitingList,
-                Member = new MemberSummaryDTO
-                {
-                    Id = e.MemberId == userId ? e.MemberId : null,
-                    FirstName = a.AreParticipantsVisible || isBoard ? e.Member.FirstName : null,
-                    LastName = a.AreParticipantsVisible || isBoard ? e.Member.LastName : null,
-                    ProfilePicturePath = a.AreParticipantsVisible || isBoard ? e.Member.ProfilePicturePath : null
-                },
-                SpecificationAnswers = e.SpecificationAnswers
-                    .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic)
-                    .Select(sa => new SpecificationAnswerResponseDTO
-                    {
-                        QuestionId = sa.SpecificationQuestionId,
-                        AnswerId = sa.Id,
-                        Answer = sa.Answer
-                    }).ToList(),
-                Price = isBoard ? e.Price : null,
-                ActivityId = a.Id,
-                MemberId = isBoard || e.MemberId == userId ? e.MemberId : null
-            }).ToList(),
+            Enrollments = a.Enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard).Compile()(e)).ToList(),
 
             SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
             {

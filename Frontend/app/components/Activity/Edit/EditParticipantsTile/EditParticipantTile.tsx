@@ -3,14 +3,14 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { 
   deleteApiEnrollmentsByActivityIdByMemberId, 
-  patchApiEnrollmentsByActivityIdByMemberId, 
-  type EnrollmentSummaryDto 
+  patchApiEnrollmentsByActivityIdByMemberId,
+  type EnrollmentResponseDto, 
 } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 
-export default function EditParticipantTile({ enrollment, onUnenroll }: { enrollment: EnrollmentSummaryDto; onUnenroll: () => void }) {
+export default function EditParticipantTile({ enrollment, onUnenroll }: { enrollment: EnrollmentResponseDto; onUnenroll: () => void }) {
   const [loading, setLoading] = useState(false);
   const [price, setPrice] = useState(enrollment.price ?? 0);
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -24,7 +24,7 @@ export default function EditParticipantTile({ enrollment, onUnenroll }: { enroll
       try {
         setLoading(true);
         const response = await deleteApiEnrollmentsByActivityIdByMemberId({
-          path: { activityId: enrollment.activityId, memberId: enrollment.memberId! },
+          path: { activityId: `$${enrollment.activity.id}`, memberId: enrollment.member.id! },
         });
 
         if (response.error) throw new Error("Failed to unenroll");
@@ -52,8 +52,8 @@ export default function EditParticipantTile({ enrollment, onUnenroll }: { enroll
       setLoading(true);
       const response = await patchApiEnrollmentsByActivityIdByMemberId({
         path: {
-          activityId: enrollment.activityId,
-          memberId: enrollment.memberId!,
+          ActivityId: enrollment.activity.id,
+          MemberId: enrollment.member.id!,
         },
         body: [
           {

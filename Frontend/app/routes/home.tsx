@@ -121,7 +121,7 @@ export default function DashboardPage() {
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview 
               enrolledActivities={activities.filter(a => 
-                a.enrollments.some(e => e.member.id === keycloak.tokenParsed?.UserId)
+                a.enrollments!.some(e => e.member.id === keycloak.tokenParsed?.UserId)
               )} 
             />
 

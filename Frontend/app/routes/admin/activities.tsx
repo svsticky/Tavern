@@ -79,7 +79,7 @@ export default function Activities() {
       header: t("participants"),
       render: (act) => (
         <div className="flex flex-col">
-          <span className="text-sm text-slate-600">👥 {act.enrollments.filter(e => !e.isOnWaitingList).length}{act.participantLimit !== null ? `/${act.participantLimit}` : ""}</span>
+          <span className="text-sm text-slate-600">👥 {act.enrollments?.filter(e => !e.isOnWaitingList).length}{act.participantLimit !== null ? `/${act.participantLimit}` : ""}</span>
         </div>
       ),
     },

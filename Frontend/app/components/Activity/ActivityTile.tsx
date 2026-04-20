@@ -120,8 +120,8 @@ export default function ActivityTile({
             <div className="mt-1 flex items-center gap-1.5">
               <UsersRound size={12} />
               {activity.participantLimit 
-                ? (activity.participantLimit - (activity.enrollments.length)) + " " + t("places_available") 
-                : (activity.enrollments.filter((e) => !e.isOnWaitingList).length) + " " + t("participants")}
+                ? (activity.participantLimit - (activity.enrollments?.length ?? 0)) + " " + t("places_available") 
+                : (activity.enrollments?.filter((e) => !e.isOnWaitingList).length) + " " + t("participants")}
             </div>
           </div>
         </div>

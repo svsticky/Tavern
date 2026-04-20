@@ -3,6 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using Backend.Models.Domain;
+using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,36 +25,41 @@ public class EnrollmentService : IEnrollmentService
         _paymentValidationService = paymentValidationService;
     }
 
-    public async Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken, Guid? memberId = null)
+    public async Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        var query = _db.Enrollments.Include(e => e.Activity).AsQueryable();
+        if(dto.FromMemberId == null || dto.FromMemberId != userId)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-        if (memberId.HasValue)
-        {
-            query = query.Where(e => e.MemberId == memberId.Value);
-        }
-
-        // To do: if member id == null, ensure board or candidate board
-        // to do: project to dto with only necessary info instead of including everything and returning the full enrollment objects (which can be quite heavy with all the specification answers)
-        // It should contain activity with basic info
-
-        return await query.ToListAsync(cancellationToken);
-    }
-
-    public async Task<Enrollment?> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
-    {
-        // To do: project to dto with only necessary info instead of including everything and returning the full enrollment objects (which can be quite heavy with all the specification answers). It should contain activity with basic info
         return await _db.Enrollments
-            .Include(e => e.Activity)
-            .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
+            .AsNoTracking()
+            .Filter(dto)
+            .Select(EnrollmentProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<Enrollment> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken)
+    public async Task<EnrollmentResponseDTO?> GetEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
+    {
+        if(dto.MemberId != userId)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+        var enrollment = await _db.Enrollments
+            .Include(e => e.Activity)
+            .Select(EnrollmentProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .FirstOrDefaultAsync(e => e.Activity!.Id == dto.ActivityId && e.Member!.Id == dto.MemberId, cancellationToken);
+        
+        return enrollment;
+    }
+
+    public async Task<EnrollmentResponseDTO> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        
+        if(dto.MemberId != userId)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         try
         {
+            // Get member and check if they are allowed to enroll in activities
             var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
 
             if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
@@ -62,9 +68,16 @@ public class EnrollmentService : IEnrollmentService
             if (member.Suspended)
                 throw new ArgumentException("Member is suspended and cannot enroll in activities.");
 
+            // TO DO: CHeck if member has active study or gratie
+            // TO DO: Set all this in validator
+
+            // Get activity and validate if enrollment is possible
             var activity = await GetActivityWithQuestionsAndEnrollmentsOrThrow(dto.ActivityId, cancellationToken);
 
             bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(member.Id);
+
+            if (activity.Enrollments.Any(e => e.MemberId == dto.MemberId))
+                throw new ArgumentException("Member is already enrolled (or on waiting list).");
 
             if (!isBoardMember)
             {
@@ -74,15 +87,12 @@ public class EnrollmentService : IEnrollmentService
                     throw new UnauthorizedAccessException("Member is not in the target audience for this activity.");
             }
 
-            if (activity.Enrollments.Any(e => e.MemberId == dto.MemberId))
-                throw new ArgumentException("Member is already enrolled (or on waiting list).");
-
+            // Validate provided answers
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
 
-            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoardMember);
 
-            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
-
+            // Determine if enrollment should be on waiting list
             int currentParticipants = activity.Enrollments.Count(e => !e.IsOnWaitingList);
 
             bool shouldBeOnWaitingList =
@@ -98,7 +108,7 @@ public class EnrollmentService : IEnrollmentService
 
             await transaction.CommitAsync(cancellationToken);
 
-            return enrollment;
+            return EnrollmentProjections.ToDto(userId, isBoardMember).Compile()(enrollment);
         }
         catch
         {
@@ -107,8 +117,11 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
-    public async Task DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
+    public async Task DeleteEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
     {
+        if(dto.MemberId != userId)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -117,24 +130,20 @@ public class EnrollmentService : IEnrollmentService
                 .Include(e => e.SpecificationAnswers)
                 .Include(e => e.Activity)
                 .ThenInclude(a => a.Enrollments)
-                .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
+                .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
 
             if (enrollment == null)
                 throw new KeyNotFoundException();
 
-            // to do: check if it is own enrollment or if user is board member
-            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(memberId);
-
-            // to do: if not board and unenroll deadline is over: don't accept it (and remove the check for enrollmentdeadline)
+            // Determine if activity enrollments can be changed 
+            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(dto.MemberId);
 
             if (!isBoardMember)
             {
                 await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);
-                
-                if(memberId != enrollment.MemberId)
-                    throw new UnauthorizedAccessException("Members can only delete their own enrollments.");
             }
 
+            // If the enrollment is not on the waiting list, we need to promote the next in line after deletion
             bool wasOnWaitingList = enrollment.IsOnWaitingList;
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
@@ -142,7 +151,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (!wasOnWaitingList)
             {
-                PromoteFromWaitingList(activityId, cancellationToken);
+                PromoteFromWaitingList(dto.ActivityId, cancellationToken);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -155,41 +164,44 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
-    public async Task UpdateEnrollment(uint activityId, Guid memberId, PostEnrollmentDTO dto, CancellationToken cancellationToken)
+    public async Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId,CancellationToken cancellationToken)
     {
-        if (activityId != dto.ActivityId || memberId != dto.MemberId)
-            throw new ArgumentException("URL parameters do not match body.");
-
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
         {
+            // Get enrollment
             var enrollment = await _db.Enrollments
                 .Include(e => e.SpecificationAnswers)
-                .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
+                .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
 
             if (enrollment == null)
                 throw new KeyNotFoundException("Enrollment not found.");
+            
+            // Get activity and validate
+            var activity = await GetActivityWithQuestionsOrThrow(dto.ActivityId, cancellationToken);
 
-            var activity = await GetActivityWithQuestionsOrThrow(activityId, cancellationToken);
-
-            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(memberId);
+            // Determine if activity enrollments can be changed
+            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
             if (!isBoard)
             {
                 await EnsureActivityEnrollmentsCanBeChanged(activity, isBoard, cancellationToken);
                 
-                if(memberId != enrollment.MemberId)
+                if(userId != enrollment.MemberId)
                     throw new UnauthorizedAccessException("Members can only update their own enrollments.");
             }
             
+            // Get and validate provided answers
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
             
             EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
 
+            // Remove old answers and add new ones
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
 
-            enrollment.SpecificationAnswers = BuildSpecificationAnswers(providedAnswers, memberId, enrollment);
+            // Add new answers to enrollment
+            enrollment.SpecificationAnswers = BuildSpecificationAnswers(providedAnswers, dto.MemberId, enrollment);
 
             StateValidator.Validate(enrollment);
 
@@ -203,7 +215,7 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
-    public async Task PatchEnrollment(uint activityId, Guid memberId, JsonPatchDocument<Enrollment> patchDoc, CancellationToken cancellationToken)
+    public async Task PatchEnrollment(EnrollmentKeyDTO dto, JsonPatchDocument<Enrollment> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(patchDoc);
 
@@ -213,23 +225,26 @@ public class EnrollmentService : IEnrollmentService
         {
             throw new ArgumentException("Cannot change ActivityId or MemberId.");
         }
-
+        
+        // Get enrollment
         var enrollment = await _db.Enrollments
-            .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
+            .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
 
         if (enrollment == null)
             throw new KeyNotFoundException();
 
-        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(memberId);
+        // Determine if activity enrollments can be changed
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         if(!isBoardMember)
         {
             await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);
             
-            if(memberId != enrollment.MemberId)
+            if(userId != enrollment.MemberId)
                 throw new UnauthorizedAccessException("Members can only update their own enrollments.");
         }
 
+        // Apply patch and validate
         patchDoc.ApplyTo(enrollment);
         StateValidator.Validate(enrollment);
 

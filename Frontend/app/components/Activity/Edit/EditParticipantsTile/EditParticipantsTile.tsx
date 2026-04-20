@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { deleteApiEnrollmentsByActivityIdByMemberId, getApiActivitiesByIdEnrollmentsExport, postApiEnrollments, type ActivityResponseDto, type Member } from "~/api";
+import { deleteApiEnrollmentsByActivityIdByMemberId, getApiActivitiesByIdEnrollmentsExport, postApiEnrollments, type ActivityResponseDto, type Member, type MemberResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
@@ -14,8 +14,8 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [loading, setLoading] = useState(false);
   
-    const enrollments = activity?.enrollments.filter(e => !e.isOnWaitingList) ?? [];
-    const waitingList = activity?.enrollments.filter(e => e.isOnWaitingList) ?? [];
+    const enrollments = activity.enrollments?.filter(e => !e.isOnWaitingList) ?? [];
+    const waitingList = activity.enrollments?.filter(e => e.isOnWaitingList) ?? [];
 
     const handleDownloadEnrollments = () => {
       const handleDownloadAction = async () => {
@@ -49,24 +49,19 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
       });
     }
 
-    const handleEnrollment = async (member: Member, isOnWaitingList: boolean, price: number) => {
-      
-    }
-
-    const handleEnroll = async (member: Member) => {
+    const handleEnroll = async (member: MemberResponseDto) => {
       setLoading(true); 
       try {
-        const enrollment = await postApiEnrollments({
-          body: { activityId: activity.id, memberId: member.id }
+        var enrollment = await postApiEnrollments({
+          body: { activityId: activity.id, memberId: member.id! }
         });
 
         if(enrollment.data) {
           toast.success(t("member_enrolled_success"));
-            activity.enrollments.push({
-            memberId: member.id,
-            member: member,
-            activityId: activity.id,
-            isOnWaitingList: enrollment.data.isOnWaitingList ?? false,
+          activity.enrollments?.push({
+            member: enrollment.data.member,
+            activity: enrollment.data.activity,
+            isOnWaitingList: enrollment.data.isOnWaitingList,
             price: enrollment.data.price
           });
           setActivity({ ...activity });
@@ -80,12 +75,12 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
     };
 
     const handleUnenroll = (memberId: string) => {
-      activity.enrollments = activity.enrollments.filter(e => e.memberId !== memberId);
+      activity.enrollments = activity.enrollments?.filter(e => e.member.id !== memberId);
       setActivity({ ...activity });
     }
 
     const handleMoveToParticipants = (memberId: string) => {
-      const enrollment = activity.enrollments.find(e => e.memberId === memberId);
+      const enrollment = activity.enrollments?.find(e => e.member.id === memberId);
       if (enrollment) {
         enrollment.isOnWaitingList = false;
         setActivity({ ...activity });
@@ -102,14 +97,14 @@ export default function EditParticipantsTile({activity, setActivity}: {activity:
               {
                 enrollments.length > 0 ? (
                 enrollments.map((e, index) => (
-                  <EditParticipantTile key={index} enrollment={e} onUnenroll={() => handleUnenroll(e.memberId!)} />
+                  <EditParticipantTile key={index} enrollment={e} onUnenroll={() => handleUnenroll(e.member.id!)} />
                 ))
               ) : (
                 <p className="text-sm text-gray-400 italic">{t("no_participants_yet")}</p>
               )}
               {
                 waitingList.length > 0 && (
-                  <EditWaitinglistParticipantTile enrollment={waitingList[0]} onUnenroll={() => handleUnenroll(waitingList[0].memberId!)} onMoveToParticipants={() => handleMoveToParticipants(waitingList[0].memberId!)} />
+                  <EditWaitinglistParticipantTile enrollment={waitingList[0]} onUnenroll={() => handleUnenroll(waitingList[0].member.id!)} onMoveToParticipants={() => handleMoveToParticipants(waitingList[0].member.id!)} />
                 )
               }
             </div>

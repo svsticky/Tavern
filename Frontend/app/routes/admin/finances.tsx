@@ -277,7 +277,7 @@ export default function Finances() {
                                 <div className="flex gap-2 items-center text-sm text-slate-500">
                                     <span>{formatDate(new Date(activity.dateTimeEnd), "fullDateTime")}</span>
                                     •
-                                    <span>{activity.enrollments.length} {t("participants")}</span>
+                                    <span>{activity.enrollments?.length} {t("participants")}</span>
                                     •
                                     <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
                                 </div>

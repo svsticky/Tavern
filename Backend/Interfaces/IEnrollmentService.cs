@@ -6,17 +6,17 @@ namespace Backend.Interfaces;
 
 public interface IEnrollmentService
 {
-    Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken, Guid? memberId = null);
+    Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId,CancellationToken cancellationToken);
 
-    Task<Enrollment?> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken);
+    Task<EnrollmentResponseDTO?> GetEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken);
 
-    Task<Enrollment> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken);
+    Task<EnrollmentResponseDTO> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken);
 
-    Task DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken);
+    Task DeleteEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken);
 
-    Task UpdateEnrollment(uint activityId, Guid memberId, PostEnrollmentDTO dto, CancellationToken cancellationToken);
+    Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken);
 
-    Task PatchEnrollment(uint activityId, Guid memberId, JsonPatchDocument<Enrollment> patchDoc, CancellationToken cancellationToken);
+    Task PatchEnrollment(EnrollmentKeyDTO dto, JsonPatchDocument<Enrollment> patchDoc, Guid userId, CancellationToken cancellationToken);
     void PromoteFromWaitingList(uint activityId, CancellationToken ct);
     void PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct);
 }

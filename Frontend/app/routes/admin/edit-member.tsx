@@ -138,7 +138,7 @@ export default function EditMemberPage() {
             dateOfBirth: memberResponse.data.dateOfBirth ? new Date(memberResponse.data.dateOfBirth).toISOString().split('T')[0] : ""
           });
 
-          setEmail(memberResponse.data.email);
+          setEmail(memberResponse.data.email!);
         }
 
         const studyEnrollmentsResponse = await getApiStudyenrollments({ query: { MemberId: memberId } });

@@ -65,10 +65,10 @@ export type ActivityResponseDto = {
     glAccountId?: string | null;
     costCenterId?: string | null;
     costUnitId?: string | null;
-    enrollments: Array<EnrollmentSummaryDto>;
+    enrollments?: Array<EnrollmentResponseDto> | null;
     specificationQuestions: Array<GetSpecificationQuestionResponseDto>;
-    paymentDeadline: string | null;
-    isOpenForPayment: boolean;
+    paymentDeadline?: string | null;
+    isOpenForPayment?: boolean | null;
 };
 
 export type Announcement = {
@@ -96,6 +96,11 @@ export type EnrollmentBalance = {
     balance: number;
 };
 
+export type EnrollmentKeyDto = {
+    activityId?: number;
+    memberId?: string;
+};
+
 export type EnrollmentPayment = {
     id?: number;
     price?: number;
@@ -110,13 +115,12 @@ export type EnrollmentPayment = {
     activity?: Activity;
 };
 
-export type EnrollmentSummaryDto = {
+export type EnrollmentResponseDto = {
     isOnWaitingList: boolean;
-    member: MemberSummaryDto;
+    member: MemberResponseDto;
     specificationAnswers?: Array<SpecificationAnswerResponseDto> | null;
     price?: number | null;
-    activityId: number;
-    memberId?: string | null;
+    activity: ActivityResponseDto;
 };
 
 export type GetAnnouncementResponseDto = {
@@ -124,8 +128,12 @@ export type GetAnnouncementResponseDto = {
     title: string;
     content: string;
     createdByName: string;
-    createdById: string;
+    createdById?: string | null;
     createdAt: string;
+};
+
+export type GetEnrollmentsDto = {
+    fromMemberId?: string | null;
 };
 
 export type GetSpecificationQuestionResponseDto = {
@@ -234,35 +242,29 @@ export type Member = {
 };
 
 export type MemberResponseDto = {
-    id?: string;
-    studentNumber?: number;
-    firstName: string;
-    lastName: string;
-    email: string;
-    phoneNumber: string;
-    street: string;
-    houseNumber: string;
-    postalCode: string;
-    city: string;
-    dateOfBirth?: string;
+    id?: string | null;
+    studentNumber?: number | null;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    phoneNumber?: string | null;
+    street?: string | null;
+    houseNumber?: string | null;
+    postalCode?: string | null;
+    city?: string | null;
+    dateOfBirth?: string | null;
     parentPhoneNumber?: string | null;
     mailSubscriptions?: MailSubscriptions;
     notes?: string | null;
-    registeredOn?: string;
+    registeredOn?: string | null;
     preferredLanguage?: Language;
-    studyEnrollments?: Array<StudyEnrollmentResponseDto>;
-    groupMemberships?: Array<GroupMembershipResponseDto>;
-    gratie?: boolean;
-    lidVanVerdienste?: boolean;
-    ereLid?: boolean;
-    begunstiger?: boolean;
-    suspended?: boolean;
-};
-
-export type MemberSummaryDto = {
-    id?: string | null;
-    firstName?: string | null;
-    lastName?: string | null;
+    studyEnrollments?: Array<StudyEnrollmentResponseDto> | null;
+    groupMemberships?: Array<GroupMembershipResponseDto> | null;
+    gratie?: boolean | null;
+    lidVanVerdienste?: boolean | null;
+    ereLid?: boolean | null;
+    begunstiger?: boolean | null;
+    suspended?: boolean | null;
     profilePicturePath?: string | null;
 };
 
@@ -753,10 +755,8 @@ export type PostApiAnnouncementsResponses = {
     /**
      * OK
      */
-    200: Announcement;
+    200: unknown;
 };
-
-export type PostApiAnnouncementsResponse = PostApiAnnouncementsResponses[keyof PostApiAnnouncementsResponses];
 
 export type DeleteApiAnnouncementsByIdData = {
     body?: never;
@@ -787,7 +787,7 @@ export type GetApiAnnouncementsByIdResponses = {
     /**
      * OK
      */
-    200: Announcement;
+    200: GetAnnouncementResponseDto;
 };
 
 export type GetApiAnnouncementsByIdResponse = GetApiAnnouncementsByIdResponses[keyof GetApiAnnouncementsByIdResponses];
@@ -825,11 +825,9 @@ export type PutApiAnnouncementsByIdResponses = {
 };
 
 export type GetApiEnrollmentsData = {
-    body?: never;
+    body?: GetEnrollmentsDto;
     path?: never;
-    query?: {
-        ownEnrollments?: boolean;
-    };
+    query?: never;
     url: '/api/enrollments';
 };
 
@@ -837,7 +835,7 @@ export type GetApiEnrollmentsResponses = {
     /**
      * OK
      */
-    200: Array<Enrollment>;
+    200: Array<EnrollmentResponseDto>;
 };
 
 export type GetApiEnrollmentsResponse = GetApiEnrollmentsResponses[keyof GetApiEnrollmentsResponses];
@@ -853,15 +851,15 @@ export type PostApiEnrollmentsResponses = {
     /**
      * OK
      */
-    200: Enrollment;
+    200: EnrollmentResponseDto;
 };
 
 export type PostApiEnrollmentsResponse = PostApiEnrollmentsResponses[keyof PostApiEnrollmentsResponses];
 
 export type DeleteApiEnrollmentsByActivityIdByMemberIdData = {
-    body?: never;
+    body?: EnrollmentKeyDto;
     path: {
-        activityId: number;
+        activityId: string;
         memberId: string;
     };
     query?: never;
@@ -876,9 +874,9 @@ export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
 };
 
 export type GetApiEnrollmentsByActivityIdByMemberIdData = {
-    body?: never;
+    body?: EnrollmentKeyDto;
     path: {
-        activityId: number;
+        activityId: string;
         memberId: string;
     };
     query?: never;
@@ -889,7 +887,7 @@ export type GetApiEnrollmentsByActivityIdByMemberIdResponses = {
     /**
      * OK
      */
-    200: Enrollment;
+    200: EnrollmentResponseDto;
 };
 
 export type GetApiEnrollmentsByActivityIdByMemberIdResponse = GetApiEnrollmentsByActivityIdByMemberIdResponses[keyof GetApiEnrollmentsByActivityIdByMemberIdResponses];
@@ -897,8 +895,8 @@ export type GetApiEnrollmentsByActivityIdByMemberIdResponse = GetApiEnrollmentsB
 export type PatchApiEnrollmentsByActivityIdByMemberIdData = {
     body?: Array<Operation>;
     path: {
-        activityId: number;
-        memberId: string;
+        ActivityId: number;
+        MemberId: string;
     };
     query?: never;
     url: '/api/enrollments/{activityId}/{memberId}';
@@ -1333,6 +1331,23 @@ export type GetApiMembersByIdProfilePictureData = {
 };
 
 export type GetApiMembersByIdProfilePictureResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PostApiMembersWebhookRefreshEmailData = {
+    body?: string;
+    headers?: {
+        'X-Webhook-Secret'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/members/webhook/refresh-email';
+};
+
+export type PostApiMembersWebhookRefreshEmailResponses = {
     /**
      * OK
      */

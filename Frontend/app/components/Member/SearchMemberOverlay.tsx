@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { t } from "i18next";
-import { getApiMembers, postApiEnrollments, type Member, type MemberSummaryDto } from "~/api";
+import { getApiMembers, postApiEnrollments, type Member, type MemberResponseDto } from "~/api";
 import Input from "~/components/UI/Input";
 import Button from "~/components/UI/Button";
 
-export default function SearchMemberOverlay({ selectText, onSelect, loading }: { selectText: string, onSelect: (member: Member) => void, loading: boolean }) {
+export default function SearchMemberOverlay({ selectText, onSelect, loading }: { selectText: string, onSelect: (member: MemberResponseDto) => void, loading: boolean }) {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<MemberSummaryDto[]>([]);
+  const [results, setResults] = useState<MemberResponseDto[]>([]);
   const [searching, setSearching] = useState(true);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function SearchMemberOverlay({ selectText, onSelect, loading }: {
             <div className="min-w-0">
               <p className="font-medium truncate">{member.firstName} {member.lastName}</p>
             </div>
-            <Button variant="secondary" onClick={() => onSelect({ street: "", email: "", phoneNumber: "", houseNumber: "", postalCode: "", city: "", ...member } as Member)} disabled={loading}>
+            <Button variant="secondary" onClick={() => onSelect(member)} disabled={loading}>
               {selectText}
             </Button>
           </div>

@@ -19,29 +19,53 @@ public class EnrollmentsController : ControllerBase
 
     // GET: api/enrollments
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Enrollment>>> GetEnrollments(bool ownEnrollments, CancellationToken cancellationToken)
-    {   
-        var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    public async Task<ActionResult<IEnumerable<EnrollmentResponseDTO>>> GetEnrollments(GetEnrollmentsDTO dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        var enrollments = await _enrollmentService.GetEnrollments(cancellationToken, ownEnrollments ? userId : null);
-        return Ok(enrollments);
+            var enrollments = await _enrollmentService.GetEnrollments(dto, userId, cancellationToken);
+            return Ok(enrollments);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
 
     // GET: api/enrollments/1/{memberId}
     [HttpGet("{activityId}/{memberId}")]
-    public async Task<ActionResult<Enrollment>> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
+    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment(EnrollmentKeyDTO dto, CancellationToken cancellationToken)
     {
-        var enrollment = await _enrollmentService.GetEnrollment(activityId, memberId, cancellationToken);
+        try
+        {
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
 
-        if (enrollment == null)
-            return NotFound();
+            var enrollment = await _enrollmentService.GetEnrollment(dto, userId, cancellationToken);
 
-        return Ok(enrollment);
+            if (enrollment == null)
+                return NotFound();
+        
+            return Ok(enrollment);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
     }
 
     // POST: api/enrollments
     [HttpPost]
-    public async Task<ActionResult<Enrollment>> PostEnrollment(
+    public async Task<ActionResult<EnrollmentResponseDTO>> PostEnrollment(
         PostEnrollmentDTO dto,
         CancellationToken cancellationToken)
     {
@@ -53,7 +77,7 @@ public class EnrollmentsController : ControllerBase
 
             return CreatedAtAction(
                 nameof(GetEnrollment),
-                new { activityId = created.ActivityId, memberId = created.MemberId },
+                new { activityId = created.Activity?.Id, memberId = created.Member?.Id },
                 created
             );
         }
@@ -73,11 +97,13 @@ public class EnrollmentsController : ControllerBase
 
     // DELETE: api/enrollments/1/{memberId}
     [HttpDelete("{activityId}/{memberId}")]
-    public async Task<ActionResult> DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteEnrollment(EnrollmentKeyDTO dto, CancellationToken cancellationToken)
     {
         try
         {
-            await _enrollmentService.DeleteEnrollment(activityId, memberId, cancellationToken);
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+
+            await _enrollmentService.DeleteEnrollment(dto, userId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -93,14 +119,17 @@ public class EnrollmentsController : ControllerBase
     // PUT: api/enrollments/1/{memberId}
     [HttpPut("{activityId}/{memberId}")]
     public async Task<ActionResult> PutEnrollment(
-        uint activityId,
-        Guid memberId,
-        PostEnrollmentDTO dto,
+        uint activityId, Guid memberId,
+        [FromBody] PostEnrollmentDTO dto,
         CancellationToken cancellationToken)
     {
         try
         {
-            await _enrollmentService.UpdateEnrollment(activityId, memberId, dto, cancellationToken);
+            if(activityId != dto.ActivityId || memberId != dto.MemberId)
+                return BadRequest("ActivityId and MemberId in the URL must match those in the body.");
+
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await _enrollmentService.UpdateEnrollment(dto, userId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException ex)
@@ -120,8 +149,7 @@ public class EnrollmentsController : ControllerBase
     // PATCH: api/enrollments/1/{memberId}
     [HttpPatch("{activityId}/{memberId}")]
     public async Task<ActionResult> PatchEnrollment(
-        uint activityId,
-        Guid memberId,
+        [FromRoute] EnrollmentKeyDTO dto,
         [FromBody] JsonPatchDocument<Enrollment> patchDoc,
         CancellationToken cancellationToken)
     {
@@ -130,7 +158,8 @@ public class EnrollmentsController : ControllerBase
 
         try
         {
-            await _enrollmentService.PatchEnrollment(activityId, memberId, patchDoc, cancellationToken);
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await _enrollmentService.PatchEnrollment(dto, patchDoc, userId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
