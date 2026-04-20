@@ -13,7 +13,9 @@ namespace Backend.Services
 {
     public class PaymentService(
         PostgresDbContext db,
-        IPaymentValidationService paymentValidationService
+        IPaymentValidationService paymentValidationService,
+        IPaymentClient mollieClient,
+        KeycloakOutboxWorker keycloakOutboxWorker
     ) : IPaymentService
     {
         private readonly string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
@@ -45,34 +47,48 @@ namespace Backend.Services
             return await db.EnrollmentPayments.FindAsync(id, ct);
         }
 
-        public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto, IPaymentClient paymentClient)
+        public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
         {
             var member = await db.Members.FindAsync(dto.MemberId);
             if (member == null) throw new Exception("Member not found");
 
-            var existingPayments = await db.MembershipPayments
-                .Where(p => p.MemberId == dto.MemberId)
-                .ToListAsync();
-
-            foreach (var existing in existingPayments)
+            var transaction = await db.Database.BeginTransactionAsync();
+            try
             {
-                if (existing.PaidAt == null)
+                if(paymentValidationService.HasPaidMembershipPayment(dto.MemberId))
                 {
-                    var molliePayment = await paymentClient.GetPaymentAsync(existing.MollieId);
+                    throw new InvalidOperationException("Member already paid membership");
+                }
+                
+                var existingPayment = await db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == dto.MemberId);
+                if (existingPayment != null)
+                {
+                    var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
+                    if(molliePayment.Status == "paid")
+                    {
+                        throw new InvalidOperationException("Member already paid membership");
+                    }
 
-                    if (molliePayment.Status == "expired" || molliePayment.Status == "canceled")
+                    if (molliePayment.Status != "pending")
                     {
-                        db.MembershipPayments.Remove(existing);
+                        return new PostPaymentResponse { CheckoutUrl = existingPayment.PaymentIntentUrl };
                     }
-                    else
-                    {
-                        return new PostPaymentResponse { CheckoutUrl = existing.PaymentIntentUrl };
-                    }
+
+                    db.MembershipPayments.Remove(existingPayment);
+                    
+                    db.Members.Remove(member);
+                    keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, member.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
+                    
+                    await db.SaveChangesAsync();
+                    await db.Database.CommitTransactionAsync();
+                    
+                    throw new InvalidOperationException("Payment is expired or canceled.");
                 }
-                else
-                {
-                    throw new Exception("Member already paid membership");
-                }
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
             }
 
             var request = new PaymentRequest
@@ -86,7 +102,7 @@ namespace Backend.Services
                 Metadata = $"membership_{dto.MemberId}"
             };
 
-            var mollieResponse = await paymentClient.CreatePaymentAsync(request);
+            var mollieResponse = await mollieClient.CreatePaymentAsync(request);
 
             if (mollieResponse.Links.Checkout == null)
                 throw new Exception("No checkout URL from Mollie");
@@ -183,7 +199,7 @@ namespace Backend.Services
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
         }
 
-        public async Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, IPaymentClient paymentClient)
+        public async Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto)
         {
             var member = await db.Members.FindAsync(dto.MemberId);
             if (member == null) throw new Exception("Member not found");
@@ -217,7 +233,7 @@ namespace Backend.Services
                     Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
                 };
 
-                mollieResponse = await paymentClient.CreatePaymentAsync(request);
+                mollieResponse = await mollieClient.CreatePaymentAsync(request);
 
                 if (mollieResponse.Links.Checkout == null)
                     throw new Exception("No checkout URL from Mollie");

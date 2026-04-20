@@ -53,13 +53,12 @@ namespace Backend.Controllers
         // POST: api/payments/membership
         [HttpPost("membership")]
         public async Task<ActionResult<PostPaymentResponse>> PostMembershipPayment(
-            PostMembershipPaymentDTO dto,
-            [FromServices] Mollie.Api.Client.Abstract.IPaymentClient paymentClient
+            PostMembershipPaymentDTO dto
         )
         {
             try
             {
-                var result = await _paymentService.CreateMembershipPayment(dto, paymentClient);
+                var result = await _paymentService.CreateMembershipPayment(dto);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -71,13 +70,12 @@ namespace Backend.Controllers
         // POST: api/payments/activity
         [HttpPost("activity")]
         public async Task<ActionResult<PostPaymentResponse>> PostActivityPayment(
-            PostActivityPaymentDTO dto,
-            [FromServices] Mollie.Api.Client.Abstract.IPaymentClient paymentClient
+            PostActivityPaymentDTO dto
         )
         {
             try
             {
-                var result = await _paymentService.CreateActivityPayment(dto, paymentClient);
+                var result = await _paymentService.CreateActivityPayment(dto);
                 return Ok(result);
             }
             catch (Exception ex)

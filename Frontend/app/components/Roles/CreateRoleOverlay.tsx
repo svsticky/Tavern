@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { t } from "i18next";
-import { getApiMembers, getApiRoles, postApiEnrollments, postApiRolealiases, postApiRoles, type Member, type MemberSummaryDto, type RoleAlias } from "~/api";
+import { getApiMembers, getApiRoles, postApiEnrollments, postApiRolealiases, postApiRoles, type Member, type MemberSummaryDto, type Role, type RoleAlias } from "~/api";
 import Input from "~/components/UI/Input";
 import Select from "../UI/Select";
 import Form from "../UI/Form/Form";
 import Button from "../UI/Button";
 import toast from "react-hot-toast";
 
-export default function CreateRoleOverlay({ onRoleAliasCreated }: { onRoleAliasCreated: (roleAlias: RoleAlias) => void }) {
+export default function CreateRoleOverlay({ onRoleAliasCreated, onRoleCreated }: { onRoleAliasCreated: (roleAlias: RoleAlias) => void; onRoleCreated: (role: Role) => void; }) {
   const [roles, setRoles] = useState<RoleAlias[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);
   const [selectedType, setSelectedType] = useState("RoleAlias");
@@ -41,11 +41,15 @@ export default function CreateRoleOverlay({ onRoleAliasCreated }: { onRoleAliasC
         try{
             setLoading(true);
             if (selectedType === "ParentRole") {
-                const response = postApiRoles({
+                const response = await postApiRoles({
                     body: {
                         name,
                     }
                 });
+
+                if(response.data){
+                    onRoleCreated({id: (response.data as any).id, name: name});
+                }
             } else if (selectedType === "RoleAlias") {
                 const response = await postApiRolealiases({
                     body: {
@@ -108,7 +112,7 @@ export default function CreateRoleOverlay({ onRoleAliasCreated }: { onRoleAliasC
             disabled={loadingRoles || loading}
         />
 
-        <Button type="submit" disabled={loading || loadingRoles || selectedRoleId === "" || name.trim() === ""}>
+        <Button type="submit" disabled={loading || loadingRoles || (selectedRoleId === "" && selectedType === "RoleAlias") || name.trim() === ""}>
             {t("create")}
         </Button>
 

@@ -4,6 +4,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Mollie.Api.Client.Abstract;
 
 namespace Backend.Services
 {
@@ -11,7 +12,9 @@ namespace Backend.Services
         PostgresDbContext db,
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
-        IStorageService storageService
+        IStorageService storageService,
+        IPaymentClient mollieClient,
+        KeycloakOutboxWorker keycloakOutboxWorker
     ) : IMemberService
     {
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
@@ -127,6 +130,34 @@ namespace Backend.Services
             
             try
             {
+                var existingMember = await db.Members.FirstOrDefaultAsync(m => m.Email == dto.Email, cancellationToken);
+                if (existingMember != null)        
+                {
+                    var existingPayment = await db.MembershipPayments
+                        .Where(p => p.MemberId == existingMember.Id)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (existingPayment != null)
+                    {
+                        var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
+
+                        if (molliePayment.Status == "paid")
+                        {
+                            throw new InvalidOperationException("Existing member with unpaid payments found.");
+                        }
+
+                        if(molliePayment.Status == "pending")
+                        {
+                            await mollieClient.CancelPaymentAsync(existingPayment.MollieId);
+                        }
+
+                        db.MembershipPayments.Remove(existingPayment);
+                    }
+
+                    db.Members.Remove(existingMember);
+                    keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, existingMember.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
+                }
+
                 var member = new Member
                 {
                     StudentNumber = dto.StudentNumber,
@@ -170,11 +201,7 @@ namespace Backend.Services
 
                 }
 
-                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                {
-                    KeycloakId = member.Id,
-                    TaskType = KeycloakTaskType.Create
-                });
+                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
 
                 await db.SaveChangesAsync(cancellationToken);
 
@@ -229,11 +256,7 @@ namespace Backend.Services
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
-                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                {
-                    KeycloakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
-                    TaskType = KeycloakTaskType.Sync
-                });
+                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -270,11 +293,7 @@ namespace Backend.Services
 
                 StateValidator.Validate(member);
 
-                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                {
-                    KeycloakId = member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."),
-                    TaskType = KeycloakTaskType.Sync
-                });
+                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

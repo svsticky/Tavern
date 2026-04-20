@@ -95,5 +95,10 @@ public class PostgresDbContext : DbContext
                 .HasForeignKey(e => e.MemberId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
+
+        modelBuilder.Entity<MembershipPayment>()
+            .HasIndex(p => p.MemberId)
+            .IsUnique()
+            .HasFilter("\"MemberId\" IS NOT NULL");
     }
 }

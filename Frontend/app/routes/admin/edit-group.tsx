@@ -409,7 +409,7 @@ export default function EditGroupPage() {
         </Modal>
 
         <Modal isOpen={addRoleModalIsOpen} onClose={() => setAddRoleModalIsOpen(false)} title={t("add_role")}>
-            <CreateRoleOverlay onRoleAliasCreated={handleRoleAliasAdded} />
+            <CreateRoleOverlay onRoleAliasCreated={handleRoleAliasAdded} onRoleCreated={() => setAddRoleModalIsOpen(false)} />
         </Modal>
       </div>
     </>

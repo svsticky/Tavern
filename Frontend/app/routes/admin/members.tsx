@@ -156,7 +156,6 @@ export default function Members() {
             <Input 
               label={t("search")}
               placeholder={t("search_members")} 
-              className="bg-slate-100 w-full" 
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} 
             />
           </div>

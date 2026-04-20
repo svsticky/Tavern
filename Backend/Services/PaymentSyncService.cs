@@ -1,11 +1,12 @@
 using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 
 namespace Backend.Services;
 
-public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundService
+public class PaymentSyncService(IServiceProvider serviceProvider, IPaymentValidationService paymentValidationService) : BackgroundService
 {
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -96,8 +97,26 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                 if (mollieStatus.Status == "expired" || mollieStatus.Status == "canceled")
                 {
                     // If the payment is expired or canceled, we can remove it from our database as it can no longer be paid.
-                    db.Remove(payment);
-                    await db.SaveChangesAsync();
+                    var transaction = await db.Database.BeginTransactionAsync();
+                    try
+                    {
+                        db.Remove(payment);
+
+                        // If it's a membership payment, we also want to check if we should remove the member associated with it. 
+                        if(payment is MembershipPayment mp && mp.Member != null)
+                        {
+                            if (!paymentValidationService.HasPaidMembershipPayment(mp.Member.Id))
+                            {
+                                db.Members.Remove(mp.Member);
+                            }
+                        }
+                        await db.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                    }
+                    catch
+                    {
+                        await transaction.RollbackAsync();
+                    }
                 }
             }
             catch (Exception) { }
