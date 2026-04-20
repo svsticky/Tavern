@@ -8,7 +8,7 @@ public class KeycloakOutboxWorker(
     IServiceProvider serviceProvider, 
     ILogger<KeycloakOutboxWorker> logger) : BackgroundService
 {
-    public void EnqueueTask(KeycloakTaskType taskType, Guid keycloakId)
+    public async Task EnqueueTask(KeycloakTaskType taskType, Guid keycloakId)
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
@@ -22,7 +22,7 @@ public class KeycloakOutboxWorker(
         };
 
         db.KeycloakOutboxTasks.Add(task);
-        db.SaveChanges();
+        await db.SaveChangesAsync();
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -95,6 +95,10 @@ public class KeycloakOutboxWorker(
                 {
                     await syncService.DeleteUserInKeycloak(memberToDelete.KeycloakId.Value);
                 }
+                break;
+
+            case KeycloakTaskType.RefreshEmail:
+                await syncService.RefreshEmail(task.KeycloakId);
                 break;
 
             default:

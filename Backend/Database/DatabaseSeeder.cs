@@ -140,7 +140,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     RoleAliasId = null
                 });
 
-                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);
 
                 db.MembershipPayments.Add(new MembershipPayment
                 {

@@ -132,6 +132,31 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         }
     }
 
+    public async Task RefreshEmail(Guid keycloakId)
+    {
+        var client = httpClientFactory.CreateClient("KeycloakAdmin");
+        var token = await GetServiceAccountToken();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync($"users/{keycloakId}");
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception($"Keycloak User Fetch Failed: {error}");
+        }
+
+        var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        var email = json.GetProperty("email").GetString()!;
+
+        var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
+        if (member != null)
+        {
+            member.Email = email;
+            await db.SaveChangesAsync();
+        }
+    }
+
     private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
     {
         return new

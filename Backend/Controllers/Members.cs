@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -10,8 +11,9 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class MembersController(IMemberService memberService, IPermissionService permissionService) : ControllerBase
+    public class MembersController(IMemberService memberService, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxWorker) : ControllerBase
     {
+        private readonly string? _keycloakWebhookSecret = Environment.GetEnvironmentVariable("KEYCLOAK_WEBHOOK_SECRET");
         private Guid GetUserId()
         {
             return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
@@ -167,6 +169,26 @@ namespace Backend.Controllers
             if (!success) return NotFound();
 
             return NoContent();
+        }
+
+        [AllowAnonymous]
+        [HttpPost("webhook/refresh-email")]
+        public async Task<IActionResult> UpdateEmailWebhook([FromHeader(Name = "X-Webhook-Secret")] string secret, [FromBody] Guid userId, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (_keycloakWebhookSecret == null || secret == _keycloakWebhookSecret)
+                {
+                    return Unauthorized("Invalid webhook secret.");
+                }
+
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.RefreshEmail, userId);
+                return Ok();
+            }
+            catch
+            {
+                return StatusCode(500, "Error updating email via webhook.");
+            }
         }
     }
 }

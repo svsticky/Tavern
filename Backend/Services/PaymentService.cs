@@ -77,7 +77,7 @@ namespace Backend.Services
                     db.MembershipPayments.Remove(existingPayment);
                     
                     db.Members.Remove(member);
-                    keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, member.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
+                    await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, member.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
                     
                     await db.SaveChangesAsync();
                     await db.Database.CommitTransactionAsync();

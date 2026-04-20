@@ -1,6 +1,6 @@
 namespace Backend.Models.Domain;
 
-public enum KeycloakTaskType { Create, Sync, Delete }
+public enum KeycloakTaskType { Create, Sync, Delete, RefreshEmail }
 
 public class KeycloakOutboxTask
 {

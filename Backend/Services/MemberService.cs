@@ -155,7 +155,7 @@ namespace Backend.Services
                     }
 
                     db.Members.Remove(existingMember);
-                    keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, existingMember.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
+                    await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, existingMember.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
                 }
 
                 var member = new Member
@@ -201,7 +201,7 @@ namespace Backend.Services
 
                 }
 
-                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
 
                 await db.SaveChangesAsync(cancellationToken);
 
@@ -256,7 +256,7 @@ namespace Backend.Services
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
-                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -293,7 +293,7 @@ namespace Backend.Services
 
                 StateValidator.Validate(member);
 
-                keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

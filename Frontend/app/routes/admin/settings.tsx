@@ -203,7 +203,6 @@ export default function SettingsPage() {
 
           <FormSection title={t("role_email_mapping")} columns={1}>
             <div className="space-y-6">
-              <BorderedTile className="bg-slate-50/50 border-dashed">
                 <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
                   <div className="flex-1 w-full">
                     <Select 
@@ -224,7 +223,6 @@ export default function SettingsPage() {
                     {t("add_mapping")}
                   </Button>
                 </div>
-              </BorderedTile>
 
               <div className="grid grid-cols-1 gap-4">
                 {currentRoleMappings.length > 0 ? (
@@ -233,29 +231,27 @@ export default function SettingsPage() {
                     const role = availableRoles.find(r => r.id?.toString() === roleId);
                     
                     return (
-                      <BorderedTile key={key}>
-                        <div className="flex items-start gap-4 w-full">
-                          <div className="flex-1 min-w-0">
-                              <Input 
-                              label={`${t("email_address_for")} ${role?.name || roleId}`}
-                              type="email"
-                              placeholder={t("enter_email_for_role")}
-                              value={value} 
-                              onChange={(e) => handleChange(key, e.target.value)} 
-                              className="w-full"
-                              />
-                          </div>
-                          
-                          <button 
-                              type="button"
-                              onClick={() => handleRemoveRoleMapping(key)}
-                              className="hover:cursor-pointer mt-8 p-2 flex-shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                              title={t("remove")}
-                          >
-                              <TrashIcon className="w-5 h-5" />
-                          </button>
-                          </div>
-                      </BorderedTile>
+                      <div className="flex items-start gap-4 w-full">
+                        <div className="flex-1 min-w-0">
+                            <Input 
+                            label={`${t("email_address_for")} ${role?.name || roleId}`}
+                            type="email"
+                            placeholder={t("enter_email_for_role")}
+                            value={value} 
+                            onChange={(e) => handleChange(key, e.target.value)} 
+                            className="w-full"
+                            />
+                        </div>
+                        
+                        <button 
+                            type="button"
+                            onClick={() => handleRemoveRoleMapping(key)}
+                            className="hover:cursor-pointer mt-7 p-2 flex-shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                            title={t("remove")}
+                        >
+                            <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
                     );
                   })
                 ) : (
