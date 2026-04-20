@@ -70,21 +70,11 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task<GroupMembership> CreateGroupMembership(PostGroupMembershipDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException();
+        EnsureBoardMember(userId);
 
-        var member = await _db.Members.FindAsync(dto.MemberId, cancellationToken)
-            ?? throw new ArgumentException($"Member with ID {dto.MemberId} does not exist.");
-
-        var group = await _db.Groups.FindAsync(dto.GroupId, cancellationToken)
-            ?? throw new ArgumentException($"Group with ID {dto.GroupId} does not exist.");
-
-        if (dto.RoleAliasId.HasValue)
-        {
-            var roleAlias = await _db.RoleAliases.FindAsync(dto.RoleAliasId.Value, cancellationToken);
-            if (roleAlias == null)
-                throw new ArgumentException($"Role alias with ID {dto.RoleAliasId.Value} does not exist.");
-        }
+        var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
+        var group = await GetGroupOrThrow(dto.GroupId, cancellationToken);
+        await EnsureRoleAliasExists(dto.RoleAliasId, cancellationToken);
 
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -118,8 +108,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task DeleteGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can delete group memberships.");
+        EnsureBoardMember(userId, "Only board members can delete group memberships.");
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
@@ -148,8 +137,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task PatchGroupMembership(uint id, Guid userId, JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can update group memberships.");
+        EnsureBoardMember(userId, "Only board members can update group memberships.");
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -196,8 +184,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task UpdateGroupMembership(uint id, Guid userId, GroupMembershipUpdateDTO dto, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can update group memberships.");
+        EnsureBoardMember(userId, "Only board members can update group memberships.");
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
@@ -212,12 +199,7 @@ public class GroupMembershipService : IGroupMembershipService
 
         try
         {
-            if (dto.RoleAliasId.HasValue)
-            {
-                var roleAlias = await _db.RoleAliases.FindAsync(dto.RoleAliasId.Value, cancellationToken);
-                if (roleAlias == null)
-                    throw new ArgumentException($"Role alias with ID {dto.RoleAliasId.Value} does not exist.");
-            }
+            await EnsureRoleAliasExists(dto.RoleAliasId, cancellationToken);
 
             membership.RoleAliasId = dto.RoleAliasId;
 
@@ -242,5 +224,38 @@ public class GroupMembershipService : IGroupMembershipService
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
+    }
+
+    private void EnsureBoardMember(Guid userId, string message = "")
+    {
+        if (_permissionService.IsBoardOrCandidateBoardMember(userId))
+            return;
+
+        if (!string.IsNullOrEmpty(message))
+            throw new UnauthorizedAccessException(message);
+
+        throw new UnauthorizedAccessException();
+    }
+
+    private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken cancellationToken)
+    {
+        var member = await _db.Members.FindAsync(new object[] { memberId }, cancellationToken);
+        return member ?? throw new ArgumentException($"Member with ID {memberId} does not exist.");
+    }
+
+    private async Task<Group> GetGroupOrThrow(uint groupId, CancellationToken cancellationToken)
+    {
+        var group = await _db.Groups.FindAsync(new object[] { groupId }, cancellationToken);
+        return group ?? throw new ArgumentException($"Group with ID {groupId} does not exist.");
+    }
+
+    private async Task EnsureRoleAliasExists(uint? roleAliasId, CancellationToken cancellationToken)
+    {
+        if (!roleAliasId.HasValue)
+            return;
+
+        var roleAlias = await _db.RoleAliases.FindAsync(roleAliasId.Value, cancellationToken);
+        if (roleAlias == null)
+            throw new ArgumentException($"Role alias with ID {roleAliasId.Value} does not exist.");
     }
 }

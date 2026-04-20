@@ -37,13 +37,7 @@ public class AnnouncementService : IAnnouncementService
 
     public async Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        var announcement = new Announcement
-        {
-            Title = dto.Title,
-            Content = dto.Content,
-            CreatedById = userId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var announcement = BuildAnnouncement(userId, dto);
 
         StateValidator.Validate(announcement);
 
@@ -55,10 +49,7 @@ public class AnnouncementService : IAnnouncementService
 
     public async Task DeleteAnnouncement(uint id, CancellationToken cancellationToken)
     {
-        var announcement = await _db.Announcements.FindAsync(new object[] { id }, cancellationToken);
-
-        if (announcement == null)
-            throw new KeyNotFoundException();
+        var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
 
         _db.Announcements.Remove(announcement);
         await _db.SaveChangesAsync(cancellationToken);
@@ -68,10 +59,7 @@ public class AnnouncementService : IAnnouncementService
     {
         ArgumentNullException.ThrowIfNull(patchDoc);
 
-        var announcement = await _db.Announcements.FindAsync(new object[] { id }, cancellationToken);
-
-        if (announcement == null)
-            throw new KeyNotFoundException();
+        var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
 
         patchDoc.ApplyTo(announcement);
         StateValidator.Validate(announcement);
@@ -81,16 +69,34 @@ public class AnnouncementService : IAnnouncementService
 
     public async Task UpdateAnnouncement(uint id, UpdateAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        var announcement = await _db.Announcements.FindAsync(new object[] { id }, cancellationToken);
-
-        if (announcement == null)
-            throw new KeyNotFoundException();
-
-        announcement.Title = dto.Title;
-        announcement.Content = dto.Content;
+        var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
+        ApplyUpdate(announcement, dto);
 
         StateValidator.Validate(announcement);
 
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private static Announcement BuildAnnouncement(Guid userId, PostAnnouncementDTO dto)
+    {
+        return new Announcement
+        {
+            Title = dto.Title,
+            Content = dto.Content,
+            CreatedById = userId,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    private static void ApplyUpdate(Announcement announcement, UpdateAnnouncementDTO dto)
+    {
+        announcement.Title = dto.Title;
+        announcement.Content = dto.Content;
+    }
+
+    private async Task<Announcement> GetAnnouncementOrThrow(uint id, CancellationToken ct)
+    {
+        var announcement = await _db.Announcements.FindAsync(new object[] { id }, ct);
+        return announcement ?? throw new KeyNotFoundException();
     }
 }

@@ -6,7 +6,6 @@ using Backend.Projections;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using Newtonsoft.Json;
 using System.Text;
 using Backend.Utils.DateTime;
 
@@ -88,38 +87,17 @@ public class ActivityService : IActivityService
 
     public async Task<Activity> CreateActivity(Guid userId, PostActivityDTO dto)
     {
-        if (dto.DateTimeEnd < dto.DateTimeStart)
-            throw new ArgumentException("Activity cannot end before it starts.");
-
-        if (dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null)
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-
-        if (dto.ParticipantLimit < 0)
-            throw new ArgumentException("Participant limit cannot be negative.");
-
-        if (dto.Poster != null)
-        {
-            ExtensionValidator.ValidatePosterExtension(dto.Poster);
-        }
-
-        if (dto.IsEnrollable)
-        {
-            dto.EnrollOpenDate = null;
-        }
+        ActivityValidator.ValidateCreateRequest(dto, userId, _permissionService);
+        ActivityValidator.NormalizeCreateRequest(dto);
 
         using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var questions = string.IsNullOrEmpty(dto.SpecificationQuestionsJson)
-                ? new List<SpecificationQuestionDTO>()
-                : JsonConvert.DeserializeObject<List<SpecificationQuestionDTO>>(dto.SpecificationQuestionsJson);
+        var questions = ActivityValidator.ParseCreateQuestions(dto.SpecificationQuestionsJson);
 
         var organizerMembers = await _db.GroupMemberships
             .Where(gm => gm.GroupId == dto.OrganizerId)
             .Select(gm => gm.Member)
             .ToListAsync();
-
-        if (questions == null)
-            throw new ArgumentException("Invalid specification questions format.");
 
         try
         {
@@ -160,12 +138,7 @@ public class ActivityService : IActivityService
                 PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
             };
 
-            if (dto.Poster != null)
-            {
-                var compressed = await _fileCompressor.CompressFileAsync(dto.Poster);
-                activity.PosterPath = await _storageService.SaveFileAsync(compressed.Stream, compressed.ContentType, "posters");
-                activity.PosterFileName = dto.Poster.FileName;
-            }
+            await SavePosterIfProvided(activity, dto.Poster);
 
             StateValidator.Validate(activity);
 
@@ -290,11 +263,7 @@ public class ActivityService : IActivityService
         {
             if (poster != null)
             {
-                var compressedImage = await _fileCompressor.CompressFileAsync(poster);
-                string path = await _storageService.SaveFileAsync(compressedImage.Stream, compressedImage.ContentType, "posters");
-
-                activity.PosterPath = path;
-                activity.PosterFileName = poster.FileName;
+                await SavePoster(activity, poster);
             }
             else
             {
@@ -324,26 +293,11 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        if (dto.DateTimeEnd < dto.DateTimeStart)
-            throw new ArgumentException("Activity cannot end before it starts.");
-
-        if (dto.ParticipantLimit < 0)
-            throw new ArgumentException("Participant limit cannot be negative.");
-
-        if (dto.Poster != null)
-            ExtensionValidator.ValidatePosterExtension(dto.Poster);
-
-        if (activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null || dto.EnrollOpenDate != null)
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        ActivityValidator.ValidateUpdateRequest(activity, dto, userId, _permissionService);
 
         using var transaction = await _db.Database.BeginTransactionAsync();
 
-        var questions = string.IsNullOrEmpty(dto.SpecificationQuestionsJson)
-                ? new List<UpdateSpecificationQuestionDTO>()
-                : JsonConvert.DeserializeObject<List<UpdateSpecificationQuestionDTO>>(dto.SpecificationQuestionsJson);
-
-        if (questions == null)
-            throw new ArgumentException("Invalid specification questions format.");
+        var questions = ActivityValidator.ParseUpdateQuestions(dto.SpecificationQuestionsJson);
 
         try
         {
@@ -352,29 +306,7 @@ public class ActivityService : IActivityService
             string? existingPosterPath = activity.PosterPath;
             var oldAudience = activity.AllowedAudience;
 
-            activity.Name = dto.Name;
-            activity.Price = dto.Price;
-            activity.DutchDescription = dto.DutchDescription;
-            activity.EnglishDescription = dto.EnglishDescription;
-            activity.DateTimeStart = dto.DateTimeStart;
-            activity.DateTimeEnd = dto.DateTimeEnd;
-            activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;
-            activity.EnrollmentDeadline = dto.EnrollmentDeadline;
-            activity.EnrollOpenDate = dto.IsEnrollable ? null : dto.EnrollOpenDate;
-            activity.Location = dto.Location;
-            activity.ParticipantLimit = dto.ParticipantLimit;
-            activity.OrganizerId = dto.OrganizerId;
-            activity.ShowInKoala = dto.ShowInKoala;
-            activity.ShowOnWebsite = dto.ShowOnWebsite;
-            activity.IsEnrollable = dto.IsEnrollable;
-            activity.AreParticipantsVisible = dto.AreParticipantsVisible;
-            activity.IsAdultOnly = dto.IsAdultOnly;
-            activity.IsWeeklyDrinks = dto.IsWeeklyDrinks;
-            activity.AllowedAudience = dto.AllowedAudience;
-            activity.VatRate = dto.VatRate;
-            activity.GLAccountId = dto.GLAccountId;
-            activity.CostCenterId = dto.CostCenterId;
-            activity.CostUnitId = dto.CostUnitId;
+            ApplyPutDto(activity, dto);
 
             await SyncSpecificationQuestions(activity, questions);
 
@@ -388,12 +320,7 @@ public class ActivityService : IActivityService
                     enrollment.Price = activity.Price;
             }
 
-            if (dto.Poster != null)
-            {
-                var compressed = await _fileCompressor.CompressFileAsync(dto.Poster);
-                activity.PosterPath = await _storageService.SaveFileAsync(compressed.Stream, compressed.ContentType, "posters");
-                activity.PosterFileName = dto.Poster.FileName;
-            }
+            await SavePosterIfProvided(activity, dto.Poster);
 
             if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
                 || activity.AllowedAudience != oldAudience)
@@ -509,18 +436,6 @@ public class ActivityService : IActivityService
         }
     }
 
-    private void MapSpecificationQuestion(SpecificationQuestion entity, UpdateSpecificationQuestionDTO dto)
-    {
-        entity.QuestionDutch = dto.QuestionDutch;
-        entity.QuestionEnglish = dto.QuestionEnglish;
-        entity.Type = dto.Type;
-        entity.IsMandatory = dto.IsMandatory;
-        entity.IsPublic = dto.IsPublic;
-        entity.Options = dto.Options != null && dto.Options.Any()
-            ? string.Join(';', dto.Options)
-            : null;
-    }
-
     private async Task SyncSpecificationQuestions(Activity activity, List<UpdateSpecificationQuestionDTO> dtoQuestions)
     {
         await _db.Entry(activity)
@@ -537,7 +452,7 @@ public class ActivityService : IActivityService
                 if (existing == null)
                     throw new Exception($"SpecificationQuestion with id {dto.Id} not found.");
 
-                MapSpecificationQuestion(existing, dto);
+                ActivityValidator.MapSpecificationQuestion(existing, dto);
             }
             else
             {
@@ -563,5 +478,47 @@ public class ActivityService : IActivityService
         var toRemove = existingQuestions.Where(q => !dtoIds.Contains(q.Id)).ToList();
 
         _db.SpecificationQuestions.RemoveRange(toRemove);
+    }
+
+    private async Task SavePosterIfProvided(Activity activity, IFormFile? poster)
+    {
+        if (poster == null)
+            return;
+
+        await SavePoster(activity, poster);
+    }
+
+    private async Task SavePoster(Activity activity, IFormFile poster)
+    {
+        var compressed = await _fileCompressor.CompressFileAsync(poster);
+        activity.PosterPath = await _storageService.SaveFileAsync(compressed.Stream, compressed.ContentType, "posters");
+        activity.PosterFileName = poster.FileName;
+    }
+
+    private static void ApplyPutDto(Activity activity, PutActivityDTO dto)
+    {
+        activity.Name = dto.Name;
+        activity.Price = dto.Price;
+        activity.DutchDescription = dto.DutchDescription;
+        activity.EnglishDescription = dto.EnglishDescription;
+        activity.DateTimeStart = dto.DateTimeStart;
+        activity.DateTimeEnd = dto.DateTimeEnd;
+        activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;
+        activity.EnrollmentDeadline = dto.EnrollmentDeadline;
+        activity.EnrollOpenDate = dto.IsEnrollable ? null : dto.EnrollOpenDate;
+        activity.Location = dto.Location;
+        activity.ParticipantLimit = dto.ParticipantLimit;
+        activity.OrganizerId = dto.OrganizerId;
+        activity.ShowInKoala = dto.ShowInKoala;
+        activity.ShowOnWebsite = dto.ShowOnWebsite;
+        activity.IsEnrollable = dto.IsEnrollable;
+        activity.AreParticipantsVisible = dto.AreParticipantsVisible;
+        activity.IsAdultOnly = dto.IsAdultOnly;
+        activity.IsWeeklyDrinks = dto.IsWeeklyDrinks;
+        activity.AllowedAudience = dto.AllowedAudience;
+        activity.VatRate = dto.VatRate;
+        activity.GLAccountId = dto.GLAccountId;
+        activity.CostCenterId = dto.CostCenterId;
+        activity.CostUnitId = dto.CostUnitId;
     }
 }

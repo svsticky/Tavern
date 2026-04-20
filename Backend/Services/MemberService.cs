@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
@@ -19,62 +20,14 @@ namespace Backend.Services
     {
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
-                throw new UnauthorizedAccessException("Only board members can view members.");
+            EnsureBoardMember(userId, "Only board members can view members.");
 
-            var query = db.Members.AsQueryable().Filter(dto);
-
-            int pageSize = dto.PageSize > 0 ? dto.PageSize : 50;
-            int skip = (dto.Page > 0 ? dto.Page - 1 : 0) * pageSize;
-
-            return await query
+            return await db.Members
+                .AsQueryable()
+                .Filter(dto)
                 .OrderBy(m => m.LastName)
-                .Skip(skip)
-                .Take(pageSize)
-                .Select(m => new MemberResponseDTO
-                {
-                    Id = m.Id,
-                    StudentNumber = m.StudentNumber,
-                    FirstName = m.FirstName,
-                    LastName = m.LastName,
-                    Email = m.Email,
-                    PhoneNumber = m.PhoneNumber,
-                    Street = m.Street,
-                    HouseNumber = m.HouseNumber,
-                    PostalCode = m.PostalCode,
-                    City = m.City,
-                    DateOfBirth = m.DateOfBirth,
-                    ParentPhoneNumber = m.ParentPhoneNumber,
-                    MailSubscriptions = m.MailSubscriptions,
-                    Notes = m.Notes,
-                    RegisteredOn = m.RegisteredOn,
-                    PreferredLanguage = m.PreferredLanguage,
-                    StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
-                    {
-                        Id = se.Id,
-                        StudyId = se.StudyId,
-                        StudyTitle = se.Study.Title,
-                        MemberId = se.MemberId,
-                        MemberName = $"{m.FirstName} {m.LastName}",
-                        EnrollmentDate = se.EnrollmentDate,
-                        CompletionDate = se.CompletionDate,
-                        Status = se.Status
-                    }).ToList(),
-                    GroupMemberships = db.GroupMemberships
-                        .Where(gm => gm.MemberId == m.Id)
-                        .Select(gm => new GroupMembershipResponseDTO
-                        {
-                            Id = gm.Id,
-                            GroupId = gm.GroupId,
-                            GroupName = gm.Group.Name,
-                            GroupType = gm.Group.Type,
-                            MemberId = gm.MemberId,
-                            MemberName = $"{m.FirstName} {m.LastName}",
-                            MembershipYear = gm.MembershipYear,
-                            RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
-                            RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
-                        }).ToList()
-                })
+                .ApplyPaging(dto)
+                .Select(MemberProjections.ToListDto())
                 .ToListAsync(cancellationToken);
         }
 
@@ -85,36 +38,7 @@ namespace Backend.Services
 
             return await db.Members
                 .Where(m => m.Id == id)
-                .Select(m => new MemberResponseDTO
-                {
-                    Id = m.Id,
-                    StudentNumber = m.StudentNumber,
-                    FirstName = m.FirstName,
-                    LastName = m.LastName,
-                    Email = m.Email,
-                    PhoneNumber = m.PhoneNumber,
-                    Street = m.Street,
-                    HouseNumber = m.HouseNumber,
-                    PostalCode = m.PostalCode,
-                    City = m.City,
-                    DateOfBirth = m.DateOfBirth,
-                    ParentPhoneNumber = m.ParentPhoneNumber,
-                    MailSubscriptions = m.MailSubscriptions,
-                    Notes = isBoard ? m.Notes : null,
-                    RegisteredOn = m.RegisteredOn,
-                    PreferredLanguage = m.PreferredLanguage,
-                    StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
-                    {
-                        Id = se.Id,
-                        StudyId = se.StudyId,
-                        StudyTitle = se.Study.Title,
-                        MemberId = se.MemberId,
-                        MemberName = $"{m.FirstName} {m.LastName}",
-                        EnrollmentDate = se.EnrollmentDate,
-                        CompletionDate = se.CompletionDate,
-                        Status = se.Status
-                    }).ToList()
-                })
+                .Select(MemberProjections.ToDetailDto(isBoard))
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
@@ -130,52 +54,9 @@ namespace Backend.Services
             
             try
             {
-                var existingMember = await db.Members.FirstOrDefaultAsync(m => m.Email == dto.Email, cancellationToken);
-                if (existingMember != null)        
-                {
-                    var existingPayment = await db.MembershipPayments
-                        .Where(p => p.MemberId == existingMember.Id)
-                        .FirstOrDefaultAsync(cancellationToken);
+                await RemoveExistingMemberWithSameEmail(dto.Email, cancellationToken);
 
-                    if (existingPayment != null)
-                    {
-                        var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
-
-                        if (molliePayment.Status == "paid")
-                        {
-                            throw new InvalidOperationException("Existing member with unpaid payments found.");
-                        }
-
-                        if(molliePayment.Status == "pending")
-                        {
-                            await mollieClient.CancelPaymentAsync(existingPayment.MollieId);
-                        }
-
-                        db.MembershipPayments.Remove(existingPayment);
-                    }
-
-                    db.Members.Remove(existingMember);
-                    await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, existingMember.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
-                }
-
-                var member = new Member
-                {
-                    StudentNumber = dto.StudentNumber,
-                    FirstName = dto.FirstName,
-                    LastName = dto.LastName,
-                    Email = dto.Email,
-                    PhoneNumber = dto.PhoneNumber,
-                    Street = dto.Street,
-                    HouseNumber = dto.HouseNumber,
-                    PostalCode = dto.PostalCode,
-                    City = dto.City,
-                    DateOfBirth = dto.DateOfBirth,
-                    ParentPhoneNumber = dto.ParentPhoneNumber,
-                    MailSubscriptions = dto.MailSubscriptions,
-                    PreferredLanguage = dto.PreferredLanguage,
-                    RegisteredOn = DateTimeOffset.UtcNow,
-                    StudyEnrollments = new List<StudyEnrollment>()
-                };
+                var member = BuildMember(dto);
 
                 StateValidator.Validate(member);
 
@@ -184,21 +65,7 @@ namespace Backend.Services
                 
                 if (dto.StudyEnrollments != null)
                 {
-                    foreach (var se in dto.StudyEnrollments)
-                    {
-                        var enrollment = new StudyEnrollment
-                        {
-                            MemberId = member.Id,
-                            StudyId = se.StudyId,
-                            EnrollmentDate = se.EnrollmentDate,
-                            Status = se.Status
-                        };
-
-                        StateValidator.Validate(enrollment);
-
-                        db.StudyEnrollments.Add(enrollment);
-                    }
-
+                    AddStudyEnrollments(member.Id, dto.StudyEnrollments);
                 }
 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
@@ -343,6 +210,86 @@ namespace Backend.Services
         public async Task<Member?> GetMemberEntity(Guid id)
         {
             return await db.Members.FindAsync(id);
+        }
+
+        private void EnsureBoardMember(Guid userId, string errorMessage)
+        {
+            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
+                throw new UnauthorizedAccessException(errorMessage);
+        }
+
+        private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
+        {
+            var existingMember = await db.Members.FirstOrDefaultAsync(m => m.Email == email, ct);
+            if (existingMember == null)
+                return;
+
+            var existingPayment = await db.MembershipPayments
+                .Where(p => p.MemberId == existingMember.Id)
+                .FirstOrDefaultAsync(ct);
+
+            if (existingPayment != null)
+            {
+                var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
+
+                if (molliePayment.Status == "paid")
+                {
+                    throw new InvalidOperationException("Existing member with unpaid payments found.");
+                }
+
+                if (molliePayment.Status == "pending")
+                {
+                    await mollieClient.CancelPaymentAsync(existingPayment.MollieId);
+                }
+
+                db.MembershipPayments.Remove(existingPayment);
+            }
+
+            db.Members.Remove(existingMember);
+            await keycloakOutboxWorker.EnqueueTask(
+                KeycloakTaskType.Delete,
+                existingMember.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status.")
+            );
+        }
+
+        private static Member BuildMember(PostMemberDTO dto)
+        {
+            return new Member
+            {
+                StudentNumber = dto.StudentNumber,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Email = dto.Email,
+                PhoneNumber = dto.PhoneNumber,
+                Street = dto.Street,
+                HouseNumber = dto.HouseNumber,
+                PostalCode = dto.PostalCode,
+                City = dto.City,
+                DateOfBirth = dto.DateOfBirth,
+                ParentPhoneNumber = dto.ParentPhoneNumber,
+                MailSubscriptions = dto.MailSubscriptions,
+                PreferredLanguage = dto.PreferredLanguage,
+                RegisteredOn = DateTimeOffset.UtcNow,
+                StudyEnrollments = new List<StudyEnrollment>()
+            };
+        }
+
+        private void AddStudyEnrollments(Guid memberId, IEnumerable<PostStudyEnrollmentDTO> studyEnrollments)
+        {
+            foreach (var se in studyEnrollments)
+            {
+                var enrollment = new StudyEnrollment
+                {
+                    MemberId = memberId,
+                    StudyId = se.StudyId,
+                    EnrollmentDate = se.EnrollmentDate,
+                    Status = se.Status
+                };
+
+                StateValidator.Validate(enrollment);
+
+                db.StudyEnrollments.Add(enrollment);
+            }
         }
     }
 }

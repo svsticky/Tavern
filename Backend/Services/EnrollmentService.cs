@@ -54,9 +54,7 @@ public class EnrollmentService : IEnrollmentService
 
         try
         {
-            var member = await _db.Members.FindAsync(new object[] { dto.MemberId }, cancellationToken);
-            if (member == null)
-                throw new KeyNotFoundException("Member not found.");
+            var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
 
             if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
                 throw new ArgumentException("Member does not have a paid membership payment.");
@@ -64,13 +62,7 @@ public class EnrollmentService : IEnrollmentService
             if (member.Suspended)
                 throw new ArgumentException("Member is suspended and cannot enroll in activities.");
 
-            var activity = await _db.Activities
-                .Include(a => a.SpecificationQuestions)
-                .Include(a => a.Enrollments)
-                .FirstOrDefaultAsync(a => a.Id == dto.ActivityId, cancellationToken);
-
-            if (activity == null)
-                throw new KeyNotFoundException("Activity not found.");
+            var activity = await GetActivityWithQuestionsAndEnrollmentsOrThrow(dto.ActivityId, cancellationToken);
 
             bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(member.Id);
 
@@ -87,11 +79,6 @@ public class EnrollmentService : IEnrollmentService
 
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
 
-            var mandatoryQuestionIds = activity.SpecificationQuestions
-                .Where(q => q.IsMandatory)
-                .Select(q => q.Id)
-                .ToList();
-
             bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
             EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
@@ -102,20 +89,7 @@ public class EnrollmentService : IEnrollmentService
                 activity.ParticipantLimit.HasValue &&
                 currentParticipants >= activity.ParticipantLimit.Value;
 
-            var enrollment = new Enrollment
-            {
-                ActivityId = dto.ActivityId,
-                MemberId = dto.MemberId,
-                Price = activity.Price,
-                RegisteredOn = DateTime.UtcNow,
-                IsOnWaitingList = shouldBeOnWaitingList,
-                SpecificationAnswers = providedAnswers.Select(a => new SpecificationAnswer
-                {
-                    SpecificationQuestionId = a.QuestionId,
-                    Answer = a.Answer,
-                    MemberId = dto.MemberId
-                }).ToList()
-            };
+            var enrollment = BuildEnrollment(dto, activity, shouldBeOnWaitingList, providedAnswers);
 
             StateValidator.Validate(enrollment);
 
@@ -197,12 +171,7 @@ public class EnrollmentService : IEnrollmentService
             if (enrollment == null)
                 throw new KeyNotFoundException("Enrollment not found.");
 
-            var activity = await _db.Activities
-                .Include(a => a.SpecificationQuestions)
-                .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
-
-            if (activity == null)
-                throw new KeyNotFoundException("Activity not found.");
+            var activity = await GetActivityWithQuestionsOrThrow(activityId, cancellationToken);
 
             bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(memberId);
 
@@ -220,13 +189,7 @@ public class EnrollmentService : IEnrollmentService
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
 
-            enrollment.SpecificationAnswers = providedAnswers.Select(a => new SpecificationAnswer
-            {
-                SpecificationQuestionId = a.QuestionId,
-                Answer = a.Answer,
-                MemberId = memberId,
-                Enrollment = enrollment
-            }).ToList();
+            enrollment.SpecificationAnswers = BuildSpecificationAnswers(providedAnswers, memberId, enrollment);
 
             StateValidator.Validate(enrollment);
 
@@ -320,5 +283,66 @@ public class EnrollmentService : IEnrollmentService
         var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
         if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
             throw new UnauthorizedAccessException("Enrollment deadline has passed.");
+    }
+
+    private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken cancellationToken)
+    {
+        var member = await _db.Members.FindAsync(new object[] { memberId }, cancellationToken);
+        return member ?? throw new KeyNotFoundException("Member not found.");
+    }
+
+    private async Task<Activity> GetActivityWithQuestionsAndEnrollmentsOrThrow(uint activityId, CancellationToken cancellationToken)
+    {
+        var activity = await _db.Activities
+            .Include(a => a.SpecificationQuestions)
+            .Include(a => a.Enrollments)
+            .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
+
+        return activity ?? throw new KeyNotFoundException("Activity not found.");
+    }
+
+    private async Task<Activity> GetActivityWithQuestionsOrThrow(uint activityId, CancellationToken cancellationToken)
+    {
+        var activity = await _db.Activities
+            .Include(a => a.SpecificationQuestions)
+            .FirstOrDefaultAsync(a => a.Id == activityId, cancellationToken);
+
+        return activity ?? throw new KeyNotFoundException("Activity not found.");
+    }
+
+    private static Enrollment BuildEnrollment(
+        PostEnrollmentDTO dto,
+        Activity activity,
+        bool isOnWaitingList,
+        IEnumerable<PostSpecificationAnswerDTO> providedAnswers)
+    {
+        return new Enrollment
+        {
+            ActivityId = dto.ActivityId,
+            MemberId = dto.MemberId,
+            Price = activity.Price,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = isOnWaitingList,
+            SpecificationAnswers = providedAnswers.Select(a => new SpecificationAnswer
+            {
+                SpecificationQuestionId = a.QuestionId,
+                Answer = a.Answer,
+                MemberId = dto.MemberId
+            }).ToList()
+        };
+    }
+
+    private static List<SpecificationAnswer> BuildSpecificationAnswers(
+        IEnumerable<PostSpecificationAnswerDTO> providedAnswers,
+        Guid memberId,
+        Enrollment enrollment)
+    {
+        return providedAnswers.Select(a => new SpecificationAnswer
+        {
+            SpecificationQuestionId = a.QuestionId,
+            Answer = a.Answer,
+            MemberId = memberId,
+            Enrollment = enrollment
+        }).ToList();
     }
 }

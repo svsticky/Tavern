@@ -65,4 +65,16 @@ public static class MemberQueryExtensions
 
         return query;
     }
+
+    public static IQueryable<Member> ApplyPaging(
+        this IQueryable<Member> query,
+        GetMembersDto dto)
+    {
+        int pageSize = dto.PageSize > 0 ? dto.PageSize : 50;
+        int skip = (dto.Page > 0 ? dto.Page - 1 : 0) * pageSize;
+
+        return query
+            .Skip(skip)
+            .Take(pageSize);
+    }
 }

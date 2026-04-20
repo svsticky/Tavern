@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Projections;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -32,14 +33,7 @@ public class GroupService : IGroupService
         }
 
         return await _db.Groups
-            .Select(c => new GroupResponseDTO
-            {
-                Id = c.Id,
-                Name = c.Name,
-                Type = c.Type,
-                Active = c.Active,
-                GroupPicturePath = c.GroupPicturePath
-            })
+            .Select(GroupProjections.ToDto())
             .ToListAsync(cancellationToken);
     }
 
@@ -49,24 +43,15 @@ public class GroupService : IGroupService
             .Where(g => g.Id == id)
             .Include(g => g.GroupMemberships)
             .ThenInclude(gm => gm.Member)
-            .Select(g => new GroupResponseDTO
-            {
-                Id = g.Id,
-                Name = g.Name,
-                Active = g.Active,
-                Type = g.Type,
-                GroupPicturePath = g.GroupPicturePath
-            })
+            .Select(GroupProjections.ToDto())
             .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<Group> CreateGroup(PostGroupDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can create groups.");
+        EnsureBoardMember(userId, "Only board members can create groups.");
 
-        if (dto.Name.Contains(';') || dto.Name.Contains(':'))
-            throw new ArgumentException("Group names cannot contain ';' or ':'.");
+        GroupValidator.ValidateName(dto.Name);
 
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
@@ -80,15 +65,7 @@ public class GroupService : IGroupService
 
             if (dto.GroupPicture != null)
             {
-                ExtensionValidator.ValidateProfilePictureExtension(dto.GroupPicture);
-
-                var compressed = await _fileCompressService.CompressFileAsync(dto.GroupPicture);
-                group.GroupPicturePath = await _storageService.SaveFileAsync(
-                    compressed.Stream, 
-                    compressed.ContentType, 
-                    "group-pictures"
-                );
-                group.GroupPictureFileName = dto.GroupPicture.FileName;
+                await SaveGroupPicture(group, dto.GroupPicture);
             }
 
             StateValidator.Validate(group);
@@ -122,12 +99,9 @@ public class GroupService : IGroupService
 
     public async Task DeleteGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can delete groups.");
+        EnsureBoardMember(userId, "Only board members can delete groups.");
 
-        var group = await _db.Groups.FindAsync(id, cancellationToken);
-        if (group == null)
-            throw new KeyNotFoundException();
+        var group = await GetGroupOrThrow(id, cancellationToken);
 
         if (group.GroupPicturePath != null)
             await _storageService.DeleteFileAsync("group-pictures", group.GroupPicturePath);
@@ -138,37 +112,29 @@ public class GroupService : IGroupService
 
     public async Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can update groups.");
+        EnsureBoardMember(userId, "Only board members can update groups.");
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
-        var group = await _db.Groups.FindAsync(new object[] { id }, cancellationToken);
-        if (group == null)
-            throw new KeyNotFoundException();
+        var group = await GetGroupOrThrow(id, cancellationToken);
 
         patchDoc.ApplyTo(group);
 
         StateValidator.Validate(group);
 
-        if (group.Name.Contains(';') || group.Name.Contains(':'))
-            throw new ArgumentException("Group names cannot contain ';' or ':'.");
+        GroupValidator.ValidateName(group.Name);
 
         await _db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken)
     {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException("Only board members can update groups.");
+        EnsureBoardMember(userId, "Only board members can update groups.");
 
-        if (dto.Name.Contains(';') || dto.Name.Contains(':'))
-            throw new ArgumentException("Group names cannot contain ';' or ':'.");
+        GroupValidator.ValidateName(dto.Name);
 
-        var group = await _db.Groups.FindAsync(id, cancellationToken);
-        if (group == null)
-            throw new KeyNotFoundException();
+        var group = await GetGroupOrThrow(id, cancellationToken);
 
         group.Name = dto.Name;
         group.Active = dto.Active;
@@ -181,20 +147,11 @@ public class GroupService : IGroupService
 
     public async Task<string?> UploadGroupPicture(uint groupId, Guid userId, IFormFile? image)
     {
-        var group = await _db.Groups.FindAsync(groupId);
-        if (group == null) throw new Exception("Group not found");
+        var group = await GetGroupOrThrow(groupId, default, "Group not found");
 
-        // Authorization check
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-        {
-            throw new UnauthorizedAccessException("You can only update your own profile picture.");
-        }
+        EnsureBoardMember(userId, "You can only update your own profile picture.");
 
-        // Validate file
-        if (image != null)
-        {
-            ExtensionValidator.ValidateProfilePictureExtension(image);
-        }
+        ValidateGroupPicture(image);
 
         string? oldPath = group.GroupPicturePath;
 
@@ -204,16 +161,7 @@ public class GroupService : IGroupService
         {
             if (image != null)
             {
-                var compressedImage = await _fileCompressService.CompressFileAsync(image);
-
-                string path = await _storageService.SaveFileAsync(
-                    compressedImage.Stream,
-                    compressedImage.ContentType,
-                    "group-pictures"
-                );
-
-                group.GroupPicturePath = path;
-                group.GroupPictureFileName = image.FileName;
+                await SaveGroupPicture(group, image);
             }
             else
             {
@@ -227,7 +175,7 @@ public class GroupService : IGroupService
             // Cleanup old file after successful commit
             if (!string.IsNullOrEmpty(oldPath))
             {
-                await _storageService.DeleteFileAsync("profile-pictures", oldPath);
+                await _storageService.DeleteFileAsync("group-pictures", oldPath);
             }
 
             return group.GroupPicturePath;
@@ -255,5 +203,45 @@ public class GroupService : IGroupService
             throw new KeyNotFoundException("CandidateBoardGroupId setting is missing or invalid.");
 
         return candidateBoardGroupId;
+    }
+
+    private void EnsureBoardMember(Guid userId, string errorMessage)
+    {
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
+            throw new UnauthorizedAccessException(errorMessage);
+    }
+
+    private async Task<Group> GetGroupOrThrow(uint groupId, CancellationToken cancellationToken, string errorMessage = "")
+    {
+        var group = await _db.Groups.FindAsync(new object[] { groupId }, cancellationToken);
+        if (group != null)
+            return group;
+
+        if (!string.IsNullOrEmpty(errorMessage))
+            throw new Exception(errorMessage);
+
+        throw new KeyNotFoundException();
+    }
+
+    private static void ValidateGroupPicture(IFormFile? image)
+    {
+        if (image != null)
+        {
+            ExtensionValidator.ValidateProfilePictureExtension(image);
+        }
+    }
+
+    private async Task SaveGroupPicture(Group group, IFormFile image)
+    {
+        ValidateGroupPicture(image);
+        var compressedImage = await _fileCompressService.CompressFileAsync(image);
+        string path = await _storageService.SaveFileAsync(
+            compressedImage.Stream,
+            compressedImage.ContentType,
+            "group-pictures"
+        );
+
+        group.GroupPicturePath = path;
+        group.GroupPictureFileName = image.FileName;
     }
 }

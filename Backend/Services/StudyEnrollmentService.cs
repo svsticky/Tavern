@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,28 +17,11 @@ namespace Backend.Services
         {
             EnsureBoardMember(userId);
 
-            var query = db.StudyEnrollments
-                .Include(se => se.Member)
-                .Include(se => se.Study)
-                .AsQueryable();
-
-            if (dto.MemberId != null)
-            {
-                query = query.Where(se => se.MemberId == dto.MemberId);
-            }
-
-            return await query
-                .Select(se => new StudyEnrollmentResponseDTO
-                {
-                    Id = se.Id,
-                    MemberId = se.MemberId,
-                    MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
-                    StudyId = se.StudyId,
-                    StudyTitle = se.Study.Title,
-                    EnrollmentDate = se.EnrollmentDate,
-                    CompletionDate = se.CompletionDate,
-                    Status = se.Status,
-                })
+            return await db.StudyEnrollments
+                .AsQueryable()
+                .IncludeDetails()
+                .Filter(dto)
+                .Select(StudyEnrollmentProjections.ToDto())
                 .ToListAsync(ct);
         }
 
@@ -45,17 +29,7 @@ namespace Backend.Services
         {
             var result = await db.StudyEnrollments
                 .Where(se => se.Id == id)
-                .Select(se => new StudyEnrollmentResponseDTO
-                {
-                    Id = se.Id,
-                    MemberId = se.MemberId,
-                    MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
-                    StudyId = se.StudyId,
-                    StudyTitle = se.Study.Title,
-                    EnrollmentDate = se.EnrollmentDate,
-                    CompletionDate = se.CompletionDate,
-                    Status = se.Status
-                })
+                .Select(StudyEnrollmentProjections.ToDto())
                 .FirstOrDefaultAsync(ct);
 
             if (result == null)
@@ -71,37 +45,19 @@ namespace Backend.Services
         {
             EnsureBoardMember(userId);
 
-            var member = await db.Members.FindAsync(dto.MemberId, ct);
-            if (member == null)
-                throw new Exception($"Member with ID {dto.MemberId} does not exist.");
-
-            var study = await db.Studies.FindAsync(dto.StudyId, ct);
-            if (study == null)
-                throw new Exception($"Study with ID {dto.StudyId} does not exist.");
-
-            var enrollment = new StudyEnrollment
-            {
-                Member = member,
-                Study = study,
-                EnrollmentDate = dto.EnrollmentDate,
-                Status = dto.Status
-            };
+            var member = await GetMemberOrThrow(dto.MemberId, ct);
+            var study = await GetStudyOrThrow(dto.StudyId, ct);
+            var enrollment = BuildStudyEnrollment(dto, member, study);
 
             StateValidator.Validate(enrollment);
 
             db.StudyEnrollments.Add(enrollment);
             await db.SaveChangesAsync(ct);
 
-            return new StudyEnrollmentResponseDTO
-            {
-                Id = enrollment.Id,
-                MemberId = enrollment.MemberId,
-                StudyTitle = study.Title,
-                StudyId = enrollment.StudyId,
-                EnrollmentDate = enrollment.EnrollmentDate,
-                CompletionDate = enrollment.CompletionDate,
-                Status = enrollment.Status
-            };
+            return await db.StudyEnrollments
+                .Where(se => se.Id == enrollment.Id)
+                .Select(StudyEnrollmentProjections.ToDto())
+                .FirstAsync(ct);
         }
 
         public async Task DeleteStudyEnrollment(uint id, Guid userId, CancellationToken ct)
@@ -164,6 +120,29 @@ namespace Backend.Services
             {
                 throw new UnauthorizedAccessException("Only board members can perform this action.");
             }
+        }
+
+        private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken ct)
+        {
+            var member = await db.Members.FindAsync(new object[] { memberId }, ct);
+            return member ?? throw new Exception($"Member with ID {memberId} does not exist.");
+        }
+
+        private async Task<Study> GetStudyOrThrow(uint studyId, CancellationToken ct)
+        {
+            var study = await db.Studies.FindAsync(new object[] { studyId }, ct);
+            return study ?? throw new Exception($"Study with ID {studyId} does not exist.");
+        }
+
+        private static StudyEnrollment BuildStudyEnrollment(PostStudyEnrollmentDTO dto, Member member, Study study)
+        {
+            return new StudyEnrollment
+            {
+                Member = member,
+                Study = study,
+                EnrollmentDate = dto.EnrollmentDate,
+                Status = dto.Status
+            };
         }
     }
 }

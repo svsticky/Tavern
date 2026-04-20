@@ -17,7 +17,19 @@ namespace Backend.Services
         public async Task HandleWebhookAsync(string id)
         {
             PaymentResponse result = await paymentClient.GetPaymentAsync(id);
+            var payments = await GetPaymentsByMollieId(id);
 
+            if (!payments.Any())
+                throw new Exception("Payment not found");
+
+            if (result.Status == "paid")
+            {
+                await ProcessPaidPayments(payments, result);
+            }
+        }
+
+        private async Task<List<Payment>> GetPaymentsByMollieId(string id)
+        {
             var membershipPayments = await db.MembershipPayments
                 .Include(p => p.Member)
                 .Where(p => p.MollieId == id)
@@ -36,52 +48,66 @@ namespace Backend.Services
                 .Cast<Payment>()
                 .ToListAsync();
 
-            var payments = membershipPayments.Concat(enrollmentPayments).Concat(mollieFeePayments).ToList();
+            return membershipPayments
+                .Concat(enrollmentPayments)
+                .Concat(mollieFeePayments)
+                .ToList();
+        }
 
-            if (!payments.Any())
-                throw new Exception("Payment not found");
+        private async Task ProcessPaidPayments(IEnumerable<Payment> payments, PaymentResponse result)
+        {
+            var transaction = await db.Database.BeginTransactionAsync();
 
-            if (result.Status == "paid")
+            try
             {
-                var transaction = await db.Database.BeginTransactionAsync();
-
-                try
+                foreach (var payment in payments)
                 {
-                    foreach (var payment in payments)
-                    {
-                        payment.PaidAt = result.PaidAt;
-
-                        if (payment is MembershipPayment membershipPayment)
-                        {
-                            var task = new KeycloakOutboxTask
-                            {
-                                TaskType = KeycloakTaskType.Sync,
-                                KeycloakId = membershipPayment.Member?.KeycloakId 
-                                    ?? throw new Exception("Member does not have a Keycloak ID")
-                            };
-
-                            db.KeycloakOutboxTasks.Add(task);
-                        }
-
-                        if (_isUsingAccountingTool)
-                        {
-                            db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
-                            {
-                                PaymentId = payment.Id,
-                                TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : AccountingToolTaskType.EnrollmentPayment
-                            });
-                        }
-                        
-                    }
-
-                    await db.SaveChangesAsync();
-                    await transaction.CommitAsync();
+                    MarkPaymentPaid(payment, result);
+                    QueueKeycloakSyncIfNeeded(payment);
+                    QueueAccountingTaskIfNeeded(payment);
                 }
-                catch
+
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        private static void MarkPaymentPaid(Payment payment, PaymentResponse result)
+        {
+            payment.PaidAt = result.PaidAt;
+        }
+
+        private void QueueKeycloakSyncIfNeeded(Payment payment)
+        {
+            if (payment is MembershipPayment membershipPayment)
+            {
+                var task = new KeycloakOutboxTask
                 {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
+                    TaskType = KeycloakTaskType.Sync,
+                    KeycloakId = membershipPayment.Member?.KeycloakId
+                        ?? throw new Exception("Member does not have a Keycloak ID")
+                };
+
+                db.KeycloakOutboxTasks.Add(task);
+            }
+        }
+
+        private void QueueAccountingTaskIfNeeded(Payment payment)
+        {
+            if (_isUsingAccountingTool)
+            {
+                db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
+                {
+                    PaymentId = payment.Id,
+                    TaskType = payment is MembershipPayment
+                        ? AccountingToolTaskType.MembershipPayment
+                        : AccountingToolTaskType.EnrollmentPayment
+                });
             }
         }
     }

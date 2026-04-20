@@ -49,40 +49,16 @@ namespace Backend.Services
 
         public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
         {
-            var member = await db.Members.FindAsync(dto.MemberId);
-            if (member == null) throw new Exception("Member not found");
+            var member = await GetMemberOrThrow(dto.MemberId);
 
             var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                if(paymentValidationService.HasPaidMembershipPayment(dto.MemberId))
+                EnsureMemberHasNoPaidMembership(dto.MemberId);
+                var existingResponse = await HandleExistingMembershipPayment(member, dto.MemberId);
+                if (existingResponse != null)
                 {
-                    throw new InvalidOperationException("Member already paid membership");
-                }
-                
-                var existingPayment = await db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == dto.MemberId);
-                if (existingPayment != null)
-                {
-                    var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
-                    if(molliePayment.Status == "paid")
-                    {
-                        throw new InvalidOperationException("Member already paid membership");
-                    }
-
-                    if (molliePayment.Status != "pending")
-                    {
-                        return new PostPaymentResponse { CheckoutUrl = existingPayment.PaymentIntentUrl };
-                    }
-
-                    db.MembershipPayments.Remove(existingPayment);
-                    
-                    db.Members.Remove(member);
-                    await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, member.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
-                    
-                    await db.SaveChangesAsync();
-                    await db.Database.CommitTransactionAsync();
-                    
-                    throw new InvalidOperationException("Payment is expired or canceled.");
+                    return existingResponse;
                 }
             }
             catch
@@ -91,36 +67,21 @@ namespace Backend.Services
                 throw;
             }
 
-            var request = new PaymentRequest
-            {
-                Amount = new Amount(Currency.EUR, 7.50m),
-                Description = $"Membership payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = $"{_frontendUrl}/confirm-mail",
-                WebhookUrl = string.IsNullOrEmpty(_ngrokUrl) ? 
-                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/api/payments/webhook")
-                    : $"{_ngrokUrl}/api/payments/webhook",
-                Metadata = $"membership_{dto.MemberId}"
-            };
+            var request = BuildMembershipPaymentRequest(member, dto.MemberId);
 
             var mollieResponse = await mollieClient.CreatePaymentAsync(request);
 
             if (mollieResponse.Links.Checkout == null)
                 throw new Exception("No checkout URL from Mollie");
 
-            var payment = new MembershipPayment
-            {
-                MemberId = dto.MemberId,
-                Price = decimal.TryParse((await db.Settings.FindAsync("MembershipPrice"))?.Value ?? "7.50", out var price) ? price : 7.50m,
-                MollieId = mollieResponse.Id,
-                PaymentIntentUrl = mollieResponse.Links.Checkout.Href
-            };
+            var payment = await BuildMembershipPayment(dto.MemberId, mollieResponse);
 
             StateValidator.Validate(payment);
 
             db.MembershipPayments.Add(payment);
             await db.SaveChangesAsync();
 
-            return new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout.Href };
+            return ToCheckoutResponse(mollieResponse.Links.Checkout.Href);
         }
 
         public async Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
@@ -201,8 +162,7 @@ namespace Backend.Services
 
         public async Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto)
         {
-            var member = await db.Members.FindAsync(dto.MemberId);
-            if (member == null) throw new Exception("Member not found");
+            var member = await GetMemberOrThrow(dto.MemberId);
 
             var enrollments = await db.Enrollments
                 .Include(e => e.Activity)
@@ -226,7 +186,7 @@ namespace Backend.Services
             {
                 var request = new PaymentRequest
                 {
-                    Amount = new Amount(Currency.EUR, totalPrice + db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault()),
+                    Amount = new Amount(Currency.EUR, totalPrice + GetMollieFee()),
                     Description = $"Activity payment for {member.FirstName} {member.LastName}",
                     RedirectUrl = _frontendUrl,
                     WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/api/payments/webhook",
@@ -241,7 +201,7 @@ namespace Backend.Services
                 MollieFeePayment mollieFeePayment = new MollieFeePayment
                 {
                     MemberId = dto.MemberId,
-                    Price = db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault(),
+                    Price = GetMollieFee(),
                     MollieId = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Id,
                     PaymentIntentUrl = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Links.Checkout!.Href,
                     PaidAt = dto.ManuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
@@ -315,6 +275,83 @@ namespace Backend.Services
                 HasPaidAllActivities = !unpaid.Any(),
                 UnpaidEnrollments = unpaid
             };
+        }
+
+        private async Task<Member> GetMemberOrThrow(Guid memberId)
+        {
+            var member = await db.Members.FindAsync(memberId);
+            return member ?? throw new Exception("Member not found");
+        }
+
+        private void EnsureMemberHasNoPaidMembership(Guid memberId)
+        {
+            if (paymentValidationService.HasPaidMembershipPayment(memberId))
+            {
+                throw new InvalidOperationException("Member already paid membership");
+            }
+        }
+
+        private async Task<PostPaymentResponse?> HandleExistingMembershipPayment(Member member, Guid memberId)
+        {
+            var existingPayment = await db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == memberId);
+            if (existingPayment == null)
+                return null;
+
+            var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
+            if(molliePayment.Status == "paid")
+            {
+                throw new InvalidOperationException("Member already paid membership");
+            }
+
+            if (molliePayment.Status != "pending")
+            {
+                return ToCheckoutResponse(existingPayment.PaymentIntentUrl);
+            }
+
+            db.MembershipPayments.Remove(existingPayment);
+            
+            db.Members.Remove(member);
+            await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, member.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
+            
+            await db.SaveChangesAsync();
+            await db.Database.CommitTransactionAsync();
+            
+            throw new InvalidOperationException("Payment is expired or canceled.");
+        }
+
+        private PaymentRequest BuildMembershipPaymentRequest(Member member, Guid memberId)
+        {
+            return new PaymentRequest
+            {
+                Amount = new Amount(Currency.EUR, 7.50m),
+                Description = $"Membership payment for {member.FirstName} {member.LastName}",
+                RedirectUrl = $"{_frontendUrl}/confirm-mail",
+                WebhookUrl = string.IsNullOrEmpty(_ngrokUrl) ? 
+                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/api/payments/webhook")
+                    : $"{_ngrokUrl}/api/payments/webhook",
+                Metadata = $"membership_{memberId}"
+            };
+        }
+
+        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, PaymentResponse mollieResponse)
+        {
+            return new MembershipPayment
+            {
+                MemberId = memberId,
+                Price = decimal.TryParse((await db.Settings.FindAsync("MembershipPrice"))?.Value ?? "7.50", out var price) ? price : 7.50m,
+                MollieId = mollieResponse.Id,
+                PaymentIntentUrl = mollieResponse.Links.Checkout!.Href
+            };
+        }
+
+        private static PostPaymentResponse ToCheckoutResponse(string checkoutUrl)
+        {
+            return new PostPaymentResponse { CheckoutUrl = checkoutUrl };
+        }
+
+        private decimal GetMollieFee()
+        {
+            return db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault();
         }
     }
 }

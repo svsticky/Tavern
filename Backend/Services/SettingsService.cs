@@ -18,24 +18,21 @@ public class SettingsService : ISettingsService
 
     public Task<IEnumerable<Setting>> GetSettings(Guid UserId, CancellationToken ct)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
+        EnsureBoardMember(UserId);
 
         return Task.FromResult(_db.Settings.AsEnumerable());
     }
 
     public Task<Setting?> GetSetting(string name, Guid UserId, CancellationToken ct)
     {
-        if(!name.Equals("CandidateBoardGroupId") && !name.Equals("BoardGroupId"))
-        {
-            _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
-        }
+        EnsureCanReadSetting(name, UserId);
 
         return Task.FromResult(_db.Settings.Find(name));
     }
 
     public async Task<Setting> CreateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        EnsureBoardMember(userId);
 
         var setting = new Setting
         {
@@ -51,15 +48,8 @@ public class SettingsService : ISettingsService
 
     public async Task UpdateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-
-
-        var setting = await _db.Settings.FindAsync(new object[] { name }, ct);
-
-        if (setting == null)
-        {
-            throw new KeyNotFoundException($"Setting with name '{name}' not found.");
-        }
+        EnsureBoardMember(userId);
+        var setting = await GetSettingOrThrow(name, ct);
 
         setting.Value = value;
         await _db.SaveChangesAsync(ct);
@@ -67,14 +57,8 @@ public class SettingsService : ISettingsService
 
     public async Task DeleteSetting(string name, Guid userId, CancellationToken ct)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-
-        var setting = await _db.Settings.FindAsync(new object[] { name }, ct);
-
-        if (setting == null)
-        {
-            throw new KeyNotFoundException($"Setting with name '{name}' not found.");
-        }
+        EnsureBoardMember(userId);
+        var setting = await GetSettingOrThrow(name, ct);
 
         _db.Settings.Remove(setting);
         await _db.SaveChangesAsync(ct);
@@ -82,8 +66,29 @@ public class SettingsService : ISettingsService
 
     public async Task PatchSetting(string name, JsonPatchDocument<Setting> patchDoc, Guid userId, CancellationToken ct)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        EnsureBoardMember(userId);
+        var setting = await GetSettingOrThrow(name, ct);
 
+        patchDoc.ApplyTo(setting);
+
+        await _db.SaveChangesAsync(ct);
+    }
+
+    private void EnsureBoardMember(Guid userId)
+    {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+    }
+
+    private void EnsureCanReadSetting(string name, Guid userId)
+    {
+        if(!name.Equals("CandidateBoardGroupId") && !name.Equals("BoardGroupId"))
+        {
+            EnsureBoardMember(userId);
+        }
+    }
+
+    private async Task<Setting> GetSettingOrThrow(string name, CancellationToken ct)
+    {
         var setting = await _db.Settings.FindAsync(new object[] { name }, ct);
 
         if (setting == null)
@@ -91,8 +96,6 @@ public class SettingsService : ISettingsService
             throw new KeyNotFoundException($"Setting with name '{name}' not found.");
         }
 
-        patchDoc.ApplyTo(setting);
-
-        await _db.SaveChangesAsync(ct);
+        return setting;
     }
 }

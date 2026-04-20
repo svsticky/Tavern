@@ -22,14 +22,11 @@ namespace Backend.Services
             return await db.Roles.FindAsync(id, ct);
         }
 
-        public async Task<Role> CreateRole(PostRoleDTO dto, Guid userId, CancellationToken ct)
-        {
-            EnsureBoardMember(userId);
+    public async Task<Role> CreateRole(PostRoleDTO dto, Guid userId, CancellationToken ct)
+    {
+        EnsureBoardMember(userId);
 
-            var role = new Role
-            {
-                Name = dto.Name
-            };
+        var role = BuildRole(dto);
 
             StateValidator.Validate(role);
 
@@ -39,28 +36,24 @@ namespace Backend.Services
             return role;
         }
 
-        public async Task DeleteRole(uint id, Guid userId, CancellationToken ct)
-        {
-            EnsureBoardMember(userId);
+    public async Task DeleteRole(uint id, Guid userId, CancellationToken ct)
+    {
+        EnsureBoardMember(userId);
 
-            var role = await db.Roles.FindAsync(id, ct);
-            if (role == null)
-                throw new Exception("Role not found");
+        var role = await GetRoleOrThrow(id, ct);
 
             db.Roles.Remove(role);
             await db.SaveChangesAsync(ct);
         }
 
-        public async Task PatchRole(uint id, JsonPatchDocument<Role> patchDoc, Guid userId, CancellationToken ct)
-        {
-            EnsureBoardMember(userId);
+    public async Task PatchRole(uint id, JsonPatchDocument<Role> patchDoc, Guid userId, CancellationToken ct)
+    {
+        EnsureBoardMember(userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
-            var role = await db.Roles.FindAsync(new object[] { id }, ct);
-            if (role == null)
-                throw new Exception("Role not found");
+        var role = await GetRoleOrThrow(id, ct);
 
             patchDoc.ApplyTo(role);
 
@@ -69,27 +62,43 @@ namespace Backend.Services
             await db.SaveChangesAsync(ct);
         }
 
-        public async Task UpdateRole(uint id, RoleUpdateDTO dto, Guid userId, CancellationToken ct)
-        {
-            EnsureBoardMember(userId);
+    public async Task UpdateRole(uint id, RoleUpdateDTO dto, Guid userId, CancellationToken ct)
+    {
+        EnsureBoardMember(userId);
 
-            var role = await db.Roles.FindAsync(id, ct);
-            if (role == null)
-                throw new Exception("Role not found");
-
-            role.Name = dto.Name;
+        var role = await GetRoleOrThrow(id, ct);
+        ApplyUpdate(role, dto);
 
             StateValidator.Validate(role);
 
             await db.SaveChangesAsync(ct);
         }
 
-        private void EnsureBoardMember(Guid userId)
+    private void EnsureBoardMember(Guid userId)
+    {
+        if (!permissionService.IsBoardOrCandidateBoardMember(userId))
         {
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
-            {
-                throw new UnauthorizedAccessException("Only board members can perform this action.");
-            }
+            throw new UnauthorizedAccessException("Only board members can perform this action.");
         }
     }
+
+    private static Role BuildRole(PostRoleDTO dto)
+    {
+        return new Role
+        {
+            Name = dto.Name
+        };
+    }
+
+    private static void ApplyUpdate(Role role, RoleUpdateDTO dto)
+    {
+        role.Name = dto.Name;
+    }
+
+    private async Task<Role> GetRoleOrThrow(uint id, CancellationToken ct)
+    {
+        var role = await db.Roles.FindAsync(new object[] { id }, ct);
+        return role ?? throw new Exception("Role not found");
+    }
+}
 }

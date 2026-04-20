@@ -52,38 +52,16 @@ namespace Backend.Services
         {
             EnsureBoardMember(userId);
 
-            var roleAlias = await db.RoleAliases.FindAsync(id, ct);
-            if (roleAlias == null) throw new Exception("Role alias not found");
+            var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
-            using var transaction = await db.Database.BeginTransactionAsync(ct);
-
-            try
+            await ExecuteInTransaction(ct, async () =>
             {
-                var affectedMembers = await db.GroupMemberships
-                    .Where(gm => gm.RoleAliasId == id)
-                    .Select(gm => gm.Member.KeycloakId)
-                    .Distinct()
-                    .ToListAsync(ct);
+                var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
 
                 db.RoleAliases.Remove(roleAlias);
-
-                foreach (var keycloakId in affectedMembers)
-                {
-                    db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                    {
-                        KeycloakId = keycloakId ?? throw new Exception("Member with null KeycloakId found"),
-                        TaskType = KeycloakTaskType.Sync
-                    });
-                }
-
+                QueueSyncTasks(affectedMembers);
                 await db.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(ct);
-                throw;
-            }
+            });
         }
 
         public async Task PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, Guid userId, CancellationToken ct)
@@ -93,81 +71,39 @@ namespace Backend.Services
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
-            var roleAlias = await db.RoleAliases.FindAsync(new object[] { id }, ct);
-            if (roleAlias == null) throw new Exception("Role alias not found");
+            var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
-            using var transaction = await db.Database.BeginTransactionAsync(ct);
-
-            try
+            await ExecuteInTransaction(ct, async () =>
             {
                 patchDoc.ApplyTo(roleAlias);
 
                 StateValidator.Validate(roleAlias);
 
-                var affectedMembers = await db.GroupMemberships
-                    .Where(gm => gm.RoleAliasId == id)
-                    .Select(gm => gm.Member.KeycloakId)
-                    .Distinct()
-                    .ToListAsync(ct);
-
-                foreach (var memberId in affectedMembers)
-                {
-                    db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                    {
-                        KeycloakId = memberId ?? throw new Exception("Member with null KeycloakId found"),
-                        TaskType = KeycloakTaskType.Sync
-                    });
-                }
+                var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
+                QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(ct);
-                throw;
-            }
+            });
         }
 
         public async Task UpdateRoleAlias(uint id, RoleAliasUpdateDTO dto, Guid userId, CancellationToken ct)
         {
             EnsureBoardMember(userId);
 
-            var roleAlias = await db.RoleAliases.FindAsync(id, ct);
-            if (roleAlias == null) throw new Exception("Role alias not found");
+            var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
-            using var transaction = await db.Database.BeginTransactionAsync(ct);
-
-            try
+            await ExecuteInTransaction(ct, async () =>
             {
                 roleAlias.Name = dto.Name;
                 roleAlias.RoleId = dto.RoleId;
 
                 StateValidator.Validate(roleAlias);
 
-                var affectedMembers = await db.GroupMemberships
-                    .Where(gm => gm.RoleAliasId == id)
-                    .Select(gm => gm.Member.KeycloakId)
-                    .Distinct()
-                    .ToListAsync(ct);
-
-                foreach (var memberId in affectedMembers)
-                {
-                    db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
-                    {
-                        KeycloakId = memberId ?? throw new Exception("Member with null KeycloakId found"),
-                        TaskType = KeycloakTaskType.Sync
-                    });
-                }
+                var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
+                QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
-                await transaction.CommitAsync(ct);
-            }
-            catch
-            {
-                await transaction.RollbackAsync(ct);
-                throw;
-            }
+            });
         }
 
         private void EnsureBoardMember(Guid userId)
@@ -175,6 +111,49 @@ namespace Backend.Services
             if (!permissionService.IsBoardOrCandidateBoardMember(userId))
             {
                 throw new UnauthorizedAccessException("Only board members can perform this action.");
+            }
+        }
+
+        private async Task<RoleAlias> GetRoleAliasOrThrow(uint id, CancellationToken ct)
+        {
+            var roleAlias = await db.RoleAliases.FindAsync(new object[] { id }, ct);
+            return roleAlias ?? throw new Exception("Role alias not found");
+        }
+
+        private async Task<List<Guid?>> GetAffectedMemberKeycloakIds(uint roleAliasId, CancellationToken ct)
+        {
+            return await db.GroupMemberships
+                .Where(gm => gm.RoleAliasId == roleAliasId)
+                .Select(gm => gm.Member.KeycloakId)
+                .Distinct()
+                .ToListAsync(ct);
+        }
+
+        private void QueueSyncTasks(IEnumerable<Guid?> keycloakIds)
+        {
+            foreach (var keycloakId in keycloakIds)
+            {
+                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
+                {
+                    KeycloakId = keycloakId ?? throw new Exception("Member with null KeycloakId found"),
+                    TaskType = KeycloakTaskType.Sync
+                });
+            }
+        }
+
+        private async Task ExecuteInTransaction(CancellationToken ct, Func<Task> action)
+        {
+            using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+            try
+            {
+                await action();
+                await transaction.CommitAsync(ct);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(ct);
+                throw;
             }
         }
     }

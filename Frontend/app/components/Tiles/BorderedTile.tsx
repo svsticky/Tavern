@@ -61,7 +61,7 @@ export default function BorderedTile({
         </div>
 
         {hasBottomContent && (
-          <div className="flex flex-col gap-4 mt-1"> 
+          <div className="flex flex-col gap-4"> 
             {subtitle && (
               <span className="text-sm text-slate-400">
                 {subtitle}

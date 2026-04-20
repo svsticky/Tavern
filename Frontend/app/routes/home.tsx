@@ -95,7 +95,7 @@ export default function DashboardPage() {
                   {t("show_all")}
                 </Button>
               </div>
-              <AnnouncementsList announcements={announcements.slice(0, 3)} />
+              <AnnouncementsList announcements={announcements.slice(0, 2)} />
             </div>
             
             {/* Upcoming Activities */}

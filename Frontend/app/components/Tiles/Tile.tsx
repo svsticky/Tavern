@@ -8,7 +8,7 @@ type TileProps = {
 
 export default function Tile({ className, children }: TileProps) {
   return (
-    <div className={cn("box-border rounded-2xl p-5", className)}>
+    <div className={cn("box-border rounded-2xl p-5 overflow-hidden", className)}>
       {children}
     </div>
   );
