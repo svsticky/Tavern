@@ -70,7 +70,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task<GroupMembership> CreateGroupMembership(PostGroupMembershipDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
         var group = await GetGroupOrThrow(dto.GroupId, cancellationToken);
@@ -108,7 +108,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task DeleteGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can delete group memberships.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
@@ -137,7 +137,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task PatchGroupMembership(uint id, Guid userId, JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can update group memberships.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -184,7 +184,7 @@ public class GroupMembershipService : IGroupMembershipService
 
     public async Task UpdateGroupMembership(uint id, Guid userId, GroupMembershipUpdateDTO dto, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can update group memberships.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
@@ -224,17 +224,6 @@ public class GroupMembershipService : IGroupMembershipService
             await transaction.RollbackAsync(cancellationToken);
             throw;
         }
-    }
-
-    private void EnsureBoardMember(Guid userId, string message = "")
-    {
-        if (_permissionService.IsBoardOrCandidateBoardMember(userId))
-            return;
-
-        if (!string.IsNullOrEmpty(message))
-            throw new UnauthorizedAccessException(message);
-
-        throw new UnauthorizedAccessException();
     }
 
     private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken cancellationToken)

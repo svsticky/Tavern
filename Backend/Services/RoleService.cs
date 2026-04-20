@@ -24,7 +24,7 @@ namespace Backend.Services
 
     public async Task<Role> CreateRole(PostRoleDTO dto, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var role = BuildRole(dto);
 
@@ -38,7 +38,7 @@ namespace Backend.Services
 
     public async Task DeleteRole(uint id, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var role = await GetRoleOrThrow(id, ct);
 
@@ -48,7 +48,7 @@ namespace Backend.Services
 
     public async Task PatchRole(uint id, JsonPatchDocument<Role> patchDoc, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
@@ -64,22 +64,14 @@ namespace Backend.Services
 
     public async Task UpdateRole(uint id, RoleUpdateDTO dto, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var role = await GetRoleOrThrow(id, ct);
         ApplyUpdate(role, dto);
 
-            StateValidator.Validate(role);
+        StateValidator.Validate(role);
 
-            await db.SaveChangesAsync(ct);
-        }
-
-    private void EnsureBoardMember(Guid userId)
-    {
-        if (!permissionService.IsBoardOrCandidateBoardMember(userId))
-        {
-            throw new UnauthorizedAccessException("Only board members can perform this action.");
-        }
+        await db.SaveChangesAsync(ct);
     }
 
     private static Role BuildRole(PostRoleDTO dto)

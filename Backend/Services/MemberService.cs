@@ -20,7 +20,7 @@ namespace Backend.Services
     {
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
-            EnsureBoardMember(userId, "Only board members can view members.");
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             return await db.Members
                 .AsQueryable()
@@ -146,17 +146,7 @@ namespace Backend.Services
 
             try
             {
-                member.StudentNumber = dto.StudentNumber;
-                member.FirstName = dto.FirstName;
-                member.LastName = dto.LastName;
-                member.PhoneNumber = dto.PhoneNumber;
-                member.Street = dto.Street;
-                member.HouseNumber = dto.HouseNumber;
-                member.PostalCode = dto.PostalCode;
-                member.City = dto.City;
-                member.DateOfBirth = dto.DateOfBirth;
-                member.ParentPhoneNumber = dto.ParentPhoneNumber;
-                member.PreferredLanguage = dto.PreferredLanguage;
+                ApplyMemberUpdate(member, dto);
 
                 StateValidator.Validate(member);
 
@@ -210,12 +200,6 @@ namespace Backend.Services
         public async Task<Member?> GetMemberEntity(Guid id)
         {
             return await db.Members.FindAsync(id);
-        }
-
-        private void EnsureBoardMember(Guid userId, string errorMessage)
-        {
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
-                throw new UnauthorizedAccessException(errorMessage);
         }
 
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
@@ -272,6 +256,21 @@ namespace Backend.Services
                 RegisteredOn = DateTimeOffset.UtcNow,
                 StudyEnrollments = new List<StudyEnrollment>()
             };
+        }
+
+        private static void ApplyMemberUpdate(Member member, MemberUpdateDTO dto)
+        {
+            member.StudentNumber = dto.StudentNumber;
+            member.FirstName = dto.FirstName;
+            member.LastName = dto.LastName;
+            member.PhoneNumber = dto.PhoneNumber;
+            member.Street = dto.Street;
+            member.HouseNumber = dto.HouseNumber;
+            member.PostalCode = dto.PostalCode;
+            member.City = dto.City;
+            member.DateOfBirth = dto.DateOfBirth;
+            member.ParentPhoneNumber = dto.ParentPhoneNumber;
+            member.PreferredLanguage = dto.PreferredLanguage;
         }
 
         private void AddStudyEnrollments(Guid memberId, IEnumerable<PostStudyEnrollmentDTO> studyEnrollments)

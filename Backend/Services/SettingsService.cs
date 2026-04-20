@@ -18,21 +18,21 @@ public class SettingsService : ISettingsService
 
     public Task<IEnumerable<Setting>> GetSettings(Guid UserId, CancellationToken ct)
     {
-        EnsureBoardMember(UserId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
 
         return Task.FromResult(_db.Settings.AsEnumerable());
     }
 
     public Task<Setting?> GetSetting(string name, Guid UserId, CancellationToken ct)
     {
-        EnsureCanReadSetting(name, UserId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
 
         return Task.FromResult(_db.Settings.Find(name));
     }
 
     public async Task<Setting> CreateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var setting = new Setting
         {
@@ -48,7 +48,7 @@ public class SettingsService : ISettingsService
 
     public async Task UpdateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         var setting = await GetSettingOrThrow(name, ct);
 
         setting.Value = value;
@@ -57,7 +57,7 @@ public class SettingsService : ISettingsService
 
     public async Task DeleteSetting(string name, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         var setting = await GetSettingOrThrow(name, ct);
 
         _db.Settings.Remove(setting);
@@ -66,7 +66,7 @@ public class SettingsService : ISettingsService
 
     public async Task PatchSetting(string name, JsonPatchDocument<Setting> patchDoc, Guid userId, CancellationToken ct)
     {
-        EnsureBoardMember(userId);
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         var setting = await GetSettingOrThrow(name, ct);
 
         patchDoc.ApplyTo(setting);
@@ -74,16 +74,11 @@ public class SettingsService : ISettingsService
         await _db.SaveChangesAsync(ct);
     }
 
-    private void EnsureBoardMember(Guid userId)
-    {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-    }
-
     private void EnsureCanReadSetting(string name, Guid userId)
     {
         if(!name.Equals("CandidateBoardGroupId") && !name.Equals("BoardGroupId"))
         {
-            EnsureBoardMember(userId);
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
     }
 

@@ -24,7 +24,7 @@ namespace Backend.Services
 
         public async Task<Study> CreateStudy(PostStudyDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
             var study = BuildStudy(dto);
 
             StateValidator.Validate(study);
@@ -37,7 +37,7 @@ namespace Backend.Services
 
         public async Task DeleteStudy(uint id, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
             var study = await GetStudyOrThrow(id, ct);
 
             db.Studies.Remove(study);
@@ -46,7 +46,7 @@ namespace Backend.Services
 
         public async Task PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
@@ -62,18 +62,13 @@ namespace Backend.Services
 
         public async Task UpdateStudy(uint id, StudyUpdateDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
             var study = await GetStudyOrThrow(id, ct);
             ApplyStudyUpdate(study, dto);
 
             StateValidator.Validate(study);
 
             await db.SaveChangesAsync(ct);
-        }
-
-        private void EnsureBoardMember(Guid userId)
-        {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
 
         private static Study BuildStudy(PostStudyDTO dto)

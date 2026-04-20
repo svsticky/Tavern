@@ -18,7 +18,7 @@ public interface IActivityService
     
     Task UploadPoster(Guid userId, uint id, IFormFile? poster);
 
-    Task PutActivity(Guid userId, uint id, PutActivityDTO dto);
+    Task UpdateActivity(Guid userId, uint id, PutActivityDTO dto);
 
     Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid userId, uint id, bool download);
 

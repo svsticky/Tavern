@@ -145,7 +145,7 @@ namespace Backend.Controllers
         {
             try
             {
-                await service.PutActivity(GetUserId(), id, dto);
+                await service.UpdateActivity(GetUserId(), id, dto);
                 return NoContent();
             }
             catch (ArgumentException ex)

@@ -9,7 +9,8 @@ namespace Backend.Services
 {
     public class RoleAliasService(
         PostgresDbContext db,
-        IPermissionService permissionService
+        IPermissionService permissionService,
+        KeycloakOutboxWorker keycloakOutboxWorker
     ) : IRoleAliasService
     {
         public async Task<List<RoleAlias>> GetRoleAliases(CancellationToken ct)
@@ -28,7 +29,7 @@ namespace Backend.Services
 
         public async Task<RoleAlias> CreateRoleAlias(PostRoleAliasDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             var role = await db.Roles.FindAsync(dto.RoleId, ct);
             if (role == null)
@@ -50,7 +51,7 @@ namespace Backend.Services
 
         public async Task DeleteRoleAlias(uint id, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
@@ -59,14 +60,14 @@ namespace Backend.Services
                 var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
 
                 db.RoleAliases.Remove(roleAlias);
-                QueueSyncTasks(affectedMembers);
+                await QueueSyncTasks(affectedMembers);
                 await db.SaveChangesAsync(ct);
             });
         }
 
         public async Task PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
@@ -80,7 +81,7 @@ namespace Backend.Services
                 StateValidator.Validate(roleAlias);
 
                 var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
-                QueueSyncTasks(affectedMembers);
+                await QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
             });
@@ -88,7 +89,7 @@ namespace Backend.Services
 
         public async Task UpdateRoleAlias(uint id, RoleAliasUpdateDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
@@ -100,18 +101,10 @@ namespace Backend.Services
                 StateValidator.Validate(roleAlias);
 
                 var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
-                QueueSyncTasks(affectedMembers);
+                await QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
             });
-        }
-
-        private void EnsureBoardMember(Guid userId)
-        {
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
-            {
-                throw new UnauthorizedAccessException("Only board members can perform this action.");
-            }
         }
 
         private async Task<RoleAlias> GetRoleAliasOrThrow(uint id, CancellationToken ct)
@@ -129,15 +122,14 @@ namespace Backend.Services
                 .ToListAsync(ct);
         }
 
-        private void QueueSyncTasks(IEnumerable<Guid?> keycloakIds)
+        private async Task QueueSyncTasks(IEnumerable<Guid?> keycloakIds)
         {
             foreach (var keycloakId in keycloakIds)
             {
-                db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
+                if (keycloakId.HasValue)
                 {
-                    KeycloakId = keycloakId ?? throw new Exception("Member with null KeycloakId found"),
-                    TaskType = KeycloakTaskType.Sync
-                });
+                    await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, keycloakId.Value);
+                }
             }
         }
 

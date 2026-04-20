@@ -101,42 +101,7 @@ public class ActivityService : IActivityService
 
         try
         {
-            var activity = new Activity
-            {
-                Name = dto.Name,
-                Price = dto.Price,
-                DutchDescription = dto.DutchDescription,
-                EnglishDescription = dto.EnglishDescription,
-                DateTimeStart = dto.DateTimeStart,
-                DateTimeEnd = dto.DateTimeEnd,
-                UnenrollmentDeadline = dto.UnenrollmentDeadline,
-                EnrollmentDeadline = dto.EnrollmentDeadline,
-                EnrollOpenDate = dto.EnrollOpenDate,
-                Location = dto.Location,
-                ParticipantLimit = dto.ParticipantLimit,
-                OrganizerId = dto.OrganizerId,
-                ShowInKoala = dto.ShowInKoala,
-                ShowOnWebsite = dto.ShowOnWebsite,
-                IsEnrollable = dto.IsEnrollable,
-                AreParticipantsVisible = dto.AreParticipantsVisible,
-                IsAdultOnly = dto.IsAdultOnly,
-                IsWeeklyDrinks = dto.IsWeeklyDrinks,
-                AllowedAudience = dto.AllowedAudience,
-                VatRate = dto.VatRate,
-                GLAccountId = dto.GLAccountId,
-                CostCenterId = dto.CostCenterId,
-                CostUnitId = dto.CostUnitId,
-                SpecificationQuestions = questions.Select(q => new SpecificationQuestion
-                {
-                    QuestionDutch = q.QuestionDutch,
-                    QuestionEnglish = q.QuestionEnglish,
-                    Type = q.Type,
-                    IsMandatory = q.IsMandatory,
-                    IsPublic = q.IsPublic,
-                    Options = q.Options != null ? string.Join(";", q.Options) : null
-                }).ToList(),
-                PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
-            };
+            var activity = BuildActivity(dto, questions);
 
             await SavePosterIfProvided(activity, dto.Poster);
 
@@ -284,7 +249,7 @@ public class ActivityService : IActivityService
         }
     }
 
-    public async Task PutActivity(Guid userId, uint id, PutActivityDTO dto)
+    public async Task UpdateActivity(Guid userId, uint id, PutActivityDTO dto)
     {
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)
@@ -306,7 +271,7 @@ public class ActivityService : IActivityService
             string? existingPosterPath = activity.PosterPath;
             var oldAudience = activity.AllowedAudience;
 
-            ApplyPutDto(activity, dto);
+            ApplyUpdateDto(activity, dto);
 
             await SyncSpecificationQuestions(activity, questions);
 
@@ -421,6 +386,46 @@ public class ActivityService : IActivityService
         return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
     }
 
+    private Activity BuildActivity(PostActivityDTO dto, List<SpecificationQuestionDTO> questions)
+    {
+        return new Activity
+        {
+            Name = dto.Name,
+            Price = dto.Price,
+            DutchDescription = dto.DutchDescription,
+            EnglishDescription = dto.EnglishDescription,
+            DateTimeStart = dto.DateTimeStart,
+            DateTimeEnd = dto.DateTimeEnd,
+            UnenrollmentDeadline = dto.UnenrollmentDeadline,
+            EnrollmentDeadline = dto.EnrollmentDeadline,
+            EnrollOpenDate = dto.EnrollOpenDate,
+            Location = dto.Location,
+            ParticipantLimit = dto.ParticipantLimit,
+            OrganizerId = dto.OrganizerId,
+            ShowInKoala = dto.ShowInKoala,
+            ShowOnWebsite = dto.ShowOnWebsite,
+            IsEnrollable = dto.IsEnrollable,
+            AreParticipantsVisible = dto.AreParticipantsVisible,
+            IsAdultOnly = dto.IsAdultOnly,
+            IsWeeklyDrinks = dto.IsWeeklyDrinks,
+            AllowedAudience = dto.AllowedAudience,
+            VatRate = dto.VatRate,
+            GLAccountId = dto.GLAccountId,
+            CostCenterId = dto.CostCenterId,
+            CostUnitId = dto.CostUnitId,
+            SpecificationQuestions = questions.Select(q => new SpecificationQuestion
+            {
+                QuestionDutch = q.QuestionDutch,
+                QuestionEnglish = q.QuestionEnglish,
+                Type = q.Type,
+                IsMandatory = q.IsMandatory,
+                IsPublic = q.IsPublic,
+                Options = q.Options != null ? string.Join(";", q.Options) : null
+            }).ToList(),
+            PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
+        };
+    }
+
     private async Task ProcessWaitingList(uint activityId, uint? newLimit, CancellationToken ct)
     {
         int currentParticipants = await _db.Enrollments
@@ -495,7 +500,7 @@ public class ActivityService : IActivityService
         activity.PosterFileName = poster.FileName;
     }
 
-    private static void ApplyPutDto(Activity activity, PutActivityDTO dto)
+    private static void ApplyUpdateDto(Activity activity, PutActivityDTO dto)
     {
         activity.Name = dto.Name;
         activity.Price = dto.Price;

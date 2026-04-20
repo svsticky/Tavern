@@ -15,7 +15,7 @@ namespace Backend.Services
     {
         public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             return await db.StudyEnrollments
                 .AsQueryable()
@@ -43,7 +43,7 @@ namespace Backend.Services
 
         public async Task<StudyEnrollmentResponseDTO> CreateStudyEnrollment(PostStudyEnrollmentDTO dto, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             var member = await GetMemberOrThrow(dto.MemberId, ct);
             var study = await GetStudyOrThrow(dto.StudyId, ct);
@@ -62,7 +62,7 @@ namespace Backend.Services
 
         public async Task DeleteStudyEnrollment(uint id, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
             if (enrollment == null)
@@ -74,7 +74,7 @@ namespace Backend.Services
 
         public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
-            EnsureBoardMember(userId);
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
             
             var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
 
@@ -112,14 +112,6 @@ namespace Backend.Services
                 await transaction.RollbackAsync(ct);
                 throw;
             }            
-        }
-
-        private void EnsureBoardMember(Guid userId)
-        {
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
-            {
-                throw new UnauthorizedAccessException("Only board members can perform this action.");
-            }
         }
 
         private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken ct)

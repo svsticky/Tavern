@@ -49,7 +49,7 @@ public class GroupService : IGroupService
 
     public async Task<Group> CreateGroup(PostGroupDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can create groups.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         GroupValidator.ValidateName(dto.Name);
 
@@ -99,7 +99,7 @@ public class GroupService : IGroupService
 
     public async Task DeleteGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can delete groups.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var group = await GetGroupOrThrow(id, cancellationToken);
 
@@ -112,7 +112,7 @@ public class GroupService : IGroupService
 
     public async Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can update groups.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -130,7 +130,7 @@ public class GroupService : IGroupService
 
     public async Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken)
     {
-        EnsureBoardMember(userId, "Only board members can update groups.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         GroupValidator.ValidateName(dto.Name);
 
@@ -149,7 +149,7 @@ public class GroupService : IGroupService
     {
         var group = await GetGroupOrThrow(groupId, default, "Group not found");
 
-        EnsureBoardMember(userId, "You can only update your own profile picture.");
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         ValidateGroupPicture(image);
 
@@ -203,12 +203,6 @@ public class GroupService : IGroupService
             throw new KeyNotFoundException("CandidateBoardGroupId setting is missing or invalid.");
 
         return candidateBoardGroupId;
-    }
-
-    private void EnsureBoardMember(Guid userId, string errorMessage)
-    {
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId))
-            throw new UnauthorizedAccessException(errorMessage);
     }
 
     private async Task<Group> GetGroupOrThrow(uint groupId, CancellationToken cancellationToken, string errorMessage = "")
