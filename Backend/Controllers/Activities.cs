@@ -30,6 +30,10 @@ namespace Backend.Controllers
             {
                 return Forbid();
             }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // GET: api/activities/5
@@ -49,6 +53,10 @@ namespace Backend.Controllers
             {
                 return Forbid();
             }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // POST: api/activities
@@ -62,13 +70,13 @@ namespace Backend.Controllers
 
                 return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 
@@ -89,6 +97,10 @@ namespace Backend.Controllers
             {
                 return NotFound();
             }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // PATCH: api/activities/5
@@ -100,10 +112,6 @@ namespace Backend.Controllers
                 await service.PatchActivity(GetUserId(), id, patchDoc, ct);
                 return NoContent();
             }
-            catch (ArgumentException)
-            {
-                return BadRequest();
-            }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
@@ -111,6 +119,10 @@ namespace Backend.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 
@@ -124,10 +136,6 @@ namespace Backend.Controllers
                 await service.UploadPoster(GetUserId(), id, poster);
                 return Ok();
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
@@ -135,6 +143,10 @@ namespace Backend.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 
@@ -148,10 +160,6 @@ namespace Backend.Controllers
                 await service.UpdateActivity(GetUserId(), id, dto);
                 return NoContent();
             }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
@@ -159,6 +167,10 @@ namespace Backend.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 
@@ -179,6 +191,10 @@ namespace Backend.Controllers
             {
                 return Forbid();
             }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // GET: api/activities/5/poster/download
@@ -198,6 +214,10 @@ namespace Backend.Controllers
             {
                 return Forbid();
             }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         [HttpGet("{id}/enrollments/export")]
@@ -216,6 +236,10 @@ namespace Backend.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
     }

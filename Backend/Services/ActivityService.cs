@@ -19,7 +19,8 @@ public class ActivityService : IActivityService
     private readonly IPermissionService _permissionService;
     private readonly IEnrollmentService _enrollmentService;
 
-    private readonly string[] _restrictedPaths = new[] { "/showInKoala", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
+    private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
+    private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
     public ActivityService(
         PostgresDbContext db,
@@ -39,14 +40,17 @@ public class ActivityService : IActivityService
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
+        // Only board members can see past activities or activities that are not shown in Koala/website
         if (dto.IncludePast && !isBoard)
             throw new UnauthorizedAccessException();
 
+        // Get userGroupIds to filter activities that are only visible for the organizers of the groups
         var userGroupIds = await _db.GroupMemberships
             .Where(gm => gm.MemberId == userId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear())
             .Select(gm => gm.GroupId)
             .ToListAsync();
 
+        // Filter activities based on the provided criteria and the user's permissions
         var query = _db.Activities
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds)
@@ -66,6 +70,7 @@ public class ActivityService : IActivityService
         if (activity == null)
             return null;
 
+        // Check if the activity should be open for enrollment based on the EnrollOpenDate, if the activity is not already enrollable
         if(!activity.IsEnrollable && activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
         {
             activity.IsEnrollable = true;
@@ -73,9 +78,11 @@ public class ActivityService : IActivityService
             await _db.SaveChangesAsync();
         }
 
+        // Only board members can see past activities 
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !isBoard)
             throw new UnauthorizedAccessException();
 
+        // Only board members or members of the organizer group can see activities that are not shown in Koala, even if the activity is in the future
         if (!activity.ShowInKoala && isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
             throw new UnauthorizedAccessException();
 
@@ -87,25 +94,28 @@ public class ActivityService : IActivityService
 
     public async Task<Activity> CreateActivity(Guid userId, PostActivityDTO dto)
     {
-        ActivityValidator.ValidateCreateRequest(dto, userId, _permissionService);
+        ActivityValidator.ValidateRequest(dto, userId, _permissionService);
         ActivityValidator.NormalizeCreateRequest(dto);
 
         using var transaction = await _db.Database.BeginTransactionAsync();
-
-        var questions = ActivityValidator.ParseCreateQuestions(dto.SpecificationQuestionsJson);
-
-        var organizerMembers = await _db.GroupMemberships
-            .Where(gm => gm.GroupId == dto.OrganizerId)
-            .Select(gm => gm.Member)
-            .ToListAsync();
-
         try
         {
+            // Parse questions and create activity
+            var questions = ActivityValidator.ParseCreateQuestions(dto.SpecificationQuestionsJson);
             var activity = BuildActivity(dto, questions);
+            _db.Activities.Add(activity);
+            
+            StateValidator.Validate(activity);
 
+            // Save poster
             await SavePosterIfProvided(activity, dto.Poster);
 
-            StateValidator.Validate(activity);
+
+            // Enroll organizers
+            var organizerMembers = await _db.GroupMemberships
+                .Where(gm => gm.GroupId == dto.OrganizerId)
+                .Select(gm => gm.Member)
+                .ToListAsync();
 
             foreach(var member in organizerMembers)
             {
@@ -120,7 +130,6 @@ public class ActivityService : IActivityService
                 });
             }
 
-            _db.Activities.Add(activity);
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
@@ -157,21 +166,25 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
+        if(patchDoc.Operations.Any(op => _restrictedForEveryonePaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
+            throw new UnauthorizedAccessException("You are not allowed to modify the id or poster properties of the activity.");
+
         if (activity.ShowInKoala 
                 || activity.ShowOnWebsite 
                 || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-
         using var transaction = await _db.Database.BeginTransactionAsync(ct);
 
         try
         {
+            // save old data for processing waiting list and updating enrollment prices
             uint? oldLimit = activity.ParticipantLimit;
             decimal oldPrice = activity.Price;
             var oldAudience = activity.AllowedAudience;
 
             patchDoc.ApplyTo(activity);
+
 
             if (activity.IsEnrollable)
             {
@@ -180,12 +193,14 @@ public class ActivityService : IActivityService
 
             StateValidator.Validate(activity);
 
+            // Update waiting list
             if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
                 || activity.AllowedAudience != oldAudience)
             {
                 await ProcessWaitingList(id, activity.ParticipantLimit, ct);
             }
 
+            // Update enrollment prices if the price has changed
             if (oldPrice != activity.Price)
             {
                 var enrollments = await _db.Enrollments
@@ -212,14 +227,17 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
+        // Uploading is only allowed if the activity is not online yet
         if (activity.ShowInKoala || activity.ShowOnWebsite)
         {
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
 
+        // Validate poster if provided
         if (poster != null)
             ExtensionValidator.ValidatePosterExtension(poster);
-
+        
+        // Save old path for deletion after successful upload of the new poster
         string? oldPath = activity.PosterPath;
 
         using var transaction = await _db.Database.BeginTransactionAsync();
@@ -258,23 +276,31 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        ActivityValidator.ValidateUpdateRequest(activity, dto, userId, _permissionService);
+        if(activity.ShowInKoala || activity.ShowOnWebsite)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+        ActivityValidator.ValidateRequest(dto, userId, _permissionService);
 
         using var transaction = await _db.Database.BeginTransactionAsync();
 
+        // Parse the specification questions from the JSON string in the DTO
         var questions = ActivityValidator.ParseUpdateQuestions(dto.SpecificationQuestionsJson);
 
         try
         {
+            // Save old values for processing waiting list and updating enrollment prices after applying the update
             decimal oldPrice = activity.Price;
             uint? oldLimit = activity.ParticipantLimit;
             string? existingPosterPath = activity.PosterPath;
             var oldAudience = activity.AllowedAudience;
 
             ApplyUpdateDto(activity, dto);
+            StateValidator.Validate(activity);
 
+            // Sync specification questions
             await SyncSpecificationQuestions(activity, questions);
 
+            // Update enrollment prices if the price has changed
             if (oldPrice != activity.Price)
             {
                 var enrollmentsToUpdate = await _db.Enrollments
@@ -285,19 +311,20 @@ public class ActivityService : IActivityService
                     enrollment.Price = activity.Price;
             }
 
+            // Save poster if a new one is provided
             await SavePosterIfProvided(activity, dto.Poster);
 
+            // Update waiting list if participant limit or allowed audience has changed
             if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
                 || activity.AllowedAudience != oldAudience)
             {
                 await ProcessWaitingList(id, activity.ParticipantLimit, default);
             }
 
-            StateValidator.Validate(activity);
-
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
+            // Delete old poster if a new one was uploaded and the activity had an existing poster
             if (existingPosterPath != null && dto.Poster != null)
                 await _storageService.DeleteFileAsync("posters", existingPosterPath);
         }
@@ -315,14 +342,21 @@ public class ActivityService : IActivityService
         if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
             return null;
 
+        // Only board members can see posters of past activities
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
+        // Only board members or members of the organizer group can see posters of activities that are not shown in Koala, even if the activity is in the future
+        if (!activity.ShowInKoala && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+        // Get poster file from storage
         var file = await _storageService.GetFileAsync("posters", activity.PosterPath);
 
         if (file == null)
             return null;
 
+        // If download is true, the file will be returned with a filename to trigger download in the frontend, otherwise it will be displayed in the browser if supported
         return (
             file.Stream,
             file.ContentType,
@@ -332,15 +366,16 @@ public class ActivityService : IActivityService
 
     public async Task<(byte[] Content, string FileName)> GetEnrollmentsCsv(Guid userId, uint activityId, CancellationToken ct)
     {
+        // Only board members or members of the organizer group can download the enrollments CSV
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-
+            
+        // Get user preferred language for CSV header
         Member? member = await _db.Members.FirstOrDefaultAsync(m => m.Id == userId, ct);
-
         if(member == null)
             throw new UnauthorizedAccessException("User not found");
-
         Language language = member.PreferredLanguage;
 
+        // Load activity with enrollments and specification questions
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)
             .Include(a => a.Enrollments)
@@ -349,38 +384,11 @@ public class ActivityService : IActivityService
                 .ThenInclude(e => e.SpecificationAnswers)
             .FirstOrDefaultAsync(a => a.Id == activityId, ct);
 
+        // If activity is not found, throw an exception
         if (activity == null) throw new KeyNotFoundException("Activity not found");
 
-        var csv = new StringBuilder();
-
-        var header = language == Language.NL ? new List<string> { "Voornaam", "Achternaam", "Op Wachtlijst" } : new List<string> { "First Name", "Last Name", "On Waiting List" };
-        foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
-        {
-            header.Add(language == Language.NL ? question.QuestionDutch : question.QuestionEnglish);
-        }
-        csv.AppendLine(string.Join(";", header));
-
-        foreach (var enrollment in activity.Enrollments.OrderBy(e => e.RegisteredOn)
-            .OrderBy(e => e.IsOnWaitingList)
-            .ThenBy(e => e.RegisteredOn))
-        {
-            var row = new List<string>
-            {
-                enrollment.Member.FirstName,
-                enrollment.Member.LastName,
-                enrollment.IsOnWaitingList ? "True" : "False"
-            };
-
-            foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
-            {
-                var answer = enrollment.SpecificationAnswers
-                    .FirstOrDefault(a => a.SpecificationQuestionId == question.Id)?.Answer ?? "";
-                
-                row.Add(answer.Replace(";", ",")); 
-            }
-
-            csv.AppendLine(string.Join(";", row));
-        }
+        // Build CSV content
+        var csv = BuildEnrollmentsCsv(language, activity);
 
         var fileName = $"Enrollments_{activity.Name}.csv";
         return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
@@ -428,21 +436,25 @@ public class ActivityService : IActivityService
 
     private async Task ProcessWaitingList(uint activityId, uint? newLimit, CancellationToken ct)
     {
+        // Get the number of current participants (excluding those on the waiting list)
         int currentParticipants = await _db.Enrollments
             .CountAsync(e => e.ActivityId == activityId && !e.IsOnWaitingList, ct);
 
+        // Calculate how many people can be promoted from the waiting list based on the new participant limit
         int availableSpots = newLimit.HasValue
             ? (int)newLimit.Value - currentParticipants
             : int.MaxValue;
 
         if (availableSpots > 0)
         {
+            // Promote people from the waiting list based on the available spots
             _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
         }
     }
 
     private async Task SyncSpecificationQuestions(Activity activity, List<UpdateSpecificationQuestionDTO> dtoQuestions)
     {
+        // Load existing questions from the database
         await _db.Entry(activity)
             .Collection(a => a.SpecificationQuestions)
             .LoadAsync();
@@ -453,6 +465,7 @@ public class ActivityService : IActivityService
         {
             if (dto.Id.HasValue)
             {
+                // If the DTO has an ID, find the existing question and update it
                 var existing = existingQuestions.FirstOrDefault(q => q.Id == dto.Id.Value);
                 if (existing == null)
                     throw new Exception($"SpecificationQuestion with id {dto.Id} not found.");
@@ -461,6 +474,7 @@ public class ActivityService : IActivityService
             }
             else
             {
+                // If the DTO does not have an ID, it's a new question, so create it and add it to the activity
                 var newQuestion = new SpecificationQuestion
                 {
                     Activity = activity,
@@ -478,10 +492,9 @@ public class ActivityService : IActivityService
             }
         }
 
+        // Remove questions that are not in the DTO
         var dtoIds = dtoQuestions.Where(q => q.Id.HasValue).Select(q => q.Id!.Value).ToHashSet();
-
         var toRemove = existingQuestions.Where(q => !dtoIds.Contains(q.Id)).ToList();
-
         _db.SpecificationQuestions.RemoveRange(toRemove);
     }
 
@@ -525,5 +538,47 @@ public class ActivityService : IActivityService
         activity.GLAccountId = dto.GLAccountId;
         activity.CostCenterId = dto.CostCenterId;
         activity.CostUnitId = dto.CostUnitId;
+    }
+
+    private static StringBuilder BuildEnrollmentsCsv(Language language, Activity activity)
+    {
+        var csv = new StringBuilder();
+        
+        // Create CSV header
+        var header = language == Language.NL ? new List<string> { "Voornaam", "Achternaam", "Op Wachtlijst" } : new List<string> { "First Name", "Last Name", "On Waiting List" };
+        
+        foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
+        {
+            header.Add(language == Language.NL ? question.QuestionDutch : question.QuestionEnglish);
+        }
+
+        csv.AppendLine(string.Join(";", header));
+
+        // Create CSV rows for each enrollment
+        foreach (var enrollment in activity.Enrollments.OrderBy(e => e.RegisteredOn)
+            .OrderBy(e => e.IsOnWaitingList)
+            .ThenBy(e => e.RegisteredOn))
+        {
+            // Create basic information
+            var row = new List<string>
+            {
+                enrollment.Member.FirstName,
+                enrollment.Member.LastName,
+                enrollment.IsOnWaitingList ? "True" : "False"
+            };
+
+            // Add answers to specification questions in the order of the questions
+            foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
+            {
+                var answer = enrollment.SpecificationAnswers
+                    .FirstOrDefault(a => a.SpecificationQuestionId == question.Id)?.Answer ?? "";
+                
+                row.Add(answer.Replace(";", ",")); 
+            }
+
+            csv.AppendLine(string.Join(";", row));
+        }
+
+        return csv;
     }
 }

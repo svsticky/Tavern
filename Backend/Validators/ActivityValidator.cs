@@ -7,13 +7,20 @@ namespace Backend.Validators;
 
 public static class ActivityValidator
 {
-    public static void ValidateCreateRequest(PostActivityDTO dto, Guid userId, IPermissionService permissionService)
+    public static void ValidateRequest<TQuestion>(BaseActivityDTO<TQuestion> dto, Guid userId, IPermissionService permissionService)
     {
         ValidateTimeRange(dto.DateTimeStart, dto.DateTimeEnd);
         ValidateParticipantLimit(dto.ParticipantLimit);
         ValidatePosterIfProvided(dto.Poster);
 
-        if (dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null)
+        // Only board members can create activities that are shown in Koala/website or have enrollment/payment options, to prevent abuse of these features
+        if (dto.ShowInKoala 
+                || dto.ShowOnWebsite 
+                || dto.PaymentDeadline != null 
+                || dto.EnrollOpenDate != null
+                || dto.OrganizerId == null 
+                || !permissionService.IsInGroupInCurrentYear(userId, dto.OrganizerId.Value)
+            )
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
     }
 
@@ -23,16 +30,6 @@ public static class ActivityValidator
         {
             dto.EnrollOpenDate = null;
         }
-    }
-
-    public static void ValidateUpdateRequest(Activity activity, PutActivityDTO dto, Guid userId, IPermissionService permissionService)
-    {
-        ValidateTimeRange(dto.DateTimeStart, dto.DateTimeEnd);
-        ValidateParticipantLimit(dto.ParticipantLimit);
-        ValidatePosterIfProvided(dto.Poster);
-
-        if (activity.ShowInKoala || activity.ShowOnWebsite || dto.ShowInKoala || dto.ShowOnWebsite || dto.PaymentDeadline != null || dto.EnrollOpenDate != null)
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
     }
 
     public static List<SpecificationQuestionDTO> ParseCreateQuestions(string? specificationQuestionsJson)
