@@ -6,7 +6,7 @@ using Mollie.Api.Client.Abstract;
 
 namespace Backend.Services;
 
-public class PaymentSyncService(IServiceProvider serviceProvider, IPaymentValidationService paymentValidationService) : BackgroundService
+public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundService
 {
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -29,6 +29,7 @@ public class PaymentSyncService(IServiceProvider serviceProvider, IPaymentValida
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var paymentClient = scope.ServiceProvider.GetRequiredService<IPaymentClient>();
+        var paymentValidationService = scope.ServiceProvider.GetRequiredService<IPaymentValidationService>();
 
         var pendingMembershipPayments = await db.MembershipPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingEnrollmentPayments = await db.EnrollmentPayments.Where(p => p.PaidAt == null).ToListAsync();

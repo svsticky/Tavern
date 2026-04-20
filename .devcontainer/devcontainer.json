@@ -51,5 +51,6 @@
             "label": "Ngrok Dashboard", 
             "onAutoForward": "notify" 
         }
-    }
+    },
+    "postCreateCommand": "dotnet dev-certs https -ep /workspaces/Backend/certs/aspnetapp.pfx -p password"
 }

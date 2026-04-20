@@ -133,20 +133,16 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
 
         const submitProcess = async () => {
         try {
-            let id;
+            const redirectPathBase = `${pathname.startsWith("/admin") ? '/admin' : ''}/activities/`;
             if (isEdit) {
                 console.log("Updating activity with payload:", payload);
                 await putApiActivitiesById({ path: { id: Number(id) }, ...payload });
-                id = activity?.id;
+                navigate(`${redirectPathBase}${id}`);
             } else {
                 console.log("Creating activity with payload:", payload);
                 const response = await postApiActivities(payload);
-                id = response.data?.id;
+                navigate(`${redirectPathBase}${response.data?.id}`);
             }
-            
-            const redirectPath = `${pathname.startsWith("/admin") ? '/admin' : ''}/activities/${id}`;
-
-            navigate(redirectPath);
         } catch (error) {
             console.error(error);
             throw error;
@@ -165,7 +161,7 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
   if (loading) return t("loading");
 
   return (
-    <div className={isEdit && isBoard && "lg:col-span-2 max-w-4xl" || ""}>
+    <div className={isEdit && isBoard && "lg:col-span-2" || "max-w-4xl"}>
         <BorderedTile>
             <Form onSubmit={handleSubmit} onChange={handleFormChange}>
                 <FormSection title={t("basic_information")}>

@@ -60,7 +60,7 @@ export default function DashboardHeader({
           }).length);
           setComingEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
             const activityDate = new Date(enrollment.activity?.dateTimeStart ?? Date.now());
-            return activityDate > new Date(Date.now());
+            return activityDate >= new Date(Date.now());
           }).length);
         }
       } catch (error) {

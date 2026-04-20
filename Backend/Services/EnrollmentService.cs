@@ -27,7 +27,7 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<IEnumerable<Enrollment>> GetEnrollments(CancellationToken cancellationToken, Guid? memberId = null)
     {
-        var query = _db.Enrollments.AsQueryable();
+        var query = _db.Enrollments.Include(e => e.Activity).AsQueryable();
 
         if (memberId.HasValue)
         {
@@ -35,12 +35,15 @@ public class EnrollmentService : IEnrollmentService
         }
 
         // To do: if member id == null, ensure board or candidate board
+        // to do: project to dto with only necessary info instead of including everything and returning the full enrollment objects (which can be quite heavy with all the specification answers)
+        // It should contain activity with basic info
 
         return await query.ToListAsync(cancellationToken);
     }
 
     public async Task<Enrollment?> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
     {
+        // To do: project to dto with only necessary info instead of including everything and returning the full enrollment objects (which can be quite heavy with all the specification answers). It should contain activity with basic info
         return await _db.Enrollments
             .Include(e => e.Activity)
             .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
