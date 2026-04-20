@@ -21,6 +21,8 @@ import toast from "react-hot-toast";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
+import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable";
+import { FormHeader } from "~/components/UI/Form/FormHeader";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -159,113 +161,121 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="max-w-4xl mx-auto w-full">
+    <div className="flex flex-col max-w-4xl mx-auto w-full">
       <PageHeader title={t("system_settings")} />
 
-      <Form className="space-y-8 mt-8">
-        <FormSection title={t("financial_mollie")} columns={2}>
-          <Input 
-            label={t("mollie_fee")} 
-            type="number" step="0.01"
-            value={settings["MollieFee"] || ""} 
-            onChange={(e) => handleChange("MollieFee", e.target.value)} 
-          />
-          <Input 
-            label={t("mollie_fee_gl_account")} 
-            value={settings["MollieFeeGLAccount"] || ""} 
-            onChange={(e) => handleChange("MollieFeeGLAccount", e.target.value)} 
-          />
-        </FormSection>
-
-        <FormSection title={t("internal_identifiers")} columns={2}>
-          <Select 
-            label={t("board_group")} 
-            value={settings["BoardGroupId"] || ""} 
-            onChange={(e) => handleChange("BoardGroupId", e.target.value)}
-            options={groupOptions}
-          />
-          <Select 
-            label={t("candidate_board_group")} 
-            value={settings["CandidateBoardGroupId"] || ""} 
-            onChange={(e) => handleChange("CandidateBoardGroupId", e.target.value)}
-            options={groupOptions}
-          />
-        </FormSection>
-
-        <FormSection title={t("role_email_mapping")} columns={1}>
-          <div className="space-y-6">
-            <BorderedTile className="bg-slate-50/50 border-dashed">
-              <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
-                <div className="flex-1 w-full">
-                  <Select 
-                    label={t("add_new_role_email")}
-                    value={selectedRoleId}
-                    onChange={(e) => setSelectedRoleId(e.target.value)}
-                    options={roleOptions}
-                  />
-                </div>
-                <Button 
-                  type="button" 
-                  onClick={handleAddRoleMapping} 
-                  disabled={!selectedRoleId}
-                  variant="secondary"
-                  className="whitespace-nowrap sm:mb-1"
-                >
-                  <PlusIcon className="w-4 h-4 mr-2" />
-                  {t("add_mapping")}
-                </Button>
-              </div>
-            </BorderedTile>
-
-            <div className="grid grid-cols-1 gap-4">
-              {currentRoleMappings.length > 0 ? (
-                currentRoleMappings.map(([key, value]) => {
-                  const roleId = key.replace("ROLEMAILMAP_", "");
-                  const role = availableRoles.find(r => r.id?.toString() === roleId);
-                  
-                  return (
-                    <BorderedTile key={key}>
-                      <div className="flex items-start gap-4 w-full">
-                        <div className="flex-1 min-w-0">
-                            <Input 
-                            label={`${t("email_address_for")} ${role?.name || roleId}`}
-                            type="email"
-                            placeholder={t("enter_email_for_role")}
-                            value={value} 
-                            onChange={(e) => handleChange(key, e.target.value)} 
-                            className="w-full"
-                            />
-                        </div>
-                        
-                        <button 
-                            type="button"
-                            onClick={() => handleRemoveRoleMapping(key)}
-                            className="hover:cursor-pointer mt-8 p-2 flex-shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
-                            title={t("remove")}
-                        >
-                            <TrashIcon className="w-5 h-5" />
-                        </button>
-                        </div>
-                    </BorderedTile>
-                  );
-                })
-              ) : (
-                <NoContentTile text={t("no_role_email_mappings")} />
-              )}
-            </div>
-          </div>
-        </FormSection>
-
-        <div className="pt-6 border-t border-slate-200">
-          <Button 
-              onClick={handleSave} 
-              disabled={saving || hasEmptyFields}
-              className="w-full h-12 text-lg"
-          >
-            {saving ? t("saving") : t("save_all_settings")}
-          </Button>
+      <div className="space-y-4">
+        <div>
+          <FormHeader title={t("studies")} />
+          <ManageStudiesDatatable />
         </div>
-      </Form>
+
+        <Form>
+
+          <FormSection title={t("financial_mollie")} columns={2}>
+            <Input 
+              label={t("mollie_fee")} 
+              type="number" step="0.01"
+              value={settings["MollieFee"] || ""} 
+              onChange={(e) => handleChange("MollieFee", e.target.value)} 
+            />
+            <Input 
+              label={t("mollie_fee_gl_account")} 
+              value={settings["MollieFeeGLAccount"] || ""} 
+              onChange={(e) => handleChange("MollieFeeGLAccount", e.target.value)} 
+            />
+          </FormSection>
+
+          <FormSection title={t("internal_identifiers")} columns={2}>
+            <Select 
+              label={t("board_group")} 
+              value={settings["BoardGroupId"] || ""} 
+              onChange={(e) => handleChange("BoardGroupId", e.target.value)}
+              options={groupOptions}
+            />
+            <Select 
+              label={t("candidate_board_group")} 
+              value={settings["CandidateBoardGroupId"] || ""} 
+              onChange={(e) => handleChange("CandidateBoardGroupId", e.target.value)}
+              options={groupOptions}
+            />
+          </FormSection>
+
+          <FormSection title={t("role_email_mapping")} columns={1}>
+            <div className="space-y-6">
+              <BorderedTile className="bg-slate-50/50 border-dashed">
+                <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
+                  <div className="flex-1 w-full">
+                    <Select 
+                      label={t("add_new_role_email")}
+                      value={selectedRoleId}
+                      onChange={(e) => setSelectedRoleId(e.target.value)}
+                      options={roleOptions}
+                    />
+                  </div>
+                  <Button 
+                    type="button" 
+                    onClick={handleAddRoleMapping} 
+                    disabled={!selectedRoleId}
+                    variant="secondary"
+                    className="whitespace-nowrap sm:mb-1"
+                  >
+                    <PlusIcon className="w-4 h-4 mr-2" />
+                    {t("add_mapping")}
+                  </Button>
+                </div>
+              </BorderedTile>
+
+              <div className="grid grid-cols-1 gap-4">
+                {currentRoleMappings.length > 0 ? (
+                  currentRoleMappings.map(([key, value]) => {
+                    const roleId = key.replace("ROLEMAILMAP_", "");
+                    const role = availableRoles.find(r => r.id?.toString() === roleId);
+                    
+                    return (
+                      <BorderedTile key={key}>
+                        <div className="flex items-start gap-4 w-full">
+                          <div className="flex-1 min-w-0">
+                              <Input 
+                              label={`${t("email_address_for")} ${role?.name || roleId}`}
+                              type="email"
+                              placeholder={t("enter_email_for_role")}
+                              value={value} 
+                              onChange={(e) => handleChange(key, e.target.value)} 
+                              className="w-full"
+                              />
+                          </div>
+                          
+                          <button 
+                              type="button"
+                              onClick={() => handleRemoveRoleMapping(key)}
+                              className="hover:cursor-pointer mt-8 p-2 flex-shrink-0 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                              title={t("remove")}
+                          >
+                              <TrashIcon className="w-5 h-5" />
+                          </button>
+                          </div>
+                      </BorderedTile>
+                    );
+                  })
+                ) : (
+                  <NoContentTile text={t("no_role_email_mappings")} />
+                )}
+              </div>
+            </div>
+          </FormSection>
+
+          <div className="pt-6 border-t border-slate-200">
+            <Button 
+                onClick={handleSave} 
+                disabled={saving || hasEmptyFields}
+                className="w-full h-12 text-lg"
+            >
+              {saving ? t("saving") : t("save_all_settings")}
+            </Button>
+          </div>
+        </Form>
+      </div>
     </div>
   );
 }

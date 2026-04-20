@@ -31,7 +31,8 @@ export default function AuthenticatedLayout() {
     }
 
     if (keycloak.tokenParsed?.access_level === "not_paid") {
-      console.log("User has not paid for membership, redirecting to payment page...");
+      console.log("User has not paid for membership, redirecting to payment page if payment isn't expired...");
+      
       postApiPaymentsMembership({
         body: { memberId: keycloak.tokenParsed?.UserId ?? "" }
       }).then(res => {
@@ -39,7 +40,14 @@ export default function AuthenticatedLayout() {
         if (res.data?.checkoutUrl) {
           console.log("Redirecting to checkout URL:", res.data.checkoutUrl);
           setPaymentUrl(res.data.checkoutUrl);
+        } else{
+          throw new Error("No checkout URL received, cannot redirect to payment page.");
         }
+      }).catch(err => {
+        console.error("Error checking membership payment status:", err);
+        keycloak.logout({
+          redirectUri: "/login"
+        });
       });
 
       return;

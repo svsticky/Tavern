@@ -165,7 +165,7 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
   if (loading) return t("loading");
 
   return (
-    <div className="lg:col-span-2">
+    <div className={isEdit && isBoard && "lg:col-span-2" || ""}>
         <BorderedTile>
             <Form onSubmit={handleSubmit} onChange={handleFormChange}>
                 <FormSection title={t("basic_information")}>
@@ -250,7 +250,6 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
                 </FormSection>
 
                 <FormSection title={t("specification_questions")} columns={1}>
-                <div className="space-y-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                     <span className="min-w-0 flex-1">
                         {t("specification_questions_description")}
@@ -271,7 +270,6 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
                     {questions.length === 0 && (
                         <NoContentTile text={t("no_specification_questions_yet")} />
                     )}
-                </div>
                 </FormSection>
 
                 <Button type="submit" disabled={saving || !formValid} className="w-full">

@@ -65,7 +65,7 @@ export default function CreateGroupOverlay({ onSuccess }: CreateGroupModalProps)
   };
 
   return (
-      <Form onSubmit={handleSubmit} className="space-y-6">
+      <Form onSubmit={handleSubmit}>
         {/* Foto Upload Preview */}
         <div className="flex flex-col items-center gap-4">
           <div 
@@ -105,11 +105,9 @@ export default function CreateGroupOverlay({ onSuccess }: CreateGroupModalProps)
           ]}
         />
 
-        <div className="flex gap-3 pt-4">
-          <Button variant="primary" className="flex-1" disabled={loading || !formData.name || !formData.groupPicture} type="submit">
-            {t("create")}
-          </Button>
-        </div>
+        <Button variant="primary" className="flex-1" disabled={loading || !formData.name || !formData.groupPicture} type="submit">
+          {t("create")}
+        </Button>
       </Form>
   );
 }

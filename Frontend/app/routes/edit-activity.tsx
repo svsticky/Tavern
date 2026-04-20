@@ -12,6 +12,7 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import EditParticipantsTile from "../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent";
+import { cn } from "~/util/tailwind.util";
 
 export default function ActivityFormPage() {
   const { id } = useParams();
@@ -56,7 +57,7 @@ export default function ActivityFormPage() {
         backTo={`${pathname.startsWith("/admin") ? '/admin' : ''}${isEdit ? `/activities/${id}` : "/activities"}`} 
       />
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className={cn("grid grid-cols-1 gap-8", isBoard && isEdit&& "lg:grid-cols-3")}>
         <EditActivityForm activity={activity} id={id} isBoard={isBoard} /> 
 
         {isBoard && isEdit && activity && 
