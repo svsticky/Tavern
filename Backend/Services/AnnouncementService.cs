@@ -22,6 +22,8 @@ public class AnnouncementService : IAnnouncementService
         return await _db.Announcements
             .AsNoTracking()
             .Select(AnnouncementProjections.ToDto())
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(20)
             .ToListAsync(ct);
     }
 
