@@ -11,32 +11,36 @@ namespace Backend.Services;
 public class AnnouncementService : IAnnouncementService
 {
     private readonly PostgresDbContext _db;
+    private readonly IPermissionService _permissionService;
 
-    public AnnouncementService(PostgresDbContext db)
+    public AnnouncementService(PostgresDbContext db, IPermissionService permissionService)
     {
         _db = db;
+        _permissionService = permissionService;
     }
 
-    public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(CancellationToken ct)
+    public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(Guid userId, CancellationToken ct)
     {
         return await _db.Announcements
             .AsNoTracking()
-            .Select(AnnouncementProjections.ToDto())
+            .Select(AnnouncementProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
             .OrderByDescending(a => a.CreatedAt)
             .Take(20)
             .ToListAsync(ct);
     }
 
-    public async Task<GetAnnouncementResponseDTO?> GetAnnouncement(uint id, CancellationToken ct)
+    public async Task<GetAnnouncementResponseDTO?> GetAnnouncement(uint id, Guid userId, CancellationToken ct)
     {
         return await _db.Announcements
             .AsNoTracking()
-            .Select(AnnouncementProjections.ToDto())
+            .Select(AnnouncementProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 
     public async Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
         var announcement = BuildAnnouncement(userId, dto);
 
         StateValidator.Validate(announcement);
@@ -47,16 +51,20 @@ public class AnnouncementService : IAnnouncementService
         return announcement;
     }
 
-    public async Task DeleteAnnouncement(uint id, CancellationToken cancellationToken)
+    public async Task DeleteAnnouncement(uint id, Guid userId, CancellationToken cancellationToken)
     {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
 
         _db.Announcements.Remove(announcement);
         await _db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task PatchAnnouncement(uint id, JsonPatchDocument<Announcement> patchDoc, CancellationToken cancellationToken)
+    public async Task PatchAnnouncement(uint id, JsonPatchDocument<Announcement> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
         ArgumentNullException.ThrowIfNull(patchDoc);
 
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
@@ -67,8 +75,10 @@ public class AnnouncementService : IAnnouncementService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task UpdateAnnouncement(uint id, UpdateAnnouncementDTO dto, CancellationToken cancellationToken)
+    public async Task UpdateAnnouncement(uint id, UpdateAnnouncementDTO dto, Guid userId, CancellationToken cancellationToken)
     {
+        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
         ApplyUpdate(announcement, dto);
 

@@ -21,31 +21,65 @@ public class AnnouncementsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<GetAnnouncementResponseDTO>>> GetAnnouncements(CancellationToken cancellationToken)
     {
-        var announcements = await _announcementService.GetAnnouncements(cancellationToken);
-        return Ok(announcements);
+        try
+        {
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var announcements = await _announcementService.GetAnnouncements(userId, cancellationToken);
+            return Forbid();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     // GET: api/announcements/5
     [HttpGet("{id}")]
-    public async Task<ActionResult<Announcement>> GetAnnouncement(uint id, CancellationToken cancellationToken)
+    public async Task<ActionResult<GetAnnouncementResponseDTO>> GetAnnouncement(uint id, CancellationToken cancellationToken)
     {
-        var announcement = await _announcementService.GetAnnouncement(id, cancellationToken);
+        try
+        {
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var announcement = await _announcementService.GetAnnouncement(id, userId, cancellationToken);
+            
+            if (announcement == null)
+                return NotFound();
+        
+            return Ok(announcement);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
 
-        if (announcement == null)
-            return NotFound();
-
-        return Ok(announcement);
     }
 
     // POST: api/announcements
     [HttpPost]
-    public async Task<ActionResult<Announcement>> PostAnnouncement(PostAnnouncementDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult> PostAnnouncement(PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        var created = await _announcementService.CreateAnnouncement(userId, dto, cancellationToken);
-
-        return CreatedAtAction(nameof(GetAnnouncement), new { id = created.Id }, created);
+        try
+        {
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var created = await _announcementService.CreateAnnouncement(userId, dto, cancellationToken);
+            return CreatedAtAction(nameof(GetAnnouncement), new { id = created.Id }, created);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     // DELETE: api/announcements/5
@@ -54,12 +88,21 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            await _announcementService.DeleteAnnouncement(id, cancellationToken);
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await _announcementService.DeleteAnnouncement(id, userId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 
@@ -72,7 +115,8 @@ public class AnnouncementsController : ControllerBase
 
         try
         {
-            await _announcementService.PatchAnnouncement(id, patchDoc, cancellationToken);
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await _announcementService.PatchAnnouncement(id, patchDoc, userId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -83,6 +127,14 @@ public class AnnouncementsController : ControllerBase
         {
             return BadRequest();
         }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
+        }
     }
 
     // PUT: api/announcements/5
@@ -91,12 +143,21 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            await _announcementService.UpdateAnnouncement(id, dto, cancellationToken);
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await _announcementService.UpdateAnnouncement(id, dto, userId, cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
         {
             return NotFound();
+        }
+        catch (UnauthorizedAccessException)        
+        {
+            return Forbid();
+        }
+        catch (Exception e)
+        {
+            return BadRequest(e.Message);
         }
     }
 }

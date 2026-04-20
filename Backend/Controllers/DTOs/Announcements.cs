@@ -34,6 +34,6 @@ public class GetAnnouncementResponseDTO
     public required string Title { get; set; }
     public required string Content { get; set; }
     public required string CreatedByName { get; set; }
-    public required Guid CreatedById { get; set; }
+    public Guid? CreatedById { get; set; }
     public required DateTimeOffset CreatedAt { get; set; }
 }
