@@ -11,7 +11,7 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class MembersController(IMemberService memberService, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxWorker) : ControllerBase
+    public class MembersController(IMemberService memberService, IProfilePictureService profilePictureService, KeycloakOutboxWorker keycloakOutboxWorker) : ControllerBase
     {
         private readonly string? _keycloakWebhookSecret = Environment.GetEnvironmentVariable("KEYCLOAK_WEBHOOK_SECRET");
         private Guid GetUserId()
@@ -32,17 +32,20 @@ namespace Backend.Controllers
             {
                 return Forbid(ex.Message);
             }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<MemberResponseDTO>> GetMember(Guid id, CancellationToken cancellationToken)
         {
-            var userId = GetUserId();
-            var isBoard = permissionService.IsBoardOrCandidateBoardMember(userId);
 
             try
             {
-                var result = await memberService.GetMember(id, userId, isBoard, cancellationToken);
+                var userId = GetUserId();
+                var result = await memberService.GetMember(id, userId, cancellationToken);
                 if (result == null) return NotFound();
 
                 return Ok(result);
@@ -50,6 +53,10 @@ namespace Backend.Controllers
             catch (UnauthorizedAccessException)
             {
                 return Forbid();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 
@@ -66,30 +73,29 @@ namespace Backend.Controllers
             {
                 return BadRequest(ex.Message);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return StatusCode(500, "Error creating member.");
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<ActionResult> DeleteMember(Guid id, CancellationToken cancellationToken)
         {
-            var userId = GetUserId();
-
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId) && id != userId)
-                return Forbid();
-
             try
             {
-                var success = await memberService.DeleteMember(id, userId, cancellationToken);
-                if (!success) return NotFound();
+                var userId = GetUserId();
+                await memberService.DeleteMember(id, userId, cancellationToken);
 
                 return NoContent();
             }
-            catch (InvalidOperationException ex)
+            catch(UnauthorizedAccessException ex)
             {
-                return BadRequest(ex.Message);
+                return Forbid(ex.Message);
+            }
+            catch(KeyNotFoundException)
+            {
+                return NotFound();
             }
             catch (Exception)
             {
@@ -100,75 +106,83 @@ namespace Backend.Controllers
         [HttpPatch("{id}")]
         public async Task<ActionResult> PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
         {
-            var userId = GetUserId();
-
-            if (patchDoc == null)
-                return BadRequest();
-
             try
             {
-                var success = await memberService.PatchMember(id, patchDoc, userId, cancellationToken);
-                if (!success) return NotFound();
+                var userId = GetUserId();
+                await memberService.PatchMember(id, patchDoc, userId, cancellationToken);
 
                 return NoContent();
             }
-            catch (Exception)
+            catch (KeyNotFoundException)
             {
-                return StatusCode(500, "Error updating member.");
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
             }
         }
 
         [HttpPut("{id}")]
         public async Task<ActionResult> PutMember(Guid id, MemberUpdateDTO dto, CancellationToken cancellationToken)
         {
-            var userId = GetUserId();
-
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId) && id != userId)
-                return Forbid();
-
             try
             {
-                var success = await memberService.UpdateMember(id, dto, userId, cancellationToken);
-                if (!success) return NotFound();
+                var userId = GetUserId();
+                await memberService.UpdateMember(id, dto, userId, cancellationToken);
 
                 return NoContent();
             }
-            catch (ArgumentException ex)
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "Error updating member.");
             }
         }
 
         [HttpGet("{id}/profile-picture")]
-        public async Task<IActionResult> GetProfilePicture(Guid id)
+        public async Task<IActionResult> GetProfilePicture(Guid id, CancellationToken cancellationToken)
         {
-            var member = await memberService.GetMemberEntity(id);
+            var userId = GetUserId();
+            var member = await memberService.GetMember(id, userId, cancellationToken);
             if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
                 return NotFound("Member or profile picture not found.");
 
-            var file = await memberService.GetProfilePictureFile(member.ProfilePicturePath);
+            var file = await profilePictureService.GetProfilePictureByPath(member.ProfilePicturePath, cancellationToken);
             if (file == null)
                 return NotFound("File is no longer present on the server.");
 
-            return File(file.Stream, file.ContentType);
+            return File(file.Value.Stream, file.Value.ContentType);
         }
 
         [HttpDelete("{id}/profile-picture")]
-        public async Task<ActionResult> DeleteProfilePicture(Guid id)
+        public async Task<ActionResult> DeleteProfilePicture(Guid id, CancellationToken cancellationToken)
         {
-            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if (id != userId && !permissionService.IsBoardOrCandidateBoardMember(userId))
-                return Forbid("You can only delete your own profile picture.");
-
-            var success = await memberService.DeleteProfilePicture(id);
-            if (!success) return NotFound();
-
-            return NoContent();
+            try
+            {
+                var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+                await memberService.DeleteProfilePicture(id, userId, cancellationToken);
+                return NoContent();
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [AllowAnonymous]
@@ -177,7 +191,7 @@ namespace Backend.Controllers
         {
             try
             {
-                if (_keycloakWebhookSecret == null || secret == _keycloakWebhookSecret)
+                if (_keycloakWebhookSecret == null || secret != _keycloakWebhookSecret)
                 {
                     return Unauthorized("Invalid webhook secret.");
                 }
@@ -185,9 +199,9 @@ namespace Backend.Controllers
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.RefreshEmail, userId);
                 return Ok();
             }
-            catch
+            catch (Exception ex)
             {
-                return StatusCode(500, "Error updating email via webhook.");
+                return BadRequest(ex.Message);
             }
         }
     }

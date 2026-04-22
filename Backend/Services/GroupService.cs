@@ -26,10 +26,9 @@ public class GroupService : IGroupService
 
     public async Task<IEnumerable<GroupResponseDTO>> GetGroups(Guid userId, GetGroupDTO dto, CancellationToken cancellationToken)
     {
-        if ((dto.MembershipYear == null || dto.IncludeInactive) &&
-            !_permissionService.IsBoardOrCandidateBoardMember(userId))
+        if (dto.MembershipYear == null || dto.IncludeInactive)
         {
-            throw new UnauthorizedAccessException();
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
 
         return await _db.Groups

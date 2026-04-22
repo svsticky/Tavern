@@ -4,13 +4,13 @@ using System.Linq.Expressions;
 
 public static class GroupMembershipProjections
 {
-    public static Expression<Func<GroupMembership, GroupMembershipResponseDTO>> ToDto()
+    public static Expression<Func<GroupMembership, GroupMembershipResponseDTO>> ToDto(Guid userId, bool isBoard)
     {
         return gm => new GroupMembershipResponseDTO
         {
             Id = gm.Id,
-            MemberId = gm.MemberId,
-            MemberName = gm.Member.FirstName + " " + gm.Member.LastName,
+            MemberId = isBoard || gm.MemberId == userId ? gm.MemberId : null,
+            MemberName = isBoard || gm.MemberId == userId ? gm.Member.FirstName + " " + gm.Member.LastName : null,
             GroupId = gm.GroupId,
             GroupName = gm.Group.Name,
             GroupType = gm.Group.Type,

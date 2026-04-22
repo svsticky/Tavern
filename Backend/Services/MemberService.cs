@@ -27,23 +27,24 @@ namespace Backend.Services
                 .Filter(dto)
                 .OrderBy(m => m.LastName)
                 .ApplyPaging(dto)
-                .Select(MemberProjections.ToListDto())
+                .Select(MemberProjections.ToDto(userId, true))
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<MemberResponseDTO?> GetMember(Guid id, Guid userId, bool isBoard, CancellationToken cancellationToken)
+        public async Task<MemberResponseDTO?> GetMember(Guid userIdFromUserToGet, Guid userId, CancellationToken cancellationToken)
         {
-            if (!isBoard && id != userId)
-                throw new UnauthorizedAccessException();
+            if (userId != userIdFromUserToGet)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             return await db.Members
-                .Where(m => m.Id == id)
-                .Select(MemberProjections.ToDetailDto(isBoard))
+                .Where(m => m.Id == userIdFromUserToGet)
+                .Select(MemberProjections.ToDto(userId, permissionService.IsBoardOrCandidateBoardMember(userId)))
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
         public async Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken)
         {
+            // Check if member is a minor and if so, require parent phone number
             if (dto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) &&
                 string.IsNullOrEmpty(dto.ParentPhoneNumber))
             {
@@ -54,20 +55,21 @@ namespace Backend.Services
             
             try
             {
+                // Remove any existing member with same mail if they didn't pay membership
                 await RemoveExistingMemberWithSameEmail(dto.Email, cancellationToken);
 
+                // Creat the member
                 var member = BuildMember(dto);
-
                 StateValidator.Validate(member);
-
                 db.Members.Add(member);
-                await db.SaveChangesAsync(cancellationToken);
-                
+
+                // Add the studyenrollments if provided
                 if (dto.StudyEnrollments != null)
                 {
                     AddStudyEnrollments(member.Id, dto.StudyEnrollments);
                 }
 
+                // Sync with Keycloak 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
 
                 await db.SaveChangesAsync(cancellationToken);
@@ -82,11 +84,17 @@ namespace Backend.Services
             }
         }
 
-        public async Task<bool> DeleteMember(Guid id, Guid userId, CancellationToken cancellationToken)
+        public async Task DeleteMember(Guid id, Guid userId, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
-            if (member == null) return false;
+            var member = await db.Members.FindAsync(id, cancellationToken);
 
+            if (id != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+            if (member == null) 
+                throw new KeyNotFoundException($"Member with ID {id} not found.");
+
+            // Member must pay all activities before they can be deleted
             if (!paymentValidationService.MemberHasPaidAllActivities(member))
                 throw new InvalidOperationException("Member has unpaid activities.");
 
@@ -105,18 +113,19 @@ namespace Backend.Services
                 await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
-
-            return true;
         }
 
-        public async Task<bool> PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, Guid userId, CancellationToken cancellationToken)
+        public async Task PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, Guid userId, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
-            if (member == null) return false;
+            var member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null) 
+                throw new KeyNotFoundException($"Member with ID {id} not found.");
 
             var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            patchDoc.Operations.RemoveAll(op => op.path.Equals("/email", StringComparison.OrdinalIgnoreCase));
+            // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
+            if(member.Id != userId || patchDoc.Operations.Any(operation => Member.RestrictedFields.Contains(operation.path.ToLower())))
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
             
             try
             {
@@ -133,29 +142,41 @@ namespace Backend.Services
                 await transaction.RollbackAsync(cancellationToken);
                 throw;
             }
-
-            return true;
         }
 
-        public async Task<bool> UpdateMember(Guid id, MemberUpdateDTO dto, Guid userId, CancellationToken cancellationToken)
+        public async Task UpdateMember(Guid id, MemberUpdateDTO dto, Guid userId, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
-            if (member == null) return false;
+            var member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null)
+                throw new KeyNotFoundException($"Member with ID {id} not found.");
 
             var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
+            if(member.Id != userId 
+                || member.Email != dto.Email
+                || member.Id != userId
+                || dto.StudentNumber != member.StudentNumber 
+                || dto.FirstName != member.FirstName 
+                || dto.LastName != member.LastName 
+                || dto.DateOfBirth != member.DateOfBirth
+                || dto.Notes != member.Notes
+                || dto.Gratie != member.Gratie
+                || dto.LidVanVerdienste != member.LidVanVerdienste
+                || dto.EreLid != member.EreLid
+                || dto.Begunstiger != member.Begunstiger
+                || dto.Suspended != member.Suspended)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             try
             {
                 ApplyMemberUpdate(member, dto);
-
                 StateValidator.Validate(member);
 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
-
-                return true;
             }
             catch
             {
@@ -164,42 +185,26 @@ namespace Backend.Services
             }
         }
 
-        public async Task<FileResultDto?> GetProfilePictureFile(string path)
+        public async Task DeleteProfilePicture(Guid id, Guid userId, CancellationToken cancellationToken)
         {
-            var file = await storageService.GetFileAsync("profile-pictures", path);
+            if(id != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-            if (file == null) return null;
-
-            return new FileResultDto
-            {
-                Stream = file.Stream,
-                ContentType = file.ContentType
-            };
-        }
-
-        public async Task<bool> DeleteProfilePicture(Guid id)
-        {
-            var member = await db.Members.FindAsync(id);
-            if (member == null) return false;
+            var member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null)
+                return;
 
             if (string.IsNullOrEmpty(member.ProfilePicturePath))
-                return true;
+                throw new KeyNotFoundException("Profile picture not found for this member.");
 
             string oldPath = member.ProfilePicturePath;
 
             member.ProfilePicturePath = null;
             member.ProfilePictureFileName = null;
 
-            await db.SaveChangesAsync();
+            await db.SaveChangesAsync(cancellationToken);
 
             await storageService.DeleteFileAsync("profile-pictures", oldPath);
-
-            return true;
-        }
-
-        public async Task<Member?> GetMemberEntity(Guid id)
-        {
-            return await db.Members.FindAsync(id);
         }
 
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
@@ -216,11 +221,13 @@ namespace Backend.Services
             {
                 var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
 
+                // Make sure there is no paid membership with the same email, if there is, we don't want to delete the member
                 if (molliePayment.Status == "paid")
                 {
-                    throw new InvalidOperationException("Existing member with unpaid payments found.");
+                    throw new InvalidOperationException("Existing member with same email address that has paid membership found.");
                 }
 
+                // If there is a pending payment, we cancel it to prevent the member from paying for a membership they won't get
                 if (molliePayment.Status == "pending")
                 {
                     await mollieClient.CancelPaymentAsync(existingPayment.MollieId);

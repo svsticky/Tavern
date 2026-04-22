@@ -45,7 +45,7 @@ public class GroupMembershipService : IGroupMembershipService
         }
 
         return await query
-            .Select(GroupMembershipProjections.ToDto())
+            .Select(GroupMembershipProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
             .ToListAsync(cancellationToken);
     }
 
@@ -53,7 +53,7 @@ public class GroupMembershipService : IGroupMembershipService
     {
         var result = await _db.GroupMemberships
             .Where(cm => cm.Id == id)
-            .Select(GroupMembershipProjections.ToDto())
+            .Select(GroupMembershipProjections.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (result == null)

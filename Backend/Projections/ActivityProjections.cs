@@ -37,20 +37,9 @@ public static class ActivityProjections
             CostCenterId = a.CostCenterId,
             CostUnitId = a.CostUnitId,
 
-            Enrollments = a.Enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard, true).Compile()(e)).ToList(),
+            Enrollments = a.AreParticipantsVisible || isBoard ? a.Enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard, false).Compile()(e)).ToList() : new List<EnrollmentResponseDTO>(),
 
-            SpecificationQuestions = a.SpecificationQuestions.Select(q => new GetSpecificationQuestionResponseDTO
-            {
-                Id = q.Id,
-                QuestionDutch = q.QuestionDutch,
-                QuestionEnglish = q.QuestionEnglish,
-                Type = q.Type,
-                IsMandatory = q.IsMandatory,
-                IsPublic = q.IsPublic,
-                Options = q.Options != null
-                    ? q.Options.Split(new[] { ';' }, StringSplitOptions.None).ToList()
-                    : null
-            }).ToList(),
+            SpecificationQuestions = a.SpecificationQuestions.Select(q => SpecificationQuestionProjections.ToDto().Compile()(q)).ToList(),
 
             PaymentDeadline = isBoard ? a.PaymentDeadline : default,
             IsOpenForPayment = a.IsOpenForPayment

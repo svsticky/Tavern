@@ -6,83 +6,28 @@ namespace Backend.Projections;
 
 public static class MemberProjections
 {
-    public static Expression<Func<Member, MemberResponseDTO>> ToListDto()
+    public static Expression<Func<Member, MemberResponseDTO>> ToDto(Guid userId, bool isBoard)
     {
         return m => new MemberResponseDTO
         {
             Id = m.Id,
-            StudentNumber = m.StudentNumber,
-            FirstName = m.FirstName,
-            LastName = m.LastName,
-            Email = m.Email,
-            PhoneNumber = m.PhoneNumber,
-            Street = m.Street,
-            HouseNumber = m.HouseNumber,
-            PostalCode = m.PostalCode,
-            City = m.City,
-            DateOfBirth = m.DateOfBirth,
-            ParentPhoneNumber = m.ParentPhoneNumber,
+            StudentNumber = isBoard || userId == m.Id ? m.StudentNumber : null,
+            FirstName = isBoard || userId == m.Id ? m.FirstName : null,
+            LastName = isBoard || userId == m.Id ? m.LastName : null,
+            Email = isBoard || userId == m.Id ? m.Email : null,
+            PhoneNumber = isBoard || userId == m.Id ? m.PhoneNumber : null,
+            Street = isBoard || userId == m.Id ? m.Street : null,
+            HouseNumber = isBoard || userId == m.Id ? m.HouseNumber : null,
+            PostalCode = isBoard || userId == m.Id ? m.PostalCode : null,
+            City = isBoard || userId == m.Id ? m.City : null,
+            DateOfBirth = isBoard || userId == m.Id ? m.DateOfBirth : null,
+            ParentPhoneNumber = isBoard || userId == m.Id ? m.ParentPhoneNumber : null,
             MailSubscriptions = m.MailSubscriptions,
-            Notes = m.Notes,
-            RegisteredOn = m.RegisteredOn,
-            PreferredLanguage = m.PreferredLanguage,
-            StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
-            {
-                Id = se.Id,
-                StudyId = se.StudyId,
-                StudyTitle = se.Study.Title,
-                MemberId = se.MemberId,
-                MemberName = m.FirstName + " " + m.LastName,
-                EnrollmentDate = se.EnrollmentDate,
-                CompletionDate = se.CompletionDate,
-                Status = se.Status
-            }).ToList(),
-            GroupMemberships = m.GroupMemberships.Select(gm => new GroupMembershipResponseDTO
-            {
-                Id = gm.Id,
-                GroupId = gm.GroupId,
-                GroupName = gm.Group.Name,
-                GroupType = gm.Group.Type,
-                MemberId = gm.MemberId,
-                MemberName = m.FirstName + " " + m.LastName,
-                MembershipYear = gm.MembershipYear,
-                RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
-                RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
-            }).ToList()
-        };
-    }
-
-    public static Expression<Func<Member, MemberResponseDTO>> ToDetailDto(bool isBoard)
-    {
-        return m => new MemberResponseDTO
-        {
-            Id = m.Id,
-            StudentNumber = m.StudentNumber,
-            FirstName = m.FirstName,
-            LastName = m.LastName,
-            Email = m.Email,
-            PhoneNumber = m.PhoneNumber,
-            Street = m.Street,
-            HouseNumber = m.HouseNumber,
-            PostalCode = m.PostalCode,
-            City = m.City,
-            DateOfBirth = m.DateOfBirth,
-            ParentPhoneNumber = m.ParentPhoneNumber,
-            MailSubscriptions = m.MailSubscriptions,
-            Notes = isBoard ? m.Notes : null,
-            RegisteredOn = m.RegisteredOn,
-            PreferredLanguage = m.PreferredLanguage,
-            StudyEnrollments = m.StudyEnrollments.Select(se => new StudyEnrollmentResponseDTO
-            {
-                Id = se.Id,
-                StudyId = se.StudyId,
-                StudyTitle = se.Study.Title,
-                MemberId = se.MemberId,
-                MemberName = m.FirstName + " " + m.LastName,
-                EnrollmentDate = se.EnrollmentDate,
-                CompletionDate = se.CompletionDate,
-                Status = se.Status
-            }).ToList()
+            Notes = isBoard || userId == m.Id ? m.Notes : null,
+            RegisteredOn = isBoard || userId == m.Id ? m.RegisteredOn : null,
+            PreferredLanguage = isBoard || userId == m.Id ? m.PreferredLanguage : null,
+            StudyEnrollments = isBoard || userId == m.Id ? m.StudyEnrollments.Select(se => StudyEnrollmentProjections.ToDto().Compile()(se)).ToList() : null,
+            GroupMemberships = isBoard || userId == m.Id ? m.GroupMemberships.Select(gm => GroupMembershipProjections.ToDto(userId, isBoard).Compile()(gm)).ToList() : null
         };
     }
 }

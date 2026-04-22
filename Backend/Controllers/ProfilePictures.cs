@@ -18,9 +18,9 @@ namespace Backend.Controllers
 
         // GET: api/profilepicture/view/{path}
         [HttpGet("view/{path}")]
-        public async Task<IActionResult> GetProfilePictureByPath(string path)
+        public async Task<IActionResult> GetProfilePictureByPath(string path, CancellationToken cancellationToken)
         {
-            var result = await _service.GetProfilePictureByPath(path);
+            var result = await _service.GetProfilePictureByPath(path, cancellationToken);
 
             if (result == null)
                 return NotFound();
