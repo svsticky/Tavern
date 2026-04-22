@@ -82,7 +82,9 @@ public class EnrollmentService : IEnrollmentService
             if (member.Suspended)
                 throw new ArgumentException("Member is suspended and cannot enroll in activities.");
 
-            // TO DO: CHeck if member has active study or gratie
+            if (!member.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate >= DateTime.UtcNow) && !member.Gratie)
+                throw new ArgumentException("Member should be enrolled in a study or be Gratie to enroll in activities.");
+
             // TO DO: Set all this in validator
 
             // Get activity and validate if enrollment is possible
