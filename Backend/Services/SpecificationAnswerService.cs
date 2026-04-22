@@ -7,13 +7,19 @@ using Microsoft.AspNetCore.JsonPatch;
 namespace Backend.Services;
 
 public class SpecificationAnswerService(
-        PostgresDbContext db
+        PostgresDbContext db,
+        IPermissionService permissionService
 ) : ISpecificationAnswerService
 {
-    public async Task PatchSpecificationAnswersAsync(Guid userId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc)
+    public async Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
     {
+        if(userId != fromUserId)
+        {
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        }
+
         var answer = GetAnswerOrThrow(answerId);
-        SpecificationAnswerValidator.ValidateOwnership(answer, userId);
+        SpecificationAnswerValidator.ValidateOwnership(answer, fromUserId);
         SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer);
         SpecificationAnswerValidator.ValidatePatchOperations(patchDoc);
 

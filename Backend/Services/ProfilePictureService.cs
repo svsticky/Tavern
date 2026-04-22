@@ -22,10 +22,12 @@ namespace Backend.Services
             return (file.Stream, file.ContentType);
         }
 
-        public async Task<string?> UploadProfilePicture(Guid memberId, Guid userId, IFormFile? image)
+        public async Task<string?> UploadProfilePicture(Guid fromUserId, Guid userId, IFormFile? image)
         {
-            var member = await GetMemberOrThrow(memberId);
-            EnsureCanUpdatePicture(memberId, userId);
+            var member = await GetMemberOrThrow(fromUserId);
+            if(fromUserId != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
             ValidateImage(image);
 
             string? oldPath = member.ProfilePicturePath;
@@ -54,14 +56,6 @@ namespace Backend.Services
         {
             var member = await db.Members.FindAsync(memberId);
             return member ?? throw new Exception("Member not found");
-        }
-
-        private void EnsureCanUpdatePicture(Guid memberId, Guid userId)
-        {
-            if (memberId != userId && !permissionService.IsBoardOrCandidateBoardMember(userId))
-            {
-                throw new UnauthorizedAccessException("You can only update your own profile picture.");
-            }
         }
 
         private static void ValidateImage(IFormFile? image)

@@ -6,7 +6,7 @@ using Mailgun;
 
 namespace Backend.Services;
 
-public class MailgunService(PostgresDbContext db, IPaymentValidationService paymentValidationService) : AbstractMailService(db, paymentValidationService)
+public class MailgunService(PostgresDbContext db, IPaymentValidationService paymentValidationService, IPermissionService permissionService) : AbstractMailService(db, paymentValidationService, permissionService)
 {
     private readonly string _privateKey = Environment.GetEnvironmentVariable("MAILGUN_TOKEN")!;
     private readonly string _publicKey = Environment.GetEnvironmentVariable("MAILGUN_PUBLIC_KEY")!;

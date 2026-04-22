@@ -27,14 +27,28 @@ public class RoleAliasesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<RoleAlias>>> GetRoleAliases(CancellationToken ct)
     {
-        return Ok(await _service.GetRoleAliases(ct));
+        try
+        {
+            return Ok(await _service.GetRoleAliases(ct));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<RoleAlias>> GetRoleAlias(uint id, CancellationToken ct)
     {
-        var result = await _service.GetRoleAlias(id, ct);
-        return result != null ? Ok(result) : NotFound();
+        try
+        {
+            var result = await _service.GetRoleAlias(id, ct);
+            return result != null ? Ok(result) : NotFound();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]

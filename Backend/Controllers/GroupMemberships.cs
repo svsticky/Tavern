@@ -41,6 +41,10 @@ public class GroupMembershipsController : ControllerBase
         {
             return Forbid(ex.Message);
         }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // GET: api/groupMemberships/5
@@ -61,6 +65,10 @@ public class GroupMembershipsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 
@@ -92,7 +100,7 @@ public class GroupMembershipsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -118,7 +126,7 @@ public class GroupMembershipsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -154,7 +162,7 @@ public class GroupMembershipsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -187,7 +195,7 @@ public class GroupMembershipsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 }

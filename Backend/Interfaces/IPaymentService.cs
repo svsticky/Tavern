@@ -14,7 +14,7 @@ namespace Backend.Interfaces
 
         Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto);
         Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, Guid userId);
-        IEnumerable<EnrollmentBalance> GetUnpaid(Guid fromUserId, Guid userId, bool allUsers = false);
+        IEnumerable<EnrollmentBalance> GetUnpaid(Guid userId, bool allUsers = false);
         IEnumerable<EnrollmentBalance> GetOverpaid(Guid userId);
 
         Task<object> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct);

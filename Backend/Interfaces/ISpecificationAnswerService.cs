@@ -5,5 +5,5 @@ namespace Backend.Interfaces;
 
 public interface ISpecificationAnswerService
 {
-    public Task PatchSpecificationAnswersAsync(Guid userId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc);
+    public Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId);
 }

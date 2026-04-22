@@ -7,7 +7,7 @@ using MimeKit;
 
 namespace Backend.Services;
 
-public class SMTPMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService) : AbstractMailService(db, paymentValidationService)
+public class SMTPMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService, IPermissionService permissionService) : AbstractMailService(db, paymentValidationService, permissionService)
 {
     private readonly string _host = Environment.GetEnvironmentVariable("SMTP_HOST")!;
     private readonly int _port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");

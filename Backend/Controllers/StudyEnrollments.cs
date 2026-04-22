@@ -36,6 +36,10 @@ public class StudyEnrollmentsController : ControllerBase
         {
             return Forbid(ex.Message);
         }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
@@ -49,6 +53,10 @@ public class StudyEnrollmentsController : ControllerBase
         catch (UnauthorizedAccessException ex)
         {
             return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 
@@ -84,7 +92,7 @@ public class StudyEnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return NotFound(ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -102,7 +110,7 @@ public class StudyEnrollmentsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return NotFound(ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 }

@@ -4,6 +4,6 @@ namespace Backend.Interfaces
     {
         Task<(Stream Stream, string ContentType)?> GetProfilePictureByPath(string path);
 
-        Task<string?> UploadProfilePicture(Guid memberId, Guid userId, IFormFile? image);
+        Task<string?> UploadProfilePicture(Guid fromMemberId, Guid userId, IFormFile? image);
     }
 }

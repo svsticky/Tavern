@@ -27,14 +27,28 @@ public class RolesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Role>>> GetRoles(CancellationToken ct)
     {
-        return Ok(await _service.GetRoles(ct));
+        try
+        {
+            return Ok(await _service.GetRoles(ct));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Role>> GetRole(uint id, CancellationToken ct)
     {
-        var role = await _service.GetRole(id, ct);
-        return role != null ? Ok(role) : NotFound();
+        try
+        {
+            var role = await _service.GetRole(id, ct);
+            return role != null ? Ok(role) : NotFound();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]

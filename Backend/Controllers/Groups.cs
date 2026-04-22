@@ -42,6 +42,10 @@ public class GroupsController : ControllerBase
         {
             return Forbid(ex.Message);
         }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // GET: api/groups/5
@@ -84,7 +88,7 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -115,15 +119,27 @@ public class GroupsController : ControllerBase
     [HttpGet("{id}/group-picture")]
     public async Task<IActionResult> GetGroupPicture(uint id, CancellationToken cancellationToken)
     {
-        var group = await _groupService.GetGroup(id, cancellationToken);
-        if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
-            return NotFound("Group or group picture not found.");
+        try
+        {
+            var group = await _groupService.GetGroup(id, cancellationToken);
+            if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
+                return NotFound("Group or group picture not found.");
 
-        var file = await _groupService.GetGroupPictureFile(group.GroupPicturePath);
-        if (file == null)
-            return NotFound("File is no longer present on the server.");
+            var file = await _groupService.GetGroupPictureFile(group.GroupPicturePath);
+            if (file == null)
+                return NotFound("File is no longer present on the server.");
 
-        return File(file.Stream, file.ContentType);
+            return File(file.Stream, file.ContentType);
+        }
+        catch (UnauthorizedAccessException ex)
+        {            
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)         
+        {
+            return BadRequest(ex.Message);
+        }
+        
     }
 
     // DELETE: api/groups/5
@@ -148,7 +164,7 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -159,9 +175,6 @@ public class GroupsController : ControllerBase
         [FromBody] JsonPatchDocument<Group> patchDoc,
         CancellationToken cancellationToken)
     {
-        if (patchDoc == null)
-            return BadRequest();
-
         try
         {
             var userId = GetUserId();
@@ -184,7 +197,7 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
@@ -217,7 +230,7 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 }

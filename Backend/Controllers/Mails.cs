@@ -25,14 +25,36 @@ public class MailsController : ControllerBase
     [HttpPost("normal")]
     public async Task<ActionResult> PostNormalMail(PostMailDTO dto, CancellationToken ct)
     {
-        await _service.SendEmailAsync(dto, GetUserId(), ct);
-        return Ok();
+        try
+        {
+            await _service.SendEmailAsync(dto, GetUserId(), ct);
+            return Ok();
+        }
+        catch(UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost("activity")]
     public async Task<ActionResult> PostActivityMail(PostActivityMailDTO dto, CancellationToken ct)
     {
-        await _service.SendEmailAsync(dto, GetUserId(), ct);
-        return Ok();
+        try
+        {
+            await _service.SendEmailAsync(dto, GetUserId(), ct);
+            return Ok();
+        }
+        catch(UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

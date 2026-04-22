@@ -189,9 +189,9 @@ namespace Backend.Services
             }
         }
 
-        public IEnumerable<EnrollmentBalance> GetUnpaid(Guid fromUserId, Guid userId, bool allUsers = false)
+        public IEnumerable<EnrollmentBalance> GetUnpaid(Guid userId, bool allUsers = false)
         {
-            if(userId != fromUserId)
+            if(allUsers)
             {
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
@@ -202,7 +202,7 @@ namespace Backend.Services
             }
             else
             {
-                return paymentValidationService.GetUnpaidEnrollmentsForMember(fromUserId);
+                return paymentValidationService.GetUnpaidEnrollmentsForMember(userId);
             }
         }
 

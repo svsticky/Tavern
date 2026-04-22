@@ -35,8 +35,8 @@ namespace Backend.Services
             if (result == null)
                 return null;
 
-            if (!permissionService.IsBoardOrCandidateBoardMember(userId) && result.MemberId != userId)
-                throw new UnauthorizedAccessException("Only board members can view study enrollments of others.");
+            if (result.MemberId != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             return result;
         }

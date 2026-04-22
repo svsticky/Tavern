@@ -28,14 +28,29 @@ public class StudiesController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<IEnumerable<Study>>> GetStudies(CancellationToken ct)
     {
+        try
+        {
         return Ok(await _service.GetStudies(ct));
+            
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Study>> GetStudy(uint id, CancellationToken ct)
     {
-        var study = await _service.GetStudy(id, ct);
-        return study != null ? Ok(study) : NotFound();
+        try
+        {
+            var study = await _service.GetStudy(id, ct);
+            return study != null ? Ok(study) : NotFound();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpPost]

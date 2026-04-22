@@ -14,13 +14,10 @@ public class SpecificationAnswers(ISpecificationAnswerService service) : Control
     [HttpPatch("{answerId}")]
     public async Task<ActionResult> PatchSpecificationAnswer(uint answerId, [FromBody] JsonPatchDocument<SpecificationAnswer> patchDoc, CancellationToken ct)
     {
-        if (patchDoc == null)
-            return BadRequest("Invalid patch document.");
-
-        var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
         try
         {
-            await service.PatchSpecificationAnswersAsync(userId, answerId, patchDoc);
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await service.PatchSpecificationAnswersAsync(userId, answerId, patchDoc, userId);
             return NoContent();
         }
         catch (UnauthorizedAccessException ex)

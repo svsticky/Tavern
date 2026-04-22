@@ -19,10 +19,13 @@ public abstract class AbstractMailService
 
     protected readonly IPaymentValidationService _paymentValidationService;
 
-    public AbstractMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService)
+    protected readonly IPermissionService _permissionService;
+
+    public AbstractMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService, IPermissionService permissionService)
     {
         _db = db;
         _paymentValidationService = paymentValidationService;
+        _permissionService = permissionService;
         _roleMailMap = new Dictionary<uint, string>();
 
         var settings = _db.Settings.ToList();
@@ -41,6 +44,8 @@ public abstract class AbstractMailService
 
     public async Task SendEmailAsync(PostMailDTO dto, Guid UserId, CancellationToken ct)
     {
+        _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
+
         if(dto.Recipients.Length == 0)
         {
             return;

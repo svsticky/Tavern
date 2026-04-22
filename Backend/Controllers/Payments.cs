@@ -22,32 +22,80 @@ namespace Backend.Controllers
         [HttpGet("membership")]
         public async Task<ActionResult<IEnumerable<MembershipPayment>>> GetMembershipPayments(CancellationToken ct)
         {
-            var result = await _paymentService.GetMembershipPayments(ct);
-            return Ok(result);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetMembershipPayments(userId, ct);
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/membership/5
         [HttpGet("membership/{id}")]
         public async Task<ActionResult<MembershipPayment>> GetMembershipPayment(uint id, CancellationToken ct)
         {
-            var result = await _paymentService.GetMembershipPayments(id, ct);
-            return result != null ? Ok(result) : NotFound();
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetMembershipPayment(id, userId, ct);
+                return result != null ? Ok(result) : NotFound();
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/enrollment
         [HttpGet("enrollment")]
         public async Task<ActionResult<IEnumerable<EnrollmentPayment>>> GetEnrollmentPayments(CancellationToken ct)
         {
-            var result = await _paymentService.GetEnrollmentPayments(ct);
-            return Ok(result);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetEnrollmentPayments(userId, ct);
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/enrollment/5
         [HttpGet("enrollment/{id}")]
         public async Task<ActionResult<EnrollmentPayment>> GetEnrollmentPayment(uint id, CancellationToken ct)
         {
-            var result = await _paymentService.GetEnrollmentPayment(id, ct);
-            return result != null ? Ok(result) : NotFound();
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetEnrollmentPayment(id, userId, ct);
+                return result != null ? Ok(result) : NotFound();
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // POST: api/payments/membership
@@ -75,8 +123,13 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await _paymentService.CreateActivityPayment(dto);
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.CreateActivityPayment(dto, userId);
                 return Ok(result);
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
             }
             catch (Exception ex)
             {
@@ -92,48 +145,82 @@ namespace Backend.Controllers
             [FromServices] IPaymentWebhookService webhookService
         )
         {
-            await webhookService.HandleWebhookAsync(id);
-            return Ok();
+            try
+            {
+                await webhookService.HandleWebhookAsync(id);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/unpaid
         [HttpGet("unpaid")]
         public ActionResult<IEnumerable<EnrollmentBalance>> GetUnpaid(bool allUsers = false)
         {
-            var userId = User.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value;
-
-            if(userId == null)
+            try
             {
-                return BadRequest("UserId claim is missing");
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = _paymentService.GetUnpaid(userId, allUsers);
+
+                if(result == null)
+                    return NotFound();
+
+                return Ok(result);
             }
-
-            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(Guid.Parse(userId));
-
-            if(allUsers && !isBoard)
+            catch(UnauthorizedAccessException ex)
             {
-                return Forbid("Only board members can view all unpaid enrollments");
+                return Forbid(ex.Message);
             }
-
-            var result = _paymentService.GetUnpaid(Guid.Parse(userId), allUsers);
-            return Ok(result);
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/overpaid
         [HttpGet("overpaid")]
         public ActionResult<IEnumerable<EnrollmentBalance>> GetOverpaid()
         {
-            var result = _paymentService.GetOverpaid();
-            return Ok(result);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = _paymentService.GetOverpaid(userId);
+
+                if(result == null)
+                    return NotFound();
+
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // GET: api/payments/member/{memberId}/status
-        [HttpGet("member/{memberId}/status")]
-        public async Task<ActionResult<object?>> GetMemberPaymentStatus(Guid memberId, CancellationToken ct)
+        // GET: api/payments/member/{userId}/status
+        [HttpGet("member/{userId}/status")]
+        public async Task<ActionResult<object?>> GetMemberPaymentStatus(Guid fromUserId, CancellationToken ct)
         {
             try
             {
-                var result = await _paymentService.GetMemberPaymentStatus(memberId, ct);
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetMemberPaymentStatus(fromUserId, userId, ct);
+
+                if(result == null)
+                    return NotFound();
+
                 return Ok(result);
+            }
+            catch(UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
             }
             catch (Exception ex)
             {
@@ -146,8 +233,9 @@ namespace Backend.Controllers
         public async Task<ActionResult> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
         {            
             try
-            {                
-                var (content, fileName) = await _paymentService.ExportPaymentsToCsv(startDate, endDate, ct);
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var (content, fileName) = await _paymentService.ExportPaymentsToCsv(startDate, endDate, userId, ct);
                 return File(content, "text/csv", fileName);
             }
             catch (Exception ex)

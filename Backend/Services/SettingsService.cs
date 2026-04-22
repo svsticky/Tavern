@@ -74,14 +74,6 @@ public class SettingsService : ISettingsService
         await _db.SaveChangesAsync(ct);
     }
 
-    private void EnsureCanReadSetting(string name, Guid userId)
-    {
-        if(!name.Equals("CandidateBoardGroupId") && !name.Equals("BoardGroupId"))
-        {
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-        }
-    }
-
     private async Task<Setting> GetSettingOrThrow(string name, CancellationToken ct)
     {
         var setting = await _db.Settings.FindAsync(new object[] { name }, ct);

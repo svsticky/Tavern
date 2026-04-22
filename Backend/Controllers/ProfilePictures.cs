@@ -20,12 +20,19 @@ namespace Backend.Controllers
         [HttpGet("view/{path}")]
         public async Task<IActionResult> GetProfilePictureByPath(string path)
         {
-            var result = await _service.GetProfilePictureByPath(path);
+            try
+            {
+                var result = await _service.GetProfilePictureByPath(path);
 
-            if (result == null)
-                return NotFound();
+                if (result == null)
+                    return NotFound();
 
-            return File(result.Value.Stream, result.Value.ContentType);
+                return File(result.Value.Stream, result.Value.ContentType);
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // POST: api/profilepicture/{id}/profile-picture
@@ -33,10 +40,9 @@ namespace Backend.Controllers
         [Consumes("multipart/form-data")]
         public async Task<ActionResult> UploadProfilePicture(Guid id, IFormFile? image)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
             try
             {
+                Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
                 var path = await _service.UploadProfilePicture(id, userId, image);
 
                 return Ok(new { path });
