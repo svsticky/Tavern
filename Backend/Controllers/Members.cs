@@ -155,7 +155,7 @@ namespace Backend.Controllers
             if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
                 return NotFound("Member or profile picture not found.");
 
-            var file = await profilePictureService.GetProfilePictureByPath(member.ProfilePicturePath, cancellationToken);
+            var file = await profilePictureService.GetProfilePictureByPath(member.ProfilePicturePath);
             if (file == null)
                 return NotFound("File is no longer present on the server.");
 

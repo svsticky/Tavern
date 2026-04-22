@@ -14,5 +14,5 @@ public class PostActivityPaymentDTO
 
 public class PostPaymentResponse
 {
-    public required string CheckoutUrl { get; set; }
+    public string? CheckoutUrl { get; set; }
 }

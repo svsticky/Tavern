@@ -80,7 +80,7 @@ namespace Backend.Services
 
             ArgumentNullException.ThrowIfNull(enrollment, nameof(enrollment));
 
-            var transaction = await db.Database.BeginTransactionAsync(ct);
+            using var transaction = await db.Database.BeginTransactionAsync(ct);
 
             try
             {

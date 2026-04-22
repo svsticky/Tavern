@@ -63,7 +63,7 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                         throw new Exception("Unknown payment type");
                     }
 
-                    var transaction = await db.Database.BeginTransactionAsync();
+                    using var transaction = await db.Database.BeginTransactionAsync();
 
                     try
                     {
@@ -98,7 +98,7 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                 if (mollieStatus.Status == "expired" || mollieStatus.Status == "canceled")
                 {
                     // If the payment is expired or canceled, we can remove it from our database as it can no longer be paid.
-                    var transaction = await db.Database.BeginTransactionAsync();
+                    using var transaction = await db.Database.BeginTransactionAsync();
                     try
                     {
                         db.Remove(payment);

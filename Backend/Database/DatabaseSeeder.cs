@@ -75,7 +75,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         if (!exists)
         {
-            var transaction = await db.Database.BeginTransactionAsync();
+            using var transaction = await db.Database.BeginTransactionAsync();
 
             try
             {
@@ -112,7 +112,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
             return;
         }
 
-        var transaction = await db.Database.BeginTransactionAsync();
+        using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
             bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear());

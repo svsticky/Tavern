@@ -56,7 +56,7 @@ namespace Backend.Services
 
         private async Task ProcessPaidPayments(IEnumerable<Payment> payments, PaymentResponse result)
         {
-            var transaction = await db.Database.BeginTransactionAsync();
+            using var transaction = await db.Database.BeginTransactionAsync();
 
             try
             {

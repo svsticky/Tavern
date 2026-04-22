@@ -51,7 +51,7 @@ namespace Backend.Services
                 throw new ArgumentException("Parent phone number required for minors.");
             }
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             
             try
             {
@@ -98,7 +98,7 @@ namespace Backend.Services
             if (!paymentValidationService.MemberHasPaidAllActivities(member))
                 throw new InvalidOperationException("Member has unpaid activities.");
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             try
             {
@@ -121,7 +121,7 @@ namespace Backend.Services
             if (member == null) 
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
             if(member.Id != userId || patchDoc.Operations.Any(operation => Member.RestrictedFields.Contains(operation.path.ToLower())))
@@ -150,7 +150,7 @@ namespace Backend.Services
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
             if(member.Id != userId 

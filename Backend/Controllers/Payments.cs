@@ -30,7 +30,7 @@ namespace Backend.Controllers
         [HttpGet("membership/{id}")]
         public async Task<ActionResult<MembershipPayment>> GetMembershipPayment(uint id, CancellationToken ct)
         {
-            var result = await _paymentService.GetMembershipPayment(id, ct);
+            var result = await _paymentService.GetMembershipPayments(id, ct);
             return result != null ? Ok(result) : NotFound();
         }
 
