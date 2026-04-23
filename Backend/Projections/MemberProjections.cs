@@ -26,7 +26,12 @@ public static class MemberProjections
             Notes = isBoard || userId == m.Id ? m.Notes : null,
             RegisteredOn = isBoard || userId == m.Id ? m.RegisteredOn : null,
             PreferredLanguage = isBoard || userId == m.Id ? m.PreferredLanguage : null,
-            StudyEnrollments = isBoard || userId == m.Id ? m.StudyEnrollments.Select(se => StudyEnrollmentProjections.ToDto().Compile()(se)).ToList() : null,
+            StudyEnrollments = isBoard || userId == m.Id
+                ? m.StudyEnrollments
+                    .AsQueryable()
+                    .Select(StudyEnrollmentProjections.ToDto())
+                    .ToList()
+                : null,
             GroupMemberships = isBoard || userId == m.Id ? m.GroupMemberships.Select(gm => GroupMembershipProjections.ToDto(userId, isBoard).Compile()(gm)).ToList() : null
         };
     }

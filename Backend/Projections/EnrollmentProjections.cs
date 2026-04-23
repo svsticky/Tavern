@@ -6,7 +6,7 @@ namespace Backend.Projections;
 
 public static class EnrollmentProjections
 {
-    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeActivity = false)
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeActivity = true)
     {
         return e => new EnrollmentResponseDTO
         {

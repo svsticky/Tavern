@@ -22,13 +22,20 @@ namespace Backend.Services
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-            return await db.Members
+            var members = await db.Members
                 .AsQueryable()
                 .Filter(dto)
                 .OrderBy(m => m.LastName)
                 .ApplyPaging(dto)
-                .Select(MemberProjections.ToDto(userId, true))
+                .Include(m => m.StudyEnrollments).ThenInclude(se => se.Study)
+                .Include(m => m.GroupMemberships).ThenInclude(gm => gm.Group)
+                .Include(m => m.GroupMemberships).ThenInclude(gm => gm.RoleAlias)
+                .AsNoTracking()
                 .ToListAsync(cancellationToken);
+
+            var mapper = MemberProjections.ToDto(userId, true).Compile();
+            
+            return members.Select(m => mapper(m)).ToList();
         }
 
         public async Task<MemberResponseDTO?> GetMember(Guid userIdFromUserToGet, Guid userId, CancellationToken cancellationToken)
@@ -38,6 +45,12 @@ namespace Backend.Services
 
             return await db.Members
                 .Where(m => m.Id == userIdFromUserToGet)
+                .Include(m => m.StudyEnrollments)
+                    .ThenInclude(se => se.Study)
+                .Include(m => m.GroupMemberships)
+                    .ThenInclude(gm => gm.Group)
+                .Include(m => m.GroupMemberships)
+                    .ThenInclude(gm => gm.RoleAlias)
                 .Select(MemberProjections.ToDto(userId, permissionService.IsBoardOrCandidateBoardMember(userId)))
                 .FirstOrDefaultAsync(cancellationToken);
         }

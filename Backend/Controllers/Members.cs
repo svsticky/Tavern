@@ -89,11 +89,11 @@ namespace Backend.Controllers
 
                 return NoContent();
             }
-            catch(UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
-            catch(KeyNotFoundException)
+            catch (KeyNotFoundException)
             {
                 return NotFound();
             }
@@ -133,7 +133,7 @@ namespace Backend.Controllers
 
                 return NoContent();
             }
-            catch(UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
@@ -171,7 +171,7 @@ namespace Backend.Controllers
                 await memberService.DeleteProfilePicture(id, userId, cancellationToken);
                 return NoContent();
             }
-            catch(UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
