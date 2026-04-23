@@ -37,6 +37,8 @@ export default function Activities() {
         setLoading(true);
         const response = await getApiActivities({
           query: {
+            IncludePast: true,
+            IncludeFuture: true,
             Year: year
           }
         });
