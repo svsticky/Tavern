@@ -151,7 +151,7 @@ namespace Backend.Services
                 {
                     // If payment is manually marked as paid, we can skip creating a molliepayment and create it directly in the database
                     permissionService.EnsureBoardOrCandidateBoardMember(userId);
-                    await CreateEnrollmentPayments(dto.MemberId, enrollments, true);
+                    CreateEnrollmentPayments(dto.MemberId, enrollments, true);
 
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -175,7 +175,7 @@ namespace Backend.Services
                     db.MollieFeePayments.Add(mollieFeePayment);
 
                     // Create the enrollment payment with mollieResponse information
-                    await CreateEnrollmentPayments(dto.MemberId, enrollments, false, mollieResponse);
+                    CreateEnrollmentPayments(dto.MemberId, enrollments, false, mollieResponse);
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
 
@@ -339,7 +339,7 @@ namespace Backend.Services
             return db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault();
         }
 
-        private async Task CreateEnrollmentPayments(Guid memberId, List<Enrollment> enrollments, bool manuallyMarkedAsPaid, PaymentResponse? mollieResponse = null)
+        private void CreateEnrollmentPayments(Guid memberId, List<Enrollment> enrollments, bool manuallyMarkedAsPaid, PaymentResponse? mollieResponse = null)
         {
             if(mollieResponse == null && !manuallyMarkedAsPaid)
             {
