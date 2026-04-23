@@ -55,9 +55,6 @@ export default function AuthenticatedLayout() {
 
     if (boardGroupId === null) {
       getApiSettingsById({
-        query: {
-          id: "BoardGroupId"
-        },
         path: {
           id: "BoardGroupId"
         }
@@ -77,9 +74,6 @@ export default function AuthenticatedLayout() {
 
     if(candidateBoardGroupId === null) {
       getApiSettingsById({
-        query: {
-          id: "CandidateBoardGroupId"
-        },
         path: {
           id: "CandidateBoardGroupId"
         }
@@ -102,10 +96,18 @@ export default function AuthenticatedLayout() {
         return response;
       },
       (error) => {
-        if (error.response && error.response.status === 401) {
-          console.warn("Unauthorized, redirecting...");
-          window.location.href = "/logout"; 
+        if (error.response) {
+          if(error.response.status === 401) {
+            console.warn("Unauthorized, redirecting...");
+            window.location.href = `/logout`; 
+          }
+          else if (error.response.status === 403) {
+            console.warn("Forbidden - user does not have access to this resource.");
+            //window.location.href = `/`;
+          }
         }
+
+       
         
         return Promise.reject(error);
       }

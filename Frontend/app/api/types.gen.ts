@@ -96,11 +96,6 @@ export type EnrollmentBalance = {
     balance: number;
 };
 
-export type EnrollmentKeyDto = {
-    activityId?: number;
-    memberId?: string;
-};
-
 export type EnrollmentPayment = {
     id?: number;
     price?: number;
@@ -367,7 +362,7 @@ export type PostMembershipPaymentDto = {
 };
 
 export type PostPaymentResponse = {
-    checkoutUrl: string;
+    checkoutUrl?: string | null;
 };
 
 export type PostRoleAliasDto = {
@@ -855,13 +850,13 @@ export type PostApiEnrollmentsResponses = {
 export type PostApiEnrollmentsResponse = PostApiEnrollmentsResponses[keyof PostApiEnrollmentsResponses];
 
 export type DeleteApiEnrollmentsByActivityIdByMemberIdData = {
-    body?: EnrollmentKeyDto;
+    body?: never;
     path: {
-        activityId: string;
-        memberId: string;
+        ActivityId: number;
+        MemberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{activityId}/{memberId}';
+    url: '/api/enrollments/{ActivityId}/{MemberId}';
 };
 
 export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
@@ -874,14 +869,11 @@ export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
 export type GetApiEnrollmentsByActivityIdByMemberIdData = {
     body?: never;
     path: {
-        activityId: string;
-        memberId: string;
+        ActivityId: number;
+        MemberId: string;
     };
-    query?: {
-        ActivityId?: number;
-        MemberId?: string;
-    };
-    url: '/api/enrollments/{activityId}/{memberId}';
+    query?: never;
+    url: '/api/enrollments/{ActivityId}/{MemberId}';
 };
 
 export type GetApiEnrollmentsByActivityIdByMemberIdResponses = {
@@ -900,7 +892,7 @@ export type PatchApiEnrollmentsByActivityIdByMemberIdData = {
         MemberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{activityId}/{memberId}';
+    url: '/api/enrollments/{ActivityId}/{MemberId}';
 };
 
 export type PatchApiEnrollmentsByActivityIdByMemberIdResponses = {
@@ -1505,16 +1497,18 @@ export type GetApiPaymentsOverpaidResponses = {
 
 export type GetApiPaymentsOverpaidResponse = GetApiPaymentsOverpaidResponses[keyof GetApiPaymentsOverpaidResponses];
 
-export type GetApiPaymentsMemberByMemberIdStatusData = {
+export type GetApiPaymentsMemberByUserIdStatusData = {
     body?: never;
     path: {
-        memberId: string;
+        userId: string;
     };
-    query?: never;
-    url: '/api/payments/member/{memberId}/status';
+    query?: {
+        fromUserId?: string;
+    };
+    url: '/api/payments/member/{userId}/status';
 };
 
-export type GetApiPaymentsMemberByMemberIdStatusResponses = {
+export type GetApiPaymentsMemberByUserIdStatusResponses = {
     /**
      * OK
      */
@@ -1802,9 +1796,7 @@ export type DeleteApiSettingsByIdData = {
     path: {
         id: string;
     };
-    query?: {
-        id?: string;
-    };
+    query?: never;
     url: '/api/settings/{id}';
 };
 
@@ -1820,9 +1812,7 @@ export type GetApiSettingsByIdData = {
     path: {
         id: string;
     };
-    query?: {
-        id?: string;
-    };
+    query?: never;
     url: '/api/settings/{id}';
 };
 
@@ -1840,9 +1830,7 @@ export type PatchApiSettingsByIdData = {
     path: {
         id: string;
     };
-    query?: {
-        id?: string;
-    };
+    query?: never;
     url: '/api/settings/{id}';
 };
 
@@ -1859,7 +1847,6 @@ export type PutApiSettingsByIdData = {
         id: string;
     };
     query?: {
-        id?: string;
         value?: string;
     };
     url: '/api/settings/{id}';

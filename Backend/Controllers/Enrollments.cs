@@ -40,7 +40,7 @@ public class EnrollmentsController : ControllerBase
 
     // GET: api/enrollments/1/{memberId}
     [HttpGet("{activityId}/{memberId}")]
-    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment([FromQuery] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment([FromRoute] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -97,7 +97,7 @@ public class EnrollmentsController : ControllerBase
 
     // DELETE: api/enrollments/1/{memberId}
     [HttpDelete("{activityId}/{memberId}")]
-    public async Task<ActionResult> DeleteEnrollment(EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteEnrollment([FromRoute] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
     {
         try
         {
@@ -146,7 +146,7 @@ public class EnrollmentsController : ControllerBase
         }
     }
 
-    // PATCH: api/enrollments/1/{memberId}
+    // PATCH: api/enrollments/1/{MemberId}
     [HttpPatch("{activityId}/{memberId}")]
     public async Task<ActionResult> PatchEnrollment(
         [FromRoute] EnrollmentKeyDTO dto,

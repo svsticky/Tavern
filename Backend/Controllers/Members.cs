@@ -28,9 +28,9 @@ namespace Backend.Controllers
                 var result = await memberService.GetMembers(dto, userId, cancellationToken);
                 return Ok(result);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception e)
             {
@@ -89,9 +89,9 @@ namespace Backend.Controllers
 
                 return NoContent();
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (KeyNotFoundException)
             {
@@ -133,9 +133,9 @@ namespace Backend.Controllers
 
                 return NoContent();
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (KeyNotFoundException)
             {
@@ -171,9 +171,9 @@ namespace Backend.Controllers
                 await memberService.DeleteProfilePicture(id, userId, cancellationToken);
                 return NoContent();
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (KeyNotFoundException)
             {

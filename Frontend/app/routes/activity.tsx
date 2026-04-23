@@ -1,6 +1,6 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { getApiActivitiesById, type ActivityResponseDto } from "~/api";
-import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile";
+import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/activity";

@@ -1,7 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -38,9 +37,9 @@ public class GroupsController : ControllerBase
             var result = await _groupService.GetGroups(userId, dto, cancellationToken);
             return Ok(result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -78,9 +77,9 @@ public class GroupsController : ControllerBase
                 created
             );
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (ArgumentException ex)
         {
@@ -105,9 +104,9 @@ public class GroupsController : ControllerBase
 
             return Ok(new { path });
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -131,9 +130,9 @@ public class GroupsController : ControllerBase
 
             return File(file.Stream, file.ContentType);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {            
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)         
         {
@@ -154,9 +153,9 @@ public class GroupsController : ControllerBase
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (KeyNotFoundException)
         {
@@ -183,9 +182,9 @@ public class GroupsController : ControllerBase
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (KeyNotFoundException)
         {
@@ -216,9 +215,9 @@ public class GroupsController : ControllerBase
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (KeyNotFoundException)
         {

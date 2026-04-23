@@ -37,9 +37,9 @@ public class GroupMembershipsController : ControllerBase
             var result = await _groupMembershipService.GetGroupMemberships(dto, userId, cancellationToken);
             return Ok(result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -62,9 +62,9 @@ public class GroupMembershipsController : ControllerBase
 
             return Ok(result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -90,9 +90,9 @@ public class GroupMembershipsController : ControllerBase
                 created
             );
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (ArgumentException ex)
         {
@@ -116,9 +116,9 @@ public class GroupMembershipsController : ControllerBase
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (KeyNotFoundException)
         {
@@ -148,9 +148,9 @@ public class GroupMembershipsController : ControllerBase
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (KeyNotFoundException)
         {
@@ -181,9 +181,9 @@ public class GroupMembershipsController : ControllerBase
 
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (KeyNotFoundException)
         {

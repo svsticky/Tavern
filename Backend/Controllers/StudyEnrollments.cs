@@ -32,9 +32,9 @@ public class StudyEnrollmentsController : ControllerBase
             var result = await _service.GetStudyEnrollments(dto, GetUserId(), ct);
             return Ok(result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -50,9 +50,9 @@ public class StudyEnrollmentsController : ControllerBase
             var result = await _service.GetStudyEnrollment(id, GetUserId(), ct);
             return result != null ? Ok(result) : NotFound();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -68,9 +68,9 @@ public class StudyEnrollmentsController : ControllerBase
             var result = await _service.CreateStudyEnrollment(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetStudyEnrollment), new { id = result.Id }, result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -86,9 +86,9 @@ public class StudyEnrollmentsController : ControllerBase
             await _service.DeleteStudyEnrollment(id, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -104,9 +104,9 @@ public class StudyEnrollmentsController : ControllerBase
             await _service.PatchStudy(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {

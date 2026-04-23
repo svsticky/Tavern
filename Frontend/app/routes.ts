@@ -19,17 +19,19 @@ export default [
         route("external-links", "routes/external-links.tsx"),
         route("announcements/create", "routes/edit-announcement.tsx", { id: "create-announcement" }),
         route("announcements/edit/:id", "routes/edit-announcement.tsx", { id: "edit-announcement" }),
-
-        route("admin/finances", "routes/admin/finances.tsx"),
-        route("admin/activities", "routes/admin/activities.tsx"),
-        route("admin/activities/:id", "routes/activity.tsx", { id: "activity-details-admin" }),
-        route("admin/activities/create", "routes/edit-activity.tsx", { id: "create-activity-admin" }),
-        route("admin/activities/edit/:id", "routes/edit-activity.tsx", { id: "edit-activity-admin" }),
-        route("admin/members", "routes/admin/members.tsx"),
-        route("admin/members/:id", "routes/admin/edit-member.tsx"),
-        route("admin/groups", "routes/admin/groups.tsx"),
-        route("admin/groups/:id", "routes/admin/edit-group.tsx"),
-        route("admin/settings", "routes/admin/settings.tsx"),
+        
+        layout("layout/admin.tsx", [
+          route("admin/finances", "routes/admin/finances.tsx"),
+          route("admin/activities", "routes/admin/activities.tsx"),
+          route("admin/activities/:id", "routes/activity.tsx", { id: "activity-details-admin" }),
+          route("admin/activities/create", "routes/edit-activity.tsx", { id: "create-activity-admin" }),
+          route("admin/activities/edit/:id", "routes/edit-activity.tsx", { id: "edit-activity-admin" }),
+          route("admin/members", "routes/admin/members.tsx"),
+          route("admin/members/:id", "routes/admin/edit-member.tsx"),
+          route("admin/groups", "routes/admin/groups.tsx"),
+          route("admin/groups/:id", "routes/admin/edit-group.tsx"),
+          route("admin/settings", "routes/admin/settings.tsx"),
+        ])
       ]),
     ]),
     

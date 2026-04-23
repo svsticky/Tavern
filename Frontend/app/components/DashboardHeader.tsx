@@ -88,7 +88,7 @@ export default function DashboardHeader({
         }
       });
 
-      if (urlResponse.data) {
+      if (urlResponse.data && urlResponse.data.checkoutUrl) {
         console.log(urlResponse.data);
         window.location.href = urlResponse.data.checkoutUrl;
       }

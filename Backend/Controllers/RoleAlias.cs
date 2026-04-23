@@ -59,9 +59,9 @@ public class RoleAliasesController : ControllerBase
             var result = await _service.CreateRoleAlias(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetRoleAlias), new { id = result.Id }, result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -77,9 +77,9 @@ public class RoleAliasesController : ControllerBase
             await _service.DeleteRoleAlias(id, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -95,9 +95,9 @@ public class RoleAliasesController : ControllerBase
             await _service.PatchRoleAlias(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -113,9 +113,9 @@ public class RoleAliasesController : ControllerBase
             await _service.UpdateRoleAlias(id, dto, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {

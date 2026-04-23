@@ -110,7 +110,7 @@ export default function SettingsPage() {
       const promises = [];
 
       for (const id of deletedSettings) {
-        promises.push(deleteApiSettingsById({ path: { id }, query: { id } }));
+        promises.push(deleteApiSettingsById({ path: { id }}));
       }
 
       for (const [name, value] of Object.entries(settings)) {
@@ -119,7 +119,6 @@ export default function SettingsPage() {
         } else {
           promises.push(patchApiSettingsById({
             path: { id: name },
-            query: { id: name },
             body: [{ op: "replace", path: "/Value", value: value }] as any,
           }));
         }

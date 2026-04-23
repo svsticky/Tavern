@@ -74,7 +74,10 @@ public class EnrollmentService : IEnrollmentService
         try
         {
             // Get member and check if they are allowed to enroll in activities
-            var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
+            var member = await _db.Members.Include(m => m.StudyEnrollments).FirstOrDefaultAsync(m => m.Id == dto.MemberId, cancellationToken);
+
+            if (member == null)
+                throw new KeyNotFoundException("Member not found.");
 
             if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
                 throw new ArgumentException("Member does not have a paid membership payment.");
@@ -82,7 +85,7 @@ public class EnrollmentService : IEnrollmentService
             if (member.Suspended)
                 throw new ArgumentException("Member is suspended and cannot enroll in activities.");
 
-            if (!member.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate >= DateTime.UtcNow) && !member.Gratie)
+            if (member.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate <= DateTime.UtcNow) && !member.Gratie)
                 throw new ArgumentException("Member should be enrolled in a study or be Gratie to enroll in activities.");
 
             // TO DO: Set all this in validator
@@ -314,12 +317,6 @@ public class EnrollmentService : IEnrollmentService
         var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
         if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
             throw new UnauthorizedAccessException("Enrollment deadline has passed.");
-    }
-
-    private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken cancellationToken)
-    {
-        var member = await _db.Members.FindAsync(new object[] { memberId }, cancellationToken);
-        return member ?? throw new KeyNotFoundException("Member not found.");
     }
 
     private async Task<Activity> GetActivityWithQuestionsAndEnrollmentsOrThrow(uint activityId, CancellationToken cancellationToken)

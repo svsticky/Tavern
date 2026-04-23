@@ -30,9 +30,9 @@ public class MailsController : ControllerBase
             await _service.SendEmailAsync(dto, GetUserId(), ct);
             return Ok();
         }
-        catch(UnauthorizedAccessException ex)
+        catch(UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -48,9 +48,9 @@ public class MailsController : ControllerBase
             await _service.SendEmailAsync(dto, GetUserId(), ct);
             return Ok();
         }
-        catch(UnauthorizedAccessException ex)
+        catch(UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {

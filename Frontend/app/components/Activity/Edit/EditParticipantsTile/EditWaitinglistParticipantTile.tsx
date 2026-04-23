@@ -17,7 +17,7 @@ export default function EditWaitinglistParticipantTile({ enrollment, onUnenroll,
       try {
         setLoading(true);
         const response = await deleteApiEnrollmentsByActivityIdByMemberId({
-          path: { activityId: `$${enrollment.activity.id}`, memberId: enrollment.member.id! },
+          path: { ActivityId: enrollment.activity.id, MemberId: enrollment.member.id! },
         });
 
         if (response.error) throw new Error("Failed to unenroll");

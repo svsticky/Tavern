@@ -28,9 +28,9 @@ namespace Backend.Controllers
                 var result = await _paymentService.GetMembershipPayments(userId, ct);
                 return Ok(result);
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -48,9 +48,9 @@ namespace Backend.Controllers
                 var result = await _paymentService.GetMembershipPayment(id, userId, ct);
                 return result != null ? Ok(result) : NotFound();
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -68,9 +68,9 @@ namespace Backend.Controllers
                 var result = await _paymentService.GetEnrollmentPayments(userId, ct);
                 return Ok(result);
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -88,9 +88,9 @@ namespace Backend.Controllers
                 var result = await _paymentService.GetEnrollmentPayment(id, userId, ct);
                 return result != null ? Ok(result) : NotFound();
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -127,9 +127,9 @@ namespace Backend.Controllers
                 var result = await _paymentService.CreateActivityPayment(dto, userId);
                 return Ok(result);
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -170,9 +170,9 @@ namespace Backend.Controllers
 
                 return Ok(result);
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -194,9 +194,9 @@ namespace Backend.Controllers
 
                 return Ok(result);
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {
@@ -218,9 +218,9 @@ namespace Backend.Controllers
 
                 return Ok(result);
             }
-            catch(UnauthorizedAccessException ex)
+            catch(UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {

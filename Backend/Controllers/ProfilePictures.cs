@@ -47,9 +47,9 @@ namespace Backend.Controllers
 
                 return Ok(new { path });
             }
-            catch (UnauthorizedAccessException ex)
+            catch (UnauthorizedAccessException)
             {
-                return Forbid(ex.Message);
+                return Forbid();
             }
             catch (Exception ex)
             {

@@ -1,17 +1,18 @@
 import { Calendar, Clock, MapPin, Users, Image as ImageIcon } from 'lucide-react';
 import { deleteApiEnrollmentsByActivityIdByMemberId, postApiEnrollments, putApiEnrollmentsByActivityIdByMemberId, type ActivityResponseDto } from '~/api';
-import Tile from '../Tiles/Tile';
+import Tile from '../../Tiles/Tile';
 import { useKeycloak } from '@react-keycloak/web';
 import { useState } from 'react';
-import Button from '../UI/Button';
+import Button from '../../UI/Button';
 import { t } from 'i18next';
 import { formatDate } from '~/util/date.util';
 import { isBoardOrCandidateBoard } from '~/util/group.util';
 import { formatForGoogleCalendar, formatForWhatsApp } from '~/util/markdown.util';
 import Markdown from 'react-markdown';
 import toast from 'react-hot-toast';
-import BorderedTile from '../Tiles/BorderedTile';
-import AnswerQuestionsTile from './AnswerQuestionsTile';
+import BorderedTile from '../../Tiles/BorderedTile';
+import AnswerQuestionsTile from '../AnswerQuestionsTile';
+import InfoItem from './InfoItem';
 
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
@@ -183,11 +184,13 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
     const unenrollmentProcess = async () => {
       try {
         setSubmitting(true);
+
+        console.log("Attempting to unenroll with ActivityId:", activity.id, "and MemberId:", keycloak.tokenParsed?.UserId);
         
         const response = await deleteApiEnrollmentsByActivityIdByMemberId({
           path: {
-            activityId: `${activity.id}`,
-            memberId: keycloak.tokenParsed?.UserId
+            ActivityId: Number(activity.id),
+            MemberId: String(keycloak.tokenParsed?.UserId)
           }
         });
         
@@ -398,14 +401,3 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
   );
 }
 
-function InfoItem({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <div className="mt-1 p-2 bg-slate-50 rounded-lg text-slate-400 font-bold">{icon}</div>
-      <div>
-        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider leading-none mb-1">{label}</p>
-        <p className="text-slate-700 font-semibold leading-tight">{value}</p>
-      </div>
-    </div>
-  );
-}

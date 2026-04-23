@@ -74,7 +74,7 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
     {
         if (!IsBoardMember(userId)!)
         {
-            throw new UnauthorizedAccessException("Only board members can perform this action.");
+            throw new UnauthorizedAccessException();
         }
     }
 
@@ -88,7 +88,7 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
     {
         if (!IsBoardOrCandidateBoardMember(userId)!)
         {
-            throw new UnauthorizedAccessException("Only board members can perform this action.");
+            throw new UnauthorizedAccessException();
         }
     }
 }

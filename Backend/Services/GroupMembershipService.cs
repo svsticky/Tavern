@@ -62,7 +62,7 @@ public class GroupMembershipService : IGroupMembershipService
         if (!_permissionService.IsBoardOrCandidateBoardMember(userId)
             && result.MemberId != userId)
         {
-            throw new UnauthorizedAccessException("Only board members can view group memberships.");
+            throw new UnauthorizedAccessException();
         }
 
         return result;

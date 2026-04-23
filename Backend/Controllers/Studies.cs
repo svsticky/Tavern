@@ -61,9 +61,9 @@ public class StudiesController : ControllerBase
             var result = await _service.CreateStudy(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetStudy), new { id = result.Id }, result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -79,9 +79,9 @@ public class StudiesController : ControllerBase
             await _service.DeleteStudy(id, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -97,9 +97,9 @@ public class StudiesController : ControllerBase
             await _service.PatchStudy(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -115,9 +115,9 @@ public class StudiesController : ControllerBase
             await _service.UpdateStudy(id, dto, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {

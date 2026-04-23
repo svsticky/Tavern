@@ -9,6 +9,7 @@ public class SettingsService : ISettingsService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
+    private readonly string[] _openSettings = new string[] { "boardgroupid", "candidateboardgroupid" };
 
     public SettingsService(PostgresDbContext db, IPermissionService permissionService)
     {
@@ -25,7 +26,10 @@ public class SettingsService : ISettingsService
 
     public Task<Setting?> GetSetting(string name, Guid UserId, CancellationToken ct)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
+        if(!_openSettings.Contains(name.ToLower()))
+        {
+            _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
+        }
 
         return Task.FromResult(_db.Settings.Find(name));
     }

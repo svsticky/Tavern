@@ -59,9 +59,9 @@ public class RolesController : ControllerBase
             var result = await _service.CreateRole(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetRole), new { id = result.Id }, result);
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -77,9 +77,9 @@ public class RolesController : ControllerBase
             await _service.DeleteRole(id, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -95,9 +95,9 @@ public class RolesController : ControllerBase
             await _service.PatchRole(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {
@@ -113,9 +113,9 @@ public class RolesController : ControllerBase
             await _service.UpdateRole(id, dto, GetUserId(), ct);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (Exception ex)
         {

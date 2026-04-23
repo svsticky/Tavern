@@ -20,9 +20,9 @@ public class SpecificationAnswers(ISpecificationAnswerService service) : Control
             await service.PatchSpecificationAnswersAsync(userId, answerId, patchDoc, userId);
             return NoContent();
         }
-        catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException)
         {
-            return Forbid(ex.Message);
+            return Forbid();
         }
         catch (InvalidOperationException ex)
         {
