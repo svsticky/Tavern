@@ -156,7 +156,7 @@ export default function RegisterForm({ className }: { className?: string }) {
                             }
                         });
                         
-                        if(paymentResponse.status === 200 && paymentResponse.data) {
+                        if(paymentResponse.status === 200 && paymentResponse.data && paymentResponse.data.checkoutUrl) {
                             window.location.href = paymentResponse.data.checkoutUrl;
                         }
                     }
