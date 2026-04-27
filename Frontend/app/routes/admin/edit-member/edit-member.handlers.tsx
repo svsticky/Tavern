@@ -61,46 +61,42 @@ export const loadMemberData = async ({
 
   try {
     const memberResponse = await getApiMembersById({ path: { id: memberId } });
-    if (memberResponse.data) {
-      setFormData({
-        firstName: memberResponse.data.firstName || "",
-        lastName: memberResponse.data.lastName || "",
-        studentNumber: Number(memberResponse.data.studentNumber) || 0,
-        phoneNumber: memberResponse.data.phoneNumber || "",
-        street: memberResponse.data.street || "",
-        houseNumber: memberResponse.data.houseNumber || "",
-        postalCode: memberResponse.data.postalCode || "",
-        city: memberResponse.data.city || "",
-        parentPhoneNumber: memberResponse.data.parentPhoneNumber || "",
-        preferredLanguage: memberResponse.data.preferredLanguage ?? "NL",
-        mailSubscriptions: Number(memberResponse.data.mailSubscriptions) || 0,
-        notes: memberResponse.data.notes || "",
-        gratie: !!memberResponse.data.gratie,
-        lidVanVerdienste: !!memberResponse.data.lidVanVerdienste,
-        ereLid: !!memberResponse.data.ereLid,
-        begunstiger: !!memberResponse.data.begunstiger,
-        suspended: !!memberResponse.data.suspended,
-        dateOfBirth: memberResponse.data.dateOfBirth ? new Date(memberResponse.data.dateOfBirth).toISOString().split("T")[0] : ""
-      });
+    if (memberResponse.error || !memberResponse.data) throw new Error("Failed to load member data");
+    setFormData({
+      firstName: memberResponse.data.firstName || "",
+      lastName: memberResponse.data.lastName || "",
+      studentNumber: Number(memberResponse.data.studentNumber) || 0,
+      phoneNumber: memberResponse.data.phoneNumber || "",
+      street: memberResponse.data.street || "",
+      houseNumber: memberResponse.data.houseNumber || "",
+      postalCode: memberResponse.data.postalCode || "",
+      city: memberResponse.data.city || "",
+      parentPhoneNumber: memberResponse.data.parentPhoneNumber || "",
+      preferredLanguage: memberResponse.data.preferredLanguage ?? "NL",
+      mailSubscriptions: Number(memberResponse.data.mailSubscriptions) || 0,
+      notes: memberResponse.data.notes || "",
+      gratie: !!memberResponse.data.gratie,
+      lidVanVerdienste: !!memberResponse.data.lidVanVerdienste,
+      ereLid: !!memberResponse.data.ereLid,
+      begunstiger: !!memberResponse.data.begunstiger,
+      suspended: !!memberResponse.data.suspended,
+      dateOfBirth: memberResponse.data.dateOfBirth ? new Date(memberResponse.data.dateOfBirth).toISOString().split("T")[0] : ""
+    });
 
-      setEmail(memberResponse.data.email!);
-    }
+    setEmail(memberResponse.data.email!);
 
     const studyEnrollmentsResponse = await getApiStudyenrollments({ query: { MemberId: memberId } });
-    if (studyEnrollmentsResponse.data) {
-      setEnrollments(studyEnrollmentsResponse.data);
-    }
+    if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data) throw new Error("Failed to load study enrollments");
+    setEnrollments(studyEnrollmentsResponse.data);
 
     const studiesResponse = await getApiStudies();
-    if (studiesResponse.data) {
-      setAvailableStudies(studiesResponse.data);
-    }
+    if (studiesResponse.error || !studiesResponse.data) throw new Error("Failed to load available studies");
+    setAvailableStudies(studiesResponse.data);
 
     const profilePictureResponse = await getApiMembersByIdProfilePicture({ path: { id: memberId }, responseType: "blob" });
-    if (profilePictureResponse.data instanceof Blob) {
-      url = URL.createObjectURL(profilePictureResponse.data);
-      setProfilePictureSrc(url);
-    }
+    if (profilePictureResponse.error || !(profilePictureResponse.data instanceof Blob)) throw new Error("Failed to load profile picture");
+    url = URL.createObjectURL(profilePictureResponse.data);
+    setProfilePictureSrc(url);
   } catch (err) {
     console.log("Failed to load member data:", err);
     toast.error(t("loading_failed"));
@@ -129,10 +125,12 @@ export const handleSaveMember = async (
         value: formData[key as keyof typeof formData]
       }));
 
-      await patchApiMembersById({
+      const response = await patchApiMembersById({
         path: { id: memberId },
         body: patchDoc as any
       });
+
+      if (response.error) throw new Error("Failed to save member data");
     } catch (err) {
       console.error("Failed to save member data:", err);
       throw err;
@@ -193,10 +191,11 @@ export const handleAddEnrollment = async (
           enrollmentDate: new Date().toISOString(),
         }
       });
-      if (res.data) {
-        setEnrollments((prev) => [...prev, res.data]);
-        toast.success("Studie toegevoegd");
-      }
+
+      if(res.error || !res.data) throw new Error("Failed to add enrollment");
+      
+      setEnrollments((prev) => [...prev, res.data]);
+      toast.success("Studie toegevoegd");
     } catch (err) {
       console.error("Failed to add enrollment:", err);
       throw err;

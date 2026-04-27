@@ -42,24 +42,25 @@ export const loadGroupData = async ({
 
   try {
     const groupResponse = await getApiGroupsById({ path: { id } });
-    if (groupResponse.data) {
-      setFormData({
-        Name: groupResponse.data.name,
-        Type: groupResponse.data.type,
-        Active: groupResponse.data.active
-      });
-    }
 
+    if(groupResponse.error || !groupResponse.data) throw new Error("Failed to load group data");
+
+    setFormData({
+      Name: groupResponse.data.name,
+      Type: groupResponse.data.type,
+      Active: groupResponse.data.active
+    });
+    
     const groupPictureResponse = await getApiGroupsByIdGroupPicture({ path: { id }, responseType: "blob" });
-    if (groupPictureResponse.data instanceof Blob) {
-      url = URL.createObjectURL(groupPictureResponse.data);
-      setGroupPictureSrc(url);
-    }
+    
+    if(groupPictureResponse.error || !(groupPictureResponse.data instanceof Blob)) throw new Error("Failed to load group picture");
+    
+    url = URL.createObjectURL(groupPictureResponse.data);
+    setGroupPictureSrc(url);
 
     const roleAliasesResponse = await getApiRolealiases();
-    if (roleAliasesResponse.data) {
-      setRoleAliases(roleAliasesResponse.data);
-    }
+    if(roleAliasesResponse.error || !roleAliasesResponse.data) throw new Error("Failed to load role aliases");
+    setRoleAliases(roleAliasesResponse.data);
   } catch (err) {
     console.log("Failed to load group data:", err);
     toast.error(t("loading_failed"));
@@ -87,9 +88,10 @@ export const loadGroupMemberships = async (
         MembershipYear: selectedYear
       }
     });
-    if (groupMembershipsResponse.data) {
-      setEnrollments(groupMembershipsResponse.data);
-    }
+
+    if(groupMembershipsResponse.error || !groupMembershipsResponse.data) throw new Error("Failed to load group memberships");
+
+    setEnrollments(groupMembershipsResponse.data);
   } catch (err) {
     console.log("Failed to load group data:", err);
     toast.error(t("loading_failed"));
@@ -114,10 +116,12 @@ export const handleSaveGroup = async (
         value: formData[key as keyof typeof formData]
       }));
 
-      await patchApiGroupsById({
+      const response = await patchApiGroupsById({
         path: { id },
         body: patchDoc as any
       });
+
+      if(response.error) throw new Error("Failed to save group data");
     } catch (err) {
       console.error("Failed to save group data:", err);
       throw err;
@@ -145,10 +149,12 @@ export const handleGroupProfilePictureUpload = async (
 
   const saveProcess = async () => {
     try {
-      await postApiGroupsByIdGroupPicture({
+      const response = await postApiGroupsByIdGroupPicture({
         path: { id },
         body: { image: file }
       });
+
+      if (response.error) throw new Error("Failed to upload group picture");
 
       window.location.reload();
     } catch (err) {
@@ -213,22 +219,23 @@ export const handleAddGroupEnrollment = async (
           membershipYear: selectedYear,
         }
       });
-      if (res.data) {
-        setEnrollments((prev) => [
-          ...prev,
-          {
-            membershipYear: selectedYear,
-            memberId: member.id!,
-            groupId: id,
-            memberName: `${member.firstName} ${member.lastName}`,
-            groupName: res.data.group!.name,
-            groupType: res.data.group!.type!,
-            id: res.data.id!
-          }
-        ]);
-        toast.success(t("enrollment_added"));
-        setAddEnrollmentModalIsOpen(false);
-      }
+
+      if (res.error || !res.data) throw new Error("Failed to add enrollment");
+
+      setEnrollments((prev) => [
+        ...prev,
+        {
+          membershipYear: selectedYear,
+          memberId: member.id!,
+          groupId: id,
+          memberName: `${member.firstName} ${member.lastName}`,
+          groupName: res.data.group!.name,
+          groupType: res.data.group!.type!,
+          id: res.data.id!
+        }
+      ]);
+      toast.success(t("enrollment_added"));
+      setAddEnrollmentModalIsOpen(false);
     } catch (err) {
       console.error("Failed to add enrollment:", err);
       throw err;

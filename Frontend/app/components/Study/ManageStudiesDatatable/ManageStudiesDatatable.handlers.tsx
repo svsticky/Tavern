@@ -12,9 +12,9 @@ export const fetchStudies = async (
       setLoading(true);
       const response = await getApiStudies();
 
-      if (response.data) {
-        setStudies(response.data);
-      }
+      if(response.error || !response.data) throw new Error("Failed to fetch studies");
+
+      setStudies(response.data);
     } catch (error) {
       console.error("Error fetching studies:", error);
       toast.error(t("error_fetching_studies"));

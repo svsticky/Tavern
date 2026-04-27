@@ -3,6 +3,7 @@ import { t } from "i18next";
 import { getApiMembers, postApiEnrollments, type Member, type MemberResponseDto } from "~/api";
 import Input from "~/components/UI/Input";
 import Button from "~/components/UI/Button";
+import toast from "react-hot-toast";
 
 export default function SearchMemberOverlay({ selectText, onSelect, loading }: { selectText: string, onSelect: (member: MemberResponseDto) => void, loading: boolean }) {
   const [query, setQuery] = useState("");
@@ -14,11 +15,13 @@ export default function SearchMemberOverlay({ selectText, onSelect, loading }: {
       setSearching(true);
       try {
         const res = await getApiMembers({ query: { Search: query } });
-        if (res.data) {
-          setResults(res.data);
-        }
+
+        if(res.error || !res.data) throw new Error("Search failed");
+        
+        setResults(res.data);
       } catch (error) {
         console.error("Search error:", error);
+        toast.error(t("search_failed"));
       } finally {
         setSearching(false);
       }

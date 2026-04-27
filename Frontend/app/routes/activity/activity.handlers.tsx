@@ -21,9 +21,9 @@ export const loadActivityData = async ({ initialized, authenticated, activityId,
       path: { id: activityId }
     });
 
-    if (activitiesResponse.data) {
-      setActivity(activitiesResponse.data);
-    }
+    if(activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activity");
+    
+    setActivity(activitiesResponse.data);
   } catch (error) {
     console.error("Error while loading data:", error);
     toast.error(t("loading_failed"));

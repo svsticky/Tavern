@@ -38,30 +38,42 @@ type SubmitArgs = {
   resetForm: () => void;
 };
 
-export const handleCreateGroupSubmit = async ({ e, formData, setLoading, onSuccess, resetForm }: SubmitArgs) => {
+export const handleCreateGroupSubmit = ({ e, formData, setLoading, onSuccess, resetForm }: SubmitArgs) => {
   e.preventDefault();
-  if (!formData.name || !formData.groupPicture) {
-    toast.error(t("please_fill_all_fields"));
-    return;
-  }
 
-  setLoading(true);
-  try {
-    await postApiGroups({
-      body: {
-        Name: formData.name,
-        Type: formData.type as GroupType,
-        GroupPicture: formData.groupPicture,
+  const createProcess = async () => {
+    try {
+      setLoading(true);
+      if (!formData.name || !formData.groupPicture) {
+        toast.error(t("please_fill_all_fields"));
+        return;
       }
-    });
+      
+      const response = await postApiGroups({
+        body: {
+          Name: formData.name,
+          Type: formData.type as GroupType,
+          GroupPicture: formData.groupPicture,
+        }
+      });
+      
+      if(response.error) {
+        throw new Error("Failed to create group");
+       }
 
-    toast.success(t("group_created_successfully"));
-    onSuccess();
-    resetForm();
-  } catch (err) {
-    toast.error(t("failed_to_create_group"));
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
+      onSuccess();
+      resetForm();
+    } catch (err) {
+      console.error(err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  toast.promise(createProcess(), {
+    loading: t("creating_group"),
+    success: t("group_created_successfully"),
+    error: t("failed_to_create_group")
+  });
 };

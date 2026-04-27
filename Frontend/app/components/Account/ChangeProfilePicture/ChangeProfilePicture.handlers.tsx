@@ -12,6 +12,7 @@ export const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputE
           path: { id: userId },
           body: { image: file }
         });
+        if(response.error) throw new Error("Failed to upload profile picture");
         window.location.reload();
       } catch (err) {
         console.error("Failed to upload profile picture:", err);

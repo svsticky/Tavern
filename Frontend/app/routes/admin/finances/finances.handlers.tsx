@@ -132,22 +132,34 @@ type MarkPaidArgs = {
   refreshUnpaid: () => Promise<void>;
 };
 
-export const handleMarkAsPaid = async ({ member, enrollments, setLoading, refreshUnpaid }: MarkPaidArgs) => {
-  try {
-    setLoading(true);
-    await postApiPaymentsActivity({
-      body: {
-        memberId: member.id,
-        activityIds: enrollments.map((e) => e.enrollment.activityId),
-        manuallyMarkedAsPaid: true,
-      }
-    });
-    await refreshUnpaid();
-  } catch (error) {
-    console.error("Error while marking as paid:", error);
-  } finally {
-    setLoading(false);
-  }
+export const handleMarkAsPaid = ({ member, enrollments, setLoading, refreshUnpaid }: MarkPaidArgs) => {
+  const process = async () => {
+    try {
+      setLoading(true);
+      const response = await postApiPaymentsActivity({
+        body: {
+          memberId: member.id,
+          activityIds: enrollments.map((e) => e.enrollment.activityId),
+          manuallyMarkedAsPaid: true,
+        }
+      });
+
+      if (response.error) throw new Error("Failed to mark as paid");
+
+      await refreshUnpaid();
+    } catch (error) {
+      console.error("Error while marking as paid:", error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  toast.promise(process(), {
+    loading: t("marking_as_paid"),
+    success: t("marked_as_paid"),
+    error: t("mark_as_paid_failed"),
+  });
 };
 
 export const handlePaymentsExport = (
@@ -165,6 +177,10 @@ export const handlePaymentsExport = (
         },
         responseType: "blob",
       });
+
+      if(response.error || !response.data) {
+        throw new Error("Failed to export payments");
+      }
 
       const blob = new Blob([response.data as any], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
@@ -223,6 +239,9 @@ export const loadFinancesData = async ({
         OpenForPayment: false,
       }
     });
+
+    if(expiredActivitiesResponse.error || !expiredActivitiesResponse.data) throw new Error("Failed to load expired activities");
+
     setExpiredActivities(expiredActivitiesResponse.data || []);
 
     await refreshUnpaidPayments({
@@ -239,6 +258,7 @@ export const loadFinancesData = async ({
     }
   } catch (error) {
     console.error("Error while fetching data:", error);
+    toast.error(t("loading_failed"));
   } finally {
     setLoading(false);
   }

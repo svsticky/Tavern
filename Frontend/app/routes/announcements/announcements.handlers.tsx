@@ -17,9 +17,9 @@ export const loadAnnouncements = async ({ initialized, authenticated, setLoading
     setLoading(true);
     const announcementsResponse = await getApiAnnouncements();
 
-    if (announcementsResponse.data) {
-      setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
-    }
+    if(announcementsResponse.error || !announcementsResponse.data) throw new Error("Failed to load announcements");
+
+    setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
   } catch (error) {
     console.error("Error while loading data:", error);
     toast.error(t("loading_failed"));

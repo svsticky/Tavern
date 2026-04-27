@@ -374,6 +374,7 @@
   "to_member_portal": "To Member Portal",
   "total_unpaid": "Total unpaid",
   "type": "Type",
+  "enrolling": "Enrolling",
   "unenroll": "Unenroll",
   "unenrolling_participant": "Unenrolling participant",
   "unenrollment_deadline": "Unenrollment deadline",
@@ -412,5 +413,12 @@
   "year_2": "2nd year",
   "year_3_plus": "3rd year and up",
   "years": "years",
-  "yes": "Yes"
+  "yes": "Yes",
+  "redirecting_to_payment": "Redirecting to payment...",
+  "payment_initiation_failed": "Payment initiation failed",
+  "search_failed": "Search failed",
+  "failed_to_load_roles": "Failed to load roles",
+  "marking_as_paid": "Marking as paid...",
+  "marked_as_paid": "Marked as paid",
+  "mark_as_paid_failed": "Marking as paid failed"
 }

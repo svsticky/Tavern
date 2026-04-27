@@ -105,6 +105,7 @@
   "english": "Engels",
   "english_description": "Engelse beschrijving",
   "enroll": "Aanmelden",
+  "enrolling": "Aanmelden",
   "enroll_failed": "Aanmelden mislukt",
   "enroll_member": "Lid aanmelden",
   "enroll_open_date": "Inschrijving opent op",
@@ -410,5 +411,12 @@
   "year_2": "2de jaar",
   "year_3_plus": "3de jaar en hoger",
   "years": "jaar",
-  "yes": "Ja"
+  "yes": "Ja",
+  "redirecting_to_payment": "Doorsturen naar betaling...",
+  "payment_initiation_failed": "Betalen mislukt",
+  "search_failed": "Zoeken mislukt",
+  "failed_to_load_roles": "Rollen laden mislukt",
+  "marking_as_paid": "Markeren als betaald...",
+  "marked_as_paid": "Gemarkeerd als betaald",
+  "mark_as_paid_failed"
 }

@@ -44,9 +44,11 @@ export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navig
   const submitProcess = async () => {
     try {
       if (isEdit) {
-        await putApiAnnouncementsById({ path: { id: Number(id) }, body });
+        const response = await putApiAnnouncementsById({ path: { id: Number(id) }, body });
+        if(response.error) throw new Error("Failed to update announcement");
       } else {
-        await postApiAnnouncements({ body });
+        const response = await postApiAnnouncements({ body });
+        if(response.error) throw new Error("Failed to create announcement");
       }
       navigate("/announcements");
     } catch (error) {

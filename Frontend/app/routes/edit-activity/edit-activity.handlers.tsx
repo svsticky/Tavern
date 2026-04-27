@@ -13,9 +13,8 @@ export const loadEditActivityData = async ({ isEdit, id, setActivity, setLoading
   try {
     if (isEdit) {
       const activityRes = await getApiActivitiesById({ path: { id: Number(id) } });
-      if (activityRes.data) {
-        setActivity(activityRes.data);
-      }
+      if (activityRes.error || !activityRes.data) throw new Error("Failed to load activity");
+      setActivity(activityRes.data);
     }
   } catch (error) {
     console.error("Error loading data:", error);

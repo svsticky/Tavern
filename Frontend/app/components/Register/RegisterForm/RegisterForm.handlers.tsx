@@ -35,9 +35,10 @@ export const loadStudies = async (
   try {
     setLoading(true);
     const response = await getApiStudies();
-    if (response.data) {
-      setStudies(response.data);
-    }
+
+    if(response.error || !response.data) throw new Error("Failed to fetch studies");
+
+    setStudies(response.data);
   } catch (error) {
     console.error("Failed to fetch studies", error);
     toast.error(t("failed_to_load_studies"));
@@ -144,6 +145,9 @@ export const handleRegisterSubmit = async ({
         } else {
           navigate("/confirm-mail");
         }
+      }
+      else{
+        throw new Error("Registration failed");
       }
     } catch (error) {
       console.error("Registratie mislukt", error);

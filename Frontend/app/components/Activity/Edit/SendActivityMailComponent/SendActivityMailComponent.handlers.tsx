@@ -29,7 +29,7 @@ export const handleSendMail = async ({ activityId, subject, content, includeWait
         }
       });
 
-      if (response.status !== 200) throw new Error();
+      if (response.error) throw new Error("Failed to send mail");
 
       clearForm();
     } finally {

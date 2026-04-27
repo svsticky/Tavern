@@ -10,11 +10,13 @@ export const fetchRoles = async (
   setLoadingRoles(true);
   try {
     const res = await getApiRoles();
-    if (res.data) {
-      setRoles(res.data);
-    }
+
+    if(res.error || !res.data) throw new Error("Failed to fetch roles");
+
+    setRoles(res.data);
   } catch (error) {
     console.error("Search error:", error);
+    toast.error(t("failed_to_load_roles"));
   } finally {
     setLoadingRoles(false);
   }
@@ -42,10 +44,10 @@ export const handleCreateRoleSubmit = ({ e, selectedType, name, selectedRoleId, 
             name,
           }
         });
+        
+        if(response.error || !response.data) throw new Error("Failed to create role");
 
-        if (response.data) {
-          onRoleCreated({ id: (response.data as any).id, name });
-        }
+        onRoleCreated({ id: (response.data as any).id, name });
       } else if (selectedType === "RoleAlias") {
         const response = await postApiRolealiases({
           body: {
@@ -54,9 +56,9 @@ export const handleCreateRoleSubmit = ({ e, selectedType, name, selectedRoleId, 
           }
         });
 
-        if (response.data) {
-          onRoleAliasCreated({ id: (response.data as any).id, name, roleId: Number(selectedRoleId) });
-        }
+        if(response.error || !response.data) throw new Error("Failed to create role alias");
+
+        onRoleAliasCreated({ id: (response.data as any).id, name, roleId: Number(selectedRoleId) });
       }
     } catch (error) {
       console.error("Error creating role:", error);

@@ -11,13 +11,11 @@ export const loadStudies = async (
     setLoading(true);
     const response = await getApiStudies();
 
-    if (response.data) {
-      setStudies(response.data);
-    }
-
-    if (response.error) {
+    if (response.error || !response.data) {
       throw new Error("Failed to load studies");
     }
+
+    setStudies(response.data);
   } catch (error) {
     console.error("Failed to load studies", error);
     toast.error(t("failed_to_load_studies"));

@@ -18,9 +18,9 @@ export const loadAdminActivities = async (
       }
     });
 
-    if (response.data) {
-      setActivities(response.data);
-    }
+    if(response.error || !response.data) throw new Error("Failed to load activities");
+
+    setActivities(response.data);
   } catch (error) {
     console.error("Error fetching activities:", error);
     toast.error(t("loading_failed"));

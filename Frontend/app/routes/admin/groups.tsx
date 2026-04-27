@@ -28,12 +28,11 @@ export default function Groups() {
       try{
         setLoading(true);
         const response = await getApiGroups();
-        
-        if(response.data) {
-          setGroups(response.data);
-          setFilteredGroups(response.data);
-        }
 
+        if(response.error || !response.data) throw new Error("Failed to fetch groups");
+        
+        setGroups(response.data);
+        setFilteredGroups(response.data);
       } catch (error) {
         console.error("Error fetching groups:", error);
         toast.error(t("loading_failed"));

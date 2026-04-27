@@ -33,16 +33,19 @@ export const loadSettingsPageData = async ({
       getApiRoles()
     ]);
 
-    if (settingsRes.data) {
-      const settingsObj = settingsRes.data.reduce((acc: Record<string, string>, s: Setting) => {
-        if (s.name) acc[s.name] = s.value || "";
-        return acc;
-      }, {});
-      setSettings(settingsObj);
-    }
-    if (groupsRes.data) setAvailableGroups(groupsRes.data);
-    if (rolesRes.data) setAvailableRoles(rolesRes.data);
-  } catch {
+    if(settingsRes.error || !settingsRes.data) throw new Error("Failed to load settings");
+    if(groupsRes.error || !groupsRes.data) throw new Error("Failed to load groups");
+    if(rolesRes.error || !rolesRes.data) throw new Error("Failed to load roles");
+
+    const settingsObj = settingsRes.data.reduce((acc: Record<string, string>, s: Setting) => {
+      if (s.name) acc[s.name] = s.value || "";
+      return acc;
+    }, {});
+    setSettings(settingsObj);
+    setAvailableGroups(groupsRes.data);
+    setAvailableRoles(rolesRes.data);
+  } catch (error) {
+    console.error("Error loading settings page data:", error);
     toast.error(t("failed_to_load_settings"));
   } finally {
     setLoading(false);
@@ -141,34 +144,46 @@ export const handleSaveSettings = async ({
 }: SaveSettingsArgs) => {
   setSaving(true);
 
-  try {
-    const promises = [];
+  const saveProcess = async () => {
+    try {
+      const promises = [];
 
-    for (const id of deletedSettings) {
-      promises.push(deleteApiSettingsById({ path: { id } }));
-    }
-
-    for (const [name, value] of Object.entries(settings)) {
-      if (newSettings.has(name)) {
-        promises.push(postApiSettings({ query: { id: name, value } }));
-      } else {
-        promises.push(
-          patchApiSettingsById({
-            path: { id: name },
-            body: [{ op: "replace", path: "/Value", value }] as any,
-          })
-        );
+      for (const id of deletedSettings) {
+        promises.push(deleteApiSettingsById({ path: { id } }));
       }
-    }
 
-    await Promise.all(promises);
-    clearTracking();
-    toast.success(t("settings_saved"));
-  } catch {
-    toast.error(t("failed_to_save_settings"));
-  } finally {
-    setSaving(false);
-  }
+      for (const [name, value] of Object.entries(settings)) {
+        if (newSettings.has(name)) {
+          promises.push(postApiSettings({ query: { id: name, value } }));
+        } else {
+          promises.push(
+            patchApiSettingsById({
+              path: { id: name },
+              body: [{ op: "replace", path: "/Value", value }] as any,
+            })
+          );
+        }
+      }
+
+      const responses = await Promise.all(promises);
+
+      const hasError = responses.some((res) => res.error);
+      if (hasError) throw new Error("Failed to save settings");
+
+      clearTracking();
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      throw error;
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  toast.promise(saveProcess(), {
+    loading: t("saving"),
+    success: t("save_success"),
+    error: t("save_error")
+  });
 };
 
 export const getGroupOptions = (availableGroups: GroupResponseDto[]) => [

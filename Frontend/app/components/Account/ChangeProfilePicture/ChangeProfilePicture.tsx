@@ -12,7 +12,7 @@ export default function ChangeProfilePicture({userId, children}: {userId: string
     const loadProfilePicture = async () => {
       try {
         const ppRes = await getApiMembersByIdProfilePicture({ path: { id: userId }, responseType: 'blob' });
-        if (ppRes.data instanceof Blob && ppRes.status === 200) {
+        if (!ppRes.error && ppRes.data instanceof Blob && ppRes.status === 200) {
           url = URL.createObjectURL(ppRes.data);
           setProfilePictureSrc(url);
         } else {

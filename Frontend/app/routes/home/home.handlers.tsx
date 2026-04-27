@@ -31,26 +31,20 @@ export const loadDashboardData = async ({
         IncludeFuture: true,
       }
     });
+    if(activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+    setActivities(activitiesResponse.data as ActivityResponseDto[]);
 
     const announcementsResponse = await getApiAnnouncements();
-
-    if (announcementsResponse.data) {
-      setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
-    }
-
-    if (activitiesResponse.data) {
-      setActivities(activitiesResponse.data as ActivityResponseDto[]);
-    }
+    if(announcementsResponse.error || !announcementsResponse.data) throw new Error("Failed to load announcements");
+    setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
 
     const committeesResponse = await getApiGroupmemberships({
       query: {
         MemberId: userId
       }
     });
-
-    if (committeesResponse.data) {
-      setGroupMemberships(committeesResponse.data);
-    }
+    if(committeesResponse.error || !committeesResponse.data) throw new Error("Failed to load group memberships");
+    setGroupMemberships(committeesResponse.data);
   } catch (error) {
     console.error("Error while loading data:", error);
     toast.error(t("loading_failed"));

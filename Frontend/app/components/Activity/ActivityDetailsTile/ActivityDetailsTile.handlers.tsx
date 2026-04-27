@@ -51,6 +51,8 @@ export const handleEnrollment = async (
           }
         });
 
+        if(response.error) throw new Error("Enrollment failed");
+
         if (response.data) {
           const newEnrollment = {
             isOnWaitingList: response.data.isOnWaitingList,
@@ -71,7 +73,9 @@ export const handleEnrollment = async (
 
           setActivity && setActivity({ ...activity });
         }
-
+        else{
+          throw new Error("No enrollment data returned from API");
+        }
       } catch (error) {
         console.error("Error while enrolling:", error);
         throw error;

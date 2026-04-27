@@ -43,13 +43,13 @@ export default function Members() {
           Inactive: filters?.inactive || undefined,
           StudyType: filters?.studyType || undefined }
       });
+
+      if(response.error || !response.data) throw new Error("Failed to fetch members");
       
-      if (response.data) {
-        setMembers(prev => isInitial ? response.data! : [...prev, ...response.data!]);
-        
-        if (response.data.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
+      setMembers(prev => isInitial ? response.data! : [...prev, ...response.data!]);
+      
+      if (response.data.length < PAGE_SIZE) {
+        setHasMore(false);
       }
     } 
     catch (error) {

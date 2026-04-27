@@ -53,6 +53,8 @@ export default function DashboardHeader({
             }
         });
 
+        if(enrollmentAmountResponse.error) throw new Error("Failed to load enrollments");
+
         if (enrollmentAmountResponse.data) {
           setPastEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
             const activityDate = new Date(enrollment.activity.dateTimeStart);
@@ -62,6 +64,9 @@ export default function DashboardHeader({
             const activityDate = new Date(enrollment.activity.dateTimeStart);
             return activityDate >= new Date(Date.now());
           }).length);
+        }
+        else{
+          throw new Error("No enrollment data returned from API");
         }
       } catch (error) {
         console.error("Error while loading outstanding payments:", error);
@@ -79,24 +84,38 @@ export default function DashboardHeader({
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
   const payActivities = async () => {
-    try {
-      setLoadingPayments(true);
-      const urlResponse = await postApiPaymentsActivity({
-        body: {
-          memberId: keycloak.tokenParsed?.UserId ?? 0,
-          activityIds: unpaidActivityIds
-        }
-      });
+    const payAction = async () => {
+      try {
+        setLoadingPayments(true);
+        const urlResponse = await postApiPaymentsActivity({
+          body: {
+            memberId: keycloak.tokenParsed?.UserId ?? 0,
+            activityIds: unpaidActivityIds
+          }
+        });
 
-      if (urlResponse.data && urlResponse.data.checkoutUrl) {
-        console.log(urlResponse.data);
-        window.location.href = urlResponse.data.checkoutUrl;
+        if(urlResponse.error) throw new Error("Failed to initiate payment process");
+
+        if (urlResponse.data && urlResponse.data.checkoutUrl) {
+          console.log(urlResponse.data);
+          window.location.href = urlResponse.data.checkoutUrl;
+        }
+        else{
+          throw new Error("No checkout URL returned from API");
+        }
+      } catch (error) {
+        console.error("Error while initiating payment:", error);
+        throw error;
       }
-    } catch (error) {
-      console.error("Error while initiating payment:", error);
-    }
-    finally {
-      setLoadingPayments(false);
+      finally {
+        setLoadingPayments(false);
+      }
+
+      toast.promise(payAction(), {
+        loading: t("paying"),
+        success: t("redirecting_to_payment"),
+        error: t("payment_initiation_failed")
+      });
     }
   }
 

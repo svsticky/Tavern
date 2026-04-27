@@ -43,16 +43,17 @@ export const handleStudySubmit = async ({ e, formData, study, setLoading, onComp
             }
           });
 
-      if (!response.error) {
-        onComplete({
-          title: formData.title,
-          type: formData.type as StudyType,
-          nominalDurationYears: formData.nominalDurationYears,
-          id: study ? study.id : (response.data as any).id
-        });
-      }
+      if(response.error) throw new Error(study ? "Failed to update study" : "Failed to create study");
+
+      onComplete({
+        title: formData.title,
+        type: formData.type as StudyType,
+        nominalDurationYears: formData.nominalDurationYears,
+        id: study ? study.id : (response.data as any).id
+      });
     } catch (error) {
       console.error("Error creating study:", error);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -80,10 +81,12 @@ export const handleStudyDelete = async ({ study, setLoading, onComplete }: Delet
   const deleteStudyProcess = async () => {
     setLoading(true);
     try {
-      await deleteApiStudiesById({ path: { id: study.id! } });
+      const response = await deleteApiStudiesById({ path: { id: study.id! } });
+      if(response.error) throw new Error("Failed to delete study");
       onComplete();
     } catch (error) {
       console.error("Error deleting study:", error);
+      throw error;
     } finally {
       setLoading(false);
     }

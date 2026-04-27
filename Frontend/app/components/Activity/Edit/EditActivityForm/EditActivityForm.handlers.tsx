@@ -23,6 +23,7 @@ export const loadGroups = async (
     const groupsRes = await getApiGroups({
       query: { IncludeInactive: false, MembershipYear: getAssociationYear() }
     });
+    if(groupsRes.error) throw new Error("Failed to load groups");
     if (groupsRes.data) setGroups(groupsRes.data);
   } catch (error) {
     console.error("Error loading data:", error);
@@ -140,10 +141,12 @@ export const handleActivitySubmit = async ({
     try {
       const redirectPathBase = `${pathname.startsWith("/admin") ? "/admin" : ""}/activities/`;
       if (isEdit) {
-        await putApiActivitiesById({ path: { id: Number(id) }, ...payload });
+        const response = await putApiActivitiesById({ path: { id: Number(id) }, ...payload });
+        if (response.error) throw new Error("Failed to update activity");
         navigate(`${redirectPathBase}${id}`);
       } else {
         const response = await postApiActivities(payload);
+        if (response.error || !response.data?.id) throw new Error("Failed to create activity");
         navigate(`${redirectPathBase}${response.data?.id}`);
       }
     } catch (error) {

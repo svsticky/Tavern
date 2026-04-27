@@ -50,7 +50,7 @@ export const handleSaveAccount = async (
 
     const saveProcess = async () => {
         try {
-            await patchApiMembersById({
+            const response = await patchApiMembersById({
                 path: { id: userId },
                 body: [
                 { op: "replace", path: "/phoneNumber", value: formData.phoneNumber },
@@ -63,6 +63,8 @@ export const handleSaveAccount = async (
                 { op: "replace", path: "/mailSubscriptions", value: formData.mailSubscriptions }
                 ]
             });
+            if(response.error) throw new Error("Failed to save account changes");
+
             i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
 
             setMember((prev) => prev ? { ...prev, ...formData, mailSubscriptions: mailSubscriptionMap[formData.mailSubscriptions] } : null);

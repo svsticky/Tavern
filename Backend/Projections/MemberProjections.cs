@@ -23,7 +23,7 @@ public static class MemberProjections
             DateOfBirth = isBoard || userId == m.Id ? m.DateOfBirth : null,
             ParentPhoneNumber = isBoard || userId == m.Id ? m.ParentPhoneNumber : null,
             MailSubscriptions = m.MailSubscriptions,
-            Notes = isBoard || userId == m.Id ? m.Notes : null,
+            Notes = isBoard ? m.Notes : null,
             RegisteredOn = isBoard || userId == m.Id ? m.RegisteredOn : null,
             PreferredLanguage = isBoard || userId == m.Id ? m.PreferredLanguage : null,
             ProfilePicturePath = m.ProfilePicturePath,

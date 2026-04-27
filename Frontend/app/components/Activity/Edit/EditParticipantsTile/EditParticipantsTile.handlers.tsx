@@ -11,6 +11,10 @@ export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
         responseType: "blob"
       });
 
+      if(response.error || !response.data) {
+        throw new Error("Failed to download enrollments");
+      }
+
       const blob = new Blob([response.data as any], { type: "text/csv" });
       const url = window.URL.createObjectURL(blob);
 
@@ -45,13 +49,16 @@ type EnrollArgs = {
 
 export const handleEnrollParticipant = async ({ member, activity, setActivity, setLoading, setIsSearchOpen }: EnrollArgs) => {
   setLoading(true);
-  try {
-    const enrollment = await postApiEnrollments({
-      body: { activityId: activity.id, memberId: member.id! }
-    });
+  const enrollProcess = async () => {
+    try {
+      const enrollment = await postApiEnrollments({
+        body: { activityId: activity.id, memberId: member.id! }
+      });
 
-    if (enrollment.data) {
-      toast.success(t("member_enrolled_success"));
+      if(enrollment.error || !enrollment.data) {
+        throw new Error("Enrollment failed");
+      }
+
       activity.enrollments.push({
         member: enrollment.data.member,
         activity: enrollment.data.activity,
@@ -60,12 +67,19 @@ export const handleEnrollParticipant = async ({ member, activity, setActivity, s
       });
       setActivity({ ...activity });
       setIsSearchOpen(false);
+    } catch (err) {
+      console.log("Failed to enroll member:", err);
+      throw err;
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    toast.error(t("enroll_failed"));
-  } finally {
-    setLoading(false);
-  }
+  };
+
+  toast.promise(enrollProcess(), {
+    loading: t("enrolling"),
+    success: t("enrollment_successful"),
+    error: t("enrollment_failed")
+  });
 };
 
 export const handleUnenrollParticipant = (
