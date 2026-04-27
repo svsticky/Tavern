@@ -8,6 +8,7 @@ using Mollie.Api.Models;
 using Mollie.Api.Models.Payment.Request;
 using Mollie.Api.Models.Payment.Response;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
@@ -16,7 +17,8 @@ namespace Backend.Services
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
         IPaymentClient mollieClient,
-        KeycloakOutboxWorker keycloakOutboxWorker
+        KeycloakOutboxWorker keycloakOutboxWorker,
+        ILogger<PaymentService> logger
     ) : IPaymentService
     {
         private readonly string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
@@ -58,6 +60,7 @@ namespace Backend.Services
 
         public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
         {
+            logger.LogInformation("Creating membership payment for member {MemberId}.", dto.MemberId);
             var member = await GetMemberOrThrow(dto.MemberId);
 
             using var transaction = await db.Database.BeginTransactionAsync();
@@ -69,6 +72,7 @@ namespace Backend.Services
                 var existingResponse = await HandleExistingMembershipPayment(member, dto.MemberId);
                 if (existingResponse != null)
                 {
+                    logger.LogInformation("Reusing existing membership payment for member {MemberId}.", dto.MemberId);
                     return existingResponse;
                 }
             }
@@ -91,6 +95,7 @@ namespace Backend.Services
 
             db.MembershipPayments.Add(payment);
             await db.SaveChangesAsync();
+            logger.LogInformation("Created membership payment {PaymentId} for member {MemberId}.", payment.Id, dto.MemberId);
 
             return ToCheckoutResponse(mollieResponse.Links.Checkout.Href);
         }
@@ -117,6 +122,8 @@ namespace Backend.Services
                 .ToListAsync(ct);
 
             var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, mollieFeePayments);
+            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, MollieFee: {MollieFeeCount}",
+                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, mollieFeePayments.Count);
 
             var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
@@ -124,6 +131,8 @@ namespace Backend.Services
 
         public async Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, Guid userId)
         {
+            logger.LogInformation("Creating activity payment for member {MemberId} and {ActivityCount} activities. Manual: {Manual}",
+                dto.MemberId, dto.ActivityIds.Count, dto.ManuallyMarkedAsPaid);
             if(userId != dto.MemberId)
             {
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -155,6 +164,7 @@ namespace Backend.Services
 
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
+                    logger.LogInformation("Created manual activity payment records for member {MemberId}.", dto.MemberId);
                     return new PostPaymentResponse();
                 }
                 else
@@ -178,13 +188,16 @@ namespace Backend.Services
                     CreateEnrollmentPayments(dto.MemberId, enrollments, false, mollieResponse);
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
+                    logger.LogInformation("Created mollie-backed activity payment for member {MemberId}. MollieId: {MollieId}",
+                        dto.MemberId, mollieResponse.Id);
 
                     return new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout!.Href };
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                logger.LogError(ex, "Failed creating activity payment for member {MemberId}.", dto.MemberId);
                 throw;
             }
         }

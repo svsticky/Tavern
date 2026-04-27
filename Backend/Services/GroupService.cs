@@ -6,6 +6,7 @@ using Backend.Projections;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
@@ -15,13 +16,15 @@ public class GroupService : IGroupService
     private readonly IPermissionService _permissionService;
     private readonly IFileCompressService _fileCompressService;
     private readonly IStorageService _storageService;
+    private readonly ILogger<GroupService> _logger;
 
-    public GroupService(PostgresDbContext db, IPermissionService permissionService, IFileCompressService fileCompressService, IStorageService storageService)
+    public GroupService(PostgresDbContext db, IPermissionService permissionService, IFileCompressService fileCompressService, IStorageService storageService, ILogger<GroupService> logger)
     {
         _db = db;
         _permissionService = permissionService;
         _fileCompressService = fileCompressService;
         _storageService = storageService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<GroupResponseDTO>> GetGroups(Guid userId, GetGroupDTO dto, CancellationToken cancellationToken)
@@ -49,6 +52,7 @@ public class GroupService : IGroupService
     public async Task<Group> CreateGroup(PostGroupDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Creating group {GroupName} by user {UserId}.", dto.Name, userId);
 
         GroupValidator.ValidateName(dto.Name);
 
@@ -76,9 +80,10 @@ public class GroupService : IGroupService
 
             return group;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed creating group {GroupName}.", dto.Name);
             throw;
         }
     }
@@ -99,6 +104,7 @@ public class GroupService : IGroupService
     public async Task DeleteGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Deleting group {GroupId} by user {UserId}.", id, userId);
 
         var group = await GetGroupOrThrow(id, cancellationToken);
 
@@ -112,6 +118,7 @@ public class GroupService : IGroupService
     public async Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Patching group {GroupId} by user {UserId}.", id, userId);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -133,6 +140,7 @@ public class GroupService : IGroupService
     public async Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Updating group {GroupId} by user {UserId}.", id, userId);
 
         GroupValidator.ValidateName(dto.Name);
 
@@ -150,6 +158,7 @@ public class GroupService : IGroupService
     public async Task<string?> UploadGroupPicture(uint groupId, Guid userId, IFormFile? image)
     {
         var group = await GetGroupOrThrow(groupId, default, "Group not found");
+        _logger.LogInformation("Uploading group picture for group {GroupId} by user {UserId}.", groupId, userId);
 
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
@@ -182,9 +191,10 @@ public class GroupService : IGroupService
 
             return group.GroupPicturePath;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed uploading group picture for group {GroupId}.", groupId);
             throw;
         }
     }

@@ -6,6 +6,7 @@ using Backend.Projections;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Text;
 using Backend.Utils.DateTime;
 
@@ -18,6 +19,7 @@ public class ActivityService : IActivityService
     private readonly IFileCompressService _fileCompressor;
     private readonly IPermissionService _permissionService;
     private readonly IEnrollmentService _enrollmentService;
+    private readonly ILogger<ActivityService> _logger;
 
     private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
     private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/enrollOpenDate", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
@@ -27,13 +29,15 @@ public class ActivityService : IActivityService
         IStorageService storageService,
         IFileCompressService fileCompressor,
         IPermissionService permissionService,
-        IEnrollmentService enrollmentService)
+        IEnrollmentService enrollmentService,
+        ILogger<ActivityService> logger)
     {
         _db = db;
         _storageService = storageService;
         _fileCompressor = fileCompressor;
         _permissionService = permissionService;
         _enrollmentService = enrollmentService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto)
@@ -98,6 +102,7 @@ public class ActivityService : IActivityService
 
     public async Task<Activity> CreateActivity(Guid userId, PostActivityDTO dto)
     {
+        _logger.LogInformation("Creating activity {ActivityName} by user {UserId}.", dto.Name, userId);
         ActivityValidator.ValidateRequest(dto, userId, _permissionService);
         ActivityValidator.NormalizeCreateRequest(dto);
 
@@ -139,9 +144,10 @@ public class ActivityService : IActivityService
 
             return activity;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed creating activity {ActivityName}.", dto.Name);
             throw;
         }
     }
@@ -149,6 +155,7 @@ public class ActivityService : IActivityService
     public async Task DeleteActivity(Guid userId, uint id)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Deleting activity {ActivityId} by user {UserId}.", id, userId);
 
         var activity = await _db.Activities.FindAsync(id);
         if (activity == null)
@@ -163,6 +170,7 @@ public class ActivityService : IActivityService
 
     public async Task PatchActivity(Guid userId, uint id, JsonPatchDocument<Activity> patchDoc, CancellationToken ct)
     {
+        _logger.LogInformation("Patching activity {ActivityId} by user {UserId}.", id, userId);
         if (patchDoc == null)
             throw new ArgumentException();
 
@@ -219,15 +227,17 @@ public class ActivityService : IActivityService
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(ct);
+            _logger.LogError(ex, "Failed patching activity {ActivityId}.", id);
             throw;
         }
     }
 
     public async Task UploadPoster(Guid userId, uint id, IFormFile? poster)
     {
+        _logger.LogInformation("Uploading poster for activity {ActivityId} by user {UserId}.", id, userId);
         var activity = await _db.Activities.FindAsync(id);
         if (activity == null)
             throw new KeyNotFoundException();
@@ -265,15 +275,17 @@ public class ActivityService : IActivityService
             if (!string.IsNullOrEmpty(oldPath))
                 await _storageService.DeleteFileAsync("posters", oldPath);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed uploading poster for activity {ActivityId}.", id);
             throw;
         }
     }
 
     public async Task UpdateActivity(Guid userId, uint id, PutActivityDTO dto)
     {
+        _logger.LogInformation("Updating activity {ActivityId} by user {UserId}.", id, userId);
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)
             .FirstOrDefaultAsync(a => a.Id == id);
@@ -333,9 +345,10 @@ public class ActivityService : IActivityService
             if (existingPosterPath != null && dto.Poster != null)
                 await _storageService.DeleteFileAsync("posters", existingPosterPath);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            _logger.LogError(ex, "Failed updating activity {ActivityId}.", id);
             throw;
         }
     }

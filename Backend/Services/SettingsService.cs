@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
@@ -9,12 +10,14 @@ public class SettingsService : ISettingsService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
+    private readonly ILogger<SettingsService> _logger;
     private readonly string[] _openSettings = new string[] { "boardgroupid", "candidateboardgroupid" };
 
-    public SettingsService(PostgresDbContext db, IPermissionService permissionService)
+    public SettingsService(PostgresDbContext db, IPermissionService permissionService, ILogger<SettingsService> logger)
     {
         _db = db;
         _permissionService = permissionService;
+        _logger = logger;
     }
 
     public Task<IEnumerable<Setting>> GetSettings(Guid UserId, CancellationToken ct)
@@ -37,6 +40,7 @@ public class SettingsService : ISettingsService
     public async Task<Setting> CreateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Creating setting {SettingName} by user {UserId}.", name, userId);
 
         var setting = new Setting
         {
@@ -53,6 +57,7 @@ public class SettingsService : ISettingsService
     public async Task UpdateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Updating setting {SettingName} by user {UserId}.", name, userId);
         var setting = await GetSettingOrThrow(name, ct);
 
         setting.Value = value;
@@ -62,6 +67,7 @@ public class SettingsService : ISettingsService
     public async Task DeleteSetting(string name, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Deleting setting {SettingName} by user {UserId}.", name, userId);
         var setting = await GetSettingOrThrow(name, ct);
 
         _db.Settings.Remove(setting);
@@ -71,6 +77,7 @@ public class SettingsService : ISettingsService
     public async Task PatchSetting(string name, JsonPatchDocument<Setting> patchDoc, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Patching setting {SettingName} by user {UserId}.", name, userId);
         var setting = await GetSettingOrThrow(name, ct);
 
         if (patchDoc == null)

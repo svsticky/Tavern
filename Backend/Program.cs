@@ -12,12 +12,15 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Backend.Filters;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.HttpLogging;
 
 Env.Load();
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -51,6 +54,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
             OnTokenValidated = async context =>
             {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
                 
                 var keycloakIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
@@ -69,9 +73,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                         {
                             member.Email = newEmail;
                             await dbContext.SaveChangesAsync();
+                            logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
                         }
                     }
                 }
+            },
+
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
+                logger.LogWarning(context.Exception, "JWT authentication failed.");
+                return Task.CompletedTask;
             }
         };
         
@@ -148,6 +160,13 @@ builder.Services.AddCors(options =>
                  .AllowAnyHeader()
                  .AllowAnyMethod()
                  .AllowCredentials());
+ });
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields = HttpLoggingFields.RequestMethod
+                            | HttpLoggingFields.RequestPath
+                            | HttpLoggingFields.ResponseStatusCode
+                            | HttpLoggingFields.Duration;
 });
 
 builder.Services.AddHostedService<DatabaseSeeder>();
@@ -229,8 +248,10 @@ builder.Services.AddHangfire(config => config
 builder.Services.AddHangfireServer();
 
 WebApplication app = builder.Build();
+app.Logger.LogInformation("Starting Tavern backend. Environment: {EnvironmentName}", app.Environment.EnvironmentName);
 
 app.UseForwardedHeaders();
+app.UseHttpLogging();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

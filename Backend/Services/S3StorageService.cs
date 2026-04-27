@@ -4,8 +4,11 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Webp;
 using Backend.Interfaces;
+using Microsoft.Extensions.Logging;
 
-public class S3StorageService(IAmazonS3 s3Client) : IStorageService
+public class S3StorageService(
+    IAmazonS3 s3Client,
+    ILogger<S3StorageService> logger) : IStorageService
 {
     public async Task<string> SaveFileAsync(IFormFile file, string bucketname)
     {
@@ -39,6 +42,7 @@ public class S3StorageService(IAmazonS3 s3Client) : IStorageService
         };
 
         await s3Client.PutObjectAsync(request);
+        logger.LogInformation("Saved image file {FileKey} to bucket {BucketName}.", fileKey, bucketname);
         return fileKey;
     }
 
@@ -55,6 +59,7 @@ public class S3StorageService(IAmazonS3 s3Client) : IStorageService
         };
 
         await s3Client.PutObjectAsync(request);
+        logger.LogInformation("Saved stream file {FileKey} to bucket {BucketName}.", fileKey, bucketname);
         return fileKey;
     }
 
@@ -77,10 +82,12 @@ public class S3StorageService(IAmazonS3 s3Client) : IStorageService
         }
         catch (AmazonS3Exception e) when (e.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
+            logger.LogWarning("File {FileKey} not found in bucket {BucketName}.", fileKey, bucketname);
             return null;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Error retrieving file {FileKey} from bucket {BucketName}.", fileKey, bucketname);
             throw;
         }
     }
@@ -90,5 +97,6 @@ public class S3StorageService(IAmazonS3 s3Client) : IStorageService
         if (string.IsNullOrEmpty(fileKey)) return;
         
         await s3Client.DeleteObjectAsync(bucketname, fileKey);
+        logger.LogInformation("Deleted file {FileKey} from bucket {BucketName}.", fileKey, bucketname);
     }
 }

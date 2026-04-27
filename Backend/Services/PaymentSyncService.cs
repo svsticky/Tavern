@@ -3,16 +3,20 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
-public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundService
+public class PaymentSyncService(
+    IServiceProvider serviceProvider,
+    ILogger<PaymentSyncService> logger) : BackgroundService
 {
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Wait a bit before starting the sync to ensure the application has fully started and all services are available. 
         await Task.Delay(5000);
+        logger.LogInformation("Payment sync worker started.");
 
         await StartSyncPaymentsLoop();
     }
@@ -36,6 +40,8 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
         var pendingMollieFeePayments = await db.MollieFeePayments.Where(p => p.PaidAt == null).ToListAsync();
 
         var pendingPayments = pendingMembershipPayments.Cast<Payment>().Concat(pendingMollieFeePayments.Cast<Payment>()).Concat(pendingEnrollmentPayments.Cast<Payment>());
+        logger.LogInformation("Syncing pending payments. Membership: {MembershipCount}, Enrollment: {EnrollmentCount}, MollieFee: {MollieFeeCount}",
+            pendingMembershipPayments.Count, pendingEnrollmentPayments.Count, pendingMollieFeePayments.Count);
 
         foreach (var payment in pendingPayments)
         {
@@ -44,6 +50,7 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                 var mollieStatus = await paymentClient.GetPaymentAsync(payment.MollieId);
                 if (mollieStatus.Status == "paid")
                 {
+                    logger.LogInformation("Payment {PaymentId} marked paid in Mollie. Processing sync.", payment.Id);
                     Payment fullPayment;
 
                     if(payment is MembershipPayment)
@@ -91,12 +98,14 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                     }
                     catch
                     {
+                        logger.LogError("Transaction rollback while processing paid payment {PaymentId}.", payment.Id);
                         await transaction.RollbackAsync();
                     }
                 }
                 
                 if (mollieStatus.Status == "expired" || mollieStatus.Status == "canceled")
                 {
+                    logger.LogInformation("Payment {PaymentId} is {Status}. Removing stale payment records.", payment.Id, mollieStatus.Status);
                     // If the payment is expired or canceled, we can remove it from our database as it can no longer be paid.
                     using var transaction = await db.Database.BeginTransactionAsync();
                     try
@@ -116,11 +125,15 @@ public class PaymentSyncService(IServiceProvider serviceProvider) : BackgroundSe
                     }
                     catch
                     {
+                        logger.LogError("Transaction rollback while removing stale payment {PaymentId}.", payment.Id);
                         await transaction.RollbackAsync();
                     }
                 }
             }
-            catch (Exception) { }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to sync payment {PaymentId}.", payment.Id);
+            }
         }
     }
 }

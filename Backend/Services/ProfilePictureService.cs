@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
@@ -9,7 +10,8 @@ namespace Backend.Services
         PostgresDbContext db,
         IStorageService storageService,
         IPermissionService permissionService,
-        IFileCompressService fileCompressor
+        IFileCompressService fileCompressor,
+        ILogger<ProfilePictureService> logger
     ) : IProfilePictureService
     {
         public async Task<(Stream Stream, string ContentType)?> GetProfilePictureByPath(string path)
@@ -24,6 +26,7 @@ namespace Backend.Services
 
         public async Task<string?> UploadProfilePicture(Guid fromUserId, Guid userId, IFormFile? image)
         {
+            logger.LogInformation("Updating profile picture for member {MemberId}. Requested by {UserId}.", fromUserId, userId);
             var member = await GetMemberOrThrow(fromUserId);
             if(fromUserId != userId)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -42,12 +45,14 @@ namespace Backend.Services
                 await transaction.CommitAsync();
 
                 await DeleteOldProfilePicture(oldPath);
+                logger.LogInformation("Updated profile picture for member {MemberId}.", fromUserId);
 
                 return member.ProfilePicturePath;
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                logger.LogError(ex, "Failed updating profile picture for member {MemberId}.", fromUserId);
                 throw;
             }
         }

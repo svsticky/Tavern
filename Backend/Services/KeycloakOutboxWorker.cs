@@ -23,6 +23,7 @@ public class KeycloakOutboxWorker(
 
         db.KeycloakOutboxTasks.Add(task);
         await db.SaveChangesAsync();
+        logger.LogInformation("Enqueued Keycloak outbox task {TaskType} for {KeycloakId}.", taskType, keycloakId);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -38,6 +39,8 @@ public class KeycloakOutboxWorker(
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
         }
+
+        logger.LogInformation("Keycloak outbox worker stopped.");
     }
 
     private async Task<bool> TryProcessNextTaskAsync(CancellationToken ct)
@@ -51,6 +54,8 @@ public class KeycloakOutboxWorker(
             .FirstOrDefaultAsync(ct);
 
         if (task == null) return false;
+        logger.LogInformation("Processing Keycloak outbox task {TaskType} for {KeycloakId}. Retry {RetryCount}.",
+            task.TaskType, task.KeycloakId, task.RetryCount);
 
         var syncService = scope.ServiceProvider.GetRequiredService<KeycloakAPIService>();
 
@@ -59,6 +64,7 @@ public class KeycloakOutboxWorker(
             await HandleTaskAsync(db, syncService, task, ct);
             
             db.KeycloakOutboxTasks.Remove(task);
+            logger.LogInformation("Completed Keycloak outbox task {TaskType} for {KeycloakId}.", task.TaskType, task.KeycloakId);
         }
         catch (Exception ex)
         {
@@ -81,7 +87,12 @@ public class KeycloakOutboxWorker(
                     if (kId != null)
                     {
                         member.KeycloakId = kId;
+                        logger.LogInformation("Linked local member {MemberId} to Keycloak user {KeycloakId}.", member.Id, kId);
                     }
+                }
+                else
+                {
+                    logger.LogWarning("Keycloak create task skipped: member {MemberId} was not found.", task.KeycloakId);
                 }
                 break;
 
@@ -94,6 +105,10 @@ public class KeycloakOutboxWorker(
                 if (memberToDelete?.KeycloakId != null)
                 {
                     await syncService.DeleteUserInKeycloak(memberToDelete.KeycloakId.Value);
+                }
+                else
+                {
+                    logger.LogWarning("Keycloak delete task skipped: user {KeycloakId} was not found in local members.", task.KeycloakId);
                 }
                 break;
 
@@ -115,5 +130,7 @@ public class KeycloakOutboxWorker(
         // Exponential backoff with a max delay of 1 hour
         double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);
         task.CreatedAt = DateTime.UtcNow.AddMinutes(extraMinutes);
+        logger.LogWarning("Rescheduled Keycloak task {TaskType} for {KeycloakId} at {NextRunUtc}.",
+            task.TaskType, task.KeycloakId, task.CreatedAt);
     }
 }

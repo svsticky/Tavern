@@ -3,13 +3,21 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
+using Microsoft.Extensions.Logging;
 
 public class FileCompressService : IFileCompressService
 {
     private const int _maxWidth = 1280;
+    private readonly ILogger<FileCompressService> _logger;
+
+    public FileCompressService(ILogger<FileCompressService> logger)
+    {
+        _logger = logger;
+    }
 
     public async Task<(Stream Stream, string ContentType)> CompressFileAsync(IFormFile file)
     {
+        _logger.LogInformation("Compressing file {FileName} with content type {ContentType}.", file.FileName, file.ContentType);
         var outputStream = new MemoryStream();
         var contentType = file.ContentType.ToLower();
 
@@ -43,6 +51,7 @@ public class FileCompressService : IFileCompressService
         }
 
         outputStream.Position = 0;
+        _logger.LogInformation("Compressed file {FileName}. Output content type: {OutputContentType}.", file.FileName, contentType);
         
         return (outputStream, contentType);
     }

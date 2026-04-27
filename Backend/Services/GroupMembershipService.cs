@@ -4,6 +4,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
@@ -12,12 +13,14 @@ public class GroupMembershipService : IGroupMembershipService
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly KeycloakOutboxWorker _keycloakOutboxWorker;
+    private readonly ILogger<GroupMembershipService> _logger;
 
-    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxService)
+    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxService, ILogger<GroupMembershipService> logger)
     {
         _db = db;
         _permissionService = permissionService;
         _keycloakOutboxWorker = keycloakOutboxService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(GetGroupMembershipsDTO dto, Guid userId, CancellationToken cancellationToken)
@@ -71,6 +74,7 @@ public class GroupMembershipService : IGroupMembershipService
     public async Task<GroupMembership> CreateGroupMembership(PostGroupMembershipDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Creating group membership for member {MemberId} in group {GroupId} by user {UserId}.", dto.MemberId, dto.GroupId, userId);
 
         var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
         var group = await GetGroupOrThrow(dto.GroupId, cancellationToken);
@@ -99,9 +103,10 @@ public class GroupMembershipService : IGroupMembershipService
 
             return entry.Entity;
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed creating group membership for member {MemberId} in group {GroupId}.", dto.MemberId, dto.GroupId);
             throw;
         }
     }
@@ -109,6 +114,7 @@ public class GroupMembershipService : IGroupMembershipService
     public async Task DeleteGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Deleting group membership {MembershipId} by user {UserId}.", id, userId);
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
@@ -128,9 +134,10 @@ public class GroupMembershipService : IGroupMembershipService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed deleting group membership {MembershipId}.", id);
             throw;
         }
     }
@@ -138,6 +145,7 @@ public class GroupMembershipService : IGroupMembershipService
     public async Task PatchGroupMembership(uint id, Guid userId, JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Patching group membership {MembershipId} by user {UserId}.", id, userId);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -183,9 +191,10 @@ public class GroupMembershipService : IGroupMembershipService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed patching group membership {MembershipId}.", id);
             throw;
         }
     }
@@ -193,6 +202,7 @@ public class GroupMembershipService : IGroupMembershipService
     public async Task UpdateGroupMembership(uint id, Guid userId, GroupMembershipUpdateDTO dto, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Updating group membership {MembershipId} by user {UserId}.", id, userId);
 
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
@@ -227,9 +237,10 @@ public class GroupMembershipService : IGroupMembershipService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed updating group membership {MembershipId}.", id);
             throw;
         }
     }

@@ -4,18 +4,21 @@ using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models.Payment.Response;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
     public class PaymentWebhookService(
         PostgresDbContext db,
-        IPaymentClient paymentClient
+        IPaymentClient paymentClient,
+        ILogger<PaymentWebhookService> logger
     ) : IPaymentWebhookService
     {
         private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE") != null;
 
         public async Task HandleWebhookAsync(string id)
         {
+            logger.LogInformation("Handling Mollie webhook for payment id {MollieId}.", id);
             PaymentResponse result = await paymentClient.GetPaymentAsync(id);
             var payments = await GetPaymentsByMollieId(id);
 
@@ -25,6 +28,7 @@ namespace Backend.Services
             if (result.Status == "paid")
             {
                 await ProcessPaidPayments(payments, result);
+                logger.LogInformation("Processed paid webhook for Mollie id {MollieId}. Matched {PaymentCount} local payments.", id, payments.Count);
             }
         }
 
@@ -70,9 +74,10 @@ namespace Backend.Services
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+                logger.LogError(ex, "Failed processing paid webhook transaction for Mollie id {MollieId}.", result.Id);
                 throw;
             }
         }

@@ -4,12 +4,14 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
     public class RoleService(
         PostgresDbContext db,
-        IPermissionService permissionService
+        IPermissionService permissionService,
+        ILogger<RoleService> logger
     ) : IRoleService
     {
         public async Task<List<Role>> GetRoles(CancellationToken ct)
@@ -25,6 +27,7 @@ namespace Backend.Services
     public async Task<Role> CreateRole(PostRoleDTO dto, Guid userId, CancellationToken ct)
     {
         permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        logger.LogInformation("Creating role by user {UserId}.", userId);
 
         var role = BuildRole(dto);
 
@@ -32,6 +35,7 @@ namespace Backend.Services
 
             db.Roles.Add(role);
             await db.SaveChangesAsync(ct);
+            logger.LogInformation("Created role {RoleId}.", role.Id);
 
             return role;
         }
@@ -39,6 +43,7 @@ namespace Backend.Services
     public async Task DeleteRole(uint id, Guid userId, CancellationToken ct)
     {
         permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        logger.LogInformation("Deleting role {RoleId} by user {UserId}.", id, userId);
 
         var role = await GetRoleOrThrow(id, ct);
 
@@ -49,6 +54,7 @@ namespace Backend.Services
     public async Task PatchRole(uint id, JsonPatchDocument<Role> patchDoc, Guid userId, CancellationToken ct)
     {
         permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        logger.LogInformation("Patching role {RoleId} by user {UserId}.", id, userId);
 
         if (patchDoc == null)
             throw new Exception("Patch document is null");
@@ -68,6 +74,7 @@ namespace Backend.Services
     public async Task UpdateRole(uint id, RoleUpdateDTO dto, Guid userId, CancellationToken ct)
     {
         permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        logger.LogInformation("Updating role {RoleId} by user {UserId}.", id, userId);
 
         var role = await GetRoleOrThrow(id, ct);
         ApplyUpdate(role, dto);

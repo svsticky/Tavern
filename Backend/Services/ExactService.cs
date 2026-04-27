@@ -4,6 +4,7 @@ using Backend.Models.Domain;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
@@ -11,6 +12,7 @@ namespace Backend.Services
     {
         private readonly HttpClient _http;
         private readonly PostgresDbContext _db;
+        private readonly ILogger<ExactService> _logger;
 
         private readonly string _division = Environment.GetEnvironmentVariable("EXACT_DIVISION")!;
 
@@ -18,16 +20,18 @@ namespace Backend.Services
 
         private readonly string _membershipGLAccount = Environment.GetEnvironmentVariable("EXACT_MEMBERSHIP_GL_ACCOUNT")!;
 
-        public ExactService(HttpClient http, PostgresDbContext db)
+        public ExactService(HttpClient http, PostgresDbContext db, ILogger<ExactService> logger)
         {
             _http = http;
             _db = db;
+            _logger = logger;
         }
 
         public async Task<Guid> SyncPaymentAsync(Payment payment, CancellationToken ct)
         {
             if (payment == null)
                 throw new ArgumentNullException(nameof(payment));
+            _logger.LogInformation("Syncing payment {PaymentId} to Exact. Type: {PaymentType}", payment.Id, payment.GetType().Name);
 
             _http.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", _accessToken);
@@ -35,7 +39,10 @@ namespace Backend.Services
             var existingId = await FindExistingSalesEntryId(payment, ct);
 
             if (existingId != null)
+            {
+                _logger.LogInformation("Payment {PaymentId} already synced to Exact with entry {EntryId}.", payment.Id, existingId.Value);
                 return existingId.Value;
+            }
 
             var salesEntry = BuildSalesEntry(payment);
 
@@ -53,11 +60,14 @@ namespace Backend.Services
 
             if (!response.IsSuccessStatusCode)
             {
+                _logger.LogError("Exact sync failed for payment {PaymentId}. Status: {StatusCode}", payment.Id, response.StatusCode);
                 throw new Exception($"Exact sync failed: {responseBody}");
             }
 
             var responseJson = JsonSerializer.Deserialize<JsonElement>(responseBody);
-            return responseJson.GetProperty("ID").GetGuid();
+            var createdId = responseJson.GetProperty("ID").GetGuid();
+            _logger.LogInformation("Payment {PaymentId} synced to Exact with entry {EntryId}.", payment.Id, createdId);
+            return createdId;
         }
 
         private object BuildSalesEntry(Payment payment)

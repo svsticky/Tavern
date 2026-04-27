@@ -3,16 +3,19 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
 public class SpecificationAnswerService(
         PostgresDbContext db,
-        IPermissionService permissionService
+        IPermissionService permissionService,
+        ILogger<SpecificationAnswerService> logger
 ) : ISpecificationAnswerService
 {
     public async Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
     {
+        logger.LogInformation("Patching specification answer {AnswerId} for member {MemberId} by user {UserId}.", answerId, fromUserId, userId);
         if(userId != fromUserId)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);

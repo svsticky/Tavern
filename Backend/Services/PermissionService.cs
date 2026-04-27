@@ -2,10 +2,13 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
-public class PermissionService(PostgresDbContext db) : IPermissionService
+public class PermissionService(
+    PostgresDbContext db,
+    ILogger<PermissionService> logger) : IPermissionService
 {
     #region Group Checks
     public bool IsInGroupInCurrentYear(Guid memberId, uint groupId) 
@@ -74,6 +77,7 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
     {
         if (!IsBoardMember(userId)!)
         {
+            logger.LogWarning("Unauthorized board-only access for user {UserId}.", userId);
             throw new UnauthorizedAccessException();
         }
     }
@@ -88,6 +92,7 @@ public class PermissionService(PostgresDbContext db) : IPermissionService
     {
         if (!IsBoardOrCandidateBoardMember(userId)!)
         {
+            logger.LogWarning("Unauthorized board-or-candidate access for user {UserId}.", userId);
             throw new UnauthorizedAccessException();
         }
     }

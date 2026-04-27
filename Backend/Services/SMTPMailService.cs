@@ -4,10 +4,16 @@ using Backend.Interfaces;
 using Backend.Models;
 using MailKit.Net.Smtp;
 using MimeKit;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
-public class SMTPMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService, IPermissionService permissionService) : AbstractMailService(db, paymentValidationService, permissionService)
+public class SMTPMailService(
+    PostgresDbContext db,
+    IPaymentValidationService paymentValidationService,
+    IPermissionService permissionService,
+    ILogger<SMTPMailService> logger,
+    ILogger<AbstractMailService> baseLogger) : AbstractMailService(db, paymentValidationService, permissionService, baseLogger)
 {
     private readonly string _host = Environment.GetEnvironmentVariable("SMTP_HOST")!;
     private readonly int _port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
@@ -17,6 +23,7 @@ public class SMTPMailService(PostgresDbContext db, IPaymentValidationService pay
 
     protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
+        logger.LogInformation("Sending SMTP email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);
         var message = new MimeMessage();
         message.From.Add(new MailboxAddress(from.Name, from.Mail));
         message.Subject = subject;
@@ -46,5 +53,6 @@ public class SMTPMailService(PostgresDbContext db, IPaymentValidationService pay
 
         await client.SendAsync(message, ct);
         await client.DisconnectAsync(true, ct);
+        logger.LogInformation("SMTP email sent successfully to {RecipientCount} recipients.", to.Length);
     }
 }

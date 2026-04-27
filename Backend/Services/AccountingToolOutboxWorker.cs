@@ -21,6 +21,7 @@ public class AccountingToolOutboxWorker(
 
         db.AccountingToolOutboxTasks.Add(task);
         db.SaveChanges();
+        logger.LogInformation("Enqueued accounting outbox task {TaskType} for payment {PaymentId}.", taskType, paymentId);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -31,6 +32,8 @@ public class AccountingToolOutboxWorker(
             return;
         }
 
+        logger.LogInformation("Accounting tool outbox worker started.");
+
         while (!stoppingToken.IsCancellationRequested)
         {
             bool processed = await TryProcessNextTaskAsync(stoppingToken);
@@ -40,6 +43,8 @@ public class AccountingToolOutboxWorker(
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
         }
+
+        logger.LogInformation("Accounting tool outbox worker stopped.");
     }
 
     private async Task<bool> TryProcessNextTaskAsync(CancellationToken ct)
@@ -53,6 +58,8 @@ public class AccountingToolOutboxWorker(
             .FirstOrDefaultAsync(ct);
 
         if (task == null) return false;
+        logger.LogInformation("Processing accounting outbox task {TaskType} for payment {PaymentId}. Retry {RetryCount}.",
+            task.TaskType, task.PaymentId, task.RetryCount);
 
         var exactService = scope.ServiceProvider.GetRequiredService<IAccountingToolService>();
 
@@ -60,6 +67,7 @@ public class AccountingToolOutboxWorker(
         {
             await HandleTaskAsync(db, exactService, task, ct);
             db.AccountingToolOutboxTasks.Remove(task);
+            logger.LogInformation("Completed accounting outbox task {TaskType} for payment {PaymentId}.", task.TaskType, task.PaymentId);
         }
         catch (Exception ex)
         {
@@ -84,6 +92,10 @@ public class AccountingToolOutboxWorker(
             var entryId = await service.SyncPaymentAsync(payment, ct);
             payment.AccountingToolEntryId = entryId;
         }
+        else
+        {
+            logger.LogWarning("Accounting outbox task {TaskType} skipped: payment {PaymentId} not found.", task.TaskType, task.PaymentId);
+        }
     }
 
     private void HandleFailure(AccountingToolOutboxTask task, Exception ex)
@@ -94,5 +106,7 @@ public class AccountingToolOutboxWorker(
         // Exponential backoff with a max delay of 1 hour
         double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);
         task.CreatedAt = DateTime.UtcNow.AddMinutes(extraMinutes);
+        logger.LogWarning("Rescheduled accounting task {TaskType} for payment {PaymentId} at {NextRunUtc}.",
+            task.TaskType, task.PaymentId, task.CreatedAt);
     }
 }

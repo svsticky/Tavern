@@ -4,12 +4,14 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
     public class StudyService(
             PostgresDbContext db,
-            IPermissionService permissionService
+            IPermissionService permissionService,
+            ILogger<StudyService> logger
         ) : IStudyService
     {
         public async Task<List<Study>> GetStudies(CancellationToken ct)
@@ -25,12 +27,14 @@ namespace Backend.Services
         public async Task<Study> CreateStudy(PostStudyDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Creating study by user {UserId}.", userId);
             var study = BuildStudy(dto);
 
             StateValidator.Validate(study);
 
             db.Studies.Add(study);
                 await db.SaveChangesAsync(ct);
+                logger.LogInformation("Created study {StudyId}.", study.Id);
 
                 return study;
             }
@@ -38,6 +42,7 @@ namespace Backend.Services
         public async Task DeleteStudy(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Deleting study {StudyId} by user {UserId}.", id, userId);
             var study = await GetStudyOrThrow(id, ct);
 
             db.Studies.Remove(study);
@@ -47,6 +52,7 @@ namespace Backend.Services
         public async Task PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Patching study {StudyId} by user {UserId}.", id, userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
@@ -66,6 +72,7 @@ namespace Backend.Services
         public async Task UpdateStudy(uint id, StudyUpdateDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Updating study {StudyId} by user {UserId}.", id, userId);
             var study = await GetStudyOrThrow(id, ct);
             ApplyStudyUpdate(study, dto);
 

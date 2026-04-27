@@ -4,13 +4,15 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
     public class RoleAliasService(
         PostgresDbContext db,
         IPermissionService permissionService,
-        KeycloakOutboxWorker keycloakOutboxWorker
+        KeycloakOutboxWorker keycloakOutboxWorker,
+        ILogger<RoleAliasService> logger
     ) : IRoleAliasService
     {
         public async Task<List<RoleAlias>> GetRoleAliases(CancellationToken ct)
@@ -30,6 +32,7 @@ namespace Backend.Services
         public async Task<RoleAlias> CreateRoleAlias(PostRoleAliasDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Creating role alias for role {RoleId} by user {UserId}.", dto.RoleId, userId);
 
             var role = await db.Roles.FindAsync(dto.RoleId, ct);
             if (role == null)
@@ -45,6 +48,7 @@ namespace Backend.Services
 
             db.RoleAliases.Add(entity);
             await db.SaveChangesAsync(ct);
+            logger.LogInformation("Created role alias {RoleAliasId}.", entity.Id);
 
             return entity;
         }
@@ -52,6 +56,7 @@ namespace Backend.Services
         public async Task DeleteRoleAlias(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Deleting role alias {RoleAliasId} by user {UserId}.", id, userId);
 
             var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
@@ -68,6 +73,7 @@ namespace Backend.Services
         public async Task PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Patching role alias {RoleAliasId} by user {UserId}.", id, userId);
 
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
@@ -94,6 +100,7 @@ namespace Backend.Services
         public async Task UpdateRoleAlias(uint id, RoleAliasUpdateDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Updating role alias {RoleAliasId} by user {UserId}.", id, userId);
 
             var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
@@ -146,9 +153,10 @@ namespace Backend.Services
                 await action();
                 await transaction.CommitAsync(ct);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(ct);
+                logger.LogError(ex, "Transaction failed in role alias service.");
                 throw;
             }
         }

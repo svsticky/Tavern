@@ -5,12 +5,14 @@ using Backend.Models.Domain;
 using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
     public class StudyEnrollmentService(
         PostgresDbContext db,
-        IPermissionService permissionService
+        IPermissionService permissionService,
+        ILogger<StudyEnrollmentService> logger
     ) : IStudyEnrollmentService
     {
         public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct)
@@ -44,6 +46,7 @@ namespace Backend.Services
         public async Task<StudyEnrollmentResponseDTO> CreateStudyEnrollment(PostStudyEnrollmentDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Creating study enrollment for member {MemberId} study {StudyId} by user {UserId}.", dto.MemberId, dto.StudyId, userId);
 
             var member = await GetMemberOrThrow(dto.MemberId, ct);
             var study = await GetStudyOrThrow(dto.StudyId, ct);
@@ -63,6 +66,7 @@ namespace Backend.Services
         public async Task DeleteStudyEnrollment(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Deleting study enrollment {EnrollmentId} by user {UserId}.", id, userId);
 
             var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
             if (enrollment == null)
@@ -75,6 +79,7 @@ namespace Backend.Services
         public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Patching study enrollment {EnrollmentId} by user {UserId}.", id, userId);
 
             if(patchDoc == null)
                 throw new ArgumentException("Patch document is null");
@@ -117,9 +122,10 @@ namespace Backend.Services
                 await db.SaveChangesAsync(ct);
                 await transaction.CommitAsync(ct);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(ct);
+                logger.LogError(ex, "Failed patching study enrollment {EnrollmentId}.", id);
                 throw;
             }            
         }

@@ -2,10 +2,13 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
-public class PaymentValidationService(PostgresDbContext db) : IPaymentValidationService
+public class PaymentValidationService(
+    PostgresDbContext db,
+    ILogger<PaymentValidationService> logger) : IPaymentValidationService
 {
     public bool HasPaidMembershipPayment(Guid memberId)
     {
@@ -16,6 +19,7 @@ public class PaymentValidationService(PostgresDbContext db) : IPaymentValidation
 
         if (member == null)
         {
+            logger.LogWarning("Membership payment check failed: member {MemberId} not found.", memberId);
             throw new Exception($"Member with id {memberId} not found.");
         }
 

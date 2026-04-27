@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Backend.Validators;
 using Backend.Utils.DateTime;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Interfaces;
 
@@ -20,12 +21,18 @@ public abstract class AbstractMailService
     protected readonly IPaymentValidationService _paymentValidationService;
 
     protected readonly IPermissionService _permissionService;
+    protected readonly ILogger<AbstractMailService> _logger;
 
-    public AbstractMailService(PostgresDbContext db, IPaymentValidationService paymentValidationService, IPermissionService permissionService)
+    public AbstractMailService(
+        PostgresDbContext db,
+        IPaymentValidationService paymentValidationService,
+        IPermissionService permissionService,
+        ILogger<AbstractMailService> logger)
     {
         _db = db;
         _paymentValidationService = paymentValidationService;
         _permissionService = permissionService;
+        _logger = logger;
         _roleMailMap = new Dictionary<uint, string>();
 
         var settings = _db.Settings.ToList();
@@ -45,9 +52,11 @@ public abstract class AbstractMailService
     public async Task SendEmailAsync(PostMailDTO dto, Guid UserId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
+        _logger.LogInformation("Preparing mail send by user {UserId} to {RecipientCount} recipients.", UserId, dto.Recipients.Length);
 
         if(dto.Recipients.Length == 0)
         {
+            _logger.LogInformation("Skipping mail send by user {UserId} because recipient list is empty.", UserId);
             return;
         }
 
@@ -59,6 +68,7 @@ public abstract class AbstractMailService
         }
 
         await SendEmailCoreAsync(from, dto.Recipients, dto.Subject, dto.HtmlContent, ct);
+        _logger.LogInformation("Completed mail send by user {UserId} to {RecipientCount} recipients.", UserId, dto.Recipients.Length);
     }
 
     public async Task SendEmailAsync(PostActivityMailDTO dto, Guid userId, CancellationToken ct)

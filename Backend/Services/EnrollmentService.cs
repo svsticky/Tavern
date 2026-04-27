@@ -6,6 +6,7 @@ using Backend.Models.Domain;
 using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
@@ -14,15 +15,18 @@ public class EnrollmentService : IEnrollmentService
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly IPaymentValidationService _paymentValidationService;
+    private readonly ILogger<EnrollmentService> _logger;
 
     public EnrollmentService(
         PostgresDbContext db,
         IPermissionService permissionService,
-        IPaymentValidationService paymentValidationService)
+        IPaymentValidationService paymentValidationService,
+        ILogger<EnrollmentService> logger)
     {
         _db = db;
         _permissionService = permissionService;
         _paymentValidationService = paymentValidationService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken)
@@ -66,6 +70,7 @@ public class EnrollmentService : IEnrollmentService
 
     public async Task<EnrollmentResponseDTO> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Creating enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         
         if(dto.MemberId != userId)
@@ -112,15 +117,17 @@ public class EnrollmentService : IEnrollmentService
 
             return EnrollmentProjections.ToDto(userId, isBoardMember).Compile()(enrollment);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed creating enrollment for member {MemberId} in activity {ActivityId}.", dto.MemberId, dto.ActivityId);
             throw;
         }
     }
 
     public async Task DeleteEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Deleting enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
         if(dto.MemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         
@@ -159,15 +166,17 @@ public class EnrollmentService : IEnrollmentService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed deleting enrollment for member {MemberId} in activity {ActivityId}.", dto.MemberId, dto.ActivityId);
             throw;
         }
     }
 
     public async Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId,CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Updating enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -210,15 +219,17 @@ public class EnrollmentService : IEnrollmentService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed updating enrollment for member {MemberId} in activity {ActivityId}.", dto.MemberId, dto.ActivityId);
             throw;
         }
     }
 
     public async Task PatchEnrollment(EnrollmentKeyDTO dto, JsonPatchDocument<Enrollment> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
+        _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
         ArgumentNullException.ThrowIfNull(patchDoc);
 
         if (patchDoc.Operations.Any(op => op.path.Equals("/activity", StringComparison.OrdinalIgnoreCase)

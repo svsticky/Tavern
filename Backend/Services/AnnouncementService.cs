@@ -5,6 +5,7 @@ using Backend.Models.Domain;
 using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
@@ -12,11 +13,13 @@ public class AnnouncementService : IAnnouncementService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
+    private readonly ILogger<AnnouncementService> _logger;
 
-    public AnnouncementService(PostgresDbContext db, IPermissionService permissionService)
+    public AnnouncementService(PostgresDbContext db, IPermissionService permissionService, ILogger<AnnouncementService> logger)
     {
         _db = db;
         _permissionService = permissionService;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(Guid userId, CancellationToken ct)
@@ -40,6 +43,7 @@ public class AnnouncementService : IAnnouncementService
     public async Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Creating announcement by user {UserId}.", userId);
 
         var announcement = BuildAnnouncement(userId, dto);
 
@@ -47,6 +51,7 @@ public class AnnouncementService : IAnnouncementService
 
         _db.Announcements.Add(announcement);
         await _db.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Created announcement {AnnouncementId}.", announcement.Id);
 
         return announcement;
     }
@@ -54,6 +59,7 @@ public class AnnouncementService : IAnnouncementService
     public async Task DeleteAnnouncement(uint id, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Deleting announcement {AnnouncementId} by user {UserId}.", id, userId);
 
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
 
@@ -64,6 +70,7 @@ public class AnnouncementService : IAnnouncementService
     public async Task PatchAnnouncement(uint id, JsonPatchDocument<Announcement> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Patching announcement {AnnouncementId} by user {UserId}.", id, userId);
 
         ArgumentNullException.ThrowIfNull(patchDoc);
 
@@ -84,6 +91,7 @@ public class AnnouncementService : IAnnouncementService
     public async Task UpdateAnnouncement(uint id, UpdateAnnouncementDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _logger.LogInformation("Updating announcement {AnnouncementId} by user {UserId}.", id, userId);
 
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
         ApplyUpdate(announcement, dto);

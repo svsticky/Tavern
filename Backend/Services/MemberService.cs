@@ -6,6 +6,7 @@ using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
@@ -15,7 +16,8 @@ namespace Backend.Services
         IPaymentValidationService paymentValidationService,
         IStorageService storageService,
         IPaymentClient mollieClient,
-        KeycloakOutboxWorker keycloakOutboxWorker
+        KeycloakOutboxWorker keycloakOutboxWorker,
+        ILogger<MemberService> logger
     ) : IMemberService
     {
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
@@ -57,6 +59,7 @@ namespace Backend.Services
 
         public async Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken)
         {
+            logger.LogInformation("Creating member with email {Email}.", dto.Email);
             // Check if member is a minor and if so, require parent phone number
             if (dto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) &&
                 string.IsNullOrEmpty(dto.ParentPhoneNumber))
@@ -88,17 +91,20 @@ namespace Backend.Services
                 await db.SaveChangesAsync(cancellationToken);
 
                 await transaction.CommitAsync(cancellationToken);
+                logger.LogInformation("Created member {MemberId}.", member.Id);
                 return member;
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed creating member with email {Email}.", dto.Email);
                 throw;
             }
         }
 
         public async Task DeleteMember(Guid id, Guid userId, CancellationToken cancellationToken)
         {
+            logger.LogInformation("Deleting member {MemberId}. Requested by {UserId}.", id, userId);
             var member = await db.Members.FindAsync(id, cancellationToken);
 
             if (id != userId)
@@ -121,15 +127,17 @@ namespace Backend.Services
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed deleting member {MemberId}.", id);
                 throw;
             }
         }
 
         public async Task PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, Guid userId, CancellationToken cancellationToken)
         {
+            logger.LogInformation("Patching member {MemberId}. Requested by {UserId}.", id, userId);
             var member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null) 
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
@@ -150,15 +158,17 @@ namespace Backend.Services
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed patching member {MemberId}.", id);
                 throw;
             }
         }
 
         public async Task UpdateMember(Guid id, MemberUpdateDTO dto, Guid userId, CancellationToken cancellationToken)
         {
+            logger.LogInformation("Updating member {MemberId}. Requested by {UserId}.", id, userId);
             var member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
@@ -191,9 +201,10 @@ namespace Backend.Services
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed updating member {MemberId}.", id);
                 throw;
             }
         }
@@ -218,6 +229,7 @@ namespace Backend.Services
             await db.SaveChangesAsync(cancellationToken);
 
             await storageService.DeleteFileAsync("profile-pictures", oldPath);
+            logger.LogInformation("Deleted profile picture for member {MemberId}.", id);
         }
 
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
