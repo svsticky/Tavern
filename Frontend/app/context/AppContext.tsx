@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, type ReactNode } from 'react';
+import type { MemberResponseDto } from '~/api';
 
 interface AppContextType {
   boardGroupId: number | null;
   setBoardGroupId: (id: number) => void;
   candidateBoardGroupId: number | null;
   setCandidateBoardGroupId: (id: number) => void;
-  ableToEnroll: boolean;
-  setAbleToEnroll: (able: boolean) => void;
+  member: MemberResponseDto | null;
+  setMember: React.Dispatch<React.SetStateAction<MemberResponseDto | null>>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -14,10 +15,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [boardGroupId, setBoardGroupId] = useState<number | null>(null);
   const [candidateBoardGroupId, setCandidateBoardGroupId] = useState<number | null>(null);
-  const [ableToEnroll, setAbleToEnroll] = useState<boolean>(false);
+  const [member, setMember] = useState<MemberResponseDto | null>(null);
 
   return (
-    <AppContext.Provider value={{ boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, ableToEnroll, setAbleToEnroll }}>
+    <AppContext.Provider value={{ boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, member, setMember }}>
       {children}
     </AppContext.Provider>
   );

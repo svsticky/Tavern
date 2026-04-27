@@ -11,6 +11,7 @@ import Input from "~/components/UI/Input";
 import { handleChangeEmail, handleChangePassword, handleSaveAccount, handleSubscriptionChange } from "./ChangeAccountForm.handlers";
 import { useKeycloak } from "@react-keycloak/web";
 import { type ChangeAccountFormData } from "./ChangeAccountForm.types";
+import { useApp } from "~/context/AppContext";
 
 enum MailSubscriptions {
   GeneralMemberMeetings = 1,
@@ -22,6 +23,7 @@ enum MailSubscriptions {
 
 export default function ChangeAccountForm({member}: {member: MemberResponseDto}) {
     const {keycloak} = useKeycloak();
+    const {setMember} = useApp();
     const [saving, setSaving] = useState(false);
 
     const [formData, setFormData] = useState<ChangeAccountFormData>({
@@ -173,7 +175,7 @@ export default function ChangeAccountForm({member}: {member: MemberResponseDto})
           </FormSection>
 
           <Button 
-            onClick={() => member.id && handleSaveAccount(member.id, formData, setSaving)}
+            onClick={() => member.id && handleSaveAccount(member.id, formData, setSaving, setMember)}
             disabled={saving || !isFormValid}
             className="w-full"
           >

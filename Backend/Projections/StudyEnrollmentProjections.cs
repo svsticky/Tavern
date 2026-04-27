@@ -17,6 +17,7 @@ public static class StudyEnrollmentProjections
             StudyTitle = se.Study.Title,
             EnrollmentDate = se.EnrollmentDate,
             CompletionDate = se.CompletionDate,
+            StudyType = se.Study.Type,
             Status = se.Status
         };
     }

@@ -12,7 +12,7 @@ export default function AuthenticatedLayout() {
 
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
-  const { boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, ableToEnroll, setAbleToEnroll } = useApp();
+  const { boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, member, setMember } = useApp();
 
   useEffect(() => {
     if (!initialized || !client.instance) return;
@@ -91,18 +91,16 @@ export default function AuthenticatedLayout() {
         .catch(err => console.error("Could not fetch candidate board group ID", err));
     }
 
-    if(ableToEnroll === null) {
+    if(member == null) {
       getApiMembersById({
         path: {
           id: keycloak.tokenParsed?.UserId ?? ""
         }
-      })
-        .then(res => {
-          if (res.data) {
-            setAbleToEnroll(!!res.data.studyEnrollments?.some(e => e.completionDate === null || new Date(e.completionDate!) > new Date(Date.now())) && !res.data.suspended);
-          }
-        })
-        .catch(err => console.error("Could not fetch member data", err));
+      }).then(res => {
+        if(res.data) {
+          setMember(res.data);
+        }
+      }).catch(err => console.error("Could not fetch member data for authenticated user", err));
     }
 
     const resInterceptor = client.instance.interceptors.response.use(

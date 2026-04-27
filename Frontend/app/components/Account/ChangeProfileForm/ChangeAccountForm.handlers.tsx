@@ -1,10 +1,11 @@
 import { t } from "i18next";
-import type { SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import toast from "react-hot-toast";
-import { patchApiMembersById } from "~/api";
+import { patchApiMembersById, type MemberResponseDto } from "~/api";
 import i18n from "~/i18n";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 import type Keycloak from "keycloak-js";
+import { mailSubscriptionMap } from "~/types/MailSubscriptionsMap";
 
 export const handleSubscriptionChange = (flag: number, checked: boolean, setFormData: (formData: SetStateAction<ChangeAccountFormData>) => void) => {
     setFormData(prev => ({
@@ -39,7 +40,12 @@ else{
 }
 }; 
 
-export const handleSaveAccount = async (userId: string, formData: ChangeAccountFormData, setSaving: (saving: boolean) => void) => {
+export const handleSaveAccount = async (
+        userId: string, 
+        formData: ChangeAccountFormData, 
+        setSaving: (saving: boolean) => void, 
+        setMember: Dispatch<SetStateAction<MemberResponseDto | null>>
+    ) => {
     setSaving(true);
 
     const saveProcess = async () => {
@@ -58,6 +64,8 @@ export const handleSaveAccount = async (userId: string, formData: ChangeAccountF
                 ]
             });
             i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
+
+            setMember((prev) => prev ? { ...prev, ...formData, mailSubscriptions: mailSubscriptionMap[formData.mailSubscriptions] } : null);
         } catch (err) {
             console.error("Error saving account:", err);
             throw err;

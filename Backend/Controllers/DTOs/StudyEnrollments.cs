@@ -34,6 +34,9 @@ public class StudyEnrollmentResponseDTO
     /// <inheritdoc cref="Models.Study"/>
     public string? StudyTitle { get; set; }
 
+    /// <inheritdoc cref="Models.StudyEnrollment.Study"/>
+    public StudyType? StudyType { get; set; }
+
     /// <inheritdoc cref="Models.StudyEnrollment.EnrollmentDate"/>
     public required DateTimeOffset EnrollmentDate { get; set; }
 

@@ -474,6 +474,7 @@ export type StudyEnrollmentResponseDto = {
     memberName?: string | null;
     studyId?: number | null;
     studyTitle?: string | null;
+    studyType?: StudyType;
     enrollmentDate: string;
     completionDate?: string | null;
     status: StudyStatus;
@@ -856,7 +857,7 @@ export type DeleteApiEnrollmentsByActivityIdByMemberIdData = {
         MemberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{ActivityId}/{MemberId}';
+    url: '/api/enrollments/{activityId}/{memberId}';
 };
 
 export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
@@ -873,7 +874,7 @@ export type GetApiEnrollmentsByActivityIdByMemberIdData = {
         MemberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{ActivityId}/{MemberId}';
+    url: '/api/enrollments/{activityId}/{memberId}';
 };
 
 export type GetApiEnrollmentsByActivityIdByMemberIdResponses = {
@@ -892,7 +893,7 @@ export type PatchApiEnrollmentsByActivityIdByMemberIdData = {
         MemberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{ActivityId}/{MemberId}';
+    url: '/api/enrollments/{activityId}/{memberId}';
 };
 
 export type PatchApiEnrollmentsByActivityIdByMemberIdResponses = {

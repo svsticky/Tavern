@@ -27,14 +27,16 @@ public static class TargetAudienceHelper
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.FirstYears) && member.StudyEnrollments.Any(se => se.CompletionDate == null 
+        if (targetAudience.HasFlag(TargetAudience.FirstYears) && member.StudyEnrollments.Any(se => 
+            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
             && se.Study.Type == StudyType.Bachelor 
             && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-1)))
         {
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.SecondYears) && member.StudyEnrollments.Any(se => se.CompletionDate == null 
+        if (targetAudience.HasFlag(TargetAudience.SecondYears) && member.StudyEnrollments.Any(se =>
+            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
             && se.Study.Type == StudyType.Bachelor
             && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-2) 
             && se.EnrollmentDate < DateTimeOffset.UtcNow.AddYears(-1)))
@@ -42,14 +44,16 @@ public static class TargetAudienceHelper
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.ThirdYearsAndAbove) && member.StudyEnrollments.Any(se => se.CompletionDate == null 
+        if (targetAudience.HasFlag(TargetAudience.ThirdYearsAndAbove) && member.StudyEnrollments.Any(se => 
+            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
             && se.Study.Type == StudyType.Bachelor
             && se.EnrollmentDate < DateTimeOffset.UtcNow.AddYears(-2)))
         {
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.Masters) && member.StudyEnrollments.Any(se => se.CompletionDate == null 
+        if (targetAudience.HasFlag(TargetAudience.Masters) && member.StudyEnrollments.Any(se => 
+            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
             && se.Study.Type == StudyType.Master))
         {
             return true;

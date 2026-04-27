@@ -170,20 +170,20 @@ export const postApiEnrollments = <ThrowOnError extends boolean = false>(options
 
 export const deleteApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<DeleteApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{ActivityId}/{MemberId}',
+    url: '/api/enrollments/{activityId}/{memberId}',
     ...options
 });
 
 export const getApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<GetApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).get<GetApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{ActivityId}/{MemberId}',
+    url: '/api/enrollments/{activityId}/{memberId}',
     ...options
 });
 
 export const patchApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PatchApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{ActivityId}/{MemberId}',
+    url: '/api/enrollments/{activityId}/{memberId}',
     ...options,
     headers: {
         'Content-Type': 'application/json-patch+json',

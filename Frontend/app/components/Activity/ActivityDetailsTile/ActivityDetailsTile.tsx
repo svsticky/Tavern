@@ -14,10 +14,12 @@ import BorderedTile from '../../Tiles/BorderedTile';
 import AnswerQuestionsTile from '../AnswerQuestionsTile';
 import InfoItem from './InfoItem';
 import { handleAddToCalendar, handleCopyForWhatsapp, handleEnrollment, handleUnenrollment, handleUpdateEnrollment } from './ActivityDetailsTile.handlers';
+import { useApp } from '~/context/AppContext';
+import { isMemberInTargetAudience } from '~/util/targetaudience.util';
 
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
-  const [ableToEnroll] = useState<boolean>(false);
+  const { member } = useApp();
 
   const [submitting, setSubmitting] = useState(false);
   const [posterStatus, setPosterStatus] = useState<"loading" | "loaded" | "error">("loading");
@@ -47,6 +49,10 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
   });
 
   const isEnrolled = activity.enrollments.some(e => e.member.id === keycloak.tokenParsed?.UserId);
+
+  const ableToEnroll = !member?.suspended && member?.studyEnrollments?.some(se => se.completionDate == null || new Date(se.completionDate) > new Date(Date.now()));
+
+  const inTargetAudience = isMemberInTargetAudience(member, activity.allowedAudience);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -182,7 +188,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-          {isEnrolled ? (
+          {ableToEnroll && (isEnrolled ? (
             <div className="flex flex-col gap-3">
               {(activity.specificationQuestions.length) > 0 && (
                 <Button 
@@ -202,16 +208,16 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
                 {t("sign_out")}{submitting && ('...')}
               </Button>
             </div>
-          ) : activity.isEnrollable && ableToEnroll && (
+          ) : activity.isEnrollable &&  (
             <Button 
               variant='primary' 
               onClick={() => handleEnrollment(initialized, keycloak, activity, setActivity, answers, setSubmitting)} 
               disabled={submitting}
             >
-              {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length || 0) ? t("sign_in_on_waitlist") : t("sign_in")}
+              {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length || 0) && inTargetAudience ? t("sign_in_on_waitlist") : t("sign_in")}
               {submitting && ('...')}
             </Button>
-          )}
+          ))}
           
           <Button variant='secondary' className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700" onClick={() => handleAddToCalendar(activity)}>
             <div className='flex items-center gap-2'><Calendar size={18} />{t("add_to_calendar")}</div>

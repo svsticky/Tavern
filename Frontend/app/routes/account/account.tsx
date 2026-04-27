@@ -5,24 +5,13 @@ import { type MemberResponseDto } from "~/api";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
-import { loadAccountData } from "./account.handlers";
+import { useApp } from "~/context/AppContext";
 
 export default function AccountPage() {
   const { keycloak } = useKeycloak();
   const userId = keycloak.tokenParsed?.UserId;
-  const [loading, setLoading] = useState(true);
 
-  const [member, setMember] = useState<MemberResponseDto | null>(null);
-
-  useEffect(() => {
-    loadAccountData({
-      userId,
-      setMember: (next) => setMember(next),
-      setLoading: setLoading
-    });
-  }, [userId]);
-
-  if(loading) return t("loading");
+  const { member } = useApp();
 
   return (
     <>
