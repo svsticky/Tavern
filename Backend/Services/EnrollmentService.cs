@@ -76,27 +76,15 @@ public class EnrollmentService : IEnrollmentService
             // Get member and check if they are allowed to enroll in activities
             var member = await _db.Members.Include(m => m.StudyEnrollments).FirstOrDefaultAsync(m => m.Id == dto.MemberId, cancellationToken);
 
-            if (member == null)
+            if(member == null)
                 throw new KeyNotFoundException("Member not found.");
-
-            if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
-                throw new ArgumentException("Member does not have a paid membership payment.");
-
-            if (member.Suspended)
-                throw new ArgumentException("Member is suspended and cannot enroll in activities.");
-
-            if (member.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate <= DateTime.UtcNow) && !member.Gratie)
-                throw new ArgumentException("Member should be enrolled in a study or be Gratie to enroll in activities.");
-
-            // TO DO: Set all this in validator
 
             // Get activity and validate if enrollment is possible
             var activity = await GetActivityWithQuestionsAndEnrollmentsOrThrow(dto.ActivityId, cancellationToken);
 
             bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(member.Id);
 
-            if (activity.Enrollments.Any(e => e.MemberId == dto.MemberId))
-                throw new ArgumentException("Member is already enrolled (or on waiting list).");
+            EnrollmentValidator.ValidateEnrollment(dto.SpecificationAnswers, member, activity, isBoardMember, _paymentValidationService);
 
             if (!isBoardMember)
             {
@@ -106,11 +94,6 @@ public class EnrollmentService : IEnrollmentService
                     throw new UnauthorizedAccessException("Member is not in the target audience for this activity.");
             }
 
-            // Validate provided answers
-            var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
-
-            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoardMember);
-
             // Determine if enrollment should be on waiting list
             int currentParticipants = activity.Enrollments.Count(e => !e.IsOnWaitingList);
 
@@ -118,7 +101,7 @@ public class EnrollmentService : IEnrollmentService
                 activity.ParticipantLimit.HasValue &&
                 currentParticipants >= activity.ParticipantLimit.Value;
 
-            var enrollment = BuildEnrollment(dto, activity, shouldBeOnWaitingList, providedAnswers);
+            var enrollment = BuildEnrollment(dto, activity, shouldBeOnWaitingList, dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>());
 
             StateValidator.Validate(enrollment);
 

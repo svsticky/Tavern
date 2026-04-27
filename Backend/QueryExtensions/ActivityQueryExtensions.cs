@@ -13,7 +13,7 @@ public static class ActivityQueryExtensions
 
         query = query.Where(a => isBoard 
                                  || a.ShowInKoala 
-                                 || (a.OrganizerId != null && userGroupIds.Contains(a.OrganizerId.Value)));
+                                 || (a.OrganizerId != null && userGroupIds.Contains(a.OrganizerId.Value) && !a.ShowOnWebsite && !a.ShowInKoala && !a.EnrollOpenDate.HasValue));
 
         if (!dto.IncludePast)
             query = query.Where(a => a.DateTimeEnd > now);

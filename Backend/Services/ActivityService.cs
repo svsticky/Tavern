@@ -20,7 +20,7 @@ public class ActivityService : IActivityService
     private readonly IEnrollmentService _enrollmentService;
 
     private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
-    private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
+    private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/enrollOpenDate", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
     public ActivityService(
         PostgresDbContext db,
@@ -174,7 +174,8 @@ public class ActivityService : IActivityService
             throw new UnauthorizedAccessException("You are not allowed to modify the id or poster properties of the activity.");
 
         if (activity.ShowInKoala 
-                || activity.ShowOnWebsite 
+                || activity.ShowOnWebsite
+                || activity.EnrollOpenDate != null
                 || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
@@ -232,7 +233,7 @@ public class ActivityService : IActivityService
             throw new KeyNotFoundException();
 
         // Uploading is only allowed if the activity is not online yet
-        if (activity.ShowInKoala || activity.ShowOnWebsite)
+        if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null)
         {
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
@@ -280,7 +281,7 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        if(activity.ShowInKoala || activity.ShowOnWebsite)
+        if(activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         ActivityValidator.ValidateRequest(dto, userId, _permissionService);
