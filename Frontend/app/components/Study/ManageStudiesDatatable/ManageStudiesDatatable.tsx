@@ -16,16 +16,16 @@ export default function ManageStudiesDatatable() {
 
     const columns = [
         {
-            header: "Study Name",
+            header: t("study_name"),
             render: (item: Study) => item.title,
         },
         {
-            header: "Type",
+            header: t("type"),
             render: (item: Study) => item.type,
         },
         {
-            header: "Nominal duration",
-            render: (item: Study) => `${item.nominalDurationYears} years`,
+            header: t("nominal_duration"),
+            render: (item: Study) => `${item.nominalDurationYears} ${t("years")}`,
         },
         {
             header: (

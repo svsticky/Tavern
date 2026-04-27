@@ -10,7 +10,7 @@ export default function Register() {
   const navBarItems = [
     {
       id: "home",
-      label: "Home",
+      label: t("home"),
       href: "/register#home",
     },
     {

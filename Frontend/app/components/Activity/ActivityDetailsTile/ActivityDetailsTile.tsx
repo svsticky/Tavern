@@ -104,7 +104,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
             {activity.name}
           </h1>
           <p className="text-2xl font-semibold text-slate-800">
-            {activity.price === 0 || activity.price == null ? 'Gratis' : `€ ${activity.price.toFixed(2)}`}
+            {activity.price === 0 || activity.price == null ? t("free") : `€ ${activity.price.toFixed(2)}`}
           </p>
         </section>
 
@@ -143,8 +143,8 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
             ">
               <Markdown>
                 {keycloak.tokenParsed?.locale == "NL"
-                  ? activity.dutchDescription || "Geen beschrijving beschikbaar."
-                  : activity.englishDescription || "No description available."}
+                  ? activity.dutchDescription || t("no_description_available_nl")
+                  : activity.englishDescription || t("no_description_available_en")}
               </Markdown>
             </div>
         </BorderedTile>
@@ -220,4 +220,3 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
     </div>
   );
 }
-

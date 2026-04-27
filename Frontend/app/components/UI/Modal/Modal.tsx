@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { t } from "i18next";
 import { useEffect } from "react";
 import { createModalKeyDownHandler } from "./Modal.handlers";
 
@@ -41,7 +42,7 @@ export default function Modal({ isOpen, onClose, title, children }: ModalProps) 
           <button 
             onClick={onClose} 
             className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-            aria-label="Sluit modal"
+            aria-label={t("close_modal")}
           >
             <X size={20} className="hover:cursor-pointer" />
           </button>

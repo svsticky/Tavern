@@ -104,7 +104,7 @@ export const downloadPosters = async (activities: ActivityResponseDto[], token: 
     return;
   }
 
-  const toastId = toast.loading(t("generating_pdf..."));
+  const toastId = toast.loading(t("generating_pdf"));
 
   try {
     await generateA3Pdf(posterUrls, token);
