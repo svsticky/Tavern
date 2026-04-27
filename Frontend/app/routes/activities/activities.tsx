@@ -77,7 +77,7 @@ export default function ActivitiesPage() {
         />
       </div>
       {loading ? (
-        'Loading...'
+        t("loading")
       ) : (
       activities.length === 0 ? (
           <NoContentTile text={t("no_upcoming_activities")} />

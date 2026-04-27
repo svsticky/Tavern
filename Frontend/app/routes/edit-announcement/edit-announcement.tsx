@@ -22,7 +22,7 @@ export default function AnnouncementFormPage() {
     loadAnnouncementData({ isEdit, id, setInitialData, setLoading });
   }, [id, isEdit]);
 
-  if (loading) return <div className="p-8 text-center">{t("loading")}...</div>;
+  if (loading) return t("loading");
 
   return (
     <div className="max-w-4xl mx-auto">

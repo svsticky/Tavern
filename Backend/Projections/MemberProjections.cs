@@ -26,6 +26,7 @@ public static class MemberProjections
             Notes = isBoard || userId == m.Id ? m.Notes : null,
             RegisteredOn = isBoard || userId == m.Id ? m.RegisteredOn : null,
             PreferredLanguage = isBoard || userId == m.Id ? m.PreferredLanguage : null,
+            ProfilePicturePath = m.ProfilePicturePath,
             StudyEnrollments = isBoard || userId == m.Id
                 ? m.StudyEnrollments
                     .AsQueryable()

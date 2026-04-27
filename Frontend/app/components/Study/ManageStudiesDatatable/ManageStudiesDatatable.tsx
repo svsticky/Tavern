@@ -51,7 +51,7 @@ export default function ManageStudiesDatatable() {
     }, []);
     return (
         <BorderedTile>
-            <DataTableTile columns={columns} data={studies} emptyText={loading ? `${t("loading")}...` : t("no_studies")} />
+            <DataTableTile columns={columns} data={studies} emptyText={loading ? t("loading") : t("no_studies")} />
             <Modal isOpen={isEditModalOpen} onClose={() => { setIsEditModalOpen(false); setEditedStudy(undefined); }} title={editedStudy ? t("edit_study") : t("add_study")}>
                 <EditStudyOverlay
                   onStudyAdded={(study) => handleStudyEdited({ study, editedStudy, setStudies, setIsEditModalOpen, setEditedStudy })}

@@ -10,16 +10,19 @@ import { loadAccountData } from "./account.handlers";
 export default function AccountPage() {
   const { keycloak } = useKeycloak();
   const userId = keycloak.tokenParsed?.UserId;
+  const [loading, setLoading] = useState(true);
 
   const [member, setMember] = useState<MemberResponseDto | null>(null);
 
   useEffect(() => {
-      loadAccountData({
-        userId,
-        setMember: (next) => setMember(next),
-        setLoading: () => {}
-      });
+    loadAccountData({
+      userId,
+      setMember: (next) => setMember(next),
+      setLoading: setLoading
+    });
   }, [userId]);
+
+  if(loading) return t("loading");
 
   return (
     <>
@@ -28,7 +31,7 @@ export default function AccountPage() {
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Left: Profile Picture */}
         <ChangeProfilePicture userId={userId}>
-          <h2 className="font-bold text-xl">{member?.firstName} {member?.lastName}</h2>
+          <h2 className="font-bold text-l">{member?.firstName} {member?.lastName}</h2>
           <p className="text-gray-500 font-mono text-sm">{member?.studentNumber}</p>
         </ChangeProfilePicture>
 

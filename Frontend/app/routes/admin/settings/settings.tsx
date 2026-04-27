@@ -45,7 +45,7 @@ export default function SettingsPage() {
     ([key, value]) => !value.trim()
   );
 
-  if (loading) return `${t("loading")}...`;
+  if (loading) return t("loading");
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);

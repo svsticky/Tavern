@@ -148,39 +148,6 @@ export const handleSaveMember = async (
   }).finally(() => setSaving(false));
 };
 
-export const handleProfilePictureUpload = async (
-  e: React.ChangeEvent<HTMLInputElement>,
-  memberId: string | undefined,
-  setSaving: (saving: boolean) => void
-) => {
-  const file = e.target.files?.[0];
-  if (!file || !memberId) return;
-
-  setSaving(true);
-
-  const saveProcess = async () => {
-    try {
-      await postApiProfilepictureByIdProfilePicture({
-        path: { id: memberId },
-        body: { image: file }
-      });
-
-      window.location.reload();
-    } catch (err) {
-      console.error("Failed to upload profile picture:", err);
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  toast.promise(saveProcess(), {
-    loading: t("uploading"),
-    success: t("upload_success"),
-    error: t("upload_error")
-  });
-};
-
 export const handleDeleteEnrollment = async (
   id: number,
   setLoading: (loading: boolean) => void,

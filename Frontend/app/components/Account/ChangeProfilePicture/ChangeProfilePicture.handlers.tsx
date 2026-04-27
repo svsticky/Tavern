@@ -8,7 +8,7 @@ export const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputE
     
     const saveProcess = async (userId: string) => {
       try {
-        await postApiProfilepictureByIdProfilePicture({
+        const response = await postApiProfilepictureByIdProfilePicture({
           path: { id: userId },
           body: { image: file }
         });

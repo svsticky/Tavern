@@ -103,12 +103,10 @@ export default function AuthenticatedLayout() {
           }
           else if (error.response.status === 403) {
             console.warn("Forbidden - user does not have access to this resource.");
-            //window.location.href = `/`;
+            window.location.href = `/`;
           }
         }
 
-       
-        
         return Promise.reject(error);
       }
     );

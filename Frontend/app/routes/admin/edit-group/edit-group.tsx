@@ -137,7 +137,7 @@ export default function EditGroupPage() {
     loadGroupMemberships(id, selectedYear, setLoadingMemberships, setEnrollments);
   }, [id, selectedYear]);
 
-  if (loading) return t("loading") + "...";
+  if (loading) return t("loading");
 
   return (
     <>      
