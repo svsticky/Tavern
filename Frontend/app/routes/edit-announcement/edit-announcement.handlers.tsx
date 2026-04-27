@@ -2,7 +2,7 @@ import type React from "react";
 import type { NavigateFunction } from "react-router";
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { getApiAnnouncementsById, postApiAnnouncements, putApiAnnouncementsById } from "~/api";
+import { deleteApiAnnouncementsById, getApiAnnouncementsById, postApiAnnouncements, putApiAnnouncementsById } from "~/api";
 
 type LoadAnnouncementArgs = {
   isEdit: boolean;
@@ -63,5 +63,28 @@ export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navig
     loading: isEdit ? t("updating") : t("creating"),
     success: isEdit ? t("update_successful") : t("creation_successful"),
     error: isEdit ? t("update_failed") : t("creation_failed")
+  });
+};
+
+export const handleDeleteAnnouncement = async (id: string, setDeleting: (value: boolean) => void, navigate: NavigateFunction) => {
+  setDeleting(true);
+
+  const deleteProcess = async () => {
+    try {
+      const response = await deleteApiAnnouncementsById({ path: { id: Number(id) } });
+      if(response.error) throw new Error("Failed to delete announcement");
+      navigate("/announcements");
+    } catch (error) {
+      console.error(error);
+      throw error;
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  toast.promise(deleteProcess(), {
+    loading: t("deleting"),
+    success: t("deletion_successful"),
+    error: t("deletion_failed")
   });
 };

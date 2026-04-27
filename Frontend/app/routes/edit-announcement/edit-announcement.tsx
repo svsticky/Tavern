@@ -7,7 +7,7 @@ import { t } from "i18next";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Form from "~/components/UI/Form/Form";
-import { handleAnnouncementSubmit, loadAnnouncementData } from "./edit-announcement.handlers";
+import { handleAnnouncementSubmit, handleDeleteAnnouncement, loadAnnouncementData } from "./edit-announcement.handlers";
 
 export default function AnnouncementFormPage() {
   const { id } = useParams();
@@ -16,6 +16,7 @@ export default function AnnouncementFormPage() {
 
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [initialData, setInitialData] = useState({ Title: "", Content: "" });
 
   useEffect(() => {
@@ -48,7 +49,13 @@ export default function AnnouncementFormPage() {
           />
         </FormSection>
 
-        <Button type="submit" disabled={saving} className="w-full">
+        {id && (
+          <Button variant="danger" type="button" onClick={() => handleDeleteAnnouncement(id, setDeleting, navigate)} disabled={saving || deleting} className="w-full sm:w-auto">
+            {deleting ? `${t("deleting")}...` : t("delete")}
+          </Button>
+        )}
+
+        <Button type="submit" disabled={saving || deleting} className="w-full">
           {saving ? t("saving") : isEdit ? t("update") : t("create")}
         </Button>
       </Form>
