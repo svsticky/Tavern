@@ -17,6 +17,7 @@ import { handleAddToCalendar, handleCopyForWhatsapp, handleEnrollment, handleUne
 
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
+  const [ableToEnroll] = useState<boolean>(false);
 
   const [submitting, setSubmitting] = useState(false);
   const [posterStatus, setPosterStatus] = useState<"loading" | "loaded" | "error">("loading");
@@ -201,7 +202,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
                 {t("sign_out")}{submitting && ('...')}
               </Button>
             </div>
-          ) : activity.isEnrollable && (
+          ) : activity.isEnrollable && ableToEnroll && (
             <Button 
               variant='primary' 
               onClick={() => handleEnrollment(initialized, keycloak, activity, setActivity, answers, setSubmitting)} 

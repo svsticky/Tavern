@@ -5,6 +5,8 @@ interface AppContextType {
   setBoardGroupId: (id: number) => void;
   candidateBoardGroupId: number | null;
   setCandidateBoardGroupId: (id: number) => void;
+  ableToEnroll: boolean;
+  setAbleToEnroll: (able: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -12,9 +14,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [boardGroupId, setBoardGroupId] = useState<number | null>(null);
   const [candidateBoardGroupId, setCandidateBoardGroupId] = useState<number | null>(null);
+  const [ableToEnroll, setAbleToEnroll] = useState<boolean>(false);
 
   return (
-    <AppContext.Provider value={{ boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId }}>
+    <AppContext.Provider value={{ boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, ableToEnroll, setAbleToEnroll }}>
       {children}
     </AppContext.Provider>
   );

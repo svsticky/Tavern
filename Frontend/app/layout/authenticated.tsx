@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet } from "react-router";
 import { client } from "~/api/client.gen";
-import { getApiSettingsById, postApiPaymentsMembership } from "~/api/sdk.gen";
+import { getApiMembersById, getApiSettingsById, postApiPaymentsMembership } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
 import i18n from "~/i18n";
@@ -12,7 +12,7 @@ export default function AuthenticatedLayout() {
 
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
-  const { boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId } = useApp();
+  const { boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, ableToEnroll, setAbleToEnroll } = useApp();
 
   useEffect(() => {
     if (!initialized || !client.instance) return;
@@ -89,6 +89,20 @@ export default function AuthenticatedLayout() {
           }
         })
         .catch(err => console.error("Could not fetch candidate board group ID", err));
+    }
+
+    if(ableToEnroll === null) {
+      getApiMembersById({
+        path: {
+          id: keycloak.tokenParsed?.UserId ?? ""
+        }
+      })
+        .then(res => {
+          if (res.data) {
+            setAbleToEnroll(!!res.data.studyEnrollments?.some(e => e.completionDate === null || new Date(e.completionDate!) > new Date(Date.now())) && !res.data.suspended);
+          }
+        })
+        .catch(err => console.error("Could not fetch member data", err));
     }
 
     const resInterceptor = client.instance.interceptors.response.use(

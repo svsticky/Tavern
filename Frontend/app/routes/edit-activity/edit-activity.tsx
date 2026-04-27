@@ -44,9 +44,11 @@ export default function ActivityFormPage() {
         title={isEdit ? t("edit_activity") : t("create_activity")} 
         backTo={getEditActivityBackPath(pathname, isEdit, id)} 
       />
-      
-      <div className={cn("grid grid-cols-1 gap-8", isBoard && isEdit&& "lg:grid-cols-3")}>
-        <EditActivityForm activity={activity} id={id} isBoard={isBoard} /> 
+    
+      <div className={cn("grid grid-cols-1 gap-8", isBoard && isEdit && "lg:grid-cols-3")}>
+        <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
+          <EditActivityForm activity={activity} id={id} isBoard={isBoard} /> 
+        </div>
 
         {isBoard && isEdit && activity && 
           <div className="flex flex-col gap-4">
