@@ -221,9 +221,10 @@ public class EnrollmentService : IEnrollmentService
     {
         ArgumentNullException.ThrowIfNull(patchDoc);
 
-        if (patchDoc.Operations.Any(op =>
-            op.path.Equals("/activityid", StringComparison.OrdinalIgnoreCase) ||
-            op.path.Equals("/memberid", StringComparison.OrdinalIgnoreCase)))
+        if (patchDoc.Operations.Any(op => op.path.Equals("/activity", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/activityid", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/memberid", StringComparison.OrdinalIgnoreCase)))
         {
             throw new ArgumentException("Cannot change ActivityId or MemberId.");
         }

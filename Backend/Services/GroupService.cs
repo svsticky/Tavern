@@ -116,6 +116,9 @@ public class GroupService : IGroupService
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
+        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("Cannot modify Id field.");
+
         var group = await GetGroupOrThrow(id, cancellationToken);
 
         patchDoc.ApplyTo(group);

@@ -51,6 +51,9 @@ namespace Backend.Services
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
+            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Cannot modify Id field.");
+
             var study = await GetStudyOrThrow(id, ct);
 
             patchDoc.ApplyTo(study);

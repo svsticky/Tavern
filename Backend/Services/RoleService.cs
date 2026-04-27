@@ -50,17 +50,20 @@ namespace Backend.Services
     {
         permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-            if (patchDoc == null)
-                throw new Exception("Patch document is null");
+        if (patchDoc == null)
+            throw new Exception("Patch document is null");
+
+        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("Cannot modify Id field.");
 
         var role = await GetRoleOrThrow(id, ct);
 
-            patchDoc.ApplyTo(role);
+        patchDoc.ApplyTo(role);
 
-            StateValidator.Validate(role);
+        StateValidator.Validate(role);
 
-            await db.SaveChangesAsync(ct);
-        }
+        await db.SaveChangesAsync(ct);
+    }
 
     public async Task UpdateRole(uint id, RoleUpdateDTO dto, Guid userId, CancellationToken ct)
     {

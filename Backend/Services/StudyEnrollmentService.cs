@@ -75,6 +75,16 @@ namespace Backend.Services
         public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+            if(patchDoc == null)
+                throw new ArgumentException("Patch document is null");
+            
+            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+                || op.path.Equals("/memberId", StringComparison.OrdinalIgnoreCase)
+                || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase)
+                || op.path.Equals("/studyId", StringComparison.OrdinalIgnoreCase)
+                || op.path.Equals("/study", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Cannot modify Id, MemberId or StudyId fields.");
             
             var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
 

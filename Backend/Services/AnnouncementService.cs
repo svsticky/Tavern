@@ -67,6 +67,12 @@ public class AnnouncementService : IAnnouncementService
 
         ArgumentNullException.ThrowIfNull(patchDoc);
 
+        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/createdById", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/createdAt", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/createdBy", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("Cannot modify Id, CreatedById or CreatedAt fields.");
+
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
 
         patchDoc.ApplyTo(announcement);

@@ -72,6 +72,10 @@ namespace Backend.Services
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
+            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+                || op.path.Equals("/role", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Cannot modify Id or RoleId fields.");
+
             var roleAlias = await GetRoleAliasOrThrow(id, ct);
 
             await ExecuteInTransaction(ct, async () =>

@@ -142,6 +142,14 @@ public class GroupMembershipService : IGroupMembershipService
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
+        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/memberId", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/group", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/groupId", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/groupAlias", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("Cannot modify Id, MemberId or GroupId fields.");
+
         var membership = await _db.GroupMemberships
             .Include(g => g.Member)
             .FirstOrDefaultAsync(g => g.Id == id, cancellationToken);

@@ -18,6 +18,16 @@ public class SpecificationAnswerService(
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
 
+        if(patchDoc == null)
+            throw new ArgumentException("Patch document is null");
+        
+        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/memberId", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase) 
+            || op.path.Equals("/questionId", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/question", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("Cannot modify Id, EnrollmentId or QuestionId fields.");
+
         var answer = GetAnswerOrThrow(answerId);
         SpecificationAnswerValidator.ValidateOwnership(answer, fromUserId);
         SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer);

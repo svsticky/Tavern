@@ -73,6 +73,12 @@ public class SettingsService : ISettingsService
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         var setting = await GetSettingOrThrow(name, ct);
 
+        if (patchDoc == null)
+            throw new ArgumentException("Patch document is null");
+
+        if(patchDoc.Operations.Any(op => op.path.Equals("/name", StringComparison.OrdinalIgnoreCase)))
+            throw new ArgumentException("Cannot modify Name field.");
+
         patchDoc.ApplyTo(setting);
 
         await _db.SaveChangesAsync(ct);
