@@ -3,15 +3,15 @@ import { Mail, Phone, PlusIcon, TrendingUp } from "lucide-react";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
 import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Button from "~/components/UI/Button";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { getApiGroups, type GroupResponseDto, type MemberResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import toast from "react-hot-toast";
-import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay";
-import Modal from "~/components/UI/Modal";
+import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
+import Modal from "~/components/UI/Modal/Modal";
 
 export default function Groups() {
   const navigate = useNavigate();

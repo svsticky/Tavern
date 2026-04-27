@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { House } from "lucide-react";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-import RegisterForm from "~/components/Register/RegisterForm";
+import RegisterForm from "~/components/Register/RegisterForm/RegisterForm";
 import RegisterPhotos from "~/components/PhotoSlideShow";
 import RegisterReasons from "~/components/Register/RegisterReasons";
 import PhotoSlideshow from "~/components/PhotoSlideShow";

@@ -7,8 +7,8 @@ import MenuItemComponent from "../MenuItem";
 import type {
   ProfileDropdownContextValues,
   ProfileDropdownOption,
-} from "./ProfileDropdown";
-import ProfileDropdown from "./ProfileDropdown";
+} from "./ProfileDropdown/ProfileDropdown";
+import ProfileDropdown from "./ProfileDropdown/ProfileDropdown";
 
 const ProfileDropdownContext: React.Context<ProfileDropdownContextValues> =
   React.createContext<ProfileDropdownContextValues>({

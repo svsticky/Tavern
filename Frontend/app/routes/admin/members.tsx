@@ -3,15 +3,15 @@ import { Mail, Phone, TrendingUp } from "lucide-react";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
 import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Button from "~/components/UI/Button";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { getApiMembers, type MemberResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import toast from "react-hot-toast";
-import Modal from "~/components/UI/Modal";
-import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay";
+import Modal from "~/components/UI/Modal/Modal";
+import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
 const PAGE_SIZE = 20;
@@ -61,9 +61,7 @@ export default function Members() {
   }, [filters]);
 
   const applyFilters = (newFilters: MembersFilterDto) => {
-    console.log(newFilters);
     setFilters(newFilters);
-    console.log(filters);
     setIsFiltersOpen(false);
   };
 

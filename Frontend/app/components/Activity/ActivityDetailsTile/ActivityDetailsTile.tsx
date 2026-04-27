@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import BorderedTile from '../../Tiles/BorderedTile';
 import AnswerQuestionsTile from '../AnswerQuestionsTile';
 import InfoItem from './InfoItem';
+import { handleAddToCalendar, handleCopyForWhatsapp, handleEnrollment, handleUnenrollment, handleUpdateEnrollment } from './ActivityDetailsTile.handlers';
 
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
@@ -45,187 +46,6 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
   });
 
   const isEnrolled = activity.enrollments.some(e => e.member.id === keycloak.tokenParsed?.UserId);
-
-  const handleAddToCalendar = () => {
-    const title = encodeURIComponent(activity.name || 'Activiteit');
-    const description = encodeURIComponent(formatForGoogleCalendar(activity.dutchDescription) || '');
-    const location = encodeURIComponent(activity.location || 'TBA');
-
-    const formatDateGoogle = (dateStr: string | undefined | null) => {
-      if (!dateStr) return '';
-      return new Date(dateStr).toISOString().replace(/-|:|\.\d+/g, '');
-    };
-
-    const startTime = formatDateGoogle(activity.dateTimeStart);
-    const endTime = formatDateGoogle(activity.dateTimeEnd);
-
-    const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${description}&location=${location}&dates=${startTime}/${endTime}`;
-
-    window.open(googleUrl, '_blank', 'noreferrer');
-  };
-
-  const handleEnrollment = async () => {
-    if (!initialized || !keycloak.authenticated || !activity.id || !keycloak.tokenParsed?.UserId) {
-      console.error("User not authenticated or activity missing");
-      return;
-    }
-
-    const enrollmentProcess = async () => {
-      try {
-        setSubmitting(true);
-
-        const response = await postApiEnrollments({
-          body: {
-            activityId: activity.id,
-            memberId: keycloak.tokenParsed?.UserId,
-            specificationAnswers: Object.entries(answers).map(([questionId, answer]) => ({
-              questionId: Number(questionId),
-              answer
-            }))
-          }
-        });
-
-        if (response.data) {
-          const newEnrollment = {
-            isOnWaitingList: response.data.isOnWaitingList,
-            memberId: keycloak.tokenParsed?.UserId,
-            activityId: activity.id,
-            member: {
-              id: keycloak.tokenParsed?.UserId,
-              firstName: keycloak.tokenParsed?.given_name,
-              lastName: keycloak.tokenParsed?.family_name,
-              profilePicturePath: response.data.member?.profilePicturePath
-            },
-            specificationAnswers: response.data.specificationAnswers
-          } as any;
-
-          activity.enrollments = activity.enrollments
-            ? [...activity.enrollments, newEnrollment]
-            : [newEnrollment];
-
-          setActivity && setActivity({ ...activity });
-        }
-
-      } catch (error) {
-        console.error("Error while enrolling:", error);
-        throw error;
-      } finally {
-        setSubmitting(false);
-      }
-    }
-
-    toast.promise(enrollmentProcess(), {
-      loading: t("signing_in"),
-      success: t("enrollment_successful"),
-      error: t("enrollment_failed")
-    });
-  };
-
-  const handleUpdateEnrollment = async () => {
-    if (!initialized || !keycloak.authenticated || !activity.id || !keycloak.tokenParsed?.UserId) return;
-
-    const updateProcess = async () => {
-      try {
-        setSubmitting(true);
-
-        const response = await putApiEnrollmentsByActivityIdByMemberId({
-          path: {
-            activityId: activity.id,
-            memberId: keycloak.tokenParsed?.UserId
-          },
-          body: {
-            activityId: activity.id,
-            memberId: keycloak.tokenParsed?.UserId,
-            specificationAnswers: Object.entries(answers).map(([questionId, answer]) => ({
-              questionId: Number(questionId),
-              answer: String(answer)
-            }))
-          }
-        });
-
-        if (response.error) {
-          throw new Error("Update failed");
-        }
-
-        const updatedEnrollments = activity.enrollments.map(e => {
-          if (e.member.id === keycloak.tokenParsed?.UserId) {
-            return {
-              ...e,
-              specificationAnswers: e.specificationAnswers?.map(existingAns => ({
-                ...existingAns,
-                answer: answers[existingAns.questionId] ?? existingAns.answer
-              }))
-            };
-          }
-          return e;
-        });
-
-        setActivity && setActivity({ ...activity, enrollments: updatedEnrollments });
-      } catch (error) {
-        console.error("Error while updating enrollment:", error);
-        throw error;
-      } finally {
-        setSubmitting(false);
-      }
-    }
-
-    toast.promise(updateProcess(), {
-      loading: t("saving"),
-      success: t("answers_updated"),
-      error: t("update_failed")
-    });
-  };
-
-  const handleUnenrollment = async () => {
-    if (!initialized || !keycloak.authenticated || !activity.id || !keycloak.tokenParsed?.UserId) {
-      return;
-    }
-
-    const unenrollmentProcess = async () => {
-      try {
-        setSubmitting(true);
-
-        console.log("Attempting to unenroll with ActivityId:", activity.id, "and MemberId:", keycloak.tokenParsed?.UserId);
-        
-        const response = await deleteApiEnrollmentsByActivityIdByMemberId({
-          path: {
-            ActivityId: Number(activity.id),
-            MemberId: String(keycloak.tokenParsed?.UserId)
-          }
-        });
-        
-        if (response.error) {
-          throw new Error("Unenrollment failed");
-        }
-
-        activity.enrollments = activity.enrollments.filter(e => e.member.id !== keycloak.tokenParsed?.UserId);
-        setActivity && setActivity({ ...activity });
-      } catch (error) {
-        console.error("Error while unenrolling:", error);
-        throw error;
-      } finally {
-        setSubmitting(false);
-      }
-    }
-
-    toast.promise(unenrollmentProcess(), {
-      loading: t("signing_out"),
-      success: t("unenrollment_successful"),
-      error: t("unenrollment_failed")
-    });
-  };
-
-  const handleCopyForWhatsapp = async (lang: "NL" | "EN") => {
-    const text = lang === "NL" ?
-      `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Locatie: ${activity.location || 'TBA'} | Prijs: ${activity.price === 0 || activity.price == null ? 'Gratis' : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}` :
-      `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Location: ${activity.location || 'TBA'} | Price: ${activity.price === 0 || activity.price == null ? 'Free' : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
-
-    toast.promise(navigator.clipboard.writeText(text), {
-      loading: t("copying"),
-      success: t("copy_successful"),
-      error: t("copy_failed")
-    });
-  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -296,7 +116,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
               <div className="flex gap-2">
                 <Button
                   variant="secondary"
-                  onClick={() => handleCopyForWhatsapp("NL")}
+                  onClick={() => handleCopyForWhatsapp(activity, "NL")}
                   className="text-xs px-3 py-1"
                 >
                   {t("copy")} NL
@@ -304,7 +124,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
 
                 <Button
                   variant="secondary"
-                  onClick={() => handleCopyForWhatsapp("EN")}
+                  onClick={() => handleCopyForWhatsapp(activity, "EN")}
                   className="text-xs px-3 py-1"
                 >
                   {t("copy")} EN
@@ -366,7 +186,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
               {(activity.specificationQuestions.length) > 0 && (
                 <Button 
                   variant='primary' 
-                  onClick={handleUpdateEnrollment} 
+                  onClick={() => handleUpdateEnrollment(initialized, keycloak, activity, setActivity, answers, setSubmitting)} 
                   disabled={submitting}
                 >
                   {submitting ? t("saving") : t("update_answers")}
@@ -375,7 +195,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
               
               <Button 
                 variant='danger' 
-                onClick={handleUnenrollment} 
+                onClick={() => handleUnenrollment(initialized, keycloak, activity, setActivity, setSubmitting)} 
                 disabled={submitting || (activity.unenrollmentDeadline ? new Date(Date.now()) > new Date(activity.unenrollmentDeadline) : false)}
               >
                 {t("sign_out")}{submitting && ('...')}
@@ -384,7 +204,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
           ) : activity.isEnrollable && (
             <Button 
               variant='primary' 
-              onClick={handleEnrollment} 
+              onClick={() => handleEnrollment(initialized, keycloak, activity, setActivity, answers, setSubmitting)} 
               disabled={submitting}
             >
               {activity.participantLimit && activity.participantLimit <= (activity.enrollments.length || 0) ? t("sign_in_on_waitlist") : t("sign_in")}
@@ -392,7 +212,7 @@ export default function ActivityDetailsTile({ activity, setActivity }: { activit
             </Button>
           )}
           
-          <Button variant='secondary' className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700" onClick={handleAddToCalendar}>
+          <Button variant='secondary' className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700" onClick={() => handleAddToCalendar(activity)}>
             <div className='flex items-center gap-2'><Calendar size={18} />{t("add_to_calendar")}</div>
           </Button>
         </div>
