@@ -68,5 +68,12 @@ namespace Backend.Interfaces
         /// <param name="userId">The ID of the user performing the delete.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         Task DeleteProfilePicture(Guid id, Guid userId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Refreshes the email of a member.
+        /// </summary>
+        /// <param name="id">The user ID of the member whose email is refreshed.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task RefreshEmail(Guid id, CancellationToken cancellationToken);
     }
 }

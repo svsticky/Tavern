@@ -17,7 +17,7 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize]
-    public class MembersController(IMemberService memberService, IProfilePictureService profilePictureService, KeycloakOutboxWorker keycloakOutboxWorker) : ControllerBase
+    public class MembersController(IMemberService memberService, IProfilePictureService profilePictureService) : ControllerBase
     {
         private readonly string? _keycloakWebhookSecret = Environment.GetEnvironmentVariable("KEYCLOAK_WEBHOOK_SECRET");
 
@@ -272,7 +272,7 @@ namespace Backend.Controllers
                     return Unauthorized("Invalid webhook secret.");
                 }
 
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.RefreshEmail, userId);
+                await memberService.RefreshEmail(userId, cancellationToken);
                 return Ok();
             }
             catch (Exception ex)

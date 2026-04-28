@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace Backend.Services;
 /// </summary>
 public class KeycloakAPIService(
     PostgresDbContext db,
+    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
     ILogger<KeycloakAPIService> logger)
@@ -61,9 +63,22 @@ public class KeycloakAPIService(
 
         if (emailChanged)
         {
-            member.Email = currentEmail;
-            await db.SaveChangesAsync();
-            logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);
+            using var transaction = await db.Database.BeginTransactionAsync();
+            try
+            {
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, db);
+                member.Email = currentEmail;
+                mailSubscriptionOutboxWorker.EnqueueTask(currentEmail, member.MailSubscriptions, db);
+                await db.SaveChangesAsync();
+                logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                logger.LogError("Failed to update local member email after Keycloak sync for KeycloakId {KeycloakId}. Rolling back transaction.", keycloakId);
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 
@@ -171,12 +186,12 @@ public class KeycloakAPIService(
     }
 
     /// <summary>
-    /// Refreshes the local member email from Keycloak.
-    /// </summary>
+    /// Gets the email of a Keycloak user.
+    /// </summary> 
     /// <param name="keycloakId">The Keycloak user ID.</param>
-    public async Task RefreshEmail(Guid keycloakId)
+    /// <returns>The email address.</returns>
+    public async Task<string> GetEmail(Guid keycloakId)
     {
-        logger.LogInformation("Refreshing local email from Keycloak for {KeycloakId}.", keycloakId);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -191,7 +206,18 @@ public class KeycloakAPIService(
         }
 
         var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-        var email = json.GetProperty("email").GetString()!;
+        return json.GetProperty("email").GetString()!;
+    }
+
+    /// <summary>
+    /// Refreshes the local member email from Keycloak.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
+    public async Task RefreshEmail(Guid keycloakId)
+    {
+        logger.LogInformation("Refreshing local email from Keycloak for {KeycloakId}.", keycloakId);
+
+        var email = await GetEmail(keycloakId);
 
         var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
         if (member != null)

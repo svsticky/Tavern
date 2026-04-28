@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 using Microsoft.Extensions.Logging;
+using Backend.Models;
 
 namespace Backend.Services
 {
@@ -20,6 +21,8 @@ namespace Backend.Services
         IStorageService storageService,
         IPaymentClient mollieClient,
         KeycloakOutboxWorker keycloakOutboxWorker,
+        MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
+        KeycloakAPIService keycloakAPIService,
         ILogger<MemberService> logger
     ) : IMemberService
     {
@@ -94,6 +97,9 @@ namespace Backend.Services
                 // Sync with Keycloak 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
 
+                // Enqueue mail subscription update
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
+
                 await db.SaveChangesAsync(cancellationToken);
 
                 await transaction.CommitAsync(cancellationToken);
@@ -131,6 +137,8 @@ namespace Backend.Services
                 db.Members.Remove(member);
                 await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath ?? "");
 
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, db);
+
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
@@ -162,6 +170,8 @@ namespace Backend.Services
                 StateValidator.Validate(member);
 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -207,6 +217,8 @@ namespace Backend.Services
 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
 
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
+
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
@@ -240,6 +252,31 @@ namespace Backend.Services
 
             await storageService.DeleteFileAsync("profile-pictures", oldPath);
             logger.LogInformation("Deleted profile picture for member {MemberId}.", id);
+        }
+
+        /// <inheritdoc />
+        public async Task RefreshEmail(Guid id, CancellationToken cancellationToken)
+        {
+            var member = await db.Members.FindAsync(id, cancellationToken);
+            if (member == null)                
+                throw new KeyNotFoundException($"Member with ID {id} not found.");
+
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, db);
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.RefreshEmail, member.Id);
+                var newMail = await keycloakAPIService.GetEmail(member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+                mailSubscriptionOutboxWorker.EnqueueTask(newMail, member.MailSubscriptions, db);
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed updating member email {MemberId}.", id);
+                throw;
+            }
         }
 
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)

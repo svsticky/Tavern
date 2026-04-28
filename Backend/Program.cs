@@ -13,6 +13,9 @@ using Backend.Filters;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.HttpLogging;
+using System.Text;
+using System.Net.Http.Headers;
+using Backend.Models;
 
 Env.Load();
 
@@ -56,6 +59,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             {
                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
+                var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
                 
                 var keycloakIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
                 var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email) 
@@ -71,9 +75,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
                         if (!string.Equals(member.Email, newEmail, StringComparison.OrdinalIgnoreCase))
                         {
-                            member.Email = newEmail;
-                            await dbContext.SaveChangesAsync();
-                            logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
+                            using var transaction = await dbContext.Database.BeginTransactionAsync();
+                            try
+                            {
+                                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, dbContext);
+                                member.Email = newEmail;
+                                mailSubscriptionOutboxWorker.EnqueueTask(newEmail, member.MailSubscriptions, dbContext);
+                                await dbContext.SaveChangesAsync();
+                                logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
+                                await transaction.CommitAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogError(ex, "Error updating member email for member {MemberId}.", member.Id);
+                                await transaction.RollbackAsync();
+                                throw;
+                            }
                         }
                     }
                 }
@@ -175,6 +192,8 @@ builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddSingleton<KeycloakOutboxWorker>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<KeycloakOutboxWorker>());
 builder.Services.AddHostedService<AccountingToolOutboxWorker>();
+builder.Services.AddSingleton<MailSubscriptionOutboxWorker>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
 
 var awsOptions = builder.Configuration.GetAWSOptions();
 
@@ -216,6 +235,26 @@ switch(accountingTool)
 {
     case "EXACT":
         builder.Services.AddScoped<IAccountingToolService, ExactService>();
+        break;
+    default:
+        break;
+}
+
+string? mailSubscriptionService = Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE");
+switch(mailSubscriptionService)
+{
+    case "MAILCHIMP":
+        builder.Services.AddHttpClient<IMailSubscriptionService, MailChimpSubscriptionService>(client =>
+        {
+            var apiKey = Environment.GetEnvironmentVariable("MAILCHIMP_API_KEY") ?? throw new InvalidOperationException("MAILCHIMP_API_KEY environment variable is not set.");
+            var dataCenter = apiKey.Split('-')[1];
+            
+            client.BaseAddress = new Uri($"https://{dataCenter}.api.mailchimp.com/3.0/");
+            
+            var authValue = Convert.ToBase64String(Encoding.ASCII.GetBytes($"anyuser:{apiKey}"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authValue);
+        });
+        builder.Services.AddScoped<IMailSubscriptionService, MailChimpSubscriptionService>();
         break;
     default:
         break;
