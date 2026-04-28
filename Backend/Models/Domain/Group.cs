@@ -5,6 +5,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Defines the type of a Group.
+/// </summary>
 public enum GroupType
 {
     Committee,
@@ -12,6 +15,9 @@ public enum GroupType
     Dispute
 }
 
+/// <summary>
+/// Represents a Group within the organization. A Group can be a Committee, Working Group, or Dispute group. Each Group has a unique identifier, a name, an active status, and can have multiple members associated with it through GroupMemberships. The Group entity also includes properties for the type of group and default financial information such as GL account and cost center. This entity is used to manage and organize different groups within the system, allowing for better collaboration and communication among members.
+/// </summary>
 [PrimaryKey(nameof(Id))]
 public class Group
 {
@@ -55,6 +61,13 @@ public class Group
     [StringLength(20)]
     public string? DefaultCostCenter { get; set; }
 
+    /// <summary>
+    /// The path where the picture for the group is stored, if any.
+    /// </summary>
     public string? GroupPicturePath { get; set; }
+
+    /// <summary>
+    /// The filename of the picture for the group, if any.
+    /// </summary>
     public string? GroupPictureFileName { get; set; }
 }

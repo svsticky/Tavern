@@ -8,22 +8,28 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements study management operations.
+    /// </summary>
     public class StudyService(
             PostgresDbContext db,
             IPermissionService permissionService,
             ILogger<StudyService> logger
         ) : IStudyService
     {
+        /// <inheritdoc />
         public async Task<List<Study>> GetStudies(CancellationToken ct)
         {
             return await db.Studies.ToListAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task<Study?> GetStudy(uint id, CancellationToken ct)
         {
             return await db.Studies.FindAsync(id, ct);
         }
 
+        /// <inheritdoc />
         public async Task<Study> CreateStudy(PostStudyDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -39,6 +45,7 @@ namespace Backend.Services
                 return study;
             }
 
+        /// <inheritdoc />
         public async Task DeleteStudy(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -49,6 +56,7 @@ namespace Backend.Services
             await db.SaveChangesAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -69,6 +77,7 @@ namespace Backend.Services
                 await db.SaveChangesAsync(ct);
             }
 
+        /// <inheritdoc />
         public async Task UpdateStudy(uint id, StudyUpdateDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);

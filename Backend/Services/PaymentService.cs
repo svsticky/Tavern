@@ -12,6 +12,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements payment creation, retrieval, export, and status operations.
+    /// </summary>
     public class PaymentService(
         PostgresDbContext db,
         IPermissionService permissionService,
@@ -25,6 +28,7 @@ namespace Backend.Services
         private readonly string _backendUrl = Environment.GetEnvironmentVariable("ApiUrl")!;
         private readonly string? _ngrokUrl = Environment.GetEnvironmentVariable("NGROK_URL");
 
+        /// <inheritdoc />
         public async Task<List<MembershipPayment>> GetMembershipPayments(Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -34,6 +38,7 @@ namespace Backend.Services
                 .ToListAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task<MembershipPayment?> GetMembershipPayment(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -41,6 +46,7 @@ namespace Backend.Services
             return await db.MembershipPayments.FindAsync(id, ct);
         }
 
+        /// <inheritdoc />
         public async Task<List<EnrollmentPayment>> GetEnrollmentPayments(Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -51,6 +57,7 @@ namespace Backend.Services
                 .ToListAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task<EnrollmentPayment?> GetEnrollmentPayment(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -58,6 +65,7 @@ namespace Backend.Services
             return await db.EnrollmentPayments.FindAsync(id, ct);
         }
 
+        /// <inheritdoc />
         public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
         {
             logger.LogInformation("Creating membership payment for member {MemberId}.", dto.MemberId);
@@ -100,6 +108,7 @@ namespace Backend.Services
             return ToCheckoutResponse(mollieResponse.Links.Checkout.Href);
         }
 
+        /// <inheritdoc />
         public async Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -129,6 +138,7 @@ namespace Backend.Services
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
         }
 
+        /// <inheritdoc />
         public async Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, Guid userId)
         {
             logger.LogInformation("Creating activity payment for member {MemberId} and {ActivityCount} activities. Manual: {Manual}",
@@ -202,6 +212,7 @@ namespace Backend.Services
             }
         }
 
+        /// <inheritdoc />
         public IEnumerable<EnrollmentBalance> GetUnpaid(Guid userId, bool allUsers = false)
         {
             if(allUsers)
@@ -219,6 +230,7 @@ namespace Backend.Services
             }
         }
 
+        /// <inheritdoc />
         public IEnumerable<EnrollmentBalance> GetOverpaid(Guid userId)
         {
             if(userId != Guid.Empty)
@@ -229,6 +241,7 @@ namespace Backend.Services
             return paymentValidationService.GetAllOverpaidEnrollments();
         }
 
+        /// <inheritdoc />
         public async Task<object> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
         {
             if(fromUserId != userId)

@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements group management and group picture operations.
+/// </summary>
 public class GroupService : IGroupService
 {
     private readonly PostgresDbContext _db;
@@ -27,6 +30,7 @@ public class GroupService : IGroupService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<GroupResponseDTO>> GetGroups(Guid userId, GetGroupDTO dto, CancellationToken cancellationToken)
     {
         if (dto.MembershipYear == null || dto.IncludeInactive)
@@ -39,6 +43,7 @@ public class GroupService : IGroupService
             .ToListAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<GroupResponseDTO?> GetGroup(uint id, CancellationToken cancellationToken)
     {
         return await _db.Groups
@@ -49,6 +54,7 @@ public class GroupService : IGroupService
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<Group> CreateGroup(PostGroupDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -88,6 +94,7 @@ public class GroupService : IGroupService
         }
     }
 
+    /// <inheritdoc />
     public async Task<FileResultDto?> GetGroupPictureFile(string path)
     {
         var file = await _storageService.GetFileAsync("group-pictures", path);
@@ -101,6 +108,7 @@ public class GroupService : IGroupService
         };
     }
 
+    /// <inheritdoc />
     public async Task DeleteGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -115,6 +123,7 @@ public class GroupService : IGroupService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -137,6 +146,7 @@ public class GroupService : IGroupService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -155,6 +165,7 @@ public class GroupService : IGroupService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<string?> UploadGroupPicture(uint groupId, Guid userId, IFormFile? image)
     {
         var group = await GetGroupOrThrow(groupId, default, "Group not found");
@@ -199,6 +210,7 @@ public class GroupService : IGroupService
         }
     }
 
+    /// <inheritdoc />
     public async Task<uint> GetBoardGroupId(CancellationToken cancellationToken)
     {
         var setting = await _db.Settings.FindAsync(new [] { "BoardGroupId" }, cancellationToken);
@@ -208,6 +220,7 @@ public class GroupService : IGroupService
         return boardGroupId;
     }
 
+    /// <inheritdoc />
     public async Task<uint> GetCandidateBoardGroupId(CancellationToken cancellationToken)
     {
         var setting = await _db.Settings.FindAsync(new[] { "CandidateBoardGroupId" }, cancellationToken);

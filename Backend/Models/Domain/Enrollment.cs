@@ -5,6 +5,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Represents an enrollment of a member in an activity. An enrollment is associated with a specific activity and member, and it contains information about the price paid for the enrollment, any specification answers provided by the member, the date and time when the enrollment was placed, and whether the enrollment is on a waiting list. This entity is used to manage and track enrollments for activities within the system, allowing members to participate in activities based on their preferences and eligibility.
+/// </summary>
 [PrimaryKey(nameof(ActivityId), nameof(MemberId))]
 public class Enrollment
 {

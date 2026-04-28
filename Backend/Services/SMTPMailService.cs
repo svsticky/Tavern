@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Sends emails through an SMTP server.
+/// </summary>
 public class SMTPMailService(
     PostgresDbContext db,
     IPaymentValidationService paymentValidationService,
@@ -21,6 +24,14 @@ public class SMTPMailService(
     private readonly string? _user = Environment.GetEnvironmentVariable("SMTP_USER");
     private readonly string? _pass = Environment.GetEnvironmentVariable("SMTP_PASS");
 
+    /// <summary>
+    /// Sends an email through SMTP.
+    /// </summary>
+    /// <param name="from">The sender information.</param>
+    /// <param name="to">The recipients.</param>
+    /// <param name="subject">The email subject.</param>
+    /// <param name="htmlContent">The HTML email body.</param>
+    /// <param name="ct">The cancellation token.</param>
     protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
         logger.LogInformation("Sending SMTP email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);

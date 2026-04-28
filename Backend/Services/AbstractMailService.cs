@@ -10,8 +10,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Interfaces;
 
+/// <summary>
+/// Provides shared mail-sending workflow and recipient resolution logic.
+/// </summary>
 public abstract class AbstractMailService
 {
+    /// <summary>
+    /// Sends a composed email through the underlying provider implementation.
+    /// </summary>
+    /// <param name="from">The sender information.</param>
+    /// <param name="to">The recipients.</param>
+    /// <param name="subject">The email subject.</param>
+    /// <param name="htmlContent">The HTML email body.</param>
+    /// <param name="ct">The cancellation token.</param>
     protected abstract Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct);
     
     private readonly Dictionary<uint, string> _roleMailMap;
@@ -49,6 +60,12 @@ public abstract class AbstractMailService
         }
     }
 
+    /// <summary>
+    /// Sends an email to the provided recipients on behalf of an authorized user.
+    /// </summary>
+    /// <param name="dto">The outgoing email payload.</param>
+    /// <param name="UserId">The requesting user ID.</param>
+    /// <param name="ct">The cancellation token.</param>
     public async Task SendEmailAsync(PostMailDTO dto, Guid UserId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
@@ -71,6 +88,12 @@ public abstract class AbstractMailService
         _logger.LogInformation("Completed mail send by user {UserId} to {RecipientCount} recipients.", UserId, dto.Recipients.Length);
     }
 
+    /// <summary>
+    /// Sends an email to activity participants based on activity-mail options.
+    /// </summary>
+    /// <param name="dto">The activity email payload.</param>
+    /// <param name="userId">The requesting user ID.</param>
+    /// <param name="ct">The cancellation token.</param>
     public async Task SendEmailAsync(PostActivityMailDTO dto, Guid userId, CancellationToken ct)
     {
         MailRecipient[] recipients = await GetRecipientsFromActivity(dto.ActivityId, dto.IncludeWaitingList, ct);
@@ -83,6 +106,9 @@ public abstract class AbstractMailService
         }, userId, ct);
     }
 
+    /// <summary>
+    /// Builds outstanding-payment email content for members with unpaid enrollments.
+    /// </summary>
     public void SendOutstandingPaymentMails()
     {
         var unpaidEnrollmentBalances = _paymentValidationService.GetAllUnpaidEnrollments();

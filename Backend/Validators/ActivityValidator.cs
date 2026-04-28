@@ -5,8 +5,18 @@ using Newtonsoft.Json;
 
 namespace Backend.Validators;
 
+/// <summary>
+/// The ActivityValidator class provides static methods for validating and normalizing activity-related data transfer objects (DTOs) used in the creation and updating of activities. The ValidateRequest method checks the validity of the activity's time range, participant limit, and poster file if provided, as well as ensuring that only authorized users can create activities with certain features. The NormalizeCreateRequest method adjusts the DTO for creating an activity by setting the enrollment open date to null if the activity is marked as enrollable. The ParseCreateQuestions and ParseUpdateQuestions methods handle the deserialization of specification questions from JSON format, while the MapSpecificationQuestion method maps the properties of an UpdateSpecificationQuestionDTO to a SpecificationQuestion entity. These methods centralize the validation and normalization logic for activity-related operations, ensuring that incoming data is properly checked and formatted before being processed by the application.
+/// </summary>
 public static class ActivityValidator
 {
+    /// <summary>
+    /// Validates the properties of a BaseActivityDTO object, ensuring that the time range is valid, the participant limit is non-negative, and the poster file (if provided) has an acceptable format. Additionally, this method checks that only board members can create activities with certain features such as being shown in Koala/website or having enrollment/payment options, to prevent abuse of these features. The validation process should throw appropriate exceptions if any of the validation checks fail, providing clear feedback on the nature of the validation errors encountered.
+    /// </summary>
+    /// <typeparam name="TQuestion">The type activity DTO.</typeparam>
+    /// <param name="dto">The activity DTO to validate.</param>
+    /// <param name="userId">The ID of the user creating the activity.</param>
+    /// <param name="permissionService">The permission service for checking user permissions.</param>
     public static void ValidateRequest<TQuestion>(BaseActivityDTO<TQuestion> dto, Guid userId, IPermissionService permissionService)
     {
         ValidateTimeRange(dto.DateTimeStart, dto.DateTimeEnd);
@@ -24,6 +34,10 @@ public static class ActivityValidator
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
     }
 
+    /// <summary>
+    /// Normalizes the properties of a PostActivityDTO object for activity creation. If the activity is marked as enrollable, this method sets the enrollment open date to null, as it will be automatically determined based on the activity's start date. This normalization process ensures that the DTO is properly adjusted for the creation of an activity, allowing for consistent handling of enrollable activities within the system.
+    /// </summary>
+    /// <param name="dto">The activity DTO to normalize.</param>
     public static void NormalizeCreateRequest(PostActivityDTO dto)
     {
         if (dto.IsEnrollable)
@@ -32,6 +46,12 @@ public static class ActivityValidator
         }
     }
 
+    /// <summary>
+    /// Parses a JSON string containing a list of specification questions into a list of SpecificationQuestionDTO objects. This method checks if the input JSON string is null or empty, and if so, it returns an empty list. Otherwise, it attempts to deserialize the JSON string into a list of SpecificationQuestionDTO objects using the JsonConvert.DeserializeObject method. If the deserialization process fails or results in a null value, the method throws an ArgumentException indicating that the specification questions format is invalid. This parsing process allows for the conversion of specification question data from JSON format into a structured format that can be used within the application for activity creation and updating operations.
+    /// </summary>
+    /// <param name="specificationQuestionsJson">The JSON string containing the specification questions.</param>
+    /// <returns>The list of specification questions.</returns>
+    /// <exception cref="ArgumentException">Thrown when the specification questions format is invalid.</exception>
     public static List<SpecificationQuestionDTO> ParseCreateQuestions(string? specificationQuestionsJson)
     {
         var questions = string.IsNullOrEmpty(specificationQuestionsJson)
@@ -41,6 +61,12 @@ public static class ActivityValidator
         return questions ?? throw new ArgumentException("Invalid specification questions format.");
     }
 
+    /// <summary>
+    /// Parses a JSON string containing a list of specification questions into a list of UpdateSpecificationQuestionDTO objects. This method checks if the input JSON string is null or empty, and if so, it returns an empty list. Otherwise, it attempts to deserialize the JSON string into a list of UpdateSpecificationQuestionDTO objects using the JsonConvert.DeserializeObject method. If the deserialization process fails or results in a null value, the method throws an ArgumentException indicating that the specification questions format is invalid. This parsing process allows for the conversion of specification question data from JSON format into a structured format that can be used within the application for activity updating operations.
+    /// </summary>
+    /// <param name="specificationQuestionsJson">The JSON string containing the specification questions.</param>
+    /// <returns>The list of specification questions.</returns>
+    /// <exception cref="ArgumentException">Thrown when the specification questions format is invalid.</exception>
     public static List<UpdateSpecificationQuestionDTO> ParseUpdateQuestions(string? specificationQuestionsJson)
     {
         var questions = string.IsNullOrEmpty(specificationQuestionsJson)
@@ -50,6 +76,11 @@ public static class ActivityValidator
         return questions ?? throw new ArgumentException("Invalid specification questions format.");
     }
 
+    /// <summary>
+    /// Maps the properties of an UpdateSpecificationQuestionDTO object to a SpecificationQuestion entity. This method takes an existing SpecificationQuestion entity and an UpdateSpecificationQuestionDTO object as parameters, and it updates the properties of the entity based on the values provided in the DTO. The mapping process includes updating the question text in both Dutch and English, the type of the question, whether it is mandatory or public, and the options for the question if applicable. This method centralizes the logic for mapping specification question data from a DTO to an entity, ensuring that updates to specification questions are handled consistently within the application.
+    /// </summary>
+    /// <param name="entity">The SpecificationQuestion entity to update.</param>
+    /// <param name="dto">The UpdateSpecificationQuestionDTO object containing the updated values.</param>
     public static void MapSpecificationQuestion(SpecificationQuestion entity, UpdateSpecificationQuestionDTO dto)
     {
         entity.QuestionDutch = dto.QuestionDutch;
@@ -62,18 +93,33 @@ public static class ActivityValidator
             : null;
     }
 
+    /// <summary>
+    /// Validates that the end date and time of an activity is not before the start date and time. If the end date and time is before the start date and time, this method throws an ArgumentException indicating that the activity cannot end before it starts. This validation ensures that the time range specified for an activity is logical and prevents the creation of activities with invalid time ranges within the system.
+    /// </summary>
+    /// <param name="start">The start date and time of the activity.</param>
+    /// <param name="end">The end date and time of the activity.</param>
+    /// <exception cref="ArgumentException">Thrown when the end date and time is before the start date and time.</exception>
     private static void ValidateTimeRange(DateTimeOffset start, DateTimeOffset end)
     {
         if (end < start)
             throw new ArgumentException("Activity cannot end before it starts.");
     }
 
+    /// <summary>
+    /// Validates that the participant limit for an activity is not negative. If the participant limit is negative, this method throws an ArgumentException indicating that the participant limit cannot be negative. This validation ensures that the participant limit specified for an activity is logical and prevents the creation of activities with invalid participant limits within the system.
+    /// </summary>
+    /// <param name="participantLimit">The participant limit for the activity.</param>
+    /// <exception cref="ArgumentException">Thrown when the participant limit is negative.</exception>
     private static void ValidateParticipantLimit(uint? participantLimit)
     {
         if (participantLimit < 0)
             throw new ArgumentException("Participant limit cannot be negative.");
     }
 
+    /// <summary>
+    /// Validates the poster file provided for an activity, ensuring that if a poster file is provided, it has an acceptable format. This method checks if the poster file is not null, and if so, it calls the ExtensionValidator.ValidatePosterExtension method to validate the file's extension. This validation helps to ensure that only valid poster files are accepted for activities within the system, maintaining data integrity and security.
+    /// </summary>
+    /// <param name="poster">The poster file for the activity.</param>
     private static void ValidatePosterIfProvided(IFormFile? poster)
     {
         if (poster != null)

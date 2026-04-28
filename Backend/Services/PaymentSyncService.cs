@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Background worker that periodically reconciles pending payments with the payment provider.
+/// </summary>
 public class PaymentSyncService(
     IServiceProvider serviceProvider,
     ILogger<PaymentSyncService> logger) : BackgroundService

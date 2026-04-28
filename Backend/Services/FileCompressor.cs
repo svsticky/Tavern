@@ -5,6 +5,9 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 using Microsoft.Extensions.Logging;
 
+/// <summary>
+/// Implements image compression for uploaded files.
+/// </summary>
 public class FileCompressService : IFileCompressService
 {
     private const int _maxWidth = 1280;
@@ -15,6 +18,7 @@ public class FileCompressService : IFileCompressService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<(Stream Stream, string ContentType)> CompressFileAsync(IFormFile file)
     {
         _logger.LogInformation("Compressing file {FileName} with content type {ContentType}.", file.FileName, file.ContentType);

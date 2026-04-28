@@ -2,8 +2,18 @@ using Backend.Models.Domain;
 
 namespace Backend.Validators;
 
+/// <summary>
+/// Provides validation helpers for checking whether specification answers match a question type.
+/// </summary>
 public static class AnswerValidator
 {
+    /// <summary>
+    /// Validates whether a raw answer value is compatible with the expected question type.
+    /// </summary>
+    /// <param name="answer">The submitted answer value.</param>
+    /// <param name="expectedType">The expected question type.</param>
+    /// <param name="options">The allowed options for multiple-choice questions.</param>
+    /// <exception cref="ArgumentException">Thrown when the answer does not match the expected type.</exception>
     public static void IsValidAnswer(string answer, QuestionType expectedType, string? options = null)
     {
         try

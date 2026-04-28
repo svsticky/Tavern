@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Provides operations for managing and synchronizing users in Keycloak.
+/// </summary>
 public class KeycloakAPIService(
     PostgresDbContext db,
     IHttpClientFactory httpClientFactory,
@@ -19,6 +22,10 @@ public class KeycloakAPIService(
     private readonly string _keycloakBackendClientId = Environment.GetEnvironmentVariable("KeycloakBackendClientId")!;
     private readonly string _keycloakClientSecret = Environment.GetEnvironmentVariable("KeycloakClientSecret")!;
 
+    /// <summary>
+    /// Synchronizes local member data to an existing Keycloak user.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
     public async Task SyncMemberInKeyCloak(Guid keycloakId)
     {
         logger.LogInformation("Syncing member in Keycloak for KeycloakId {KeycloakId}.", keycloakId);
@@ -60,6 +67,11 @@ public class KeycloakAPIService(
         }
     }
 
+    /// <summary>
+    /// Creates a Keycloak user for a local member.
+    /// </summary>
+    /// <param name="member">The member to provision.</param>
+    /// <returns>The created Keycloak user ID when successful.</returns>
     public async Task<Guid?> CreateUserInKeycloak(Member member)
     {
         logger.LogInformation("Creating Keycloak user for member {MemberId}.", member.Id);
@@ -89,6 +101,10 @@ public class KeycloakAPIService(
 
     private class KeycloakUserResponse { public string Id { get; set; } = default!; }
 
+    /// <summary>
+    /// Deletes a Keycloak user.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
     public async Task DeleteUserInKeycloak(Guid keycloakId)
     {
         logger.LogInformation("Deleting Keycloak user {KeycloakId}.", keycloakId);
@@ -100,6 +116,10 @@ public class KeycloakAPIService(
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// Retrieves a service-account access token for Keycloak admin API requests.
+    /// </summary>
+    /// <returns>The access token.</returns>
     public async Task<string> GetServiceAccountToken()
     {
         var client = httpClientFactory.CreateClient();
@@ -128,6 +148,11 @@ public class KeycloakAPIService(
         return json.GetProperty("access_token").GetString()!;
     }
 
+    /// <summary>
+    /// Sends a Keycloak execute-actions email to a user.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
+    /// <param name="actions">The required actions to include.</param>
     public async Task SendActionEmail(Guid keycloakId, string[] actions)
     {
         logger.LogInformation("Sending Keycloak action email to {KeycloakId} with {ActionCount} actions.", keycloakId, actions.Length);
@@ -145,6 +170,10 @@ public class KeycloakAPIService(
         }
     }
 
+    /// <summary>
+    /// Refreshes the local member email from Keycloak.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
     public async Task RefreshEmail(Guid keycloakId)
     {
         logger.LogInformation("Refreshing local email from Keycloak for {KeycloakId}.", keycloakId);

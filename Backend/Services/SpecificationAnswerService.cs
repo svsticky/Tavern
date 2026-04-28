@@ -7,12 +7,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements updates for specification answers.
+/// </summary>
 public class SpecificationAnswerService(
         PostgresDbContext db,
         IPermissionService permissionService,
         ILogger<SpecificationAnswerService> logger
 ) : ISpecificationAnswerService
 {
+    /// <inheritdoc />
     public async Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
     {
         logger.LogInformation("Patching specification answer {AnswerId} for member {MemberId} by user {UserId}.", answerId, fromUserId, userId);

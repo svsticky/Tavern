@@ -5,12 +5,18 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Defines the type of a Study.
+/// </summary>
 public enum StudyType
 {
     Bachelor,
     Master
 }
 
+/// <summary>
+/// Represents a study program. A Study has a unique identifier, a title, a nominal duration in years, and a type (e.g., Bachelor, Master). Each Study can have multiple enrollments associated with it through the StudyEnrollment entity. This entity is used to manage and organize different study programs within the system, allowing for better tracking of student enrollments and academic programs offered by the organization.
+/// </summary>
 [PrimaryKey(nameof(Id))]
 public class Study
 {

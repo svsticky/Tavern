@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements member management and profile-related operations.
+    /// </summary>
     public class MemberService(
         PostgresDbContext db,
         IPermissionService permissionService,
@@ -20,6 +23,7 @@ namespace Backend.Services
         ILogger<MemberService> logger
     ) : IMemberService
     {
+        /// <inheritdoc />
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -40,6 +44,7 @@ namespace Backend.Services
             return members.Select(m => mapper(m)).ToList();
         }
 
+        /// <inheritdoc />
         public async Task<MemberResponseDTO?> GetMember(Guid userIdFromUserToGet, Guid userId, CancellationToken cancellationToken)
         {
             if (userId != userIdFromUserToGet)
@@ -57,6 +62,7 @@ namespace Backend.Services
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
+        /// <inheritdoc />
         public async Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken)
         {
             logger.LogInformation("Creating member with email {Email}.", dto.Email);
@@ -102,6 +108,7 @@ namespace Backend.Services
             }
         }
 
+        /// <inheritdoc />
         public async Task DeleteMember(Guid id, Guid userId, CancellationToken cancellationToken)
         {
             logger.LogInformation("Deleting member {MemberId}. Requested by {UserId}.", id, userId);
@@ -135,6 +142,7 @@ namespace Backend.Services
             }
         }
 
+        /// <inheritdoc />
         public async Task PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, Guid userId, CancellationToken cancellationToken)
         {
             logger.LogInformation("Patching member {MemberId}. Requested by {UserId}.", id, userId);
@@ -166,6 +174,7 @@ namespace Backend.Services
             }
         }
 
+        /// <inheritdoc />
         public async Task UpdateMember(Guid id, MemberUpdateDTO dto, Guid userId, CancellationToken cancellationToken)
         {
             logger.LogInformation("Updating member {MemberId}. Requested by {UserId}.", id, userId);
@@ -209,6 +218,7 @@ namespace Backend.Services
             }
         }
 
+        /// <inheritdoc />
         public async Task DeleteProfilePicture(Guid id, Guid userId, CancellationToken cancellationToken)
         {
             if(id != userId)

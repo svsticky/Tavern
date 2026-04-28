@@ -6,6 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements profile picture retrieval and upload operations.
+    /// </summary>
     public class ProfilePictureService(
         PostgresDbContext db,
         IStorageService storageService,
@@ -14,6 +17,7 @@ namespace Backend.Services
         ILogger<ProfilePictureService> logger
     ) : IProfilePictureService
     {
+        /// <inheritdoc />
         public async Task<(Stream Stream, string ContentType)?> GetProfilePictureByPath(string path)
         {
             var decodedPath = Uri.UnescapeDataString(path);
@@ -24,6 +28,7 @@ namespace Backend.Services
             return (file.Stream, file.ContentType);
         }
 
+        /// <inheritdoc />
         public async Task<string?> UploadProfilePicture(Guid fromUserId, Guid userId, IFormFile? image)
         {
             logger.LogInformation("Updating profile picture for member {MemberId}. Requested by {UserId}.", fromUserId, userId);

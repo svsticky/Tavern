@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements enrollment workflows, including waiting-list promotion.
+/// </summary>
 public class EnrollmentService : IEnrollmentService
 {
     private readonly PostgresDbContext _db;
@@ -29,6 +32,7 @@ public class EnrollmentService : IEnrollmentService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -48,6 +52,7 @@ public class EnrollmentService : IEnrollmentService
         return enrollments.Select(e => EnrollmentProjections.ToDto(userId, isBoard).Compile()(e));
     }
 
+    /// <inheritdoc />
     public async Task<EnrollmentResponseDTO?> GetEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -68,6 +73,7 @@ public class EnrollmentService : IEnrollmentService
         return EnrollmentProjections.ToDto(userId, isBoard).Compile()(enrollment);
     }
 
+    /// <inheritdoc />
     public async Task<EnrollmentResponseDTO> CreateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Creating enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
@@ -125,6 +131,7 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Deleting enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
@@ -174,6 +181,7 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
+    /// <inheritdoc />
     public async Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId,CancellationToken cancellationToken)
     {
         _logger.LogInformation("Updating enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
@@ -227,6 +235,7 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
+    /// <inheritdoc />
     public async Task PatchEnrollment(EnrollmentKeyDTO dto, JsonPatchDocument<Enrollment> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
@@ -265,6 +274,7 @@ public class EnrollmentService : IEnrollmentService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public void PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct)
     {
         var next = _db.Enrollments
@@ -283,6 +293,7 @@ public class EnrollmentService : IEnrollmentService
         }
     }
 
+    /// <inheritdoc />
     public void PromoteFromWaitingList(uint activityId, CancellationToken ct)
     {
         PromoteFromWaitingList(activityId, 1, ct);

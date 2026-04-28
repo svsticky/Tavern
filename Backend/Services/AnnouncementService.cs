@@ -9,6 +9,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements announcement management operations.
+/// </summary>
 public class AnnouncementService : IAnnouncementService
 {
     private readonly PostgresDbContext _db;
@@ -22,6 +25,7 @@ public class AnnouncementService : IAnnouncementService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<GetAnnouncementResponseDTO>> GetAnnouncements(Guid userId, CancellationToken ct)
     {
         return await _db.Announcements
@@ -32,6 +36,7 @@ public class AnnouncementService : IAnnouncementService
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<GetAnnouncementResponseDTO?> GetAnnouncement(uint id, Guid userId, CancellationToken ct)
     {
         return await _db.Announcements
@@ -40,6 +45,7 @@ public class AnnouncementService : IAnnouncementService
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 
+    /// <inheritdoc />
     public async Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -56,6 +62,7 @@ public class AnnouncementService : IAnnouncementService
         return announcement;
     }
 
+    /// <inheritdoc />
     public async Task DeleteAnnouncement(uint id, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -67,6 +74,7 @@ public class AnnouncementService : IAnnouncementService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task PatchAnnouncement(uint id, JsonPatchDocument<Announcement> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -88,6 +96,7 @@ public class AnnouncementService : IAnnouncementService
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task UpdateAnnouncement(uint id, UpdateAnnouncementDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);

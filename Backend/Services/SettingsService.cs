@@ -6,6 +6,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements application setting management.
+/// </summary>
 public class SettingsService : ISettingsService
 {
     private readonly PostgresDbContext _db;
@@ -20,6 +23,7 @@ public class SettingsService : ISettingsService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public Task<IEnumerable<Setting>> GetSettings(Guid UserId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
@@ -27,6 +31,7 @@ public class SettingsService : ISettingsService
         return Task.FromResult(_db.Settings.AsEnumerable());
     }
 
+    /// <inheritdoc />
     public Task<Setting?> GetSetting(string name, Guid UserId, CancellationToken ct)
     {
         if(!_openSettings.Contains(name.ToLower()))
@@ -37,6 +42,7 @@ public class SettingsService : ISettingsService
         return Task.FromResult(_db.Settings.Find(name));
     }
 
+    /// <inheritdoc />
     public async Task<Setting> CreateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -54,6 +60,7 @@ public class SettingsService : ISettingsService
         return setting;
     }
 
+    /// <inheritdoc />
     public async Task UpdateSetting(string name, string value, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -64,6 +71,7 @@ public class SettingsService : ISettingsService
         await _db.SaveChangesAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task DeleteSetting(string name, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -74,6 +82,7 @@ public class SettingsService : ISettingsService
         await _db.SaveChangesAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task PatchSetting(string name, JsonPatchDocument<Setting> patchDoc, Guid userId, CancellationToken ct)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);

@@ -1,8 +1,17 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
 
+/// <summary>
+/// The MemberQueryExtensions class provides extension methods for filtering and applying paging to a queryable collection of Member entities based on various criteria specified in a GetMembersDto object. The Filter method allows for dynamic filtering of members based on search terms, study enrollments, and specific member attributes such as gratie, lid van verdienste, ere lid, begunstiger, suspended, inactive status, and study type. The ApplyPaging method enables pagination of the results based on the page number and page size specified in the DTO. These methods centralize the logic for applying these filters and pagination to an IQueryable<Member>, ensuring that the relevant members are returned based on the specified criteria while maintaining appropriate access control based on the user's role within the system.
+/// </summary>
 public static class MemberQueryExtensions
 {
+    /// <summary>
+    /// Filters a queryable collection of Member entities based on various criteria specified in a GetMembersDto object. This method allows for dynamic filtering of members based on search terms, study enrollments, and specific member attributes such as gratie, lid van verdienste, ere lid, begunstiger, suspended, inactive status, and study type. The Filter method centralizes the logic for applying these filters to an IQueryable<Member>, ensuring that the relevant members are returned based on the specified criteria while maintaining appropriate access control based on the user's role within the system.
+    /// </summary>
+    /// <param name="query">The queryable collection of Member entities to filter.</param>
+    /// <param name="dto">The data transfer object containing the filtering criteria.</param>
+    /// <returns>The filtered queryable collection of Member entities.</returns>
     public static IQueryable<Member> Filter(
         this IQueryable<Member> query, 
         GetMembersDto dto)

@@ -3,6 +3,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// The type of a specification question, determining the content and format of the answers provided for this question. The QuestionType enum defines the possible types of specification questions, including String, Boolean, Number, Date, DateTime, and MultipleChoice. Each type corresponds to a specific format for the answers that can be provided for that question, allowing for better organization and management of different types of questions and their associated answers within the system.
+/// </summary>
 public enum QuestionType
 {
     String,
@@ -13,6 +16,9 @@ public enum QuestionType
     MultipleChoice
 }
 
+/// <summary>
+/// Represents a specification question that is associated with an activity. This entity is used to define specific questions that members are required or allowed to answer when enrolling for an activity. Each SpecificationQuestion is linked to a specific Activity and can have various properties such as the question text in both Dutch and English, the type of the question (e.g., string, boolean, multiple choice), whether answering the question is mandatory for enrollment, and whether the answers provided for this question are visible to other members who enrolled for the same activity. Additionally, if the question type is MultipleChoice, the Options property can be used to define the available options for that question. This entity plays a crucial role in facilitating the collection of relevant information from members during the enrollment process for activities within the system.
+/// </summary>
 public class SpecificationQuestion
 {
     /// <summary>

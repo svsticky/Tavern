@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Defines the status of a study enrollment, indicating whether the enrollment is currently active (Enrolled), has been completed (Completed), or has been dropped out (DroppedOut). The StudyStatus enum is used to track the current state of a study enrollment, allowing for better management and organization of student enrollments within the system. This status information can be crucial for various functionalities such as reporting, analytics, and determining eligibility for certain activities or programs based on the student's enrollment status in their study program.
+/// </summary>
 public enum StudyStatus
 {
     Enrolled,
@@ -10,6 +13,9 @@ public enum StudyStatus
     DroppedOut
 }
 
+/// <summary>
+/// Represents a study enrollment of a member in a study program. A StudyEnrollment has a unique identifier, references to the associated Member and Study, the date and time when the enrollment started, an optional completion date, and the current status of the enrollment (e.g., Enrolled, Completed, DroppedOut). This entity is used to manage and track enrollments for study programs within the system, allowing members to participate in academic programs based on their preferences and eligibility, and enabling better organization and reporting of student enrollments and academic progress.
+/// </summary>
 [PrimaryKey(nameof(Id))]
 public class StudyEnrollment
 {

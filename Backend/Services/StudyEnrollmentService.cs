@@ -9,12 +9,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements study-enrollment management operations.
+    /// </summary>
     public class StudyEnrollmentService(
         PostgresDbContext db,
         IPermissionService permissionService,
         ILogger<StudyEnrollmentService> logger
     ) : IStudyEnrollmentService
     {
+        /// <inheritdoc />
         public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -27,6 +31,7 @@ namespace Backend.Services
                 .ToListAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task<StudyEnrollmentResponseDTO?> GetStudyEnrollment(uint id, Guid userId, CancellationToken ct)
         {
             var result = await db.StudyEnrollments
@@ -43,6 +48,7 @@ namespace Backend.Services
             return result;
         }
 
+        /// <inheritdoc />
         public async Task<StudyEnrollmentResponseDTO> CreateStudyEnrollment(PostStudyEnrollmentDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -63,6 +69,7 @@ namespace Backend.Services
                 .FirstAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task DeleteStudyEnrollment(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -76,6 +83,7 @@ namespace Backend.Services
             await db.SaveChangesAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);

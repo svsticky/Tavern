@@ -4,8 +4,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Defines the language preference of a member, which can be either Dutch (NL) or English (EN). This enumeration is used to indicate the preferred language for communication and content presentation for a member within the system.
+/// </summary>
 public enum Language { NL, EN }
 
+/// <summary>
+/// Represents a member of the organization. A member has various properties such as personal information, contact details, registration date, and relationships with other entities such as enrollments, group memberships, and announcements. This entity is used to manage and organize members within the system, allowing for better communication, access control, and personalized experiences based on member preferences and attributes.
+/// </summary>
 [PrimaryKey(nameof(Id))]
 [Index(nameof(StudentNumber), IsUnique = true)]
 [Index(nameof(Email), IsUnique = true)]
@@ -28,7 +34,7 @@ public class Member
     /// </summary>
     public uint StudentNumber { get; set; }
 
-    /// <summary
+    /// <summary>
     /// The first name of the member.
     /// </summary>
     [StringLength(60)]

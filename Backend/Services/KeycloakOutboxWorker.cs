@@ -4,10 +4,18 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Background worker that processes queued Keycloak synchronization tasks.
+/// </summary>
 public class KeycloakOutboxWorker(
     IServiceProvider serviceProvider, 
     ILogger<KeycloakOutboxWorker> logger) : BackgroundService
 {
+    /// <summary>
+    /// Enqueues a Keycloak outbox task for asynchronous processing.
+    /// </summary>
+    /// <param name="taskType">The task type to enqueue.</param>
+    /// <param name="keycloakId">The target Keycloak user ID.</param>
     public async Task EnqueueTask(KeycloakTaskType taskType, Guid keycloakId)
     {
         using var scope = serviceProvider.CreateScope();

@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
 
+/// <summary>
+/// Controller for managing group memberships within the system. The GroupMembershipsController provides endpoints for creating, retrieving, updating, and deleting group memberships, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify group membership data while providing appropriate error handling for various scenarios. The GroupMembershipsController interacts with the IGroupMembershipService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing group memberships effectively within the application.
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
@@ -14,6 +17,10 @@ public class GroupMembershipsController : ControllerBase
 {
     private readonly IGroupMembershipService _groupMembershipService;
 
+    /// <summary>
+    /// Initializes a new instance of the GroupMembershipsController class with the specified group membership service. The constructor takes an IGroupMembershipService as a parameter, which is used to perform various operations related to group memberships, such as creating, retrieving, updating, and deleting group memberships. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the service layer.
+    /// </summary>
+    /// <param name="groupMembershipService">The group membership service for managing group membership operations.</param>
     public GroupMembershipsController(IGroupMembershipService groupMembershipService)
     {
         _groupMembershipService = groupMembershipService;

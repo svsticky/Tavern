@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Represents a GroupMembership which links a Member to a Group. A GroupMembership has a unique identifier, references to the associated Member and Group, the year of the membership, and an optional role alias that defines the role of the member within the group. This entity is used to manage the relationships between members and groups within the system, allowing for better organization and access control based on group memberships and roles.
+/// </summary>
 [PrimaryKey(nameof(Id))]
 public class GroupMembership
 {

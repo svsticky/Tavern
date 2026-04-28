@@ -3,8 +3,20 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 
+/// <summary>
+/// Provides validation helpers for enrollment requests and specification answers.
+/// </summary>
 public static class EnrollmentValidator
 {
+    /// <summary>
+    /// Validates whether a member is allowed to enroll for an activity.
+    /// </summary>
+    /// <param name="providedAnswers">The provided specification answers.</param>
+    /// <param name="member">The member attempting to enroll.</param>
+    /// <param name="activity">The target activity.</param>
+    /// <param name="isBoardMember">Whether the acting user is a board member.</param>
+    /// <param name="_paymentValidationService">The payment validation service.</param>
+    /// <exception cref="ArgumentException">Thrown when enrollment requirements are not met.</exception>
     public static void ValidateEnrollment(IEnumerable<PostSpecificationAnswerDTO>? providedAnswers, Member member, Activity activity, bool isBoardMember, IPaymentValidationService _paymentValidationService)
     {
         if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
@@ -22,6 +34,13 @@ public static class EnrollmentValidator
         ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoardMember);
     }
 
+    /// <summary>
+    /// Validates provided specification answers against activity questions.
+    /// </summary>
+    /// <param name="providedAnswers">The provided specification answers.</param>
+    /// <param name="questions">The activity specification questions.</param>
+    /// <param name="isBoard">Whether mandatory-answer checks can be bypassed.</param>
+    /// <exception cref="ArgumentException">Thrown when answers are missing or invalid.</exception>
     public static void ValidateAnswers(
         IEnumerable<PostSpecificationAnswerDTO>? providedAnswers,
         IEnumerable<SpecificationQuestion> questions, 

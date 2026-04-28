@@ -6,6 +6,9 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Represents an activity that members can enroll in. An activity has various properties such as name, price, description, location, and enrollment deadlines. It also has relationships with other entities such as enrollments and specification questions. This entity is used to manage and organize activities within the system, allowing members to view and enroll in activities based on their preferences and eligibility.
+/// </summary>
 [PrimaryKey(nameof(Id))]
 public class Activity
 {
@@ -52,14 +55,14 @@ public class Activity
     /// <summary>
     /// Gets the description of the activity in the specified locale.
     /// </summary>
-    /// <param name="locale">The locale for which to get the description.</param>
-    /// <returns>The description of the activity in the specified locale.</returns>
-    public string GetDescription(Locale locale)
+    /// <param name="language">The language for which to get the description.</param>
+    /// <returns>The description of the activity in the specified language.</returns>
+    public string GetDescription(Language language)
     {
-        return locale switch
+        return language switch
         {
-            Locale.Dutch => DutchDescription,
-            Locale.English => EnglishDescription,
+            Language.NL => DutchDescription,
+            Language.EN => EnglishDescription,
             _ => EnglishDescription
         };
     }

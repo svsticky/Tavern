@@ -1,5 +1,8 @@
 namespace Backend.Validators;
 
+/// <summary>
+/// Provides file-extension and MIME-type validation for uploaded images.
+/// </summary>
 public static class ExtensionValidator
 {
     private static readonly string[] _allowedPosterExtensions = { ".jpg", ".jpeg", ".png", ".gif" };
@@ -8,6 +11,11 @@ public static class ExtensionValidator
     private static readonly string[] _allowedProfilePictureExtensions = { ".jpg", ".jpeg", ".png" };
     private static readonly string[] _allowedProfilePictureMimeTypes = { "image/jpeg", "image/png" };
 
+    /// <summary>
+    /// Validates that an uploaded poster file has an allowed extension and MIME type.
+    /// </summary>
+    /// <param name="file">The uploaded poster file.</param>
+    /// <exception cref="ArgumentException">Thrown when the file type is not allowed.</exception>
     public static void ValidatePosterExtension(IFormFile file)
     {
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -16,6 +24,11 @@ public static class ExtensionValidator
             throw new ArgumentException("Invalid poster extension.");
     }
 
+    /// <summary>
+    /// Validates that an uploaded profile picture has an allowed extension and MIME type.
+    /// </summary>
+    /// <param name="file">The uploaded profile picture file.</param>
+    /// <exception cref="ArgumentException">Thrown when the file type is not allowed.</exception>
     public static void ValidateProfilePictureExtension(IFormFile file)
     {
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();

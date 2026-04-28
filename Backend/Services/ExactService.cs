@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements synchronization of payment data to Exact Online.
+    /// </summary>
     public class ExactService : IAccountingToolService
     {
         private readonly HttpClient _http;
@@ -27,6 +30,7 @@ namespace Backend.Services
             _logger = logger;
         }
 
+        /// <inheritdoc />
         public async Task<Guid> SyncPaymentAsync(Payment payment, CancellationToken ct)
         {
             if (payment == null)

@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements role-alias management operations.
+    /// </summary>
     public class RoleAliasService(
         PostgresDbContext db,
         IPermissionService permissionService,
@@ -15,6 +18,7 @@ namespace Backend.Services
         ILogger<RoleAliasService> logger
     ) : IRoleAliasService
     {
+        /// <inheritdoc />
         public async Task<List<RoleAlias>> GetRoleAliases(CancellationToken ct)
         {
             return await db.RoleAliases
@@ -22,6 +26,7 @@ namespace Backend.Services
                 .ToListAsync(ct);
         }
 
+        /// <inheritdoc />
         public async Task<RoleAlias?> GetRoleAlias(uint id, CancellationToken ct)
         {
             return await db.RoleAliases
@@ -29,6 +34,7 @@ namespace Backend.Services
                 .FirstOrDefaultAsync(ra => ra.Id == id, ct);
         }
 
+        /// <inheritdoc />
         public async Task<RoleAlias> CreateRoleAlias(PostRoleAliasDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -53,6 +59,7 @@ namespace Backend.Services
             return entity;
         }
 
+        /// <inheritdoc />
         public async Task DeleteRoleAlias(uint id, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -70,6 +77,7 @@ namespace Backend.Services
             });
         }
 
+        /// <inheritdoc />
         public async Task PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -97,6 +105,7 @@ namespace Backend.Services
             });
         }
 
+        /// <inheritdoc />
         public async Task UpdateRoleAlias(uint id, RoleAliasUpdateDTO dto, Guid userId, CancellationToken ct)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);

@@ -3,12 +3,21 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
+/// <summary>
+/// Background worker that processes queued accounting synchronization tasks.
+/// </summary>
 public class AccountingToolOutboxWorker(
     IServiceProvider serviceProvider,
     ILogger<AccountingToolOutboxWorker> logger) : BackgroundService
 {
     private readonly bool _isEnabled = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE"));
 
+    /// <summary>
+    /// Enqueues an accounting outbox task for a payment.
+    /// </summary>
+    /// <param name="taskType">The accounting task type.</param>
+    /// <param name="paymentId">The payment ID to process.</param>
+    /// <param name="db">The database context used to persist the task.</param>
     public void EnqueueTask(AccountingToolTaskType taskType, uint paymentId, PostgresDbContext db)
     {
         var task = new AccountingToolOutboxTask

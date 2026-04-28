@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements group-membership management operations.
+/// </summary>
 public class GroupMembershipService : IGroupMembershipService
 {
     private readonly PostgresDbContext _db;
@@ -23,6 +26,7 @@ public class GroupMembershipService : IGroupMembershipService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<GroupMembershipResponseDTO>> GetGroupMemberships(GetGroupMembershipsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         var query = _db.GroupMemberships.AsQueryable();
@@ -52,6 +56,7 @@ public class GroupMembershipService : IGroupMembershipService
             .ToListAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<GroupMembershipResponseDTO?> GetGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
         var result = await _db.GroupMemberships
@@ -71,6 +76,7 @@ public class GroupMembershipService : IGroupMembershipService
         return result;
     }
 
+    /// <inheritdoc />
     public async Task<GroupMembership> CreateGroupMembership(PostGroupMembershipDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -111,6 +117,7 @@ public class GroupMembershipService : IGroupMembershipService
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -142,6 +149,7 @@ public class GroupMembershipService : IGroupMembershipService
         }
     }
 
+    /// <inheritdoc />
     public async Task PatchGroupMembership(uint id, Guid userId, JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -199,6 +207,7 @@ public class GroupMembershipService : IGroupMembershipService
         }
     }
 
+    /// <inheritdoc />
     public async Task UpdateGroupMembership(uint id, Guid userId, GroupMembershipUpdateDTO dto, CancellationToken cancellationToken)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);

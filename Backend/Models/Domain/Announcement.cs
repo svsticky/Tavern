@@ -2,6 +2,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Represents an announcement that can be created by members. An announcement has a title, content, and information about when it was created and who created it. This entity is used to manage and display announcements within the system, allowing members to stay informed about important updates, events, or news related to the organization or community.
+/// </summary>
 public class Announcement
 {
     /// <summary>

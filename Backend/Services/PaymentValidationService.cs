@@ -6,10 +6,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements payment validation and balance calculations.
+/// </summary>
 public class PaymentValidationService(
     PostgresDbContext db,
     ILogger<PaymentValidationService> logger) : IPaymentValidationService
 {
+    /// <inheritdoc />
     public bool HasPaidMembershipPayment(Guid memberId)
     {
          var member = db.Members
@@ -30,6 +34,7 @@ public class PaymentValidationService(
         return db.MembershipPayments.Any(p => p.MemberId == member.Id && p.PaidAt != null);
     }
 
+    /// <inheritdoc />
     public IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid memberId)
     {
         return db.Enrollments
@@ -48,6 +53,7 @@ public class PaymentValidationService(
             .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
+    /// <inheritdoc />
     public decimal GetUnpaidAmountForEnrollment(Enrollment enrollment)
     {
         var paidSum = db.EnrollmentPayments
@@ -58,6 +64,7 @@ public class PaymentValidationService(
         return enrollment.Price - paidSum;
     }
 
+    /// <inheritdoc />
     public IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments()
     {
         return db.Enrollments
@@ -75,6 +82,7 @@ public class PaymentValidationService(
             .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
+    /// <inheritdoc />
     public IEnumerable<EnrollmentBalance> GetAllOverpaidEnrollments()
     {
         return db.Enrollments
@@ -92,6 +100,7 @@ public class PaymentValidationService(
             .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.PaidSum - x.Enrollment.Price });
     }
 
+    /// <inheritdoc />
     public bool MemberHasPaidAllActivities(Member member)
     {
         return !GetUnpaidEnrollmentsForMember(member.Id).Any();

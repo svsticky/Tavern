@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Sends emails through the Mailgun provider.
+/// </summary>
 public class MailgunService(
     PostgresDbContext db,
     IPaymentValidationService paymentValidationService,
@@ -18,6 +21,14 @@ public class MailgunService(
     private readonly string _publicKey = Environment.GetEnvironmentVariable("MAILGUN_PUBLIC_KEY")!;
     private readonly string _apiBaseUrl = Environment.GetEnvironmentVariable("MAILGUN_API_BASE_URL")!;
 
+    /// <summary>
+    /// Sends an email through Mailgun.
+    /// </summary>
+    /// <param name="from">The sender information.</param>
+    /// <param name="to">The recipients.</param>
+    /// <param name="subject">The email subject.</param>
+    /// <param name="htmlContent">The HTML email body.</param>
+    /// <param name="ct">The cancellation token.</param>
     protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
         logger.LogInformation("Sending Mailgun email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);

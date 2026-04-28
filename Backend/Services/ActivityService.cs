@@ -12,6 +12,9 @@ using Backend.Utils.DateTime;
 
 namespace Backend.Services;
 
+/// <summary>
+/// Implements activity management, poster handling, and enrollment exports.
+/// </summary>
 public class ActivityService : IActivityService
 {
     private readonly PostgresDbContext _db;
@@ -40,6 +43,7 @@ public class ActivityService : IActivityService
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -68,6 +72,7 @@ public class ActivityService : IActivityService
         return activities.Select(a => ActivityProjections.ToDto(userId, isBoard).Compile()(a));
     }
 
+    /// <inheritdoc />
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -100,6 +105,7 @@ public class ActivityService : IActivityService
         return ActivityProjections.ToDto(userId, isBoard).Compile()(activity);
     }
 
+    /// <inheritdoc />
     public async Task<Activity> CreateActivity(Guid userId, PostActivityDTO dto)
     {
         _logger.LogInformation("Creating activity {ActivityName} by user {UserId}.", dto.Name, userId);
@@ -152,6 +158,7 @@ public class ActivityService : IActivityService
         }
     }
 
+    /// <inheritdoc />
     public async Task DeleteActivity(Guid userId, uint id)
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -168,6 +175,7 @@ public class ActivityService : IActivityService
         await _db.SaveChangesAsync();
     }
 
+    /// <inheritdoc />
     public async Task PatchActivity(Guid userId, uint id, JsonPatchDocument<Activity> patchDoc, CancellationToken ct)
     {
         _logger.LogInformation("Patching activity {ActivityId} by user {UserId}.", id, userId);
@@ -235,6 +243,7 @@ public class ActivityService : IActivityService
         }
     }
 
+    /// <inheritdoc />
     public async Task UploadPoster(Guid userId, uint id, IFormFile? poster)
     {
         _logger.LogInformation("Uploading poster for activity {ActivityId} by user {UserId}.", id, userId);
@@ -283,6 +292,7 @@ public class ActivityService : IActivityService
         }
     }
 
+    /// <inheritdoc />
     public async Task UpdateActivity(Guid userId, uint id, PutActivityDTO dto)
     {
         _logger.LogInformation("Updating activity {ActivityId} by user {UserId}.", id, userId);
@@ -353,6 +363,7 @@ public class ActivityService : IActivityService
         }
     }
 
+    /// <inheritdoc />
     public async Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid userId, uint id, bool download)
     {
         var activity = await _db.Activities.FindAsync(id);
@@ -382,6 +393,7 @@ public class ActivityService : IActivityService
         );
     }
 
+    /// <inheritdoc />
     public async Task<(byte[] Content, string FileName)> GetEnrollmentsCsv(Guid userId, uint activityId, CancellationToken ct)
     {
         // Only board members or members of the organizer group can download the enrollments CSV

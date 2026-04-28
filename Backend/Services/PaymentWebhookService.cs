@@ -8,6 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {
+    /// <summary>
+    /// Implements webhook handling for provider payment updates.
+    /// </summary>
     public class PaymentWebhookService(
         PostgresDbContext db,
         IPaymentClient paymentClient,
@@ -16,6 +19,7 @@ namespace Backend.Services
     {
         private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE") != null;
 
+        /// <inheritdoc />
         public async Task HandleWebhookAsync(string id)
         {
             logger.LogInformation("Handling Mollie webhook for payment id {MollieId}.", id);
