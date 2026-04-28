@@ -3,8 +3,7 @@ import type { NavigateFunction } from "react-router";
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import i18n from "~/i18n";
-import { postApiMembers, postApiPaymentsMembership, getApiStudies, type MailSubscriptions, type PostMemberDto, type Study } from "~/api";
-import { mailSubscriptionMap } from "~/types/MailSubscriptionsMap";
+import { postApiMembers, postApiPaymentsMembership, getApiStudies, type PostMemberDto, type Study, getApiMailinglists, type Mailinglist } from "~/api";
 
 export type RegisterFormData = {
   firstname: string;
@@ -20,20 +19,10 @@ export type RegisterFormData = {
   studentNumber: string;
 };
 
-export type RegisterSubscriptions = {
-  general: boolean;
-  company: boolean;
-  monday: boolean;
-  lectures: boolean;
-  teacher: boolean;
-};
-
 export const loadStudies = async (
-  setLoading: (loading: boolean) => void,
   setStudies: (studies: Study[]) => void
 ) => {
   try {
-    setLoading(true);
     const response = await getApiStudies();
 
     if(response.error || !response.data) throw new Error("Failed to fetch studies");
@@ -42,8 +31,21 @@ export const loadStudies = async (
   } catch (error) {
     console.error("Failed to fetch studies", error);
     toast.error(t("failed_to_load_studies"));
-  } finally {
-    setLoading(false);
+  } 
+};
+
+export const loadMailingLists = async (
+  setMailingLists: (lists: Mailinglist[]) => void
+) => {
+  try {
+    const response = await getApiMailinglists();
+
+    if(response.error || !response.data) throw new Error("Failed to fetch mailing lists");
+
+    setMailingLists(response.data);
+  } catch (error) {
+    console.error("Failed to fetch mailing lists", error);
+    toast.error(t("fetch_mailinglists_failed"));
   }
 };
 
@@ -61,30 +63,13 @@ export const handleStudyToggle = (id: number, setSelectedStudies: React.Dispatch
   );
 };
 
-export const handleSubscriptionChange = (
-  key: keyof RegisterSubscriptions,
-  setSubscriptions: React.Dispatch<React.SetStateAction<RegisterSubscriptions>>
-) => {
-  setSubscriptions((prev) => ({ ...prev, [key]: !prev[key] }));
-};
-
-export const calculateMailSubscriptions = (subscriptions: RegisterSubscriptions): MailSubscriptions => {
-  let total = 0;
-  if (subscriptions.general) total |= 1;
-  if (subscriptions.company) total |= 2;
-  if (subscriptions.monday) total |= 4;
-  if (subscriptions.lectures) total |= 8;
-  if (subscriptions.teacher) total |= 16;
-  return mailSubscriptionMap[total];
-};
-
 type RegisterSubmitArgs = {
   e: React.FormEvent;
   isFormValid: boolean;
   setLoading: (loading: boolean) => void;
   formData: RegisterFormData;
   selectedStudies: number[];
-  subscriptions: RegisterSubscriptions;
+  subscriptions: number;
   studies: Study[];
   navigate: NavigateFunction;
 };
@@ -121,7 +106,7 @@ export const handleRegisterSubmit = async ({
         studentNumber: parseInt(formData.studentNumber),
         parentPhoneNumber: formData.parentPhone || null,
         preferredLanguage: isDutch ? "NL" : "EN",
-        mailSubscriptions: calculateMailSubscriptions(subscriptions),
+        mailSubscriptions: subscriptions,
         studyEnrollments: selectedStudies.map((id) => ({
           studyId: id,
           memberId: "00000000-0000-0000-0000-000000000000",

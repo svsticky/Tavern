@@ -94,7 +94,7 @@ export const loadMemberData = async ({
     setAvailableStudies(studiesResponse.data);
 
     const profilePictureResponse = await getApiMembersByIdProfilePicture({ path: { id: memberId }, responseType: "blob" });
-    if (profilePictureResponse.error || !(profilePictureResponse.data instanceof Blob)) throw new Error("Failed to load profile picture");
+    if (profilePictureResponse.error || !(profilePictureResponse.data instanceof Blob)) return;
     url = URL.createObjectURL(profilePictureResponse.data);
     setProfilePictureSrc(url);
   } catch (err) {

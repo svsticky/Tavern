@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
-using Backend.Models;
+using Backend.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Interfaces;
 
@@ -8,16 +9,21 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 {
     private readonly ILogger<MailChimpSubscriptionService> _logger;
     private readonly HttpClient _httpClient;
+    private readonly PostgresDbContext _context; 
     private readonly string _listKey = Environment.GetEnvironmentVariable("MAILCHIMP_LIST_KEY") ?? string.Empty;
-    private readonly bool _isEnabled = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE")) && Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE") == "MAILCHIMP";
+    private readonly bool _isEnabled = Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE") == "MAILCHIMP";
 
-    public MailChimpSubscriptionService(ILogger<MailChimpSubscriptionService> logger, HttpClient httpClient)
+    public MailChimpSubscriptionService(
+        ILogger<MailChimpSubscriptionService> logger, 
+        HttpClient httpClient,
+        PostgresDbContext context)
     {
         _logger = logger;
         _httpClient = httpClient;
+        _context = context;
     }
 
-    public async Task UpdateSubscriptionAsync(string email, MailSubscriptions mailSubscription, CancellationToken ct)
+    public async Task UpdateSubscriptionAsync(string email, uint mailSubscription, CancellationToken ct)
     {
         if(!_isEnabled) 
         {
@@ -27,7 +33,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 
         var emailHash = CalculateMd5Hash(email);
 
-        if (mailSubscription == MailSubscriptions.None)
+        if (mailSubscription == 0)
         {
             await DeleteMemberAsync(emailHash, ct);
             return;
@@ -36,27 +42,30 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         await UpsertMemberAsync(email, emailHash, mailSubscription, ct);
     }
 
-    private async Task UpsertMemberAsync(string email, string emailHash, MailSubscriptions mailSubscription, CancellationToken ct)
+    private async Task UpsertMemberAsync(string email, string emailHash, uint mailSubscription, CancellationToken ct)
     {
+        var definitions = await _context.Mailinglists
+            .ToListAsync(ct);
+
+        var interests = new Dictionary<string, bool>();
+        foreach (var def in definitions)
+        {
+            bool isSubscribed = (mailSubscription & def.BitValue) != 0;
+            interests.Add(def.ServiceId, isSubscribed);
+        }
+
         var payload = new
         {
             email_address = email,
             status_if_new = "subscribed",
             status = "subscribed",
-            interests = new Dictionary<string, bool>
-            {
-                { "ID_MEETINGS", mailSubscription.HasFlag(MailSubscriptions.GeneralMemberMeetings) },
-                { "ID_COMPANY", mailSubscription.HasFlag(MailSubscriptions.CompanyMails) },
-                { "ID_MONDAY", mailSubscription.HasFlag(MailSubscriptions.MondayMorningMails) },
-                { "ID_LECTURES", mailSubscription.HasFlag(MailSubscriptions.LecturesAndWorkshops) },
-                { "ID_TEACHERS", mailSubscription.HasFlag(MailSubscriptions.TeacherMails) }
-            }
+            interests = interests
         };
 
         var response = await _httpClient.PutAsJsonAsync($"lists/{_listKey}/members/{emailHash}", payload, ct);
         response.EnsureSuccessStatusCode();
         
-        _logger.LogInformation("Subscriptions for {Email} updated.", email);
+        _logger.LogInformation("Subscriptions for {Email} updated via dynamic bitmap.", email);
     }
 
     private async Task DeleteMemberAsync(string emailHash, CancellationToken ct)
@@ -68,15 +77,12 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
             response.EnsureSuccessStatusCode();
         }
 
-        _logger.LogInformation("User with hash {Hash} removed from Mailchimp due to empty subscriptions.", emailHash);
+        _logger.LogInformation("User with hash {Hash} removed from Mailchimp.", emailHash);
     }
 
     private string CalculateMd5Hash(string input)
     {
-        using MD5 md5 = MD5.Create();
-        byte[] inputBytes = Encoding.UTF8.GetBytes(input.ToLower().Trim());
-        byte[] hashBytes = md5.ComputeHash(inputBytes);
-
+        byte[] hashBytes = MD5.HashData(Encoding.UTF8.GetBytes(input.ToLower().Trim()));
         return Convert.ToHexString(hashBytes).ToLower();
     }
 }

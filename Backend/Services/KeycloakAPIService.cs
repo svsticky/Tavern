@@ -66,7 +66,7 @@ public class KeycloakAPIService(
             using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, db);
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
                 member.Email = currentEmail;
                 mailSubscriptionOutboxWorker.EnqueueTask(currentEmail, member.MailSubscriptions, db);
                 await db.SaveChangesAsync();

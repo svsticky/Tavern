@@ -47,6 +47,8 @@ public class PostgresDbContext : DbContext
     public DbSet<Setting> Settings { get; set; }
     /// <summary>Reference to the MailSubscriptionOutboxTasks relational table. </summary>
     public DbSet<MailSubscriptionOutboxTask> MailSubscriptionOutboxTasks { get; set; }
+    /// <summary>Reference to the MailSubscriptionDefinitions relational table. </summary>
+    public DbSet<Mailinglist> Mailinglists { get; set; }
 
     /// <summary>
     /// Creates information how to set up the object-database mapping, from C# to SQL, on the postgresql database.

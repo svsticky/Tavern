@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import type { MemberResponseDto } from "~/api/types.gen";
+import type { Mailinglist, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
@@ -12,20 +12,16 @@ import { handleChangeEmail, handleChangePassword, handleSaveAccount, handleSubsc
 import { useKeycloak } from "@react-keycloak/web";
 import { type ChangeAccountFormData } from "./ChangeAccountForm.types";
 import { useApp } from "~/context/AppContext";
-
-enum MailSubscriptions {
-  GeneralMemberMeetings = 1,
-  CompanyMails = 2,
-  MondayMorningMails = 4,
-  LecturesAndWorkshops = 8,
-  TeacherMails = 16
-}
+import { getApiMailinglists } from "~/api";
+import toast from "react-hot-toast";
 
 export default function ChangeAccountForm({member}: {member: MemberResponseDto}) {
     const {keycloak} = useKeycloak();
     const {setMember} = useApp();
     const [saving, setSaving] = useState(false);
+    const [loadingMailingLists, setLoadingMailingLists] = useState(false);
 
+    const [mailingLists, setMailinglists] = useState<Mailinglist[]>([]);
     const [formData, setFormData] = useState<ChangeAccountFormData>({
         phoneNumber: "",
         street: "",
@@ -55,18 +51,38 @@ export default function ChangeAccountForm({member}: {member: MemberResponseDto})
     }, [formData, member]);
 
     useEffect(() => {
-        setFormData({
-            phoneNumber: member.phoneNumber || "",
-            street: member.street || "",
-            houseNumber: member.houseNumber || "",
-            postalCode: member.postalCode || "",
-            city: member.city || "",
-            parentPhoneNumber: member.parentPhoneNumber || "",
-            preferredLanguage: member.preferredLanguage ?? "EN",
-            mailSubscriptions: Number(member.mailSubscriptions) || 0
-        });
+      setFormData({
+          phoneNumber: member.phoneNumber || "",
+          street: member.street || "",
+          houseNumber: member.houseNumber || "",
+          postalCode: member.postalCode || "",
+          city: member.city || "",
+          parentPhoneNumber: member.parentPhoneNumber || "",
+          preferredLanguage: member.preferredLanguage ?? "EN",
+          mailSubscriptions: member.mailSubscriptions || 0
+      });
     }, [member]);
 
+    useEffect(() => {
+        const fetchMailingLists = async () => {
+        setLoadingMailingLists(true);
+        try {
+          const response = await getApiMailinglists();
+
+          if(response.error || !response.data) throw new Error("Failed to fetch mailing lists");
+
+          setMailinglists(response.data);
+        } catch (error) {
+          console.error("Error fetching mailing lists:", error);
+          toast.error(t("fetch_mailinglists_failed") );
+        }
+        finally {
+          setLoadingMailingLists(false);
+        }
+      };
+
+      fetchMailingLists();
+    }, []);
 
     return (
         <Form className="w-full">
@@ -118,31 +134,20 @@ export default function ChangeAccountForm({member}: {member: MemberResponseDto})
           <section>
             <FormHeader title={t("mail_subscriptions")} />
             <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
-              <Checkbox 
-                label={t("general_member_meetings")} 
-                checked={(formData.mailSubscriptions & MailSubscriptions.GeneralMemberMeetings) !== 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSubscriptionChange(MailSubscriptions.GeneralMemberMeetings, e.target.checked, setFormData)}
-              />
-              <Checkbox 
-                label={t("company_mails")} 
-                checked={(formData.mailSubscriptions & MailSubscriptions.CompanyMails) !== 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSubscriptionChange(MailSubscriptions.CompanyMails, e.target.checked, setFormData)}
-              />
-              <Checkbox 
-                label={t("monday_morning_mails")} 
-                checked={(formData.mailSubscriptions & MailSubscriptions.MondayMorningMails) !== 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSubscriptionChange(MailSubscriptions.MondayMorningMails, e.target.checked, setFormData  )}
-              />
-              <Checkbox 
-                label={t("lectures_workshops")} 
-                checked={(formData.mailSubscriptions & MailSubscriptions.LecturesAndWorkshops) !== 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSubscriptionChange(MailSubscriptions.LecturesAndWorkshops, e.target.checked, setFormData)}
-              />
-              <Checkbox 
-                label={t("teacher_mails")} 
-                checked={(formData.mailSubscriptions & MailSubscriptions.TeacherMails) !== 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSubscriptionChange(MailSubscriptions.TeacherMails, e.target.checked, setFormData)}
-              />
+              {!loadingMailingLists ? (
+                mailingLists.map((list) => (
+                  <Checkbox 
+                    key={list.id}
+                    label={t(list.name!.toLowerCase().replace(/ /g, "_")) || list.name} 
+                    checked={(formData.mailSubscriptions & list.bitValue!) !== 0}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => 
+                        handleSubscriptionChange(list.bitValue!, e.target.checked, setFormData)
+                    }
+                  />
+                ))
+              ) : (
+                <p className="text-gray-500 italic">{t("loading")}</p>
+              )}
             </Tile>
           </section>
 

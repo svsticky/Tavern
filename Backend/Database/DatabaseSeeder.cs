@@ -167,7 +167,8 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 {
                     GroupId = boardGroupId,
                     MemberId = backupMember.Id,
-                    RoleAliasId = null
+                    RoleAliasId = null,
+                    MembershipYear = FinancialYearUtils.GetCurrentFinancialYear()
                 });
 
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);

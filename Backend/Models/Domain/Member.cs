@@ -106,7 +106,7 @@ public class Member
     /// <summary>
     /// The mail subscriptions of the member.
     /// </summary>
-    public MailSubscriptions MailSubscriptions { get; set; } = MailSubscriptions.None;
+    public uint MailSubscriptions { get; set; } = 0;
 
     /// <summary>
     /// The notes about the member.

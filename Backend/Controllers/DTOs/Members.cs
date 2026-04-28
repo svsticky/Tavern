@@ -61,7 +61,7 @@ public class PostMemberDTO
     public string? ParentPhoneNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
-    public MailSubscriptions MailSubscriptions { get; set; }
+    public uint MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
@@ -118,7 +118,7 @@ public class MemberResponseDTO
     public string? ParentPhoneNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
-    public MailSubscriptions? MailSubscriptions { get; set; }
+    public uint? MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.Notes"/>
     public string? Notes { get; set; }
@@ -213,7 +213,7 @@ public class MemberUpdateDTO
     public string? ParentPhoneNumber { get; set; }
 
     /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
-    public MailSubscriptions MailSubscriptions { get; set; }
+    public uint MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Models.Member.Notes"/>
     public string? Notes { get; set; }

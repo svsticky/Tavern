@@ -418,5 +418,6 @@
   "failed_to_load_roles": "Rollen laden mislukt",
   "marking_as_paid": "Markeren als betaald...",
   "marked_as_paid": "Gemarkeerd als betaald",
-  "mark_as_paid_failed": "Markeren als betaald mislukt"
+  "mark_as_paid_failed": "Markeren als betaald mislukt",
+  "fetch_mailinglists_failed": "Fout bij het ophalen van mailinglijsten"
 }

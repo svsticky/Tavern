@@ -137,7 +137,7 @@ namespace Backend.Services
                 db.Members.Remove(member);
                 await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath ?? "");
 
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, db);
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -264,7 +264,7 @@ namespace Backend.Services
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, db);
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
                 await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.RefreshEmail, member.Id);
                 var newMail = await keycloakAPIService.GetEmail(member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
                 mailSubscriptionOutboxWorker.EnqueueTask(newMail, member.MailSubscriptions, db);

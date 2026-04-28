@@ -181,6 +181,7 @@ export type GroupResponseDto = {
     name: string;
     active: boolean;
     type: GroupType;
+    groupPicturePath?: string | null;
 };
 
 export type GroupType = 'Committee' | 'WorkingGroup' | 'Dispute';
@@ -198,7 +199,12 @@ export type MailRecipient = {
     name?: string;
 };
 
-export type MailSubscriptions = 'None' | 'GeneralMemberMeetings' | 'CompanyMails' | 'MondayMorningMails' | 'LecturesAndWorkshops' | 'TeacherMails' | 'All';
+export type Mailinglist = {
+    id?: number;
+    bitValue?: number;
+    name?: string;
+    serviceId?: string;
+};
 
 export type Member = {
     id?: string;
@@ -214,7 +220,7 @@ export type Member = {
     postalCode: string;
     city: string;
     dateOfBirth?: string;
-    mailSubscriptions?: MailSubscriptions;
+    mailSubscriptions?: number;
     notes?: string | null;
     registeredOn?: string;
     studyEnrollments?: Array<StudyEnrollment>;
@@ -245,7 +251,7 @@ export type MemberResponseDto = {
     city?: string | null;
     dateOfBirth?: string | null;
     parentPhoneNumber?: string | null;
-    mailSubscriptions?: MailSubscriptions;
+    mailSubscriptions?: number | null;
     notes?: string | null;
     registeredOn?: string | null;
     preferredLanguage?: Language;
@@ -271,7 +277,7 @@ export type MemberUpdateDto = {
     city: string;
     dateOfBirth: string;
     parentPhoneNumber?: string | null;
-    mailSubscriptions?: MailSubscriptions;
+    mailSubscriptions?: number;
     notes?: string | null;
     preferredLanguage: Language;
     gratie?: boolean;
@@ -340,6 +346,11 @@ export type PostMailDto = {
     recipients: Array<MailRecipient>;
 };
 
+export type PostMailinglistDto = {
+    name?: string;
+    serviceId?: string;
+};
+
 export type PostMemberDto = {
     studentNumber: number;
     firstName: string;
@@ -352,7 +363,7 @@ export type PostMemberDto = {
     city: string;
     dateOfBirth: string;
     parentPhoneNumber?: string | null;
-    mailSubscriptions?: MailSubscriptions;
+    mailSubscriptions?: number;
     preferredLanguage: Language;
     studyEnrollments?: Array<PostStudyEnrollmentDto> | null;
 };
@@ -539,7 +550,7 @@ export type PostApiActivitiesData = {
         IsEnrollable: boolean;
         AreParticipantsVisible: boolean;
         IsAdultOnly: boolean;
-        IsWeeklyDrinks?: boolean;
+        IsWeeklyDrinks: boolean;
         AllowedAudience?: TargetAudience;
         VatRate?: number;
         GLAccountId?: string;
@@ -632,7 +643,7 @@ export type PutApiActivitiesByIdData = {
         IsEnrollable: boolean;
         AreParticipantsVisible: boolean;
         IsAdultOnly: boolean;
-        IsWeeklyDrinks?: boolean;
+        IsWeeklyDrinks: boolean;
         AllowedAudience?: TargetAudience;
         VatRate?: number;
         GLAccountId?: string;
@@ -1155,6 +1166,102 @@ export type PostApiGroupsByIdGroupPictureData = {
 };
 
 export type PostApiGroupsByIdGroupPictureResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiMailinglistsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/mailinglists';
+};
+
+export type GetApiMailinglistsResponses = {
+    /**
+     * OK
+     */
+    200: Array<Mailinglist>;
+};
+
+export type GetApiMailinglistsResponse = GetApiMailinglistsResponses[keyof GetApiMailinglistsResponses];
+
+export type PostApiMailinglistsData = {
+    body?: PostMailinglistDto;
+    path?: never;
+    query?: never;
+    url: '/api/mailinglists';
+};
+
+export type PostApiMailinglistsResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type DeleteApiMailinglistsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/mailinglists/{id}';
+};
+
+export type DeleteApiMailinglistsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetApiMailinglistsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/mailinglists/{id}';
+};
+
+export type GetApiMailinglistsByIdResponses = {
+    /**
+     * OK
+     */
+    200: Mailinglist;
+};
+
+export type GetApiMailinglistsByIdResponse = GetApiMailinglistsByIdResponses[keyof GetApiMailinglistsByIdResponses];
+
+export type PatchApiMailinglistsByIdData = {
+    body?: Array<Operation>;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/mailinglists/{id}';
+};
+
+export type PatchApiMailinglistsByIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type PutApiMailinglistsByIdData = {
+    body?: PostMailinglistDto;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/api/mailinglists/{id}';
+};
+
+export type PutApiMailinglistsByIdResponses = {
     /**
      * OK
      */

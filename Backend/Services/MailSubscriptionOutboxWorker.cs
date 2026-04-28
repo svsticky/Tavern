@@ -19,7 +19,7 @@ public class MailSubscriptionOutboxWorker(
     /// <param name="taskType">The mail subscription task type.</param>
     /// <param name="email">The email address to process.</param>
     /// <param name="db">The database context used to persist the task.</param>
-    public void EnqueueTask(string email, MailSubscriptions mailSubscriptions, PostgresDbContext db)
+    public void EnqueueTask(string email, uint mailSubscriptions, PostgresDbContext db)
     {
         var task = new MailSubscriptionOutboxTask
         {

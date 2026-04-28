@@ -78,7 +78,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                             using var transaction = await dbContext.Database.BeginTransactionAsync();
                             try
                             {
-                                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, MailSubscriptions.None, dbContext);
+                                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, dbContext);
                                 member.Email = newEmail;
                                 mailSubscriptionOutboxWorker.EnqueueTask(newEmail, member.MailSubscriptions, dbContext);
                                 await dbContext.SaveChangesAsync();
@@ -276,6 +276,7 @@ builder.Services.AddScoped<IStudyEnrollmentService, StudyEnrollmentService>();
 builder.Services.AddScoped<IStudyService, StudyService>();
 builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
+builder.Services.AddScoped<IMailinglistService, MailinglistService>();
 
 builder.Services.AddHangfire(config => config
     .UsePostgreSqlStorage(options => 

@@ -4,7 +4,7 @@ import Input from "../../UI/Input";
 import { FormSection } from "../../UI/Form/FormSection";
 import { t } from "i18next";
 import { useEffect, useState, useMemo } from "react";
-import { type Study } from "~/api";
+import { type Mailinglist, type Study } from "~/api";
 import Button from "../../UI/Button";
 import { cn } from "~/util/tailwind.util";
 import { useNavigate } from "react-router";
@@ -13,14 +13,14 @@ import {
   handleRegisterInputChange,
   handleRegisterSubmit,
   handleStudyToggle,
-  handleSubscriptionChange,
-  type RegisterSubscriptions,
-  loadStudies
+  loadStudies,
+  loadMailingLists
 } from "./RegisterForm.handlers";
 
 export default function RegisterForm({ className }: { className?: string }) {
     const [loading, setLoading] = useState(false);
     const [studies, setStudies] = useState<Study[]>([]);
+    const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
 
     const navigate = useNavigate();
     
@@ -41,7 +41,10 @@ export default function RegisterForm({ className }: { className?: string }) {
     const [selectedStudies, setSelectedStudies] = useState<number[]>([]);
 
     useEffect(() => {
-        loadStudies(setLoading, setStudies);
+        setLoading(true);
+        loadStudies(setStudies);
+        loadMailingLists(setMailingLists);
+        setLoading(false);
     }, []);
 
     const isFormValid = useMemo(() => {
@@ -71,13 +74,7 @@ export default function RegisterForm({ className }: { className?: string }) {
         return allFieldsFilled && hasAtLeastOneStudy;
     }, [formData, selectedStudies]);
 
-    const [subscriptions, setSubscriptions] = useState<RegisterSubscriptions>({
-        general: false,
-        company: false,
-        monday: false,
-        lectures: false,
-        teacher: false,
-    });
+    const [subscriptions, setSubscriptions] = useState<number>(0);
 
     return (
         <Tile className={cn("shadow-xl border border-gray-200 bg-white", className)}>
@@ -131,12 +128,27 @@ export default function RegisterForm({ className }: { className?: string }) {
                 </FormSection>
 
                 <FormSection title={t("mail_subscriptions")}>
-                    <Checkbox label={t("general_member_meetings")} disabled={loading} checked={subscriptions.general} onChange={() => handleSubscriptionChange("general", setSubscriptions)} />
-                    <Checkbox label={t("company_mails")} disabled={loading} checked={subscriptions.company} onChange={() => handleSubscriptionChange("company", setSubscriptions)} />
-                    <Checkbox label={t("monday_morning_mails")} disabled={loading} checked={subscriptions.monday} onChange={() => handleSubscriptionChange("monday", setSubscriptions)} />
-                    <Checkbox label={t("lectures_workshops")} disabled={loading} checked={subscriptions.lectures} onChange={() => handleSubscriptionChange("lectures", setSubscriptions)} />
-                    <Checkbox label={t("teacher_mails")} disabled={loading} checked={subscriptions.teacher} onChange={() => handleSubscriptionChange("teacher", setSubscriptions)} />
-                </FormSection>
+                    {loading ? (
+                        t("loading")
+                    ) : (
+                        <div className="space-y-2">
+                            {mailingLists.map((list) => (
+                                <Checkbox 
+                                    key={list.id}
+                                    label={list.name}
+                                    disabled={loading}
+                                    checked={(subscriptions & list.bitValue!) !== 0}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        const newValue = e.target.checked 
+                                            ? subscriptions | list.bitValue! 
+                                            : subscriptions & ~list.bitValue!;
+                                        setSubscriptions(newValue);
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    )}
+                    </FormSection>
 
                 <Button 
                     type="submit" 

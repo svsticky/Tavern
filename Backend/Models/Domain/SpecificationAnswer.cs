@@ -3,6 +3,9 @@ using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Models.Domain;
 
+/// <summary>
+/// Represents an answer provided for a specification question by a member. This entity is used to capture and manage the responses given by members to specific questions that are part of the activity enrollment process. Each SpecificationAnswer is associated with a specific SpecificationQuestion and a Member, allowing for better organization and retrieval of answers based on the related question and member. The Answer property holds the actual response provided by the member, which can be of various formats depending on the type of the associated specification question (e.g., text, multiple choice, etc.). This entity plays a crucial role in facilitating the collection and management of member responses during the enrollment process for activities within the system.
+/// </summary>
 public class SpecificationAnswer
 {
     /// <summary>

@@ -28,5 +28,5 @@ public class MailSubscriptionOutboxTask
     /// <summary>
     /// The mail subscription associated with this outbox task. This is a required property that references the MailSubscriptions entity, which contains information about the specific mail subscription that this task is related to. This association allows for better organization and retrieval of tasks based on the related mail subscription.
     /// </summary>
-    public required MailSubscriptions MailSubscription { get; set; }
+    public required uint MailSubscription { get; set; }
 }

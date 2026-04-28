@@ -14,5 +14,5 @@ public interface IMailSubscriptionService
     /// <param name="mailSubscription">The mail subscription details.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    public Task UpdateSubscriptionAsync(string email, MailSubscriptions mailSubscription, CancellationToken ct);
+    public Task UpdateSubscriptionAsync(string email, uint mailSubscription, CancellationToken ct);
 }

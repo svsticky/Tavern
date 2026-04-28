@@ -24,6 +24,7 @@ import {
   loadSettingsPageData
 } from "./settings.handlers";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
+import ManageMailingListsDatatable from "Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,11 @@ export default function SettingsPage() {
         <div>
           <FormHeader title={t("studies")} />
           <ManageStudiesDatatable />
+        </div>
+
+        <div>
+          <FormHeader title={t("mail_subscriptions")} />
+          <ManageMailingListsDatatable />
         </div>
 
         <Form>
