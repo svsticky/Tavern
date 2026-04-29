@@ -25,9 +25,6 @@ public static class EnrollmentValidator
         if (member.Suspended)
             throw new ArgumentException("Member is suspended and cannot enroll in activities.");
 
-        if (member.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate <= DateTime.UtcNow) && !member.Gratie)
-            throw new ArgumentException("Member should be enrolled in a study or be Gratie to enroll in activities.");
-
         if (activity.Enrollments.Any(e => e.MemberId == member.Id))
             throw new ArgumentException("Member is already enrolled (or on waiting list).");
 

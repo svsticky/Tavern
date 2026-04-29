@@ -53,7 +53,14 @@ export const isMemberInTargetAudience = (
 
   // 4. Masters
   if (audienceMask & AudienceFlags.Masters) {
-    if (activeEnrollments.some(se => se.studyType == "Master")) return true;
+    if (activeEnrollments.some(se => se.studyType == "Master"
+      && (se.completionDate == null || new Date(se.completionDate) > new Date(Date.now())) 
+    )) return true;
+  }
+
+  // 5. Gratie
+  if (audienceMask & AudienceFlags.Gratie) {
+    if (member.gratie) return true;
   }
 
   return false;

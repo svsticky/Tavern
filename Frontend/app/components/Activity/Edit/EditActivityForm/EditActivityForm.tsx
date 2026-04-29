@@ -87,6 +87,7 @@ export default function EditActivityForm({ activity, id, isBoard }: { activity: 
                     <Checkbox label={t("year_2")} name="AudienceBit" value="2" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 2) : true} />
                     <Checkbox label={t("year_3_plus")} name="AudienceBit" value="4" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 4) : true} />
                     <Checkbox label={t("masters")} name="AudienceBit" value="8" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 8) : true} />
+                    <Checkbox label={t("gratie")} name="AudienceBit" value="16" defaultChecked={isEdit ? !!(activity?.allowedAudience ?? 0 & 16) : true} />
                     </div>
                 </div>
                 <div>

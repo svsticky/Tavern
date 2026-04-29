@@ -419,5 +419,9 @@
   "marking_as_paid": "Markeren als betaald...",
   "marked_as_paid": "Gemarkeerd als betaald",
   "mark_as_paid_failed": "Markeren als betaald mislukt",
-  "fetch_mailinglists_failed": "Fout bij het ophalen van mailinglijsten"
+  "fetch_mailinglists_failed": "Fout bij het ophalen van mailinglijsten",
+  "edit_mailing_list": "Mailinglijst bewerken",
+  "add_mailing_list": "Mailinglijst toevoegen",
+  "no_mailing_lists": "Geen mailinglijsten",
+  "service_id": "Service ID"
 }

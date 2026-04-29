@@ -13,7 +13,8 @@ public enum TargetAudience : uint
     SecondYears = 1 << 1,         // 2
     ThirdYearsAndAbove = 1 << 2,  // 4
     Masters = 1 << 3,             // 8
-    All = FirstYears | SecondYears | ThirdYearsAndAbove | Masters
+    Gratie = 1 << 4,              // 16
+    All = FirstYears | SecondYears | ThirdYearsAndAbove | Masters | Gratie
 }
 
 /// <summary>
@@ -29,16 +30,6 @@ public static class TargetAudienceHelper
     /// <returns>True if the member belongs to the specified target audience, otherwise false.</returns>
     public static bool IsMemberInTargetAudience(Member member, TargetAudience targetAudience)
     {
-        if (targetAudience == TargetAudience.None)
-        {
-            return false;
-        }
-
-        if  (targetAudience == TargetAudience.All)
-        {
-            return true;
-        }
-
         if (targetAudience.HasFlag(TargetAudience.FirstYears) && member.StudyEnrollments.Any(se => 
             (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
             && se.Study.Type == StudyType.Bachelor 
@@ -67,6 +58,11 @@ public static class TargetAudienceHelper
         if (targetAudience.HasFlag(TargetAudience.Masters) && member.StudyEnrollments.Any(se => 
             (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
             && se.Study.Type == StudyType.Master))
+        {
+            return true;
+        }
+
+        if (targetAudience.HasFlag(TargetAudience.Gratie) && member.Gratie)
         {
             return true;
         }

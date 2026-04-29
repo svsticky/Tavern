@@ -421,5 +421,9 @@
   "marking_as_paid": "Marking as paid...",
   "marked_as_paid": "Marked as paid",
   "mark_as_paid_failed": "Marking as paid failed",
-  "fetch_mailinglists_failed": "Failed to fetch mailing lists"
+  "fetch_mailinglists_failed": "Failed to fetch mailing lists",
+  "edit_mailing_list": "Edit mailing list",
+  "add_mailing_list": "Add mailing list",
+  "no_mailing_lists": "No mailing lists",
+  "service_id": "Service ID"
 }
