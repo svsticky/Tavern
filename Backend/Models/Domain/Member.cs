@@ -1,0 +1,185 @@
+using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
+
+namespace Backend.Models.Domain;
+
+/// <summary>
+/// Defines the language preference of a member, which can be either Dutch (NL) or English (EN). This enumeration is used to indicate the preferred language for communication and content presentation for a member within the system.
+/// </summary>
+public enum Language { NL, EN }
+
+/// <summary>
+/// Represents a member of the organization. A member has various properties such as personal information, contact details, registration date, and relationships with other entities such as enrollments, group memberships, and announcements. This entity is used to manage and organize members within the system, allowing for better communication, access control, and personalized experiences based on member preferences and attributes.
+/// </summary>
+[PrimaryKey(nameof(Id))]
+[Index(nameof(StudentNumber), IsUnique = true)]
+[Index(nameof(Email), IsUnique = true)]
+public class Member
+{
+    public static readonly IList<string> RestrictedFields = new[] { "/email", "/id", "/studentnumber", "/firstname", "/lastname", "/dateofbirth", "/notes", "/registeredon", "/gratie", "/lidvanverdienste", "/erelid", "/begunstiger", "/suspended" };
+
+    /// <summary>
+    /// The unique identifier of a member, assigned incrementally.
+    /// </summary>
+    public Guid Id { get; set; }
+
+    /// <summary>
+    /// The keycloak id of the member, used for authentication and authorization.
+    /// </summary>
+    public Guid? KeycloakId { get; set; }
+
+    /// <summary>
+    /// The student number of the member.
+    /// </summary>
+    public uint StudentNumber { get; set; }
+
+    /// <summary>
+    /// The first name of the member.
+    /// </summary>
+    [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
+    public required string FirstName { get; set; }
+
+    /// <summary>
+    /// The last name of the member.
+    /// </summary>
+    [StringLength(60)]
+    [Required(AllowEmptyStrings = false)]
+    public required string LastName { get; set; }
+
+    /// <summary>
+    /// The email address of the member.
+    /// </summary>
+    [StringLength(100)]
+    [EmailAddress]
+    [Required(AllowEmptyStrings = false)]
+    public required string Email { get; set; }
+
+    /// <summary>
+    /// The phone number of the member. 
+    /// </summary>
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
+    public required string PhoneNumber { get; set; }
+
+    /// <summary>
+    /// Phone number of the member's parent or guardian, if the member is a minor.
+    /// </summary>
+    [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
+    public string? ParentPhoneNumber { get; set; }
+
+    /// <summary>
+    /// The street of the member.
+    /// </summary>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string Street { get; set; }
+
+    /// <summary>
+    /// The house number of the member.
+    /// </summary>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
+    public required string HouseNumber { get; set; }
+
+    /// <summary>
+    /// The postal code of the member.
+    /// </summary>
+    [StringLength(10)]
+    [Required(AllowEmptyStrings = false)]
+    public required string PostalCode { get; set; }
+    
+    /// <summary>
+    /// The city of the member.
+    /// </summary>
+    [StringLength(40)]
+    [Required(AllowEmptyStrings = false)]
+    public required string City { get; set; }
+
+    /// <summary>
+    /// The date of birth of the member.
+    /// </summary>
+    public DateTimeOffset DateOfBirth { get; set; }
+
+    /// <summary>
+    /// The mail subscriptions of the member.
+    /// </summary>
+    public uint MailSubscriptions { get; set; } = 0;
+
+    /// <summary>
+    /// The notes about the member.
+    /// </summary>
+    public string? Notes { get; set; }
+
+    /// <summary>
+    /// The date and time at which the member registered.
+    /// </summary>
+    public DateTimeOffset RegisteredOn { get; set; }
+
+    /// <summary>
+    /// The enrollments associated with this member.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<StudyEnrollment> StudyEnrollments { get; set; } = new List<StudyEnrollment>();
+
+    /// <summary>
+    /// The activities this member is enrolled in.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<Enrollment> Enrollments { get; set; } = new List<Enrollment>();
+
+    /// <summary>
+    /// The groups this member is part of.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; } = new List<GroupMembership>();
+
+    /// <summary>
+    /// The preferred language of the member.
+    /// </summary>
+    public Language PreferredLanguage { get; set; }
+
+    /// <summary>
+    /// Indicates whether the member is granted a fee waiver.
+    /// </summary>
+    public bool Gratie { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is a "Lid van Verdienste".
+    /// </summary>
+    public bool LidVanVerdienste { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is an honorary member.
+    /// </summary>
+    public bool EreLid { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is a "Begunstiger".
+    /// </summary>
+    public bool Begunstiger { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member is suspended.
+    /// </summary>
+    public bool Suspended { get; set; } = false;
+
+    /// <summary>
+    /// The announcements created by this member.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<Announcement> Announcements { get; set; } = new List<Announcement>();
+
+    /// <summary>
+    /// The path to the profile picture of the member.
+    /// </summary>
+    public string? ProfilePicturePath { get; set; }
+
+    /// <summary>
+    /// The file name of the profile picture of the member.
+    /// </summary>
+    public string? ProfilePictureFileName { get; set; }
+
+    /// <summary>
+    /// The date and time when the member joined the association.
+    /// </summary>
+    public DateTimeOffset JoinedOn { get; set; } = DateTime.UtcNow;
+}

@@ -1,123 +1,223 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
-using Backend.Utils;
+using Backend.Interfaces;
+using Backend.Models.Domain;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Controllers
+namespace Backend.Controllers;
+
+/// <summary>
+/// Controller for managing enrollments within the system. The EnrollmentsController provides endpoints for creating, retrieving, updating, and deleting enrollments, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify enrollment data while providing appropriate error handling for various scenarios. The EnrollmentsController interacts with the IEnrollmentService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing enrollments effectively within the application.
+/// </summary>
+[Route("api/[controller]")]
+[ApiController]
+public class EnrollmentsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class Enrollments(PostgresDbContext db) : ControllerBase
+    private readonly IEnrollmentService _enrollmentService;
+
+    /// <summary>
+    /// Initializes a new instance of the EnrollmentsController class with the specified enrollment service. The constructor takes an IEnrollmentService as a parameter, which is used to perform various operations related to enrollments, such as creating, retrieving, updating, and deleting enrollments. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the service layer.
+    /// </summary>
+    /// <param name="enrollmentService">The enrollment service for managing enrollment operations.</param>
+    public EnrollmentsController(IEnrollmentService enrollmentService)
     {
-        // GET: api/enrollments
-        /// <summary>
-        /// Lists all enrollments in the database.
-        /// </summary>
-        /// <returns>A list of enrollments.</returns>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Enrollment>>> GetEnrollments(CancellationToken cancellationToken)
+        _enrollmentService = enrollmentService;
+    }
+
+    /// <summary>
+    /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
+    /// </summary>
+    /// <returns>A Guid representing the authenticated user's ID.</returns>
+    private Guid GetUserId()
+    {
+        return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    }
+
+    // GET: api/enrollments
+    /// <summary>
+    /// Retrieves a list of enrollments based on the provided filtering criteria. The GetEnrollments endpoint allows clients to fetch a collection of enrollments that match the specified criteria in the GetEnrollmentsDTO, such as filtering by member ID or activity ID. This endpoint is designed to return a list of enrollments, ensuring that proper authorization is enforced to allow only authorized users to access enrollment data, while also providing appropriate error handling for cases where enrollments may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns a list of enrollments with a 200 OK status code, allowing clients to easily access and display enrollment information as needed. This endpoint provides a convenient way for clients to stay informed about enrollment details related to specific members or activities by accessing the relevant enrollment data available within the system.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing the filtering criteria.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A list of enrollments.</returns>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<EnrollmentResponseDTO>>> GetEnrollments([FromQuery] GetEnrollmentsDTO dto, CancellationToken cancellationToken)
+    {
+        try
         {
-            return await db.Enrollments.ToListAsync(cancellationToken);
+            var enrollments = await _enrollmentService.GetEnrollments(dto, GetUserId(), cancellationToken);
+            return Ok(enrollments);
         }
-
-        // GET: api/enrollments/1/00000000-0000-0000-0000-000000000000
-        /// <summary>
-        /// Fetches a single enrollment by its composite key.
-        /// </summary>
-        /// <param name="activityId">The ID of the activity.</param>
-        /// <param name="memberId">The Guid of the member.</param>
-        /// <returns>The full enrollment record.</returns>
-        [HttpGet("{activityId}/{memberId}")]
-        public async Task<ActionResult<Enrollment>> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException)
         {
-            Enrollment? enrollment = await db.Enrollments
-                .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
-
-            return enrollment != null ? enrollment : NotFound();
+            return Forbid();
         }
-
-        // POST: api/enrollments
-        /// <summary>
-        /// Creates a new enrollment.
-        /// </summary>
-        /// <param name="enrollment">The enrollment details to add.</param>
-        /// <returns>The created enrollment.</returns>
-        [HttpPost]
-        public async Task<ActionResult<Enrollment>> PostEnrollment(PostEnrollmentDTO dto, CancellationToken cancellationToken)
+        catch (Exception ex)
         {
-            Member? member = await db.Members.FindAsync(dto.MemberId, cancellationToken);
-            
-            if (member == null) return NotFound("Member not found.");
-
-            if (PaymentUtils.HasPaidMembershipPayment(member, db) == false)
-            {
-                return BadRequest("Member does not have a paid membership payment.");
-            }
-
-            Activity? activity = await db.Activities.FirstOrDefaultAsync(a => a.Id == dto.ActivityId, cancellationToken);
-            
-            if (activity == null) return NotFound("Activity not found.");
-            
-            var enrollment = new Enrollment
-            {
-                ActivityId = dto.ActivityId,
-                MemberId = dto.MemberId,
-                Price = activity.Price
-            };
-
-            db.Enrollments.Add(enrollment);
-            await db.SaveChangesAsync(cancellationToken);
-
-            return CreatedAtAction(nameof(GetEnrollment), 
-                new { activityId = enrollment.ActivityId, memberId = enrollment.MemberId }, 
-                enrollment);
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
+    }
 
-        // DELETE: api/enrollments/1/00000000-0000-0000-0000-000000000000
-        /// <summary>
-        /// Deletes an enrollment.
-        /// </summary>
-        /// <param name="activityId">The ID of the activity.</param>
-        /// <param name="memberId">The Guid of the member.</param>
-        /// <returns>No content.</returns>
-        [HttpDelete("{activityId}/{memberId}")]
-        public async Task<IActionResult> DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
+    // GET: api/enrollments/1/{memberId}
+    /// <summary>
+    /// Retrieves a specific enrollment based on the provided activity ID and member ID. The GetEnrollment endpoint allows clients to fetch the details of a single enrollment by providing the unique combination of activity ID and member ID in the EnrollmentKeyDTO. This endpoint is designed to return the enrollment data, ensuring that proper authorization is enforced to allow only authorized users to access the enrollment information, while also providing appropriate error handling for cases where the enrollment may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns the details of the specified enrollment with a 200 OK status code, allowing clients to easily access and display specific enrollment information as needed. This endpoint provides a convenient way for clients to stay informed about enrollment details related to specific members and activities by accessing detailed information about individual enrollments available within the system.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing the activity ID and member ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The enrollment matching the criteria.</returns>
+    [HttpGet("{activityId}/{memberId}")]
+    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment([FromRoute] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    {
+        try
         {
-            Enrollment? enrollment = await db.Enrollments
-                .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
-            
-            if (enrollment == null) return NotFound();
+            var enrollment = await _enrollmentService.GetEnrollment(dto, GetUserId(), cancellationToken);
 
-            db.Enrollments.Remove(enrollment);
-            await db.SaveChangesAsync(cancellationToken);
+            if (enrollment == null)
+                return NotFound();
+        
+            return Ok(enrollment);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 
+    // POST: api/enrollments
+    /// <summary>
+    /// Creates a new enrollment based on the provided data. The PostEnrollment endpoint allows clients to submit a request to create a new enrollment by providing the necessary information in the PostEnrollmentDTO. This endpoint is designed to handle the creation of enrollments, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can create new enrollments within the system. Upon successful creation, the endpoint returns the details of the newly created enrollment along with a 201 Created status code, allowing clients to easily access and reference the new enrollment in subsequent operations.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing the enrollment data.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The newly created enrollment.</returns>
+    [HttpPost]
+    public async Task<ActionResult<EnrollmentResponseDTO>> PostEnrollment(
+        PostEnrollmentDTO dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var created = await _enrollmentService.CreateEnrollment(dto, GetUserId(), cancellationToken);
+
+            return CreatedAtAction(
+                nameof(GetEnrollment),
+                new { activityId = created.Activity?.Id, memberId = created.Member?.Id },
+                created
+            );
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    // DELETE: api/enrollments/1/{memberId}
+    /// <summary>
+    /// Deletes a specific enrollment by its unique identifier. The DeleteEnrollment endpoint allows clients to remove an existing enrollment from the system based on the provided activity ID and member ID. This endpoint is designed to handle the deletion of enrollments, ensuring that proper authorization is enforced to allow only authorized users to delete enrollments, while also providing appropriate error handling for cases where the enrollment may not be found or the user does not have access rights. Upon successful deletion, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully removed from the system without returning any content in the response body.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing the activity ID and member ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>No content.</returns>
+    [HttpDelete("{activityId}/{memberId}")]
+    public async Task<ActionResult> DeleteEnrollment([FromRoute] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _enrollmentService.DeleteEnrollment(dto, GetUserId(), cancellationToken);
             return NoContent();
         }
-
-        // PATCH: api/enrollments/1/00000000-0000-0000-0000-000000000000
-        /// <summary>
-        /// Partially updates an enrollment (e.g., changing the price).
-        /// </summary>
-        [HttpPatch("{activityId}/{memberId}")]
-        public async Task<IActionResult> PatchEnrollment(uint activityId, Guid memberId, [FromBody] JsonPatchDocument<Enrollment> patchDoc, CancellationToken cancellationToken)
+        catch (KeyNotFoundException)
         {
-            if (patchDoc == null) return BadRequest();
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
 
-            Enrollment? enrollment = await db.Enrollments
-                .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
-            
-            if (enrollment == null) return NotFound();
+    // PUT: api/enrollments/1/{memberId}
+    /// <summary>
+    /// Updates a specific enrollment by its unique identifier with the provided data. The PutEnrollment endpoint allows clients to submit a request to update an existing enrollment by providing the necessary information in the PostEnrollmentDTO. This endpoint is designed to handle the updating of enrollments, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can update existing enrollments within the system. Upon successful update, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully updated without returning any content in the response body, allowing clients to easily manage and modify enrollment details as needed.
+    /// </summary>
+    /// <param name="activityId">The unique identifier of the activity for which to update enrollment.</param>
+    /// <param name="memberId">The unique identifier of the member for whom to update enrollment.</param>
+    /// <param name="dto">The data transfer object containing the updated enrollment data.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>No content.</returns>
+    [HttpPut("{activityId}/{memberId}")]
+    public async Task<ActionResult> PutEnrollment(
+        uint activityId, Guid memberId,
+        [FromBody] PostEnrollmentDTO dto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            if(activityId != dto.ActivityId || memberId != dto.MemberId)
+                return BadRequest("ActivityId and MemberId in the URL must match those in the body.");
 
-            patchDoc.ApplyTo(enrollment, ModelState);
-
-            if (!ModelState.IsValid) return BadRequest(ModelState);
-
-            await db.SaveChangesAsync(cancellationToken);
-
+            await _enrollmentService.UpdateEnrollment(dto, GetUserId(), cancellationToken);
             return NoContent();
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
+        }
+    }
+
+    // PATCH: api/enrollments/1/{MemberId}
+    /// <summary>
+    /// Partially updates a specific enrollment by its unique identifier using a JSON Patch document. The PatchEnrollment endpoint allows clients to submit a request to modify an existing enrollment by providing a JSON Patch document that specifies the changes to be made to the enrollment's properties. This endpoint is designed to handle partial updates of enrollments, ensuring that the provided patch document is validated and applied correctly, while also enforcing proper authorization to ensure that only authorized users can modify existing enrollments within the system. Upon successful application of the patch, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully updated without returning any content in the response body. This approach allows for efficient updates to enrollment data without requiring clients to send the entire enrollment object, enabling more flexible and targeted modifications to enrollment properties as needed.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing the enrollment key information.</param>
+    /// <param name="patchDoc">The JSON Patch document specifying the changes to be made.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>No content.</returns>
+    [HttpPatch("{activityId}/{memberId}")]
+    public async Task<ActionResult> PatchEnrollment(
+        [FromRoute] EnrollmentKeyDTO dto,
+        [FromBody] JsonPatchDocument<Enrollment> patchDoc,
+        CancellationToken cancellationToken)
+    {
+        if (patchDoc == null)
+            return BadRequest();
+
+        try
+        {
+            await _enrollmentService.PatchEnrollment(dto, patchDoc, GetUserId(), cancellationToken);
+            return NoContent();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 }

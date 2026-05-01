@@ -6,15 +6,66 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  index("routes/home.tsx"),
+  layout("layout/keycloak.tsx", [
+    layout("layout/authenticated.tsx", [
+      layout("layout/navbar.tsx", [
+        index("routes/home/home.tsx"),
+        route("announcements", "routes/announcements/announcements.tsx"),
+        route("activities", "routes/activities/activities.tsx"),
+        route("activities/create", "routes/edit-activity/edit-activity.tsx", {
+          id: "create-activity",
+        }),
+        route("activities/edit/:id", "routes/edit-activity/edit-activity.tsx", {
+          id: "edit-activity",
+        }),
+        route("activities/:id", "routes/activity/activity.tsx", {
+          id: "activity-details",
+        }),
+        route("account", "routes/account/account.tsx"),
+        route("external-links", "routes/external-links.tsx"),
+        route(
+          "announcements/create",
+          "routes/edit-announcement/edit-announcement.tsx",
+          { id: "create-announcement" },
+        ),
+        route(
+          "announcements/edit/:id",
+          "routes/edit-announcement/edit-announcement.tsx",
+          { id: "edit-announcement" },
+        ),
 
-  layout("layout/auth.tsx", [
+        layout("layout/admin.tsx", [
+          route("admin/finances", "routes/admin/finances/finances.tsx"),
+          route("admin/activities", "routes/admin/activities/activities.tsx"),
+          route("admin/activities/:id", "routes/activity/activity.tsx", {
+            id: "activity-details-admin",
+          }),
+          route(
+            "admin/activities/create",
+            "routes/edit-activity/edit-activity.tsx",
+            { id: "create-activity-admin" },
+          ),
+          route(
+            "admin/activities/edit/:id",
+            "routes/edit-activity/edit-activity.tsx",
+            { id: "edit-activity-admin" },
+          ),
+          route("admin/members", "routes/admin/members.tsx"),
+          route(
+            "admin/members/:id",
+            "routes/admin/edit-member/edit-member.tsx",
+          ),
+          route("admin/groups", "routes/admin/groups.tsx"),
+          route("admin/groups/:id", "routes/admin/edit-group/edit-group.tsx"),
+          route("admin/settings", "routes/admin/settings/settings.tsx"),
+        ]),
+      ]),
+    ]),
+
+    route("confirm-mail", "routes/confirm-mail.tsx"),
+
     route("login", "routes/auth/login.tsx"),
-    route("register", "routes/auth/register.tsx"),
+    route("logout", "routes/auth/logout.tsx"),
   ]),
-  route("logout", "routes/auth/logout.tsx"),
-
-  /**
-   * TODO: Make a common layout for when you are authenticated
-   */
+  route("register", "routes/register.tsx"),
 ] satisfies RouteConfig;

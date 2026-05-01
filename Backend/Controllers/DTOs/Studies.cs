@@ -1,14 +1,17 @@
 using System.ComponentModel.DataAnnotations;
 
-using Backend.Models;
+using Backend.Models.Domain;
 
 namespace Backend.Controllers.DTOs;
 
-// ReSharper disable once InconsistentNaming => Allow DTO as an acronym
+/// <summary>
+/// Defines the DTO for posting a study, containing the necessary information for creating a new study, including its title, nominal duration in years, and type. The PostStudyDTO is used to transfer data from the client to the server when creating a new study, ensuring that all required information is provided and validated appropriately for the creation process.
+/// </summary>
 public class PostStudyDTO
 {
     /// <inheritdoc cref="Models.Study.Title"/>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
     /// <inheritdoc cref="Models.Study.NominalDurationYears"/>
@@ -18,10 +21,14 @@ public class PostStudyDTO
     public required StudyType Type { get; set; }
 }
 
+/// <summary>
+/// Defines the DTO for updating an existing study, containing all necessary information for modifying a study's properties. The StudyUpdateDTO is used to transfer data from the client to the server when updating an existing study, allowing for changes to be made to the study's details while ensuring that the provided information is validated appropriately for the update process.
+/// </summary>
 public class StudyUpdateDTO
 {
     /// <inheritdoc cref="Models.Study.Title"/>
     [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
     /// <inheritdoc cref="Models.Study.NominalDurationYears"/>

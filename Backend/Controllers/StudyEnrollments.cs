@@ -1,183 +1,163 @@
-using Microsoft.AspNetCore.Mvc;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Backend.Interfaces;
+using Backend.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
-using Backend.Utils;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
 
+/// <summary>
+/// Controller for managing the association between members and their specific academic studies. The StudyEnrollmentsController provides a set of endpoints to track when and how users are enrolled in various programs, maintaining a historical and current record of their academic status. This controller is crucial for verifying eligibility for student-specific activities and benefits within the system. It enforces strict authorization to ensure that enrollment data—which often contains sensitive academic timelines—is only accessible to the account owner or authorized administrators. By utilizing the IStudyEnrollmentService, the controller abstracts the complex logic of managing overlapping enrollments and status transitions.
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class StudyEnrollmentsController(PostgresDbContext db) : ControllerBase
+public class StudyEnrollmentsController : ControllerBase
 {
+    private readonly IStudyEnrollmentService _service;
+
+    /// <summary>
+    /// Initializes a new instance of the StudyEnrollmentsController with the required enrollment management service.
+    /// </summary>
+    /// <param name="service">The service responsible for study enrollment business logic and data persistence.</param>
+    public StudyEnrollmentsController(IStudyEnrollmentService service)
+    {
+        _service = service;
+    }
+
+    /// <summary>
+    /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
+    /// </summary>
+    /// <returns>A Guid representing the authenticated user's ID.</returns>
+    private Guid GetUserId()
+    {
+        return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    }
+
     // GET: api/studyenrollments
     /// <summary>
-    /// Lists all study enrollments in the database.
+    /// Retrieves a list of study enrollments based on the provided query parameters. The GetStudyEnrollments endpoint allows authorized users to fetch enrollment records, which can be filtered and paginated via the GetStudyEnrollmentsDTO. This is primarily used by administrators to oversee student demographics or by individual users to view their own academic history within the system. The endpoint ensures that the returned data is scoped according to the requester's permissions, preventing unauthorized access to other members' academic records.
     /// </summary>
-    /// <returns>Said list.</returns>
+    /// <param name="dto">The data transfer object containing filtering and pagination criteria.</param>
+    /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A collection of study enrollment response objects matching the criteria.</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<StudyEnrollment>>> GetStudyEnrollments(CancellationToken cancellationToken)
+    public async Task<ActionResult<IEnumerable<StudyEnrollmentResponseDTO>>> GetStudyEnrollments([FromQuery] GetStudyEnrollmentsDTO dto, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        try
         {
-            return Forbid("Only board members can view study enrollments.");
+            var result = await _service.GetStudyEnrollments(dto, GetUserId(), ct);
+            return Ok(result);
         }
-
-        var result = await db.StudyEnrollments
-            .Select(se => new StudyEnrollmentResponseDTO
-            {
-                Id = se.Id,
-                MemberId = se.MemberId,
-                MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
-                StudyId = se.StudyId,
-                StudyTitle = se.Study.Title,
-                EnrollmentDate = se.EnrollmentDate,
-                CompletionDate = se.CompletionDate,
-                Status = se.Status,
-            })
-            .ToListAsync(cancellationToken);
-
-        return Ok(result);
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // GET: api/studyenrollments/5
     /// <summary>
-    /// Fetches a single study enrollment.
+    /// Retrieves the details of a specific study enrollment by its unique identifier. The GetStudyEnrollment endpoint provides a comprehensive view of a single enrollment record, including the associated study details, start/end dates, and the current status of the enrollment. This granular access is necessary for verifying specific academic claims or troubleshooting individual member profiles. If the enrollment record is not found or access is denied, the endpoint returns the appropriate HTTP status code.
     /// </summary>
-    /// <param name="id">The id of the study enrollment to fetch.</param>
-    /// <returns>The full study enrollment.</returns> 
+    /// <param name="id">The unique identifier of the study enrollment to retrieve.</param>
+    /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>The detailed study enrollment record if found; otherwise, a 404 status.</returns>
     [HttpGet("{id}")]
-    public async Task<ActionResult<StudyEnrollment>> GetStudyEnrollment(uint id, CancellationToken cancellationToken)
+    public async Task<ActionResult<StudyEnrollmentResponseDTO>> GetStudyEnrollment(uint id, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        var result = await db.StudyEnrollments
-            .Where(se => se.Id == id)
-            .Select(se => new StudyEnrollmentResponseDTO
-            {
-                Id = se.Id,
-                MemberId = se.MemberId,
-                MemberName = $"{se.Member.FirstName} {se.Member.LastName}",
-                StudyId = se.StudyId,
-                StudyTitle = se.Study.Title,
-                EnrollmentDate = se.EnrollmentDate,
-                CompletionDate = se.CompletionDate,
-                Status = se.Status
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (result is null) return NotFound();
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db) && result.MemberId != userId)
+        try
         {
-            return Forbid("Only board members can view study enrollments of others.");
+            var result = await _service.GetStudyEnrollment(id, GetUserId(), ct);
+            return result != null ? Ok(result) : NotFound();
         }
-
-        return Ok(result);
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // POST: api/studyenrollments
     /// <summary>
-    /// Creates a new study enrollment with a unique ID assigned by the database.
+    /// Creates a new study enrollment record for a member. The PostStudyEnrollment endpoint processes requests to link a member to a specific academic study using the PostStudyEnrollmentDTO. This operation involves validating the enrollment period and ensuring the member is not already enrolled in a conflicting program. The endpoint enforces authorization to ensure that users can only create enrollments for themselves or, in the case of staff, for other members. Upon success, it returns the newly created enrollment details.
     /// </summary>
-    /// <param name="enrollmentDto">The study enrollment to be added to the database.</param>
-    /// <returns>Fully created study enrollment in body and api route of where to
+    /// <param name="dto">The data transfer object containing the new enrollment configuration.</param>
+    /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>The newly created study enrollment response object with a 201 Created status.</returns>
     [HttpPost]
-    public async Task<ActionResult<StudyEnrollment>> PostStudyEnrollment(PostStudyEnrollmentDTO enrollmentDto, CancellationToken cancellationToken)
+    public async Task<ActionResult<StudyEnrollmentResponseDTO>> PostStudyEnrollment(PostStudyEnrollmentDTO dto, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        try
         {
-            return Forbid("Only board members can create study enrollments.");
+            var result = await _service.CreateStudyEnrollment(dto, GetUserId(), ct);
+            return CreatedAtAction(nameof(GetStudyEnrollment), new { id = result.Id }, result);
         }
-
-        Member? member = await db.Members.FindAsync(enrollmentDto.MemberId, cancellationToken);
-        if (member is null)
-            return BadRequest($"Member with ID {enrollmentDto.MemberId} does not exist.");
-
-        Study? study = await db.Studies.FindAsync(enrollmentDto.StudyId, cancellationToken);
-        if (study is null)
-            return BadRequest($"Study with ID {enrollmentDto.StudyId} does not exist.");
-
-        var newEnrollment = new StudyEnrollment
+        catch (UnauthorizedAccessException)
         {
-            Member = member,
-            Study = study,
-            EnrollmentDate = enrollmentDto.EnrollmentDate,
-            Status = enrollmentDto.Status
-        };
-        var newEntry = db.StudyEnrollments.Add(newEnrollment);
-        await db.SaveChangesAsync(cancellationToken);
-        return CreatedAtAction(
-            nameof(GetStudyEnrollment),
-            new { id = newEntry.Entity.Id },
-            new StudyEnrollmentResponseDTO
-            {
-                Id = newEntry.Entity.Id,
-                MemberId = newEntry.Entity.MemberId,
-                StudyId = newEntry.Entity.StudyId,
-                EnrollmentDate = newEntry.Entity.EnrollmentDate,
-                CompletionDate = newEntry.Entity.CompletionDate,
-                Status = newEntry.Entity.Status
-            }
-        );
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     // DELETE: api/studyenrollments/5
     /// <summary>
-    /// Deletes a study enrollment.
+    /// Permanently removes a study enrollment record from the system. The DeleteStudyEnrollment endpoint allows for the removal of incorrectly entered or obsolete enrollment data. This operation is strictly guarded to prevent accidental loss of academic history and requires the requester to have administrative rights or ownership of the record. Following successful deletion, a 204 No Content status is returned to the client.
     /// </summary>
-    /// <param name="id">The id of the study enrollment to delete.</param>
-    /// <returns>No content.</returns>
+    /// <param name="id">The unique identifier of the study enrollment to delete.</param>
+    /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A 204 No Content status upon successful deletion.</returns>
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteStudyEnrollment(uint id, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteStudyEnrollment(uint id, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        try
         {
-            return Forbid("Only board members can delete study enrollments.");
+            await _service.DeleteStudyEnrollment(id, GetUserId(), ct);
+            return NoContent();
         }
-
-        var enrollment = await db.StudyEnrollments.FindAsync(id, cancellationToken);
-        if (enrollment is null)
-            return NotFound();
-
-        db.StudyEnrollments.Remove(enrollment);
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
-    // PATCH: api/studyenrollments
+    // PATCH: api/studyenrollments/5
     /// <summary>
-    /// Updates an existing study enrollment.
+    /// Partially updates an existing study enrollment using a JSON Patch document. The PatchStudy endpoint (targeting a specific StudyEnrollment) allows for the modification of specific enrollment attributes—such as adjusting a graduation date or changing a status—without the need to resend the entire record. This ensures that updates are targeted and efficient. The endpoint validates the proposed changes against the enrollment domain rules and verifies the user's authority to modify the record before persisting the changes.
     /// </summary>
-    /// <param name="enrollmentDto">The study enrollment to be updated.</param>
-    /// <returns>Fully updated study enrollment in body and api route of where to fetch it in the headers.</returns>
-    [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(uint id, [FromBody] StudyStatus newStatus, CancellationToken cancellationToken)
+    /// <param name="id">The unique identifier of the study enrollment to update.</param>
+    /// <param name="patchDoc">The JSON Patch document containing the intended modifications.</param>
+    /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A 204 No Content status if the patch was successfully applied.</returns>
+    [HttpPatch("{id}")]
+    public async Task<ActionResult> PatchStudy(uint id, [FromBody] JsonPatchDocument<StudyEnrollment> patchDoc, CancellationToken ct)
     {
-        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-        if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+        try
         {
-            return Forbid("Only board members can change study enrollment statuses.");
+            await _service.PatchStudy(id, patchDoc, GetUserId(), ct);
+            return NoContent();
         }
-
-        var enrollment = await db.StudyEnrollments.FindAsync([id], cancellationToken);
-        if (enrollment is null)
-            return NotFound();
-
-        enrollment.Status = newStatus;
-        await db.SaveChangesAsync(cancellationToken);
-
-        return NoContent();
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 }

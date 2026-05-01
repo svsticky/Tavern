@@ -1,51 +1,68 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
-	"vcs": {
-		"enabled": true,
-		"clientKind": "git",
-		"useIgnoreFile": true
-	},
-	"files": {
+  "$schema": "https://biomejs.dev/schemas/2.3.8/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
     "includes": ["app/**/*.tsx", "app/**/*.ts", "!app/api/**"],
-		"ignoreUnknown": false
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "space",
-		"indentWidth": 2
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"suspicious": {
-				"noArrayIndexKey": "off",
-        "noExplicitAny": "off"
-			},
+    "ignoreUnknown": false
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noArrayIndexKey": "off",
+        "noExplicitAny": "off",
+        "noDocumentCookie": "warn",
+        "noNonNullAssertedOptionalChain": "warn"
+      },
       "correctness": {
-        "noUnusedVariables": "error"
+        "noUnusedVariables": "error",
+        "useHookAtTopLevel": "error",
+        "useExhaustiveDependencies": "warn",
+        "noInnerDeclarations": "warn",
+        "noChildrenProp": "warn",
+        "useJsxKeyInIterable": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "off"
+      },
+      "a11y": {
+        "noStaticElementInteractions": "off",
+        "useKeyWithClickEvents": "off",
+        "useButtonType": "off",
+        "noLabelWithoutControl": "off",
+        "noSvgWithoutTitle": "off",
+        "useValidAnchor": "off"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
       }
-		}
-	},
-	"json": {
-	  "formatter": {
-		  "enabled": false
-	  },
-	  "linter": {
-		  "enabled": false
-	  }
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double"
-		}
-	},
-	"assist": {
-		"enabled": true,
-		"actions": {
-			"source": {
-				"organizeImports": "on"
-			}
-		}
-	}
+    }
+  },
+  "json": {
+    "formatter": { "enabled": false },
+    "linter": { "enabled": false }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
 }

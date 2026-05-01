@@ -1,81 +1,128 @@
 using System.Net.Http.Headers;
 using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models;
-using Backend.Utils;
+using Backend.Models.Domain;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
-public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpClientFactory)
+/// <summary>
+/// Provides operations for managing and synchronizing users in Keycloak.
+/// </summary>
+public class KeycloakAPIService(
+    PostgresDbContext db,
+    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
+    IHttpClientFactory httpClientFactory,
+    [FromServices] IPaymentValidationService paymentValidationService,
+    ILogger<KeycloakAPIService> logger)
 {
-    public async Task SyncMemberInKeyCloak(Guid memberId)
+    private readonly string _keycloakUrl = Environment.GetEnvironmentVariable("KeycloakUrl")!;
+    private readonly string _keycloakRealm = Environment.GetEnvironmentVariable("KeycloakRealm")!;
+    private readonly string _keycloakBackendClientId = Environment.GetEnvironmentVariable("KeycloakBackendClientId")!;
+    private readonly string _keycloakClientSecret = Environment.GetEnvironmentVariable("KeycloakClientSecret")!;
+
+    /// <summary>
+    /// Synchronizes local member data to an existing Keycloak user.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
+    public async Task SyncMemberInKeyCloak(Guid keycloakId)
     {
-        var member = await db.Members.FindAsync(memberId);
+        logger.LogInformation("Syncing member in Keycloak for KeycloakId {KeycloakId}.", keycloakId);
+        var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
 
         if (member == null)
         {
-            throw new Exception($"Member with id {memberId} not found.");
+            throw new Exception($"Member with id {keycloakId} not found.");
         }
 
-        var memberships = await db.GroupMemberships
-            .Where(gm => gm.MemberId == memberId && gm.Group.Active)
-            .Select(gm => $"{gm.MembershipYear}:{gm.Group.Name}:{(gm.RoleAlias != null ? gm.RoleAlias.Id : "")}")
-            .ToListAsync();
-
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
-
         var tokenResponse = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updatedUser = MapToKeycloakUser(member, memberships.ToArray());
+        var currentKeycloakUser = await client.GetFromJsonAsync<System.Text.Json.JsonElement>($"users/{keycloakId}");
+
+        string currentEmail = currentKeycloakUser.GetProperty("email").GetString()!;
+
+        bool emailChanged = !string.Equals(currentEmail, member.Email, StringComparison.OrdinalIgnoreCase);
+
+        var memberships = await db.GroupMemberships
+            .Include(gm => gm.RoleAlias!.Role)
+            .Where(gm => gm.MemberId == member.Id && gm.Group.Active)
+            .Select(gm => $"{gm.MembershipYear}:{gm.Group.Id};{gm.Group.Name}:{(gm.RoleAlias != null ? gm.RoleAlias.Id : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Role.Name : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Name : "")}")
+            .ToListAsync();
+
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
+
+        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray());
 
         var response = await client.PutAsJsonAsync($"users/{member.KeycloakId}", updatedUser);
         response.EnsureSuccessStatusCode();
+
+        if (emailChanged)
+        {
+            using var transaction = await db.Database.BeginTransactionAsync();
+            try
+            {
+                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
+                member.Email = currentEmail;
+                mailSubscriptionOutboxWorker.EnqueueTask(currentEmail, member.MailSubscriptions, db);
+                await db.SaveChangesAsync();
+                logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                logger.LogError("Failed to update local member email after Keycloak sync for KeycloakId {KeycloakId}. Rolling back transaction.", keycloakId);
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
     }
 
+    /// <summary>
+    /// Creates a Keycloak user for a local member.
+    /// </summary>
+    /// <param name="member">The member to provision.</param>
+    /// <returns>The created Keycloak user ID when successful.</returns>
     public async Task<Guid?> CreateUserInKeycloak(Member member)
     {
+        logger.LogInformation("Creating Keycloak user for member {MemberId}.", member.Id);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var newUser = MapToKeycloakUser(member);
+        var newUser = MapToKeycloakUser(member, member.Email, true);
         var response = await client.PostAsJsonAsync("users", newUser);
         
-        string? keycloakId = null;
-
         if (response.IsSuccessStatusCode)
         {
-            // User created
-            keycloakId = response.Headers.Location?.Segments.Last();
-        }
-        else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
-        {
-            // User was already created, so continue for sending the mail
-            var searchResponse = await client.GetFromJsonAsync<List<KeycloakUserResponse>>($"users?email={member.Email}");
-            keycloakId = searchResponse?.FirstOrDefault()?.Id;
+            var id = response.Headers.Location?.Segments.Last();
+            if (id != null && Guid.TryParse(id, out var keycloakId))            
+            {
+                logger.LogInformation("Created Keycloak user {KeycloakId} for member {MemberId}.", keycloakId, member.Id);
+                return keycloakId;
+            }
         }
         else
         {
             response.EnsureSuccessStatusCode();
         }
 
-        if (keycloakId != null)
-        {
-            await client.PutAsJsonAsync($"users/{keycloakId}", newUser);
-            var actions = new[] { "UPDATE_PASSWORD", "VERIFY_EMAIL" };
-            var emailResponse = await client.PutAsJsonAsync($"users/{keycloakId}/execute-actions-email", actions);
-            emailResponse.EnsureSuccessStatusCode();
-            return Guid.Parse(keycloakId);
-        }
-
-        return null;
+        throw new Exception("Unexpected error creating user in Keycloak.");
     }
 
     private class KeycloakUserResponse { public string Id { get; set; } = default!; }
 
+    /// <summary>
+    /// Deletes a Keycloak user.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
     public async Task DeleteUserInKeycloak(Guid keycloakId)
     {
+        logger.LogInformation("Deleting Keycloak user {KeycloakId}.", keycloakId);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -84,17 +131,21 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// Retrieves a service-account access token for Keycloak admin API requests.
+    /// </summary>
+    /// <returns>The access token.</returns>
     public async Task<string> GetServiceAccountToken()
     {
         var client = httpClientFactory.CreateClient();
         
-        var url = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}/protocol/openid-connect/token";
+        var url = $"{_keycloakUrl}/realms/{_keycloakRealm}/protocol/openid-connect/token";
         
         var dict = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
-            { "client_id", Environment.GetEnvironmentVariable("KeycloakBackendClientId")! },
-            { "client_secret", Environment.GetEnvironmentVariable("KeycloakClientSecret")! }
+            { "client_id", _keycloakBackendClientId },
+            { "client_secret", _keycloakClientSecret }
         };
 
         var content = new FormUrlEncodedContent(dict);
@@ -104,6 +155,7 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
+            logger.LogError("Failed retrieving Keycloak service token. Status: {StatusCode}", response.StatusCode);
             throw new Exception($"Keycloak Auth Failed: {error}");
         }
 
@@ -111,8 +163,14 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         return json.GetProperty("access_token").GetString()!;
     }
 
+    /// <summary>
+    /// Sends a Keycloak execute-actions email to a user.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
+    /// <param name="actions">The required actions to include.</param>
     public async Task SendActionEmail(Guid keycloakId, string[] actions)
     {
+        logger.LogInformation("Sending Keycloak action email to {KeycloakId} with {ActionCount} actions.", keycloakId, actions.Length);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -122,23 +180,68 @@ public class KeycloakAPIService(PostgresDbContext db, IHttpClientFactory httpCli
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
+            logger.LogError("Failed sending Keycloak action email to {KeycloakId}. Status: {StatusCode}", keycloakId, response.StatusCode);
             throw new Exception($"Keycloak Email Failed: {error}");
         }
     }
 
-    private object MapToKeycloakUser(Member member, string[]? memberships = null)
+    /// <summary>
+    /// Gets the email of a Keycloak user.
+    /// </summary> 
+    /// <param name="keycloakId">The Keycloak user ID.</param>
+    /// <returns>The email address.</returns>
+    public async Task<string> GetEmail(Guid keycloakId)
+    {
+        var client = httpClientFactory.CreateClient("KeycloakAdmin");
+        var token = await GetServiceAccountToken();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        var response = await client.GetAsync($"users/{keycloakId}");
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            logger.LogError("Failed fetching Keycloak user {KeycloakId}. Status: {StatusCode}", keycloakId, response.StatusCode);
+            throw new Exception($"Keycloak User Fetch Failed: {error}");
+        }
+
+        var json = await response.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+        return json.GetProperty("email").GetString()!;
+    }
+
+    /// <summary>
+    /// Refreshes the local member email from Keycloak.
+    /// </summary>
+    /// <param name="keycloakId">The Keycloak user ID.</param>
+    public async Task RefreshEmail(Guid keycloakId)
+    {
+        logger.LogInformation("Refreshing local email from Keycloak for {KeycloakId}.", keycloakId);
+
+        var email = await GetEmail(keycloakId);
+
+        var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
+        if (member != null)
+        {
+            member.Email = email;
+            await db.SaveChangesAsync();
+            logger.LogInformation("Updated local member email from Keycloak for {KeycloakId}.", keycloakId);
+        }
+    }
+
+    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
     {
         return new
         {
             username = member.Email,
-            email = member.Email,
+            email = currentEmail,
             firstName = member.FirstName,
             lastName = member.LastName,
             enabled = true,
+            emailVerified = emailVerified,
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
-                { "access_level", new List<string> { member.Suspended ? "suspended" : PaymentUtils.HasPaidMembershipPayment(member, db) ? "notpaid" : "full" } },
-                { "member_memberships", memberships?.ToList() ?? new List<string>() },
+                { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPayment(member.Id) ? "full" : "not_paid" } },
+                { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } }
             }

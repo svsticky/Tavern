@@ -1,210 +1,294 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
+using Backend.Interfaces;
+using Backend.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
-using Backend.Utils;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
-namespace Backend.Controllers
+namespace Backend.Controllers;
+
+/// <summary>
+/// Controller for managing organizational groups within the system. The GroupsController provides a comprehensive set of endpoints for handling the lifecycle of groups, including creation, retrieval, full and partial updates, and deletion. It also manages group-specific assets such as group profile pictures. This controller is designed to enforce strict ownership and authorization rules, ensuring that only authorized users can modify group data. By interacting with the IGroupService, the controller maintains a clean separation between the API layer and the business logic required to manage group structures and their associated metadata effectively.
+/// </summary>
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class GroupsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class Groups(PostgresDbContext db) : ControllerBase
+    private readonly IGroupService _groupService;
+
+    /// <summary>
+    /// Initializes a new instance of the GroupsController with the required group management service.
+    /// </summary>
+    /// <param name="groupService">The group service used for managing group-related business operations.</param>
+    public GroupsController(IGroupService groupService)
     {
-        // GET: api/groups
-        /// <summary>
-        /// Lists all groups in the database.
-        /// </summary>
-        /// <returns>Said list.</returns>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Group>>> GetGroups(CancellationToken cancellationToken)
+        _groupService = groupService;
+    }
+
+    /// <summary>
+    /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
+    /// </summary>
+    /// <returns>A Guid representing the authenticated user's ID.</returns>
+    private Guid GetUserId()
+    {
+        return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+    }
+
+    // GET: api/groups
+    /// <summary>
+    /// Retrieves a collection of groups based on the provided query filters and pagination parameters. The GetGroups endpoint allows clients to fetch a list of groups that match specific criteria defined in the GetGroupDTO. This endpoint is designed to support efficient data retrieval by allowing users to filter through available groups while ensuring that the returned results are scoped according to the user's authorization level. It provides a robust way for clients to browse and search for groups within the application's ecosystem.
+    /// </summary>
+    /// <param name="dto">The data transfer object containing filtering and pagination parameters.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A list of group response objects matching the specified criteria.</returns>
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<GroupResponseDTO>>> GetGroups(
+        [FromQuery] GetGroupDTO dto,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var userId = GetUserId();
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can view groups.");
-            }
-
-            var result = await db.Groups
-                .Select(c => new GroupResponseDTO
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                    GroupMemberships = c.GroupMemberships.Select(cm => new GroupMembershipResponseDTO
-                    {
-                        Id = cm.Id,
-                        GroupId = cm.GroupId,
-                        GroupName = cm.Group.Name,
-                        GroupType = cm.Group.Type,
-                        MemberId = cm.MemberId,
-                        MemberName = $"{cm.Member.FirstName} {cm.Member.LastName}",
-                        MembershipYear = cm.MembershipYear,
-                        RoleAliasId = cm.RoleAlias != null ? cm.RoleAlias.Id : null,
-                        RoleAliasName = cm.RoleAlias != null ? cm.RoleAlias.Name : null
-                    }).ToList()
-                })
-                .ToListAsync(cancellationToken);
-
+            var result = await _groupService.GetGroups(userId, dto, cancellationToken);
             return Ok(result);
         }
-
-        // GET: api/groups/5
-        /// <summary>
-        /// Fetches a single group.
-        /// </summary>
-        /// <param name="id">The id of the group to fetch.</param>
-        /// <returns>The full group.</returns>
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Group>> GetGroup(uint id, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException)
         {
-            var result = await db.Groups
-                .Where(g => g.Id == id)
-                .Select(g => new GroupResponseDTO
-                {
-                    Id = g.Id,
-                    Name = g.Name,
-                    Active = g.Active,
-                    Type = g.Type,
-                    GroupMemberships = g.GroupMemberships.Select(gm => new GroupMembershipResponseDTO
-                    {
-                        Id = gm.Id,
-                        GroupId = gm.GroupId,
-                        GroupName = g.Name,
-                        GroupType = g.Type,
-                        MemberId = gm.MemberId,
-                        MemberName = $"{gm.Member.FirstName} {gm.Member.LastName}",
-                        MembershipYear = gm.MembershipYear,
-                        RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
-                        RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync(cancellationToken);
-
-            if (result == null) return NotFound();
-
-            return Ok(result);
+            return Forbid();
         }
-
-        // POST: api/groups
-        /// <summary>
-        /// Creates a new group with a unique ID assigned by the database.
-        /// </summary>
-        /// <param name="group">The group to be added to the database.</param>
-        /// <returns>Fully created group in body and api route of where to fetch it in the headers.</returns>
-        [HttpPost]
-        public async Task<ActionResult<Group>> PostGroup(PostGroupDTO groupDto, CancellationToken cancellationToken)
+        catch (Exception ex)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can create groups.");
-            }
-
-            var newEntry = db.Groups.Add(new Group
-            {
-                Name = groupDto.Name,
-                Type = groupDto.Type
-            });
-            await db.SaveChangesAsync(cancellationToken);
-
-            return CreatedAtAction(nameof(GetGroup), new { id = newEntry.Entity.Id }, newEntry.Entity);
+            return BadRequest(ex.Message);
         }
+    }
 
-        // DELETE: api/groups/5
-        /// <summary>
-        /// Deletes a group.
-        /// </summary>
-        /// <param name="id">The id of the group to delete.</param>
-        /// <returns>Nothing, really.</returns>
-        /// <remarks>
-        /// Deleting a group will also delete all enrollments and group enrollments associated with said
-        /// group.
-        /// </remarks>
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
+    // GET: api/groups/5
+    /// <summary>
+    /// Retrieves the detailed information of a specific group by its unique identifier. The GetGroup endpoint is designed to return a single, comprehensive group record based on the provided ID. This allows clients to access full details about a specific group's properties and configuration. If the group is not found within the system, the endpoint provides appropriate error feedback, ensuring the client is aware of the missing resource while maintaining a secure and predictable API response.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group to retrieve.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>The detailed group information if found; otherwise, a 404 Not Found status.</returns>
+    [HttpGet("{id}")]
+    public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
+    {
+        var result = await _groupService.GetGroup(id, cancellationToken);
+
+        if (result == null)
+            return NotFound();
+
+        return Ok(result);
+    }
+
+    // POST: api/groups
+    /// <summary>
+    /// Creates a new group within the system using the provided data. The PostGroup endpoint processes requests to establish a new group entity, taking inputs from the PostGroupDTO. This process includes validating the provided data, assigning ownership to the creating user, and persisting the new group to the data store. Upon successful creation, the endpoint returns the newly created group's details and its unique location, following standard RESTful practices for resource creation.
+    /// </summary>
+    /// <param name="groupDto">The data transfer object containing the initial group configuration.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>The details of the newly created group with a 201 Created status.</returns>
+    [HttpPost]
+    public async Task<ActionResult<Group>> PostGroup(
+        [FromForm] PostGroupDTO groupDto,
+        CancellationToken cancellationToken)
+    {
+        try
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var userId = GetUserId();
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can delete groups.");
-            }
+            var created = await _groupService.CreateGroup(groupDto, userId, cancellationToken);
 
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
+            return CreatedAtAction(
+                nameof(GetGroup),
+                new { id = created.Id },
+                created
+            );
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-            db.Groups.Remove(group);
-            await db.SaveChangesAsync(cancellationToken);
+    // POST: api/groups/{id}/group-picture
+    /// <summary>
+    /// Uploads and associates a profile picture with a specific group. The UploadGroupPicture endpoint handles multipart form-data requests to save an image file and link it to the group identified by the provided ID. This endpoint ensures that only authorized administrators of the group can modify its visual identity. Once processed, the path to the stored image is returned, allowing the client to immediately reference the new asset within the application's interface.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group for which the picture is being uploaded.</param>
+    /// <param name="image">The image file to be used as the group's profile picture.</param>
+    /// <returns>An OK status containing the new image path upon successful upload.</returns>
+    [HttpPost("{id}/group-picture")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult> UploadGroupPicture(uint id, IFormFile? image)
+    {
+        try
+        {
+            var path = await _groupService.UploadGroupPicture(id, GetUserId(), image);
+
+            return Ok(new { path });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // GET: api/groups/5/group-picture
+    /// <summary>
+    /// Retrieves the binary file content of a specific group's profile picture. The GetGroupPicture endpoint fetches the stored image associated with a group and streams it back to the client with the appropriate content type. This endpoint includes checks to ensure both the group and the physical file exist on the server. It provides a direct way for client applications to render group imagery while centralizing the file retrieval logic through the service layer.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group whose picture is being retrieved.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>The image file stream with the correct MIME type.</returns>
+    [HttpGet("{id}/group-picture")]
+    public async Task<IActionResult> GetGroupPicture(uint id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var group = await _groupService.GetGroup(id, cancellationToken);
+            if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
+                return NotFound("Group or group picture not found.");
+
+            var file = await _groupService.GetGroupPictureFile(group.GroupPicturePath);
+            if (file == null)
+                return NotFound("File is no longer present on the server.");
+
+            return File(file.Stream, file.ContentType);
+        }
+        catch (UnauthorizedAccessException)
+        {            
+            return Forbid();
+        }
+        catch (Exception ex)         
+        {
+            return BadRequest(ex.Message);
+        }
+        
+    }
+
+    // DELETE: api/groups/5
+    /// <summary>
+    /// Permanently removes a group from the system based on its unique identifier. The DeleteGroup endpoint ensures that the requested group is deleted only after verifying that the requesting user has the necessary administrative permissions. This operation is destructive and removes all associated group metadata. Upon successful completion, the endpoint returns a 204 No Content status, signaling that the resource no longer exists without returning an unnecessary response body.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group to be deleted.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A 204 No Content status if deletion is successful.</returns>
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = GetUserId();
+
+            await _groupService.DeleteGroup(id, userId, cancellationToken);
 
             return NoContent();
         }
-
-        // PATCH: api/groups/5
-        /// <summary>
-        /// Partially updates an groups details.
-        /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="patchDoc">The patch document containing the changes.</param>
-        /// <returns>No Content.</returns>
-        [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchGroup(uint id, [FromBody] JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            return Forbid();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can update groups.");
-            }
+    // PATCH: api/groups/5
+    /// <summary>
+    /// Performs a partial update on an existing group's properties using a JSON Patch document. The PatchGroup endpoint allows clients to modify specific fields of a group without providing the entire resource representation. This is particularly useful for making small adjustments to group metadata while minimizing data transfer. The endpoint validates the patch operations against the group domain model and ensures that the user is authorized to perform these specific modifications before applying changes to the database.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group to update.</param>
+    /// <param name="patchDoc">The JSON Patch document containing the set of modifications.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A 204 No Content status upon successful update.</returns>
+    [HttpPatch("{id}")]
+    public async Task<ActionResult> PatchGroup(
+        uint id,
+        [FromBody] JsonPatchDocument<Group> patchDoc,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = GetUserId();
 
-            if (patchDoc == null)
-                return BadRequest();
-
-            Group? group = await db.Groups.FindAsync(new object[] { id }, cancellationToken);
-            if (group == null)
-                return NotFound();
-
-            patchDoc.ApplyTo(group, ModelState);
-
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            await db.SaveChangesAsync(cancellationToken);
+            await _groupService.PatchGroup(id, userId, patchDoc, cancellationToken);
 
             return NoContent();
         }
-
-        // PUT: api/groups/5
-        /// <summary>
-        /// Updates a group's details.
-        /// </summary>
-        /// <param name="id">The id of the group to update.</param>
-        /// <param name="groupDto">The new details of the group.</param>
-        /// <returns>No Content.</returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutGroup(uint id, GroupUpdateDTO groupDto, CancellationToken cancellationToken)
+        catch (UnauthorizedAccessException)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can update groups.");
-            }
+            return Forbid();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
 
-            Group? group = await db.Groups.FindAsync(id, cancellationToken);
-            if (group == null) return NotFound();
+    // PUT: api/groups/5
+    /// <summary>
+    /// Updates the entire representation of an existing group with the provided data. The PutActivity endpoint replaces the current group information with the data provided in the GroupUpdateDTO. This endpoint is typically used for comprehensive updates where multiple group attributes are changed simultaneously. It enforces authorization to ensure only group managers can perform the update and provides detailed error handling for validation failures or missing resources, returning a 204 No Content status upon a successful operation.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group to update.</param>
+    /// <param name="groupDto">The data transfer object containing the updated group information.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A 204 No Content status if the group was successfully updated.</returns>
+    [HttpPut("{id}")]
+    public async Task<ActionResult> PutGroup(
+        uint id,
+        GroupUpdateDTO groupDto,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var userId = GetUserId();
 
-            group.Name = groupDto.Name;
-            group.Active = groupDto.Active;
-            group.Type = groupDto.Type;
-
-            await db.SaveChangesAsync(cancellationToken);
+            await _groupService.UpdateGroup(id, userId, groupDto, cancellationToken);
 
             return NoContent();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 }

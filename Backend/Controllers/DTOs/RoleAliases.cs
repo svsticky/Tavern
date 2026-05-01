@@ -1,27 +1,31 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Backend.Controllers.DTOs;
 
+/// <summary>
+/// Defines the DTO for posting a role alias, containing the necessary information for creating a new role alias, including its name and the associated parent role ID. The PostRoleAliasDTO is used to transfer data from the client to the server when creating a new role alias, ensuring that all required information is provided and validated appropriately for the creation process.
+/// </summary>
 public class PostRoleAliasDTO
 {
-    /// <summary>
-    /// The name of the role alias (e.g., "Schatbewaarder").
-    /// </summary>
+    /// <inheritdoc cref="Models.RoleAlias.Name"/>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
-    /// <summary>
-    /// The ID of the parent role this alias belongs to.
-    /// </summary>
+    /// <inheritdoc cref="Models.RoleAlias.RoleId"/>
     public uint RoleId { get; set; }
 }
 
+/// <summary>
+/// Defines the DTO for updating an existing role alias, containing all necessary information for modifying a role alias's properties. The RoleAliasUpdateDTO is used to transfer data from the client to the server when updating an existing role alias, allowing for changes to be made to the role alias's details while ensuring that the provided information is validated appropriately for the update process.
+/// </summary>
 public class RoleAliasUpdateDTO
 {
-    /// <summary>
-    /// The updated name of the role alias.
-    /// </summary>
+    /// <inheritdoc cref="Models.RoleAlias.Name"/>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
-    /// <summary>
-    /// The updated parent role ID.
-    /// </summary>
+    /// <inheritdoc cref="Models.RoleAlias.RoleId"/>
     public uint RoleId { get; set; }
 }

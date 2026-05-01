@@ -1,15 +1,22 @@
 @import "tailwindcss";
 
+@plugin "@tailwindcss/typography";
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
+:root{
+  --board-primary-light: #f98f55ff;
+  --board-primary: #fa6b20;
+  --board-primary-dark: #ca5617;
+}
+
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
-
-  @media (prefers-color-scheme: dark) {
-    color-scheme: dark;
+  @apply bg-white;
+  a:not([class]) {
+    @apply text-(--board-primary) underline decoration-transparent transition-colors hover:text-(--board-primary-light) hover:decoration-current hover:cursor-pointer;
   }
 }

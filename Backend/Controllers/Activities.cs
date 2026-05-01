@@ -1,418 +1,309 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.JsonPatch;
-using Microsoft.EntityFrameworkCore;
-using Backend.Database;
-using Backend.Models;
+using Backend.Models.Domain;
 using Backend.Controllers.DTOs;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.Storage;
-using Backend.Utils;
 using Microsoft.AspNetCore.Authorization;
+using Backend.Interfaces;
 
 namespace Backend.Controllers
 {
-    [Route("api/[controller]")]
+    /// <summary>
+    /// Controller for managing activities within the system. The ActivitiesController provides endpoints for creating, retrieving, updating, and deleting activities, as well as handling related operations such as uploading posters and exporting enrollments. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify activity data while providing appropriate error handling for various scenarios. The ActivitiesController interacts with the IActivityService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing activities effectively within the application.
+    /// </summary>
+    /// <param name="service">The activity service for managing activity operations.</param>
     [ApiController]
+    [Route("api/[controller]")]
     [Authorize]
-    public class Activities(PostgresDbContext db) : ControllerBase
+    public class ActivitiesController(IActivityService service) : ControllerBase
     {
+        /// <summary>
+        /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
+        /// </summary>
+        /// <returns>A Guid representing the authenticated user's ID.</returns>
+        private Guid GetUserId()
+        {
+            return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+        }
+
         // GET: api/activities
         /// <summary>
-        /// Lists all activities in the database.
+        /// Retrieves a list of activities based on the provided query parameters. The GetActivities endpoint allows clients to fetch a collection of activities, optionally filtered and paginated according to the criteria specified in the GetActivitiesDTO. This endpoint is designed to return a comprehensive list of activities that match the given parameters, enabling clients to efficiently retrieve relevant activity data while supporting various filtering and pagination options for optimal performance and usability.
         /// </summary>
-        /// <returns>Said list.</returns>
+        /// <param name="dto">The data transfer object containing the query parameters.</param>
+        /// <returns>A list of activities matching the criteria.</returns>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Activity>>> GetActivities()
+        public async Task<ActionResult<IEnumerable<ActivityResponseDTO>>> GetActivities([FromQuery] GetActivitiesDTO dto)
         {
-            return await db.Activities.ToListAsync();
+            try
+            {
+                var result = await service.GetActivities(GetUserId(), dto);
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // GET: api/activities/5
         /// <summary>
-        /// Fetches a single activity.
+        /// Retrieves a specific activity by its unique identifier. The GetActivity endpoint allows clients to fetch detailed information about a single activity based on the provided ID. This endpoint is designed to return comprehensive data about the specified activity, including its properties and any associated information, enabling clients to access specific activity details efficiently while ensuring proper authorization and error handling for cases where the activity may not be found or the user does not have access rights.
         /// </summary>
-        /// <param name="id">The id of the activity to fetch.</param>
-        /// <returns>The full activity.</returns>
+        /// <param name="id">The unique identifier of the activity to retrieve.</param>
+        /// <returns>The activity matching the criteria.</returns>
         [HttpGet("{id}")]
-        public async Task<ActionResult<Activity>> GetActivity(uint id)
+        public async Task<ActionResult<ActivityResponseDTO>> GetActivity(uint id)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            Activity? activity = await db.Activities.FindAsync(id);
-
-            if(activity == null)
+            try
             {
-                return NotFound();
-            }
+                var activity = await service.GetActivity(GetUserId(), id);
 
-            if(activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+                if (activity == null)
+                    return NotFound();
+
+                return Ok(activity);
+            }
+            catch (UnauthorizedAccessException)
             {
-                return Forbid("Only board members can view past activities.");
+                return Forbid();
             }
-
-            return activity != null ? activity : NotFound();
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // POST: api/activities
         /// <summary>
-        /// Creates a new activity with a unique ID assigned by the database.
+        /// Creates a new activity based on the provided data. The PostActivity endpoint allows clients to submit a request to create a new activity by providing the necessary information in the PostActivityDTO. This endpoint is designed to handle the creation of activities, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can create new activities within the system. Upon successful creation, the endpoint returns the details of the newly created activity along with a 201 Created status code, allowing clients to easily access and reference the new activity in subsequent operations.
         /// </summary>
-        /// <param name="activity">The activity to be added to the database.</param>
-        /// <returns>Fully created activity in body and api route of where to fetch it in the headers.</returns>
+        /// <param name="dto">The data transfer object containing the activity data.</param>
+        /// <returns>The newly created activity.</returns>
         [HttpPost]
-        public async Task<ActionResult<Activity>> PostActivity(PostActivityDTO activityDto)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<Activity>> PostActivity([FromForm] PostActivityDTO dto)
         {
-            if(activityDto.DateTimeEnd < activityDto.DateTimeStart)
-            {
-                return BadRequest("Activity cannot end before it starts.");
-            }
-
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if((activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can create activities for public display.");
-            }
-
-            IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
-
             try
             {
-                Activity newActivity = new()
-                {
-                    Name = activityDto.Name,
-                    Price = activityDto.Price,
-                    DutchDescription = activityDto.DutchDescription,
-                    EnglishDescription = activityDto.EnglishDescription,
-                    DateTimeStart = activityDto.DateTimeStart,
-                    DateTimeEnd = activityDto.DateTimeEnd,
-                    UnenrollmentDeadline = activityDto.UnenrollmentDeadline,
-                    EnrollmentDeadline = activityDto.EnrollmentDeadline,
-                    Location = activityDto.Location,
-                    ParticipantLimit = activityDto.ParticipantLimit,
-                    OrganizerId = activityDto.OrganizerId,
-                    ShowInKoala = activityDto.ShowInKoala,
-                    ShowOnWebsite = activityDto.ShowOnWebsite,
-                    IsEnrollable = activityDto.IsEnrollable,
-                    AreParticipantsVisible = activityDto.AreParticipantsVisible,
-                    IsAdultOnly = activityDto.IsAdultOnly,
-                    AllowedAudience = activityDto.AllowedAudience,
-                    VatRate = activityDto.VatRate,
-                    GLAccountId = activityDto.GLAccountId,
-                    CostCenterId = activityDto.CostCenterId,
-                    CostUnitId = activityDto.CostUnitId
-                };
+                var activity = await service.CreateActivity(GetUserId(), dto);
 
-                newActivity.SpecificationQuestions = activityDto.SpecificationQuestions.Select(q => new SpecificationQuestion 
-                { 
-                    Activity = newActivity,
-                    QuestionDutch = q.QuestionDutch, 
-                    QuestionEnglish = q.QuestionEnglish,
-                    Type = q.Type,
-                }).ToList();
-
-                if(activityDto.Poster != null)
-                {
-                    try
-                    {
-                        newActivity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
-                        newActivity.PosterFileName = activityDto.Poster.FileName;
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        return BadRequest(ex.Message);
-                    }
-                }
-
-                EntityEntry<Activity> newEntry = db.Activities.Add(newActivity);
-                await db.SaveChangesAsync();
-                await transaction.CommitAsync();
-                return CreatedAtAction(nameof(GetActivity), new { id = newEntry.Entity.Id }, newEntry.Entity);
+                return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
             }
-            catch
+            catch (UnauthorizedAccessException)
             {
-                await transaction.RollbackAsync();
-                return StatusCode(500, "An error occurred while creating the activity.");
+                return Forbid();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
 
         // DELETE: api/activities/5
         /// <summary>
-        /// Deletes an activity.
+        /// Deletes a specific activity by its unique identifier. The DeleteActivity endpoint allows clients to remove an existing activity from the system based on the provided ID. This endpoint is designed to handle the deletion of activities, ensuring that proper authorization is enforced to allow only authorized users to delete activities, while also providing appropriate error handling for cases where the activity may not be found or the user does not have access rights. Upon successful deletion, the endpoint returns a 204 No Content status code, indicating that the activity has been successfully removed from the system without returning any content in the response body.
         /// </summary>
-        /// <param name="id">The id of the activity to delete.</param>
-        /// <returns>Nothing, really.</returns>
+        /// <param name="id">The unique identifier of the activity to delete.</param>
+        /// <returns>No content.</returns>
         [HttpDelete("{id}")]
-        
-        public async Task<IActionResult> DeleteActivity(uint id)
+        public async Task<ActionResult> DeleteActivity(uint id)
         {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if(!PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            try
             {
-                return Forbid("Only board members can delete activities.");
+                await service.DeleteActivity(GetUserId(), id);
+                return NoContent();
             }
-
-            Activity? activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
-
-            if(activity.PosterPath != null)
+            catch (UnauthorizedAccessException)
             {
-                System.IO.File.Delete(activity.PosterPath);
+                return Forbid();
             }
-
-            db.Activities.Remove(activity);
-            await db.SaveChangesAsync();
-
-            return NoContent();
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // PATCH: api/activities/5
         /// <summary>
-        /// Partially updates an activity's details.
+        /// Partially updates a specific activity by its unique identifier using a JSON Patch document. The PatchActivity endpoint allows clients to submit a request to modify an existing activity by providing a JSON Patch document that specifies the changes to be made to the activity's properties. This endpoint is designed to handle partial updates of activities, ensuring that the provided patch document is validated and applied correctly, while also enforcing proper authorization to ensure that only authorized users can modify existing activities within the system. Upon successful application of the patch, the endpoint returns a 204 No Content status code, indicating that the activity has been successfully updated without returning any content in the response body. This approach allows for efficient updates to activity data without requiring clients to send the entire activity object, enabling more flexible and targeted modifications to activity properties as needed.
         /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
-        /// <param name="patchDoc">The patch document containing the changes.</param>
-        /// <returns>No Content.</returns>
+        /// <param name="id">The unique identifier of the activity to update.</param>
+        /// <param name="patchDoc">The JSON Patch document containing the changes to apply.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>No content.</returns>
         [HttpPatch("{id}")]
-        public async Task<IActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken cancellationToken)
+        public async Task<ActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken ct)
         {
-            if (patchDoc == null)
-                return BadRequest();
-
-            Activity? activity = await db.Activities.FindAsync(new object[] { id }, cancellationToken);
-            if (activity == null)
-                return NotFound();
-
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if((activity.ShowInKoala || activity.ShowOnWebsite || patchDoc.Operations.Any(op => op.path == "/showInKoala" || op.path == "/showOnWebsite")) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            try
             {
-                return Forbid("Only board members can update activities for public display.");
+                await service.PatchActivity(GetUserId(), id, patchDoc, ct);
+                return NoContent();
             }
-
-            patchDoc.ApplyTo(activity, ModelState);
-
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
-
-            await db.SaveChangesAsync(cancellationToken);
-
-            return NoContent();
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // POST: api/activities/5/poster
         /// <summary>
-        /// Uploads or replaces the poster of an activity. If a poster already exists, it will be deleted from the server after the new one is successfully saved and linked to the activity in the database, to prevent orphaned files. If no file is provided, the existing poster will be removed without replacement. This endpoint allows clients to manage activity posters separately from other activity details, which can be useful for performance and user experience when only the poster needs to be updated.
+        /// Uploads a poster image for a specific activity by its unique identifier. The UploadPoster endpoint allows clients to submit a request to upload a poster image file for an existing activity, associating the uploaded image with the specified activity ID. This endpoint is designed to handle file uploads, ensuring that the provided file is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can upload posters for activities within the system. Upon successful upload, the endpoint returns a 200 OK status code, indicating that the poster has been successfully uploaded and associated with the activity, allowing clients to easily manage and update activity posters as needed.
         /// </summary>
-        /// <param name="id">The id of the activity for which to upload or replace the poster.</param>
-        /// <param name="poster">The new poster file to upload. If null, the existing poster will be removed.</param>
-        /// <returns>Ok with the new poster path if successful, or an error message if something goes wrong.</returns>
+        /// <param name="id">The unique identifier of the activity for which to upload a poster.</param>
+        /// <param name="poster">The poster image file to upload.</param>
+        /// <returns>OK status code.</returns>
         [HttpPost("{id}/poster")]
         [Consumes("multipart/form-data")]
-        public async Task<IActionResult> UploadPoster(uint id, IFormFile? poster)
+        public async Task<ActionResult> UploadPoster(uint id, IFormFile? poster)
         {
-            var activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
-
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if((activity.ShowInKoala || activity.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can update activity posters for public display.");
-            }
-
-            string? oldPath = activity.PosterPath;
-
-            using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                if(poster != null)
-                {
-                    string newFileName = Guid.NewGuid().ToString() + Path.GetExtension(poster.FileName);
-                    string newPath = Path.Combine("Posters", newFileName);
-                    await FileUtils.SaveFileAsync(poster, newPath);
-                    activity.PosterPath = newPath;
-                    activity.PosterFileName = poster.FileName;
-                }
-                else
-                {
-                    activity.PosterPath = null;
-                    activity.PosterFileName = null;
-                }
-
-                await db.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                if (!string.IsNullOrEmpty(oldPath) && System.IO.File.Exists(oldPath))
-                {
-                    System.IO.File.Delete(oldPath);
-                }
-
-                return Ok(new { path = activity.PosterPath });
+                await service.UploadPoster(GetUserId(), id, poster);
+                return Ok();
             }
-            catch
+            catch (UnauthorizedAccessException)
             {
-                await transaction.RollbackAsync();
-                return StatusCode(500, "Error uploading poster.");
+                return Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
             }
         }
-        
+
         // PUT: api/activities/5
         /// <summary>
-        /// Updates an activity.
+        /// Updates a specific activity by its unique identifier with the provided data. The PutActivity endpoint allows clients to submit a request to update an existing activity by providing the necessary information in the PutActivityDTO. This endpoint is designed to handle the updating of activities, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can update existing activities within the system. Upon successful update, the endpoint returns a 204 No Content status code, indicating that the activity has been successfully updated without returning any content in the response body, allowing clients to easily manage and modify activity details as needed.
         /// </summary>
-        /// <param name="id">The id of the activity to update.</param>
-        /// <param name="activityDto">The new details of the activity.</param>
+        /// <param name="id">The unique identifier of the activity to update.</param>
+        /// <param name="dto">The data transfer object containing the updated activity information.</param>
         /// <returns>No content.</returns>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutActivity(uint id, PostActivityDTO activityDto)
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult> PutActivity(uint id, [FromForm] PutActivityDTO dto)
         {
-            Activity? activity = await db.Activities.FindAsync(id);
-            if (activity == null) return NotFound();
-
-            if(activityDto.DateTimeEnd < activityDto.DateTimeStart)
-            {
-                return BadRequest("Activity cannot end before it starts.");
-            }
-
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-
-            if((activity.ShowInKoala || activity.ShowOnWebsite || activityDto.ShowInKoala || activityDto.ShowOnWebsite) && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
-            {
-                return Forbid("Only board members can update activities for public display.");
-            }
-
-            using IDbContextTransaction transaction = await db.Database.BeginTransactionAsync();
-            
-            activity.Name = activityDto.Name;
-            activity.Price = activityDto.Price;
-            activity.DutchDescription = activityDto.DutchDescription;
-            activity.EnglishDescription = activityDto.EnglishDescription;
-            activity.DateTimeStart = activityDto.DateTimeStart;
-            activity.DateTimeEnd = activityDto.DateTimeEnd;
-            activity.UnenrollmentDeadline = activityDto.UnenrollmentDeadline;
-            activity.EnrollmentDeadline = activityDto.EnrollmentDeadline;
-            activity.Location = activityDto.Location;
-            activity.ParticipantLimit = activityDto.ParticipantLimit;
-            activity.OrganizerId = activityDto.OrganizerId;
-            activity.SpecificationQuestions = activityDto.SpecificationQuestions.Select(q => new SpecificationQuestion 
-            { 
-                Activity = activity,
-                QuestionDutch = q.QuestionDutch, 
-                QuestionEnglish = q.QuestionEnglish,
-                Type = q.Type,
-            }).ToList();
-            activity.ShowInKoala = activityDto.ShowInKoala;
-            activity.ShowOnWebsite = activityDto.ShowOnWebsite;
-            activity.IsEnrollable = activityDto.IsEnrollable;
-            activity.AreParticipantsVisible = activityDto.AreParticipantsVisible;
-            activity.IsAdultOnly = activityDto.IsAdultOnly;
-            activity.AllowedAudience = activityDto.AllowedAudience;
-            activity.VatRate = activityDto.VatRate;
-            activity.GLAccountId = activityDto.GLAccountId;
-            activity.CostCenterId = activityDto.CostCenterId;
-            activity.CostUnitId = activityDto.CostUnitId;
-
             try
             {
-                string? existingPosterPath = activity.PosterPath;
-
-                if(activityDto.Poster != null)
-                {
-                    try
-                    {
-                        activity.PosterPath = await PosterUtils.SavePosterAsync(activityDto.Poster);
-                        activity.PosterFileName = activityDto.Poster.FileName;
-                    }
-                    catch (InvalidOperationException ex)
-                    {
-                        await transaction.RollbackAsync();
-                        return BadRequest(ex.Message);
-                    }
-                }
-                else
-                {
-                    activity.PosterFileName = null;
-                    activity.PosterPath = null;
-                }
-
-                await db.SaveChangesAsync();
-                await transaction.CommitAsync();
-
-                if(existingPosterPath != null)
-                {
-                    System.IO.File.Delete(existingPosterPath);
-                    activity.PosterPath = null;
-                    activity.PosterFileName = null;
-                }
+                await service.UpdateActivity(GetUserId(), id, dto);
+                return NoContent();
             }
-            catch
+            catch (UnauthorizedAccessException)
             {
-                await transaction.RollbackAsync();
-                return StatusCode(500, "An error occurred while updating the activity.");
+                return Forbid();
             }
-
-            return NoContent();
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // GET: api/activities/5/poster
         /// <summary>
-        /// Views or downloads the poster of an activity, depending on the client's needs.
+        /// Retrieves the poster image for a specific activity by its unique identifier. The GetPoster endpoint allows clients to fetch the poster image associated with an existing activity based on the provided ID. This endpoint is designed to return the poster image file, ensuring that proper authorization is enforced to allow only authorized users to access activity posters, while also providing appropriate error handling for cases where the activity or poster may not be found. Upon successful retrieval, the endpoint returns the poster image file with the correct content type, allowing clients to easily display or manage activity posters as needed. Additionally, this endpoint supports an optional download parameter that allows clients to specify whether they want to download the poster file directly or display it in the browser, providing flexibility in how clients can access and utilize activity posters within their applications.
         /// </summary>
+        /// <param name="id">The unique identifier of the activity for which to retrieve the poster.</param>
+        /// <returns>The poster image file.</returns>
         [HttpGet("{id}/poster")]
         public async Task<IActionResult> GetPoster(uint id)
         {
-            var activity = await db.Activities.FindAsync(id);
-
-            if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
-                return NotFound("Activity or poster not found.");
-
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            try
             {
-                return Forbid("Only board members can view posters of past activities.");
+                var result = await service.GetPoster(GetUserId(), id, download: false);
+
+                if (result == null)
+                    return NotFound();
+
+                return File(result.Value.Stream, result.Value.ContentType);
             }
-
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), activity.PosterPath);
-
-            if (!System.IO.File.Exists(filePath))
-                return NotFound("File is no longer present on the server.");
-
-            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
-            if (!provider.TryGetContentType(filePath, out string? contentType))
+            catch (UnauthorizedAccessException)
             {
-                contentType = "application/octet-stream";
+                return Forbid();
             }
-
-            return PhysicalFile(filePath, contentType);
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
 
         // GET: api/activities/5/poster/download
         /// <summary>
-        /// Downloads the poster of an activity as an attachment, prompting the client to save it with the original filename.
+        /// Downloads the poster image for a specific activity by its unique identifier. The DownloadPoster endpoint allows clients to fetch the poster image associated with an existing activity based on the provided ID, specifically for the purpose of downloading the file directly. This endpoint is designed to return the poster image file with the appropriate content type and a content disposition that prompts the client to download the file, ensuring that proper authorization is enforced to allow only authorized users to access activity posters, while also providing appropriate error handling for cases where the activity or poster may not be found. Upon successful retrieval, the endpoint returns the poster image file with a filename, allowing clients to easily download and manage activity posters as needed. This endpoint provides a convenient way for clients to access and utilize activity posters within their applications by enabling direct downloads of poster files.
         /// </summary>
+        /// <param name="id">The unique identifier of the activity for which to download the poster.</param>
+        /// <returns>The poster image file.</returns>
         [HttpGet("{id}/poster/download")]
         public async Task<IActionResult> DownloadPoster(uint id)
         {
-            var activity = await db.Activities.FindAsync(id);
-
-            if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
-                return NotFound("Activity or poster not found.");
-
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !PermissionUtils.IsInGroupInCurrentYear(userId, (uint)PredefinedGroup.Board, db))
+            try
             {
-                return Forbid("Only board members can view posters of past activities.");
+                var result = await service.GetPoster(GetUserId(), id, download: true);
+
+                if (result == null)
+                    return NotFound();
+
+                return File(result.Value.Stream, result.Value.ContentType, result.Value.FileName);
             }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
+        }
 
-            var filePath = Path.Combine(Directory.GetCurrentDirectory(), activity.PosterPath);
+        /// <summary>
+        /// Exports the enrollments for a specific activity by its unique identifier in CSV format. The ExportEnrollments endpoint allows clients to fetch the enrollment data associated with an existing activity based on the provided ID, specifically formatted as a CSV file for easy analysis and reporting. This endpoint is designed to return the enrollment data in a structured CSV format, ensuring that proper authorization is enforced to allow only authorized users to access enrollment information, while also providing appropriate error handling for cases where the activity or enrollments may not be found. Upon successful retrieval, the endpoint returns the enrollment data as a downloadable CSV file with a filename, allowing clients to easily export and manage enrollment information for activities as needed. This endpoint provides a convenient way for clients to access and utilize enrollment data within their applications by enabling direct downloads of enrollment information in a widely used format.
+        /// </summary>
+        /// <param name="id">The unique identifier of the activity for which to export enrollments.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>The enrollment data in CSV format.</returns>
+        [HttpGet("{id}/enrollments/export")]
+        public async Task<IActionResult> ExportEnrollments(uint id, CancellationToken ct)
+        {
+            try
+            {
+                var result = await service.GetEnrollmentsCsv(GetUserId(), id, ct);
 
-            if (!System.IO.File.Exists(filePath))
-                return NotFound("File is no longer present on the server.");
-
-            return PhysicalFile(filePath, "application/octet-stream", activity.PosterFileName);
+                return File(result.Content, "text/csv", result.FileName);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
     }
 }

@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
 import {
   isRouteErrorResponse,
   Links,
@@ -5,21 +7,18 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
 } from "react-router";
-
+import "./i18n";
 import type { Route } from "./+types/root";
-import "./app.css";
 import { client } from "./api/client.gen";
-import { getSession } from "./sessions.server";
+import i18n from "./i18n";
+import "./app.css";
+import FaviconHandler from "./components/FavIconHandler";
+import { AppProvider } from "./context/AppContext";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-
-  return {
-    authToken: session.get("auth_token") ?? null,
-  };
-}
+client.setConfig({
+  baseURL: import.meta.env.ApiUrl ?? "https://localhost:8081",
+});
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -35,30 +34,6 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { authToken } = useLoaderData<typeof loader>();
-
-  /**
-   * Configure internal service client using session token
-   * TODO: Get the base url from the .env file
-   */
-  client.setConfig({
-    baseUrl: "http://localhost:8000",
-    headers: {
-      Authorization: authToken ? `Bearer ${authToken}` : undefined,
-    },
-  });
-
-  /**
-   * Interceptor
-   * TODO: if the status code is unauthenticated we redirect the user to the login page
-   */
-  client.interceptors.response.use((response) => {
-    if (response.status === 200) {
-      console.log(`request to ${response.url} was successful`);
-    }
-    return response;
-  });
-
   return (
     <html lang="en">
       <head>
@@ -77,7 +52,46 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const [i18nReady, setI18nReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    const primaryLight = import.meta.env.BOARD_PRIMARY_LIGHT;
+    const primary = import.meta.env.BOARD_PRIMARY;
+    const primaryDark = import.meta.env.BOARD_PRIMARY_DARK;
+
+    if (primaryLight)
+      document.documentElement.style.setProperty(
+        "--board-primary-light",
+        primaryLight,
+      );
+    if (primary)
+      document.documentElement.style.setProperty("--board-primary", primary);
+    if (primaryDark)
+      document.documentElement.style.setProperty(
+        "--board-primary-dark",
+        primaryDark,
+      );
+
+    setIsClient(true);
+    if (i18n.isInitialized) {
+      setI18nReady(true);
+    } else {
+      const handleInitialized = () => setI18nReady(true);
+      i18n.on("initialized", handleInitialized);
+      return () => i18n.off("initialized", handleInitialized);
+    }
+  }, []);
+
+  if (!i18nReady) return null;
+
+  return (
+    <AppProvider>
+      <FaviconHandler />
+      {isClient && <Toaster position="bottom-right" />}
+      <Outlet />
+    </AppProvider>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

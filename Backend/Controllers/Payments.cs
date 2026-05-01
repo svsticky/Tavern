@@ -1,254 +1,315 @@
-using Microsoft.AspNetCore.Mvc;
-using Backend.Database;
-using Backend.Models;
-using Microsoft.EntityFrameworkCore;
 using Backend.Controllers.DTOs;
-using Mollie.Api.Client.Abstract;
-using Mollie.Api.Models.Payment.Response;
-using Backend.Utils;
+using Backend.Interfaces;
+using Backend.Models.Domain;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
 {
+    /// <summary>
+    /// Controller for managing financial transactions and payment records within the system. The PaymentsController serves as a centralized hub for processing membership fees, activity enrollments, and maintaining payment balances. It integrates with external payment providers through secure webhooks and provides administrative tools for auditing, such as exporting transaction data to CSV. This controller ensures that all financial operations are strictly authorized, allowing users to view their own payment history while granting administrative access for oversight and reporting, ultimately ensuring a transparent and manageable financial ecosystem for the organization.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
-    public class Payments(PostgresDbContext db) : ControllerBase
+    public class PaymentsController : ControllerBase
     {
-        private string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
+        private readonly IPaymentService _paymentService;
+        private readonly IPermissionService _permissionService;
+
+        /// <summary>
+        /// Initializes a new instance of the PaymentsController with the required payment and permission services.
+        /// </summary>
+        /// <param name="paymentService">The service handling payment processing and ledger operations.</param>
+        /// <param name="permissionService">The service used to validate administrative and user-level permissions.</param>
+        public PaymentsController(IPaymentService paymentService, IPermissionService permissionService)
+        {
+            _paymentService = paymentService;
+            _permissionService = permissionService;
+        }
 
         // GET: api/payments/membership
+        /// <summary>
+        /// Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentService, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
+        /// </summary>
+        /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>A collection of membership payment records.</returns>
         [HttpGet("membership")]
         public async Task<ActionResult<IEnumerable<MembershipPayment>>> GetMembershipPayments(CancellationToken ct)
         {
-            return await db.MembershipPayments.Include(p => p.Member).ToListAsync(ct);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetMembershipPayments(userId, ct);
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/membership/5
+        /// <summary>
+        /// Retrieves the details of a specific membership payment by its unique identifier. The GetMembershipPayment endpoint provides a granular view of a single transaction, including status, amount, and timestamp. This is essential for resolving billing inquiries and providing users with detailed receipts or proof of payment for their membership status.
+        /// </summary>
+        /// <param name="id">The unique identifier of the membership payment record.</param>
+        /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>The specific membership payment record if found; otherwise, a 404 Not Found status.</returns>
         [HttpGet("membership/{id}")]
         public async Task<ActionResult<MembershipPayment>> GetMembershipPayment(uint id, CancellationToken ct)
         {
-            MembershipPayment? payment = await db.MembershipPayments.FindAsync(id, ct);
-
-            return payment != null ? payment : NotFound();
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetMembershipPayment(id, userId, ct);
+                return result != null ? Ok(result) : NotFound();
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/enrollment
+        /// <summary>
+        /// Retrieves a list of payments specifically associated with activity enrollments. The GetEnrollmentPayments endpoint allows users to review the costs and payment statuses of the activities they have registered for. This helps maintain clarity regarding which events have been fully paid for and which require further financial action.
+        /// </summary>
+        /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>A collection of enrollment-related payment records.</returns>
         [HttpGet("enrollment")]
         public async Task<ActionResult<IEnumerable<EnrollmentPayment>>> GetEnrollmentPayments(CancellationToken ct)
         {
-            return await db.EnrollmentPayments.Include(p => p.Member).Include(p => p.Activity).ToListAsync(ct);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetEnrollmentPayments(userId, ct);
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // GET: api/payments/enrollment/membership/5
+        // GET: api/payments/enrollment/5
+        /// <summary>
+        /// Retrieves a specific enrollment payment detail by its unique identifier. This endpoint serves to verify the payment status of a particular activity registration, offering a breakdown of the transaction details for both the user and administrative staff.
+        /// </summary>
+        /// <param name="id">The unique identifier of the enrollment payment record.</param>
+        /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>The specific enrollment payment record if found.</returns>
         [HttpGet("enrollment/{id}")]
         public async Task<ActionResult<EnrollmentPayment>> GetEnrollmentPayment(uint id, CancellationToken ct)
         {
-            EnrollmentPayment? payment = await db.EnrollmentPayments.FindAsync(id, ct);
-
-            return payment != null ? payment : NotFound();
-        }        
-
-        // POST: api/payments/membership
-        [HttpPost("membership")]
-        public async Task<ActionResult> PostMembershipPayment(PostMembershipPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
-        {
-            Member? member = await db.Members.FindAsync(dto.MemberId);
-            if (member == null) return NotFound("Member not found");
-
-            List<MembershipPayment> existingPayments = await db.MembershipPayments.Where(p => p.MemberId == dto.MemberId).ToListAsync();
-           
-            foreach (MembershipPayment existingPayment in existingPayments)
+            try
             {
-                if (existingPayment.PaidAt == null) 
-                {
-                    // Payment isn't paid yet, check if it's expired
-                    PaymentResponse molliePayment = await paymentClient.GetPaymentAsync(existingPayment.MollieId);
-                    if (molliePayment.Status == "expired" || molliePayment.Status == "canceled")
-                    {
-                        // Payment is expired, we can remove it and create a new one
-                        db.MembershipPayments.Remove(existingPayment);
-                    }
-                    else
-                    {
-                        // Payment isn't expired, return the existing payment link
-                        return Ok(new { existingPayment.PaymentIntentUrl });
-                    }
-                }
-                else
-                {
-                    return BadRequest("Member has already payed for a membership, if you think this is an error please contact support.");
-                }
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetEnrollmentPayment(id, userId, ct);
+                return result != null ? Ok(result) : NotFound();
             }
-
-            var amount = new Mollie.Api.Models.Amount(Mollie.Api.Models.Currency.EUR, 7.50m);
-            var request = new Mollie.Api.Models.Payment.Request.PaymentRequest
+            catch(UnauthorizedAccessException)
             {
-                Amount = amount,
-                Description = $"Membership payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = $"{_frontendUrl}",
-                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
-                Metadata = $"membership_{dto.MemberId}"
-            };
-
-            var mollieResponse = await paymentClient.CreatePaymentAsync(request);
-
-            if(mollieResponse.Links.Checkout == null) return BadRequest("Mollie response did not contain a checkout link");
-
-            var payment = new MembershipPayment
+                return Forbid();
+            }
+            catch (Exception ex)
             {
-                MemberId = dto.MemberId,
-                Price = 7.50m,
-                MollieId = mollieResponse.Id,
-                PaymentIntentUrl = mollieResponse.Links.Checkout.Href
-            };
-
-            db.MembershipPayments.Add(payment);
-            await db.SaveChangesAsync();
-
-            return Ok(new { checkoutUrl = mollieResponse.Links.Checkout.Href });
+                return BadRequest(ex.Message);
+            }
         }
 
-        // POST: api/activity/membership
-        [HttpPost("activity")]
-        public async Task<ActionResult> PostActivityPayment(PostActivityPaymentDTO dto, [FromServices] IPaymentClient paymentClient)
+        // POST: api/payments/membership
+        /// <summary>
+        /// Initiates a new membership payment process. The PostMembershipPayment endpoint receives the PostMembershipPaymentDTO to trigger the creation of a payment intent. This usually involves communicating with an external payment gateway to generate a checkout URL, allowing the user to securely complete their membership purchase.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing membership payment details.</param>
+        /// <returns>A response containing the payment status and potential checkout URL.</returns>
+        [HttpPost("membership")]
+        public async Task<ActionResult<PostPaymentResponse>> PostMembershipPayment(
+            PostMembershipPaymentDTO dto
+        )
         {
-            Member? member = await db.Members.FindAsync(dto.MemberId);
-            if (member == null) return NotFound("Member not found");
-
-            List<Enrollment> enrollments = await db.Enrollments
-                .Include(e => e.Activity)
-                .Where(e => dto.ActivityIds.Contains(e.ActivityId))
-                .ToListAsync();
-            if (enrollments.Count != dto.ActivityIds.Count) return NotFound("One or more enrollments not found");
-
-            var enrollmentBalances = await db.Enrollments
-                .Where(e => dto.ActivityIds.Contains(e.ActivityId) && e.MemberId == dto.MemberId)
-                .Select(e => new
-                {
-                    Enrollment = e,
-                    Activity = e.Activity,
-                    PaidSum = db.EnrollmentPayments
-                        .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
-                        .Sum(p => (decimal?)p.Price) ?? 0
-                })
-                .ToListAsync();
-
-            var totalPrice = enrollmentBalances.Sum(e => Math.Max(0, e.Enrollment.Price - e.PaidSum));
-            var amount = new Mollie.Api.Models.Amount(Mollie.Api.Models.Currency.EUR, totalPrice);
-            var request = new Mollie.Api.Models.Payment.Request.PaymentRequest
+            try
             {
-                Amount = amount,
-                Description = $"Activity payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = $"{_frontendUrl}",
-                WebhookUrl = _frontendUrl.ToLower().Contains("localhost") ? null : $"{_frontendUrl}/api/payments/webhook",
-                Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
-            };
-
-            var mollieResponse = await paymentClient.CreatePaymentAsync(request);
-
-            foreach (var enrollment in enrollments)
-            {
-                if(!enrollment.Activity.IsOpenForPayment)
-                {
-                    return BadRequest($"Activity {enrollment.Activity.Name} is not open for payment");
-                }
-
-                decimal price = PaymentUtils.GetUnpaidAmountForEnrollment(enrollment, db);
-
-                if(price <= 0) continue; // No need to create a payment for free activities
-
-                if (mollieResponse.Links.Checkout == null) return BadRequest("Mollie response did not contain a checkout link");
-
-                EnrollmentPayment payment = new EnrollmentPayment
-                {
-                    MemberId = dto.MemberId,
-                    ActivityId = enrollment.ActivityId,
-                    Price = price,
-                    MollieId = mollieResponse.Id,
-                    PaymentIntentUrl = mollieResponse.Links.Checkout.Href
-                };
-
-                db.EnrollmentPayments.Add(payment);
+                var result = await _paymentService.CreateMembershipPayment(dto);
+                return Ok(result);
             }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-            await db.SaveChangesAsync();
-
-            if(mollieResponse.Links.Checkout == null) throw new Exception("Mollie response did not contain a checkout link");
-
-            return Ok(new { checkoutUrl = mollieResponse.Links.Checkout.Href });
+        // POST: api/payments/activity
+        /// <summary>
+        /// Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the service layer to reserve the spot and handle the transaction initiation.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing activity-specific payment details.</param>
+        /// <returns>A response containing the payment status and instructions for completion.</returns>
+        [HttpPost("activity")]
+        public async Task<ActionResult<PostPaymentResponse>> PostActivityPayment(
+            PostActivityPaymentDTO dto
+        )
+        {
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.CreateActivityPayment(dto, userId);
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // POST: api/payments/webhook
+        /// <summary>
+        /// Processes asynchronous status updates from the Mollie payment gateway. The MollieWebhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
+        /// </summary>
+        /// <param name="id">The transaction identifier provided by the payment gateway.</param>
+        /// <param name="webhookService">The service dedicated to handling external payment status webhooks.</param>
+        /// <returns>An OK status once the webhook has been successfully processed.</returns>
         [HttpPost("webhook")]
         [Consumes("application/x-www-form-urlencoded")]
-        public async Task<IActionResult> MollieWebhook([FromForm] string id, [FromServices] IPaymentClient paymentClient)
+        public async Task<ActionResult> MollieWebhook(
+            [FromForm] string id,
+            [FromServices] IPaymentWebhookService webhookService
+        )
         {
-            PaymentResponse result = await paymentClient.GetPaymentAsync(id);
-
-            var payments = await db.MembershipPayments.Where(p => p.MollieId == id).Cast<Payment>().ToListAsync();
-            payments.AddRange(await db.EnrollmentPayments.Where(p => p.MollieId == id).Cast<Payment>().ToListAsync());
-
-            if (payments.Count == 0) return NotFound();
-
-            if (result.Status == "paid")
+            try
             {
-                foreach (var payment in payments)
-                {
-                    payment.PaidAt = result.PaidAt?.ToString("O");
-                    if(payment is MembershipPayment)
-                    {
-                        KeyCloakOutboxTask task = new KeyCloakOutboxTask
-                        {
-                            TaskType = KeycloakTaskType.Sync,
-                            KeycoakId = payment.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID")
-                        };
-                        db.KeyCloakOutboxTasks.Add(task);
-                    }
-                }
-                await db.SaveChangesAsync();
+                await webhookService.HandleWebhookAsync(id);
+                return Ok();
             }
-
-            return Ok();
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/unpaid
+        /// <summary>
+        /// Retrieves a list of outstanding balances or unpaid enrollments. The GetUnpaid endpoint identifies members who have pending financial obligations. It can be filtered to show only the current user's debts or, for administrators, a comprehensive list of all unpaid activities across the organization, facilitating debt collection and financial planning.
+        /// </summary>
+        /// <param name="allUsers">A boolean flag indicating whether to fetch unpaid balances for all users (requires admin permissions).</param>
+        /// <returns>A collection of enrollment balances with outstanding amounts.</returns>
         [HttpGet("unpaid")]
-        public ActionResult<IEnumerable<EnrollmentBalance>> GetAllUnpaid(CancellationToken ct)
+        public ActionResult<IEnumerable<EnrollmentBalance>> GetUnpaid(bool allUsers = false)
         {
-            var unpaid = PaymentUtils.GetAllUnpaidEnrollments(db);
-            return Ok(unpaid);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = _paymentService.GetUnpaid(userId, allUsers);
+
+                if(result == null)
+                    return NotFound();
+
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         // GET: api/payments/overpaid
+        /// <summary>
+        /// Retrieves a list of enrollment balances that have been overpaid. The GetOverpaid endpoint is designed for financial reconciliation, highlighting instances where users have paid more than the required amount. This allows administrators to manage refunds or apply credits to future activities, ensuring accurate accounting and member satisfaction.
+        /// </summary>
+        /// <returns>A collection of enrollment balances with credit amounts.</returns>
         [HttpGet("overpaid")]
-        public ActionResult<IEnumerable<EnrollmentBalance>> GetAllOverpaid(CancellationToken ct)
+        public ActionResult<IEnumerable<EnrollmentBalance>> GetOverpaid()
         {
-            var overpaid = PaymentUtils.GetAllOverpaidEnrollments(db);
-            return Ok(overpaid);
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = _paymentService.GetOverpaid(userId);
+
+                if(result == null)
+                    return NotFound();
+
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        // GET: api/payments/member/{memberId}/status
-        [HttpGet("member/{memberId}/status")]
-        public async Task<ActionResult> GetMemberPaymentStatus(Guid memberId, CancellationToken ct)
+        // GET: api/payments/member/{userId}/status
+        /// <summary>
+        /// Retrieves the current payment and membership status for a specific member. The GetMemberPaymentStatus endpoint provides a high-level summary of a user's financial standing, including whether they are considered a "paid member" and if they have any critical outstanding debts. This is frequently used by other modules to determine eligibility for activity registration or access to certain system features.
+        /// </summary>
+        /// <param name="fromUserId">The unique identifier of the member whose status is being queried.</param>
+        /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>A status object reflecting the member's current financial standing.</returns>
+        [HttpGet("member/{userId}/status")]
+        public async Task<ActionResult<object?>> GetMemberPaymentStatus(Guid fromUserId, CancellationToken ct)
         {
-            var member = await db.Members
-                .Include(m => m.StudyEnrollments)
-                .ThenInclude(se => se.Study)
-                .Include(m => m.Enrollments)
-                .FirstOrDefaultAsync(m => m.Id == memberId, ct);
-
-            if (member == null) return NotFound("Member not found");
-
-            var unpaid = PaymentUtils.GetUnpaidEnrollmentsForMember(member, db);
-            var hasPaidMembership = PaymentUtils.HasPaidMembershipPayment(member, db);
-            var hasPaidEverything = !unpaid.Any();
-
-            return Ok(new
+            try
             {
-                MemberId = member.Id,
-                HasPaidMembership = hasPaidMembership,
-                HasPaidAllActivities = hasPaidEverything,
-                UnpaidEnrollments = unpaid
-            });
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var result = await _paymentService.GetMemberPaymentStatus(fromUserId, userId, ct);
+
+                if(result == null)
+                    return NotFound();
+
+                return Ok(result);
+            }
+            catch(UnauthorizedAccessException)
+            {
+                return Forbid();
+            }
+            catch (Exception ex)
+            {
+                return NotFound(ex.Message);
+            }
+        }
+
+        // GET: api/payments/export?startDate=2024-01-01&endDate=2024-12-31
+        /// <summary>
+        /// Exports all payment transactions within a specified date range to a CSV file. The ExportPaymentsToCsv endpoint is a powerful administrative tool for financial reporting and external auditing. It gathers all relevant transaction data between the start and end dates, formats it into a structured CSV file, and provides it as a download, enabling deep-dive analysis in spreadsheet software.
+        /// </summary>
+        /// <param name="startDate">The beginning of the date range for the export.</param>
+        /// <param name="endDate">The end of the date range for the export.</param>
+        /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>A downloadable CSV file containing the payment transaction records.</returns>
+        [HttpGet("export")]
+        public async Task<ActionResult> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
+        {            
+            try
+            {
+                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+                var (content, fileName) = await _paymentService.ExportPaymentsToCsv(startDate, endDate, userId, ct);
+                return File(content, "text/csv", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

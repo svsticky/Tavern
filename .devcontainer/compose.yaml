@@ -1,19 +1,19 @@
 services:
   devcontainer:
     container_name: tavern-devcontainer
-    image: tavern-devcontainer # Overwrites image name, image is build from dockerfile
     build:
       context: .
       dockerfile: Dockerfile
     volumes:
       - ..:/workspaces:cached
-    # Overrides default command so things don't shut down after the process ends.
     command: sleep infinity
-    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    # Ports will be exposed through the devcontainer.json, trust
-    network_mode: service:db
     env_file:
       - .env
+    networks:
+      - tavern-net
+    depends_on:
+      - db
+      - localstack
 
   db:
     image: postgres:17
@@ -26,6 +26,39 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+    networks:
+      - tavern-net
+
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: tavern-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+    volumes:
+      - ./localstack-setup/:/etc/localstack/init/ready.d/
+    networks:
+      - tavern-net
+
+  ngrok:
+    image: ngrok/ngrok:latest
+    restart: unless-stopped
+    command:
+      - "http"
+      - "devcontainer:8080" 
+    ports:
+      - "4040:4040" 
+    environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+    networks:
+      - tavern-net
+    depends_on:
+      - devcontainer
 
 volumes:
   postgres-data:
+
+networks:
+  tavern-net:
+    driver: bridge

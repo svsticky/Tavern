@@ -1,100 +1,44 @@
-import { data, redirect } from "react-router";
-import { commitSession, getSession } from "../../sessions.server";
-import type { Route } from "./+types/login";
+import { useKeycloak } from "@react-keycloak/web";
+import { t } from "i18next";
+import { useEffect } from "react";
 
-export async function loader({ request }: Route.LoaderArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
+/**
+ * A dedicated authentication gateway component.
+ *
+ * This page acts as a router/sentinel for the login flow. It does not contain
+ * a traditional UI; instead, it orchestrates the following logic:
+ * - **Unauthenticated Users**: Automatically triggers the Keycloak redirect
+ *   to the SSO login page. Upon successful login, Keycloak is instructed to
+ *   redirect the user back to the application root.
+ * - **Authenticated Users**: If a user navigates to this page while already
+ *   logged in, they are immediately bounced back to the homepage to prevent
+ *   unnecessary login prompts.
+ *
+ * Performance Note: This component uses a full page redirect (`window.location.href`)
+ * to ensure the application state is completely reset and synchronized with
+ * the new authentication token.
+ *
+ * @page
+ * @component
+ */
+export default function Login() {
+  const { keycloak } = useKeycloak();
 
-  if (session.has("auth_token")) {
-    // Redirect to the home page if they are already signed in.
-    return redirect("/");
-  }
+  useEffect(() => {
+    if (!keycloak.authenticated) {
+      keycloak.login({
+        redirectUri: `${window.location.origin}/`,
+      });
+    } else {
+      window.location.href = "/";
+    }
+  }, [keycloak]);
 
-  return data(
-    { error: session.get("error") },
-    {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    },
-  );
-}
-
-export async function action({ request }: Route.ActionArgs) {
-  const session = await getSession(request.headers.get("Cookie"));
-  const form = await request.formData();
-  const _email = form.get("email");
-  const _password = form.get("password");
-
-  // TODO: Normally we would call the backend here to validate
-  const userId = "12";
-
-  if (userId === null) {
-    session.flash("error", "Invalid email/password");
-
-    // Redirect back to the login page with errors.
-    return redirect("/login", {
-      headers: {
-        "Set-Cookie": await commitSession(session),
-      },
-    });
-  }
-
-  // TODO: Set an actual auth_token here.
-  session.set("auth_token", "asdf");
-
-  // Login succeeded, send them to the home page.
-  return redirect("/", {
-    headers: {
-      "Set-Cookie": await commitSession(session),
-    },
-  });
-}
-
-export default function Login({ loaderData }: Route.ComponentProps) {
-  const { error } = loaderData;
-
-  /**
-   * The email and password are currently not required untill we actually implement auth
-   */
   return (
-    <div>
-      {error ? <div className="error">{error}</div> : null}
-      <form method="POST">
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium text-slate-700" htmlFor="email">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            // required
-            className="rounded-lg border border-slate-200 px-3 py-2 shadow-sm outline-none ring-blue-500 focus:border-blue-400 focus:ring"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <label
-            className="text-sm font-medium text-slate-700"
-            htmlFor="password"
-          >
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            // required
-            className="rounded-lg border border-slate-200 px-3 py-2 shadow-sm outline-none ring-blue-500 focus:border-blue-400 focus:ring"
-          />
-        </div>
-        <button
-          type="submit"
-          className="mt-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white shadow-md shadow-blue-500/30 transition hover:bg-blue-700"
-        >
-          Sign in
-        </button>
-      </form>
+    <div className="flex items-center justify-center min-h-screen">
+      <p className="text-xl font-semibold text-gray-700">
+        {t("redirecting_to_login")}
+      </p>
     </div>
   );
 }
