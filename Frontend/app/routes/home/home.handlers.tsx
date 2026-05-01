@@ -2,6 +2,9 @@ import { toast } from "react-hot-toast";
 import { t } from "i18next";
 import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, type ActivityResponseDto, type GetAnnouncementResponseDto, type GroupMembershipResponseDto } from "~/api";
 
+/**
+ * Arguments for the loadDashboardData handler.
+ */
 type LoadDashboardArgs = {
   initialized: boolean;
   authenticated: boolean | undefined;
@@ -12,6 +15,24 @@ type LoadDashboardArgs = {
   setGroupMemberships: (memberships: GroupMembershipResponseDto[]) => void;
 };
 
+/**
+ * Orchestrates the data hydration for the main user dashboard.
+ * 
+ * Fetches three core data sets in sequence:
+ * 1. **Upcoming Activities**: Future events available for viewing or enrollment.
+ * 2. **Announcements**: Recent association-wide notifications.
+ * 3. **Personal Memberships**: Groups and committees the specific user belongs to.
+ * 
+ * @async
+ * @param {LoadDashboardArgs} args - Configuration object containing:
+ * @param {boolean} args.initialized - Guard to ensure auth services are ready.
+ * @param {boolean | undefined} args.authenticated - Guard to ensure the user is logged in.
+ * @param {string | undefined} args.userId - The ID used to filter personal group memberships.
+ * @param {Function} args.setLoading - Function to toggle the loading overlay.
+ * @param {Function} args.setActivities - Function to update the activities state.
+ * @param {Function} args.setAnnouncements - Function to update the announcements state.
+ * @param {Function} args.setGroupMemberships - Function to update the user's committees state.
+ */
 export const loadDashboardData = async ({
   initialized,
   authenticated,

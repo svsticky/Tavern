@@ -6,13 +6,17 @@ import MenuContent from "../MenuContent";
 import MenuFooter from "../MenuFooter";
 import MenuItem from "../MenuItem";
 
-type SideBarProps = {
-  color?: string | undefined;
-  children?: React.ReactNode;
-  className?: string;
-};
-
-export default function SideBar({ color = undefined, children, className }: SideBarProps) {
+/**
+ * A responsive Sidebar component that transforms into a DropdownMenu on mobile screens.
+ * It manages layout positioning for branding, navigation items, footers, and main content.
+ * 
+ * @component
+ * @param {Object} props - Component props.
+ * @param {string} [props.color] - Custom background color for the sidebar.
+ * @param {React.ReactNode} [props.children] - Subcomponents like SideBar.Item or SideBar.Branding.
+ * @param {string} [props.className] - Extra Tailwind classes for the wrapper.
+ */
+export default function SideBar({ color = undefined, children, className }: { color?: string | undefined; children?: React.ReactNode; className?: string }) {
   const childrenArray = React.Children.toArray(children);
   return (
     <div className={cn("flex flex-col sm:flex-row", className)}>

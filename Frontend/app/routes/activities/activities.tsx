@@ -11,6 +11,27 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { copyWeekOverview, downloadPosters, handleCreateActivityClick, loadActivities } from "./activities.handlers";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 
+/**
+ * The main activities listing page for both members and administrators.
+ * 
+ * This page serves as a hub for viewing upcoming events. It dynamically adjusts 
+ * its interface based on the user's permissions:
+ * - **Members**: View a responsive grid of `ActivityTile` components.
+ * - **Group Members**: Access a "Create Activity" button.
+ * - **Board Members**: Access administrative tools such as generating poster PDFs 
+ *   and copying social media week overviews in multiple languages.
+ * 
+ * Layout Features:
+ * - **Responsive Grid**: Uses CSS Grid with `auto-fill` and `minmax` to create a 
+ *   fluid layout that adjusts based on screen width.
+ * - **Conditional Actions**: Uses the `PageHeader`'s action prop to inject 
+ *   context-sensitive buttons.
+ * - **Loading/Empty States**: Standardized handling for API wait times and 
+ *   scenarios with no upcoming events.
+ * 
+ * @page
+ * @component
+ */
 export default function ActivitiesPage() {
   const { keycloak, initialized } = useKeycloak();
 

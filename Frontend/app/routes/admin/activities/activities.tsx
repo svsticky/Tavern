@@ -12,6 +12,20 @@ import BorderedTile from "~/components/Tiles/BorderedTile";
 import Select from "~/components/UI/Select";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
+/**
+ * An administrative management page for viewing and filtering all association activities.
+ * 
+ * This component provides a robust interface for board members to track events across 
+ * different association years. It features:
+ * - **Yearly Archiving**: A selector to view activities as far back as 2007.
+ * - **Real-time Filtering**: Search by activity name or location using a memoized filter.
+ * - **Data Visualization**: A `DataTable` that summarizes key metrics such as 
+ *   participant counts (including limits), pricing, and scheduling.
+ * - **Contextual Navigation**: Quick access to the administrative details of any specific event.
+ * 
+ * @page
+ * @component
+ */
 export default function Activities() {
   const navigate = useNavigate();
 

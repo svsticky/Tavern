@@ -15,6 +15,12 @@ import { useApp } from "~/context/AppContext";
 import { getApiMailinglists } from "~/api";
 import toast from "react-hot-toast";
 
+/**
+ * Renders a form for changing account details.
+ * @param {Object} props - The component props.
+ * @param {MemberResponseDto} props.member - The member whose account is being changed.
+ * @returns {JSX.Element} - The rendered form.
+ */
 export default function ChangeAccountForm({member}: {member: MemberResponseDto}) {
     const {keycloak} = useKeycloak();
     const {setMember} = useApp();

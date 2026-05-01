@@ -4,6 +4,9 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import { deleteApiAnnouncementsById, getApiAnnouncementsById, postApiAnnouncements, putApiAnnouncementsById } from "~/api";
 
+/**
+ * Arguments for the loadAnnouncementData handler.
+ */
 type LoadAnnouncementArgs = {
   isEdit: boolean;
   id: string | undefined;
@@ -11,6 +14,16 @@ type LoadAnnouncementArgs = {
   setLoading: (value: boolean) => void;
 };
 
+/**
+ * Fetches existing announcement data from the API to hydrate the edit form.
+ * 
+ * @async
+ * @param {LoadAnnouncementArgs} args - Configuration object containing:
+ * @param {boolean} args.isEdit - Whether the handler should perform a fetch for existing data.
+ * @param {string | undefined} args.id - The ID of the announcement to retrieve.
+ * @param {Function} args.setInitialData - Function to update the local form state with fetched data.
+ * @param {Function} args.setLoading - Function to update the loading indicator state.
+ */
 export const loadAnnouncementData = async ({ isEdit, id, setInitialData, setLoading }: LoadAnnouncementArgs) => {
   if (!isEdit || !id) return;
 
@@ -23,6 +36,9 @@ export const loadAnnouncementData = async ({ isEdit, id, setInitialData, setLoad
     .finally(() => setLoading(false));
 };
 
+/**
+ * Arguments for the handleAnnouncementSubmit handler.
+ */
 type SubmitAnnouncementArgs = {
   e: React.FormEvent<HTMLFormElement>;
   isEdit: boolean;
@@ -31,6 +47,20 @@ type SubmitAnnouncementArgs = {
   navigate: NavigateFunction;
 };
 
+/**
+ * Processes the announcement form submission for both creating and updating records.
+ * 
+ * Extracts data from the form event, determines the correct API method (POST vs PUT),
+ * and provides visual feedback using toast promises.
+ * 
+ * @async
+ * @param {SubmitAnnouncementArgs} args - Configuration object containing:
+ * @param {React.FormEvent<HTMLFormElement>} args.e - The form submission event.
+ * @param {boolean} args.isEdit - Determines whether to call the create or update endpoint.
+ * @param {string | undefined} args.id - The ID of the announcement to update.
+ * @param {Function} args.setSaving - Function to update the saving state.
+ * @param {NavigateFunction} args.navigate - Function to redirect the user upon success.
+ */
 export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navigate }: SubmitAnnouncementArgs) => {
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
@@ -66,6 +96,14 @@ export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navig
   });
 };
 
+/**
+ * Deletes an announcement from the system and redirects to the list view.
+ * 
+ * @async
+ * @param {string} id - The unique identifier of the announcement to be deleted.
+ * @param {Function} setDeleting - State setter to track the deletion process.
+ * @param {NavigateFunction} navigate - Function to redirect the user after successful deletion.
+ */
 export const handleDeleteAnnouncement = async (id: string, setDeleting: (value: boolean) => void, navigate: NavigateFunction) => {
   setDeleting(true);
 

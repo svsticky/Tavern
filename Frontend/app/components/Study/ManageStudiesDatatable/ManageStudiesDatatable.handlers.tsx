@@ -3,6 +3,14 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import { getApiStudies, type Study } from "~/api";
 
+/**
+ * Fetches the list of studies from the API and updates the provided state.
+ * 
+ * @async
+ * @param {function} setLoading - State setter to track the loading status of the API request.
+ * @param {React.Dispatch<React.SetStateAction<Study[]>>} setStudies - State setter to update the list of study programs.
+ * @returns {Promise<void>}
+ */
 export const fetchStudies = async (
   setLoading: (loading: boolean) => void,
   setStudies: React.Dispatch<React.SetStateAction<Study[]>>
@@ -26,6 +34,15 @@ export const fetchStudies = async (
   fetchStudiesAction();
 };
 
+/**
+ * Arguments for the handleStudyEdited function.
+ * @typedef {Object} HandleStudyEditedArgs
+ * @property {Study} [study] - The updated study object from the form. If undefined, signifies a deletion.
+ * @property {Study} [editedStudy] - The original study object that was being edited.
+ * @property {React.Dispatch<React.SetStateAction<Study[]>>} setStudies - State setter for the studies list.
+ * @property {function} setIsEditModalOpen - State setter to close the edit modal.
+ * @property {function} setEditedStudy - State setter to clear the current selection.
+ */
 type HandleStudyEditedArgs = {
   study?: Study;
   editedStudy?: Study;
@@ -34,6 +51,15 @@ type HandleStudyEditedArgs = {
   setEditedStudy: (study: Study | undefined) => void;
 };
 
+/**
+ * Orchestrates the local state updates after a study has been created, edited, or deleted.
+ * It handles three scenarios:
+ * 1. **Deletion**: If `study` is missing, it removes `editedStudy` from the list.
+ * 2. **Update**: If `study` has an ID, it replaces the existing item in the list.
+ * 3. **Creation**: If `study` is new (no ID or matching ID), it appends it to the list.
+ * 
+ * @param {HandleStudyEditedArgs} args - The state handlers and data objects for the update.
+ */
 export const handleStudyEdited = ({ study, editedStudy, setStudies, setIsEditModalOpen, setEditedStudy }: HandleStudyEditedArgs) => {
   if (!study) {
     if (editedStudy) {

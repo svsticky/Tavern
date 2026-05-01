@@ -7,11 +7,16 @@ import Select from "~/components/UI/Select";
 import Form from "../../UI/Form/Form";
 import { handleCreateGroupSubmit, handleFileChange, resetCreateGroupForm } from "./CreateGroupOverlay.handlers";
 
-interface CreateGroupModalProps {
-  onSuccess: () => void;
-}
-
-export default function CreateGroupOverlay({ onSuccess }: CreateGroupModalProps) {
+/**
+ * A modal overlay component for creating a new group.
+ * Handles image selection, group naming, and type classification.
+ * 
+ * @component
+ * @param {Object} props - Component props.
+ * @param {Function} props.onSuccess - Callback function triggered after a group is successfully created.
+ * @returns {JSX.Element} The rendered CreateGroupOverlay component.
+ */
+export default function CreateGroupOverlay({ onSuccess }: { onSuccess: () => void }) {
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);

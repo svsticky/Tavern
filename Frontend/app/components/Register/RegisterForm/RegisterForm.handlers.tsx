@@ -5,6 +5,10 @@ import toast from "react-hot-toast";
 import i18n from "~/i18n";
 import { postApiMembers, postApiPaymentsMembership, getApiStudies, type PostMemberDto, type Study, getApiMailinglists, type Mailinglist } from "~/api";
 
+/**
+ * Data structure representing the registration form fields for a new member.
+ * @typedef {Object} RegisterFormData
+ */
 export type RegisterFormData = {
   firstname: string;
   lastname: string;
@@ -19,6 +23,11 @@ export type RegisterFormData = {
   studentNumber: string;
 };
 
+/**
+ * Fetches the list of available studies from the API and updates the local state.
+ * @param {function} setStudies - State setter function for the studies array.
+ * @returns {Promise<void>}
+ */
 export const loadStudies = async (
   setStudies: (studies: Study[]) => void
 ) => {
@@ -34,6 +43,11 @@ export const loadStudies = async (
   } 
 };
 
+/**
+ * Fetches available mailing lists from the API and updates the local state.
+ * @param {function} setMailingLists - State setter function for the mailing lists array.
+ * @returns {Promise<void>}
+ */
 export const loadMailingLists = async (
   setMailingLists: (lists: Mailinglist[]) => void
 ) => {
@@ -49,6 +63,11 @@ export const loadMailingLists = async (
   }
 };
 
+/**
+ * Handles updates for standard text and date input fields in the registration form.
+ * @param {React.ChangeEvent<HTMLInputElement>} e - The change event from the input.
+ * @param {React.Dispatch<React.SetStateAction<RegisterFormData>>} setFormData - State setter for form data.
+ */
 export const handleRegisterInputChange = (
   e: React.ChangeEvent<HTMLInputElement>,
   setFormData: React.Dispatch<React.SetStateAction<RegisterFormData>>
@@ -57,12 +76,21 @@ export const handleRegisterInputChange = (
   setFormData((prev) => ({ ...prev, [name]: value }));
 };
 
+/**
+ * Toggles a study ID within the selected studies selection array.
+ * @param {number} id - The ID of the study to toggle.
+ * @param {React.Dispatch<React.SetStateAction<number[]>>} setSelectedStudies - State setter for selected study IDs.
+ */
 export const handleStudyToggle = (id: number, setSelectedStudies: React.Dispatch<React.SetStateAction<number[]>>) => {
   setSelectedStudies((prev) =>
     prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
   );
 };
 
+/**
+ * Arguments for the handleRegisterSubmit function.
+ * @typedef {Object} RegisterSubmitArgs
+ */
 type RegisterSubmitArgs = {
   e: React.FormEvent;
   isFormValid: boolean;
@@ -74,6 +102,13 @@ type RegisterSubmitArgs = {
   navigate: NavigateFunction;
 };
 
+/**
+ * Orchestrates the member registration process, including API submission, 
+ * toast notifications, and conditional redirection to payment or confirmation.
+ * 
+ * @param {RegisterSubmitArgs} args - Configuration and state objects required for submission.
+ * @returns {Promise<void>}
+ */
 export const handleRegisterSubmit = async ({
   e,
   isFormValid,

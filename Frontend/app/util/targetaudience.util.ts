@@ -1,6 +1,12 @@
 import { type MemberResponseDto } from "~/api";
 import { AudienceFlags } from "~/types/AudienceMap";
 
+/**
+ * Determines if a member is in a specific target audience.
+ * @param member The member to check.
+ * @param targetAudience The target audience criteria.
+ * @returns True if the member is in the target audience, false otherwise.
+ */
 export const isMemberInTargetAudience = (
   member: MemberResponseDto | null,
   targetAudience: any 

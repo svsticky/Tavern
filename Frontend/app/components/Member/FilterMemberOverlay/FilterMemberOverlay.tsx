@@ -7,6 +7,19 @@ import TriStateFilter from "../../UI/TriStateFilter";
 import { type MembersFilterDto } from "~/types/MembersFilterDto";
 import { handleApplyFilters, handleResetFilters, loadStudies } from "./FilterMemberOverlay.handlers";
 
+/**
+ * A modal overlay component that provides an interface for filtering members.
+ * It manages multiple filter states including study types, specific studies, 
+ * and various membership statuses using tri-state logic.
+ * 
+ * @component
+ * @example
+ * 
+```tsx
+ * <FilterMemberOverlay * filters="{currentFilters}" onFilter="{(newFilters)"> handleUpdate(newFilters)} 
+ * />
+ * ```
+ */
 export default function FilterMemberOverlay({ filters, onFilter }: { filters: MembersFilterDto | null; onFilter: (filters: MembersFilterDto) => void }) {
   const [loading, setLoading] = useState(false);
 

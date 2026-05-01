@@ -15,11 +15,32 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useNavigate } from "react-router";
 import toast from "react-hot-toast";
 
+/**
+ * Props for the DashboardHeader component.
+ * @interface DashboardHeaderProps
+ * @property {string} name - The display name of the user to be greeted.
+ * @property {ActivityResponseDto} [nextActivity] - Data for the user's next scheduled activity, if one exists.
+ */
 type DashboardHeaderProps = {
   name: string;
   nextActivity?: ActivityResponseDto;
 };
 
+/**
+ * The primary hero section for the user dashboard.
+ * 
+ * This component provides a high-level summary of the user's account status, including:
+ * - **Greeting**: Personalized welcome message.
+ * - **Activity Stats**: Counts of upcoming and past enrollments.
+ * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
+ * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
+ * 
+ * It manages its own data fetching state for payments and enrollment totals, and integrates
+ * with Keycloak for user identification and Lucide for iconography.
+ * 
+ * @component
+ * @param {DashboardHeaderProps} props - The component properties.
+ */
 export default function DashboardHeader({
   name,
   nextActivity,

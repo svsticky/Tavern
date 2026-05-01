@@ -6,19 +6,40 @@ import { t } from "i18next";
 import Tile from "../Tiles/Tile";
 import Select from "../UI/Select";
 
-type Props = {
-  questions: GetSpecificationQuestionResponseDto[];
-  answers: SpecificationAnswerResponseDto[];
-  disabled?: boolean;
-  onChange?: (answers: Record<number, string>) => void;
-};
-
+/**
+ * A dynamic form component that renders a list of activity-specific questions.
+ * 
+ * Features:
+ * - **Polymorphic Inputs**: Automatically switches between `Input` (text, number, date, checkbox) 
+ *   and `Select` components based on the `question.type`.
+ * - **Localization**: Displays question labels in Dutch or English based on the 
+ *   Keycloak user's locale preference.
+ * - **State Syncing**: Initializes local state with existing `enrollmentAnswers` and 
+ *   notifies parent components via `onChange` whenever a value is modified.
+ * - **Validation Visuals**: Appends a red asterisk to labels for mandatory questions.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {GetSpecificationQuestionResponseDto[]} props.questions - The list of question definitions to render.
+ * @param {SpecificationAnswerResponseDto[]} props.answers - Existing answers for the current enrollment to pre-populate the form.
+ * @param {boolean} [props.disabled=false] - If true, prevents user interaction with all input fields.
+ * @param {(answers: Record<number, string>) => void} [props.onChange] - Callback triggered on every state change, providing a map of question IDs to answer strings.
+ * 
+ * @example
+ * ```tsx
+ * <AnswerQuestionsTile 
+ *   questions={activity.specificationQuestions}
+ *   answers={enrollment.specificationAnswers}
+ *   onChange={(newAnswers) => setFormData(newAnswers)}
+ * />
+ * ```
+ */
 export default function AnswerQuestionsTile({
   questions,
   answers: enrollmentAnswers,
   disabled = false,
   onChange
-}: Props) {
+}: { questions: GetSpecificationQuestionResponseDto[]; answers: SpecificationAnswerResponseDto[]; disabled?: boolean; onChange?: (answers: Record<number, string>) => void }) {
   const { keycloak } = useKeycloak();
 
   const [answers, setAnswers] = useState<Record<number, string>>({});

@@ -9,6 +9,24 @@ import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Form from "~/components/UI/Form/Form";
 import { handleAnnouncementSubmit, handleDeleteAnnouncement, loadAnnouncementData } from "./edit-announcement.handlers";
 
+/**
+ * An administrative page for creating or editing system-wide announcements.
+ * 
+ * This component provides a focused interface for board members to communicate with the association.
+ * It manages several operational states:
+ * - **Context Switching**: Automatically toggles between 'Create' and 'Edit' modes based on the URL ID parameter.
+ * - **Data Hydration**: Fetches existing announcement content when in edit mode to prepopulate the form.
+ * - **Form Orchestration**: Leverages specialized handlers to process complex logic like FormData extraction, 
+ *   API status management (saving/deleting), and navigation.
+ * - **Destructive Actions**: Provides a 'Delete' option only when modifying an existing entry, 
+ *   protected by loading states to prevent duplicate requests.
+ * 
+ * The layout is constrained to a readable width (`max-w-4xl`) to improve the editing experience 
+ * for long-form announcement content.
+ * 
+ * @page
+ * @component
+ */
 export default function AnnouncementFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();

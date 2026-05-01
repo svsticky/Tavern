@@ -1,6 +1,18 @@
 import { t } from "i18next";
 import Tile from "../Tiles/Tile";
 
+/**
+ * A specialized filter component that allows users to toggle between three states: Yes, No, and All.
+ * 
+ * This component is ideal for boolean filters that also require a "neutral" or "ignored" state 
+ * (represented by `null`). It renders as a segmented control (button group) within a small Tile.
+ * 
+ * @component
+ * @param {Object} props - The component properties.
+ * @param {string} props.label - The text label identifying what is being filtered.
+ * @param {boolean | null} props.value - The current state: `true` (Yes), `false` (No), or `null` (All).
+ * @param {(val: boolean | null) => void} props.onChange - Callback function triggered when a new state is selected.
+ */
 export default function TriStateFilter({ 
   label, 
   value, 

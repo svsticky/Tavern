@@ -11,6 +11,20 @@ import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { handleCreateAnnouncementClick, loadAnnouncements } from "./announcements.handlers";
 
+/**
+ * The public-facing and administrative announcements page.
+ * 
+ * This component displays a list of association-wide announcements. It features:
+ * - **Permission-based Actions**: Board and Candidate Board members see a 
+ *   plus icon in the header to create new announcements.
+ * - **Dynamic Data Loading**: Uses the `loadAnnouncements` handler to fetch data 
+ *   once Keycloak is initialized and the user is authenticated.
+ * - **State-driven Rendering**: Handles loading states, empty list scenarios 
+ *   (via `NoContentTile`), and populated list views (via `AnnouncementsList`).
+ * 
+ * @page
+ * @component
+ */
 export default function AnnouncementsPage() {
   const {keycloak, initialized} = useKeycloak();
   

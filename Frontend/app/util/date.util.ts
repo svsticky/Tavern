@@ -5,6 +5,12 @@ type DateFormatType =
   | "timeOnly"
   | "defaultDate";
 
+/**
+ * Formats a date according to the specified format.
+ * @param date The date to format.
+ * @param format The desired format type.
+ * @returns The formatted date string.
+ */
 export function formatDate(date: Date, format: DateFormatType): string {
   switch (format) {
     case "fullDateTime":
@@ -36,6 +42,10 @@ export function formatDate(date: Date, format: DateFormatType): string {
   }
 }
 
+/**
+ * Determines the current association year based on the current month.
+ * @returns The current association year.
+ */
 export const getAssociationYear = (): number => {
   const nlDateString = new Date().toLocaleString("en-US", { timeZone: "Europe/Amsterdam" });
   const now = new Date(nlDateString);

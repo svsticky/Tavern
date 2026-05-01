@@ -14,8 +14,25 @@ import Modal from "~/components/UI/Modal/Modal";
 import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
+/** The number of members to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 20;
 
+/**
+ * An administrative directory page for managing association members.
+ * 
+ * Key Features:
+ * - **Infinite Scrolling**: Uses the `IntersectionObserver` API to detect when the user 
+ *   has reached the end of the list and automatically fetches the next page.
+ * - **Debounced Search**: Waits 300ms after the last keystroke before triggering an API 
+ *   call to reduce server load.
+ * - **Complex Filtering**: Supports advanced server-side filtering (Studies, Status, 
+ *   Suspension, etc.) via a Modal overlay.
+ * - **Responsive Design**: Uses a data table that collapses or adjusts for mobile 
+ *   viewports with full-width buttons.
+ * 
+ * @page
+ * @component
+ */
 export default function Members() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);

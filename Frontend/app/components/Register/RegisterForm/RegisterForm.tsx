@@ -17,6 +17,17 @@ import {
   loadMailingLists
 } from "./RegisterForm.handlers";
 
+/**
+ * The primary registration form component for new members.
+ * 
+ * This component manages the state for personal details, study selection, and mailing 
+ * list subscriptions. It includes complex client-side validation, such as checking 
+ * the user's age to determine if parent contact information is required.
+ * 
+ * @component
+ * @param {Object} props - Component properties.
+ * @param {string} [props.className] - Optional CSS classes for the outer Tile container.
+ */
 export default function RegisterForm({ className }: { className?: string }) {
     const [loading, setLoading] = useState(false);
     const [studies, setStudies] = useState<Study[]>([]);

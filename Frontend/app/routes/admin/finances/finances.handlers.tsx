@@ -12,6 +12,9 @@ import {
   type Member
 } from "~/api";
 
+/**
+ * Arguments for the internal setUnpaidPaymentState utility.
+ */
 type SetUnpaidStateArgs = {
   balances: EnrollmentBalance[];
   setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
@@ -21,6 +24,12 @@ type SetUnpaidStateArgs = {
   setMembersWithOverduePayment: (value: { member: Member; enrollments: EnrollmentBalance[] }[] | null) => void;
 };
 
+/**
+ * Internal utility to process raw enrollment balances and categorize them for the UI.
+ * It calculates total debt, identifies unique activities with debts, and groups debts by member.
+ * 
+ * @param {SetUnpaidStateArgs} args - Configuration and state setters.
+ */
 export const setUnpaidPaymentState = ({
   balances,
   setUnpaidBalances,
@@ -55,6 +64,9 @@ export const setUnpaidPaymentState = ({
   setMembersWithOverduePayment(Object.values(membersMap));
 };
 
+/**
+ * Arguments for the refreshUnpaidPayments handler.
+ */
 type RefreshUnpaidArgs = {
   setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
   setTotalUnpaid: (value: number) => void;
@@ -63,6 +75,12 @@ type RefreshUnpaidArgs = {
   setMembersWithOverduePayment: (value: { member: Member; enrollments: EnrollmentBalance[] }[] | null) => void;
 };
 
+/**
+ * Fetches the latest unpaid balance data from the API and refreshes the state.
+ * 
+ * @async
+ * @param {RefreshUnpaidArgs} args - State setters to update after fetching.
+ */
 export const refreshUnpaidPayments = async ({
   setUnpaidBalances,
   setTotalUnpaid,
@@ -88,6 +106,19 @@ export const refreshUnpaidPayments = async ({
   }
 };
 
+/**
+ * Generates a WhatsApp message and opens a chat window to remind a member of their debts.
+ * 
+ * Logic:
+ * - Filters for activities past their payment deadline.
+ * - Scales the "severity" of the language based on how many days overdue the oldest debt is.
+ * - Uses the member's `preferredLanguage` (NL/EN) for the message body.
+ * - Formats phone numbers to the international Dutch format (31).
+ * 
+ * @param {Object} args
+ * @param {Member} args.member - The member to message.
+ * @param {EnrollmentBalance[]} args.enrollments - The member's specific outstanding enrollments.
+ */
 export const handleWhatsAppClick = ({ member, enrollments }: { member: Member; enrollments: EnrollmentBalance[] }) => {
   const unpaidEnrollments = enrollments.filter(
     (e) => e.balance > 0 && e.enrollment.activity && new Date(e.enrollment.activity.paymentDeadline) < new Date()
@@ -125,6 +156,9 @@ export const handleWhatsAppClick = ({ member, enrollments }: { member: Member; e
   window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, "_blank");
 };
 
+/**
+ * Arguments for the handleMarkAsPaid handler.
+ */
 type MarkPaidArgs = {
   member: Member;
   enrollments: EnrollmentBalance[];
@@ -132,6 +166,12 @@ type MarkPaidArgs = {
   refreshUnpaid: () => Promise<void>;
 };
 
+/**
+ * Manually marks a set of enrollments as paid in the system (e.g., if the user paid in cash).
+ * 
+ * @async
+ * @param {MarkPaidArgs} args - Context and refresh logic.
+ */
 export const handleMarkAsPaid = ({ member, enrollments, setLoading, refreshUnpaid }: MarkPaidArgs) => {
   const process = async () => {
     try {
@@ -162,6 +202,14 @@ export const handleMarkAsPaid = ({ member, enrollments, setLoading, refreshUnpai
   });
 };
 
+/**
+ * Generates a CSV export of payments within a specific date range and triggers a browser download.
+ * 
+ * @async
+ * @param {string} exportStartDate - Start of the range (YYYY-MM-DD).
+ * @param {string} exportEndDate - End of the range (YYYY-MM-DD).
+ * @param {Function} setExporting - State setter for loading indicators.
+ */
 export const handlePaymentsExport = (
   exportStartDate: string,
   exportEndDate: string,
@@ -208,6 +256,9 @@ export const handlePaymentsExport = (
   });
 };
 
+/**
+ * Arguments for the loadFinancesData handler.
+ */
 type LoadFinancesArgs = {
   setLoading: (loading: boolean) => void;
   setExpiredActivities: (value: ActivityResponseDto[] | null) => void;
@@ -219,6 +270,13 @@ type LoadFinancesArgs = {
   setOverpaidBalances: (value: EnrollmentBalance[] | null) => void;
 };
 
+/**
+ * The primary data loader for the Finances page.
+ * Orchestrates calls for expired activities, unpaid debts, and overpaid credits.
+ * 
+ * @async
+ * @param {LoadFinancesArgs} args - Complete set of state setters for the finances dashboard.
+ */
 export const loadFinancesData = async ({
   setLoading,
   setExpiredActivities,

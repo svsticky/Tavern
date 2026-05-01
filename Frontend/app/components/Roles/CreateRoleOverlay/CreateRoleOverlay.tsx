@@ -7,6 +7,18 @@ import Form from "../../UI/Form/Form";
 import Button from "../../UI/Button";
 import { fetchRoles, handleCreateRoleSubmit } from "./CreateRoleOverlay.handlers";
 
+/**
+ * An overlay component that provides a form to create either a new Parent Role or a Role Alias.
+ * 
+ * It manages internal form state, including type selection (Alias vs. Parent) and 
+ * handles the conditional rendering of the parent role selection dropdown when 
+ * creating an alias.
+ * 
+ * @component
+ * @param {Object} props - Component properties.
+ * @param {(roleAlias: RoleAlias) => void} props.onRoleAliasCreated - Callback triggered when a role alias is successfully created.
+ * @param {(role: Role) => void} props.onRoleCreated - Callback triggered when a parent role is successfully created.
+ */
 export default function CreateRoleOverlay({ onRoleAliasCreated, onRoleCreated }: { onRoleAliasCreated: (roleAlias: RoleAlias) => void; onRoleCreated: (role: Role) => void; }) {
   const [roles, setRoles] = useState<RoleAlias[]>([]);
   const [loadingRoles, setLoadingRoles] = useState(true);

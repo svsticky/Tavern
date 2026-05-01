@@ -7,6 +7,19 @@ import { useState } from "react";
 import { t } from "i18next";
 import { handleStudyDelete, handleStudySubmit } from "./EditStudyOverlay.handlers";
 
+/**
+ * An overlay component used for creating or editing study program information.
+ * 
+ * It manages a local form state for study details like title, degree type, 
+ * and duration. If a `study` object is provided, the form initializes in "Edit" mode,
+ * allowing the user to update or delete the record. Otherwise, it functions in 
+ * "Create" mode.
+ * 
+ * @component
+ * @param {Object} props - Component properties.
+ * @param {function} props.onStudyAdded - Callback triggered when a study is successfully created, updated, or deleted.
+ * @param {Study} [props.study] - Optional existing study data; if present, the component switches to edit/delete mode.
+ */
 export default function EditStudyOverlay({onStudyAdded: onComplete, study = undefined}: {onStudyAdded: (study?: Study) => void, study?: Study}) {
     const [formData, setFormData] = useState({
         title: study ? study.title : "",

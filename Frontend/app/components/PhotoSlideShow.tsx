@@ -2,12 +2,31 @@ import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Tile from "./Tiles/Tile";
 
+/**
+ * Props for the PhotoSlideshow component.
+ * @interface PhotoSlideshowProps
+ * @property {string[]} images - An array of image URLs to display in the slideshow.
+ * @property {string} [className] - Optional CSS classes for the outer container.
+ * @property {number} [autoPlayInterval=5000] - Duration in milliseconds between automatic slide transitions.
+ */
 interface PhotoSlideshowProps {
     images: string[];
     className?: string;
     autoPlayInterval?: number;
 }
 
+/**
+ * A responsive, automated image carousel component.
+ * 
+ * This slideshow features:
+ * - **Automatic Transitions**: Slides rotate based on the `autoPlayInterval`.
+ * - **Manual Navigation**: Users can toggle slides via previous/next buttons (visible on hover) or via indicator dots.
+ * - **Responsive Aspect Ratio**: Adapts from a standard `16:9` (video) ratio on mobile to a wider `21:9` ratio on medium screens.
+ * - **Visual Feedback**: Active slide indicators change size and opacity to show current progress.
+ * 
+ * @component
+ * @param {PhotoSlideshowProps} props - The component properties.
+ */
 export default function PhotoSlideshow({ 
     images, 
     className, 

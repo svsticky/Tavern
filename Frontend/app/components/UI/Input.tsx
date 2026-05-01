@@ -1,5 +1,18 @@
 import { cn } from "~/util/tailwind.util";
 
+/**
+ * A versatile input component that handles standard text-based inputs and checkboxes.
+ * 
+ * For text-based types (text, number, email, etc.), it renders a stacked layout 
+ * with a label above the input field. For checkbox types, it renders an inline 
+ * layout with the checkbox preceding the label.
+ * 
+ * @component
+ * @param {Object} props - Component properties.
+ * @param {string | null} [props.label=null] - The text label associated with the input.
+ * @param {string} [props.className] - Optional CSS classes to override or extend the input styling.
+ * @param {React.InputHTMLAttributes<HTMLInputElement>} props... - All standard HTML input attributes (e.g., type, value, onChange, disabled).
+ */
 export default function Input({ label = null, className, ...props }: {label?: string | null} & React.InputHTMLAttributes<HTMLInputElement>) {
 
   if(props.type === "checkbox") {

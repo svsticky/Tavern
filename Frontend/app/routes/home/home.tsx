@@ -11,6 +11,25 @@ import Button from "~/components/UI/Button";
 import UpcomingActivities from "~/components/Activity/UpcomingActivities";
 import { loadDashboardData } from "./home.handlers";
 
+/**
+ * The main application landing page for authenticated members.
+ * 
+ * This component acts as a high-level summary of the user's association life. It aggregates:
+ * - **Personalized Greeting**: Welcomes the user and highlights their next upcoming activity.
+ * - **Latest Announcements**: Shows a preview of the most recent association-wide updates.
+ * - **Activity Feed**: Displays a comprehensive list of upcoming events.
+ * - **Personal Overview**: A sidebar containing the user's current activity enrollments and 
+ *   their committee/group memberships.
+ * 
+ * Features:
+ * - **Contextual Loading**: Displays a skeleton-style loading state while coordinating multiple API requests.
+ * - **Auth Integration**: Deeply integrates with Keycloak to filter data based on the user's `UserId`.
+ * - **Responsive Layout**: Uses a grid system that transitions from a single-column mobile view to a 
+ *   split main/sidebar layout on larger screens.
+ * 
+ * @page
+ * @component
+ */
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { keycloak, initialized } = useKeycloak();

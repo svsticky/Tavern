@@ -6,13 +6,35 @@ import Input from "~/components/UI/Input";
 import Select from "~/components/UI/Select";
 import BorderedTile from "../../Tiles/BorderedTile";
 
-interface Props {
-  question: Partial<GetSpecificationQuestionResponseDto>;
-  onRemove: () => void;
-  onUpdate: (field: keyof GetSpecificationQuestionResponseDto, value: any) => void;
-}
-
-export default function EditQuestionTile({ question, onRemove, onUpdate }: Props) {
+/**
+ * A specialized form tile for creating or editing an activity specification question.
+ * 
+ * Features:
+ * - **Bilingual Support**: Provides inputs for both Dutch and English versions of the question.
+ * - **Dynamic Type Selection**: Supports various data types (String, Boolean, Number, etc.) 
+ *   via a dropdown.
+ * - **Conditional Rendering**: Displays an additional input field for options if the 
+ *   question type is set to 'MultipleChoice'.
+ * - **Semicolon Parsing**: Automatically splits and trims string input into an array 
+ *   of options for multiple-choice questions.
+ * - **Interactive Deletion**: Displays a floating "remove" button when the tile is hovered.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {Partial<GetSpecificationQuestionResponseDto>} props.question - The current state of the question being edited.
+ * @param {() => void} props.onRemove - Callback to remove this question from the parent state.
+ * @param {(field: keyof GetSpecificationQuestionResponseDto, value: any) => void} props.onUpdate - Callback to update a specific property of the question.
+ * 
+ * @example
+ * ```tsx
+ * <EditQuestionTile 
+ *   question={myQuestion} 
+ *   onRemove={() => handleRemove(index)} 
+ *   onUpdate={(field, value) => handleUpdate(index, field, value)} 
+ * />
+ * ```
+ */
+export default function EditQuestionTile({ question, onRemove, onUpdate }: { question: Partial<GetSpecificationQuestionResponseDto>; onRemove: () => void; onUpdate: (field: keyof GetSpecificationQuestionResponseDto, value: any) => void }) {
   return (
     <BorderedTile className="group relative">
       <button 

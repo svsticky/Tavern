@@ -2,6 +2,26 @@ import type { EnrollmentResponseDto } from "~/api/types.gen";
 import Tile from "../../Tiles/Tile";
 import { useState, useEffect } from "react";
 
+/**
+ * A compact tile component used to display an individual participant's information.
+ * 
+ * Key features:
+ * - **Profile Picture**: Fetches the member's profile picture or falls back to a default SVG.
+ * - **Dynamic Answers**: If the enrollment contains multiple specification answers, 
+ *   it automatically cycles through them with a sliding animation every 3 seconds.
+ * - **Hover Effects**: Includes subtle scaling and color transitions for better interactivity.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {EnrollmentResponseDto} props.enrollment - The enrollment data, including member details and specification answers.
+ * 
+ * @example
+ * ```tsx
+ * <ParticipantTile 
+ *   enrollment={enrollmentData} 
+ * />
+ * ```
+ */
 export default function ParticipantTile({ enrollment }: { enrollment: EnrollmentResponseDto }) {  
   const imageUrl = `${import.meta.env.ApiUrl}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";

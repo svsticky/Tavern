@@ -11,6 +11,24 @@ import { PencilIcon } from "lucide-react";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { canEditActivity, getActivityBackPath, handleEditActivityClick, loadActivityData } from "./activity.handlers";
 
+/**
+ * Detailed view for a specific activity, including description and participant lists.
+ * 
+ * This page serves as the single source of truth for an activity's information. 
+ * It manages:
+ * - **Data Hydration**: Fetches activity details based on the URL `id` parameter.
+ * - **Enrollment Management**: Passes state-updating functions to child tiles 
+ *   to allow immediate UI feedback after joining/leaving.
+ * - **Participant Visibility**: Filters and displays the participant list and 
+ *   waiting list, respecting the `areParticipantsVisible` privacy flag.
+ * - **Contextual Navigation**: Determines the "Back" path based on whether 
+ *   the user arrived via an admin route or the standard member list.
+ * - **Permissions**: Shows an edit action only for authorized users (Board or Organizers).
+ * 
+ * @page
+ * @component
+ * @param {Route.LoaderArgs} props - Route parameters provided by the framework, including the activity ID.
+ */
 export default function ActivityPage({ params }: Route.LoaderArgs) {
   const { keycloak, initialized } = useKeycloak();
   const navigate = useNavigate();

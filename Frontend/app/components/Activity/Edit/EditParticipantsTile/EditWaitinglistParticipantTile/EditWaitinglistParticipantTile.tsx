@@ -7,6 +7,14 @@ import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import { handleMoveFromWaitinglist, handleWaitinglistUnenroll } from "./EditWaitinglistParticipantTile.handlers";
 
+/**
+ * Renders a tile for managing participants in the waiting list.
+ *
+ * @param {Object} props - The component's props.
+ * @param {EnrollmentResponseDto} props.enrollment - The enrollment to manage.
+ * @param {() => void} props.onUnenroll - Callback function to handle unenrollment.
+ * @param {() => void} props.onMoveToParticipants - Callback function to move the participant to participants.
+ */
 export default function EditWaitinglistParticipantTile({ enrollment, onUnenroll, onMoveToParticipants }: { enrollment: EnrollmentResponseDto; onUnenroll: () => void; onMoveToParticipants: () => void }) {
   const [loading, setLoading] = useState(false);
 

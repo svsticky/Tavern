@@ -10,6 +10,34 @@ import { useState } from "react";
 import SearchMemberOverlay from "../../../Member/SearchMemberOverlay";
 import { handleDownloadEnrollments, handleEnrollParticipant, handleMoveToParticipants, handleUnenrollParticipant } from "./EditParticipantsTile.handlers";
 
+/**
+ * An administrative tile component for managing the participants and waiting list 
+ * of a specific activity.
+ * 
+ * Features:
+ * - **Participant Overview**: Displays a list of enrolled members with an optional 
+ *   capacity counter (e.g., 15/20).
+ * - **Waiting List Promotion**: Identifies the next person on the waiting list and 
+ *   provides actions to promote them to the main participant list.
+ * - **Member Search & Manual Enrollment**: Opens a modal containing a `SearchMemberOverlay` 
+ *   to find and manually register association members.
+ * - **Data Export**: Provides a trigger to download the full enrollment list as a CSV.
+ * - **Real-time State Updates**: Coordinates with handler functions to update the 
+ *   local `activity` state without requiring a full page refresh.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {ActivityResponseDto} props.activity - The current activity data containing the enrollment list.
+ * @param {React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>} props.setActivity - State setter to update participant/waiting list data locally.
+ * 
+ * @example
+ * ```tsx
+ * <EditParticipantsTile 
+ *   activity={currentActivity} 
+ *   setActivity={setActivity} 
+ * />
+ * ```
+ */
 export default function EditParticipantsTile({activity, setActivity}: {activity: ActivityResponseDto; setActivity: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>}) {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [loading, setLoading] = useState(false);

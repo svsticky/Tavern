@@ -27,6 +27,24 @@ import {
 } from "./edit-member.handlers";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 
+/**
+ * An administrative page for viewing and editing a member's complete profile.
+ * 
+ * This comprehensive interface is designed for board members and administrators to:
+ * - **Manage Personal & Contact Data**: Update identity, student number, and detailed address information.
+ * - **Control Membership Status**: Toggle special statuses like "Honorary Member" (ere lid), 
+ *   "Benefactor" (begunstiger), or manage disciplinary "Suspensions".
+ * - **Audit Educational History**: Manage multiple study enrollments, track graduation status, 
+ *   and add new educational records.
+ * - **Internal Bookkeeping**: View and edit internal admin-only notes about the member.
+ * - **Media Management**: Access the `ChangeProfilePicture` component to update the member's avatar.
+ * 
+ * The layout uses a responsive two-column design on larger screens, placing the profile picture 
+ * as a sidebar and the multi-section form as the main content.
+ * 
+ * @page
+ * @component
+ */
 export default function EditMemberPage() {
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);

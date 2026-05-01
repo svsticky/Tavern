@@ -13,6 +13,21 @@ import toast from "react-hot-toast";
 import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
 import Modal from "~/components/UI/Modal/Modal";
 
+/**
+ * An administrative management page for viewing, filtering, and creating association groups.
+ * 
+ * This component provides a high-level overview of all organizational entities (Committees, 
+ * Working Groups, etc.). It features:
+ * - **Asynchronous Loading**: Fetches group data from the API on mount with error handling.
+ * - **Dynamic Filtering**: Client-side search that filters groups by name or type.
+ * - **Creation Workflow**: Integrated `Modal` and `CreateGroupOverlay` to add new groups 
+ *   without leaving the page.
+ * - **Data Visualization**: Utilizes a `DataTable` for a clean, sortable overview of group metadata.
+ * - **Navigation**: Direct access to detailed group management via the "View Group" action.
+ * 
+ * @page
+ * @component
+ */
 export default function Groups() {
   const navigate = useNavigate();
 

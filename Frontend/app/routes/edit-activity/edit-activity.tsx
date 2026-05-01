@@ -13,6 +13,25 @@ import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMa
 import { cn } from "~/util/tailwind.util";
 import { getEditActivityBackPath, loadEditActivityData } from "./edit-activity.handlers";
 
+/**
+ * A dynamic page for creating new activities or editing existing ones.
+ * 
+ * This component acts as the primary orchestrator for activity management. It handles:
+ * - **Context Detection**: Determines if the user is creating or editing based on the presence of an `id` param.
+ * - **Permission Management**: Restricts administrative features (mailing, participant editing) to 
+ *   Board or Candidate Board members.
+ * - **Dynamic Layout**: Switches from a single-column layout (Creation/Member view) to a 
+ *   split-column layout (Admin Edit view) to accommodate management tools.
+ * - **Data Synchronization**: Hydrates the form with existing activity data and manages the loading state.
+ * 
+ * Sub-components:
+ * - `EditActivityForm`: Handles the primary metadata (name, date, description, etc.).
+ * - `SendActivityMailComponent`: Allows admins to email all enrolled participants.
+ * - `EditParticipantsTile`: Provides administrative tools for manual enrollment management.
+ * 
+ * @page
+ * @component
+ */
 export default function ActivityFormPage() {
   const { id } = useParams();
   const isEdit = !!id;

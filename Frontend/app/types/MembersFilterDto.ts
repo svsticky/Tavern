@@ -1,5 +1,8 @@
 import type { Study, StudyType } from "~/api"
 
+/**
+ * DTO for filtering members based on various criteria.
+ */
 export type MembersFilterDto = {
     studyId: number | null,
     gratie: boolean | null,

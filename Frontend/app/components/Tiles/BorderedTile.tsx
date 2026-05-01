@@ -4,6 +4,18 @@ import { useState, type ReactNode } from "react";
 import Tile from "./Tile";
 import { cn } from "~/util/tailwind.util";
 
+/**
+ * Props for the BorderedTile component.
+ * @interface BorderedTileProps
+ * @property {string | null} [title] - The main heading text displayed at the top left.
+ * @property {string | null} [subtitle] - Supporting text displayed below the title.
+ * @property {LucideIcon} [icon] - An optional Lucide icon component displayed in a highlighted box.
+ * @property {string} [className] - Additional CSS classes for the outer Tile container.
+ * @property {ReactNode} children - The primary content of the tile.
+ * @property {ReactNode} [collapsibleContent] - Content hidden within a toggleable accordion section.
+ * @property {boolean} [defaultOpen] - Whether the collapsible section should be expanded by default.
+ * @property {boolean} [noPadding] - If true, removes the default padding from the main container.
+ */
 interface BorderedTileProps {
   title?: string | null;
   subtitle?: string | null;
@@ -14,6 +26,18 @@ interface BorderedTileProps {
   defaultOpen?: boolean;
   noPadding?: boolean;
 }
+
+/**
+ * A versatile card component that supports headers, icons, and optional collapsible sections.
+ * 
+ * This component wraps content in a bordered container and can act as either a static 
+ * information tile or an accordion. When `collapsibleContent` is provided, the header 
+ * becomes interactive, toggling the visibility of the extra content with a smooth 
+ * grid-row transition.
+ * 
+ * @component
+ * @param {BorderedTileProps} props - The component properties.
+ */
 export default function BorderedTile({
   title = null,
   subtitle = null,

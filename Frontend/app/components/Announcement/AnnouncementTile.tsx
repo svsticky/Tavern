@@ -9,15 +9,36 @@ import { useNavigate } from "react-router";
 import { t } from "i18next";
 import type { GetAnnouncementResponseDto } from "~/api";
 
-type AnnouncementTileProps = {
-  announcement: GetAnnouncementResponseDto;
-  className?: string;
-};
-
+/**
+ * A detailed tile component for displaying an individual association announcement.
+ * 
+ * Features:
+ * - **Markdown Support**: Renders the announcement body text using a specialized 
+ *   `Markdown` component with tailored typography styles.
+ * - **Administrative Controls**: Automatically displays a floating edit button if the 
+ *   authenticated user is a member of the Board or Candidate Board.
+ * - **Metadata Display**: Shows the creation date and the name of the announcer 
+ *   with accompanying icons for better scannability.
+ * - **Responsive Design**: Uses a flexible header layout that ensures the title 
+ *   and date/controls do not overlap on smaller screens.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {GetAnnouncementResponseDto} props.announcement - The announcement data object including title, content, and metadata.
+ * @param {string} [props.className] - Optional CSS classes to override or extend the root container styling.
+ * 
+ * @example
+ * ```tsx
+ * <AnnouncementTile 
+ *   announcement={announcementData} 
+ *   className="shadow-lg" 
+ * />
+ * ```
+ */
 export default function AnnouncementTile({
   announcement,
   className,
-}: AnnouncementTileProps) {
+}: { announcement: GetAnnouncementResponseDto; className?: string }) {
   const { keycloak } = useKeycloak();
   const navigate = useNavigate();
 

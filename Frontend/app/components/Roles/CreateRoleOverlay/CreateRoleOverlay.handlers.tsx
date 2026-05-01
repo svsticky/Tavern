@@ -3,6 +3,13 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import { getApiRoles, postApiRolealiases, postApiRoles, type Role, type RoleAlias } from "~/api";
 
+/**
+ * Fetches all existing roles/aliases from the API and updates the local state.
+ * 
+ * @param {function} setLoadingRoles - State setter to track the loading status of the fetch operation.
+ * @param {function} setRoles - State setter to update the list of roles in the UI.
+ * @returns {Promise<void>}
+ */
 export const fetchRoles = async (
   setLoadingRoles: (loading: boolean) => void,
   setRoles: (roles: RoleAlias[]) => void
@@ -22,6 +29,17 @@ export const fetchRoles = async (
   }
 };
 
+/**
+ * Arguments required for the handleCreateRoleSubmit function.
+ * @typedef {Object} HandleCreateRoleSubmitArgs
+ * @property {React.FormEvent} e - The form submission event.
+ * @property {string} selectedType - The type of role to create ("ParentRole" or "RoleAlias").
+ * @property {string} name - The display name for the new role or alias.
+ * @property {string} selectedRoleId - The ID of the parent role (required only for RoleAlias).
+ * @property {function} setLoading - Callback to update the submission loading state.
+ * @property {function} onRoleCreated - Callback executed when a new ParentRole is successfully created.
+ * @property {function} onRoleAliasCreated - Callback executed when a new RoleAlias is successfully created.
+ */
 type HandleCreateRoleSubmitArgs = {
   e: React.FormEvent;
   selectedType: string;
@@ -32,6 +50,13 @@ type HandleCreateRoleSubmitArgs = {
   onRoleAliasCreated: (roleAlias: RoleAlias) => void;
 };
 
+/**
+ * Handles the submission logic for creating either a new Parent Role or a Role Alias.
+ * It determines which API endpoint to call based on the selectedType and provides
+ * visual feedback via toast notifications.
+ * 
+ * @param {HandleCreateRoleSubmitArgs} args - The configuration and state handlers for the submission.
+ */
 export const handleCreateRoleSubmit = ({ e, selectedType, name, selectedRoleId, setLoading, onRoleCreated, onRoleAliasCreated }: HandleCreateRoleSubmitArgs) => {
   e.preventDefault();
 

@@ -26,6 +26,25 @@ import {
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
 import ManageMailingListsDatatable from "Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 
+/**
+ * The primary configuration dashboard for the application's global settings.
+ * 
+ * This page serves as a centralized administrative hub for:
+ * - **Study Management**: Viewing and editing educational programs.
+ * - **Mailing Lists**: Managing association-wide subscription lists.
+ * - **Internal Identifiers**: Configuring critical system IDs like the Board and Candidate Board groups.
+ * - **Financial Parameters**: Setting transaction fees, VAT codes, and membership prices.
+ * - **Accounting Integration**: Mapping GL accounts and relation codes for financial exports.
+ * - **Role-to-Email Mapping**: Configuring specific email recipients for system roles.
+ * 
+ * State Management Features:
+ * - **Change Tracking**: Uses `newSettings` and `deletedSettings` sets to identify which records 
+ *   require POST, PATCH, or DELETE operations upon saving.
+ * - **Validation**: Prevents saving if required fields are empty via `hasEmptyFields`.
+ * 
+ * @page
+ * @component
+ */
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

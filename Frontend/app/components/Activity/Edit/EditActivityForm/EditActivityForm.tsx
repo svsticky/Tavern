@@ -15,6 +15,34 @@ import { useNavigate } from 'react-router';
 import EditQuestionTile from '../EditQuestionTile';
 import { addQuestion, formatDateOnly, formatForInput, handleActivityFormChange, handleActivitySubmit, loadGroups, removeQuestion, updateQuestion } from './EditActivityForm.handlers';
 
+/**
+ * A comprehensive form component used to either create a new association activity 
+ * or edit an existing one.
+ * 
+ * Features:
+ * - **Dynamic Permissions**: Visibility of administrative fields (like financial GL accounts 
+ *   or internal Koala settings) is toggled based on the `isBoard` prop.
+ * - **Specification Questions**: Manages a sub-state of custom registration questions 
+ *   that can be added, updated, or removed dynamically.
+ * - **Lifecycle Management**: Handles initial data loading for association groups and 
+ *   automatically formats date strings for HTML5 compatibility.
+ * - **Validation**: Tracks form validity based on required fields and submission status.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {ActivityResponseDto | null} props.activity - The existing activity data (if editing) or null (if creating).
+ * @param {string | undefined} props.id - The unique identifier of the activity. If present, the form operates in "Edit" mode.
+ * @param {boolean} props.isBoard - Flag indicating if the current user has board-level permissions.
+ * 
+ * @example
+ * ```tsx
+ * <EditActivityForm 
+ *   activity={activityData} 
+ *   id="123" 
+ *   isBoard={true} 
+ * />
+ * ```
+ */
 export default function EditActivityForm({ activity, id, isBoard }: { activity: ActivityResponseDto | null; id: string | undefined; isBoard: boolean }) {
     const navigate = useNavigate();
     const { pathname } = window.location;

@@ -1,16 +1,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import { handleClickOutside, handleOptionClick, toggleDropdown } from "./ProfileDropdown.handlers";
 
+/**
+ * Context values required to control the dropdown's layout behavior.
+ */
 export type ProfileDropdownContextValues = {
   compact: boolean;
   setCompact: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
+/**
+ * Represents a single clickable action within the dropdown menu.
+ */
 export type ProfileDropdownOption = {
   label: string;
   action: () => void;
 };
 
+/**
+ * Props for the {@link ProfileDropdown} component.
+ */
 export type ProfileOptions = {
   username: string;
   context?: React.Context<ProfileDropdownContextValues>;
@@ -18,6 +27,15 @@ export type ProfileOptions = {
   options?: ProfileDropdownOption[];
 };
 
+/**
+ * A profile menu component that adapts its layout based on a provided context.
+ * 
+ * In standard mode, it behaves as a floating dropdown that closes on outside clicks.
+ * In compact mode, it renders as an inline list suitable for sidebars.
+ * 
+ * @param {ProfileOptions} props - The properties for the component.
+ * @returns {JSX.Element} The rendered ProfileDropdown component.
+ */
 export default function ProfileDropdown({
   username,
   context = React.createContext<ProfileDropdownContextValues>({

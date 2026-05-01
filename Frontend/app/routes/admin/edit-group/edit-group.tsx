@@ -32,6 +32,24 @@ import {
   loadGroupMemberships
 } from "./edit-group.handlers";
 
+/**
+ * An administrative page for managing group details, media, and memberships.
+ * 
+ * This component provides a comprehensive management interface that allows board members to:
+ * - **Modify Metadata**: Update group name, type (Committee/Working Group/Dispute), and active status.
+ * - **Manage Visuals**: Upload and update the group's profile/logo picture.
+ * - **Administer Memberships**: 
+ *    - View historical and current enrollments using an association year filter.
+ *    - Assign and update specific roles (Role Aliases) for group members.
+ *    - Search for and add new members to the group via a modal overlay.
+ *    - Create new Role Aliases on the fly to categorize group positions.
+ * 
+ * The page uses a split layout: a sidebar for the group image and a main form area for settings 
+ * and the membership data table.
+ * 
+ * @page
+ * @component
+ */
 export default function EditGroupPage() {
   const params = useParams();
   const id = params.id ? parseInt(params.id) : null;

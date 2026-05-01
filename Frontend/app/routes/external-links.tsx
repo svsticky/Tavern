@@ -3,6 +3,23 @@ import * as Icons from "lucide-react";
 import ExternalLinkTile from "~/components/ExternalLinkTile";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 
+/**
+ * A directory page providing a curated list of external services and association platforms.
+ * 
+ * This page serves as a "Linktree" for the association, centralizing access to various 
+ * independent sub-systems (e.g., photo albums, wiki, file storage). It utilizes a 
+ * responsive grid of `ExternalLinkTile` components.
+ * 
+ * Key features:
+ * - **Dynamic Icon Mapping**: Uses string-to-component mapping from `lucide-react` 
+ *   to render specific icons defined in the data.
+ * - **Localization**: All titles and descriptions are retrieved via `i18next`.
+ * - **Visual Variety**: Each link specifies its own background and text colors 
+ *   for branding consistency across different sub-services.
+ * 
+ * @page
+ * @component
+ */
 export default function ExternalLinksPage() {
   const links = [
     {

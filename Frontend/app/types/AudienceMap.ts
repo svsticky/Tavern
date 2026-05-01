@@ -1,5 +1,8 @@
 import type { TargetAudience } from "~/api";
 
+/**
+ * Maps numeric values to their corresponding target audience types.
+ */
 export const audienceMap: Record<number, TargetAudience> = {
     0: 'None',
     1: 'FirstYears',
@@ -8,6 +11,9 @@ export const audienceMap: Record<number, TargetAudience> = {
     8: 'Masters'
 };
 
+/**
+ * Flags for different target audiences.
+ */
 export const AudienceFlags = {
   FirstYears: 1,
   SecondYears: 2,

@@ -4,6 +4,9 @@ import type { NavigateFunction } from "react-router";
 import { getApiActivitiesById, type ActivityResponseDto } from "~/api";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
+/**
+ * Arguments for the loadActivityData handler.
+ */
 type LoadActivityArgs = {
   initialized: boolean;
   authenticated: boolean | undefined;
@@ -12,6 +15,12 @@ type LoadActivityArgs = {
   setActivity: (activity: ActivityResponseDto) => void;
 };
 
+/**
+ * Fetches the details of a specific activity by its ID.
+ * 
+ * @async
+ * @param {LoadActivityArgs} args - Configuration, activity ID, and state setter functions.
+ */
 export const loadActivityData = async ({ initialized, authenticated, activityId, setLoading, setActivity }: LoadActivityArgs) => {
   if (!initialized || !authenticated) return;
 
@@ -32,6 +41,18 @@ export const loadActivityData = async ({ initialized, authenticated, activityId,
   }
 };
 
+/**
+ * Determines if the current user has permission to edit a specific activity.
+ * 
+ * Logic:
+ * - **Board Members**: Always allowed to edit.
+ * - **Organizers**: Allowed only if the activity hasn't been finalized for 
+ *   external systems (Website/Koala) and the event hasn't started yet.
+ * 
+ * @param {ActivityResponseDto} activity - The activity data to check against.
+ * @param {any} tokenParsed - The parsed Keycloak JWT containing user roles and ID.
+ * @returns {boolean} True if the user is authorized to edit.
+ */
 export const canEditActivity = (activity: ActivityResponseDto, tokenParsed: any) => {
   return (
     isBoardOrCandidateBoard(tokenParsed) ||
@@ -39,8 +60,21 @@ export const canEditActivity = (activity: ActivityResponseDto, tokenParsed: any)
   );
 };
 
+/**
+ * Generates the appropriate "back" path based on the user's current routing context.
+ * 
+ * @param {string} pathname - The current URL path.
+ * @returns {string} Either the administrative or standard activity listing path.
+ */
 export const getActivityBackPath = (pathname: string) => `${pathname.startsWith("/admin") ? "/admin" : ""}/activities`;
 
+/**
+ * Navigates to the edit form for the specific activity, maintaining administrative context if applicable.
+ * 
+ * @param {NavigateFunction} navigate - React Router navigation function.
+ * @param {string} pathname - The current URL path to detect context.
+ * @param {number} activityId - The ID of the activity to edit.
+ */
 export const handleEditActivityClick = (navigate: NavigateFunction, pathname: string, activityId: number) => {
   navigate(`${pathname.startsWith("/admin") ? "/admin" : ""}/activities/edit/${activityId}`);
 };

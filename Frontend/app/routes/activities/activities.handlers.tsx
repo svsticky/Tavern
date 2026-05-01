@@ -4,6 +4,9 @@ import type { NavigateFunction } from "react-router";
 import { getApiActivities, type ActivityResponseDto } from "~/api";
 import { generateA3Pdf } from "~/util/pdf.util";
 
+/**
+ * Arguments for the loadActivities handler.
+ */
 type LoadActivitiesArgs = {
   initialized: boolean;
   authenticated: boolean | undefined;
@@ -11,6 +14,12 @@ type LoadActivitiesArgs = {
   setActivities: (activities: ActivityResponseDto[]) => void;
 };
 
+/**
+ * Fetches the list of current and future activities from the API.
+ * 
+ * @async
+ * @param {LoadActivitiesArgs} args - Configuration and state setter functions.
+ */
 export const loadActivities = async ({ initialized, authenticated, setLoading, setActivities }: LoadActivitiesArgs) => {
   if (!initialized || !authenticated) return;
 
@@ -34,6 +43,19 @@ export const loadActivities = async ({ initialized, authenticated, setLoading, s
   }
 };
 
+/**
+ * Generates a formatted text overview of the current/next week's activities 
+ * and copies it to the user's clipboard for social media distribution.
+ * 
+ * Logic:
+ * - If today is Monday-Wednesday, it targets the current week.
+ * - If today is Thursday-Sunday, it targets the following week.
+ * - Formats output based on the user's locale (NL vs EN).
+ * 
+ * @async
+ * @param {string} locale - The user's current language preference.
+ * @param {ActivityResponseDto[]} activities - The full list of activities to filter from.
+ */
 export const copyWeekOverview = async (locale: string, activities: ActivityResponseDto[]) => {
   try {
     const now = new Date();

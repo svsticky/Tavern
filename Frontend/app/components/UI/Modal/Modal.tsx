@@ -3,6 +3,14 @@ import { t } from "i18next";
 import { useEffect } from "react";
 import { createModalKeyDownHandler } from "./Modal.handlers";
 
+/**
+ * Props for the Modal component.
+ * @interface ModalProps
+ * @property {boolean} isOpen - Controls whether the modal is visible.
+ * @property {() => void} onClose - Callback function to execute when the modal is requested to close (via backdrop click, close button, or Escape key).
+ * @property {string} title - The heading text displayed in the modal header.
+ * @property {React.ReactNode} children - The content to be rendered inside the modal body.
+ */
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,6 +18,18 @@ interface ModalProps {
   children: React.ReactNode;
 }
 
+/**
+ * A highly accessible overlay component for displaying dialogs, forms, or focus-heavy content.
+ * 
+ * This component handles several UX requirements:
+ * - **Scroll Locking**: Prevents the background body from scrolling when the modal is active.
+ * - **Accessibility**: Supports closing via the "Escape" key and backdrop interaction.
+ * - **Responsive Design**: Renders as a full-screen view on mobile and a centered card on larger screens.
+ * - **Transitions**: Includes entrance animations using Tailwind's `animate-in` utilities.
+ * 
+ * @component
+ * @param {ModalProps} props - The component properties.
+ */
 export default function Modal({ isOpen, onClose, title, children }: ModalProps) {
   useEffect(() => {
     const onKeyDown = createModalKeyDownHandler(onClose);

@@ -4,14 +4,33 @@ import { t } from "i18next";
 import { NoContentTile } from "../Tiles/NoContentTile";
 import ActivityTile from "./ActivityTile/ActivityTile";
 
-interface UpcomingActivitiesProps {
-  activities: ActivityResponseDto[];
-}
-
 const TILE_MIN_WIDTH = 250; 
 const VERTICAL_STACK_COUNT = 3;
 
-export default function UpcomingActivities({ activities }: UpcomingActivitiesProps) {
+/**
+ * A responsive container component that displays a dynamic number of upcoming activities.
+ * 
+ * Features:
+ * - **Dynamic Grid Layout**: Uses a `ResizeObserver` to calculate how many activity tiles 
+ *   can fit side-by-side based on a minimum tile width (`250px`).
+ * - **Smart Stacking**: Automatically switches to a vertical stack of 3 items when the 
+ *   container is too narrow for a multi-column grid (e.g., on mobile devices).
+ * - **Automatic Slice**: Ensures that only the number of activities that physically fit the 
+ *   screen are rendered, preventing layout overflow.
+ * - **Empty State**: Renders a `NoContentTile` with a localized message if the activity list is empty.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {ActivityResponseDto[]} props.activities - The array of upcoming activity objects to display.
+ * 
+ * @example
+ * ```tsx
+ * <UpcomingActivities 
+ *   activities={upcomingActivitiesData} 
+ * />
+ * ```
+ */
+export default function UpcomingActivities({ activities }: { activities: ActivityResponseDto[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [numVisible, setNumVisible] = useState(3);
   const [isStacked, setIsStacked] = useState(false);

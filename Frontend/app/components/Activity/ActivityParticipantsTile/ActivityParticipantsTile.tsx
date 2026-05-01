@@ -3,6 +3,25 @@ import ParticipantTile from "./ParticipantTile";
 import Tile from "../../Tiles/Tile";
 import { t } from "i18next";
 
+/**
+ * A layout component that displays a collection of activity participants in a responsive grid.
+ * It renders a list of `ParticipantTile` components and includes a total count badge in the header.
+ * 
+ * Note: If the `enrollments` array is empty, this component will return `null` and render nothing.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {string} [props.title] - Optional override for the section title. Defaults to the localized "participants" string.
+ * @param {EnrollmentResponseDto[]} props.enrollments - An array of enrollment data objects to be displayed.
+ * 
+ * @example
+ * ```tsx
+ * <ActivityParticipantsTile 
+ *   title="Attendees" 
+ *   enrollments={activity.enrollments} 
+ * />
+ * ```
+ */
 export default function ActivityParticipantsTile({ title, enrollments }: { title?: string; enrollments: EnrollmentResponseDto[] }) {
   const count = enrollments.length;
 

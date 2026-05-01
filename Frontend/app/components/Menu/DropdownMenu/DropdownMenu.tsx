@@ -6,17 +6,33 @@ import MenuFooter from "../MenuFooter";
 import MenuItem from "../MenuItem";
 import { useLocation } from "react-router";
 
-type DropdownMenuProps = {
-  color?: string | undefined;
-  className?: string;
-  children?: React.ReactNode;
-};
-
+/**
+ * A responsive, sticky dropdown navigation header.
+ * 
+ * This component uses the **Compound Component pattern**. It filters its children
+ * based on their sub-component type (Branding, Item, or Footer) and injects them
+ * into specific layout slots. It also handles mobile toggle state and 
+ * automatically closes the menu on route changes.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <DropdownMenu>
+ *   <DropdownMenu.Branding>My App</DropdownMenu.Branding>
+ *   <DropdownMenu.Item href="/home">Home</DropdownMenu.Item>
+ *   <DropdownMenu.Footer>v1.0.0</DropdownMenu.Footer>
+ * </DropdownMenu>
+ * ```
+ */
 export default function DropdownMenu({
   color = undefined,
   className,
   children,
-}: DropdownMenuProps) {
+}: {
+  color?: string | undefined;
+  className?: string;
+  children?: React.ReactNode;
+}) {
   const childrenArray = React.Children.toArray(children);
   const location = useLocation();
   const [isNavBarOpen, setIsNavBarOpen] = useState(false);
@@ -69,13 +85,26 @@ export default function DropdownMenu({
   );
 }
 
-// Branding subcomponent
+/**
+ * Sub-component for branding/logos. Placed in the top-left of the header.
+ * @static
+ */
 DropdownMenu.Branding = MenuBranding;
 
-// Navigation subcomponent
+/**
+ * Sub-component for navigation links. Rendered inside the toggleable list.
+ * @static
+ */
 DropdownMenu.Item = MenuItem;
 
-// Footer subcomponent
+/**
+ * Sub-component for additional content or versioning at the bottom of the menu.
+ * @static
+ */
 DropdownMenu.Footer = MenuFooter;
 
+/**
+ * Sub-component for general menu content.
+ * @static
+ */
 DropdownMenu.Content = MenuContent;

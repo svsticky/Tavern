@@ -12,6 +12,18 @@ import { getApiMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
+/**
+ * A primary layout component that provides the main navigation structure for the application.
+ * 
+ * This layout includes:
+ * - **Dynamic Navigation**: Displays a set of standard links (Dashboard, Activities, etc.).
+ * - **Identity Management**: Fetches and displays the user's profile picture and name.
+ * - **Role-Based Access**: Conditionally adds administrative links to the profile dropdown if the user is a board member.
+ * - **Blob Management**: Safely handles profile picture retrieval via API as a Blob and manages Object URL cleanup.
+ * - **Responsive Constraints**: Configures the `NavBar` to adapt its layout based on the length of the user's name.
+ * 
+ * @component
+ */
 export default function NavBarLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();

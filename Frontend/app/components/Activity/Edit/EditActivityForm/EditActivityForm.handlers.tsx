@@ -12,9 +12,29 @@ import {
 import { audienceMap } from "~/types/AudienceMap";
 import { getAssociationYear } from "~/util/date.util";
 
+/**
+ * Truncates an ISO date string to a format compatible with HTML `datetime-local` inputs.
+ * 
+ * @param isoString - The ISO date string (e.g., from the API).
+ * @returns A string in the format "YYYY-MM-DDTHH:mm".
+ */
 export const formatForInput = (isoString?: string) => (isoString ? isoString.substring(0, 16) : "");
+
+/**
+ * Truncates an ISO date string to a date-only format compatible with HTML `date` inputs.
+ * 
+ * @param isoString - The ISO date string.
+ * @returns A string in the format "YYYY-MM-DD".
+ */
 export const formatDateOnly = (isoString?: string) => (isoString ? isoString.substring(0, 10) : "");
 
+/**
+ * Fetches active association groups for the current membership year from the API.
+ * 
+ * @param setLoading - Callback to update the loading state.
+ * @param setGroups - Callback to update the state with the retrieved groups.
+ * @returns A Promise that resolves when the groups are loaded or the request fails.
+ */
 export const loadGroups = async (
   setLoading: (loading: boolean) => void,
   setGroups: (groups: GroupResponseDto[]) => void
@@ -33,12 +53,24 @@ export const loadGroups = async (
   }
 };
 
+/**
+ * Validates the activity form by checking if all required fields are present in the FormData.
+ * 
+ * @param e - The form event.
+ * @param setFormValid - Callback to update the validity state of the form.
+ */
 export const handleActivityFormChange = (e: React.FormEvent<HTMLFormElement>, setFormValid: (valid: boolean) => void) => {
   const fd = new FormData(e.currentTarget);
   const required = ["Name", "DateTimeStart", "DateTimeEnd", "Location", "OrganizerId"];
   setFormValid(required.every((field) => !!fd.get(field)));
 };
 
+/**
+ * Adds a new empty specification question template to the list of questions.
+ * 
+ * @param questions - Current list of questions.
+ * @param setQuestions - Callback to update the questions state.
+ */
 export const addQuestion = (questions: Partial<GetSpecificationQuestionResponseDto>[], setQuestions: (value: Partial<GetSpecificationQuestionResponseDto>[]) => void) => {
   setQuestions([
     ...questions,
@@ -53,6 +85,13 @@ export const addQuestion = (questions: Partial<GetSpecificationQuestionResponseD
   ]);
 };
 
+/**
+ * Removes a specification question from the list at a specific index.
+ * 
+ * @param index - The index of the question to remove.
+ * @param questions - Current list of questions.
+ * @param setQuestions - Callback to update the questions state.
+ */
 export const removeQuestion = (
   index: number,
   questions: Partial<GetSpecificationQuestionResponseDto>[],
@@ -61,6 +100,15 @@ export const removeQuestion = (
   setQuestions(questions.filter((_, i) => i !== index));
 };
 
+/**
+ * Updates a specific field of a question within the questions array.
+ * 
+ * @param index - The index of the question to update.
+ * @param field - The key of the GetSpecificationQuestionResponseDto to modify.
+ * @param value - The new value for the field.
+ * @param questions - Current list of questions.
+ * @param setQuestions - Callback to update the questions state.
+ */
 export const updateQuestion = (
   index: number,
   field: keyof GetSpecificationQuestionResponseDto,
@@ -73,6 +121,10 @@ export const updateQuestion = (
   setQuestions(newQuestions);
 };
 
+/**
+ * Arguments for the `handleActivitySubmit` function.
+ * @interface HandleActivitySubmitArgs
+ */
 type HandleActivitySubmitArgs = {
   e: React.FormEvent<HTMLFormElement>;
   isBoard: boolean;
@@ -84,6 +136,13 @@ type HandleActivitySubmitArgs = {
   navigate: NavigateFunction;
 };
 
+/**
+ * Handles the submission of the activity form, converting FormData into an API-compatible payload.
+ * Supports both creation and updates, manages file uploads (posters), and handles toast notifications.
+ * 
+ * @param args - The submission arguments and state setters.
+ * @returns A Promise that resolves after the submission and redirection.
+ */
 export const handleActivitySubmit = async ({
   e,
   isBoard,

@@ -3,6 +3,16 @@ import Tile from "./Tiles/Tile"; // Zorg dat het pad klopt
 import type { ReactNode } from "react";
 import BorderedTile from "./Tiles/BorderedTile";
 
+/**
+ * Props for the ExternalLinkTile component.
+ * @typedef {Object} ExternalLinkTileProps
+ * @property {string} title - The main heading for the link card.
+ * @property {string} description - A short summary or subtext explaining the link's destination.
+ * @property {string} url - The external destination URL.
+ * @property {ReactNode} icon - A Lucide or SVG icon element to represent the link.
+ * @property {string} [iconBgColor="bg-gray-100"] - Tailwind background color class for the icon container.
+ * @property {string} [iconColor="text-gray-600"] - Tailwind text color class for the icon.
+ */
 type ExternalLinkTileProps = {
   title: string;
   description: string;
@@ -12,6 +22,17 @@ type ExternalLinkTileProps = {
   iconColor?: string;
 };
 
+/**
+ * A navigation component that renders an external link as a rich, interactive card.
+ * 
+ * This component utilizes `BorderedTile` and provides a consistent layout with 
+ * an icon, title, and description. It automatically adds security attributes 
+ * (`target="_blank"` and `rel="noopener noreferrer"`) and includes a visual 
+ * external-link indicator that reacts to hover states.
+ * 
+ * @component
+ * @param {ExternalLinkTileProps} props - The component properties.
+ */
 export default function ExternalLinkTile({
   title,
   description,

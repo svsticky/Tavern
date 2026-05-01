@@ -16,6 +16,9 @@ import {
   type StudyStatus
 } from "~/api";
 
+/**
+ * Interface representing the comprehensive form state for editing a member.
+ */
 type EditMemberFormData = {
   firstName: string;
   lastName: string;
@@ -37,6 +40,9 @@ type EditMemberFormData = {
   dateOfBirth: string;
 };
 
+/**
+ * Arguments for the loadMemberData handler.
+ */
 type LoadMemberArgs = {
   memberId: string | undefined;
   setFormData: React.Dispatch<React.SetStateAction<EditMemberFormData>>;
@@ -47,6 +53,21 @@ type LoadMemberArgs = {
   setLoading: (value: boolean) => void;
 };
 
+/**
+ * Initializes the edit page by fetching member profile, study enrollments, 
+ * available study programs, and the profile picture.
+ * 
+ * @async
+ * @param {LoadMemberArgs} args - Configuration object containing:
+ * @param {string | undefined} args.memberId - The unique ID of the member to load.
+ * @param {Function} args.setFormData - React state setter for the main edit form.
+ * @param {Function} args.setEmail - Setter to handle the member's email address separately.
+ * @param {Function} args.setEnrollments - Setter for the list of study history records.
+ * @param {Function} args.setAvailableStudies - Setter for the global list of selectable study programs.
+ * @param {Function} args.setProfilePictureSrc - Setter for the profile image source URL.
+ * @param {Function} args.setLoading - Setter to toggle the component's global loading state.
+ * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
+ */
 export const loadMemberData = async ({
   memberId,
   setFormData,
@@ -109,6 +130,14 @@ export const loadMemberData = async ({
   };
 };
 
+/**
+ * Updates member profile information using JSON Patch based on the current form state.
+ * 
+ * @async
+ * @param {string | undefined} memberId - The ID of the member to update.
+ * @param {EditMemberFormData} formData - The structured data containing modified profile fields.
+ * @param {Function} setSaving - React state setter to track the submission progress.
+ */
 export const handleSaveMember = async (
   memberId: string | undefined,
   formData: EditMemberFormData,
@@ -146,6 +175,14 @@ export const handleSaveMember = async (
   }).finally(() => setSaving(false));
 };
 
+/**
+ * Removes a specific study enrollment record from the member's profile.
+ * 
+ * @async
+ * @param {number} id - The unique ID of the study enrollment to delete.
+ * @param {Function} setLoading - State setter to track the deletion request.
+ * @param {Function} setEnrollments - State setter to update the local list of enrollments.
+ */
 export const handleDeleteEnrollment = async (
   id: number,
   setLoading: (loading: boolean) => void,
@@ -174,6 +211,15 @@ export const handleDeleteEnrollment = async (
   });
 };
 
+/**
+ * Adds a new study enrollment record to the member's profile.
+ * 
+ * @async
+ * @param {string | undefined} memberId - The ID of the member receiving the enrollment.
+ * @param {number | ""} selectedStudyId - The ID of the chosen study program.
+ * @param {Function} setLoading - State setter to track the creation request.
+ * @param {Function} setEnrollments - State setter to add the new record to the local list.
+ */
 export const handleAddEnrollment = async (
   memberId: string | undefined,
   selectedStudyId: number | "",
@@ -211,6 +257,15 @@ export const handleAddEnrollment = async (
   });
 };
 
+/**
+ * Updates the status (e.g., Active, Graduated) of an existing study enrollment via JSON Patch.
+ * 
+ * @async
+ * @param {number} enrollmentId - The unique ID of the enrollment record to update.
+ * @param {StudyStatus} newStatus - The new status to be assigned.
+ * @param {Function} setLoading - State setter to track the update request.
+ * @param {Function} setEnrollments - State setter to refresh the status in the local list.
+ */
 export const handleUpdateEnrollmentStatus = async (
   enrollmentId: number,
   newStatus: StudyStatus,

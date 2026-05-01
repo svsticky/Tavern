@@ -8,6 +8,14 @@ type WaitingListActionArgs = {
   onUnenroll: () => void;
 };
 
+/**
+ * Handles the unenrollment of a participant from the waiting list.
+ *
+ * @param {Object} args - The arguments for the function.
+ * @param {EnrollmentResponseDto} args.enrollment - The enrollment to be unenrolled.
+ * @param {(loading: boolean) => void} args.setLoading - Function to update the loading state.
+ * @param {() => void} args.onUnenroll - Callback function to handle unenrollment completion.
+ */
 export const handleWaitinglistUnenroll = ({ enrollment, setLoading, onUnenroll }: WaitingListActionArgs) => {
   const handleUnenrollAction = async () => {
     try {
@@ -34,6 +42,14 @@ export const handleWaitinglistUnenroll = ({ enrollment, setLoading, onUnenroll }
   });
 };
 
+/**
+ * Handles the movement of a participant from the waiting list to participants.
+ *
+ * @param {Object} args - The arguments for the function.
+ * @param {EnrollmentResponseDto} args.enrollment - The enrollment to be moved.
+ * @param {(loading: boolean) => void} args.setLoading - Function to update the loading state.
+ * @param {() => void} args.onUnenroll - Callback function to handle unenrollment completion.
+ */
 export const handleMoveFromWaitinglist = ({ enrollment, setLoading, onUnenroll }: WaitingListActionArgs) => {
   const handleMoveToParticipantsAction = async () => {
     try {

@@ -1,5 +1,21 @@
 import React, { useEffect } from 'react';
 
+/**
+ * A utility component that dynamically generates and updates the browser's favicon 
+ * based on the application's primary theme color.
+ * 
+ * This component performs the following steps:
+ * 1. Reads the `--board-primary` CSS variable from the document root.
+ * 2. Injects that color into a predefined SVG template.
+ * 3. Converts the SVG string into a Blob URL.
+ * 4. Updates or creates a `<link rel="icon">` tag in the document head.
+ * 
+ * This ensures the brand identity is reflected even in browser tabs without 
+ * requiring multiple static image files.
+ * 
+ * @component
+ * @returns {null} This component does not render any visual UI elements.
+ */
 const FaviconHandler = () => {
   useEffect(() => {
     const rootStyle = getComputedStyle(document.documentElement);

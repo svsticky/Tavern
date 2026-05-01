@@ -3,6 +3,14 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import { getApiActivitiesByIdEnrollmentsExport, postApiEnrollments, type ActivityResponseDto, type MemberResponseDto } from "~/api";
 
+/**
+ * Triggers a download of the activity's enrollment list as a CSV file.
+ * 
+ * This handler fetches a blob from the API, creates a temporary DOM element to 
+ * initiate the download, and cleans up resources (URL objects and elements) afterward.
+ * 
+ * @param activity - The activity object for which to export enrollments.
+ */
 export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
   const handleDownloadAction = async () => {
     try {
@@ -39,15 +47,22 @@ export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
   });
 };
 
-type EnrollArgs = {
-  member: MemberResponseDto;
-  activity: ActivityResponseDto;
-  setActivity: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>;
-  setLoading: (loading: boolean) => void;
-  setIsSearchOpen: (open: boolean) => void;
-};
-
-export const handleEnrollParticipant = async ({ member, activity, setActivity, setLoading, setIsSearchOpen }: EnrollArgs) => {
+/**
+ * Manually enrolls a specific member into an activity.
+ * 
+ * This is an administrative action that bypasses standard user checks. Upon 
+ * success, it updates the local activity state by pushing the new enrollment 
+ * into the list and closes the search interface.
+ * 
+ * @function
+ * @param {Object} args - The configuration object.
+ * @param {MemberResponseDto} args.member - The member to be enrolled.
+ * @param {ActivityResponseDto} args.activity - The current activity.
+ * @param {React.Dispatch} args.setActivity - State setter to update the activity with the new participant.
+ * @param {(loading: boolean) => void} args.setLoading - Callback to toggle the local loading state.
+ * @param {(open: boolean) => void} args.setIsSearchOpen - Callback to close the member search modal.
+ */
+export const handleEnrollParticipant = async ({ member, activity, setActivity, setLoading, setIsSearchOpen }: { member: MemberResponseDto; activity: ActivityResponseDto; setActivity: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>; setLoading: (loading: boolean) => void; setIsSearchOpen: (open: boolean) => void }) => {
   setLoading(true);
   const enrollProcess = async () => {
     try {
@@ -82,6 +97,14 @@ export const handleEnrollParticipant = async ({ member, activity, setActivity, s
   });
 };
 
+/**
+ * Removes a participant from the local activity state after they have been unenrolled.
+ * 
+ * @function
+ * @param {string} memberId - The unique ID of the member to remove.
+ * @param {ActivityResponseDto} activity - The activity object to filter.
+ * @param {React.Dispatch} setActivity - State setter to apply the updated enrollment list.
+ */
 export const handleUnenrollParticipant = (
   memberId: string,
   activity: ActivityResponseDto,

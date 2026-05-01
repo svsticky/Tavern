@@ -17,6 +17,30 @@ import { handleAddToCalendar, handleCopyForWhatsapp, handleEnrollment, handleUne
 import { useApp } from '~/context/AppContext';
 import { isMemberInTargetAudience } from '~/util/targetaudience.util';
 
+/**
+ * A detailed tile component for displaying activity information, including posters, 
+ * descriptions, and enrollment actions.
+ * 
+ * This component handles:
+ * - Dynamic poster loading with state management (loading/error/success).
+ * - Localization of descriptions based on Keycloak user settings.
+ * - Enrollment logic (signing in, waiting list, unenrolling, updating answers).
+ * - Clipboard integration for WhatsApp sharing (restricted to Board/Candidate Board).
+ * - External calendar integration.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {ActivityResponseDto} props.activity - The activity data to display.
+ * @param {React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>} [props.setActivity] - Optional state setter to update activity data (e.g., after enrollment changes) in the parent component.
+ * 
+ * @example
+ * ```tsx
+ * <ActivityDetailsTile 
+ *   activity={activityData} 
+ *   setActivity={setActivityData} 
+ * />
+ * ```
+ */
 export default function ActivityDetailsTile({ activity, setActivity }: { activity: ActivityResponseDto; setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto | null>> }) {
   const { keycloak, initialized } = useKeycloak();
   const { member } = useApp();

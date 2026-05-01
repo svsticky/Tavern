@@ -2,6 +2,11 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import { postApiProfilepictureByIdProfilePicture } from "~/api";
 
+/**
+ * Handles the profile picture upload process.
+ * @param {React.ChangeEvent<HTMLInputElement>} e - The change event from the file input.
+ * @param {string} userId - The ID of the user whose profile picture is being uploaded.
+ */
 export const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>, userId: string) => {
     const file = e.target.files?.[0];
     if (!file) return;

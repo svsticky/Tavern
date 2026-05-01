@@ -3,6 +3,20 @@ import Button from "../Button";
 import { t } from "i18next";
 import { handleBack } from "./PageHeader.handlers";
 
+/**
+ * A standardized header component for main application pages.
+ * 
+ * It displays a prominent page title and optionally provides a back button and a 
+ * right-aligned action area. The back button functionality is intelligent: it can 
+ * either trigger a custom callback or navigate to a specific route.
+ * 
+ * @component
+ * @param {Object} props - The component properties.
+ * @param {string} props.title - The primary title of the page.
+ * @param {string} [props.backTo] - The route path to navigate to when the back button is clicked.
+ * @param {() => void} [props.onBack] - A custom callback to execute for back-navigation instead of routing.
+ * @param {React.ReactNode} [props.action] - Optional content (like buttons or menus) to display on the right side of the header.
+ */
 export const PageHeader = ({ 
   title, 
   backTo, 

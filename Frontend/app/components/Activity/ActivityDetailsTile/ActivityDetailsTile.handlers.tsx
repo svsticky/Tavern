@@ -5,6 +5,11 @@ import { formatForGoogleCalendar, formatForWhatsApp } from "~/util/markdown.util
 import { t } from "i18next";
 import { formatDate } from "~/util/date.util";
 
+/**
+ * Generates a Google Calendar event link and opens it in a new browser tab.
+ * 
+ * @param activity - The activity object containing name, description, location, and date details.
+ */
 export const handleAddToCalendar = (activity: ActivityResponseDto) => {
     const title = encodeURIComponent(activity.name || 'Activiteit');
     const description = encodeURIComponent(formatForGoogleCalendar(activity.dutchDescription) || '');
@@ -23,6 +28,18 @@ export const handleAddToCalendar = (activity: ActivityResponseDto) => {
     window.open(googleUrl, '_blank', 'noreferrer');
 };
 
+/**
+ * Handles the enrollment of a user into an activity.
+ * Validates authentication status, submits answers to the API, and updates the local state.
+ * 
+ * @param initialized - Boolean indicating if the authentication client is initialized.
+ * @param keycloak - The Keycloak instance for user authentication and token data.
+ * @param activity - The current activity object.
+ * @param setActivity - State setter to update the activity with the new enrollment list.
+ * @param answers - A record of question IDs and user-provided answers.
+ * @param setSubmitting - Callback to toggle the loading state of the UI.
+ * @returns A promise that resolves when the enrollment process completes.
+ */
 export const handleEnrollment = async (
         initialized: boolean, 
         keycloak: Keycloak, 
@@ -91,6 +108,16 @@ export const handleEnrollment = async (
     });
 };
 
+/**
+ * Updates an existing enrollment's answers for the current user.
+ * 
+ * @param initialized - Boolean indicating if the authentication client is initialized.
+ * @param keycloak - The Keycloak instance for user authentication.
+ * @param activity - The current activity object containing enrollments.
+ * @param setActivity - State setter to update the local activity data.
+ * @param answers - The new set of answers to be updated.
+ * @param setSubmitting - Callback to toggle the loading state.
+ */
 export const handleUpdateEnrollment = async (
         initialized: boolean, 
         keycloak: Keycloak, 
@@ -153,6 +180,15 @@ export const handleUpdateEnrollment = async (
     });
 };
 
+/**
+ * Removes the current user from an activity's enrollment list.
+ * 
+ * @param initialized - Authentication initialization status.
+ * @param keycloak - Keycloak instance.
+ * @param activity - The activity from which to unenroll.
+ * @param setActivity - State setter to update the activity's enrollment list locally.
+ * @param setSubmitting - Callback to toggle loading state.
+ */
 export const handleUnenrollment = async (
         initialized: boolean, 
         keycloak: Keycloak, 
@@ -168,8 +204,6 @@ export const handleUnenrollment = async (
       try {
         setSubmitting(true);
 
-        console.log("Attempting to unenroll with ActivityId:", activity.id, "and MemberId:", keycloak.tokenParsed?.UserId);
-        
         const response = await deleteApiEnrollmentsByActivityIdByMemberId({
           path: {
             ActivityId: Number(activity.id),
@@ -198,6 +232,13 @@ export const handleUnenrollment = async (
     });
 };
 
+/**
+ * Formats activity details into a WhatsApp-friendly message and copies it to the clipboard.
+ * Supports localization (NL/EN) for the message template.
+ * 
+ * @param activity - The activity data to format.
+ * @param lang - The language preference ('NL' or 'EN').
+ */
 export const handleCopyForWhatsapp = async (activity: ActivityResponseDto, lang: Language) => {
     const startDate = new Date(activity.dateTimeStart);
     const endDate = new Date(activity.dateTimeEnd);

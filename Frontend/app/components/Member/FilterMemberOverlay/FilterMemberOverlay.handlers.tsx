@@ -3,6 +3,16 @@ import toast from "react-hot-toast";
 import { getApiStudies, type Study, type StudyType } from "~/api";
 import { type MembersFilterDto } from "~/types/MembersFilterDto";
 
+/**
+ * Fetches the list of available studies from the API.
+ * 
+ * @async
+ * @function loadStudies
+ * @param {Function} setLoading - State setter to track the loading status.
+ * @param {Function} setStudies - State setter to store the retrieved array of {@link Study} objects.
+ * @throws Will display a toast notification and log to console if the API request fails.
+ * @returns {Promise<void>}
+ */
 export const loadStudies = async (
   setLoading: (loading: boolean) => void,
   setStudies: (studies: Study[]) => void
@@ -24,6 +34,9 @@ export const loadStudies = async (
   }
 };
 
+/**
+ * Arguments for the {@link handleApplyFilters} function.
+ */
 type ApplyFiltersArgs = {
   onFilter: (filters: MembersFilterDto) => void;
   studyId: number | null;
@@ -36,6 +49,13 @@ type ApplyFiltersArgs = {
   studyType: StudyType | null;
 };
 
+/**
+ * Compiles individual filter states into a single DTO and triggers the filter callback.
+ * 
+ * @function handleApplyFilters
+ * @param {ApplyFiltersArgs} args - The filter state values and callback.
+ * @returns {void}
+ */
 export const handleApplyFilters = ({
   onFilter,
   studyId,

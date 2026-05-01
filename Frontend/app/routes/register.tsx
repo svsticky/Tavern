@@ -6,6 +6,27 @@ import RegisterPhotos from "~/components/PhotoSlideShow";
 import RegisterReasons from "~/components/Register/RegisterReasons";
 import PhotoSlideshow from "~/components/PhotoSlideShow";
 
+/**
+ * The public-facing membership registration landing page.
+ * 
+ * This page is designed as a high-conversion "One-Pager" for prospective members. 
+ * It follows a logical flow to encourage sign-ups:
+ * 1. **Visual Hook**: A `PhotoSlideshow` displaying the association's atmosphere.
+ * 2. **Value Proposition**: The `RegisterReasons` section (anchored by #reasons) 
+ *    explaining the benefits of joining.
+ * 3. **Call to Action**: The `RegisterForm` (anchored by #become-member) for 
+ *    collecting registration data.
+ * 
+ * Features:
+ * - **Smooth Navigation**: The `NavBar` uses hash-links (#) to allow users to 
+ *   jump between sections on the same page.
+ * - **Responsive Constraints**: Uses `max-w-7xl` for informational content and 
+ *   a tighter `max-w-xl` for the form to ensure readability and focus.
+ * - **Branding**: Implements a subtle themed background using `bg-(--board-primary)/5`.
+ * 
+ * @page
+ * @component
+ */
 export default function Register() {
   const navBarItems = [
     {

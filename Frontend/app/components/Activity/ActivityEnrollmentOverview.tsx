@@ -7,13 +7,35 @@ import { Link } from "react-router";
 import { NoContentTile } from "../Tiles/NoContentTile";
 import Tile from "../Tiles/Tile";
 
-type ActivityEnrollmentOverviewProps = {
-  enrolledActivities: ActivityResponseDto[];
-};
-
+/**
+ * A specialized list component that displays a collection of activities 
+ * the current user is enrolled in.
+ * 
+ * Features:
+ * - **Empty State Handling**: Automatically renders a `NoContentTile` with a 
+ *   localized message if the enrollment list is empty.
+ * - **Visual Indicators**: Each activity is represented with a themed checkmark icon 
+ *   using color-mixing to match the organization's primary brand color.
+ * - **Navigation**: Each item acts as a `Link` to the detailed activity page, 
+ *   complete with hover states for better interactivity.
+ * - **Date Formatting**: Displays the start date using a standardized "shortDate" 
+ *   utility for consistent UI presentation.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {ActivityResponseDto[]} props.enrolledActivities - An array of activity objects 
+ * representing the user's current enrollments.
+ * 
+ * @example
+ * ```tsx
+ * <ActivityEnrollmentOverview 
+ *   enrolledActivities={userEnrollments} 
+ * />
+ * ```
+ */
 export default function ActivityEnrollmentOverview({
   enrolledActivities,
-}: ActivityEnrollmentOverviewProps) {
+}: { enrolledActivities: ActivityResponseDto[] }) {
   if(enrolledActivities.length === 0) {
     return (
       <NoContentTile text={t("no_enrollments")} />

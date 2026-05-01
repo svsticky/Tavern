@@ -16,6 +16,23 @@ import {
   refreshUnpaidPayments
 } from "./finances.handlers";
 
+/**
+ * The administrative Finances dashboard for the association.
+ * 
+ * This page provides a centralized overview of the association's treasury tasks:
+ * - **Financial KPIs**: Displays total outstanding debt and the number of open payments.
+ * - **Debt Recovery**: Identifies members with overdue payments and provides one-click WhatsApp 
+ *   messaging with pre-filled localized reminders.
+ * - **Activity Reconciliation**: Groups unpaid balances by activity, allowing the treasurer 
+ *   to see which events have the most outstanding revenue.
+ * - **Credit Management**: Lists members who have overpaid, facilitating refunds or processed adjustments.
+ * - **Data Export**: Provides a date-range selector to export payment records to CSV for accounting.
+ * - **Disciplinary Tracking**: Automatically highlights members who have been in debt for more than 
+ *   21 days (standard association suspension threshold) in red.
+ * 
+ * @page
+ * @component
+ */
 export default function Finances() {
     const [loading, setLoading] = useState(true);
     const [exporting, setExporting] = useState(false);

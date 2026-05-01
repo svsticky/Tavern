@@ -6,6 +6,12 @@ import i18n from "~/i18n";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 import type Keycloak from "keycloak-js";
 
+/**
+ * Handles the change in subscription status for a mailing list.
+ * @param {number} flag - The bit value representing the mailing list.
+ * @param {boolean} checked - Whether the checkbox is checked or not.
+ * @param {(formData: SetStateAction<ChangeAccountFormData>) => void} setFormData - A function to update the form data state.
+ */
 export const handleSubscriptionChange = (flag: number, checked: boolean, setFormData: (formData: SetStateAction<ChangeAccountFormData>) => void) => {
     setFormData(prev => ({
         ...prev,
@@ -13,6 +19,10 @@ export const handleSubscriptionChange = (flag: number, checked: boolean, setForm
     }));
 };
 
+/**
+ * Handles changing the password for a user.
+ * @param {Keycloak} keycloak - The Keycloak instance.
+ */
 export const handleChangePassword = async (keycloak: Keycloak) => {
     if (keycloak) {
         const url = await keycloak.createLoginUrl({
@@ -26,6 +36,10 @@ export const handleChangePassword = async (keycloak: Keycloak) => {
     }
 }; 
 
+/**
+ * Handles changing the email for a user.
+ * @param {Keycloak} keycloak - The Keycloak instance.
+ */
 export const handleChangeEmail = async (keycloak: Keycloak) => {
 if (keycloak) {
     const url = await keycloak.createLoginUrl({
@@ -39,6 +53,13 @@ else{
 }
 }; 
 
+/**
+ * Saves changes to a user's account.
+ * @param {string} userId - The ID of the user whose account is being saved.
+ * @param {ChangeAccountFormData} formData - The form data containing the updated account details.
+ * @param {(saving: boolean) => void} setSaving - A function to update the saving state.
+ * @param {Dispatch<SetStateAction<MemberResponseDto | null>>} setMember - A function to update the member state.
+ */
 export const handleSaveAccount = async (
         userId: string, 
         formData: ChangeAccountFormData, 

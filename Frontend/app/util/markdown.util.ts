@@ -33,7 +33,7 @@ export const formatForWhatsApp = (markdown: string | undefined | null): string =
     .replace(/^\|?[\s\-\|:]+\|?$/gm, '')
     .replace(/^\|(.*)\|$/gm, (match, content) => {
        return content.split('|').map((c: string) => c.trim()).join(' - ');
-    })
+    });
 };
 
 /**

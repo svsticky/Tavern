@@ -8,6 +8,31 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { handleParticipantUnenroll, handlePriceBlur, handlePriceChange, savePriceToServer } from "./EditParticipantTile.handlers";
 
+/**
+ * An administrative tile component for managing an individual participant's enrollment.
+ * 
+ * Features:
+ * - **Price Management**: Provides a controlled input to adjust the price for a specific enrollment.
+ *   Includes a 600ms debounce to minimize API calls during typing and an `onBlur` trigger to 
+ *   ensure final values are saved.
+ * - **Unenrollment**: Allows administrators to remove a participant with a single action, 
+ *   guarded by a loading state and toast notifications.
+ * - **State Syncing**: Automatically updates the local price state if the enrollment prop changes 
+ *   externally (e.g., after a list refresh).
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {EnrollmentResponseDto} props.enrollment - The enrollment data for the specific member.
+ * @param {() => void} props.onUnenroll - Callback executed after a successful unenrollment to update the parent list.
+ * 
+ * @example
+ * ```tsx
+ * <EditParticipantTile 
+ *   enrollment={participantData} 
+ *   onUnenroll={() => refreshParticipantList()} 
+ * />
+ * ```
+ */
 export default function EditParticipantTile({ enrollment, onUnenroll }: { enrollment: EnrollmentResponseDto; onUnenroll: () => void }) {
   const [loading, setLoading] = useState(false);
   const [price, setPrice] = useState(enrollment.price ?? 0);

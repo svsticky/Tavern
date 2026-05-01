@@ -16,12 +16,18 @@ import {
   type RoleAlias
 } from "~/api";
 
+/**
+ * Interface representing the editable fields of a group.
+ */
 type EditGroupFormData = {
   Name: string;
   Type: string;
   Active: boolean;
 };
 
+/**
+ * Arguments for the loadGroupData handler.
+ */
 type LoadGroupArgs = {
   id: number | null;
   setFormData: React.Dispatch<React.SetStateAction<EditGroupFormData>>;
@@ -30,6 +36,18 @@ type LoadGroupArgs = {
   setLoading: (value: boolean) => void;
 };
 
+/**
+ * Initializes the edit page by fetching the group profile, group picture, and available role aliases.
+ * 
+ * @async
+ * @param {LoadGroupArgs} args - Configuration object containing:
+ * @param {number | null} args.id - The ID of the group to load.
+ * @param {Function} args.setFormData - Setter for the group's basic info form state.
+ * @param {Function} args.setGroupPictureSrc - Setter for the group's profile image source URL.
+ * @param {Function} args.setRoleAliases - Setter for the global list of selectable role aliases.
+ * @param {Function} args.setLoading - Setter for the component's main loading state.
+ * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
+ */
 export const loadGroupData = async ({
   id,
   setFormData,
@@ -73,6 +91,15 @@ export const loadGroupData = async ({
   };
 };
 
+/**
+ * Fetches memberships for a specific group filtered by association year.
+ * 
+ * @async
+ * @param {number | null} id - The ID of the group for which to load memberships.
+ * @param {number} selectedYear - The association year to filter memberships by.
+ * @param {Function} setLoadingMemberships - Setter for the membership-specific loading state.
+ * @param {Function} setEnrollments - Setter for the list of group memberships.
+ */
 export const loadGroupMemberships = async (
   id: number | null,
   selectedYear: number,
@@ -100,6 +127,14 @@ export const loadGroupMemberships = async (
   }
 };
 
+/**
+ * Updates the group metadata (Name, Type, Active status) using JSON Patch.
+ * 
+ * @async
+ * @param {number | null} id - The ID of the group to save.
+ * @param {EditGroupFormData} formData - The current form data to persist.
+ * @param {Function} setSaving - Setter to track the asynchronous saving progress.
+ */
 export const handleSaveGroup = async (
   id: number | null,
   formData: EditGroupFormData,
@@ -137,6 +172,14 @@ export const handleSaveGroup = async (
   }).finally(() => setSaving(false));
 };
 
+/**
+ * Uploads a new profile picture for the group.
+ * 
+ * @async
+ * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event containing the file.
+ * @param {number | null} id - The ID of the group receiving the new picture.
+ * @param {Function} setSaving - Setter to track the upload progress.
+ */
 export const handleGroupProfilePictureUpload = async (
   e: React.ChangeEvent<HTMLInputElement>,
   id: number | null,
@@ -172,6 +215,14 @@ export const handleGroupProfilePictureUpload = async (
   });
 };
 
+/**
+ * Removes a member's enrollment from the group.
+ * 
+ * @async
+ * @param {number} id - The unique ID of the group membership record to delete.
+ * @param {Function} setLoading - Setter to track the deletion progress.
+ * @param {Function} setEnrollments - Setter to update the local membership list.
+ */
 export const handleDeleteGroupEnrollment = async (
   id: number,
   setLoading: (loading: boolean) => void,
@@ -200,6 +251,17 @@ export const handleDeleteGroupEnrollment = async (
   });
 };
 
+/**
+ * Adds a new member to the group for a specific association year.
+ * 
+ * @async
+ * @param {number | null} id - The ID of the group receiving a new member.
+ * @param {MemberResponseDto} member - The member data to be enrolled.
+ * @param {number} selectedYear - The association year for the new membership.
+ * @param {Function} setLoading - Setter to track the creation progress.
+ * @param {Function} setEnrollments - Setter to update the local membership list.
+ * @param {Function} setAddEnrollmentModalIsOpen - Setter to close the enrollment modal on success.
+ */
 export const handleAddGroupEnrollment = async (
   id: number | null,
   member: MemberResponseDto,
@@ -251,6 +313,15 @@ export const handleAddGroupEnrollment = async (
   });
 };
 
+/**
+ * Updates the specific role alias assigned to a group membership.
+ * 
+ * @async
+ * @param {number} enrollmentId - The ID of the group membership record to update.
+ * @param {number | null} newRoleAliasId - The ID of the new role alias (or null to clear).
+ * @param {Function} setLoadingChangeRole - Setter to track the role update progress.
+ * @param {Function} setEnrollments - Setter to update the local membership list.
+ */
 export const handleUpdateGroupRole = async (
   enrollmentId: number,
   newRoleAliasId: number | null,
@@ -291,6 +362,13 @@ export const handleUpdateGroupRole = async (
   });
 };
 
+/**
+ * Updates the local list of role aliases when a new one is created via a modal.
+ * 
+ * @param {RoleAlias} roleAlias - The newly created role alias object.
+ * @param {Function} setRoleAliases - Setter to update the local list of available roles.
+ * @param {Function} setAddRoleModalIsOpen - Setter to close the role creation modal.
+ */
 export const handleRoleAliasAdded = (
   roleAlias: RoleAlias,
   setRoleAliases: React.Dispatch<React.SetStateAction<RoleAlias[]>>,

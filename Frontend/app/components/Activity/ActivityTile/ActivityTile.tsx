@@ -10,15 +10,35 @@ import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { handleEditClick } from "./ActivityTile.handlers";
 
-type ActivityTileProps = {
-  activity: ActivityResponseDto;
-  className?: string;
-};
-
+/**
+ * A preview card component for an Activity, typically used in grids or lists.
+ * It provides a visual summary including the poster, pricing, and key metadata.
+ * 
+ * Key Features:
+ * - **Smart Edit Permissions**: Displays a floating edit button if the user is a board member 
+ *   or the organizer of an un-published, future activity.
+ * - **Image Lifecycle**: Manages loading, success, and error states for posters with smooth transitions.
+ * - **Availability Logic**: Dynamically displays remaining spots if a participant limit is set, 
+ *   otherwise shows the current participant count.
+ * - **Event Handling**: Uses a nested edit button that prevents parent `Link` navigation.
+ * 
+ * @component
+ * @param {Object} props - The component props.
+ * @param {ActivityResponseDto} props.activity - The activity data object containing all display information.
+ * @param {string} [props.className] - Optional additional CSS classes for custom styling or positioning.
+ * 
+ * @example
+ * ```tsx
+ * <ActivityTile 
+ *   activity={activityData} 
+ *   className="m-4" 
+ * />
+ * ```
+ */
 export default function ActivityTile({
   activity,
   className,
-}: ActivityTileProps) {
+}: {  activity: ActivityResponseDto; className?: string }) {
   const { t } = useTranslation();
   const { keycloak } = useKeycloak();
   const navigate = useNavigate();

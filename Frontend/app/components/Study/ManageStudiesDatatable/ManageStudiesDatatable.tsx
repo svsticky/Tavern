@@ -8,6 +8,15 @@ import BorderedTile from "../../Tiles/BorderedTile";
 import EditStudyOverlay from "./../EditStudyOverlay/EditStudyOverlay";
 import { fetchStudies, handleStudyEdited } from "./ManageStudiesDatatable.handlers";
 
+/**
+ * A management dashboard component for viewing and modifying study programs.
+ * 
+ * This component renders a data table listing all studies, providing functionality 
+ * to add new studies or edit existing ones via a modal interface. It handles the 
+ * integration between the data display layer and the study modification overlays.
+ * 
+ * @component
+ */
 export default function ManageStudiesDatatable() {
     const [studies, setStudies] = useState<Study[]>([]);
     const [loading, setLoading] = useState(true);

@@ -3,6 +3,13 @@ import { useEffect, useRef, useState } from "react";
 import { getApiMembersByIdProfilePicture, postApiProfilepictureByIdProfilePicture } from "~/api";
 import { handleProfilePictureUpload } from "./ChangeProfilePicture.handlers";
 
+/**
+ * Renders a component for changing a user's profile picture.
+ * @param {Object} props - The component props.
+ * @param {string} props.userId - The ID of the user whose profile picture is being changed.
+ * @param {React.ReactNode} [props.children] - Optional children to render below the profile picture.
+ * @returns {JSX.Element} - The rendered component.
+ */
 export default function ChangeProfilePicture({userId, children}: {userId: string, children?: React.ReactNode}) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profilePictureSrc, setProfilePictureSrc] = useState<string | null>(null);

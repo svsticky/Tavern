@@ -2,6 +2,18 @@ import { t } from "i18next";
 import { Book, BriefcaseBusiness, HeartHandshake, PartyPopper, UsersRound } from "lucide-react";
 import RegisterReason from "./RegisterReason";
 
+/**
+ * A grid-based layout component that displays a collection of reasons to register.
+ * 
+ * It maps through a predefined list of benefits—such as discounts, networking, 
+ * and career orientation—and renders each using the `RegisterReason` subcomponent.
+ * The grid is fully responsive, adjusting columns based on screen size (1 col for mobile, 
+ * 2 for tablet, 3 for desktop).
+ * 
+ * @component
+ * @param {Object} props - Component properties.
+ * @param {string} [props.className] - Optional CSS classes to apply to the grid container.
+ */
 export default function RegisterReasons( { className }: { className?: string }) {
     const reasons = [
         {

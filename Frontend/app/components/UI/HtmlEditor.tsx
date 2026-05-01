@@ -2,6 +2,14 @@ import { t } from "i18next";
 import { useState, useEffect, useMemo } from "react";
 import 'react-quill-new/dist/quill.snow.css';
 
+/**
+ * Props for the HtmlEditor component.
+ * @interface HtmlEditorProps
+ * @property {string} value - The HTML string content of the editor.
+ * @property {(content: string) => void} onChange - Callback triggered when the content changes.
+ * @property {string} [placeholder] - Placeholder text displayed when the editor is empty.
+ * @property {string} [label] - Optional label text displayed above the editor.
+ */
 interface HtmlEditorProps {
     value: string;
     onChange: (content: string) => void;
@@ -9,6 +17,17 @@ interface HtmlEditorProps {
     label?: string;
 }
 
+/**
+ * A Rich Text (HTML) Editor component based on Quill.
+ * 
+ * This component utilizes dynamic importing for `react-quill-new` to ensure 
+ * compatibility with Server-Side Rendering (SSR) environments where `document` 
+ * is not available during initial load. It features a customized toolbar 
+ * and specific CSS overrides to integrate seamlessly with the application's design.
+ * 
+ * @component
+ * @param {HtmlEditorProps} props - The component properties.
+ */
 export default function HtmlEditor({ value, onChange, placeholder, label }: HtmlEditorProps) {
     const [QuillEditor, setQuillEditor] = useState<any>(null);
     const [isMounted, setIsMounted] = useState(false);

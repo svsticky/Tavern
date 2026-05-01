@@ -10,12 +10,23 @@ import type {
 } from "./ProfileDropdown/ProfileDropdown";
 import ProfileDropdown from "./ProfileDropdown/ProfileDropdown";
 
+/**
+ * Context to manage the visual state (compact vs. full) of the NavBar and its children.
+ */
 const ProfileDropdownContext: React.Context<ProfileDropdownContextValues> =
   React.createContext<ProfileDropdownContextValues>({
     compact: false,
     setCompact: () => {},
   });
 
+/**
+ * Props for the NavBar component.
+ * @typedef {Object} NavBarProps
+ * @property {number} [maxWidthBeforeCompact] - The pixel width threshold at which the navbar switches to a compact/mobile dropdown view.
+ * @property {string} [color] - Optional background color override.
+ * @property {string} [className] - Additional CSS classes for styling.
+ * @property {React.ReactNode} [children] - Components to be rendered within the NavBar (e.g., NavBar.Branding, NavBar.Item).
+ */
 type NavBarProps = {
   maxWidthBeforeCompact?: number;
   color?: string | undefined;
@@ -23,6 +34,12 @@ type NavBarProps = {
   children?: React.ReactNode;
 };
 
+/**
+ * A responsive navigation bar that switches between a standard horizontal layout and a 
+ * compact dropdown menu based on container width.
+ * 
+ * @param {NavBarProps} props - The properties for the NavBar.
+ */
 export default function NavBar({
   maxWidthBeforeCompact,
   color,
@@ -92,13 +109,24 @@ export default function NavBar({
   );
 }
 
-//  subcomponent
+/**
+ * Subcomponent for rendering branding assets (e.g., Logos, Titles) within the NavBar.
+ */
 NavBar.Branding = MenuBranding;
 
-// Navigation subcomponent
+/**
+ * Subcomponent for individual navigation links or interactive items.
+ */
 NavBar.Item = MenuItemComponent;
 
-// Footer subcomponent
+/**
+ * Subcomponent for the user profile section, integrating with the NavBar's compact state.
+ * 
+ * @param {Object} props - Profile dropdown properties.
+ * @param {string} props.username - The name of the current user.
+ * @param {string} props.avatarUrl - The URL of the user's profile image.
+ * @param {ProfileDropdownOption[]} props.options - List of menu options for the dropdown.
+ */
 NavBar.ProfileDropdown = function NavBarProfileDropdown(props: {
   username: string;
   avatarUrl: string;
@@ -107,5 +135,7 @@ NavBar.ProfileDropdown = function NavBarProfileDropdown(props: {
   return <ProfileDropdown context={ProfileDropdownContext} {...props} />;
 };
 
-// Content subcomponent
+/**
+ * Subcomponent for general content sections within the navigation system.
+ */
 NavBar.Content = MenuContent;

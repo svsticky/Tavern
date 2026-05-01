@@ -7,6 +7,20 @@ import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
 import i18n from "~/i18n";
 
+/**
+ * The core layout wrapper for all authenticated routes in the application.
+ * 
+ * This component orchestrates several critical middleware-like functions:
+ * - **API Interceptors**: Synchronizes the Keycloak JWT with the Axios client for all outgoing requests.
+ * - **Locale Synchronization**: Updates the application language based on the user's Keycloak profile.
+ * - **Membership Enforcement**: Detects "not_paid" status and forces a redirect to a payment checkout.
+ * - **Global Hydration**: Fetches essential system settings (Board IDs) and the user's full member profile 
+ *   into the `AppContext` on initial load.
+ * - **Security Error Handling**: Manages global response interceptors to catch 401 (Unauthorized) 
+ *   and 403 (Forbidden) errors, triggering appropriate redirects.
+ * 
+ * @component
+ */
 export default function AuthenticatedLayout() {
   const { keycloak, initialized } = useKeycloak();
 

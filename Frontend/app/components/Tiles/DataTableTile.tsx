@@ -1,12 +1,29 @@
 import { t } from "i18next";
 import type { ReactNode } from "react";
 
+/**
+ * Configuration for a single column in the DataTable.
+ * @template T - The type of the data object being rendered in this column.
+ * @interface Column
+ * @property {React.ReactNode | string} header - The title or component to display in the header cell.
+ * @property {(item: T) => ReactNode} render - A function that returns the content for the cell based on the row's data.
+ * @property {string} [className] - Custom CSS classes for the column (header and cells).
+ */
 export interface Column<T> {
   header: React.ReactNode | string;
   render: (item: T) => ReactNode;
   className?: string;
 }
 
+/**
+ * Props for the DataTableTile component.
+ * @template T
+ * @interface DataTableProps
+ * @property {T[]} data - An array of data objects to be displayed as rows.
+ * @property {Column<T>[]} columns - An array of column definitions.
+ * @property {string} [emptyText] - Message to display when the data array is empty.
+ * @property {(item: T) => void} [onRowClick] - Optional callback triggered when a row is clicked.
+ */
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
@@ -14,6 +31,17 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
 }
 
+/**
+ * A responsive data table component designed to work within a Tile layout.
+ * 
+ * On large screens, it renders as a standard HTML table. On smaller screens (mobile),
+ * it transforms into a stacked block layout where headers are hidden and labels
+ * are displayed above each cell value for better readability.
+ * 
+ * @component
+ * @template T
+ * @param {DataTableProps<T>} props - The component properties.
+ */
 export default function DataTableTile<T>({ data, columns, emptyText, onRowClick }: DataTableProps<T>) {
   return (
     <div className="w-full overflow-x-auto">

@@ -5,6 +5,21 @@ import Input from "~/components/UI/Input";
 import Button from "~/components/UI/Button";
 import toast from "react-hot-toast";
 
+/**
+ * A modal overlay component for searching and selecting members from the API.
+ * It features a debounced search input to minimize API calls and displays
+ * a scrollable list of member results.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <SearchMemberOverlay 
+ *   selectText={t("add_member")} 
+ *   onSelect={(member) => handleAdd(member)} 
+ *   loading={isSubmitting} 
+ * />
+ * ```
+ */
 export default function SearchMemberOverlay({ selectText, onSelect, loading }: { selectText: string, onSelect: (member: MemberResponseDto) => void, loading: boolean }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MemberResponseDto[]>([]);
