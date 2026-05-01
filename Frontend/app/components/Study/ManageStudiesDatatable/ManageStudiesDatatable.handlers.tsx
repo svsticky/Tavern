@@ -1,11 +1,11 @@
-import type React from "react";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
 import { getApiStudies, type Study } from "~/api";
 
 /**
  * Fetches the list of studies from the API and updates the provided state.
- * 
+ *
  * @async
  * @param {function} setLoading - State setter to track the loading status of the API request.
  * @param {React.Dispatch<React.SetStateAction<Study[]>>} setStudies - State setter to update the list of study programs.
@@ -13,14 +13,15 @@ import { getApiStudies, type Study } from "~/api";
  */
 export const fetchStudies = async (
   setLoading: (loading: boolean) => void,
-  setStudies: React.Dispatch<React.SetStateAction<Study[]>>
+  setStudies: React.Dispatch<React.SetStateAction<Study[]>>,
 ) => {
   const fetchStudiesAction = async () => {
     try {
       setLoading(true);
       const response = await getApiStudies();
 
-      if(response.error || !response.data) throw new Error("Failed to fetch studies");
+      if (response.error || !response.data)
+        throw new Error("Failed to fetch studies");
 
       setStudies(response.data);
     } catch (error) {
@@ -57,10 +58,16 @@ type HandleStudyEditedArgs = {
  * 1. **Deletion**: If `study` is missing, it removes `editedStudy` from the list.
  * 2. **Update**: If `study` has an ID, it replaces the existing item in the list.
  * 3. **Creation**: If `study` is new (no ID or matching ID), it appends it to the list.
- * 
+ *
  * @param {HandleStudyEditedArgs} args - The state handlers and data objects for the update.
  */
-export const handleStudyEdited = ({ study, editedStudy, setStudies, setIsEditModalOpen, setEditedStudy }: HandleStudyEditedArgs) => {
+export const handleStudyEdited = ({
+  study,
+  editedStudy,
+  setStudies,
+  setIsEditModalOpen,
+  setEditedStudy,
+}: HandleStudyEditedArgs) => {
   if (!study) {
     if (editedStudy) {
       setStudies((prev) => prev.filter((s) => s.id !== editedStudy.id));

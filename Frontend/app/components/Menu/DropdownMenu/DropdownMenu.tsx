@@ -1,19 +1,19 @@
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLocation } from "react-router";
 import { cn } from "~/util/tailwind.util";
 import MenuBranding from "../MenuBranding";
 import MenuContent from "../MenuContent";
 import MenuFooter from "../MenuFooter";
 import MenuItem from "../MenuItem";
-import { useLocation } from "react-router";
 
 /**
  * A responsive, sticky dropdown navigation header.
- * 
+ *
  * This component uses the **Compound Component pattern**. It filters its children
  * based on their sub-component type (Branding, Item, or Footer) and injects them
- * into specific layout slots. It also handles mobile toggle state and 
+ * into specific layout slots. It also handles mobile toggle state and
  * automatically closes the menu on route changes.
- * 
+ *
  * @component
  * @example
  * ```tsx
@@ -34,14 +34,14 @@ export default function DropdownMenu({
   children?: React.ReactNode;
 }) {
   const childrenArray = React.Children.toArray(children);
-  const location = useLocation();
+  const _location = useLocation();
   const [isNavBarOpen, setIsNavBarOpen] = useState(false);
 
   const toggleNavBar = () => setIsNavBarOpen((prev) => !prev);
 
   useEffect(() => {
     setIsNavBarOpen(false);
-  }, [location.pathname]);
+  }, []);
 
   return (
     <header

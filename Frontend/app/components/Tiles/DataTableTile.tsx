@@ -33,25 +33,29 @@ interface DataTableProps<T> {
 
 /**
  * A responsive data table component designed to work within a Tile layout.
- * 
+ *
  * On large screens, it renders as a standard HTML table. On smaller screens (mobile),
  * it transforms into a stacked block layout where headers are hidden and labels
  * are displayed above each cell value for better readability.
- * 
+ *
  * @component
  * @template T
  * @param {DataTableProps<T>} props - The component properties.
  */
-export default function DataTableTile<T>({ data, columns, emptyText, onRowClick }: DataTableProps<T>) {
+export default function DataTableTile<T>({
+  data,
+  columns,
+  emptyText,
+  onRowClick,
+}: DataTableProps<T>) {
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse block lg:table">
-        
         <thead className="hidden lg:table-header-group">
           <tr className="border-b border-slate-100 text-slate-400 text-sm font-medium">
             {columns.map((col, i) => (
-              <th 
-                key={i} 
+              <th
+                key={i}
                 className={`py-4 px-4 text-left font-medium whitespace-nowrap ${col.className || ""}`}
               >
                 {col.header}
@@ -62,8 +66,8 @@ export default function DataTableTile<T>({ data, columns, emptyText, onRowClick 
 
         <tbody className="block lg:table-row-group">
           {data.map((item, rowIndex) => (
-            <tr 
-              key={rowIndex} 
+            <tr
+              key={rowIndex}
               onClick={() => onRowClick?.(item)}
               className={`
                 block lg:table-row 
@@ -74,8 +78,8 @@ export default function DataTableTile<T>({ data, columns, emptyText, onRowClick 
               `}
             >
               {columns.map((col, colIndex) => (
-                <td 
-                  key={colIndex} 
+                <td
+                  key={colIndex}
                   data-label={col.header}
                   className={`
                     px-4 py-2 lg:py-4 
@@ -98,7 +102,7 @@ export default function DataTableTile<T>({ data, columns, emptyText, onRowClick 
           ))}
         </tbody>
       </table>
-      
+
       {data.length === 0 && emptyText !== "" && (
         <div className="p-8 text-center text-slate-400">
           {emptyText == null ? t("no_data_found") : emptyText}

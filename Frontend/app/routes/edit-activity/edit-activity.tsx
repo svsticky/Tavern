@@ -2,33 +2,34 @@ import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router";
-import { 
-  type ActivityResponseDto,
-} from "~/api";
+import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
+import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
-import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
-import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
 import { cn } from "~/util/tailwind.util";
-import { getEditActivityBackPath, loadEditActivityData } from "./edit-activity.handlers";
+import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
+import {
+  getEditActivityBackPath,
+  loadEditActivityData,
+} from "./edit-activity.handlers";
 
 /**
  * A dynamic page for creating new activities or editing existing ones.
- * 
+ *
  * This component acts as the primary orchestrator for activity management. It handles:
  * - **Context Detection**: Determines if the user is creating or editing based on the presence of an `id` param.
- * - **Permission Management**: Restricts administrative features (mailing, participant editing) to 
+ * - **Permission Management**: Restricts administrative features (mailing, participant editing) to
  *   Board or Candidate Board members.
- * - **Dynamic Layout**: Switches from a single-column layout (Creation/Member view) to a 
+ * - **Dynamic Layout**: Switches from a single-column layout (Creation/Member view) to a
  *   split-column layout (Admin Edit view) to accommodate management tools.
  * - **Data Synchronization**: Hydrates the form with existing activity data and manages the loading state.
- * 
+ *
  * Sub-components:
  * - `EditActivityForm`: Handles the primary metadata (name, date, description, etc.).
  * - `SendActivityMailComponent`: Allows admins to email all enrolled participants.
  * - `EditParticipantsTile`: Provides administrative tools for manual enrollment management.
- * 
+ *
  * @page
  * @component
  */
@@ -49,7 +50,7 @@ export default function ActivityFormPage() {
       isEdit,
       id,
       setActivity: (next) => setActivity(next),
-      setLoading
+      setLoading,
     });
   }, [id, isEdit]);
 
@@ -59,22 +60,30 @@ export default function ActivityFormPage() {
 
   return (
     <div className="">
-      <PageHeader 
-        title={isEdit ? t("edit_activity") : t("create_activity")} 
-        backTo={getEditActivityBackPath(pathname, isEdit, id)} 
+      <PageHeader
+        title={isEdit ? t("edit_activity") : t("create_activity")}
+        backTo={getEditActivityBackPath(pathname, isEdit, id)}
       />
-    
-      <div className={cn("grid grid-cols-1 gap-8", isBoard && isEdit && "lg:grid-cols-3")}>
+
+      <div
+        className={cn(
+          "grid grid-cols-1 gap-8",
+          isBoard && isEdit && "lg:grid-cols-3",
+        )}
+      >
         <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
-          <EditActivityForm activity={activity} id={id} isBoard={isBoard} /> 
+          <EditActivityForm activity={activity} id={id} isBoard={isBoard} />
         </div>
 
-        {isBoard && isEdit && activity && 
+        {isBoard && isEdit && activity && (
           <div className="flex flex-col gap-4">
             <SendActivityMailComponent activityId={activity.id} />
-            <EditParticipantsTile activity={activity} setActivity={setActivity} />
+            <EditParticipantsTile
+              activity={activity}
+              setActivity={setActivity}
+            />
           </div>
-        }
+        )}
       </div>
     </div>
   );

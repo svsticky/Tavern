@@ -1,47 +1,43 @@
 import { t } from "i18next";
-import { useEffect, useState, useRef } from "react";
-import { 
-  type Study,
-  type StudyEnrollmentResponseDto, 
-} from "~/api";
-import Input from "~/components/UI/Input";
-import Button from "~/components/UI/Button";
-import Checkbox from "~/components/UI/Checkbox";
-import { FormSection } from "~/components/UI/Form/FormSection";
-import { FormHeader } from "~/components/UI/Form/FormHeader";
-import Tile from "~/components/Tiles/Tile";
-import Form from "~/components/UI/Form/Form";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { type StudyStatus } from "~/api";
-import Select from "~/components/UI/Select";
+import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
+import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
+import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
-import BorderedTile from "~/components/Tiles/BorderedTile";
+import Tile from "~/components/Tiles/Tile";
+import Button from "~/components/UI/Button";
+import Checkbox from "~/components/UI/Checkbox";
+import Form from "~/components/UI/Form/Form";
+import { FormHeader } from "~/components/UI/Form/FormHeader";
+import { FormSection } from "~/components/UI/Form/FormSection";
+import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import Select from "~/components/UI/Select";
 import {
   handleAddEnrollment,
   handleDeleteEnrollment,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
-  loadMemberData
+  loadMemberData,
 } from "./edit-member.handlers";
-import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 
 /**
  * An administrative page for viewing and editing a member's complete profile.
- * 
+ *
  * This comprehensive interface is designed for board members and administrators to:
  * - **Manage Personal & Contact Data**: Update identity, student number, and detailed address information.
- * - **Control Membership Status**: Toggle special statuses like "Honorary Member" (ere lid), 
+ * - **Control Membership Status**: Toggle special statuses like "Honorary Member" (ere lid),
  *   "Benefactor" (begunstiger), or manage disciplinary "Suspensions".
- * - **Audit Educational History**: Manage multiple study enrollments, track graduation status, 
+ * - **Audit Educational History**: Manage multiple study enrollments, track graduation status,
  *   and add new educational records.
  * - **Internal Bookkeeping**: View and edit internal admin-only notes about the member.
  * - **Media Management**: Access the `ChangeProfilePicture` component to update the member's avatar.
- * 
- * The layout uses a responsive two-column design on larger screens, placing the profile picture 
+ *
+ * The layout uses a responsive two-column design on larger screens, placing the profile picture
  * as a sidebar and the multi-section form as the main content.
- * 
+ *
  * @page
  * @component
  */
@@ -49,9 +45,13 @@ export default function EditMemberPage() {
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profilePictureSrc, setProfilePictureSrc] = useState<string | null>(null);
-  const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>([]);
+  const _fileInputRef = useRef<HTMLInputElement>(null);
+  const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
+    null,
+  );
+  const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>(
+    [],
+  );
   const [availableStudies, setAvailableStudies] = useState<Study[]>([]);
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
   const [email, setEmail] = useState("");
@@ -74,57 +74,64 @@ export default function EditMemberPage() {
     ereLid: false,
     begunstiger: false,
     suspended: false,
-    dateOfBirth: ""
+    dateOfBirth: "",
   });
 
   const enrollmentColumns: Column<StudyEnrollmentResponseDto>[] = [
     {
-        header: t("study"),
-        render: (item) => item.studyTitle,
+      header: t("study"),
+      render: (item) => item.studyTitle,
     },
     {
-        header: t("start_date"),
-        render: (item) => new Date(item.enrollmentDate).toLocaleDateString(),
+      header: t("start_date"),
+      render: (item) => new Date(item.enrollmentDate).toLocaleDateString(),
     },
     {
-        header: t("status"),
-        render: (item) => (
+      header: t("status"),
+      render: (item) => (
         <select
-            value={item.status}
-            onChange={(e) => handleUpdateEnrollmentStatus(item.id, e.target.value as StudyStatus, setLoading, setEnrollments)}
-            className={`text-xs font-semibold px-2 py-1 rounded-full border-none cursor-pointer focus:ring-2 focus:ring-blue-500 ${
+          value={item.status}
+          onChange={(e) =>
+            handleUpdateEnrollmentStatus(
+              item.id,
+              e.target.value as StudyStatus,
+              setLoading,
+              setEnrollments,
+            )
+          }
+          className={`text-xs font-semibold px-2 py-1 rounded-full border-none cursor-pointer focus:ring-2 focus:ring-blue-500 ${
             item.status === "Completed"
-                ? "bg-green-100 text-green-700"
-                : item.status === "DroppedOut"
+              ? "bg-green-100 text-green-700"
+              : item.status === "DroppedOut"
                 ? "bg-red-100 text-red-700"
                 : "bg-blue-100 text-blue-700"
-            }`}
-            disabled={loading}
+          }`}
+          disabled={loading}
         >
-            <option value={"Enrolled"}>{t("status_in_progress")}</option>
-            <option value={"Completed"}>{t("status_completed")}</option>
-            <option value={"DroppedOut"}>{t("status_dropped_out")}</option>
+          <option value={"Enrolled"}>{t("status_in_progress")}</option>
+          <option value={"Completed"}>{t("status_completed")}</option>
+          <option value={"DroppedOut"}>{t("status_dropped_out")}</option>
         </select>
-        ),
+      ),
     },
     {
-        header: "",
-        className: "text-right",
-        render: (item) => (
+      header: "",
+      className: "text-right",
+      render: (item) => (
         <Button
-            variant="danger"
-            onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteEnrollment(item.id, setLoading, setEnrollments);
-            }}
-            type="button"
-            disabled={loading}
+          variant="danger"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDeleteEnrollment(item.id, setLoading, setEnrollments);
+          }}
+          type="button"
+          disabled={loading}
         >
-            {t("remove")}
+          {t("remove")}
         </Button>
-        ),
+      ),
     },
-    ];
+  ];
 
   useEffect(() => {
     const cleanupPromise = loadMemberData({
@@ -134,41 +141,116 @@ export default function EditMemberPage() {
       setEnrollments,
       setAvailableStudies,
       setProfilePictureSrc,
-      setLoading
+      setLoading,
     });
     return () => {
-      cleanupPromise.then((cleanup) => cleanup && cleanup());
+      cleanupPromise.then((cleanup) => cleanup?.());
     };
   }, [memberId]);
 
   if (loading) return t("loading");
 
   return (
-    <>      
+    <>
       <PageHeader title="" backTo="/admin/members" />
       <div className="flex flex-col lg:flex-row gap-12">
         <ChangeProfilePicture userId={memberId!} />
 
         <Form className="w-full space-y-8">
           <FormSection title={t("personal_info")} columns={2}>
-            <Input label={t("first_name")} value={formData.firstName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, firstName: e.target.value})} />
-            <Input label={t("last_name")} value={formData.lastName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, lastName: e.target.value})} />
-            <Input label={t("student_number")} type="number" value={formData.studentNumber.toString()} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, studentNumber: parseInt(e.target.value)})} />
-            <Input label={t("date_of_birth")} type="date" value={formData.dateOfBirth} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, dateOfBirth: e.target.value})} />
-            <Input className="border-transparent bg-transparent p-0 cursor-default text-gray-900 disabled:text-gray-900" label={t("email")} type="email" value={email} disabled />
+            <Input
+              label={t("first_name")}
+              value={formData.firstName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, firstName: e.target.value })
+              }
+            />
+            <Input
+              label={t("last_name")}
+              value={formData.lastName}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, lastName: e.target.value })
+              }
+            />
+            <Input
+              label={t("student_number")}
+              type="number"
+              value={formData.studentNumber.toString()}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({
+                  ...formData,
+                  studentNumber: parseInt(e.target.value, 10),
+                })
+              }
+            />
+            <Input
+              label={t("date_of_birth")}
+              type="date"
+              value={formData.dateOfBirth}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, dateOfBirth: e.target.value })
+              }
+            />
+            <Input
+              className="border-transparent bg-transparent p-0 cursor-default text-gray-900 disabled:text-gray-900"
+              label={t("email")}
+              type="email"
+              value={email}
+              disabled
+            />
           </FormSection>
 
           {/* Contact & Adres */}
           <FormSection title={t("contact_and_address")} columns={2}>
-            <Input label={t("phone_number")} value={formData.phoneNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, phoneNumber: e.target.value})} />
-            <Input label={t("parent_phone_number")} value={formData.parentPhoneNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, parentPhoneNumber: e.target.value})} />
+            <Input
+              label={t("phone_number")}
+              value={formData.phoneNumber}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, phoneNumber: e.target.value })
+              }
+            />
+            <Input
+              label={t("parent_phone_number")}
+              value={formData.parentPhoneNumber}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, parentPhoneNumber: e.target.value })
+              }
+            />
             <div className="md:col-span-2 grid grid-cols-3 gap-4">
-               <div className="col-span-2"><Input label={t("street")} value={formData.street} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, street: e.target.value})} /></div>
-               <Input label={t("house_number")} value={formData.houseNumber} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, houseNumber: e.target.value})} />
+              <div className="col-span-2">
+                <Input
+                  label={t("street")}
+                  value={formData.street}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, street: e.target.value })
+                  }
+                />
+              </div>
+              <Input
+                label={t("house_number")}
+                value={formData.houseNumber}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, houseNumber: e.target.value })
+                }
+              />
             </div>
-            <Input label={t("postal_code")} required value={formData.postalCode} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, postalCode: e.target.value})} />
+            <Input
+              label={t("postal_code")}
+              required
+              value={formData.postalCode}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, postalCode: e.target.value })
+              }
+            />
             <div className="md:col-span-2">
-              <Input label={t("city")} required value={formData.city} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, city: e.target.value})} />
+              <Input
+                label={t("city")}
+                required
+                value={formData.city}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, city: e.target.value })
+                }
+              />
             </div>
           </FormSection>
 
@@ -176,74 +258,117 @@ export default function EditMemberPage() {
           <section>
             <FormHeader title={t("status_and_membership")} />
             <Tile className="grid grid-cols-1 md:grid-cols-3 gap-4 p-5 bg-blue-50/50">
-              <Checkbox label={t("gratie")} checked={formData.gratie} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, gratie: e.target.checked})} />
-              <Checkbox label={t("lid_van_verdienste")} checked={formData.lidVanVerdienste} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, lidVanVerdienste: e.target.checked})} />
-              <Checkbox label={t("ere_lid")} checked={formData.ereLid} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, ereLid: e.target.checked})} />
-              <Checkbox label={t("begunstiger")} checked={formData.begunstiger} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, begunstiger: e.target.checked})} />
-              <Checkbox label={t("suspended")} checked={formData.suspended} className="text-red-600 font-bold" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({...formData, suspended: e.target.checked})} />
+              <Checkbox
+                label={t("gratie")}
+                checked={formData.gratie}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, gratie: e.target.checked })
+                }
+              />
+              <Checkbox
+                label={t("lid_van_verdienste")}
+                checked={formData.lidVanVerdienste}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({
+                    ...formData,
+                    lidVanVerdienste: e.target.checked,
+                  })
+                }
+              />
+              <Checkbox
+                label={t("ere_lid")}
+                checked={formData.ereLid}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, ereLid: e.target.checked })
+                }
+              />
+              <Checkbox
+                label={t("begunstiger")}
+                checked={formData.begunstiger}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, begunstiger: e.target.checked })
+                }
+              />
+              <Checkbox
+                label={t("suspended")}
+                checked={formData.suspended}
+                className="text-red-600 font-bold"
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setFormData({ ...formData, suspended: e.target.checked })
+                }
+              />
             </Tile>
           </section>
 
           {/* Notities (Admin Only) */}
           <section>
             <FormHeader title={t("internal_notes")} />
-            <textarea 
+            <textarea
               className="w-full p-3 border rounded-md min-h-[100px]"
               value={formData.notes}
               placeholder={t("internal_notes_placeholder")}
-              onChange={e => setFormData({...formData, notes: e.target.value})}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
             />
           </section>
 
-          <Button 
-            onClick={() => handleSaveMember(memberId, formData, setSaving)} 
+          <Button
+            onClick={() => handleSaveMember(memberId, formData, setSaving)}
             disabled={saving}
           >
             {saving ? t("saving") : t("save")}
           </Button>
 
-            <section>
-                <FormHeader title={t("study_enrollments")} />
-                <BorderedTile>
-                    <DataTableTile
-                        data={enrollments}
-                        columns={enrollmentColumns}
-                        emptyText={t("no_enrollments_found")}
-                    />
-                    <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
-                        <div className="flex-1 w-full">
-                            <Select
-                                label={t("add_study_enrollment")}
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        setSelectedStudyId(parseInt(e.target.value));
-                                    } else {
-                                        setSelectedStudyId("");
-                                    }
-                                }}
-                                defaultValue=""
-                                options={[
-                                    { value: "", label: `${t("select_a_study")}...` },
-                                    ...availableStudies.map((study) => ({
-                                        value: study.id!.toString(),
-                                        label: study.title,
-                                    }))
-                                ]}
-                            />
-                        </div>
+          <section>
+            <FormHeader title={t("study_enrollments")} />
+            <BorderedTile>
+              <DataTableTile
+                data={enrollments}
+                columns={enrollmentColumns}
+                emptyText={t("no_enrollments_found")}
+              />
+              <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
+                <div className="flex-1 w-full">
+                  <Select
+                    label={t("add_study_enrollment")}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setSelectedStudyId(parseInt(e.target.value, 10));
+                      } else {
+                        setSelectedStudyId("");
+                      }
+                    }}
+                    defaultValue=""
+                    options={[
+                      { value: "", label: `${t("select_a_study")}...` },
+                      ...availableStudies.map((study) => ({
+                        value: study.id!.toString(),
+                        label: study.title,
+                      })),
+                    ]}
+                  />
+                </div>
 
-                        <Button
-                            variant="primary"
-                            onClick={() => handleAddEnrollment(memberId, selectedStudyId, setLoading, setEnrollments)}
-                            disabled={!selectedStudyId || loading}
-                            className="h-[46px] whitespace-nowrap"
-                            type="button"
-                        >
-                            {t("add")}
-                        </Button>
-                    </div>
-                </BorderedTile>
-            </section>
+                <Button
+                  variant="primary"
+                  onClick={() =>
+                    handleAddEnrollment(
+                      memberId,
+                      selectedStudyId,
+                      setLoading,
+                      setEnrollments,
+                    )
+                  }
+                  disabled={!selectedStudyId || loading}
+                  className="h-[46px] whitespace-nowrap"
+                  type="button"
+                >
+                  {t("add")}
+                </Button>
+              </div>
+            </BorderedTile>
+          </section>
         </Form>
       </div>
     </>

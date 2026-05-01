@@ -1,5 +1,10 @@
-import React, { createContext, useContext, useState, type ReactNode } from 'react';
-import type { MemberResponseDto } from '~/api';
+import React, {
+  createContext,
+  type ReactNode,
+  useContext,
+  useState,
+} from "react";
+import type { MemberResponseDto } from "~/api";
 
 /**
  * The shape of the global application context state.
@@ -28,22 +33,33 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 /**
  * Global State Provider that wraps the application.
- * 
+ *
  * This provider manages high-level state that needs to be accessed across various
- * routes and component trees, such as the current member's profile and 
+ * routes and component trees, such as the current member's profile and
  * specific group identifiers used for filtering or context-aware logic.
- * 
+ *
  * @component
  * @param {Object} props - The component properties.
  * @param {ReactNode} props.children - The component tree that will have access to the context.
  */
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [boardGroupId, setBoardGroupId] = useState<number | null>(null);
-  const [candidateBoardGroupId, setCandidateBoardGroupId] = useState<number | null>(null);
+  const [candidateBoardGroupId, setCandidateBoardGroupId] = useState<
+    number | null
+  >(null);
   const [member, setMember] = useState<MemberResponseDto | null>(null);
 
   return (
-    <AppContext.Provider value={{ boardGroupId, setBoardGroupId, candidateBoardGroupId, setCandidateBoardGroupId, member, setMember }}>
+    <AppContext.Provider
+      value={{
+        boardGroupId,
+        setBoardGroupId,
+        candidateBoardGroupId,
+        setCandidateBoardGroupId,
+        member,
+        setMember,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
@@ -51,14 +67,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
 /**
  * Custom hook to access the application context.
- * 
+ *
  * Provides a convenient way for functional components to consume global state.
- * It includes a safety check to ensure that the hook is only used within 
+ * It includes a safety check to ensure that the hook is only used within
  * an `AppProvider` hierarchy.
- * 
+ *
  * @throws {Error} If used outside of an AppProvider.
  * @returns {AppContextType} The current application context value.
- * 
+ *
  * @example
  * const { member, setMember } = useApp();
  */

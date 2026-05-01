@@ -1,7 +1,13 @@
-import type React from "react";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
-import { deleteApiStudiesById, postApiStudies, putApiStudiesById, type Study, type StudyType } from "~/api";
+import {
+  deleteApiStudiesById,
+  postApiStudies,
+  putApiStudiesById,
+  type Study,
+  type StudyType,
+} from "~/api";
 
 /**
  * Data structure for the study creation and edition form.
@@ -36,12 +42,18 @@ type SubmitArgs = {
 /**
  * Handles the submission for both creating a new study or updating an existing one.
  * It selects the appropriate API method (POST or PUT) based on the presence of a study object.
- * 
+ *
  * @async
  * @param {SubmitArgs} args - The submission configuration and handlers.
  * @returns {Promise<void>}
  */
-export const handleStudySubmit = async ({ e, formData, study, setLoading, onComplete }: SubmitArgs) => {
+export const handleStudySubmit = async ({
+  e,
+  formData,
+  study,
+  setLoading,
+  onComplete,
+}: SubmitArgs) => {
   e.preventDefault();
   if (!formData.title || !formData.type || !formData.nominalDurationYears) {
     return;
@@ -57,23 +69,26 @@ export const handleStudySubmit = async ({ e, formData, study, setLoading, onComp
               title: formData.title,
               type: formData.type as StudyType,
               nominalDurationYears: formData.nominalDurationYears,
-            }
+            },
           })
         : await postApiStudies({
             body: {
               title: formData.title,
               type: formData.type as StudyType,
               nominalDurationYears: formData.nominalDurationYears,
-            }
+            },
           });
 
-      if(response.error) throw new Error(study ? "Failed to update study" : "Failed to create study");
+      if (response.error)
+        throw new Error(
+          study ? "Failed to update study" : "Failed to create study",
+        );
 
       onComplete({
         title: formData.title,
         type: formData.type as StudyType,
         nominalDurationYears: formData.nominalDurationYears,
-        id: study ? study.id : (response.data as any).id
+        id: study ? study.id : (response.data as any).id,
       });
     } catch (error) {
       console.error("Error creating study:", error);
@@ -86,7 +101,7 @@ export const handleStudySubmit = async ({ e, formData, study, setLoading, onComp
   toast.promise(editStudyProcess(), {
     loading: t("creating_study"),
     success: t("study_created_successfully"),
-    error: t("failed_to_create_study")
+    error: t("failed_to_create_study"),
   });
 };
 
@@ -96,7 +111,11 @@ type DeleteArgs = {
   onComplete: (study?: Study) => void;
 };
 
-export const handleStudyDelete = async ({ study, setLoading, onComplete }: DeleteArgs) => {
+export const handleStudyDelete = async ({
+  study,
+  setLoading,
+  onComplete,
+}: DeleteArgs) => {
   if (!study) {
     toast.error(t("no_study_to_delete"));
     return;
@@ -106,7 +125,7 @@ export const handleStudyDelete = async ({ study, setLoading, onComplete }: Delet
     setLoading(true);
     try {
       const response = await deleteApiStudiesById({ path: { id: study.id! } });
-      if(response.error) throw new Error("Failed to delete study");
+      if (response.error) throw new Error("Failed to delete study");
       onComplete();
     } catch (error) {
       console.error("Error deleting study:", error);
@@ -119,6 +138,6 @@ export const handleStudyDelete = async ({ study, setLoading, onComplete }: Delet
   toast.promise(deleteStudyProcess(), {
     loading: t("deleting_study"),
     success: t("study_deleted_successfully"),
-    error: t("failed_to_delete_study")
+    error: t("failed_to_delete_study"),
   });
 };

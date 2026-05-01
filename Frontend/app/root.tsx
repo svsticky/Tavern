@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
 import {
   isRouteErrorResponse,
   Links,
@@ -6,12 +8,10 @@ import {
   Scripts,
   ScrollRestoration,
 } from "react-router";
-import { useEffect, useState } from "react";
-import { Toaster } from 'react-hot-toast';
 import "./i18n";
-import i18n from "./i18n";
-import { client } from "./api/client.gen";
 import type { Route } from "./+types/root";
+import { client } from "./api/client.gen";
+import i18n from "./i18n";
 import "./app.css";
 import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
@@ -22,7 +22,11 @@ client.setConfig({
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+  {
+    rel: "preconnect",
+    href: "https://fonts.gstatic.com",
+    crossOrigin: "anonymous",
+  },
   {
     rel: "stylesheet",
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
@@ -56,9 +60,18 @@ export default function App() {
     const primary = import.meta.env.BOARD_PRIMARY;
     const primaryDark = import.meta.env.BOARD_PRIMARY_DARK;
 
-    if (primaryLight) document.documentElement.style.setProperty('--board-primary-light', primaryLight);
-    if (primary)      document.documentElement.style.setProperty('--board-primary', primary);
-    if (primaryDark)  document.documentElement.style.setProperty('--board-primary-dark', primaryDark);
+    if (primaryLight)
+      document.documentElement.style.setProperty(
+        "--board-primary-light",
+        primaryLight,
+      );
+    if (primary)
+      document.documentElement.style.setProperty("--board-primary", primary);
+    if (primaryDark)
+      document.documentElement.style.setProperty(
+        "--board-primary-dark",
+        primaryDark,
+      );
 
     setIsClient(true);
     if (i18n.isInitialized) {

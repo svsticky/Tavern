@@ -14,16 +14,21 @@ type Props = {
 
 /**
  * A specialized Tile component used as a placeholder when a list or container is empty.
- * 
- * It features a centered, italicized text layout with a dashed border to visually 
+ *
+ * It features a centered, italicized text layout with a dashed border to visually
  * indicate an empty state or a drop zone, distinguishing it from standard content-heavy tiles.
- * 
+ *
  * @component
  * @param {Props} props - The component properties.
  */
 export function NoContentTile({ text, className }: Props) {
   return (
-    <Tile className={cn("p-8 text-center border-2 border-dashed border-gray-200 text-gray-500 italic", className)}>
+    <Tile
+      className={cn(
+        "p-8 text-center border-2 border-dashed border-gray-200 text-gray-500 italic",
+        className,
+      )}
+    >
       {text}
     </Tile>
   );

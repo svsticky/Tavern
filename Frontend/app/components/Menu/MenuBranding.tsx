@@ -3,7 +3,7 @@ import { NavLink } from "react-router";
 /**
  * A branding subcomponent typically used in NavBars or SideBars.
  * Displays a clickable logo and title that links to the application's homepage.
- * 
+ *
  * @component
  * @param {Object} props - Component props.
  * @param {string} [props.icon] - Source URL for the brand logo.
@@ -13,8 +13,12 @@ import { NavLink } from "react-router";
 export default function MenuBranding({
   icon = import.meta.env.LOGO_URL,
   title = "Sticky",
-  homepage = "/"
-}: { icon?: string; title?: string; homepage?: string }) {
+  homepage = "/",
+}: {
+  icon?: string;
+  title?: string;
+  homepage?: string;
+}) {
   return (
     <NavLink
       to={homepage}

@@ -1,8 +1,13 @@
-import type React from "react";
-import type { NavigateFunction } from "react-router";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
-import { deleteApiAnnouncementsById, getApiAnnouncementsById, postApiAnnouncements, putApiAnnouncementsById } from "~/api";
+import type { NavigateFunction } from "react-router";
+import {
+  deleteApiAnnouncementsById,
+  getApiAnnouncementsById,
+  postApiAnnouncements,
+  putApiAnnouncementsById,
+} from "~/api";
 
 /**
  * Arguments for the loadAnnouncementData handler.
@@ -16,7 +21,7 @@ type LoadAnnouncementArgs = {
 
 /**
  * Fetches existing announcement data from the API to hydrate the edit form.
- * 
+ *
  * @async
  * @param {LoadAnnouncementArgs} args - Configuration object containing:
  * @param {boolean} args.isEdit - Whether the handler should perform a fetch for existing data.
@@ -24,7 +29,12 @@ type LoadAnnouncementArgs = {
  * @param {Function} args.setInitialData - Function to update the local form state with fetched data.
  * @param {Function} args.setLoading - Function to update the loading indicator state.
  */
-export const loadAnnouncementData = async ({ isEdit, id, setInitialData, setLoading }: LoadAnnouncementArgs) => {
+export const loadAnnouncementData = async ({
+  isEdit,
+  id,
+  setInitialData,
+  setLoading,
+}: LoadAnnouncementArgs) => {
   if (!isEdit || !id) return;
 
   await getApiAnnouncementsById({ path: { id: Number(id) } })
@@ -49,10 +59,10 @@ type SubmitAnnouncementArgs = {
 
 /**
  * Processes the announcement form submission for both creating and updating records.
- * 
+ *
  * Extracts data from the form event, determines the correct API method (POST vs PUT),
  * and provides visual feedback using toast promises.
- * 
+ *
  * @async
  * @param {SubmitAnnouncementArgs} args - Configuration object containing:
  * @param {React.FormEvent<HTMLFormElement>} args.e - The form submission event.
@@ -61,12 +71,18 @@ type SubmitAnnouncementArgs = {
  * @param {Function} args.setSaving - Function to update the saving state.
  * @param {NavigateFunction} args.navigate - Function to redirect the user upon success.
  */
-export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navigate }: SubmitAnnouncementArgs) => {
+export const handleAnnouncementSubmit = async ({
+  e,
+  isEdit,
+  id,
+  setSaving,
+  navigate,
+}: SubmitAnnouncementArgs) => {
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
   const body = {
     title: fd.get("Title") as string,
-    content: fd.get("Content") as string
+    content: fd.get("Content") as string,
   };
 
   setSaving(true);
@@ -74,11 +90,14 @@ export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navig
   const submitProcess = async () => {
     try {
       if (isEdit) {
-        const response = await putApiAnnouncementsById({ path: { id: Number(id) }, body });
-        if(response.error) throw new Error("Failed to update announcement");
+        const response = await putApiAnnouncementsById({
+          path: { id: Number(id) },
+          body,
+        });
+        if (response.error) throw new Error("Failed to update announcement");
       } else {
         const response = await postApiAnnouncements({ body });
-        if(response.error) throw new Error("Failed to create announcement");
+        if (response.error) throw new Error("Failed to create announcement");
       }
       navigate("/announcements");
     } catch (error) {
@@ -92,25 +111,31 @@ export const handleAnnouncementSubmit = async ({ e, isEdit, id, setSaving, navig
   toast.promise(submitProcess(), {
     loading: isEdit ? t("updating") : t("creating"),
     success: isEdit ? t("update_successful") : t("creation_successful"),
-    error: isEdit ? t("update_failed") : t("creation_failed")
+    error: isEdit ? t("update_failed") : t("creation_failed"),
   });
 };
 
 /**
  * Deletes an announcement from the system and redirects to the list view.
- * 
+ *
  * @async
  * @param {string} id - The unique identifier of the announcement to be deleted.
  * @param {Function} setDeleting - State setter to track the deletion process.
  * @param {NavigateFunction} navigate - Function to redirect the user after successful deletion.
  */
-export const handleDeleteAnnouncement = async (id: string, setDeleting: (value: boolean) => void, navigate: NavigateFunction) => {
+export const handleDeleteAnnouncement = async (
+  id: string,
+  setDeleting: (value: boolean) => void,
+  navigate: NavigateFunction,
+) => {
   setDeleting(true);
 
   const deleteProcess = async () => {
     try {
-      const response = await deleteApiAnnouncementsById({ path: { id: Number(id) } });
-      if(response.error) throw new Error("Failed to delete announcement");
+      const response = await deleteApiAnnouncementsById({
+        path: { id: Number(id) },
+      });
+      if (response.error) throw new Error("Failed to delete announcement");
       navigate("/announcements");
     } catch (error) {
       console.error(error);
@@ -123,6 +148,6 @@ export const handleDeleteAnnouncement = async (id: string, setDeleting: (value: 
   toast.promise(deleteProcess(), {
     loading: t("deleting"),
     success: t("deletion_successful"),
-    error: t("deletion_failed")
+    error: t("deletion_failed"),
   });
 };

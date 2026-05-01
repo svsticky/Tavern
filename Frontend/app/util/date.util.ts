@@ -47,9 +47,11 @@ export function formatDate(date: Date, format: DateFormatType): string {
  * @returns The current association year.
  */
 export const getAssociationYear = (): number => {
-  const nlDateString = new Date().toLocaleString("en-US", { timeZone: "Europe/Amsterdam" });
+  const nlDateString = new Date().toLocaleString("en-US", {
+    timeZone: "Europe/Amsterdam",
+  });
   const now = new Date(nlDateString);
-  
+
   const year = now.getFullYear();
   const month = now.getMonth();
 

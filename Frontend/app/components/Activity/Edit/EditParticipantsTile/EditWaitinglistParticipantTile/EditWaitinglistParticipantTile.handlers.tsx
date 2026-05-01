@@ -1,6 +1,10 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { deleteApiEnrollmentsByActivityIdByMemberId, patchApiEnrollmentsByActivityIdByMemberId, type EnrollmentResponseDto } from "~/api";
+import {
+  deleteApiEnrollmentsByActivityIdByMemberId,
+  type EnrollmentResponseDto,
+  patchApiEnrollmentsByActivityIdByMemberId,
+} from "~/api";
 
 type WaitingListActionArgs = {
   enrollment: EnrollmentResponseDto;
@@ -16,12 +20,19 @@ type WaitingListActionArgs = {
  * @param {(loading: boolean) => void} args.setLoading - Function to update the loading state.
  * @param {() => void} args.onUnenroll - Callback function to handle unenrollment completion.
  */
-export const handleWaitinglistUnenroll = ({ enrollment, setLoading, onUnenroll }: WaitingListActionArgs) => {
+export const handleWaitinglistUnenroll = ({
+  enrollment,
+  setLoading,
+  onUnenroll,
+}: WaitingListActionArgs) => {
   const handleUnenrollAction = async () => {
     try {
       setLoading(true);
       const response = await deleteApiEnrollmentsByActivityIdByMemberId({
-        path: { ActivityId: enrollment.activity.id, MemberId: enrollment.member.id! },
+        path: {
+          ActivityId: enrollment.activity.id,
+          MemberId: enrollment.member.id!,
+        },
       });
 
       if (response.error) throw new Error("Failed to unenroll");
@@ -50,15 +61,20 @@ export const handleWaitinglistUnenroll = ({ enrollment, setLoading, onUnenroll }
  * @param {(loading: boolean) => void} args.setLoading - Function to update the loading state.
  * @param {() => void} args.onUnenroll - Callback function to handle unenrollment completion.
  */
-export const handleMoveFromWaitinglist = ({ enrollment, setLoading, onUnenroll }: WaitingListActionArgs) => {
+export const handleMoveFromWaitinglist = ({
+  enrollment,
+  setLoading,
+  onUnenroll,
+}: WaitingListActionArgs) => {
   const handleMoveToParticipantsAction = async () => {
     try {
       setLoading(true);
       const response = await patchApiEnrollmentsByActivityIdByMemberId({
-        path: { ActivityId: enrollment.activity.id!, MemberId: enrollment.member.id! },
-        body: [
-          { op: "replace", path: "/isOnWaitingList", value: false }
-        ]
+        path: {
+          ActivityId: enrollment.activity.id!,
+          MemberId: enrollment.member.id!,
+        },
+        body: [{ op: "replace", path: "/isOnWaitingList", value: false }],
       });
 
       if (response.error) throw new Error("Failed to move to participants");

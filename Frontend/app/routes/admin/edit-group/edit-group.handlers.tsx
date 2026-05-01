@@ -1,19 +1,19 @@
-import type React from "react";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
 import {
   deleteApiGroupmembershipsById,
+  type GroupMembershipResponseDto,
   getApiGroupmemberships,
   getApiGroupsById,
   getApiGroupsByIdGroupPicture,
   getApiRolealiases,
+  type MemberResponseDto,
   patchApiGroupmembershipsById,
   patchApiGroupsById,
   postApiGroupmemberships,
   postApiGroupsByIdGroupPicture,
-  type GroupMembershipResponseDto,
-  type MemberResponseDto,
-  type RoleAlias
+  type RoleAlias,
 } from "~/api";
 
 /**
@@ -38,7 +38,7 @@ type LoadGroupArgs = {
 
 /**
  * Initializes the edit page by fetching the group profile, group picture, and available role aliases.
- * 
+ *
  * @async
  * @param {LoadGroupArgs} args - Configuration object containing:
  * @param {number | null} args.id - The ID of the group to load.
@@ -53,7 +53,7 @@ export const loadGroupData = async ({
   setFormData,
   setGroupPictureSrc,
   setRoleAliases,
-  setLoading
+  setLoading,
 }: LoadGroupArgs) => {
   if (!id) return;
   let url = null as string | null;
@@ -61,23 +61,32 @@ export const loadGroupData = async ({
   try {
     const groupResponse = await getApiGroupsById({ path: { id } });
 
-    if(groupResponse.error || !groupResponse.data) throw new Error("Failed to load group data");
+    if (groupResponse.error || !groupResponse.data)
+      throw new Error("Failed to load group data");
 
     setFormData({
       Name: groupResponse.data.name,
       Type: groupResponse.data.type,
-      Active: groupResponse.data.active
+      Active: groupResponse.data.active,
     });
-    
-    const groupPictureResponse = await getApiGroupsByIdGroupPicture({ path: { id }, responseType: "blob" });
-    
-    if(groupPictureResponse.error || !(groupPictureResponse.data instanceof Blob)) throw new Error("Failed to load group picture");
-    
+
+    const groupPictureResponse = await getApiGroupsByIdGroupPicture({
+      path: { id },
+      responseType: "blob",
+    });
+
+    if (
+      groupPictureResponse.error ||
+      !(groupPictureResponse.data instanceof Blob)
+    )
+      throw new Error("Failed to load group picture");
+
     url = URL.createObjectURL(groupPictureResponse.data);
     setGroupPictureSrc(url);
 
     const roleAliasesResponse = await getApiRolealiases();
-    if(roleAliasesResponse.error || !roleAliasesResponse.data) throw new Error("Failed to load role aliases");
+    if (roleAliasesResponse.error || !roleAliasesResponse.data)
+      throw new Error("Failed to load role aliases");
     setRoleAliases(roleAliasesResponse.data);
   } catch (err) {
     console.log("Failed to load group data:", err);
@@ -93,7 +102,7 @@ export const loadGroupData = async ({
 
 /**
  * Fetches memberships for a specific group filtered by association year.
- * 
+ *
  * @async
  * @param {number | null} id - The ID of the group for which to load memberships.
  * @param {number} selectedYear - The association year to filter memberships by.
@@ -104,7 +113,9 @@ export const loadGroupMemberships = async (
   id: number | null,
   selectedYear: number,
   setLoadingMemberships: (value: boolean) => void,
-  setEnrollments: React.Dispatch<React.SetStateAction<GroupMembershipResponseDto[]>>
+  setEnrollments: React.Dispatch<
+    React.SetStateAction<GroupMembershipResponseDto[]>
+  >,
 ) => {
   if (!id) return;
   try {
@@ -112,11 +123,12 @@ export const loadGroupMemberships = async (
     const groupMembershipsResponse = await getApiGroupmemberships({
       query: {
         GroupId: id,
-        MembershipYear: selectedYear
-      }
+        MembershipYear: selectedYear,
+      },
     });
 
-    if(groupMembershipsResponse.error || !groupMembershipsResponse.data) throw new Error("Failed to load group memberships");
+    if (groupMembershipsResponse.error || !groupMembershipsResponse.data)
+      throw new Error("Failed to load group memberships");
 
     setEnrollments(groupMembershipsResponse.data);
   } catch (err) {
@@ -129,7 +141,7 @@ export const loadGroupMemberships = async (
 
 /**
  * Updates the group metadata (Name, Type, Active status) using JSON Patch.
- * 
+ *
  * @async
  * @param {number | null} id - The ID of the group to save.
  * @param {EditGroupFormData} formData - The current form data to persist.
@@ -138,7 +150,7 @@ export const loadGroupMemberships = async (
 export const handleSaveGroup = async (
   id: number | null,
   formData: EditGroupFormData,
-  setSaving: (saving: boolean) => void
+  setSaving: (saving: boolean) => void,
 ) => {
   if (!id) return;
   const saveProcess = async () => {
@@ -148,15 +160,15 @@ export const handleSaveGroup = async (
       const patchDoc = Object.keys(formData).map((key) => ({
         op: "replace",
         path: `/${key}`,
-        value: formData[key as keyof typeof formData]
+        value: formData[key as keyof typeof formData],
       }));
 
       const response = await patchApiGroupsById({
         path: { id },
-        body: patchDoc as any
+        body: patchDoc as any,
       });
 
-      if(response.error) throw new Error("Failed to save group data");
+      if (response.error) throw new Error("Failed to save group data");
     } catch (err) {
       console.error("Failed to save group data:", err);
       throw err;
@@ -165,16 +177,18 @@ export const handleSaveGroup = async (
     }
   };
 
-  toast.promise(saveProcess(), {
-    loading: t("saving"),
-    success: t("save_success"),
-    error: t("save_error")
-  }).finally(() => setSaving(false));
+  toast
+    .promise(saveProcess(), {
+      loading: t("saving"),
+      success: t("save_success"),
+      error: t("save_error"),
+    })
+    .finally(() => setSaving(false));
 };
 
 /**
  * Uploads a new profile picture for the group.
- * 
+ *
  * @async
  * @param {React.ChangeEvent<HTMLInputElement>} e - The input change event containing the file.
  * @param {number | null} id - The ID of the group receiving the new picture.
@@ -183,7 +197,7 @@ export const handleSaveGroup = async (
 export const handleGroupProfilePictureUpload = async (
   e: React.ChangeEvent<HTMLInputElement>,
   id: number | null,
-  setSaving: (saving: boolean) => void
+  setSaving: (saving: boolean) => void,
 ) => {
   const file = e.target.files?.[0];
   if (!file || !id) return;
@@ -194,7 +208,7 @@ export const handleGroupProfilePictureUpload = async (
     try {
       const response = await postApiGroupsByIdGroupPicture({
         path: { id },
-        body: { image: file }
+        body: { image: file },
       });
 
       if (response.error) throw new Error("Failed to upload group picture");
@@ -211,13 +225,13 @@ export const handleGroupProfilePictureUpload = async (
   toast.promise(saveProcess(), {
     loading: t("uploading"),
     success: t("upload_success"),
-    error: t("upload_error")
+    error: t("upload_error"),
   });
 };
 
 /**
  * Removes a member's enrollment from the group.
- * 
+ *
  * @async
  * @param {number} id - The unique ID of the group membership record to delete.
  * @param {Function} setLoading - Setter to track the deletion progress.
@@ -226,7 +240,9 @@ export const handleGroupProfilePictureUpload = async (
 export const handleDeleteGroupEnrollment = async (
   id: number,
   setLoading: (loading: boolean) => void,
-  setEnrollments: React.Dispatch<React.SetStateAction<GroupMembershipResponseDto[]>>
+  setEnrollments: React.Dispatch<
+    React.SetStateAction<GroupMembershipResponseDto[]>
+  >,
 ) => {
   const deleteProcess = async () => {
     try {
@@ -247,13 +263,13 @@ export const handleDeleteGroupEnrollment = async (
   toast.promise(deleteProcess(), {
     loading: t("deleting"),
     success: t("delete_success"),
-    error: t("delete_error")
+    error: t("delete_error"),
   });
 };
 
 /**
  * Adds a new member to the group for a specific association year.
- * 
+ *
  * @async
  * @param {number | null} id - The ID of the group receiving a new member.
  * @param {MemberResponseDto} member - The member data to be enrolled.
@@ -267,8 +283,10 @@ export const handleAddGroupEnrollment = async (
   member: MemberResponseDto,
   selectedYear: number,
   setLoading: (loading: boolean) => void,
-  setEnrollments: React.Dispatch<React.SetStateAction<GroupMembershipResponseDto[]>>,
-  setAddEnrollmentModalIsOpen: (open: boolean) => void
+  setEnrollments: React.Dispatch<
+    React.SetStateAction<GroupMembershipResponseDto[]>
+  >,
+  setAddEnrollmentModalIsOpen: (open: boolean) => void,
 ) => {
   if (!id || !member || !member.id) return;
   const executeProcess = async () => {
@@ -279,7 +297,7 @@ export const handleAddGroupEnrollment = async (
           memberId: member.id!,
           groupId: id,
           membershipYear: selectedYear,
-        }
+        },
       });
 
       if (res.error || !res.data) throw new Error("Failed to add enrollment");
@@ -293,8 +311,8 @@ export const handleAddGroupEnrollment = async (
           memberName: `${member.firstName} ${member.lastName}`,
           groupName: res.data.group!.name,
           groupType: res.data.group!.type!,
-          id: res.data.id!
-        }
+          id: res.data.id!,
+        },
       ]);
       toast.success(t("enrollment_added"));
       setAddEnrollmentModalIsOpen(false);
@@ -309,13 +327,13 @@ export const handleAddGroupEnrollment = async (
   toast.promise(executeProcess(), {
     loading: t("adding"),
     success: t("add_success"),
-    error: t("add_error")
+    error: t("add_error"),
   });
 };
 
 /**
  * Updates the specific role alias assigned to a group membership.
- * 
+ *
  * @async
  * @param {number} enrollmentId - The ID of the group membership record to update.
  * @param {number | null} newRoleAliasId - The ID of the new role alias (or null to clear).
@@ -326,7 +344,9 @@ export const handleUpdateGroupRole = async (
   enrollmentId: number,
   newRoleAliasId: number | null,
   setLoadingChangeRole: (loading: boolean) => void,
-  setEnrollments: React.Dispatch<React.SetStateAction<GroupMembershipResponseDto[]>>
+  setEnrollments: React.Dispatch<
+    React.SetStateAction<GroupMembershipResponseDto[]>
+  >,
 ) => {
   const saveProcess = async () => {
     try {
@@ -334,8 +354,8 @@ export const handleUpdateGroupRole = async (
       const response = await patchApiGroupmembershipsById({
         path: { id: enrollmentId },
         body: [
-          { op: "replace", path: "/roleAliasId", value: newRoleAliasId }
-        ] as any
+          { op: "replace", path: "/roleAliasId", value: newRoleAliasId },
+        ] as any,
       });
 
       if (response.error) throw new Error("Failed to update role");
@@ -344,8 +364,8 @@ export const handleUpdateGroupRole = async (
         prev.map((e) =>
           e.id === enrollmentId
             ? { ...e, roleAliasId: newRoleAliasId as any }
-            : e
-        )
+            : e,
+        ),
       );
     } catch (err) {
       console.error("Failed to update enrollment role:", err);
@@ -358,13 +378,13 @@ export const handleUpdateGroupRole = async (
   toast.promise(saveProcess(), {
     loading: t("updating_role"),
     success: t("role_updated"),
-    error: t("role_update_failed")
+    error: t("role_update_failed"),
   });
 };
 
 /**
  * Updates the local list of role aliases when a new one is created via a modal.
- * 
+ *
  * @param {RoleAlias} roleAlias - The newly created role alias object.
  * @param {Function} setRoleAliases - Setter to update the local list of available roles.
  * @param {Function} setAddRoleModalIsOpen - Setter to close the role creation modal.
@@ -372,7 +392,7 @@ export const handleUpdateGroupRole = async (
 export const handleRoleAliasAdded = (
   roleAlias: RoleAlias,
   setRoleAliases: React.Dispatch<React.SetStateAction<RoleAlias[]>>,
-  setAddRoleModalIsOpen: (open: boolean) => void
+  setAddRoleModalIsOpen: (open: boolean) => void,
 ) => {
   setRoleAliases((prev) => [...prev, roleAlias]);
   setAddRoleModalIsOpen(false);

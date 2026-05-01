@@ -1,44 +1,47 @@
+import { useKeycloak } from "@react-keycloak/web";
+import { t } from "i18next";
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
+import { useNavigate } from "react-router";
+import type { GetAnnouncementResponseDto } from "~/api";
+import Markdown from "~/components/UI/Markdown";
 import { formatDate } from "~/util/date.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../Tiles/Tile";
-import Markdown from "~/components/UI/Markdown";
-import { useKeycloak } from "@react-keycloak/web";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
-import { useNavigate } from "react-router";
-import { t } from "i18next";
-import type { GetAnnouncementResponseDto } from "~/api";
 
 /**
  * A detailed tile component for displaying an individual association announcement.
- * 
+ *
  * Features:
- * - **Markdown Support**: Renders the announcement body text using a specialized 
+ * - **Markdown Support**: Renders the announcement body text using a specialized
  *   `Markdown` component with tailored typography styles.
- * - **Administrative Controls**: Automatically displays a floating edit button if the 
+ * - **Administrative Controls**: Automatically displays a floating edit button if the
  *   authenticated user is a member of the Board or Candidate Board.
- * - **Metadata Display**: Shows the creation date and the name of the announcer 
+ * - **Metadata Display**: Shows the creation date and the name of the announcer
  *   with accompanying icons for better scannability.
- * - **Responsive Design**: Uses a flexible header layout that ensures the title 
+ * - **Responsive Design**: Uses a flexible header layout that ensures the title
  *   and date/controls do not overlap on smaller screens.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @param {GetAnnouncementResponseDto} props.announcement - The announcement data object including title, content, and metadata.
  * @param {string} [props.className] - Optional CSS classes to override or extend the root container styling.
- * 
+ *
  * @example
  * ```tsx
- * <AnnouncementTile 
- *   announcement={announcementData} 
- *   className="shadow-lg" 
+ * <AnnouncementTile
+ *   announcement={announcementData}
+ *   className="shadow-lg"
  * />
  * ```
  */
 export default function AnnouncementTile({
   announcement,
   className,
-}: { announcement: GetAnnouncementResponseDto; className?: string }) {
+}: {
+  announcement: GetAnnouncementResponseDto;
+  className?: string;
+}) {
   const { keycloak } = useKeycloak();
   const navigate = useNavigate();
 
@@ -48,8 +51,10 @@ export default function AnnouncementTile({
     <Tile className={cn("border border-gray-200 p-6", className)}>
       {/* Header: Title (Links) | Date & Edit (Rechts) */}
       <div className="flex w-full justify-between items-start mb-4 gap-4">
-        <h3 className="font-bold text-lg leading-tight">{announcement.title}</h3>
-        
+        <h3 className="font-bold text-lg leading-tight">
+          {announcement.title}
+        </h3>
+
         <div className="flex items-center gap-3 shrink-0">
           <p className="flex items-center gap-1 text-sm text-gray-500 font-medium whitespace-nowrap">
             <Calendar className="w-4 h-4" />

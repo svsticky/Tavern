@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { getApiActivities, type ActivityResponseDto } from "~/api";
+import { type ActivityResponseDto, getApiActivities } from "~/api";
 import { generateA3Pdf } from "~/util/pdf.util";
 
 /**
@@ -16,11 +16,16 @@ type LoadActivitiesArgs = {
 
 /**
  * Fetches the list of current and future activities from the API.
- * 
+ *
  * @async
  * @param {LoadActivitiesArgs} args - Configuration and state setter functions.
  */
-export const loadActivities = async ({ initialized, authenticated, setLoading, setActivities }: LoadActivitiesArgs) => {
+export const loadActivities = async ({
+  initialized,
+  authenticated,
+  setLoading,
+  setActivities,
+}: LoadActivitiesArgs) => {
   if (!initialized || !authenticated) return;
 
   try {
@@ -29,10 +34,11 @@ export const loadActivities = async ({ initialized, authenticated, setLoading, s
       query: {
         IncludePast: false,
         IncludeFuture: true,
-      }
+      },
     });
 
-    if(activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+    if (activitiesResponse.error || !activitiesResponse.data)
+      throw new Error("Failed to load activities");
 
     setActivities(activitiesResponse.data as ActivityResponseDto[]);
   } catch (error) {
@@ -44,19 +50,22 @@ export const loadActivities = async ({ initialized, authenticated, setLoading, s
 };
 
 /**
- * Generates a formatted text overview of the current/next week's activities 
+ * Generates a formatted text overview of the current/next week's activities
  * and copies it to the user's clipboard for social media distribution.
- * 
+ *
  * Logic:
  * - If today is Monday-Wednesday, it targets the current week.
  * - If today is Thursday-Sunday, it targets the following week.
  * - Formats output based on the user's locale (NL vs EN).
- * 
+ *
  * @async
  * @param {string} locale - The user's current language preference.
  * @param {ActivityResponseDto[]} activities - The full list of activities to filter from.
  */
-export const copyWeekOverview = async (locale: string, activities: ActivityResponseDto[]) => {
+export const copyWeekOverview = async (
+  locale: string,
+  activities: ActivityResponseDto[],
+) => {
   try {
     const now = new Date();
     const currentDay = now.getDay();
@@ -72,13 +81,30 @@ export const copyWeekOverview = async (locale: string, activities: ActivityRespo
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 7);
 
-    const weekActivities = activities.filter((a) => {
-      const d = new Date(a.dateTimeStart);
-      return d >= startOfWeek && d < endOfWeek;
-    }) ?? [];
+    const weekActivities =
+      activities.filter((a) => {
+        const d = new Date(a.dateTimeStart);
+        return d >= startOfWeek && d < endOfWeek;
+      }) ?? [];
 
-    const dutchDays = ["Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag", "Zondag"];
-    const englishDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+    const dutchDays = [
+      "Maandag",
+      "Dinsdag",
+      "Woensdag",
+      "Donderdag",
+      "Vrijdag",
+      "Zaterdag",
+      "Zondag",
+    ];
+    const englishDays = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
     const isDutch = locale === "NL";
     const days = isDutch ? dutchDays : englishDays;
     let message = isDutch ? "*Weekoverzicht*\n\n" : "*Weekly Overview*\n\n";
@@ -87,13 +113,14 @@ export const copyWeekOverview = async (locale: string, activities: ActivityRespo
       const dayDate = new Date(startOfWeek);
       dayDate.setDate(startOfWeek.getDate() + index);
 
-      const dayActivities = weekActivities.filter((a) =>
-        new Date(a.dateTimeStart).toDateString() === dayDate.toDateString()
+      const dayActivities = weekActivities.filter(
+        (a) =>
+          new Date(a.dateTimeStart).toDateString() === dayDate.toDateString(),
       );
 
       message += `*${dayName}*\n`;
       if (dayActivities.length > 0) {
-        message += dayActivities.map((a) => `${isDutch ? a.dutchDescription : a.englishDescription || a.name}\n\n${import.meta.env.HostUrl}/activities/${a.id}`).join("\n\n&\n\n") + "\n\n";
+        message += `${dayActivities.map((a) => `${isDutch ? a.dutchDescription : a.englishDescription || a.name}\n\n${import.meta.env.HostUrl}/activities/${a.id}`).join("\n\n&\n\n")}\n\n`;
       } else {
         message += isDutch ? "Geen activiteit :(\n\n" : "No activities :(\n\n";
       }
@@ -102,8 +129,11 @@ export const copyWeekOverview = async (locale: string, activities: ActivityRespo
     const weeklyDrink = weekActivities.find((a) => a.isWeeklyDrinks);
     message += isDutch ? "*Wekelijkse borrel*\n" : "*Weekly Drinks*\n";
     if (weeklyDrink) {
-      const drinkDay = days[(new Date(weeklyDrink.dateTimeStart).getDay() + 6) % 7];
-      const locationFallback = isDutch ? "Locatie onbekend" : "Unknown location";
+      const drinkDay =
+        days[(new Date(weeklyDrink.dateTimeStart).getDay() + 6) % 7];
+      const locationFallback = isDutch
+        ? "Locatie onbekend"
+        : "Unknown location";
       message += `${drinkDay}: ${weeklyDrink.location || locationFallback}\n`;
     } else {
       message += isDutch ? "Geen borrel deze week" : "No drinks this week";
@@ -116,7 +146,10 @@ export const copyWeekOverview = async (locale: string, activities: ActivityRespo
   }
 };
 
-export const downloadPosters = async (activities: ActivityResponseDto[], token: string) => {
+export const downloadPosters = async (
+  activities: ActivityResponseDto[],
+  token: string,
+) => {
   const posterUrls = activities
     .filter((a) => a.showInKoala && a.posterPath)
     .map((a) => `${import.meta.env.ApiUrl}/api/activities/${a.id}/poster`);

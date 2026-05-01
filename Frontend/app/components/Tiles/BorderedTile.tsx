@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react";
-import { ChevronDown } from "lucide-react"; 
-import { useState, type ReactNode } from "react";
-import Tile from "./Tile";
+import { ChevronDown } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { cn } from "~/util/tailwind.util";
+import Tile from "./Tile";
 
 /**
  * Props for the BorderedTile component.
@@ -21,20 +21,20 @@ interface BorderedTileProps {
   subtitle?: string | null;
   icon?: LucideIcon;
   className?: string;
-  children: ReactNode; 
-  collapsibleContent?: ReactNode; 
+  children: ReactNode;
+  collapsibleContent?: ReactNode;
   defaultOpen?: boolean;
   noPadding?: boolean;
 }
 
 /**
  * A versatile card component that supports headers, icons, and optional collapsible sections.
- * 
- * This component wraps content in a bordered container and can act as either a static 
- * information tile or an accordion. When `collapsibleContent` is provided, the header 
- * becomes interactive, toggling the visibility of the extra content with a smooth 
+ *
+ * This component wraps content in a bordered container and can act as either a static
+ * information tile or an accordion. When `collapsibleContent` is provided, the header
+ * becomes interactive, toggling the visibility of the extra content with a smooth
  * grid-row transition.
- * 
+ *
  * @component
  * @param {BorderedTileProps} props - The component properties.
  */
@@ -46,7 +46,7 @@ export default function BorderedTile({
   children,
   collapsibleContent,
   defaultOpen = false,
-  noPadding = false
+  noPadding = false,
 }: BorderedTileProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -54,10 +54,11 @@ export default function BorderedTile({
 
   return (
     <Tile className={cn("border border-gray-200 flex flex-col p-0", className)}>
-      <div 
+      <div
         className={cn(
-          "p-4 transition-colors flex flex-col", 
-          collapsibleContent && "cursor-pointer hover:bg-slate-50", noPadding && "p-0"
+          "p-4 transition-colors flex flex-col",
+          collapsibleContent && "cursor-pointer hover:bg-slate-50",
+          noPadding && "p-0",
         )}
         onClick={() => collapsibleContent && setIsOpen(!isOpen)}
       >
@@ -67,9 +68,9 @@ export default function BorderedTile({
               {title}
             </span>
           ) : (
-            <div /> 
+            <div />
           )}
-          
+
           <div className="flex items-center gap-3">
             {Icon && (
               <div className="bg-orange-50 p-3 rounded-2xl flex items-center justify-center">
@@ -77,39 +78,38 @@ export default function BorderedTile({
               </div>
             )}
             {collapsibleContent && (
-              <ChevronDown 
-                className={cn("w-5 h-5 text-slate-400 transition-transform duration-200", isOpen && "rotate-180")} 
+              <ChevronDown
+                className={cn(
+                  "w-5 h-5 text-slate-400 transition-transform duration-200",
+                  isOpen && "rotate-180",
+                )}
               />
             )}
           </div>
         </div>
 
         {hasBottomContent && (
-          <div className="flex flex-col gap-4"> 
+          <div className="flex flex-col gap-4">
             {subtitle && (
-              <span className="text-sm text-slate-400">
-                {subtitle}
-              </span>
+              <span className="text-sm text-slate-400">{subtitle}</span>
             )}
 
-            {children && (
-              <div className="flex flex-col w-full">
-                {children}
-              </div>
-            )}
+            {children && <div className="flex flex-col w-full">{children}</div>}
           </div>
         )}
       </div>
 
       {collapsibleContent && (
-        <div className={cn(
-          "grid transition-all duration-200 ease-in-out border-t border-slate-50 bg-white",
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        )}>
+        <div
+          className={cn(
+            "grid transition-all duration-200 ease-in-out border-t border-slate-50 bg-white",
+            isOpen
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0",
+          )}
+        >
           <div className="overflow-hidden">
-            <div className="p-4">
-               {collapsibleContent}
-            </div>
+            <div className="p-4">{collapsibleContent}</div>
           </div>
         </div>
       )}

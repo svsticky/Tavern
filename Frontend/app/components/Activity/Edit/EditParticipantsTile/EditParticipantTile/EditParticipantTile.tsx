@@ -1,42 +1,53 @@
 import { t } from "i18next";
-import { useState, useEffect } from "react";
-import { 
-  type EnrollmentResponseDto, 
-} from "~/api";
+import { useEffect, useState } from "react";
+import type { EnrollmentResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
-import { handleParticipantUnenroll, handlePriceBlur, handlePriceChange, savePriceToServer } from "./EditParticipantTile.handlers";
+import {
+  handleParticipantUnenroll,
+  handlePriceBlur,
+  handlePriceChange,
+  savePriceToServer,
+} from "./EditParticipantTile.handlers";
 
 /**
  * An administrative tile component for managing an individual participant's enrollment.
- * 
+ *
  * Features:
  * - **Price Management**: Provides a controlled input to adjust the price for a specific enrollment.
- *   Includes a 600ms debounce to minimize API calls during typing and an `onBlur` trigger to 
+ *   Includes a 600ms debounce to minimize API calls during typing and an `onBlur` trigger to
  *   ensure final values are saved.
- * - **Unenrollment**: Allows administrators to remove a participant with a single action, 
+ * - **Unenrollment**: Allows administrators to remove a participant with a single action,
  *   guarded by a loading state and toast notifications.
- * - **State Syncing**: Automatically updates the local price state if the enrollment prop changes 
+ * - **State Syncing**: Automatically updates the local price state if the enrollment prop changes
  *   externally (e.g., after a list refresh).
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @param {EnrollmentResponseDto} props.enrollment - The enrollment data for the specific member.
  * @param {() => void} props.onUnenroll - Callback executed after a successful unenrollment to update the parent list.
- * 
+ *
  * @example
  * ```tsx
- * <EditParticipantTile 
- *   enrollment={participantData} 
- *   onUnenroll={() => refreshParticipantList()} 
+ * <EditParticipantTile
+ *   enrollment={participantData}
+ *   onUnenroll={() => refreshParticipantList()}
  * />
  * ```
  */
-export default function EditParticipantTile({ enrollment, onUnenroll }: { enrollment: EnrollmentResponseDto; onUnenroll: () => void }) {
+export default function EditParticipantTile({
+  enrollment,
+  onUnenroll,
+}: {
+  enrollment: EnrollmentResponseDto;
+  onUnenroll: () => void;
+}) {
   const [loading, setLoading] = useState(false);
   const [price, setPrice] = useState(enrollment.price ?? 0);
-  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(
+    null,
+  );
 
   useEffect(() => {
     setPrice(enrollment.price ?? 0);
@@ -59,31 +70,45 @@ export default function EditParticipantTile({ enrollment, onUnenroll }: { enroll
               value={price === 0 ? "" : price}
               placeholder="0.00"
               className="h-8 text-sm text-right px-2 w-full"
-               onChange={(e) =>
-                 handlePriceChange({
-                   e,
-                   debounceTimeout,
-                   setPrice,
-                   setDebounceTimeout,
-                   saveAction: (targetPrice) => savePriceToServer({ targetPrice, enrollment, setLoading, setPrice })
-                 })
-               }
-               onBlur={() =>
-                 handlePriceBlur({
-                   debounceTimeout,
-                   price,
-                   saveAction: (targetPrice) => savePriceToServer({ targetPrice, enrollment, setLoading, setPrice })
-                 })
-               }
-               disabled={loading}
-             />
+              onChange={(e) =>
+                handlePriceChange({
+                  e,
+                  debounceTimeout,
+                  setPrice,
+                  setDebounceTimeout,
+                  saveAction: (targetPrice) =>
+                    savePriceToServer({
+                      targetPrice,
+                      enrollment,
+                      setLoading,
+                      setPrice,
+                    }),
+                })
+              }
+              onBlur={() =>
+                handlePriceBlur({
+                  debounceTimeout,
+                  price,
+                  saveAction: (targetPrice) =>
+                    savePriceToServer({
+                      targetPrice,
+                      enrollment,
+                      setLoading,
+                      setPrice,
+                    }),
+                })
+              }
+              disabled={loading}
+            />
           </div>
         </div>
 
         <Button
           variant="danger"
           className="shrink-0 whitespace-nowrap"
-          onClick={() => handleParticipantUnenroll({ enrollment, setLoading, onUnenroll })}
+          onClick={() =>
+            handleParticipantUnenroll({ enrollment, setLoading, onUnenroll })
+          }
           disabled={loading}
         >
           {t("unenroll")}

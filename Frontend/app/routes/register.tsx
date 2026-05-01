@@ -1,29 +1,27 @@
 import { t } from "i18next";
-import { House } from "lucide-react";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-import RegisterForm from "~/components/Register/RegisterForm/RegisterForm";
-import RegisterPhotos from "~/components/PhotoSlideShow";
-import RegisterReasons from "~/components/Register/RegisterReasons";
 import PhotoSlideshow from "~/components/PhotoSlideShow";
+import RegisterForm from "~/components/Register/RegisterForm/RegisterForm";
+import RegisterReasons from "~/components/Register/RegisterReasons";
 
 /**
  * The public-facing membership registration landing page.
- * 
- * This page is designed as a high-conversion "One-Pager" for prospective members. 
+ *
+ * This page is designed as a high-conversion "One-Pager" for prospective members.
  * It follows a logical flow to encourage sign-ups:
  * 1. **Visual Hook**: A `PhotoSlideshow` displaying the association's atmosphere.
- * 2. **Value Proposition**: The `RegisterReasons` section (anchored by #reasons) 
+ * 2. **Value Proposition**: The `RegisterReasons` section (anchored by #reasons)
  *    explaining the benefits of joining.
- * 3. **Call to Action**: The `RegisterForm` (anchored by #become-member) for 
+ * 3. **Call to Action**: The `RegisterForm` (anchored by #become-member) for
  *    collecting registration data.
- * 
+ *
  * Features:
- * - **Smooth Navigation**: The `NavBar` uses hash-links (#) to allow users to 
+ * - **Smooth Navigation**: The `NavBar` uses hash-links (#) to allow users to
  *   jump between sections on the same page.
- * - **Responsive Constraints**: Uses `max-w-7xl` for informational content and 
+ * - **Responsive Constraints**: Uses `max-w-7xl` for informational content and
  *   a tighter `max-w-xl` for the form to ensure readability and focus.
  * - **Branding**: Implements a subtle themed background using `bg-(--board-primary)/5`.
- * 
+ *
  * @page
  * @component
  */
@@ -43,7 +41,7 @@ export default function Register() {
       id: "become_member",
       label: t("become_member"),
       href: "/register#become-member",
-    }
+    },
   ];
 
   const images = [
@@ -66,10 +64,10 @@ export default function Register() {
       <div className="flex flex-col min-h-screen w-full gap-6 items-center justify-center p-4 bg-(--board-primary)/5">
         <PhotoSlideshow images={images} className="w-full max-w-7xl" />
 
-        <section id="reasons" className="w-full max-w-7xl" >
+        <section id="reasons" className="w-full max-w-7xl">
           <RegisterReasons />
         </section>
-        
+
         <section id="become-member" className="w-full max-w-xl">
           <RegisterForm />
         </section>

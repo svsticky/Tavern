@@ -1,17 +1,17 @@
 import { t } from "i18next";
-import { Mail, Phone, TrendingUp } from "lucide-react";
-import type { Column } from "~/components/Tiles/DataTableTile";
-import DataTable from "~/components/Tiles/DataTableTile";
-import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
-import Button from "~/components/UI/Button";
+import { Mail, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { getApiMembers, type MemberResponseDto } from "~/api";
-import BorderedTile from "~/components/Tiles/BorderedTile";
-import toast from "react-hot-toast";
-import Modal from "~/components/UI/Modal/Modal";
 import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
+import BorderedTile from "~/components/Tiles/BorderedTile";
+import type { Column } from "~/components/Tiles/DataTableTile";
+import DataTable from "~/components/Tiles/DataTableTile";
+import Button from "~/components/UI/Button";
+import Input from "~/components/UI/Input";
+import Modal from "~/components/UI/Modal/Modal";
+import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
 /** The number of members to fetch per page for infinite scrolling. */
@@ -19,17 +19,17 @@ const PAGE_SIZE = 20;
 
 /**
  * An administrative directory page for managing association members.
- * 
+ *
  * Key Features:
- * - **Infinite Scrolling**: Uses the `IntersectionObserver` API to detect when the user 
+ * - **Infinite Scrolling**: Uses the `IntersectionObserver` API to detect when the user
  *   has reached the end of the list and automatically fetches the next page.
- * - **Debounced Search**: Waits 300ms after the last keystroke before triggering an API 
+ * - **Debounced Search**: Waits 300ms after the last keystroke before triggering an API
  *   call to reduce server load.
- * - **Complex Filtering**: Supports advanced server-side filtering (Studies, Status, 
+ * - **Complex Filtering**: Supports advanced server-side filtering (Studies, Status,
  *   Suspension, etc.) via a Modal overlay.
- * - **Responsive Design**: Uses a data table that collapses or adjusts for mobile 
+ * - **Responsive Design**: Uses a data table that collapses or adjusts for mobile
  *   viewports with full-width buttons.
- * 
+ *
  * @page
  * @component
  */
@@ -41,41 +41,50 @@ export default function Members() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<MembersFilterDto | null>(null);
-  
+
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement>(null);
 
-  const fetchMembers = useCallback(async (pageNum: number, search: string, isInitial: boolean) => {
-    try {
-      setLoading(true);
-      const response = await getApiMembers({ 
-        query: { Page: pageNum, PageSize: PAGE_SIZE, Search: search, 
-          StudyId: filters?.studyId || undefined, 
-          Gratie: filters?.gratie || undefined, 
-          LidVanVerdienste: filters?.lidVanVerdienste || undefined, 
-          EreLid: filters?.ereLid || undefined, 
-          Begunstiger: filters?.begunstiger || undefined, 
-          Suspended: filters?.suspended || undefined, 
-          Inactive: filters?.inactive || undefined,
-          StudyType: filters?.studyType || undefined }
-      });
+  const fetchMembers = useCallback(
+    async (pageNum: number, search: string, isInitial: boolean) => {
+      try {
+        setLoading(true);
+        const response = await getApiMembers({
+          query: {
+            Page: pageNum,
+            PageSize: PAGE_SIZE,
+            Search: search,
+            StudyId: filters?.studyId || undefined,
+            Gratie: filters?.gratie || undefined,
+            LidVanVerdienste: filters?.lidVanVerdienste || undefined,
+            EreLid: filters?.ereLid || undefined,
+            Begunstiger: filters?.begunstiger || undefined,
+            Suspended: filters?.suspended || undefined,
+            Inactive: filters?.inactive || undefined,
+            StudyType: filters?.studyType || undefined,
+          },
+        });
 
-      if(response.error || !response.data) throw new Error("Failed to fetch members");
-      
-      setMembers(prev => isInitial ? response.data! : [...prev, ...response.data!]);
-      
-      if (response.data.length < PAGE_SIZE) {
-        setHasMore(false);
+        if (response.error || !response.data)
+          throw new Error("Failed to fetch members");
+
+        setMembers((prev) =>
+          isInitial ? response.data! : [...prev, ...response.data!],
+        );
+
+        if (response.data.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
+      } catch (error) {
+        console.error("Error fetching members:", error);
+        toast.error(t("loading_failed"));
+      } finally {
+        setLoading(false);
       }
-    } 
-    catch (error) {
-      console.error("Error fetching members:", error);
-      toast.error(t("loading_failed"));
-    } finally {
-      setLoading(false);
-    }
-  }, [filters]);
+    },
+    [filters],
+  );
 
   const applyFilters = (newFilters: MembersFilterDto) => {
     setFilters(newFilters);
@@ -94,7 +103,7 @@ export default function Members() {
     setPage(1);
     setHasMore(true);
     fetchMembers(1, debouncedSearchQuery, true);
-  }, [debouncedSearchQuery, filters, fetchMembers]);
+  }, [debouncedSearchQuery, fetchMembers]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -105,7 +114,7 @@ export default function Members() {
           fetchMembers(nextPage, debouncedSearchQuery, false);
         }
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     if (loaderRef.current) {
@@ -114,13 +123,15 @@ export default function Members() {
 
     return () => observer.disconnect();
   }, [hasMore, loading, page, debouncedSearchQuery, fetchMembers]);
-  
+
   const columns: Column<MemberResponseDto>[] = [
     {
       header: t("name"),
       render: (m) => (
         <div className="flex items-center gap-2 text-slate-500">
-          <span>{m.firstName} {m.lastName}</span>
+          <span>
+            {m.firstName} {m.lastName}
+          </span>
         </div>
       ),
     },
@@ -146,9 +157,9 @@ export default function Members() {
       header: "",
       className: "w-full sm:w-px whitespace-nowrap text-right",
       render: (act) => (
-        <Button 
+        <Button
           variant="secondary"
-          className="w-full sm:w-auto" 
+          className="w-full sm:w-auto"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/admin/members/${act.id}`);
@@ -157,7 +168,7 @@ export default function Members() {
           {t("view_member")}
         </Button>
       ),
-    }
+    },
   ];
 
   return (
@@ -166,33 +177,45 @@ export default function Members() {
 
       <BorderedTile>
         <div className="flex flex-col sm:flex-row items-end w-full gap-4">
-          
           <div className="flex flex-col flex-1 w-full sm:w-auto">
-            <Input 
+            <Input
               label={t("search")}
-              placeholder={t("search_members")} 
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)} 
+              placeholder={t("search_members")}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearchQuery(e.target.value)
+              }
             />
           </div>
 
-          <Button variant="secondary" className="h-[42px]" onClick={() => setIsFiltersOpen(true)}>
+          <Button
+            variant="secondary"
+            className="h-[42px]"
+            onClick={() => setIsFiltersOpen(true)}
+          >
             {t("filters")}
           </Button>
-          
         </div>
       </BorderedTile>
 
       <BorderedTile className="bg-white p-0">
         <DataTable data={members} columns={columns} emptyText="" />
-        
+
         <div ref={loaderRef} className="h-10 flex items-center justify-center">
-          <span className="text-slate-400 text-sm">{loading ? t("loading_more") : hasMore ? t("load_more") : members.length === 0 ? t("no_data") : t("no_more_members")}</span>
+          <span className="text-slate-400 text-sm">
+            {loading
+              ? t("loading_more")
+              : hasMore
+                ? t("load_more")
+                : members.length === 0
+                  ? t("no_data")
+                  : t("no_more_members")}
+          </span>
         </div>
       </BorderedTile>
-      
-      <Modal 
-        isOpen={isFiltersOpen} 
-        onClose={() => setIsFiltersOpen(false)} 
+
+      <Modal
+        isOpen={isFiltersOpen}
+        onClose={() => setIsFiltersOpen(false)}
         title={t("filter_members")}
       >
         <FilterMemberOverlay filters={filters} onFilter={applyFilters} />

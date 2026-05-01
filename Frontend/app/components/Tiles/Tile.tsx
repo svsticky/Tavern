@@ -14,17 +14,19 @@ type TileProps = {
 
 /**
  * A fundamental layout building block that provides a consistent container style.
- * 
- * The Tile component serves as the base for most UI cards, providing standard 
- * properties like rounded corners, internal padding, and overflow containment. 
+ *
+ * The Tile component serves as the base for most UI cards, providing standard
+ * properties like rounded corners, internal padding, and overflow containment.
  * It is designed to be highly composable and easily extended via Tailwind classes.
- * 
+ *
  * @component
  * @param {TileProps} props - The component properties.
  */
 export default function Tile({ className, children }: TileProps) {
   return (
-    <div className={cn("box-border rounded-2xl p-5 overflow-hidden", className)}>
+    <div
+      className={cn("box-border rounded-2xl p-5 overflow-hidden", className)}
+    >
       {children}
     </div>
   );

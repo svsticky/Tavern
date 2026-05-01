@@ -1,9 +1,17 @@
-import type React from "react";
-import type { NavigateFunction } from "react-router";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
+import type { NavigateFunction } from "react-router";
+import {
+  getApiMailinglists,
+  getApiStudies,
+  type Mailinglist,
+  type PostMemberDto,
+  postApiMembers,
+  postApiPaymentsMembership,
+  type Study,
+} from "~/api";
 import i18n from "~/i18n";
-import { postApiMembers, postApiPaymentsMembership, getApiStudies, type PostMemberDto, type Study, getApiMailinglists, type Mailinglist } from "~/api";
 
 /**
  * Data structure representing the registration form fields for a new member.
@@ -28,19 +36,18 @@ export type RegisterFormData = {
  * @param {function} setStudies - State setter function for the studies array.
  * @returns {Promise<void>}
  */
-export const loadStudies = async (
-  setStudies: (studies: Study[]) => void
-) => {
+export const loadStudies = async (setStudies: (studies: Study[]) => void) => {
   try {
     const response = await getApiStudies();
 
-    if(response.error || !response.data) throw new Error("Failed to fetch studies");
+    if (response.error || !response.data)
+      throw new Error("Failed to fetch studies");
 
     setStudies(response.data);
   } catch (error) {
     console.error("Failed to fetch studies", error);
     toast.error(t("failed_to_load_studies"));
-  } 
+  }
 };
 
 /**
@@ -49,12 +56,13 @@ export const loadStudies = async (
  * @returns {Promise<void>}
  */
 export const loadMailingLists = async (
-  setMailingLists: (lists: Mailinglist[]) => void
+  setMailingLists: (lists: Mailinglist[]) => void,
 ) => {
   try {
     const response = await getApiMailinglists();
 
-    if(response.error || !response.data) throw new Error("Failed to fetch mailing lists");
+    if (response.error || !response.data)
+      throw new Error("Failed to fetch mailing lists");
 
     setMailingLists(response.data);
   } catch (error) {
@@ -70,7 +78,7 @@ export const loadMailingLists = async (
  */
 export const handleRegisterInputChange = (
   e: React.ChangeEvent<HTMLInputElement>,
-  setFormData: React.Dispatch<React.SetStateAction<RegisterFormData>>
+  setFormData: React.Dispatch<React.SetStateAction<RegisterFormData>>,
 ) => {
   const { name, value } = e.target;
   setFormData((prev) => ({ ...prev, [name]: value }));
@@ -81,9 +89,12 @@ export const handleRegisterInputChange = (
  * @param {number} id - The ID of the study to toggle.
  * @param {React.Dispatch<React.SetStateAction<number[]>>} setSelectedStudies - State setter for selected study IDs.
  */
-export const handleStudyToggle = (id: number, setSelectedStudies: React.Dispatch<React.SetStateAction<number[]>>) => {
+export const handleStudyToggle = (
+  id: number,
+  setSelectedStudies: React.Dispatch<React.SetStateAction<number[]>>,
+) => {
   setSelectedStudies((prev) =>
-    prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
   );
 };
 
@@ -103,9 +114,9 @@ type RegisterSubmitArgs = {
 };
 
 /**
- * Orchestrates the member registration process, including API submission, 
+ * Orchestrates the member registration process, including API submission,
  * toast notifications, and conditional redirection to payment or confirmation.
- * 
+ *
  * @param {RegisterSubmitArgs} args - Configuration and state objects required for submission.
  * @returns {Promise<void>}
  */
@@ -117,7 +128,7 @@ export const handleRegisterSubmit = async ({
   selectedStudies,
   subscriptions,
   studies,
-  navigate
+  navigate,
 }: RegisterSubmitArgs) => {
   e.preventDefault();
   if (!isFormValid) return;
@@ -138,7 +149,7 @@ export const handleRegisterSubmit = async ({
         houseNumber: formData.houseNumber,
         postalCode: formData.postalCode,
         city: formData.city,
-        studentNumber: parseInt(formData.studentNumber),
+        studentNumber: parseInt(formData.studentNumber, 10),
         parentPhoneNumber: formData.parentPhone || null,
         preferredLanguage: isDutch ? "NL" : "EN",
         mailSubscriptions: subscriptions,
@@ -146,27 +157,34 @@ export const handleRegisterSubmit = async ({
           studyId: id,
           memberId: "00000000-0000-0000-0000-000000000000",
           enrollmentDate: new Date().toISOString(),
-        }))
+        })),
       };
 
       const response = await postApiMembers({ body: payload });
 
       if (response.status === 201 && response.data) {
-        if (!studies.some((s) => selectedStudies.includes(s.id!) && s.type === "Master")) {
+        if (
+          !studies.some(
+            (s) => selectedStudies.includes(s.id!) && s.type === "Master",
+          )
+        ) {
           const paymentResponse = await postApiPaymentsMembership({
             body: {
               memberId: response.data.id,
-            }
+            },
           });
 
-          if (paymentResponse.status === 200 && paymentResponse.data && paymentResponse.data.checkoutUrl) {
+          if (
+            paymentResponse.status === 200 &&
+            paymentResponse.data &&
+            paymentResponse.data.checkoutUrl
+          ) {
             window.location.href = paymentResponse.data.checkoutUrl;
           }
         } else {
           navigate("/confirm-mail");
         }
-      }
-      else{
+      } else {
         throw new Error("Registration failed");
       }
     } catch (error) {
@@ -180,6 +198,6 @@ export const handleRegisterSubmit = async ({
   toast.promise(registerProcess(), {
     loading: t("registering"),
     success: t("registration_successful"),
-    error: t("registration_failed")
+    error: t("registration_failed"),
   });
 };

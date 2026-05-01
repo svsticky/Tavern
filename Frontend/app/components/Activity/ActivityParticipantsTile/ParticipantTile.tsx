@@ -1,28 +1,32 @@
+import { useEffect, useState } from "react";
 import type { EnrollmentResponseDto } from "~/api/types.gen";
 import Tile from "../../Tiles/Tile";
-import { useState, useEffect } from "react";
 
 /**
  * A compact tile component used to display an individual participant's information.
- * 
+ *
  * Key features:
  * - **Profile Picture**: Fetches the member's profile picture or falls back to a default SVG.
- * - **Dynamic Answers**: If the enrollment contains multiple specification answers, 
+ * - **Dynamic Answers**: If the enrollment contains multiple specification answers,
  *   it automatically cycles through them with a sliding animation every 3 seconds.
  * - **Hover Effects**: Includes subtle scaling and color transitions for better interactivity.
- * 
+ *
  * @component
  * @param {Object} props - The component props.
  * @param {EnrollmentResponseDto} props.enrollment - The enrollment data, including member details and specification answers.
- * 
+ *
  * @example
  * ```tsx
- * <ParticipantTile 
- *   enrollment={enrollmentData} 
+ * <ParticipantTile
+ *   enrollment={enrollmentData}
  * />
  * ```
  */
-export default function ParticipantTile({ enrollment }: { enrollment: EnrollmentResponseDto }) {  
+export default function ParticipantTile({
+  enrollment,
+}: {
+  enrollment: EnrollmentResponseDto;
+}) {
   const imageUrl = `${import.meta.env.ApiUrl}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 
@@ -51,7 +55,11 @@ export default function ParticipantTile({ enrollment }: { enrollment: Enrollment
             src={isFallback ? fallbackUrl : imageUrl}
             alt="Profile"
             onError={() => setImgError(true)}
-            className={isFallback ? "w-8 h-8 object-contain" : "w-full h-full object-cover"}
+            className={
+              isFallback
+                ? "w-8 h-8 object-contain"
+                : "w-full h-full object-cover"
+            }
           />
         </div>
       </div>
@@ -63,7 +71,7 @@ export default function ParticipantTile({ enrollment }: { enrollment: Enrollment
 
         {hasAnswers && (
           <div className="relative h-4 overflow-hidden mt-0.5">
-            <p 
+            <p
               key={currentAnswerIndex}
               className="text-xs text-slate-500 truncate animate-slide-up"
             >

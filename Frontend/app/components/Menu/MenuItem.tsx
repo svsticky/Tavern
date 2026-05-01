@@ -33,7 +33,7 @@ type MenuItemProps = {
 /**
  * A navigation link component used within sidebars and navbars.
  * Automatically handles active state styling based on the current URL path.
- * 
+ *
  * @component
  * @param {MenuItemProps} props - The component properties.
  */

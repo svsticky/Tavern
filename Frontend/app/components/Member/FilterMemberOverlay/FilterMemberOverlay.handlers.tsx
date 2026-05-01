@@ -1,11 +1,11 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import { getApiStudies, type Study, type StudyType } from "~/api";
-import { type MembersFilterDto } from "~/types/MembersFilterDto";
+import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
 /**
  * Fetches the list of available studies from the API.
- * 
+ *
  * @async
  * @function loadStudies
  * @param {Function} setLoading - State setter to track the loading status.
@@ -15,7 +15,7 @@ import { type MembersFilterDto } from "~/types/MembersFilterDto";
  */
 export const loadStudies = async (
   setLoading: (loading: boolean) => void,
-  setStudies: (studies: Study[]) => void
+  setStudies: (studies: Study[]) => void,
 ) => {
   try {
     setLoading(true);
@@ -51,7 +51,7 @@ type ApplyFiltersArgs = {
 
 /**
  * Compiles individual filter states into a single DTO and triggers the filter callback.
- * 
+ *
  * @function handleApplyFilters
  * @param {ApplyFiltersArgs} args - The filter state values and callback.
  * @returns {void}
@@ -65,7 +65,7 @@ export const handleApplyFilters = ({
   begunstiger,
   suspended,
   inactive,
-  studyType
+  studyType,
 }: ApplyFiltersArgs) => {
   onFilter({
     studyId,
@@ -75,7 +75,7 @@ export const handleApplyFilters = ({
     begunstiger,
     suspended,
     inactive,
-    studyType
+    studyType,
   });
 };
 
@@ -98,7 +98,7 @@ export const handleResetFilters = ({
   setBegunstiger,
   setSuspended,
   setInactive,
-  setStudyType
+  setStudyType,
 }: ResetFiltersArgs) => {
   setStudy(null);
   setGratie(null);

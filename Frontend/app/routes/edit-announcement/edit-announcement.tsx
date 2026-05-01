@@ -1,29 +1,33 @@
-import { useParams, useNavigate } from "react-router";
-import { useEffect, useState } from "react";
-import Input from "~/components/UI/Input";
-import TextArea from "~/components/UI/TextArea";
-import Button from "~/components/UI/Button";
 import { t } from "i18next";
-import { FormSection } from "~/components/UI/Form/FormSection";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router";
+import Button from "~/components/UI/Button";
 import Form from "~/components/UI/Form/Form";
-import { handleAnnouncementSubmit, handleDeleteAnnouncement, loadAnnouncementData } from "./edit-announcement.handlers";
+import { FormSection } from "~/components/UI/Form/FormSection";
+import Input from "~/components/UI/Input";
+import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import TextArea from "~/components/UI/TextArea";
+import {
+  handleAnnouncementSubmit,
+  handleDeleteAnnouncement,
+  loadAnnouncementData,
+} from "./edit-announcement.handlers";
 
 /**
  * An administrative page for creating or editing system-wide announcements.
- * 
+ *
  * This component provides a focused interface for board members to communicate with the association.
  * It manages several operational states:
  * - **Context Switching**: Automatically toggles between 'Create' and 'Edit' modes based on the URL ID parameter.
  * - **Data Hydration**: Fetches existing announcement content when in edit mode to prepopulate the form.
- * - **Form Orchestration**: Leverages specialized handlers to process complex logic like FormData extraction, 
+ * - **Form Orchestration**: Leverages specialized handlers to process complex logic like FormData extraction,
  *   API status management (saving/deleting), and navigation.
- * - **Destructive Actions**: Provides a 'Delete' option only when modifying an existing entry, 
+ * - **Destructive Actions**: Provides a 'Delete' option only when modifying an existing entry,
  *   protected by loading states to prevent duplicate requests.
- * 
- * The layout is constrained to a readable width (`max-w-4xl`) to improve the editing experience 
+ *
+ * The layout is constrained to a readable width (`max-w-4xl`) to improve the editing experience
  * for long-form announcement content.
- * 
+ *
  * @page
  * @component
  */
@@ -45,30 +49,40 @@ export default function AnnouncementFormPage() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <PageHeader 
-        title={isEdit ? t("edit_announcement") : t("create_announcement")} 
-        backTo="/announcements" 
+      <PageHeader
+        title={isEdit ? t("edit_announcement") : t("create_announcement")}
+        backTo="/announcements"
       />
 
-      <Form onSubmit={(e) => handleAnnouncementSubmit({ e, isEdit, id, setSaving, navigate })}>
+      <Form
+        onSubmit={(e) =>
+          handleAnnouncementSubmit({ e, isEdit, id, setSaving, navigate })
+        }
+      >
         <FormSection title={t("announcement_details")} columns={1}>
-          <Input 
-            label={t("title")} 
-            name="Title" 
-            defaultValue={initialData.Title} 
-            required 
+          <Input
+            label={t("title")}
+            name="Title"
+            defaultValue={initialData.Title}
+            required
           />
-          <TextArea 
-            label={t("content")} 
-            name="Content" 
-            defaultValue={initialData.Content} 
-            rows={12} 
-            required 
+          <TextArea
+            label={t("content")}
+            name="Content"
+            defaultValue={initialData.Content}
+            rows={12}
+            required
           />
         </FormSection>
 
         {id && (
-          <Button variant="danger" type="button" onClick={() => handleDeleteAnnouncement(id, setDeleting, navigate)} disabled={saving || deleting} className="w-full sm:w-auto">
+          <Button
+            variant="danger"
+            type="button"
+            onClick={() => handleDeleteAnnouncement(id, setDeleting, navigate)}
+            disabled={saving || deleting}
+            className="w-full sm:w-auto"
+          >
             {deleting ? `${t("deleting")}...` : t("delete")}
           </Button>
         )}

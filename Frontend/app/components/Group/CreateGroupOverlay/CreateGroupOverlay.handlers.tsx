@@ -1,7 +1,7 @@
-import type React from "react";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
-import { postApiGroups, type GroupType } from "~/api";
+import { type GroupType, postApiGroups } from "~/api";
 
 type CreateGroupFormData = {
   name: string;
@@ -11,7 +11,7 @@ type CreateGroupFormData = {
 
 /**
  * Processes a file input change event to update the form state and generate a local image preview.
- * 
+ *
  * @param e - The change event from the file input element.
  * @param formData - The current state of the group creation form.
  * @param setFormData - State setter to update the form data with the selected file.
@@ -21,7 +21,7 @@ export const handleFileChange = (
   e: React.ChangeEvent<HTMLInputElement>,
   formData: CreateGroupFormData,
   setFormData: React.Dispatch<React.SetStateAction<CreateGroupFormData>>,
-  setImagePreview: (preview: string | null) => void
+  setImagePreview: (preview: string | null) => void,
 ) => {
   const file = e.target.files?.[0];
   if (file) {
@@ -32,13 +32,13 @@ export const handleFileChange = (
 
 /**
  * Resets the group creation form to its initial default values.
- * 
+ *
  * @param setFormData - State setter to clear form fields.
  * @param setImagePreview - State setter to remove the local image preview and revoke URL objects.
  */
 export const resetCreateGroupForm = (
   setFormData: React.Dispatch<React.SetStateAction<CreateGroupFormData>>,
-  setImagePreview: (preview: string | null) => void
+  setImagePreview: (preview: string | null) => void,
 ) => {
   setFormData({ name: "", type: "Committee", groupPicture: null });
   setImagePreview(null);
@@ -57,14 +57,20 @@ type SubmitArgs = {
 
 /**
  * Handles the submission of the group creation form.
- * 
- * Validates the presence of required fields (Name and Picture), performs the 
+ *
+ * Validates the presence of required fields (Name and Picture), performs the
  * API request, and manages user feedback via toast notifications.
- * 
+ *
  * @async
  * @param {SubmitArgs} args - Configuration for the submission process.
  */
-export const handleCreateGroupSubmit = ({ e, formData, setLoading, onSuccess, resetForm }: SubmitArgs) => {
+export const handleCreateGroupSubmit = ({
+  e,
+  formData,
+  setLoading,
+  onSuccess,
+  resetForm,
+}: SubmitArgs) => {
   e.preventDefault();
 
   const createProcess = async () => {
@@ -74,18 +80,18 @@ export const handleCreateGroupSubmit = ({ e, formData, setLoading, onSuccess, re
         toast.error(t("please_fill_all_fields"));
         return;
       }
-      
+
       const response = await postApiGroups({
         body: {
           Name: formData.name,
           Type: formData.type as GroupType,
           GroupPicture: formData.groupPicture,
-        }
+        },
       });
-      
-      if(response.error) {
+
+      if (response.error) {
         throw new Error("Failed to create group");
-       }
+      }
 
       onSuccess();
       resetForm();
@@ -100,6 +106,6 @@ export const handleCreateGroupSubmit = ({ e, formData, setLoading, onSuccess, re
   toast.promise(createProcess(), {
     loading: t("creating_group"),
     success: t("group_created_successfully"),
-    error: t("failed_to_create_group")
+    error: t("failed_to_create_group"),
   });
 };

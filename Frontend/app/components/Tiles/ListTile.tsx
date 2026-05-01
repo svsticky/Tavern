@@ -1,6 +1,5 @@
 import React from "react";
 import { cn } from "~/util/tailwind.util";
-import Tile from "./Tile";
 import BorderedTile from "./BorderedTile";
 
 /**
@@ -16,11 +15,11 @@ type Props = {
 
 /**
  * A layout component that renders a collection of items as a vertical list inside a BorderedTile.
- * 
+ *
  * Each child is wrapped in a container with a bottom border, except for the last item,
- * creating a clean, separated list view. It automatically utilizes `BorderedTile` with 
+ * creating a clean, separated list view. It automatically utilizes `BorderedTile` with
  * `noPadding` to ensure the list items extend to the edges of the card.
- * 
+ *
  * @component
  * @param {Props} props - The component properties.
  */

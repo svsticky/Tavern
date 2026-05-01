@@ -35,9 +35,9 @@ type NavBarProps = {
 };
 
 /**
- * A responsive navigation bar that switches between a standard horizontal layout and a 
+ * A responsive navigation bar that switches between a standard horizontal layout and a
  * compact dropdown menu based on container width.
- * 
+ *
  * @param {NavBarProps} props - The properties for the NavBar.
  */
 export default function NavBar({
@@ -121,7 +121,7 @@ NavBar.Item = MenuItemComponent;
 
 /**
  * Subcomponent for the user profile section, integrating with the NavBar's compact state.
- * 
+ *
  * @param {Object} props - Profile dropdown properties.
  * @param {string} props.username - The name of the current user.
  * @param {string} props.avatarUrl - The URL of the user's profile image.

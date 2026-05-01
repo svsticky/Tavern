@@ -6,11 +6,14 @@ import { jsPDF } from "jspdf";
  * @param images An array of image URLs to be included in the PDF document.
  * @returns A promise that resolves when the PDF has been generated and saved.
  */
-export const generateA3Pdf = async (imageUrls: string[], token: string): Promise<void> => {
+export const generateA3Pdf = async (
+  imageUrls: string[],
+  token: string,
+): Promise<void> => {
   const pdf = new jsPDF({
-    orientation: 'p',
-    unit: 'mm',
-    format: 'a3'
+    orientation: "p",
+    unit: "mm",
+    format: "a3",
   });
 
   const width = pdf.internal.pageSize.getWidth();
@@ -20,8 +23,8 @@ export const generateA3Pdf = async (imageUrls: string[], token: string): Promise
     try {
       const response = await fetch(imageUrls[i], {
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       if (!response.ok) continue;
@@ -35,10 +38,10 @@ export const generateA3Pdf = async (imageUrls: string[], token: string): Promise
       });
 
       if (i > 0) {
-        pdf.addPage('a3', 'p');
+        pdf.addPage("a3", "p");
       }
 
-      pdf.addImage(base64Data, 'JPEG', 0, 0, width, height, undefined, 'FAST');
+      pdf.addImage(base64Data, "JPEG", 0, 0, width, height, undefined, "FAST");
     } catch (error) {
       console.error(error);
     }

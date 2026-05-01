@@ -14,14 +14,14 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * A primary layout component that provides the main navigation structure for the application.
- * 
+ *
  * This layout includes:
  * - **Dynamic Navigation**: Displays a set of standard links (Dashboard, Activities, etc.).
  * - **Identity Management**: Fetches and displays the user's profile picture and name.
  * - **Role-Based Access**: Conditionally adds administrative links to the profile dropdown if the user is a board member.
  * - **Blob Management**: Safely handles profile picture retrieval via API as a Blob and manages Object URL cleanup.
  * - **Responsive Constraints**: Configures the `NavBar` to adapt its layout based on the length of the user's name.
- * 
+ *
  * @component
  */
 export default function NavBarLayout() {
@@ -33,37 +33,40 @@ export default function NavBarLayout() {
   const [imgSrc, setImgSrc] = useState<string>("/profile-picture.svg");
 
   useEffect(() => {
-      let url: string | null = null;
-      async function loadData() {
-        if (!initialized || !keycloak.authenticated) return;
-  
-        try {
-          var profilePictureResponse = await getApiMembersByIdProfilePicture({
-            path: {
-              id: keycloak.tokenParsed?.UserId ?? 0
-            },
-            responseType: 'blob'
-          })
-        
-          if (profilePictureResponse.data instanceof Blob && profilePictureResponse.status === 200) {
-            url = URL.createObjectURL(profilePictureResponse.data);
-            setImgSrc(url);
-          }
+    let url: string | null = null;
+    async function loadData() {
+      if (!initialized || !keycloak.authenticated) return;
 
-          if(profilePictureResponse.status === 404) {
-            setImgSrc("/profile-picture.svg");
-          }
-        } catch (error) {
-          console.error("Error while loading profile picture:", error);
+      try {
+        const profilePictureResponse = await getApiMembersByIdProfilePicture({
+          path: {
+            id: keycloak.tokenParsed?.UserId ?? 0,
+          },
+          responseType: "blob",
+        });
+
+        if (
+          profilePictureResponse.data instanceof Blob &&
+          profilePictureResponse.status === 200
+        ) {
+          url = URL.createObjectURL(profilePictureResponse.data);
+          setImgSrc(url);
         }
-      }
-  
-      loadData();
 
-      return () => {
-        if (url) URL.revokeObjectURL(url);
-      };  
-    }, [initialized, keycloak.authenticated]);
+        if (profilePictureResponse.status === 404) {
+          setImgSrc("/profile-picture.svg");
+        }
+      } catch (error) {
+        console.error("Error while loading profile picture:", error);
+      }
+    }
+
+    loadData();
+
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId]);
 
   const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
 
@@ -72,11 +75,41 @@ export default function NavBarLayout() {
     avatarUrl: imgSrc,
     options: [
       { label: t("account"), action: () => navigate("/account") },
-      ...(isBoard ? [{ label: `${t("all_activities")}`, action: () => navigate("/admin/activities") }] : []),
-      ...(isBoard ? [{ label: `${t("members")}`, action: () => navigate("/admin/members") }] : []),
-      ...(isBoard ? [{ label: `${t("groups")}`, action: () => navigate("/admin/groups") }] : []),
-      ...(isBoard ? [{ label: `${t("finances")}`, action: () => navigate("/admin/finances") }] : []),
-      ...(isBoard ? [{ label: `${t("koala_settings")}`, action: () => navigate("/admin/settings") }] : []),
+      ...(isBoard
+        ? [
+            {
+              label: `${t("all_activities")}`,
+              action: () => navigate("/admin/activities"),
+            },
+          ]
+        : []),
+      ...(isBoard
+        ? [
+            {
+              label: `${t("members")}`,
+              action: () => navigate("/admin/members"),
+            },
+          ]
+        : []),
+      ...(isBoard
+        ? [{ label: `${t("groups")}`, action: () => navigate("/admin/groups") }]
+        : []),
+      ...(isBoard
+        ? [
+            {
+              label: `${t("finances")}`,
+              action: () => navigate("/admin/finances"),
+            },
+          ]
+        : []),
+      ...(isBoard
+        ? [
+            {
+              label: `${t("koala_settings")}`,
+              action: () => navigate("/admin/settings"),
+            },
+          ]
+        : []),
       { label: t("logout"), action: () => navigate("/logout") },
     ],
   };
@@ -110,7 +143,10 @@ export default function NavBarLayout() {
 
   return (
     <div className="min-w-[320px]">
-      <NavBar className="px-[5%] sm:px-[10%]" maxWidthBeforeCompact={900 + profileOptions.username.length * 17}>
+      <NavBar
+        className="px-[5%] sm:px-[10%]"
+        maxWidthBeforeCompact={900 + profileOptions.username.length * 17}
+      >
         <NavBar.Branding title="" />
         {navBarItems.map((item) => (
           <NavBar.Item key={item.id} item={item} />

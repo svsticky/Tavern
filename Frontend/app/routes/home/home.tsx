@@ -2,31 +2,35 @@ import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import { type ActivityResponseDto, type GetAnnouncementResponseDto, type GroupMembershipResponseDto } from "~/api";
+import type {
+  ActivityResponseDto,
+  GetAnnouncementResponseDto,
+  GroupMembershipResponseDto,
+} from "~/api";
 import ActivityEnrollmentOverview from "~/components/Activity/ActivityEnrollmentOverview";
-import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
-import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
-import DashboardHeader from "~/components/DashboardHeader";
-import Button from "~/components/UI/Button";
 import UpcomingActivities from "~/components/Activity/UpcomingActivities";
+import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
+import DashboardHeader from "~/components/DashboardHeader";
+import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
+import Button from "~/components/UI/Button";
 import { loadDashboardData } from "./home.handlers";
 
 /**
  * The main application landing page for authenticated members.
- * 
+ *
  * This component acts as a high-level summary of the user's association life. It aggregates:
  * - **Personalized Greeting**: Welcomes the user and highlights their next upcoming activity.
  * - **Latest Announcements**: Shows a preview of the most recent association-wide updates.
  * - **Activity Feed**: Displays a comprehensive list of upcoming events.
- * - **Personal Overview**: A sidebar containing the user's current activity enrollments and 
+ * - **Personal Overview**: A sidebar containing the user's current activity enrollments and
  *   their committee/group memberships.
- * 
+ *
  * Features:
  * - **Contextual Loading**: Displays a skeleton-style loading state while coordinating multiple API requests.
  * - **Auth Integration**: Deeply integrates with Keycloak to filter data based on the user's `UserId`.
- * - **Responsive Layout**: Uses a grid system that transitions from a single-column mobile view to a 
+ * - **Responsive Layout**: Uses a grid system that transitions from a single-column mobile view to a
  *   split main/sidebar layout on larger screens.
- * 
+ *
  * @page
  * @component
  */
@@ -36,8 +40,12 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
-  const [announcements, setAnnouncements] = useState<GetAnnouncementResponseDto[]>([]);
-  const [groupMemberships, setGroupMemberships] = useState<GroupMembershipResponseDto[]>([]);
+  const [announcements, setAnnouncements] = useState<
+    GetAnnouncementResponseDto[]
+  >([]);
+  const [groupMemberships, setGroupMemberships] = useState<
+    GroupMembershipResponseDto[]
+  >([]);
 
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -48,27 +56,28 @@ export default function DashboardPage() {
       setLoading,
       setActivities,
       setAnnouncements,
-      setGroupMemberships
+      setGroupMemberships,
     });
-  }, [initialized, keycloak.authenticated]);
+  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId]);
 
   return (
     <div className="flex flex-col items-center gap-5 max-w-8xl mx-auto w-full">
       {/* Dashboard Header */}
-      <DashboardHeader 
-        name={keycloak.tokenParsed?.given_name} 
-        nextActivity={activities[0]} 
+      <DashboardHeader
+        name={keycloak.tokenParsed?.given_name}
+        nextActivity={activities[0]}
       />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] w-full gap-4">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-(--board-primary-light)"></div>
-          <p className="text-gray-500 animate-pulse">{t("loading_dashboard")}...</p>
+          <p className="text-gray-500 animate-pulse">
+            {t("loading_dashboard")}...
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
           <div className="flex flex-col w-full gap-y-8 col-span-4 lg:col-span-3">
-            
             {/* Announcements */}
             <div className="flex flex-col w-full gap-y-3">
               <div className="flex w-full justify-between items-center">
@@ -85,9 +94,11 @@ export default function DashboardPage() {
               </div>
               <AnnouncementsList announcements={announcements.slice(0, 2)} />
             </div>
-            
+
             {/* Upcoming Activities */}
-            <div className="flex flex-col w-full gap-y-3"> {/* Toegevoegd: flex flex-col en gap-y-3 */}
+            <div className="flex flex-col w-full gap-y-3">
+              {" "}
+              {/* Toegevoegd: flex flex-col en gap-y-3 */}
               <div className="flex w-full justify-between items-center">
                 <p className="font-semibold text-lg">
                   {t("upcoming_activities")}
@@ -107,10 +118,12 @@ export default function DashboardPage() {
           {/* Enrollments and Committees */}
           <div className="flex flex-col col-span-4 lg:col-span-1 gap-3">
             <p className="text-md">{t("my_enrollments")}</p>
-            <ActivityEnrollmentOverview 
-              enrolledActivities={activities.filter(a => 
-                a.enrollments!.some(e => e.member.id === keycloak.tokenParsed?.UserId)
-              )} 
+            <ActivityEnrollmentOverview
+              enrolledActivities={activities.filter((a) =>
+                a.enrollments!.some(
+                  (e) => e.member.id === keycloak.tokenParsed?.UserId,
+                ),
+              )}
             />
 
             <p className="text-md">{t("my_groups")}</p>

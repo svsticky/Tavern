@@ -1,5 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { handleClickOutside, handleOptionClick, toggleDropdown } from "./ProfileDropdown.handlers";
+import {
+  handleClickOutside,
+  handleOptionClick,
+  toggleDropdown,
+} from "./ProfileDropdown.handlers";
 
 /**
  * Context values required to control the dropdown's layout behavior.
@@ -29,10 +33,10 @@ export type ProfileOptions = {
 
 /**
  * A profile menu component that adapts its layout based on a provided context.
- * 
+ *
  * In standard mode, it behaves as a floating dropdown that closes on outside clicks.
  * In compact mode, it renders as an inline list suitable for sidebars.
- * 
+ *
  * @param {ProfileOptions} props - The properties for the component.
  * @returns {JSX.Element} The rendered ProfileDropdown component.
  */
@@ -53,7 +57,8 @@ export default function ProfileDropdown({
   useEffect(() => {
     if (compact || !isOpen) return;
 
-    const onClickOutside = (event: MouseEvent) => handleClickOutside(event, dropdownRef, setIsOpen);
+    const onClickOutside = (event: MouseEvent) =>
+      handleClickOutside(event, dropdownRef, setIsOpen);
 
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
@@ -96,7 +101,9 @@ export default function ProfileDropdown({
             <button
               key={option.label}
               type="button"
-              onClick={() => handleOptionClick(option.action, compact, setIsOpen)}
+              onClick={() =>
+                handleOptionClick(option.action, compact, setIsOpen)
+              }
               className={`
                 text-left px-2 py-2.5 text-sm cursor-pointer
                 ${

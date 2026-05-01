@@ -1,6 +1,13 @@
-import { toast } from "react-hot-toast";
 import { t } from "i18next";
-import { getApiActivities, getApiAnnouncements, getApiGroupmemberships, type ActivityResponseDto, type GetAnnouncementResponseDto, type GroupMembershipResponseDto } from "~/api";
+import { toast } from "react-hot-toast";
+import {
+  type ActivityResponseDto,
+  type GetAnnouncementResponseDto,
+  type GroupMembershipResponseDto,
+  getApiActivities,
+  getApiAnnouncements,
+  getApiGroupmemberships,
+} from "~/api";
 
 /**
  * Arguments for the loadDashboardData handler.
@@ -17,12 +24,12 @@ type LoadDashboardArgs = {
 
 /**
  * Orchestrates the data hydration for the main user dashboard.
- * 
+ *
  * Fetches three core data sets in sequence:
  * 1. **Upcoming Activities**: Future events available for viewing or enrollment.
  * 2. **Announcements**: Recent association-wide notifications.
  * 3. **Personal Memberships**: Groups and committees the specific user belongs to.
- * 
+ *
  * @async
  * @param {LoadDashboardArgs} args - Configuration object containing:
  * @param {boolean} args.initialized - Guard to ensure auth services are ready.
@@ -40,7 +47,7 @@ export const loadDashboardData = async ({
   setLoading,
   setActivities,
   setAnnouncements,
-  setGroupMemberships
+  setGroupMemberships,
 }: LoadDashboardArgs) => {
   if (!initialized || !authenticated) return;
 
@@ -50,21 +57,26 @@ export const loadDashboardData = async ({
       query: {
         IncludePast: false,
         IncludeFuture: true,
-      }
+      },
     });
-    if(activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+    if (activitiesResponse.error || !activitiesResponse.data)
+      throw new Error("Failed to load activities");
     setActivities(activitiesResponse.data as ActivityResponseDto[]);
 
     const announcementsResponse = await getApiAnnouncements();
-    if(announcementsResponse.error || !announcementsResponse.data) throw new Error("Failed to load announcements");
-    setAnnouncements(announcementsResponse.data as GetAnnouncementResponseDto[]);
+    if (announcementsResponse.error || !announcementsResponse.data)
+      throw new Error("Failed to load announcements");
+    setAnnouncements(
+      announcementsResponse.data as GetAnnouncementResponseDto[],
+    );
 
     const committeesResponse = await getApiGroupmemberships({
       query: {
-        MemberId: userId
-      }
+        MemberId: userId,
+      },
     });
-    if(committeesResponse.error || !committeesResponse.data) throw new Error("Failed to load group memberships");
+    if (committeesResponse.error || !committeesResponse.data)
+      throw new Error("Failed to load group memberships");
     setGroupMemberships(committeesResponse.data);
   } catch (error) {
     console.error("Error while loading data:", error);

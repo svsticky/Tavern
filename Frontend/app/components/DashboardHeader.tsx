@@ -1,3 +1,4 @@
+import { useKeycloak } from "@react-keycloak/web";
 import {
   Calendar,
   CircleCheckBig,
@@ -5,15 +6,19 @@ import {
   TrendingUp,
   UsersRound,
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router";
+import {
+  type ActivityResponseDto,
+  getApiEnrollments,
+  getApiPaymentsUnpaid,
+  postApiPaymentsActivity,
+} from "~/api";
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
-import { getApiEnrollments, getApiPaymentsUnpaid, postApiPaymentsActivity, type Activity, type ActivityResponseDto, type GroupMembership } from "~/api";
-import { useEffect, useState } from "react";
-import { useKeycloak } from "@react-keycloak/web";
-import { useNavigate } from "react-router";
-import toast from "react-hot-toast";
 
 /**
  * Props for the DashboardHeader component.
@@ -28,16 +33,16 @@ type DashboardHeaderProps = {
 
 /**
  * The primary hero section for the user dashboard.
- * 
+ *
  * This component provides a high-level summary of the user's account status, including:
  * - **Greeting**: Personalized welcome message.
  * - **Activity Stats**: Counts of upcoming and past enrollments.
  * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
  * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
- * 
+ *
  * It manages its own data fetching state for payments and enrollment totals, and integrates
  * with Keycloak for user identification and Lucide for iconography.
- * 
+ *
  * @component
  * @param {DashboardHeaderProps} props - The component properties.
  */
@@ -48,12 +53,13 @@ export default function DashboardHeader({
   const { t } = useTranslation();
   const { keycloak, initialized } = useKeycloak();
   const navigate = useNavigate();
-  
+
   const [loading, setLoading] = useState<boolean>(true);
 
   const [outstandingPayments, setOutstandingPayments] = useState<number>(0);
   const [pastEnrollmentAmount, setPastEnrollmentAmount] = useState<number>(0);
-  const [comingEnrollmentAmount, setComingEnrollmentAmount] = useState<number>(0);
+  const [comingEnrollmentAmount, setComingEnrollmentAmount] =
+    useState<number>(0);
   const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>([]);
 
   useEffect(() => {
@@ -64,29 +70,42 @@ export default function DashboardHeader({
         const outstandingPaymentsResponse = await getApiPaymentsUnpaid();
 
         if (outstandingPaymentsResponse.data) {
-          setOutstandingPayments(outstandingPaymentsResponse.data.reduce((total, payment) => total + (payment.balance || 0), 0));
-          setUnpaidActivityIds(outstandingPaymentsResponse.data.map(payment => payment.enrollment.activityId));
+          setOutstandingPayments(
+            outstandingPaymentsResponse.data.reduce(
+              (total, payment) => total + (payment.balance || 0),
+              0,
+            ),
+          );
+          setUnpaidActivityIds(
+            outstandingPaymentsResponse.data.map(
+              (payment) => payment.enrollment.activityId,
+            ),
+          );
         }
 
         const enrollmentAmountResponse = await getApiEnrollments({
-            query: {
-              FromMemberId: keycloak.tokenParsed?.UserId
-            }
+          query: {
+            FromMemberId: keycloak.tokenParsed?.UserId,
+          },
         });
 
-        if(enrollmentAmountResponse.error) throw new Error("Failed to load enrollments");
+        if (enrollmentAmountResponse.error)
+          throw new Error("Failed to load enrollments");
 
         if (enrollmentAmountResponse.data) {
-          setPastEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
-            const activityDate = new Date(enrollment.activity.dateTimeStart);
-            return activityDate < new Date(Date.now());
-          }).length);
-          setComingEnrollmentAmount(enrollmentAmountResponse.data.filter(enrollment => {
-            const activityDate = new Date(enrollment.activity.dateTimeStart);
-            return activityDate >= new Date(Date.now());
-          }).length);
-        }
-        else{
+          setPastEnrollmentAmount(
+            enrollmentAmountResponse.data.filter((enrollment) => {
+              const activityDate = new Date(enrollment.activity.dateTimeStart);
+              return activityDate < new Date(Date.now());
+            }).length,
+          );
+          setComingEnrollmentAmount(
+            enrollmentAmountResponse.data.filter((enrollment) => {
+              const activityDate = new Date(enrollment.activity.dateTimeStart);
+              return activityDate >= new Date(Date.now());
+            }).length,
+          );
+        } else {
           throw new Error("No enrollment data returned from API");
         }
       } catch (error) {
@@ -100,45 +119,44 @@ export default function DashboardHeader({
     }
 
     loadData();
-  }, [initialized, keycloak.authenticated]);
+  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId, t]);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
   const payActivities = async () => {
-    const payAction = async () => {
+    const _payAction = async () => {
       try {
         setLoadingPayments(true);
         const urlResponse = await postApiPaymentsActivity({
           body: {
             memberId: keycloak.tokenParsed?.UserId ?? 0,
-            activityIds: unpaidActivityIds
-          }
+            activityIds: unpaidActivityIds,
+          },
         });
 
-        if(urlResponse.error) throw new Error("Failed to initiate payment process");
+        if (urlResponse.error)
+          throw new Error("Failed to initiate payment process");
 
-        if (urlResponse.data && urlResponse.data.checkoutUrl) {
+        if (urlResponse.data?.checkoutUrl) {
           console.log(urlResponse.data);
           window.location.href = urlResponse.data.checkoutUrl;
-        }
-        else{
+        } else {
           throw new Error("No checkout URL returned from API");
         }
       } catch (error) {
         console.error("Error while initiating payment:", error);
         throw error;
-      }
-      finally {
+      } finally {
         setLoadingPayments(false);
       }
 
-      toast.promise(payAction(), {
+      toast.promise(_payAction(), {
         loading: t("paying"),
         success: t("redirecting_to_payment"),
-        error: t("payment_initiation_failed")
+        error: t("payment_initiation_failed"),
       });
-    }
-  }
+    };
+  };
 
   return (
     <Tile className="w-full m-0 bg-[linear-gradient(color-mix(in_srgb,var(--board-primary),white_20%),var(--board-primary))] text-white">
@@ -153,7 +171,9 @@ export default function DashboardHeader({
             <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
               <p>{t("enrollments")}</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl">{loading ? t("loading") : comingEnrollmentAmount}</p>
+                <p className="text-2xl">
+                  {loading ? t("loading") : comingEnrollmentAmount}
+                </p>
                 <CircleCheckBig />
               </div>
             </Tile>
@@ -162,7 +182,9 @@ export default function DashboardHeader({
             <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
               <p>{t("attended")}</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl">{loading ? t("loading") : pastEnrollmentAmount}</p>
+                <p className="text-2xl">
+                  {loading ? t("loading") : pastEnrollmentAmount}
+                </p>
                 <TrendingUp />
               </div>
             </Tile>
@@ -173,9 +195,17 @@ export default function DashboardHeader({
             <div className="flex justify-between flex-col w-full min-[330px]:flex-row">
               <div>
                 <p>{t("outstanding_payments")}</p>
-                <p>{loading ? t("loading") : `€${outstandingPayments.toFixed(2)}`}</p>
+                <p>
+                  {loading
+                    ? t("loading")
+                    : `€${outstandingPayments.toFixed(2)}`}
+                </p>
               </div>
-              <Button onClick={payActivities} variant="secondary" disabled={loadingPayments || unpaidActivityIds.length === 0}>
+              <Button
+                onClick={payActivities}
+                variant="secondary"
+                disabled={loadingPayments || unpaidActivityIds.length === 0}
+              >
                 {loadingPayments ? t("paying") : t("pay")}
               </Button>
             </div>
@@ -190,14 +220,24 @@ export default function DashboardHeader({
             </div>
             <p className="truncate">{nextActivity.name}</p>
             <div className="flex items-center gap-2">
-              <Calendar /> {formatDate(new Date(nextActivity.dateTimeStart), "fullDateTime")}
+              <Calendar />{" "}
+              {formatDate(new Date(nextActivity.dateTimeStart), "fullDateTime")}
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {nextActivity.enrollments.filter(e => !e.isOnWaitingList).length}{" "}
-              {nextActivity.participantLimit ? (t("of_the") + ` ${nextActivity.participantLimit} ` + t("available")) + "." : t("enrollments").toLocaleLowerCase() + "."}
+              {
+                nextActivity.enrollments.filter((e) => !e.isOnWaitingList)
+                  .length
+              }{" "}
+              {nextActivity.participantLimit
+                ? `${t("of_the")} ${nextActivity.participantLimit} ${t("available")}.`
+                : `${t("enrollments").toLocaleLowerCase()}.`}
             </div>
-            <Button variant="secondary" showArrow={true} onClick={() => navigate(`/activities/${nextActivity.id}`)}>
+            <Button
+              variant="secondary"
+              showArrow={true}
+              onClick={() => navigate(`/activities/${nextActivity.id}`)}
+            >
               {t("view_details")}
             </Button>
           </Tile>
