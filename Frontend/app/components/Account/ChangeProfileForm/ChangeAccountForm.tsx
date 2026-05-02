@@ -229,6 +229,7 @@ export default function ChangeAccountForm({
           <FormHeader title={t("preferred_language")} border={false} />
           <div className="flex gap-2">
             <Button
+              type="button"
               variant={
                 formData.preferredLanguage === "NL" ? "primary" : "secondary"
               }
@@ -243,6 +244,7 @@ export default function ChangeAccountForm({
               variant={
                 formData.preferredLanguage === "EN" ? "primary" : "secondary"
               }
+              type="button"
               className="flex-1"
               onClick={() =>
                 setFormData({ ...formData, preferredLanguage: "EN" })

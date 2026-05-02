@@ -26,6 +26,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!keycloak.authenticated) {
+      console.log("User not authenticated, redirecting to Keycloak login...");
       keycloak.login({
         redirectUri: `${window.location.origin}/`,
       });

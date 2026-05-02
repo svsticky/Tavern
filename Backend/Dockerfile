@@ -23,4 +23,10 @@ RUN dotnet publish "Backend.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:U
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+ARG HostUrl
+ARG KeycloakUrl
+ARG KeycloakRealm
+ENV HostUrl=$HostUrl
+ENV KeycloakUrl=$KeycloakUrl
+ENV KeycloakRealm=$KeycloakRealm
 ENTRYPOINT ["dotnet", "Backend.dll"]

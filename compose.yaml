@@ -6,8 +6,17 @@ services:
     build:
       context: .
       dockerfile: Backend/Dockerfile
+      args:
+        - HostUrl=${HostUrl}
+        - KeycloakUrl=${KeycloakUrl}
+        - KeycloakRealm=${KeycloakRealm}
     ports:
-      - "8080:8080"
+      - "${BackendPort:-8080}:8080"
+    env_file:
+      - .env
+      - .env.runtime
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
 
   db:
     image: postgres:17
@@ -18,8 +27,6 @@ services:
       POSTGRES_DB: postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data/
-#    ports:
-#      - "5432:5432"
 
   tavern-frontend:
     container_name: tavern-frontend
@@ -28,8 +35,21 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
+      args:
+        - KeycloakUrl=${KeycloakUrl}
+        - KeycloakRealm=${KeycloakRealm}
+        - KeycloakClientId=${KeycloakClientId}
+        - HostUrl=${HostUrl}
+        - ApiUrl=${ApiUrl}
+        - LOGO_URL=${LOGO_URL}
+        - BOARD_PRIMARY_LIGHT=${BOARD_PRIMARY_LIGHT}
+        - BOARD_PRIMARY=${BOARD_PRIMARY}
+        - BOARD_PRIMARY_DARK=${BOARD_PRIMARY_DARK}
     ports:
-      - "3000:5173"
+      - "${FrontendPort:-5173}:3000"
+    env_file:
+      - .env
+      - .env.runtime
 
 volumes:
   postgres-data:

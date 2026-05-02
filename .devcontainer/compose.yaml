@@ -2,13 +2,14 @@ services:
   devcontainer:
     container_name: tavern-devcontainer
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
     volumes:
       - ..:/workspaces:cached
     command: sleep infinity
     env_file:
-      - .env
+      - ../.env
+      - ../.env.runtime
     networks:
       - tavern-net
     depends_on:

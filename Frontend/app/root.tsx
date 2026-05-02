@@ -17,7 +17,7 @@ import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
 
 client.setConfig({
-  baseURL: import.meta.env.ApiUrl ?? "https://localhost:8081",
+  baseURL: import.meta.env.ApiUrl ?? "http://localhost:8080",
 });
 
 export const links: Route.LinksFunction = () => [

@@ -6,6 +6,10 @@
     "service": "devcontainer",
     "workspaceFolder": "/workspaces",
 
+    "remoteEnv": {
+        "DOTNET_ENVIRONMENT": "Development"
+    },
+
     "features": {
         "ghcr.io/devcontainers/features/node:1": {
             "version": "20" 
@@ -51,6 +55,5 @@
             "label": "Ngrok Dashboard", 
             "onAutoForward": "notify" 
         }
-    },
-    "postCreateCommand": "dotnet dev-certs https -ep /workspaces/Backend/certs/aspnetapp.pfx -p password"
+    }
 }
