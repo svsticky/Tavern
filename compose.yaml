@@ -16,17 +16,8 @@ services:
       - .env
       - .env.runtime
     environment:
+      - PostgresqlConnectionString=${PostgresConnectionString}
       - ASPNETCORE_ENVIRONMENT=Production
-
-  db:
-    image: postgres:17
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres # TODO move this to docker secrets or something
-      POSTGRES_DB: postgres
-    volumes:
-      - postgres-data:/var/lib/postgresql/data/
 
   tavern-frontend:
     container_name: tavern-frontend

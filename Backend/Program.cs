@@ -15,7 +15,6 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.HttpLogging;
 using System.Text;
 using System.Net.Http.Headers;
-using Backend.Models;
 
 Env.Load();
 
@@ -157,7 +156,8 @@ builder.Services.AddSwaggerGen(c =>
 
     c.SupportNonNullableReferenceTypes();
 });
-builder.Services.AddNpgsql<PostgresDbContext>(connectionString: builder.Configuration.GetConnectionString("Postgresql"));
+string connectionstring = Environment.GetEnvironmentVariable("PostgresqlConnectionString") ?? throw new InvalidOperationException("PostgresConnectionString environment variable is not set.");
+builder.Services.AddNpgsql<PostgresDbContext>(connectionString: connectionstring);
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddMollieApi(options => 
 {
@@ -186,7 +186,6 @@ builder.Services.AddHttpLogging(options =>
                             | HttpLoggingFields.Duration;
 });
 
-builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<KeycloakAPIService>();
 builder.Services.AddSingleton<KeycloakOutboxWorker>();
@@ -281,7 +280,7 @@ builder.Services.AddScoped<IMailinglistService, MailinglistService>();
 builder.Services.AddHangfire(config => config
     .UsePostgreSqlStorage(options => 
     {
-        options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("Postgresql"));
+        options.UseNpgsqlConnection(connectionstring);
     })
     .UseRecommendedSerializerSettings());
 
@@ -320,6 +319,12 @@ using (var scope = app.Services.CreateScope())
         service => service.SendOutstandingPaymentMails(), 
         "0 10 * * 5" // Each Friday at 10:00 AM
     );
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = new DatabaseSeeder(scope.ServiceProvider.GetRequiredService<IServiceScopeFactory>());
+    await seeder.StartAsync(CancellationToken.None);
 }
 
 app.Run();
