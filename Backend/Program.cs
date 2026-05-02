@@ -313,11 +313,26 @@ app.UseHangfireDashboard();
 using (var scope = app.Services.CreateScope())
 {
     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+
+    var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+
+    var recurringJobOptions = new RecurringJobOptions
+    {
+        TimeZone = amsterdamTimeZone
+    };
     
     recurringJobManager.AddOrUpdate<AbstractMailService>(
         "outstanding-payments-mail", 
         service => service.SendOutstandingPaymentMails(), 
-        "0 10 * * 5" // Each Friday at 10:00 AM
+        "0 10 * * 5", // Each Friday at 10:00 AM
+        recurringJobOptions
+    );
+
+    recurringJobManager.AddOrUpdate<ISettingsService>(
+        "ensure-settings-exists-annual",
+        service => service.EnsureSettingsExists(),
+        "0 0 1 8 *", // Minute 0, Hour 0, Day 1, Month 8 (Augustus)
+        recurringJobOptions
     );
 }
 

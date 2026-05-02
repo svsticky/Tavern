@@ -135,12 +135,6 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
     {
         uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
 
-        string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
-
-        if(string.IsNullOrEmpty(backupEmail))
-        {
-            return;
-        }
 
         using var transaction = await db.Database.BeginTransactionAsync();
         try
@@ -148,6 +142,31 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
             bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear());
             if (!hasBoardMembers)
             {
+                var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value);
+                var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear() - 1).ToListAsync();
+                
+                if(candidateBoardMembershipsLastYear.Count >= 0)
+                {
+                    foreach(var candidateBoardMembership in candidateBoardMembershipsLastYear)
+                    {
+                        db.GroupMemberships.Add(new GroupMembership
+                        {
+                            GroupId = boardGroupId,
+                            MemberId = candidateBoardMembership.MemberId,
+                            RoleAliasId = candidateBoardMembership.RoleAliasId,
+                            MembershipYear = FinancialYearUtils.GetCurrentFinancialYear()
+                        });
+                    }
+                    return;
+                }
+
+                string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
+
+                if(string.IsNullOrEmpty(backupEmail))
+                {
+                    return;
+                }
+
                 var backupMember = new Member
                 {
                     Id = Guid.NewGuid(),
