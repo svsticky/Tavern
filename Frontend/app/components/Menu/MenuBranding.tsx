@@ -1,4 +1,5 @@
 import { NavLink } from "react-router";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * A branding subcomponent typically used in NavBars or SideBars.
@@ -11,7 +12,7 @@ import { NavLink } from "react-router";
  * @param {string} [props.homepage] - Route path for the branding link.
  */
 export default function MenuBranding({
-  icon = import.meta.env.LOGO_URL,
+  icon = getEnv("LOGO_URL"),
   title = "Sticky",
   homepage = "/",
 }: {

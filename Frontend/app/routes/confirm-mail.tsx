@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { useEffect } from "react";
 import NavBar from "~/components/Menu/NavBar/NavBar";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * A bridge component used during the email confirmation or password reset flow.
@@ -26,9 +27,9 @@ export default function ConfirmMail() {
     const redirectAction = async () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const baseUrl = `${import.meta.env.KeycloakUrl}/realms/${import.meta.env.KeycloakRealm}/login-actions/reset-credentials`;
+      const baseUrl = `${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/login-actions/reset-credentials`;
 
-      const clientId = `${import.meta.env.KeycloakClientId}`;
+      const clientId = `${getEnv("KeycloakClientId")}`;
       const redirectUri = encodeURIComponent(`${window.location.origin}/`);
 
       window.location.href = `${baseUrl}?client_id=${clientId}&tab_id=...&redirect_uri=${redirectUri}`;

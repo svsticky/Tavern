@@ -15,6 +15,7 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -62,7 +63,7 @@ export default function ActivityTile({
       !activity.showOnWebsite &&
       activity.organizerId &&
       new Date(activity.dateTimeStart) > new Date(Date.now()));
-  const posterUrl = `${import.meta.env.ApiUrl}/api/activities/${activity.id}/poster`;
+  const posterUrl = `${getEnv("ApiUrl")}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 
   const startDate = new Date(activity.dateTimeStart);

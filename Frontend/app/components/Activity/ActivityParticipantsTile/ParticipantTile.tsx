@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { EnrollmentResponseDto } from "~/api/types.gen";
 import Tile from "../../Tiles/Tile";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * A compact tile component used to display an individual participant's information.
@@ -27,7 +28,7 @@ export default function ParticipantTile({
 }: {
   enrollment: EnrollmentResponseDto;
 }) {
-  const imageUrl = `${import.meta.env.ApiUrl}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
+  const imageUrl = `${getEnv("ApiUrl")}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 
   const [imgError, setImgError] = useState(false);

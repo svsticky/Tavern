@@ -15,9 +15,10 @@ import i18n from "./i18n";
 import "./app.css";
 import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
+import { getEnv } from "./util/config.utils";
 
 client.setConfig({
-  baseURL: import.meta.env.ApiUrl ?? "http://localhost:8080",
+  baseURL: getEnv("ApiUrl") ?? "http://localhost:8080",
 });
 
 export const links: Route.LinksFunction = () => [
@@ -37,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {import.meta.env.VITE_ApiUrl || <script src="/env-config.js"></script>}
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
@@ -56,9 +58,9 @@ export default function App() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const primaryLight = import.meta.env.BOARD_PRIMARY_LIGHT;
-    const primary = import.meta.env.BOARD_PRIMARY;
-    const primaryDark = import.meta.env.BOARD_PRIMARY_DARK;
+    const primaryLight = getEnv("BOARD_PRIMARY_LIGHT");
+    const primary = getEnv("BOARD_PRIMARY");
+    const primaryDark = getEnv("BOARD_PRIMARY_DARK");
 
     if (primaryLight)
       document.documentElement.style.setProperty(
@@ -105,7 +107,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
       error.status === 404
         ? "The requested page could not be found."
         : error.statusText || details;
-  } else if (import.meta.env.DEV && error && error instanceof Error) {
+  } else if (error && error instanceof Error) {
     details = error.message;
     stack = error.stack;
   }

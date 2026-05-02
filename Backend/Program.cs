@@ -277,6 +277,8 @@ builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerServi
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 builder.Services.AddScoped<IMailinglistService, MailinglistService>();
 
+builder.Services.AddScoped<ICreateNewBoardService, CreateNewBoardService>();
+builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHangfire(config => config
     .UsePostgreSqlStorage(options => 
     {
@@ -328,18 +330,12 @@ using (var scope = app.Services.CreateScope())
         recurringJobOptions
     );
 
-    recurringJobManager.AddOrUpdate<ISettingsService>(
-        "ensure-settings-exists-annual",
-        service => service.EnsureSettingsExists(),
-        "0 0 1 8 *", // Minute 0, Hour 0, Day 1, Month 8 (Augustus)
+    recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
+        "annual-board-rotation",
+        service => service.PromoteCandidateBoardToBoardAsync(),
+        "0 0 1 8 *", // 1 Augustus
         recurringJobOptions
     );
-}
-
-using (var scope = app.Services.CreateScope())
-{
-    var seeder = new DatabaseSeeder(scope.ServiceProvider.GetRequiredService<IServiceScopeFactory>());
-    await seeder.StartAsync(CancellationToken.None);
 }
 
 app.Run();

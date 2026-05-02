@@ -25,6 +25,7 @@ import {
   handleUpdateEnrollment,
 } from "./ActivityDetailsTile.handlers";
 import InfoItem from "./InfoItem";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * A detailed tile component for displaying activity information, including posters,
@@ -69,7 +70,7 @@ export default function ActivityDetailsTile({
 
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  const posterUrl = `${import.meta.env.ApiUrl}/api/activities/${activity.id}/poster`;
+  const posterUrl = `${getEnv("ApiUrl")}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 
   const startDate = new Date(activity.dateTimeStart);

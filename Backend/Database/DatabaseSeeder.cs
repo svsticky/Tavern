@@ -1,3 +1,4 @@
+using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Utils.DateTime;
@@ -52,7 +53,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         var keycloakOutboxWorker = scope.ServiceProvider.GetRequiredService<KeycloakOutboxWorker>();
 
-        await EnsureBoardAccountExists(db, keycloakOutboxWorker);
+        var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();
+
+        await EnsureBoardAccountExists(db, keycloakOutboxWorker, createNewBoardService);
     }
 
     /// <summary>
@@ -130,8 +133,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="keycloakOutboxWorker">The Keycloak outbox worker.</param>
+    /// <param name="createNewBoardService">The service for creating new board members.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private static async Task EnsureBoardAccountExists(PostgresDbContext db, KeycloakOutboxWorker keycloakOutboxWorker)
+    private static async Task EnsureBoardAccountExists(PostgresDbContext db, KeycloakOutboxWorker keycloakOutboxWorker, ICreateNewBoardService createNewBoardService)
     {
         uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
 
@@ -145,18 +149,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value);
                 var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear() - 1).ToListAsync();
                 
-                if(candidateBoardMembershipsLastYear.Count >= 0)
+                if(candidateBoardMembershipsLastYear.Any())
                 {
-                    foreach(var candidateBoardMembership in candidateBoardMembershipsLastYear)
-                    {
-                        db.GroupMemberships.Add(new GroupMembership
-                        {
-                            GroupId = boardGroupId,
-                            MemberId = candidateBoardMembership.MemberId,
-                            RoleAliasId = candidateBoardMembership.RoleAliasId,
-                            MembershipYear = FinancialYearUtils.GetCurrentFinancialYear()
-                        });
-                    }
+                    await createNewBoardService.PromoteCandidateBoardToBoardAsync();
                     return;
                 }
 

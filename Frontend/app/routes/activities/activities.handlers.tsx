@@ -2,6 +2,7 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getApiActivities } from "~/api";
+import { getEnv } from "~/util/config.utils";
 import { generateA3Pdf } from "~/util/pdf.util";
 
 /**
@@ -120,7 +121,7 @@ export const copyWeekOverview = async (
 
       message += `*${dayName}*\n`;
       if (dayActivities.length > 0) {
-        message += `${dayActivities.map((a) => `${isDutch ? a.dutchDescription : a.englishDescription || a.name}\n\n${import.meta.env.HostUrl}/activities/${a.id}`).join("\n\n&\n\n")}\n\n`;
+        message += `${dayActivities.map((a) => `${isDutch ? a.dutchDescription : a.englishDescription || a.name}\n\n${getEnv("HostUrl")}/activities/${a.id}`).join("\n\n&\n\n")}\n\n`;
       } else {
         message += isDutch ? "Geen activiteit :(\n\n" : "No activities :(\n\n";
       }
@@ -152,7 +153,7 @@ export const downloadPosters = async (
 ) => {
   const posterUrls = activities
     .filter((a) => a.showInKoala && a.posterPath)
-    .map((a) => `${import.meta.env.ApiUrl}/api/activities/${a.id}/poster`);
+    .map((a) => `${getEnv("ApiUrl")}/api/activities/${a.id}/poster`);
 
   if (posterUrls.length === 0) {
     toast.error(t("no_posters_found"));

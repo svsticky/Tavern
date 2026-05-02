@@ -1,0 +1,58 @@
+name: Build and Publish Images
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    env:
+      IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/tavern-backend
+      IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/tavern-frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- Backend Build & Push ---
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Backend/Dockerfile
+          push: true
+          tags: |
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE_BACKEND) || '' }}
+            ${{ github.ref == 'refs/heads/development' && format('{0}:dev', env.IMAGE_BACKEND) || '' }}
+            ${{ github.event_name == 'release' && format('{0}:{1}', env.IMAGE_BACKEND, github.event.release.tag_name) || '' }}
+            
+      # --- Frontend Build & Push ---
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./Frontend
+          file: ./Frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE_FRONTEND) || '' }}
+            ${{ github.ref == 'refs/heads/development' && format('{0}:dev', env.IMAGE_FRONTEND) || '' }}
+            ${{ github.event_name == 'release' && format('{0}:{1}', env.IMAGE_FRONTEND, github.event.release.tag_name) || '' }}

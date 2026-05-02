@@ -6,15 +6,10 @@ services:
     build:
       context: .
       dockerfile: Backend/Dockerfile
-      args:
-        - HostUrl=${HostUrl}
-        - KeycloakUrl=${KeycloakUrl}
-        - KeycloakRealm=${KeycloakRealm}
     ports:
       - "${BackendPort:-8080}:8080"
     env_file:
       - .env
-      - .env.runtime
     environment:
       - PostgresqlConnectionString=${PostgresConnectionString}
       - ASPNETCORE_ENVIRONMENT=Production
@@ -26,21 +21,18 @@ services:
     build:
       context: ./Frontend
       dockerfile: Dockerfile
-      args:
-        - KeycloakUrl=${KeycloakUrl}
-        - KeycloakRealm=${KeycloakRealm}
-        - KeycloakClientId=${KeycloakClientId}
-        - HostUrl=${HostUrl}
-        - ApiUrl=${ApiUrl}
-        - LOGO_URL=${LOGO_URL}
-        - BOARD_PRIMARY_LIGHT=${BOARD_PRIMARY_LIGHT}
-        - BOARD_PRIMARY=${BOARD_PRIMARY}
-        - BOARD_PRIMARY_DARK=${BOARD_PRIMARY_DARK}
     ports:
       - "${FrontendPort:-5173}:3000"
-    env_file:
-      - .env
-      - .env.runtime
+    environment:
+      - VITE_KeycloakUrl=${KeycloakUrl}
+      - VITE_KeycloakRealm=${KeycloakRealm}
+      - VITE_KeycloakClientId=${KeycloakClientId}
+      - VITE_HostUrl=${HostUrl}
+      - VITE_ApiUrl=${ApiUrl}
+      - VITE_LOGO_RUL=${LOGO_URL}
+      - VITE_BOARD_PRIMARY_LIGHT=${BOARD_PRIMARY_LIGHT}
+      - VITE_BOARD_PRIMARY=${BOARD_PRIMARY}
+      - VITE_BOARD_PRIMARY_DARK=${BOARD_PRIMARY_DARK}
 
 volumes:
   postgres-data:

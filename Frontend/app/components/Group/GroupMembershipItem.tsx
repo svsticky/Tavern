@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { GroupMembershipResponseDto } from "~/api";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * Renders an individual group membership item with its own state for image handling.
@@ -17,7 +18,7 @@ export default function GroupMembershipItem({
   fallbackUrl: string;
 }) {
   const [imageUrl, setImageUrl] = useState(
-    `${import.meta.env.ApiUrl}/api/groups/${groupMembership.groupId}/group-picture`,
+    `${getEnv("ApiUrl")}/api/groups/${groupMembership.groupId}/group-picture`,
   );
 
   return (
