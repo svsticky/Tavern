@@ -15,8 +15,10 @@
         <PackageReference Include="Hangfire" Version="1.8.23" />
         <PackageReference Include="Hangfire.AspNetCore" Version="1.8.23" />
         <PackageReference Include="Hangfire.PostgreSql" Version="1.21.1" />
-        <PackageReference Include="Mailgun.Net" Version="0.1.16" />
-        <PackageReference Include="MailKit" Version="4.15.1" />
+        <PackageReference Include="Mailgun.NET" Version="0.1.16" NoWarn="NU1701" />
+        <PackageReference Include="Microsoft.Bcl" Version="1.1.10" NoWarn="NU1701" />
+        <PackageReference Include="Microsoft.Net.Http" Version="2.2.29" NoWarn="NU1701" />
+        <PackageReference Include="MailKit" Version="4.16.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.*" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.7" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10" />
