@@ -73,8 +73,8 @@ export default function BorderedTile({
 
           <div className="flex items-center gap-3">
             {Icon && (
-              <div className="bg-orange-50 p-3 rounded-2xl flex items-center justify-center">
-                <Icon className="w-6 h-6 text-orange-600" strokeWidth={2.5} />
+              <div className="bg-[color-mix(in_srgb,var(--board-primary),white_80%)] p-3 rounded-2xl flex items-center justify-center">
+                <Icon className="w-6 h-6 text-(--board-primary)" strokeWidth={2.5} />
               </div>
             )}
             {collapsibleContent && (

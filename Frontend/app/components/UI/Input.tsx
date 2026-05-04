@@ -1,4 +1,5 @@
 import { cn } from "~/util/tailwind.util";
+import RequiredAsterisk from "./RequiredAstrix";
 
 /**
  * A versatile input component that handles standard text-based inputs and checkboxes.
@@ -23,6 +24,7 @@ export default function Input({
       <div className={cn("flex items-center justify-start", className)}>
         <input type="checkbox" {...props} />
         {label && <span className="ml-2 text-sm">{label}</span>}
+        <RequiredAsterisk required={props.required || false} />
       </div>
     );
   }
@@ -30,7 +32,10 @@ export default function Input({
   return (
     <label className="flex flex-col gap-1 w-full">
       {label && (
-        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <div className="flex">
+          <span className="text-sm font-medium text-gray-700">{label}</span>
+          <RequiredAsterisk required={props.required || false} />
+        </div>
       )}
       <input
         {...props}

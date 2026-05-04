@@ -46,7 +46,7 @@ export default function EditQuestionTile({
   ) => void;
 }) {
   return (
-    <BorderedTile className="group relative">
+    <BorderedTile className="group relative overflow-visible">
       <button
         type="button"
         onClick={onRemove}
@@ -76,14 +76,14 @@ export default function EditQuestionTile({
         <Select
           label={t("type")}
           value={question.type}
-          onChange={(e) => onUpdate("type", Number(e.target.value))}
+          onChange={(e) => onUpdate("type", e.target.value)}
           options={[
-            { value: 0, label: "String" },
-            { value: 1, label: "Boolean" },
-            { value: 2, label: "Number" },
-            { value: 3, label: "Date" },
-            { value: 4, label: "DateTime" },
-            { value: 5, label: "Multiple Choice" },
+            { value: "String", label: "String" },
+            { value: "Boolean", label: "Boolean" },
+            { value: "Number", label: "Number" },
+            { value: "Date", label: "Date" },
+            { value: "DateTime", label: "DateTime" },
+            { value: "MultipleChoice", label: "Multiple Choice" },
           ]}
         />
 

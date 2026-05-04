@@ -425,5 +425,6 @@
   "edit_mailing_list": "Edit mailing list",
   "add_mailing_list": "Add mailing list",
   "no_mailing_lists": "No mailing lists",
-  "service_id": "Service ID"
+  "service_id": "Service ID",
+  "weekoverview": "Week overview"
 }

@@ -58,42 +58,11 @@ export default function ActivitiesPage() {
 
   return (
     <>
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:items-start justify-between gap-3">
         <PageHeader
           title={t("activities")}
           action={
             <div className="flex items-center gap-2">
-              {isBoard && (
-                <>
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      downloadPosters(activities, keycloak.token ?? "")
-                    }
-                    className="text-xs px-3 py-1"
-                    title="Download Koala Posters"
-                  >
-                    <DownloadIcon size={18} className="mr-1" />
-                    {t("download_posters")}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => copyWeekOverview("NL", activities)}
-                    className="text-xs px-3 py-1"
-                  >
-                    <CalendarDaysIcon size={18} className="mr-1" />
-                    {t("copy")} NL
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => copyWeekOverview("EN", activities)}
-                    className="text-xs px-3 py-1"
-                  >
-                    <CalendarDaysIcon size={18} className="mr-1" />
-                    {t("copy")} EN
-                  </Button>
-                </>
-              )}
               {isInGroup && (
                 <Button
                   variant="secondary"
@@ -106,6 +75,37 @@ export default function ActivitiesPage() {
             </div>
           }
         />
+          {isBoard && (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  downloadPosters(activities, keycloak.token ?? "")
+                }
+                className="text-xs px-3 py-1"
+                title="Download Koala Posters"
+              >
+                <DownloadIcon size={20} className="mr-1" />
+                {t("download_posters")}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => copyWeekOverview("NL", activities)}
+                className="text-xs px-3 py-1"
+              >
+                <CalendarDaysIcon size={20} className="mr-1" />
+                {t("copy")} {t("weekoverview").toLowerCase()} NL
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => copyWeekOverview("EN", activities)}
+                className="text-xs px-3 py-1 mb-4"
+              >
+                <CalendarDaysIcon size={20} className="mr-1" />
+                {t("copy")} {t("weekoverview").toLowerCase()} EN
+              </Button>
+            </>
+          )}
       </div>
       {loading ? (
         t("loading")

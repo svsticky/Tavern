@@ -130,12 +130,14 @@ export default function EditActivityForm({
               rows={10}
               name="DutchDescription"
               defaultValue={activity?.dutchDescription}
+              required
             />
             <TextArea
               label={t("english_description")}
               rows={10}
               name="EnglishDescription"
               defaultValue={activity?.englishDescription}
+              required
             />
           </FormSection>
 

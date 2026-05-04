@@ -27,6 +27,8 @@ public class PaymentValidationService(
             throw new Exception($"Member with id {memberId} not found.");
         }
 
+        if (member.Begunstiger) return true;
+
         bool isMaster = member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master);
         
         if (isMaster) return true;

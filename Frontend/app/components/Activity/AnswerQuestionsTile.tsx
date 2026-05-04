@@ -1,6 +1,6 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   GetSpecificationQuestionResponseDto,
   SpecificationAnswerResponseDto,
@@ -50,25 +50,39 @@ export default function AnswerQuestionsTile({
 }) {
   const { keycloak } = useKeycloak();
 
-  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [answers, setAnswers] = useState<Record<number, string>>(() => {
+    const initial: Record<number, string> = {};
+    enrollmentAnswers?.forEach((a) => {
+      if (a.questionId !== undefined) initial[a.questionId] = a.answer;
+    });
+    return initial;
+  });
+
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    onChangeRef.current?.(answers);
+  }, [answers]);
 
   useEffect(() => {
     if (!enrollmentAnswers) return;
 
-    const existing: Record<number, string> = {};
-
+    const incoming: Record<number, string> = {};
     enrollmentAnswers.forEach((a) => {
-      if (a.questionId !== undefined) {
-        existing[a.questionId] = a.answer;
-      }
+      if (a.questionId !== undefined) incoming[a.questionId] = a.answer;
     });
 
-    setAnswers(existing);
+    setAnswers((prev) => {
+      const isDifferent = JSON.stringify(prev) !== JSON.stringify(incoming);
+      if (isDifferent) {
+        return incoming;
+      }
+      return prev;
+    });
   }, [enrollmentAnswers]);
-
-  useEffect(() => {
-    onChange?.(answers);
-  }, [answers, onChange]);
 
   const setValue = (questionId: number, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -91,6 +105,7 @@ export default function AnswerQuestionsTile({
               setValue(id, e.target.value)
             }
             disabled={disabled}
+            required={q.isMandatory}
           />
         );
 
@@ -116,6 +131,7 @@ export default function AnswerQuestionsTile({
               setValue(id, e.target.value)
             }
             disabled={disabled}
+            required={q.isMandatory}
           />
         );
 
@@ -129,6 +145,7 @@ export default function AnswerQuestionsTile({
               setValue(id, e.target.value)
             }
             disabled={disabled}
+            required={q.isMandatory}
           />
         );
 
@@ -142,6 +159,7 @@ export default function AnswerQuestionsTile({
               setValue(id, e.target.value)
             }
             disabled={disabled}
+            required={q.isMandatory}
           />
         );
 
@@ -154,6 +172,7 @@ export default function AnswerQuestionsTile({
             value={value}
             onChange={(e) => setValue(id, e.target.value)}
             options={options.map((opt) => ({ label: opt, value: opt }))}
+            required={q.isMandatory}
           />
         );
       }

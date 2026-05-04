@@ -1,3 +1,5 @@
+import RequiredAsterisk from "./RequiredAstrix";
+
 /**
  * A styled multi-line text input component.
  *
@@ -14,7 +16,10 @@
 export default function TextArea({ label, ...props }: any) {
   return (
     <label className="flex flex-col gap-1 w-full">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <div className="flex">
+        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <RequiredAsterisk required={props.required || false} />
+      </div>
       <textarea
         {...props}
         className="border p-2 rounded-lg focus:ring-2 outline-none transition-all"

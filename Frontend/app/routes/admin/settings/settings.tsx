@@ -71,11 +71,11 @@ export default function SettingsPage() {
     ([_key, value]) => !value.trim(),
   );
 
-  if (loading) return t("loading");
-
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
   const currentRoleMappings = getCurrentRoleMappings(settings);
+
+  if (loading) return t("loading");
 
   return (
     <div className="flex flex-col max-w-4xl mx-auto w-full">

@@ -52,11 +52,11 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
     });
   }, [initialized, keycloak.authenticated, params.id]);
 
+  const canEdit = activity == null ? false : canEditActivity(activity, keycloak.tokenParsed);
+
   if (loading) return t("loading");
 
   if (activity == null) return t("failed_fetching");
-
-  const canEdit = canEditActivity(activity, keycloak.tokenParsed);
 
   return (
     <div className="flex flex-col w-full">

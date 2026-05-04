@@ -72,6 +72,8 @@ export const handleActivityFormChange = (
     "DateTimeEnd",
     "Location",
     "OrganizerId",
+    "DutchDescription",
+    "EnglishDescription",
   ];
   setFormValid(required.every((field) => !!fd.get(field)));
 };

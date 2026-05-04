@@ -136,7 +136,7 @@ export default function ActivityTile({
           </div>
 
           <div className="mt-0 flex flex-col text-[14px] text-gray-500">
-            <div>
+            <div className="mt-1 flex items-center gap-1.5">
               <Calendar size={12} />
               {startDate.getDate()} {formatDate(startDate, "monthShort")} •{" "}
               {formatDate(startDate, "timeOnly")}

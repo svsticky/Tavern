@@ -1,4 +1,4 @@
-import type { ComponentProps, PropsWithChildren } from "react";
+import type { ComponentProps, PropsWithChildren, KeyboardEvent } from "react";
 import { cn } from "~/util/tailwind.util";
 
 /**
@@ -18,9 +18,19 @@ type FormProps = PropsWithChildren<ComponentProps<"form">>;
  * @component
  * @param {FormProps} props - The component properties and native HTML form attributes.
  */
-export default function Form({ children, className, ...props }: FormProps) {
+export default function Form({ children, className, onKeyDown, ...props }: FormProps) {
+  const handleKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      
+      event.currentTarget.requestSubmit();
+    }
+
+    onKeyDown?.(event);
+  };
+
   return (
-    <form {...props} className={cn("flex flex-col gap-4", className)}>
+    <form {...props} className={cn("flex flex-col gap-4", className)} onKeyDown={handleKeyDown}>
       {children}
     </form>
   );
