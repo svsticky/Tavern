@@ -77,13 +77,16 @@ export const handleStudyEdited = ({
     return;
   }
 
-  if (study.id) {
-    setStudies((prev) => prev.map((s) => (s.id === study.id ? study : s)));
-    setIsEditModalOpen(false);
-    setEditedStudy(undefined);
-    return;
-  }
+  setStudies((prev) => {
+    const exists = prev.find((s) => s.id === study.id);
+    
+    if (exists) {
+      return prev.map((s) => (s.id === study.id ? study : s));
+    } else {
+      return [...prev, study];
+    }
+  });
 
-  setStudies((prev) => [...prev, { ...study }]);
   setIsEditModalOpen(false);
+  setEditedStudy(undefined);
 };

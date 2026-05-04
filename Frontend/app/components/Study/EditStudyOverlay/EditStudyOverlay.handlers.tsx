@@ -19,7 +19,7 @@ import {
 type EditStudyFormData = {
   title: string;
   type: string;
-  nominalDurationYears: number;
+  nominalDurationYears?: number;
 };
 
 /**
@@ -68,14 +68,14 @@ export const handleStudySubmit = async ({
             body: {
               title: formData.title,
               type: formData.type as StudyType,
-              nominalDurationYears: formData.nominalDurationYears,
+              nominalDurationYears: formData.nominalDurationYears ?? 0,
             },
           })
         : await postApiStudies({
             body: {
               title: formData.title,
               type: formData.type as StudyType,
-              nominalDurationYears: formData.nominalDurationYears,
+              nominalDurationYears: formData.nominalDurationYears ?? 0,
             },
           });
 

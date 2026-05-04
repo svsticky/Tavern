@@ -131,7 +131,7 @@ export default function ActivityTile({
               {activity.name}
             </p>
             <p className="shrink-0 text-nowrap text-(--board-primary)">
-              {(activity.price ?? 0) > 0 ? `€${activity.price}` : t("free")}
+              {(activity.price ?? 0) > 0 ? `€${activity.price.toFixed(2)}` : t("free")}
             </p>
           </div>
 

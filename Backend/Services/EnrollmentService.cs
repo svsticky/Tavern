@@ -53,11 +53,11 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public async Task<EnrollmentResponseDTO?> GetEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
+    public async Task<EnrollmentResponseDTO?> GetEnrollment(uint activityId, Guid enrolledUser, Guid userId, CancellationToken cancellationToken)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
-        if (dto.MemberId != userId)
+        if (enrolledUser != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         var enrollment = await _db.Enrollments
@@ -65,7 +65,7 @@ public class EnrollmentService : IEnrollmentService
             .Include(e => e.Member)
             .Include(e => e.SpecificationAnswers)
                 .ThenInclude(sa => sa.Question)
-            .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
+            .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == enrolledUser, cancellationToken);
         
         if (enrollment == null)
             return null;
@@ -132,10 +132,10 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public async Task DeleteEnrollment(EnrollmentKeyDTO dto, Guid userId, CancellationToken cancellationToken)
+    public async Task DeleteEnrollment(uint activityId, Guid enrolledUser, Guid userId, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Deleting enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
-        if(dto.MemberId != userId)
+        _logger.LogInformation("Deleting enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", enrolledUser, activityId, userId);
+        if(enrolledUser != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
@@ -146,13 +146,13 @@ public class EnrollmentService : IEnrollmentService
                 .Include(e => e.SpecificationAnswers)
                 .Include(e => e.Activity)
                 .ThenInclude(a => a.Enrollments)
-                .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
+                .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == enrolledUser, cancellationToken);
 
             if (enrollment == null)
                 throw new KeyNotFoundException();
 
             // Determine if activity enrollments can be changed 
-            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(dto.MemberId);
+            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(enrolledUser);
 
             if (!isBoardMember)
             {
@@ -167,7 +167,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (!wasOnWaitingList)
             {
-                PromoteFromWaitingList(dto.ActivityId, cancellationToken);
+                PromoteFromWaitingList(activityId, cancellationToken);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -176,7 +176,7 @@ public class EnrollmentService : IEnrollmentService
         catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Failed deleting enrollment for member {MemberId} in activity {ActivityId}.", dto.MemberId, dto.ActivityId);
+            _logger.LogError(ex, "Failed deleting enrollment for member {MemberId} in activity {ActivityId}.", enrolledUser, activityId);
             throw;
         }
     }
@@ -236,9 +236,9 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public async Task PatchEnrollment(EnrollmentKeyDTO dto, JsonPatchDocument<Enrollment> patchDoc, Guid userId, CancellationToken cancellationToken)
+    public async Task PatchEnrollment(uint activityId, Guid memberId, JsonPatchDocument<Enrollment> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
+        _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", memberId, activityId, userId);
         ArgumentNullException.ThrowIfNull(patchDoc);
 
         if (patchDoc.Operations.Any(op => op.path.Equals("/activity", StringComparison.OrdinalIgnoreCase)
@@ -251,7 +251,7 @@ public class EnrollmentService : IEnrollmentService
         
         // Get enrollment
         var enrollment = await _db.Enrollments
-            .FirstOrDefaultAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
+            .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
 
         if (enrollment == null)
             throw new KeyNotFoundException();

@@ -242,8 +242,8 @@ export const handleUnenrollment = async (
 
       const response = await deleteApiEnrollmentsByActivityIdByMemberId({
         path: {
-          ActivityId: Number(activity.id),
-          MemberId: String(keycloak.tokenParsed?.UserId),
+          activityId: Number(activity.id),
+          memberId: String(keycloak.tokenParsed?.UserId),
         },
       });
 

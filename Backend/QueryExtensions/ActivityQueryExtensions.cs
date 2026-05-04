@@ -27,10 +27,10 @@ public static class ActivityQueryExtensions
                                  || (a.OrganizerId != null && userGroupIds.Contains(a.OrganizerId.Value) && !a.ShowOnWebsite && !a.ShowInKoala && !a.EnrollOpenDate.HasValue));
 
         if (!dto.IncludePast)
-            query = query.Where(a => a.DateTimeEnd > now);
+            query = query.Where(a => a.DateTimeEnd <= now);
 
         if (!dto.IncludeFuture)
-            query = query.Where(a => a.DateTimeStart < now);
+            query = query.Where(a => a.DateTimeStart > now);
 
         if (dto.Year.HasValue)
             query = query.Where(a => a.DateTimeStart.Year == (int)dto.Year.Value);

@@ -67,7 +67,7 @@ export default function EditParticipantTile({
               min="0"
               type="number"
               step="0.01"
-              value={price === 0 ? "" : price}
+              value={price === 0 ? "" : price.toFixed(2)}
               placeholder="0.00"
               className="h-8 text-sm text-right px-2 w-full"
               onChange={(e) =>

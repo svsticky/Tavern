@@ -30,8 +30,8 @@ export const handleWaitinglistUnenroll = ({
       setLoading(true);
       const response = await deleteApiEnrollmentsByActivityIdByMemberId({
         path: {
-          ActivityId: enrollment.activity.id,
-          MemberId: enrollment.member.id!,
+          activityId: enrollment.activity.id,
+          memberId: enrollment.member.id!,
         },
       });
 
@@ -71,8 +71,8 @@ export const handleMoveFromWaitinglist = ({
       setLoading(true);
       const response = await patchApiEnrollmentsByActivityIdByMemberId({
         path: {
-          ActivityId: enrollment.activity.id!,
-          MemberId: enrollment.member.id!,
+          activityId: enrollment.activity.id!,
+          memberId: enrollment.member.id!,
         },
         body: [{ op: "replace", path: "/isOnWaitingList", value: false }],
       });

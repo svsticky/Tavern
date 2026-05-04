@@ -48,18 +48,6 @@ public class GetEnrollmentsDTO
 }
 
 /// <summary>
-/// Represents the key information for an enrollment, containing the unique identifiers of the activity and member associated with the enrollment. The EnrollmentKeyDTO is used to transfer essential enrollment data from the client to the server when performing operations that require identification of a specific enrollment, such as retrieving, updating, or deleting an enrollment based on its unique activity and member identifiers within the system.
-/// </summary>
-public class EnrollmentKeyDTO
-{
-    /// <inheritdoc cref="Models.Enrollment.ActivityId"/>
-    public uint ActivityId { get; set; }
-
-    /// <inheritdoc cref="Models.Enrollment.MemberId"/>
-    public Guid MemberId { get; set; }
-}
-
-/// <summary>
 /// Represents the response DTO for a post enrollment operation, containing the unique identifiers of the activity and member associated with the newly created enrollment. The PostEnrollmentResponseDTO is used to transfer essential enrollment data from the server to the client after successfully creating a new enrollment, allowing for confirmation of the enrollment creation and providing key information about the associated activity and member in the response payload.
 /// </summary>
 public class PostEnrollmentResponseDTO

@@ -62,15 +62,17 @@ public class EnrollmentsController : ControllerBase
     /// <summary>
     /// Retrieves a specific enrollment based on the provided activity ID and member ID. The GetEnrollment endpoint allows clients to fetch the details of a single enrollment by providing the unique combination of activity ID and member ID in the EnrollmentKeyDTO. This endpoint is designed to return the enrollment data, ensuring that proper authorization is enforced to allow only authorized users to access the enrollment information, while also providing appropriate error handling for cases where the enrollment may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns the details of the specified enrollment with a 200 OK status code, allowing clients to easily access and display specific enrollment information as needed. This endpoint provides a convenient way for clients to stay informed about enrollment details related to specific members and activities by accessing detailed information about individual enrollments available within the system.
     /// </summary>
-    /// <param name="dto">The data transfer object containing the activity ID and member ID.</param>
+    /// <param name="activityId">The unique identifier of the activity for which to retrieve enrollment.</param>
+    /// <param name="memberId">The unique identifier of the member for whom to retrieve enrollment.</param>
+    /// <param name="userId">The ID of the requesting user.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The enrollment matching the criteria.</returns>
     [HttpGet("{activityId}/{memberId}")]
-    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment([FromRoute] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
     {
         try
         {
-            var enrollment = await _enrollmentService.GetEnrollment(dto, GetUserId(), cancellationToken);
+            var enrollment = await _enrollmentService.GetEnrollment(activityId, memberId, GetUserId(), cancellationToken);
 
             if (enrollment == null)
                 return NotFound();
@@ -127,15 +129,16 @@ public class EnrollmentsController : ControllerBase
     /// <summary>
     /// Deletes a specific enrollment by its unique identifier. The DeleteEnrollment endpoint allows clients to remove an existing enrollment from the system based on the provided activity ID and member ID. This endpoint is designed to handle the deletion of enrollments, ensuring that proper authorization is enforced to allow only authorized users to delete enrollments, while also providing appropriate error handling for cases where the enrollment may not be found or the user does not have access rights. Upon successful deletion, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully removed from the system without returning any content in the response body.
     /// </summary>
-    /// <param name="dto">The data transfer object containing the activity ID and member ID.</param>
+    /// <param name="activityId">The unique identifier of the activity for which to delete enrollment.</param>
+    /// <param name="memberId">The unique identifier of the member for whom to delete enrollment.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>No content.</returns>
     [HttpDelete("{activityId}/{memberId}")]
-    public async Task<ActionResult> DeleteEnrollment([FromRoute] EnrollmentKeyDTO dto, CancellationToken cancellationToken)
+    public async Task<ActionResult> DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
     {
         try
         {
-            await _enrollmentService.DeleteEnrollment(dto, GetUserId(), cancellationToken);
+            await _enrollmentService.DeleteEnrollment(activityId, memberId, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -195,7 +198,7 @@ public class EnrollmentsController : ControllerBase
     /// <returns>No content.</returns>
     [HttpPatch("{activityId}/{memberId}")]
     public async Task<ActionResult> PatchEnrollment(
-        [FromRoute] EnrollmentKeyDTO dto,
+        uint activityId, Guid memberId,
         [FromBody] JsonPatchDocument<Enrollment> patchDoc,
         CancellationToken cancellationToken)
     {
@@ -204,7 +207,7 @@ public class EnrollmentsController : ControllerBase
 
         try
         {
-            await _enrollmentService.PatchEnrollment(dto, patchDoc, GetUserId(), cancellationToken);
+            await _enrollmentService.PatchEnrollment(activityId, memberId, patchDoc, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)

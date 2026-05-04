@@ -501,7 +501,7 @@ export type StudyUpdateDto = {
     type: StudyType;
 };
 
-export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'All';
+export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'Gratie' | 'All';
 
 export type UpdateAnnouncementDto = {
     title: string;
@@ -864,8 +864,8 @@ export type PostApiEnrollmentsResponse = PostApiEnrollmentsResponses[keyof PostA
 export type DeleteApiEnrollmentsByActivityIdByMemberIdData = {
     body?: never;
     path: {
-        ActivityId: number;
-        MemberId: string;
+        activityId: number;
+        memberId: string;
     };
     query?: never;
     url: '/api/enrollments/{activityId}/{memberId}';
@@ -881,8 +881,8 @@ export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
 export type GetApiEnrollmentsByActivityIdByMemberIdData = {
     body?: never;
     path: {
-        ActivityId: number;
-        MemberId: string;
+        activityId: number;
+        memberId: string;
     };
     query?: never;
     url: '/api/enrollments/{activityId}/{memberId}';
@@ -900,8 +900,8 @@ export type GetApiEnrollmentsByActivityIdByMemberIdResponse = GetApiEnrollmentsB
 export type PatchApiEnrollmentsByActivityIdByMemberIdData = {
     body?: Array<Operation>;
     path: {
-        ActivityId: number;
-        MemberId: string;
+        activityId: number;
+        memberId: string;
     };
     query?: never;
     url: '/api/enrollments/{activityId}/{memberId}';

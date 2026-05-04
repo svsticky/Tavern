@@ -38,7 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
-        {import.meta.env.VITE_ApiUrl || <script src="/env-config.js"></script>}
+        {import.meta.env.ApiUrl || <script src="/env-config.js"></script>}
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />

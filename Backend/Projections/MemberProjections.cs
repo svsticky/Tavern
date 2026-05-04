@@ -39,6 +39,7 @@ public static class MemberProjections
                     .Select(StudyEnrollmentProjections.ToDto())
                     .ToList()
                 : null,
+            Suspended = isBoard || userId == m.Id ? m.Suspended : (bool?)null,
             GroupMemberships = isBoard || userId == m.Id ? m.GroupMemberships.Select(gm => GroupMembershipProjections.ToDto(userId, isBoard).Compile()(gm)).ToList() : null
         };
     }

@@ -253,7 +253,7 @@ export default function EditActivityForm({
               name="Price"
               type="number"
               step="0.01"
-              defaultValue={activity?.price}
+              defaultValue={activity?.price.toFixed(2)}
             />
             <Input
               label={t("participant_limit")}
