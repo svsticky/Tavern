@@ -3,6 +3,7 @@ using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Backend.Database;
 

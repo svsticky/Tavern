@@ -83,29 +83,31 @@ namespace Backend.Services
                     logger.LogInformation("Reusing existing membership payment for member {MemberId}.", dto.MemberId);
                     return existingResponse;
                 }
+
+
+                // create new payment
+                var request = BuildMembershipPaymentRequest(member, dto.MemberId);
+                var mollieResponse = await mollieClient.CreatePaymentAsync(request);
+
+                // Build the payment record and save to database
+                if (mollieResponse.Links.Checkout == null)
+                    throw new Exception("No checkout URL from Mollie");
+
+                var payment = await BuildMembershipPayment(dto.MemberId, mollieResponse);
+                StateValidator.Validate(payment);
+
+                db.MembershipPayments.Add(payment);
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+                logger.LogInformation("Created membership payment {PaymentId} for member {MemberId}.", payment.Id, dto.MemberId);
+
+                return ToCheckoutResponse(mollieResponse.Links.Checkout.Href);
             }
             catch
             {
                 await transaction.RollbackAsync();
                 throw;
             }
-
-            // create new payment
-            var request = BuildMembershipPaymentRequest(member, dto.MemberId);
-            var mollieResponse = await mollieClient.CreatePaymentAsync(request);
-
-            // Build the payment record and save to database
-            if (mollieResponse.Links.Checkout == null)
-                throw new Exception("No checkout URL from Mollie");
-
-            var payment = await BuildMembershipPayment(dto.MemberId, mollieResponse);
-            StateValidator.Validate(payment);
-
-            db.MembershipPayments.Add(payment);
-            await db.SaveChangesAsync();
-            logger.LogInformation("Created membership payment {PaymentId} for member {MemberId}.", payment.Id, dto.MemberId);
-
-            return ToCheckoutResponse(mollieResponse.Links.Checkout.Href);
         }
 
         /// <inheritdoc />
@@ -295,7 +297,7 @@ namespace Backend.Services
                 throw new InvalidOperationException("Member already paid membership");
             }
 
-            if (molliePayment.Status != "pending")
+            if (molliePayment.Status == "pending")
             {
                 return ToCheckoutResponse(existingPayment.PaymentIntentUrl);
             }

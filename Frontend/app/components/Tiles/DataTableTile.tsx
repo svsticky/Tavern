@@ -48,6 +48,10 @@ export default function DataTableTile<T>({
   emptyText,
   onRowClick,
 }: DataTableProps<T>) {
+  const mobileHeaderActions = columns.filter(
+    (column) => typeof column.header !== "string" && column.header != null,
+  );
+
   return (
     <div className="w-full overflow-x-auto">
       <table className="w-full min-w-full border-collapse block lg:table">
@@ -80,20 +84,27 @@ export default function DataTableTile<T>({
               {columns.map((col, colIndex) => (
                 <td
                   key={colIndex}
-                  data-label={col.header}
+                  data-label={typeof col.header === "string" ? col.header : ""}
                   className={`
                     px-4 py-2 lg:py-4 
                     block lg:table-cell
                     text-left
-                    
-                    ${col.header ? "before:content-[attr(data-label)] before:block" : "before:hidden"}
+                     
+                    ${typeof col.header === "string" && col.header.length > 0 ? "before:content-[attr(data-label)] before:block" : "before:hidden"}
                     lg:before:hidden 
                     before:text-[10px] before:tracking-wider before:text-slate-400 before:font-bold
-                    
+                     
                     ${col.className || ""}
+                    !w-full lg:!w-auto
                   `}
                 >
-                  <div className="text-slate-700 font-medium lg:font-normal lg:text-inherit whitespace-normal">
+                  <div
+                    className={`text-slate-700 font-medium lg:font-normal lg:text-inherit whitespace-normal ${
+                      colIndex === columns.length - 1
+                        ? "w-full lg:w-auto [&_div]:w-full [&_button]:!w-full lg:[&_button]:!w-auto"
+                        : ""
+                    }`}
+                  >
                     {col.render(item)}
                   </div>
                 </td>
@@ -102,6 +113,16 @@ export default function DataTableTile<T>({
           ))}
         </tbody>
       </table>
+
+      {mobileHeaderActions.length > 0 && (
+        <div className="lg:hidden mt-2 flex flex-col gap-2 w-full">
+          {mobileHeaderActions.map((column, index) => (
+            <div key={index} className="w-full [&>*]:w-full [&_button]:w-full">
+              {column.header}
+            </div>
+          ))}
+        </div>
+      )}
 
       {data.length === 0 && emptyText !== "" && (
         <div className="p-8 text-center text-slate-400">

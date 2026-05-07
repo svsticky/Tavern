@@ -254,7 +254,7 @@ export default function SettingsPage() {
                   }
                   disabled={!selectedRoleId}
                   variant="secondary"
-                  className="whitespace-nowrap sm:mb-1"
+                  className="whitespace-nowrap w-full sm:w-auto sm:mb-1"
                 >
                   <PlusIcon className="w-4 h-4 mr-2" />
                   {t("add_mapping")}

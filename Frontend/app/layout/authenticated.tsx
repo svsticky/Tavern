@@ -1,7 +1,7 @@
 import { useKeycloak } from "@react-keycloak/web";
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router";
+import { Navigate, Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
 import {
   getApiMembersById,
@@ -31,6 +31,8 @@ export default function AuthenticatedLayout() {
 
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
+  const navigate = useNavigate();
+
   const {
     boardGroupId,
     setBoardGroupId,
@@ -50,6 +52,7 @@ export default function AuthenticatedLayout() {
             path: "/",
             secure: true,
             sameSite: "none",
+            domain: `.${window.location.hostname}`,
           });
 
           config.headers.Authorization = `Bearer ${keycloak.token}`;
@@ -205,11 +208,7 @@ export default function AuthenticatedLayout() {
         <p className="mb-6">{i18n.t("membership_payment_description")}</p>
         {paymentUrl && (
           <Button
-            onClick={() =>
-              keycloak.logout({
-                redirectUri: paymentUrl,
-              })
-            }
+            onClick={() => navigate(paymentUrl)}
           >
             {i18n.t("pay")}
           </Button>

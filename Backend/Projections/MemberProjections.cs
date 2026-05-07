@@ -18,8 +18,8 @@ public static class MemberProjections
         {
             Id = m.Id,
             StudentNumber = isBoard || userId == m.Id ? m.StudentNumber : null,
-            FirstName = isBoard || userId == m.Id ? m.FirstName : null,
-            LastName = isBoard || userId == m.Id ? m.LastName : null,
+            FirstName = m.FirstName,
+            LastName = m.LastName,
             Email = isBoard || userId == m.Id ? m.Email : null,
             PhoneNumber = isBoard || userId == m.Id ? m.PhoneNumber : null,
             Street = isBoard || userId == m.Id ? m.Street : null,

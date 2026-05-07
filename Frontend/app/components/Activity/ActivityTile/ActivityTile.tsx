@@ -114,6 +114,7 @@ export default function ActivityTile({
               src={posterUrl}
               alt={activity.name}
               loading="lazy"
+              crossOrigin="use-credentials"
               onLoad={() => setStatus("loaded")}
               onError={() => setStatus("error")}
               className={cn(

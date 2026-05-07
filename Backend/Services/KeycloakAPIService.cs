@@ -94,7 +94,7 @@ public class KeycloakAPIService(
         var token = await GetServiceAccountToken();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-        var newUser = MapToKeycloakUser(member, member.Email, true);
+        var newUser = MapToKeycloakUser(member, member.Email, false);
         var response = await client.PostAsJsonAsync("users", newUser);
         
         if (response.IsSuccessStatusCode)

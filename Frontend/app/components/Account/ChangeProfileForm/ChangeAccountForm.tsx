@@ -152,7 +152,7 @@ export default function ChangeAccountForm({
           </div>
 
           <div className="pb-1">
-            <a onClick={() => handleChangeEmail(keycloak)}>
+            <a className="hover:cursor-pointer" onClick={() => handleChangeEmail(keycloak)}>
               {t("change_email")}
             </a>
           </div>
@@ -205,9 +205,7 @@ export default function ChangeAccountForm({
             mailingLists.map((list) => (
               <Checkbox
                 key={list.id}
-                label={
-                  t(list.name!.toLowerCase().replace(/ /g, "_")) || list.name
-                }
+                label={list.name}
                 checked={(formData.mailSubscriptions & list.bitValue!) !== 0}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                   handleSubscriptionChange(

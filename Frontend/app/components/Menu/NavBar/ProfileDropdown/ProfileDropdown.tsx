@@ -29,6 +29,8 @@ export type ProfileOptions = {
   context?: React.Context<ProfileDropdownContextValues>;
   avatarUrl?: string;
   options?: ProfileDropdownOption[];
+  onOptionSelect?: (option: ProfileDropdownOption) => void;
+  onClose?: () => void;
 };
 
 /**
@@ -48,6 +50,8 @@ export default function ProfileDropdown({
   }),
   avatarUrl = "/default-avatar.png",
   options = [],
+  onOptionSelect,
+  onClose,
 }: ProfileOptions) {
   const [isOpen, setIsOpen] = useState(false);
   const compact = React.useContext(context).compact;
@@ -102,7 +106,15 @@ export default function ProfileDropdown({
               key={option.label}
               type="button"
               onClick={() =>
-                handleOptionClick(option.action, compact, setIsOpen)
+                handleOptionClick(
+                  () => {
+                    option.action();
+                    onOptionSelect?.(option);
+                    onClose?.();
+                  },
+                  compact,
+                  setIsOpen,
+                )
               }
               className={`
                 text-left px-2 py-2.5 text-sm cursor-pointer

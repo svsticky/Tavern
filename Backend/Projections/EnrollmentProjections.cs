@@ -21,12 +21,12 @@ public static class EnrollmentProjections
         return e => new EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
-            Member = MemberProjections.ToDto(userId, isBoard).Compile()(e.Member),
-            SpecificationAnswers = e.SpecificationAnswers
+            Member = e.Member == null ? null! :  MemberProjections.ToDto(userId, isBoard).Compile()(e.Member),
+            SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
                 .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible)
                 .Select(sa => SpecificationAnswerProjections.ToDto().Compile()(sa)).ToList(),
             Price = isBoard ? e.Price : null,
-            Activity = includeActivity ? ActivityProjections.ToDto(userId, isBoard).Compile()(e.Activity) : null!
+            Activity = e.Activity == null ? null! : includeActivity ? ActivityProjections.ToDto(userId, isBoard).Compile()(e.Activity) : null!
         };
     }
 }

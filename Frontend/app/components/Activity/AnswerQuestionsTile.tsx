@@ -1,10 +1,6 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
-import { useEffect, useRef, useState } from "react";
-import type {
-  GetSpecificationQuestionResponseDto,
-  SpecificationAnswerResponseDto,
-} from "~/api";
+import type { GetSpecificationQuestionResponseDto } from "~/api";
 import Tile from "../Tiles/Tile";
 import Input from "../UI/Input";
 import Select from "../UI/Select";
@@ -17,76 +13,38 @@ import Select from "../UI/Select";
  *   and `Select` components based on the `question.type`.
  * - **Localization**: Displays question labels in Dutch or English based on the
  *   Keycloak user's locale preference.
- * - **State Syncing**: Initializes local state with existing `enrollmentAnswers` and
- *   notifies parent components via `onChange` whenever a value is modified.
+ * - **Controlled Inputs**: Uses parent-owned answer state, so rerenders never
+ *   reset in-progress typing.
  * - **Validation Visuals**: Appends a red asterisk to labels for mandatory questions.
  *
  * @component
  * @param {Object} props - The component props.
  * @param {GetSpecificationQuestionResponseDto[]} props.questions - The list of question definitions to render.
- * @param {SpecificationAnswerResponseDto[]} props.answers - Existing answers for the current enrollment to pre-populate the form.
+ * @param {Record<number, string>} props.answers - Current answers keyed by question id.
  * @param {boolean} [props.disabled=false] - If true, prevents user interaction with all input fields.
- * @param {(answers: Record<number, string>) => void} [props.onChange] - Callback triggered on every state change, providing a map of question IDs to answer strings.
+ * @param {(id: number, value: string) => void} props.onChange - Callback triggered for each input change.
  *
  * @example
  * ```tsx
  * <AnswerQuestionsTile
  *   questions={activity.specificationQuestions}
- *   answers={enrollment.specificationAnswers}
- *   onChange={(newAnswers) => setFormData(newAnswers)}
+ *   answers={formData}
+ *   onChange={(id, value) => setFormData((prev) => ({ ...prev, [id]: value }))}
  * />
  * ```
  */
 export default function AnswerQuestionsTile({
   questions,
-  answers: enrollmentAnswers,
+  answers,
   disabled = false,
   onChange,
 }: {
   questions: GetSpecificationQuestionResponseDto[];
-  answers: SpecificationAnswerResponseDto[];
+  answers: Record<number, string>;
   disabled?: boolean;
-  onChange?: (answers: Record<number, string>) => void;
+  onChange: (id: number, value: string) => void;
 }) {
   const { keycloak } = useKeycloak();
-
-  const [answers, setAnswers] = useState<Record<number, string>>(() => {
-    const initial: Record<number, string> = {};
-    enrollmentAnswers?.forEach((a) => {
-      if (a.questionId !== undefined) initial[a.questionId] = a.answer;
-    });
-    return initial;
-  });
-
-  const onChangeRef = useRef(onChange);
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-
-  useEffect(() => {
-    onChangeRef.current?.(answers);
-  }, [answers]);
-
-  useEffect(() => {
-    if (!enrollmentAnswers) return;
-
-    const incoming: Record<number, string> = {};
-    enrollmentAnswers.forEach((a) => {
-      if (a.questionId !== undefined) incoming[a.questionId] = a.answer;
-    });
-
-    setAnswers((prev) => {
-      const isDifferent = JSON.stringify(prev) !== JSON.stringify(incoming);
-      if (isDifferent) {
-        return incoming;
-      }
-      return prev;
-    });
-  }, [enrollmentAnswers]);
-
-  const setValue = (questionId: number, value: string) => {
-    setAnswers((prev) => ({ ...prev, [questionId]: value }));
-  };
 
   const renderInput = (q: GetSpecificationQuestionResponseDto) => {
     if (q.id === undefined) return null;
@@ -102,7 +60,7 @@ export default function AnswerQuestionsTile({
             className="input"
             value={value}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue(id, e.target.value)
+              onChange(id, e.target.value)
             }
             disabled={disabled}
             required={q.isMandatory}
@@ -115,7 +73,7 @@ export default function AnswerQuestionsTile({
             type="checkbox"
             checked={value === "true"}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue(id, e.target.checked ? "true" : "false")
+              onChange(id, e.target.checked ? "true" : "false")
             }
             disabled={disabled}
           />
@@ -128,7 +86,7 @@ export default function AnswerQuestionsTile({
             className="input"
             value={value}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue(id, e.target.value)
+              onChange(id, e.target.value)
             }
             disabled={disabled}
             required={q.isMandatory}
@@ -142,7 +100,7 @@ export default function AnswerQuestionsTile({
             className="input"
             value={value}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue(id, e.target.value)
+              onChange(id, e.target.value)
             }
             disabled={disabled}
             required={q.isMandatory}
@@ -156,7 +114,7 @@ export default function AnswerQuestionsTile({
             className="input"
             value={value}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setValue(id, e.target.value)
+              onChange(id, e.target.value)
             }
             disabled={disabled}
             required={q.isMandatory}
@@ -170,7 +128,7 @@ export default function AnswerQuestionsTile({
           <Select
             className="input"
             value={value}
-            onChange={(e) => setValue(id, e.target.value)}
+            onChange={(e) => onChange(id, e.target.value)}
             options={options.map((opt) => ({ label: opt, value: opt }))}
             required={q.isMandatory}
           />

@@ -35,8 +35,9 @@ export const links: Route.LinksFunction = () => [
 ];
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const currentLang = i18n.language || "en";
   return (
-    <html lang="en">
+    <html lang={currentLang}>
       <head>
         <script src="/env-config.js" />
         <meta charSet="utf-8" />

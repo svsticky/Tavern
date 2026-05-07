@@ -43,14 +43,17 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
   const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
   useEffect(() => {
+    const activityId = Number(params.id);
+    if (activity?.id === activityId) return;
+
     loadActivityData({
       initialized,
       authenticated: keycloak.authenticated,
-      activityId: Number(params.id),
+      activityId,
       setLoading,
       setActivity: (next) => setActivity(next),
     });
-  }, [initialized, keycloak.authenticated, params.id]);
+  }, [activity?.id, initialized, keycloak.authenticated, params.id]);
 
   const canEdit = activity == null ? false : canEditActivity(activity, keycloak.tokenParsed);
 

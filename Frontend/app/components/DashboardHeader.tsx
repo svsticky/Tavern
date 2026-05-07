@@ -214,7 +214,7 @@ export default function DashboardHeader({
 
         {/* Next Activity Details */}
         {nextActivity && (
-          <Tile className="flex flex-col gap-4 bg-(--board-primary-light) border-2 border-white/20 grow basis-0">
+          <Tile className="flex flex-col gap-4 bg-(--board-primary-light) border-2 border-white/20 grow basis-0 hidden lg:flex">
             <div className="flex items-center gap-2">
               <Clock /> {t("upcoming_activity")}
             </div>

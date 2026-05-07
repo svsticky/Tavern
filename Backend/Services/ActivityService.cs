@@ -64,7 +64,9 @@ public class ActivityService : IActivityService
                 .ThenInclude(e => e.Member)
             .Include(a => a.SpecificationQuestions)
             .Include(a => a.Enrollments)
-                .ThenInclude(e => e.SpecificationAnswers) 
+                .ThenInclude(e => e.SpecificationAnswers)
+                    .ThenInclude(sa => sa.Question)
+                        .ThenInclude(q => q.Activity)
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds)
             .ToListAsync();
@@ -83,7 +85,8 @@ public class ActivityService : IActivityService
                 .ThenInclude(e => e.Member)
             .Include(a => a.Enrollments)
                 .ThenInclude(e => e.SpecificationAnswers)
-                    .ThenInclude(sa => sa.Question) 
+                    .ThenInclude(sa => sa.Question)
+                        .ThenInclude(q => q.Activity)
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)
@@ -478,7 +481,7 @@ public class ActivityService : IActivityService
         if (availableSpots > 0)
         {
             // Promote people from the waiting list based on the available spots
-            _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
+            await _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
         }
     }
 

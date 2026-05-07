@@ -15,6 +15,7 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.HttpLogging;
 using System.Text;
 using System.Net.Http.Headers;
+using Npgsql;
 
 Env.Load();
 
@@ -156,12 +157,12 @@ builder.Services.AddSwaggerGen(c =>
 
     c.SupportNonNullableReferenceTypes();
 });
-string connectionstring = Environment.GetEnvironmentVariable("PostgresqlConnectionString") ?? throw new InvalidOperationException("PostgresConnectionString environment variable is not set.");
+string connectionstring = Environment.GetEnvironmentVariable("PostgresqlConnectionString") ?? string.Empty;
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: connectionstring);
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddMollieApi(options => 
 {
-    options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? throw new Exception("No Mollie Key initialized");
+    options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? string.Empty;
 });
 builder.Services.AddHostedService<PaymentSyncService>();
 builder.Services.AddHttpClient("KeycloakAdmin", client =>
@@ -206,7 +207,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
         AuthenticationRegion = "us-east-1"
     };
 
-    return new AmazonS3Client("test", "test", s3Config);
+    return new AmazonS3Client(Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID"), Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY"), s3Config);
 });
 
 builder.Services.AddScoped<IStorageService, S3StorageService>();
@@ -336,6 +337,12 @@ using (var scope = app.Services.CreateScope())
         "0 0 1 8 *", // 1 Augustus
         recurringJobOptions
     );
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
+    await db.Database.MigrateAsync();
 }
 
 app.Run();

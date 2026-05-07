@@ -1,3 +1,5 @@
+import RequiredAsterisk from "./RequiredAstrix";
+
 /**
  * Represents an individual option within a select dropdown.
  * @typedef {Object} Option
@@ -42,7 +44,10 @@ export default function Select({
   return (
     <label className="flex flex-col gap-1 w-full">
       {label && (
-        <span className="text-sm font-medium text-gray-700">{label}</span>
+        <div className="flex">
+          <span className="text-sm font-medium text-gray-700">{label}</span>
+          <RequiredAsterisk required={props.required || false} />
+        </div>
       )}
       <select
         {...props}

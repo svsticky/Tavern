@@ -88,49 +88,49 @@ export default function Finances() {
 
   return (
     <>
-      <PageHeader
-        title={t("finances")}
-        backTo="/"
-        action={
-          <div className="flex flex-col sm:flex-row items-end gap-2">
-            <Input
-              type="date"
-              label={t("start_date")}
-              name="start_date"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setExportStartDate(e.target.value)
+      <div className="flex flex-col lg:flex-row lg:items-center lg:items-start justify-between gap-3">
+        <PageHeader
+          title={t("finances")}
+          backTo="/"
+        />
+        <>
+          <Input
+            type="date"
+            label={t("start_date")}
+            name="start_date"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setExportStartDate(e.target.value)
+            }
+          />
+          <Input
+            type="date"
+            label={t("end_date")}
+            name="end_date"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setExportEndDate(e.target.value)
+            }
+          />
+          <div className="w-full sm:w-auto">
+            <Button
+              variant="secondary"
+              className="w-full mb-4"
+              disabled={
+                exportStartDate === "" || exportEndDate === "" || exporting
               }
-            />
-            <Input
-              type="date"
-              label={t("end_date")}
-              name="end_date"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setExportEndDate(e.target.value)
+              onClick={() =>
+                handlePaymentsExport(
+                  exportStartDate,
+                  exportEndDate,
+                  setExporting,
+                )
               }
-            />
-            <div className="w-full sm:w-auto">
-              <Button
-                variant="secondary"
-                className="w-full"
-                disabled={
-                  exportStartDate === "" || exportEndDate === "" || exporting
-                }
-                onClick={() =>
-                  handlePaymentsExport(
-                    exportStartDate,
-                    exportEndDate,
-                    setExporting,
-                  )
-                }
-              >
-                {t("export")}
-                {exporting && "..."}
-              </Button>
-            </div>
+            >
+              {t("export")}
+              {exporting && "..."}
+            </Button>
           </div>
-        }
-      />
+        </>
+      </div>
       <div className="flex flex-col gap-4 w-full">
         <div className="flex flex-col sm:flex-row gap-4 w-full">
           <BorderedTile

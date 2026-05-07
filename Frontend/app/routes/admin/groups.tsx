@@ -118,7 +118,7 @@ export default function Groups() {
           <Button
             variant="secondary"
             onClick={() => setCreateGroupModalIsOpen(true)}
-            className="flex items-center gap-2 px-3 py-1 rounded-lg transition-colors font-medium shadow-sm"
+            className="items-center px-3 py-1"
           >
             <PlusIcon className="w-5 h-5" />
           </Button>

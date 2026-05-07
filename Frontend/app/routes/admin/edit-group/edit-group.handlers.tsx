@@ -70,6 +70,11 @@ export const loadGroupData = async ({
       Active: groupResponse.data.active,
     });
 
+    const roleAliasesResponse = await getApiRolealiases();
+    if (roleAliasesResponse.error || !roleAliasesResponse.data)
+      throw new Error("Failed to load role aliases");
+    setRoleAliases(roleAliasesResponse.data);
+
     const groupPictureResponse = await getApiGroupsByIdGroupPicture({
       path: { id },
       responseType: "blob",
@@ -79,15 +84,13 @@ export const loadGroupData = async ({
       groupPictureResponse.error ||
       !(groupPictureResponse.data instanceof Blob)
     )
-      throw new Error("Failed to load group picture");
+    {
+      console.warn("Failed to load group picture, using default avatar");
+      return;
+    }
 
     url = URL.createObjectURL(groupPictureResponse.data);
     setGroupPictureSrc(url);
-
-    const roleAliasesResponse = await getApiRolealiases();
-    if (roleAliasesResponse.error || !roleAliasesResponse.data)
-      throw new Error("Failed to load role aliases");
-    setRoleAliases(roleAliasesResponse.data);
   } catch (err) {
     console.log("Failed to load group data:", err);
     toast.error(t("loading_failed"));

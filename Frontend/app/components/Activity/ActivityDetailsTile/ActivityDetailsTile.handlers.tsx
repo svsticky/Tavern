@@ -91,6 +91,14 @@ export const handleEnrollment = async (
       if (response.error) throw new Error("Enrollment failed");
 
       if (response.data) {
+        const submittedAnswers = Object.entries(answers).map(
+          ([questionId, answer]) => ({
+            questionId: Number(questionId),
+            answerId: 0,
+            answer: String(answer),
+          }),
+        );
+
         const newEnrollment = {
           isOnWaitingList: response.data.isOnWaitingList,
           memberId: keycloak.tokenParsed?.UserId,
@@ -101,7 +109,10 @@ export const handleEnrollment = async (
             lastName: keycloak.tokenParsed?.family_name,
             profilePicturePath: response.data.member?.profilePicturePath,
           },
-          specificationAnswers: response.data.specificationAnswers,
+          specificationAnswers:
+            (response.data.specificationAnswers?.length ?? 0) > 0
+              ? response.data.specificationAnswers
+              : submittedAnswers,
         } as any;
 
         activity.enrollments = activity.enrollments
@@ -180,16 +191,29 @@ export const handleUpdateEnrollment = async (
         throw new Error("Update failed");
       }
 
+      const existingEnrollment = activity.enrollments.find(
+        (e) => e.member.id === keycloak.tokenParsed?.UserId,
+      );
+      const existingAnswerIds = new Map(
+        (existingEnrollment?.specificationAnswers ?? []).map((answer) => [
+          answer.questionId,
+          answer.answerId,
+        ]),
+      );
+
+      const updatedSpecificationAnswers = Object.entries(answers).map(
+        ([questionId, answer]) => ({
+          questionId: Number(questionId),
+          answerId: existingAnswerIds.get(Number(questionId)) ?? 0,
+          answer: String(answer),
+        }),
+      );
+
       const updatedEnrollments = activity.enrollments.map((e) => {
         if (e.member.id === keycloak.tokenParsed?.UserId) {
           return {
             ...e,
-            specificationAnswers: e.specificationAnswers?.map(
-              (existingAns) => ({
-                ...existingAns,
-                answer: answers[existingAns.questionId] ?? existingAns.answer,
-              }),
-            ),
+            specificationAnswers: updatedSpecificationAnswers,
           };
         }
         return e;

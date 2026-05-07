@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Markdown from "react-markdown";
-import type { ActivityResponseDto } from "~/api";
+import type { ActivityResponseDto, SpecificationAnswerResponseDto } from "~/api";
 import { useApp } from "~/context/AppContext";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -26,6 +26,14 @@ import {
 } from "./ActivityDetailsTile.handlers";
 import InfoItem from "./InfoItem";
 import { getEnv } from "~/util/config.utils";
+
+const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
+  const mapped: Record<number, string> = {};
+  answers?.forEach((answer) => {
+    mapped[answer.questionId] = answer.answer;
+  });
+  return mapped;
+};
 
 /**
  * A detailed tile component for displaying activity information, including posters,
@@ -67,8 +75,6 @@ export default function ActivityDetailsTile({
   const [posterStatus, setPosterStatus] = useState<
     "loading" | "loaded" | "error"
   >("loading");
-
-  const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const posterUrl = `${getEnv("ApiUrl")}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
@@ -114,6 +120,12 @@ export default function ActivityDetailsTile({
     member,
     activity.allowedAudience,
   );
+  const currentEnrollment = activity.enrollments.find(
+    (e) => e.member.id === keycloak.tokenParsed?.UserId,
+  );
+  const [answers, setAnswers] = useState<Record<number, string>>(() =>
+    toAnswerMap(currentEnrollment?.specificationAnswers),
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -155,6 +167,7 @@ export default function ActivityDetailsTile({
               alt={activity.name}
               onLoad={() => setPosterStatus("loaded")}
               onError={() => setPosterStatus("error")}
+              crossOrigin="use-credentials"
               className={`w-full h-full object-cover transition-opacity duration-500 ${
                 posterStatus === "loading" ? "opacity-0" : "opacity-100"
               }`}
@@ -178,15 +191,15 @@ export default function ActivityDetailsTile({
         </section>
 
         <BorderedTile>
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
             <h3 className="font-bold text-slate-900">{t("description")}</h3>
 
             {isBoardOrCandidateBoard(keycloak.tokenParsed) && (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   variant="secondary"
                   onClick={() => handleCopyForWhatsapp(activity, "NL")}
-                  className="text-xs px-3 py-1"
+                  className="text-xs px-3 py-1 w-full sm:w-auto"
                 >
                   {t("copy")} NL
                 </Button>
@@ -194,7 +207,7 @@ export default function ActivityDetailsTile({
                 <Button
                   variant="secondary"
                   onClick={() => handleCopyForWhatsapp(activity, "EN")}
-                  className="text-xs px-3 py-1"
+                  className="text-xs px-3 py-1 w-full sm:w-auto"
                 >
                   {t("copy")} EN
                 </Button>
@@ -267,12 +280,10 @@ export default function ActivityDetailsTile({
         {activity.isEnrollable && (
           <AnswerQuestionsTile
             questions={activity.specificationQuestions}
-            answers={
-              activity.enrollments.find(
-                (e) => e.member.id === keycloak.tokenParsed?.UserId,
-              )?.specificationAnswers ?? []
+            answers={answers}
+            onChange={(id, value) =>
+              setAnswers((prev) => ({ ...prev, [id]: value }))
             }
-            onChange={(answers) => setAnswers(answers)}
             disabled={
               submitting || activity.enrollmentDeadline
                 ? new Date(Date.now()) > new Date(activity.enrollmentDeadline!)
@@ -289,6 +300,7 @@ export default function ActivityDetailsTile({
                 {activity.specificationQuestions.length > 0 && (
                   <Button
                     variant="primary"
+                    className="w-full sm:w-auto"
                     onClick={() =>
                       handleUpdateEnrollment(
                         initialized,
@@ -307,6 +319,7 @@ export default function ActivityDetailsTile({
 
                 <Button
                   variant="danger"
+                  className="w-full sm:w-auto"
                   onClick={() =>
                     handleUnenrollment(
                       initialized,
@@ -332,6 +345,7 @@ export default function ActivityDetailsTile({
               activity.isEnrollable && (
                 <Button
                   variant="primary"
+                  className="w-full sm:w-auto"
                   onClick={() =>
                     handleEnrollment(
                       initialized,
@@ -357,7 +371,7 @@ export default function ActivityDetailsTile({
 
           <Button
             variant="secondary"
-            className="bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700"
+            className="w-full sm:w-auto"
             onClick={() => handleAddToCalendar(activity)}
           >
             <div className="flex items-center gap-2">

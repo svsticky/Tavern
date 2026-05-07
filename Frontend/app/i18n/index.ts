@@ -6,9 +6,12 @@ i18n
   .use(HttpBackend)
   .use(initReactI18next)
   .init({
-    lng: "nl",
     fallbackLng: "en",
     debug: true,
+    detection: {
+      order: ["querystring", "cookie", "localStorage", "navigator"],
+      caches: ["localStorage", "cookie"],
+    },
     backend: {
       loadPath: "/locales/{{lng}}/translation.json",
     },

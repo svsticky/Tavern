@@ -82,6 +82,8 @@ public class EnrollmentService : IEnrollmentService
         if(dto.MemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
         try
         {
             // Get member and check if they are allowed to enroll in activities
@@ -92,8 +94,6 @@ public class EnrollmentService : IEnrollmentService
 
             // Get activity and validate if enrollment is possible
             var activity = await GetActivityWithQuestionsAndEnrollmentsOrThrow(dto.ActivityId, cancellationToken);
-
-            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(member.Id);
 
             EnrollmentValidator.ValidateEnrollment(dto.SpecificationAnswers, member, activity, isBoardMember, _paymentValidationService);
 
@@ -120,8 +120,6 @@ public class EnrollmentService : IEnrollmentService
             await _db.SaveChangesAsync(cancellationToken);
 
             await transaction.CommitAsync(cancellationToken);
-
-            return EnrollmentProjections.ToDto(userId, isBoardMember).Compile()(enrollment);
         }
         catch (Exception ex)
         {
@@ -129,6 +127,15 @@ public class EnrollmentService : IEnrollmentService
             _logger.LogError(ex, "Failed creating enrollment for member {MemberId} in activity {ActivityId}.", dto.MemberId, dto.ActivityId);
             throw;
         }
+
+        var savedEnrollment = await _db.Enrollments
+            .Include(e => e.Member)
+            .Include(e => e.Activity)
+            .Include(e => e.SpecificationAnswers)
+                .ThenInclude(sa => sa.Question)
+            .FirstAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
+
+        return EnrollmentProjections.ToDto(userId, isBoardMember).Compile()(savedEnrollment);
     }
 
     /// <inheritdoc />
@@ -167,7 +174,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (!wasOnWaitingList)
             {
-                PromoteFromWaitingList(activityId, cancellationToken);
+                await PromoteFromWaitingList(activityId, cancellationToken);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -275,17 +282,18 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public void PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct)
+    public async Task PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct)
     {
-        var next = _db.Enrollments
+        var next = await _db.Enrollments
             .Include(e => e.Member)
             .Include(e => e.Activity)
             .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
             .OrderBy(e => e.RegisteredOn)
-            .AsEnumerable()
+            .ToListAsync(ct);
+
+        var toPromote = next
             .Where(e => TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
-            .Take(numberToPromote)
-            .ToList();
+            .Take(numberToPromote);
 
         foreach (var enrollment in next)
         {
@@ -294,9 +302,9 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public void PromoteFromWaitingList(uint activityId, CancellationToken ct)
+    public async Task PromoteFromWaitingList(uint activityId, CancellationToken ct)
     {
-        PromoteFromWaitingList(activityId, 1, ct);
+        await PromoteFromWaitingList(activityId, 1, ct);
     }
 
     private async Task EnsureActivityEnrollmentsCanBeChanged(Activity activity, bool isBoardMember, CancellationToken cancellationToken)
