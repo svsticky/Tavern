@@ -9,8 +9,6 @@ import { generateA3Pdf } from "~/util/pdf.util";
  * Arguments for the loadActivities handler.
  */
 type LoadActivitiesArgs = {
-  initialized: boolean;
-  authenticated: boolean | undefined;
   setLoading: (loading: boolean) => void;
   setActivities: (activities: ActivityResponseDto[]) => void;
 };
@@ -22,13 +20,9 @@ type LoadActivitiesArgs = {
  * @param {LoadActivitiesArgs} args - Configuration and state setter functions.
  */
 export const loadActivities = async ({
-  initialized,
-  authenticated,
   setLoading,
   setActivities,
 }: LoadActivitiesArgs) => {
-  if (!initialized || !authenticated) return;
-
   try {
     setLoading(true);
     const activitiesResponse = await getActivities({

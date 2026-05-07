@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router";
@@ -13,6 +12,8 @@ import {
   getEditActivityBackPath,
   loadEditActivityData,
 } from "./edit-activity.handlers";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * A dynamic page for creating new activities or editing existing ones.
@@ -38,21 +39,36 @@ export default function ActivityFormPage() {
   const isEdit = !!id;
   const { pathname } = useLocation();
 
-  const { keycloak } = useKeycloak();
-  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [isBoard, setIsBoard] = useState(false);
 
   const [loading, setLoading] = useState<boolean>(true);
 
   const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
   useEffect(() => {
+    const loadToken = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      setTokenParsed(tokenParsed);
+      if (!tokenParsed) {
+        console.error("User not authenticated");
+        return;
+      }
+      setIsBoard(isBoardOrCandidateBoard(tokenParsed));
+    };
+    loadToken();
+  }, [authService]);
+
+  useEffect(() => {
+    if(!tokenParsed) return;
     loadEditActivityData({
       isEdit,
       id,
       setActivity: (next) => setActivity(next),
       setLoading,
     });
-  }, [id, isEdit]);
+  }, [id, isEdit, tokenParsed]);
 
   if (loading) return t("loading");
 

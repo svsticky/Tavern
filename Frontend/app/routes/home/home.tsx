@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -14,6 +13,8 @@ import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import Button from "~/components/UI/Button";
 import { loadDashboardData } from "./home.handlers";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * The main application landing page for authenticated members.
@@ -27,7 +28,7 @@ import { loadDashboardData } from "./home.handlers";
  *
  * Features:
  * - **Contextual Loading**: Displays a skeleton-style loading state while coordinating multiple API requests.
- * - **Auth Integration**: Deeply integrates with Keycloak to filter data based on the user's `UserId`.
+ * - **Auth Integration**: Deeply integrates with auth service to filter data based on the user's `UserId`.
  * - **Responsive Layout**: Uses a grid system that transitions from a single-column mobile view to a
  *   split main/sidebar layout on larger screens.
  *
@@ -36,7 +37,24 @@ import { loadDashboardData } from "./home.handlers";
  */
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const loadTokenAndAuth = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      const authenticated = await authService.isAuthenticated();
+      setTokenParsed(tokenParsed);
+      setAuthenticated(authenticated);
+    };
+    loadTokenAndAuth();
+  }, [authService]);
+
+  if (!tokenParsed) {
+    console.error("User not authenticated");
+    return null;
+  }
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
@@ -49,22 +67,25 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    if(!authenticated || !tokenParsed) {
+      console.error("User not authenticated");
+      return;
+    }
     loadDashboardData({
-      initialized,
-      authenticated: keycloak.authenticated,
-      userId: keycloak.tokenParsed?.UserId,
+      authenticated: authenticated,
+      userId: tokenParsed.UserId,
       setLoading,
       setActivities,
       setAnnouncements,
       setGroupMemberships,
     });
-  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId]);
+  }, [authenticated, tokenParsed]);
 
   return (
     <div className="flex flex-col items-center gap-5 max-w-8xl mx-auto w-full">
       {/* Dashboard Header */}
       <DashboardHeader
-        name={keycloak.tokenParsed?.given_name}
+        name={tokenParsed.given_name}
         nextActivity={activities[0]}
       />
 
@@ -121,7 +142,7 @@ export default function DashboardPage() {
             <ActivityEnrollmentOverview
               enrolledActivities={activities.filter((a) =>
                 a.enrollments!.some(
-                  (e) => e.member.id === keycloak.tokenParsed?.UserId,
+                  (e) => e.member.id === tokenParsed.UserId,
                 ),
               )}
             />

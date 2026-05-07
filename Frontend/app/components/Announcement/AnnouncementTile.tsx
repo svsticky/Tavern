@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { useNavigate } from "react-router";
@@ -8,6 +7,9 @@ import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../Tiles/Tile";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
+import { useEffect, useState } from "react";
 
 /**
  * A detailed tile component for displaying an individual association announcement.
@@ -42,10 +44,17 @@ export default function AnnouncementTile({
   announcement: GetAnnouncementResponseDto;
   className?: string;
 }) {
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
   const navigate = useNavigate();
+  const [isBoard, setIsBoard] = useState(false);
 
-  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getTokenParsed();
+      setIsBoard(isBoardOrCandidateBoard(token));
+    };
+    loadToken();
+  }, [authService]);
 
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>

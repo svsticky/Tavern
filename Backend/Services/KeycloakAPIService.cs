@@ -15,7 +15,7 @@ public class KeycloakAPIService(
     MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
-    ILogger<KeycloakAPIService> logger)
+    ILogger<KeycloakAPIService> logger) : IAuthService
 {
     private readonly string _keycloakUrl = Environment.GetEnvironmentVariable("KeycloakUrl")!;
     private readonly string _keycloakRealm = Environment.GetEnvironmentVariable("KeycloakRealm")!;
@@ -26,10 +26,10 @@ public class KeycloakAPIService(
     /// Synchronizes local member data to an existing Keycloak user.
     /// </summary>
     /// <param name="keycloakId">The Keycloak user ID.</param>
-    public async Task SyncMemberInKeyCloak(Guid keycloakId)
+    public async Task SyncMember(Guid keycloakId)
     {
         logger.LogInformation("Syncing member in Keycloak for KeycloakId {KeycloakId}.", keycloakId);
-        var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
+        var member = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == keycloakId);
 
         if (member == null)
         {
@@ -56,7 +56,7 @@ public class KeycloakAPIService(
 
         var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray());
 
-        var response = await client.PutAsJsonAsync($"users/{member.KeycloakId}", updatedUser);
+        var response = await client.PutAsJsonAsync($"users/{member.AuthSystemUserId}", updatedUser);
         response.EnsureSuccessStatusCode();
 
         if (emailChanged)
@@ -85,7 +85,7 @@ public class KeycloakAPIService(
     /// </summary>
     /// <param name="member">The member to provision.</param>
     /// <returns>The created Keycloak user ID when successful.</returns>
-    public async Task<Guid?> CreateUserInKeycloak(Member member)
+    public async Task<Guid?> CreateUser(Member member)
     {
         logger.LogInformation("Creating Keycloak user for member {MemberId}.", member.Id);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
@@ -118,7 +118,7 @@ public class KeycloakAPIService(
     /// Deletes a Keycloak user.
     /// </summary>
     /// <param name="keycloakId">The Keycloak user ID.</param>
-    public async Task DeleteUserInKeycloak(Guid keycloakId)
+    public async Task DeleteUser(Guid keycloakId)
     {
         logger.LogInformation("Deleting Keycloak user {KeycloakId}.", keycloakId);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
@@ -129,11 +129,7 @@ public class KeycloakAPIService(
         response.EnsureSuccessStatusCode();
     }
 
-    /// <summary>
-    /// Retrieves a service-account access token for Keycloak admin API requests.
-    /// </summary>
-    /// <returns>The access token.</returns>
-    public async Task<string> GetServiceAccountToken()
+    private async Task<string> GetServiceAccountToken()
     {
         var client = httpClientFactory.CreateClient();
         
@@ -166,7 +162,7 @@ public class KeycloakAPIService(
     /// </summary>
     /// <param name="keycloakId">The Keycloak user ID.</param>
     /// <param name="actions">The required actions to include.</param>
-    public async Task SendActionEmail(Guid keycloakId, string[] actions)
+    private async Task SendActionEmail(Guid keycloakId, string[] actions)
     {
         logger.LogInformation("Sending Keycloak action email to {KeycloakId} with {ActionCount} actions.", keycloakId, actions.Length);
         var client = httpClientFactory.CreateClient("KeycloakAdmin");
@@ -217,7 +213,7 @@ public class KeycloakAPIService(
 
         var email = await GetEmail(keycloakId);
 
-        var member = await db.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
+        var member = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == keycloakId);
         if (member != null)
         {
             member.Email = email;

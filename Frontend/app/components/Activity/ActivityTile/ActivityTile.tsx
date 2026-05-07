@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import {
   Calendar,
   ImageIcon,
@@ -6,7 +5,7 @@ import {
   PencilIcon,
   UsersRound,
 } from "lucide-react"; // PencilIcon toegevoegd
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
 import type { ActivityResponseDto } from "~/api";
@@ -16,6 +15,7 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
+import { useAuth } from "~/context/AuthContext";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -50,19 +50,27 @@ export default function ActivityTile({
   className?: string;
 }) {
   const { t } = useTranslation();
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
+  const [canEdit, setCanEdit] = useState(false);
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getTokenParsed();
+      setCanEdit(
+        !!(isBoardOrCandidateBoard(token) ||
+          (!activity.showInKoala &&
+            !activity.showOnWebsite &&
+            activity.organizerId &&
+            new Date(activity.dateTimeStart) > new Date(Date.now())))
+      );
+    };
+    loadToken();
+  }, [authService]);
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(
     "loading",
   );
 
-  const canEdit =
-    isBoardOrCandidateBoard(keycloak.tokenParsed) ||
-    (!activity.showInKoala &&
-      !activity.showOnWebsite &&
-      activity.organizerId &&
-      new Date(activity.dateTimeStart) > new Date(Date.now()));
   const posterUrl = `${getEnv("ApiUrl")}/api/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 

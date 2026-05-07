@@ -64,13 +64,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
                 var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
                 
-                var keycloakIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                var authIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
                 var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email) 
                                  ?? context.Principal?.FindFirst("email");
 
-                if (keycloakIdClaim != null && Guid.TryParse(keycloakIdClaim.Value, out var keycloakId))
+                if (authIdClaim != null && Guid.TryParse(authIdClaim.Value, out var authId))
                 {
-                    var member = await dbContext.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
+                    var member = await dbContext.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == authId);
 
                     if (member != null && emailClaim != null)
                     {
@@ -118,7 +118,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddScoped<KeycloakAPIService>();
+builder.Services.AddScoped<IAuthService, KeycloakAPIService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
@@ -202,9 +202,8 @@ builder.Services.AddHttpLogging(options =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<KeycloakAPIService>();
-builder.Services.AddSingleton<KeycloakOutboxWorker>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<KeycloakOutboxWorker>());
+builder.Services.AddSingleton<AuthOutboxWorker>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AuthOutboxWorker>());
 builder.Services.AddHostedService<AccountingToolOutboxWorker>();
 builder.Services.AddSingleton<MailSubscriptionOutboxWorker>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());

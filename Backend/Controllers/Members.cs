@@ -1,7 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing system members and their profiles. The MembersController provides a comprehensive suite of endpoints for user lifecycle management, including registration, profile retrieval, data updates, and account deletion. It also handles profile picture management and integrates with identity provider webhooks to ensure data synchronization. This controller enforces security through role-based or ownership-based authorization while allowing specific public actions like self-registration. By coordinating between the IMemberService and specialized services like the KeycloakOutboxWorker, it ensures that member data remains consistent across the internal database and external identity providers.
+    /// Controller for managing system members and their profiles. The MembersController provides a comprehensive suite of endpoints for user lifecycle management, including registration, profile retrieval, data updates, and account deletion. It also handles profile picture management and integrates with identity provider webhooks to ensure data synchronization. This controller enforces security through role-based or ownership-based authorization while allowing specific public actions like self-registration. By coordinating between the IMemberService and specialized services like the AuthOutboxWorker, it ensures that member data remains consistent across the internal database and external identity providers.
     /// </summary>
     /// <param name="memberService">The service responsible for member business logic and persistence.</param>
     /// <param name="profilePictureService">The service dedicated to handling profile picture file operations.</param>
@@ -18,7 +17,7 @@ namespace Backend.Controllers
     [Authorize]
     public class MembersController(IMemberService memberService, IProfilePictureService profilePictureService) : ControllerBase
     {
-        private readonly string? _keycloakWebhookSecret = Environment.GetEnvironmentVariable("KEYCLOAK_WEBHOOK_SECRET");
+        private readonly string? _authWebhookSecret = Environment.GetEnvironmentVariable("AUTH_WEBHOOK_SECRET");
 
         /// <summary>
         /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
@@ -298,7 +297,7 @@ namespace Backend.Controllers
 
         // POST: members/webhook/refresh-email
         /// <summary>
-        /// Handles incoming webhooks from Keycloak to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.
+        /// Handles incoming webhooks from authentication system to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.
         /// </summary>
         /// <param name="secret">the shared webhook secret provided in the request headers.</param>
         /// <param name="userId">The unique identifier of the user whose email needs refreshing.</param>
@@ -315,7 +314,7 @@ namespace Backend.Controllers
         {
             try
             {
-                if (_keycloakWebhookSecret == null || secret != _keycloakWebhookSecret)
+                if (_authWebhookSecret == null || secret != _authWebhookSecret)
                 {
                     return Unauthorized("Invalid webhook secret.");
                 }

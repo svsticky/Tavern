@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { CalendarDaysIcon, DownloadIcon, PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,6 +14,8 @@ import {
   handleCreateActivityClick,
   loadActivities,
 } from "./activities.handlers";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * The main activities listing page for both members and administrators.
@@ -38,23 +39,43 @@ import {
  * @component
  */
 export default function ActivitiesPage() {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [isBoard, setIsBoard] = useState(false);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getToken();
+      const tokenParsed = await authService.getTokenParsed();
+      setToken(token);
+      setTokenParsed(tokenParsed);
+
+      if (!tokenParsed) {
+        console.error("User not authenticated");
+        return;
+      }
+
+      setIsBoard(isBoardOrCandidateBoard(tokenParsed));
+    };
+    loadToken();
+  }, [authService]);
 
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   useEffect(() => {
+    if(!tokenParsed) return;
     loadActivities({
-      initialized,
-      authenticated: keycloak.authenticated,
       setLoading,
       setActivities,
     });
-  }, [initialized, keycloak.authenticated]);
+  }, [tokenParsed]);
 
-  const isInGroup = (keycloak.tokenParsed?.group_memberships ?? []).length > 0;
-  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
+  if(!tokenParsed) return null;
+
+  const isInGroup = tokenParsed.group_memberships.length > 0;
 
   return (
     <>
@@ -79,7 +100,7 @@ export default function ActivitiesPage() {
           <>
             <Button
               variant="secondary"
-              onClick={() => downloadPosters(activities, keycloak.token ?? "")}
+              onClick={() => downloadPosters(activities, token ?? "")}
               className="text-xs px-3 py-1"
               title="Download Koala Posters"
             >

@@ -16,7 +16,7 @@ namespace Backend.Migrations
                 name: "PaymentSequence");
 
             migrationBuilder.CreateTable(
-                name: "ExactOutboxTasks",
+                name: "AccountingToolOutboxTasks",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
@@ -28,7 +28,23 @@ namespace Backend.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ExactOutboxTasks", x => x.Id);
+                    table.PrimaryKey("PK_AccountingToolOutboxTasks", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AuthOutboxTasks",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    AuthSystemUserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TaskType = table.Column<int>(type: "integer", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    RetryCount = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuthOutboxTasks", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -42,7 +58,8 @@ namespace Backend.Migrations
                     Type = table.Column<int>(type: "integer", nullable: false),
                     DefaultGLAccount = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     DefaultCostCenter = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    DefaultCostUnit = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true)
+                    GroupPicturePath = table.Column<string>(type: "text", nullable: true),
+                    GroupPictureFileName = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -50,19 +67,34 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KeycloakOutboxTasks",
+                name: "Mailinglists",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    BitValue = table.Column<long>(type: "bigint", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    ServiceId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Mailinglists", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MailSubscriptionOutboxTasks",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    KeycloakId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TaskType = table.Column<int>(type: "integer", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    RetryCount = table.Column<int>(type: "integer", nullable: false)
+                    RetryCount = table.Column<int>(type: "integer", nullable: false),
+                    MailSubscription = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KeycloakOutboxTasks", x => x.Id);
+                    table.PrimaryKey("PK_MailSubscriptionOutboxTasks", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -70,7 +102,7 @@ namespace Backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    KeycloakId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AuthSystemUserId = table.Column<Guid>(type: "uuid", nullable: true),
                     StudentNumber = table.Column<long>(type: "bigint", nullable: false),
                     FirstName = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     LastName = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
@@ -92,7 +124,8 @@ namespace Backend.Migrations
                     Begunstiger = table.Column<bool>(type: "boolean", nullable: false),
                     Suspended = table.Column<bool>(type: "boolean", nullable: false),
                     ProfilePicturePath = table.Column<string>(type: "text", nullable: true),
-                    ProfilePictureFileName = table.Column<string>(type: "text", nullable: true)
+                    ProfilePictureFileName = table.Column<string>(type: "text", nullable: true),
+                    JoinedOn = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -110,6 +143,18 @@ namespace Backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Roles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Settings",
+                columns: table => new
+                {
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Value = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Settings", x => x.Name);
                 });
 
             migrationBuilder.CreateTable(
@@ -143,6 +188,7 @@ namespace Backend.Migrations
                     DateTimeEnd = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     UnenrollmentDeadline = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     EnrollmentDeadline = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    EnrollOpenDate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     Location = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     ParticipantLimit = table.Column<long>(type: "bigint", nullable: true),
                     OrganizerId = table.Column<long>(type: "bigint", nullable: true),
@@ -151,6 +197,7 @@ namespace Backend.Migrations
                     IsEnrollable = table.Column<bool>(type: "boolean", nullable: false),
                     AreParticipantsVisible = table.Column<bool>(type: "boolean", nullable: false),
                     IsAdultOnly = table.Column<bool>(type: "boolean", nullable: false),
+                    IsWeeklyDrinks = table.Column<bool>(type: "boolean", nullable: false),
                     AllowedAudience = table.Column<long>(type: "bigint", nullable: false),
                     IsOpenForPayment = table.Column<bool>(type: "boolean", nullable: false),
                     VatRate = table.Column<long>(type: "bigint", nullable: true),
@@ -199,15 +246,40 @@ namespace Backend.Migrations
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
                     MollieId = table.Column<string>(type: "text", nullable: false),
                     PaymentIntentUrl = table.Column<string>(type: "text", nullable: false),
-                    PaidAt = table.Column<string>(type: "text", nullable: true),
+                    PaidAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     MemberId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ExactEntryId = table.Column<Guid>(type: "uuid", nullable: true)
+                    AccountingToolEntryId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ManuallyMarkedAsPaid = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_MembershipPayments", x => x.Id);
                     table.ForeignKey(
                         name: "FK_MembershipPayments_Members_MemberId",
+                        column: x => x.MemberId,
+                        principalTable: "Members",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MollieFeePayments",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false, defaultValueSql: "nextval('\"PaymentSequence\"')"),
+                    Price = table.Column<decimal>(type: "numeric", nullable: false),
+                    MollieId = table.Column<string>(type: "text", nullable: false),
+                    PaymentIntentUrl = table.Column<string>(type: "text", nullable: false),
+                    PaidAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    MemberId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AccountingToolEntryId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ManuallyMarkedAsPaid = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MollieFeePayments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MollieFeePayments_Members_MemberId",
                         column: x => x.MemberId,
                         principalTable: "Members",
                         principalColumn: "Id",
@@ -271,9 +343,10 @@ namespace Backend.Migrations
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
                     MollieId = table.Column<string>(type: "text", nullable: false),
                     PaymentIntentUrl = table.Column<string>(type: "text", nullable: false),
-                    PaidAt = table.Column<string>(type: "text", nullable: true),
+                    PaidAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     MemberId = table.Column<Guid>(type: "uuid", nullable: true),
-                    ExactEntryId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AccountingToolEntryId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ManuallyMarkedAsPaid = table.Column<bool>(type: "boolean", nullable: false),
                     ActivityId = table.Column<long>(type: "bigint", nullable: true)
                 },
                 constraints: table =>
@@ -316,8 +389,7 @@ namespace Backend.Migrations
                         name: "FK_Enrollments_Members_MemberId",
                         column: x => x.MemberId,
                         principalTable: "Members",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -414,6 +486,11 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_AccountingToolOutboxTasks_PaymentId",
+                table: "AccountingToolOutboxTasks",
+                column: "PaymentId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Activities_OrganizerId",
                 table: "Activities",
                 column: "OrganizerId");
@@ -431,17 +508,14 @@ namespace Backend.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_EnrollmentPayments_MemberId",
                 table: "EnrollmentPayments",
-                column: "MemberId");
+                column: "MemberId",
+                unique: true,
+                filter: "\"MemberId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Enrollments_MemberId",
                 table: "Enrollments",
                 column: "MemberId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ExactOutboxTasks_PaymentId",
-                table: "ExactOutboxTasks",
-                column: "PaymentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_GroupMemberships_GroupId",
@@ -473,7 +547,16 @@ namespace Backend.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_MembershipPayments_MemberId",
                 table: "MembershipPayments",
-                column: "MemberId");
+                column: "MemberId",
+                unique: true,
+                filter: "\"MemberId\" IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MollieFeePayments_MemberId",
+                table: "MollieFeePayments",
+                column: "MemberId",
+                unique: true,
+                filter: "\"MemberId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RoleAliases_RoleId",
@@ -515,22 +598,34 @@ namespace Backend.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "AccountingToolOutboxTasks");
+
+            migrationBuilder.DropTable(
                 name: "Announcements");
+
+            migrationBuilder.DropTable(
+                name: "AuthOutboxTasks");
 
             migrationBuilder.DropTable(
                 name: "EnrollmentPayments");
 
             migrationBuilder.DropTable(
-                name: "ExactOutboxTasks");
-
-            migrationBuilder.DropTable(
                 name: "GroupMemberships");
 
             migrationBuilder.DropTable(
-                name: "KeycloakOutboxTasks");
+                name: "Mailinglists");
+
+            migrationBuilder.DropTable(
+                name: "MailSubscriptionOutboxTasks");
 
             migrationBuilder.DropTable(
                 name: "MembershipPayments");
+
+            migrationBuilder.DropTable(
+                name: "MollieFeePayments");
+
+            migrationBuilder.DropTable(
+                name: "Settings");
 
             migrationBuilder.DropTable(
                 name: "SpecificationAnswers");

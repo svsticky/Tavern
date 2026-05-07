@@ -1,14 +1,14 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect } from "react";
+import { useAuth } from "~/context/AuthContext";
 
 /**
  * A dedicated authentication gateway component.
  *
  * This page acts as a router/sentinel for the login flow. It does not contain
  * a traditional UI; instead, it orchestrates the following logic:
- * - **Unauthenticated Users**: Automatically triggers the Keycloak redirect
- *   to the SSO login page. Upon successful login, Keycloak is instructed to
+ * - **Unauthenticated Users**: Automatically triggers the auth redirect
+ *   to the SSO login page. Upon successful login, authService is instructed to
  *   redirect the user back to the application root.
  * - **Authenticated Users**: If a user navigates to this page while already
  *   logged in, they are immediately bounced back to the homepage to prevent
@@ -22,18 +22,17 @@ import { useEffect } from "react";
  * @component
  */
 export default function Login() {
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
 
   useEffect(() => {
-    if (!keycloak.authenticated) {
-      console.log("User not authenticated, redirecting to Keycloak login...");
-      keycloak.login({
-        redirectUri: `${window.location.origin}/`,
-      });
+    if(!authService) return;
+    if (!authService.isAuthenticated()) {
+      console.log("User not authenticated, redirecting to login...");
+      authService.login();
     } else {
       window.location.href = "/";
     }
-  }, [keycloak]);
+  }, [authService]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

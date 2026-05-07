@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import {
   Bell,
   CalendarDays,
@@ -10,6 +9,8 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router";
 import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
@@ -28,19 +29,34 @@ export default function NavBarLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [isBoard, setIsBoard] = useState(false);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      setTokenParsed(tokenParsed);
+        if(!tokenParsed) {
+          console.error("User not authenticated");
+          return;
+        }
+      setIsBoard(isBoardOrCandidateBoard(tokenParsed));
+    };
+    loadToken();
+  }, [authService]);
 
   const [imgSrc, setImgSrc] = useState<string>("/profile-picture.svg");
 
   useEffect(() => {
     let url: string | null = null;
     async function loadData() {
-      if (!initialized || !keycloak.authenticated) return;
+      if (!authService.isAuthenticated() || !tokenParsed) return;
 
       try {
         const profilePictureResponse = await getMembersByIdProfilePicture({
           path: {
-            id: keycloak.tokenParsed?.UserId ?? 0,
+            id: tokenParsed.UserId,
           },
           responseType: "blob",
         });
@@ -66,12 +82,10 @@ export default function NavBarLayout() {
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId]);
-
-  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
+  }, [authService.isAuthenticated(), tokenParsed]);
 
   const profileOptions = {
-    username: keycloak.tokenParsed?.name || "",
+    username: tokenParsed?.name || "",
     avatarUrl: imgSrc,
     options: [
       { label: t("account"), action: () => navigate("/account") },

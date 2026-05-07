@@ -38,9 +38,9 @@ public class Member
     public Guid Id { get; set; }
 
     /// <summary>
-    /// The keycloak id of the member, used for authentication and authorization.
+    /// The id of the member int he authenticatioin system, used for authentication and authorization.
     /// </summary>
-    public Guid? KeycloakId { get; set; }
+    public Guid? AuthSystemUserId { get; set; }
 
     /// <summary>
     /// The student number of the member.

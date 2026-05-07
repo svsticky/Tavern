@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import {
   Calendar,
@@ -7,17 +6,19 @@ import {
   MapPin,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Markdown from "react-markdown";
 import type {
   ActivityResponseDto,
   SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { isMemberInTargetAudience } from "~/util/targetaudience.util";
+import type { TokenParsed } from "~/types/TokenParsed";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
 import AnswerQuestionsTile from "../AnswerQuestionsTile";
@@ -29,7 +30,6 @@ import {
   handleUpdateEnrollment,
 } from "./ActivityDetailsTile.handlers";
 import InfoItem from "./InfoItem";
-
 const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
   const mapped: Record<number, string> = {};
   answers?.forEach((answer) => {
@@ -44,7 +44,6 @@ const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
  *
  * This component handles:
  * - Dynamic poster loading with state management (loading/error/success).
- * - Localization of descriptions based on Keycloak user settings.
  * - Enrollment logic (signing in, waiting list, unenrolling, updating answers).
  * - Clipboard integration for WhatsApp sharing (restricted to Board/Candidate Board).
  * - External calendar integration.
@@ -71,7 +70,21 @@ export default function ActivityDetailsTile({
     React.SetStateAction<ActivityResponseDto | null>
   >;
 }) {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const parsedToken = await authService.getTokenParsed();
+      if (!parsedToken) {
+        console.error("User not authenticated");
+        return;
+      }
+      setTokenParsed(parsedToken);
+    };
+    loadToken();
+  }, [authService]);
+
   const { member } = useApp();
 
   const [submitting, setSubmitting] = useState(false);
@@ -107,22 +120,27 @@ export default function ActivityDetailsTile({
     minute: "2-digit",
   });
 
-  const isEnrolled = activity.enrollments.some(
-    (e) => e.member.id === keycloak.tokenParsed?.UserId,
-  );
-
-  const ableToEnroll = !member?.suspended;
+  const ableToEnroll =
+    !member?.suspended &&
+    member?.studyEnrollments?.some(
+      (se) =>
+        se.completionDate == null ||
+        new Date(se.completionDate) > new Date(Date.now()),
+    );
 
   const inTargetAudience = isMemberInTargetAudience(
     member,
     activity.allowedAudience,
   );
-  const currentEnrollment = activity.enrollments.find(
-    (e) => e.member.id === keycloak.tokenParsed?.UserId,
-  );
-  const [answers, setAnswers] = useState<Record<number, string>>(() =>
-    toAnswerMap(currentEnrollment?.specificationAnswers),
-  );
+  const currentEnrollment = tokenParsed
+    ? activity.enrollments.find((e) => e.member.id === tokenParsed.UserId)
+    : undefined;
+  const isEnrolled = !!currentEnrollment;
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+
+  useEffect(() => {
+    setAnswers(toAnswerMap(currentEnrollment?.specificationAnswers));
+  }, [currentEnrollment?.specificationAnswers]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -191,7 +209,7 @@ export default function ActivityDetailsTile({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
             <h3 className="font-bold text-slate-900">{t("description")}</h3>
 
-            {isBoardOrCandidateBoard(keycloak.tokenParsed) && (
+            {tokenParsed && isBoardOrCandidateBoard(tokenParsed) && (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   variant="secondary"
@@ -223,7 +241,7 @@ export default function ActivityDetailsTile({
             "
           >
             <Markdown>
-              {keycloak.tokenParsed?.locale === "NL"
+              {tokenParsed?.locale === "NL"
                 ? activity.dutchDescription || t("no_description_available_nl")
                 : activity.englishDescription ||
                   t("no_description_available_en")}
@@ -300,8 +318,7 @@ export default function ActivityDetailsTile({
                     className="w-full sm:w-auto"
                     onClick={() =>
                       handleUpdateEnrollment(
-                        initialized,
-                        keycloak,
+                        authService,
                         activity,
                         setActivity,
                         answers,
@@ -319,8 +336,7 @@ export default function ActivityDetailsTile({
                   className="w-full sm:w-auto"
                   onClick={() =>
                     handleUnenrollment(
-                      initialized,
-                      keycloak,
+                      authService,
                       activity,
                       setActivity,
                       setSubmitting,
@@ -345,8 +361,7 @@ export default function ActivityDetailsTile({
                   className="w-full sm:w-auto"
                   onClick={() =>
                     handleEnrollment(
-                      initialized,
-                      keycloak,
+                      authService,
                       activity,
                       setActivity,
                       answers,

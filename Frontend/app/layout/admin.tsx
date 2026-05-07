@@ -1,8 +1,9 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isInGroupWithId } from "~/util/group.util";
 
 /**
@@ -14,7 +15,7 @@ import { isInGroupWithId } from "~/util/group.util";
  *
  * Logic Flow:
  * 1. Waits for global context IDs (`boardGroupId`, `candidateBoardGroupId`) to be available.
- * 2. Checks Keycloak group memberships against these IDs.
+ * 2. Checks group memberships against these IDs.
  * 3. Redirects unauthorized users to the home page (`/`).
  * 4. Displays a loading state while membership verification is in progress.
  * 5. Renders child routes via `<Outlet />` only upon successful authorization.
@@ -23,28 +24,38 @@ import { isInGroupWithId } from "~/util/group.util";
  */
 export default function AdminLayout() {
   const { boardGroupId, candidateBoardGroupId } = useApp();
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const navigate = useNavigate();
   const [isLoading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getTokenParsed();
+      setTokenParsed(token);
+    };
+    loadToken();
+  }, [authService]);
+
+  useEffect(() => {
+    if(!tokenParsed) return;
     if (
       boardGroupId === null ||
       candidateBoardGroupId === null ||
-      !keycloak.tokenParsed
+      !tokenParsed
     ) {
       return;
     }
     if (
-      !isInGroupWithId(keycloak.tokenParsed, boardGroupId) &&
-      !isInGroupWithId(keycloak.tokenParsed, candidateBoardGroupId)
+      !isInGroupWithId(tokenParsed, boardGroupId) &&
+      !isInGroupWithId(tokenParsed, candidateBoardGroupId)
     ) {
       navigate("/");
       return;
     }
 
     setLoading(false);
-  }, [boardGroupId, candidateBoardGroupId, navigate, keycloak]);
+  }, [boardGroupId, candidateBoardGroupId, navigate, tokenParsed]);
 
   if (isLoading) {
     return `${t("loading")}`;

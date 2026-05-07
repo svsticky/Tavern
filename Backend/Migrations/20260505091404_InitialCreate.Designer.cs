@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(PostgresDbContext))]
-    [Migration("20260418130511_AddEnrollmentOpenDate")]
-    partial class AddEnrollmentOpenDate
+    [Migration("20260505091404_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -108,6 +108,9 @@ namespace Backend.Migrations
                     b.Property<bool>("IsOpenForPayment")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsWeeklyDrinks")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Location")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -186,6 +189,31 @@ namespace Backend.Migrations
                     b.ToTable("Announcements");
                 });
 
+            modelBuilder.Entity("Backend.Models.Domain.AuthOutboxTask", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<Guid>("AuthSystemUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RetryCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TaskType")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuthOutboxTasks");
+                });
+
             modelBuilder.Entity("Backend.Models.Domain.Enrollment", b =>
                 {
                     b.Property<long>("ActivityId")
@@ -228,6 +256,12 @@ namespace Backend.Migrations
                     b.Property<string>("DefaultGLAccount")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
+
+                    b.Property<string>("GroupPictureFileName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GroupPicturePath")
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -273,7 +307,7 @@ namespace Backend.Migrations
                     b.ToTable("GroupMemberships");
                 });
 
-            modelBuilder.Entity("Backend.Models.Domain.KeycloakOutboxTask", b =>
+            modelBuilder.Entity("Backend.Models.Domain.MailSubscriptionOutboxTask", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -284,24 +318,52 @@ namespace Backend.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("KeycloakId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("MailSubscription")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("RetryCount")
                         .HasColumnType("integer");
 
-                    b.Property<int>("TaskType")
+                    b.HasKey("Id");
+
+                    b.ToTable("MailSubscriptionOutboxTasks");
+                });
+
+            modelBuilder.Entity("Backend.Models.Domain.Mailinglist", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("BitValue")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ServiceId")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
-                    b.ToTable("KeycloakOutboxTasks");
+                    b.ToTable("Mailinglists");
                 });
 
             modelBuilder.Entity("Backend.Models.Domain.Member", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AuthSystemUserId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("Begunstiger")
@@ -338,9 +400,6 @@ namespace Backend.Migrations
 
                     b.Property<DateTimeOffset>("JoinedOn")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("KeycloakId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -436,7 +495,9 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("MemberId");
+                    b.HasIndex("MemberId")
+                        .IsUnique()
+                        .HasFilter("\"MemberId\" IS NOT NULL");
 
                     b.ToTable((string)null);
 

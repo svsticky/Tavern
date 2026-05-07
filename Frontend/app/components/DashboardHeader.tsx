@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import {
   Calendar,
   CircleCheckBig,
@@ -19,6 +18,8 @@ import {
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * Props for the DashboardHeader component.
@@ -40,8 +41,7 @@ type DashboardHeaderProps = {
  * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
  * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
  *
- * It manages its own data fetching state for payments and enrollment totals, and integrates
- * with Keycloak for user identification and Lucide for iconography.
+ * It manages its own data fetching state for payments and enrollment totals.
  *
  * @component
  * @param {DashboardHeaderProps} props - The component properties.
@@ -51,7 +51,8 @@ export default function DashboardHeader({
   nextActivity,
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -64,7 +65,15 @@ export default function DashboardHeader({
 
   useEffect(() => {
     async function loadData() {
-      if (!initialized || !keycloak.authenticated) return;
+      if (tokenParsed == null || !authService.isAuthenticated()) return;
+
+      setTokenParsed(await authService.getTokenParsed());
+
+      if(!tokenParsed) {
+        console.error("Failed to parse token");
+        setLoading(false);
+        return;
+      }
 
       try {
         const outstandingPaymentsResponse = await getPaymentsUnpaid();
@@ -85,10 +94,10 @@ export default function DashboardHeader({
 
         const enrollmentAmountResponse = await getEnrollments({
           query: {
-            FromMemberId: keycloak.tokenParsed?.UserId,
+            FromMemberId: tokenParsed.UserId,
           },
         });
-
+        
         if (enrollmentAmountResponse.error)
           throw new Error("Failed to load enrollments");
 
@@ -119,7 +128,7 @@ export default function DashboardHeader({
     }
 
     loadData();
-  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId, t]);
+  }, [t]);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
@@ -129,7 +138,7 @@ export default function DashboardHeader({
         setLoadingPayments(true);
         const urlResponse = await postPaymentsActivity({
           body: {
-            memberId: keycloak.tokenParsed?.UserId ?? 0,
+            memberId: tokenParsed?.UserId,
             activityIds: unpaidActivityIds,
           },
         });

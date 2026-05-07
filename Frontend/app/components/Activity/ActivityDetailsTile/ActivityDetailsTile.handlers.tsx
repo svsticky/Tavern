@@ -1,5 +1,4 @@
 import { t } from "i18next";
-import type Keycloak from "keycloak-js";
 import { AlertTriangle, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -9,6 +8,7 @@ import {
   postEnrollments,
   putEnrollmentsByActivityIdByMemberId,
 } from "~/api";
+import type { IAuthService } from "~/types/IAuthService";
 import { formatDate } from "~/util/date.util";
 import {
   formatForGoogleCalendar,
@@ -45,7 +45,7 @@ export const handleAddToCalendar = (activity: ActivityResponseDto) => {
  * Validates authentication status, submits answers to the API, and updates the local state.
  *
  * @param initialized - Boolean indicating if the authentication client is initialized.
- * @param keycloak - The Keycloak instance for user authentication and token data.
+ * @param authService - The authentication service instance to retrieve user information.
  * @param activity - The current activity object.
  * @param setActivity - State setter to update the activity with the new enrollment list.
  * @param answers - A record of question IDs and user-provided answers.
@@ -53,8 +53,7 @@ export const handleAddToCalendar = (activity: ActivityResponseDto) => {
  * @returns A promise that resolves when the enrollment process completes.
  */
 export const handleEnrollment = async (
-  initialized: boolean,
-  keycloak: Keycloak,
+  authService: IAuthService,
   activity: ActivityResponseDto,
   setActivity:
     | React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>
@@ -62,11 +61,15 @@ export const handleEnrollment = async (
   answers: Record<number, string>,
   setSubmitting: (submitting: boolean) => void,
 ) => {
+  const tokenParsed = await authService.getTokenParsed();
+  if(!tokenParsed) {
+    console.error("User not authenticated");
+    return;
+  }
+
   if (
-    !initialized ||
-    !keycloak.authenticated ||
-    !activity.id ||
-    !keycloak.tokenParsed?.UserId
+    !authService.isAuthenticated() ||
+    !activity.id 
   ) {
     console.error("User not authenticated or activity missing");
     return;
@@ -79,7 +82,7 @@ export const handleEnrollment = async (
       const response = await postEnrollments({
         body: {
           activityId: activity.id,
-          memberId: keycloak.tokenParsed?.UserId,
+          memberId: tokenParsed.UserId,
           specificationAnswers: Object.entries(answers).map(
             ([questionId, answer]) => ({
               questionId: Number(questionId),
@@ -102,12 +105,12 @@ export const handleEnrollment = async (
 
         const newEnrollment = {
           isOnWaitingList: response.data.isOnWaitingList,
-          memberId: keycloak.tokenParsed?.UserId,
+          memberId: tokenParsed.UserId,
           activityId: activity.id,
           member: {
-            id: keycloak.tokenParsed?.UserId,
-            firstName: keycloak.tokenParsed?.given_name,
-            lastName: keycloak.tokenParsed?.family_name,
+            id: tokenParsed.UserId,
+            firstName: tokenParsed.given_name,
+            lastName: tokenParsed.family_name,
             profilePicturePath: response.data.member?.profilePicturePath,
           },
           specificationAnswers:
@@ -159,15 +162,14 @@ export const handleEnrollment = async (
  * Updates an existing enrollment's answers for the current user.
  *
  * @param initialized - Boolean indicating if the authentication client is initialized.
- * @param keycloak - The Keycloak instance for user authentication.
+ * @param authService - The authentication service instance for user authentication.
  * @param activity - The current activity object containing enrollments.
  * @param setActivity - State setter to update the local activity data.
  * @param answers - The new set of answers to be updated.
  * @param setSubmitting - Callback to toggle the loading state.
  */
 export const handleUpdateEnrollment = async (
-  initialized: boolean,
-  keycloak: Keycloak,
+  authService: IAuthService,
   activity: ActivityResponseDto,
   setActivity:
     | React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>
@@ -175,11 +177,16 @@ export const handleUpdateEnrollment = async (
   answers: Record<number, string>,
   setSubmitting: (submitting: boolean) => void,
 ) => {
+  const tokenParsed = await authService.getTokenParsed();
+  if(!tokenParsed) {
+    console.error("User not authenticated");
+    return;
+  }
+
   if (
-    !initialized ||
-    !keycloak.authenticated ||
+    !authService.isAuthenticated() ||
     !activity.id ||
-    !keycloak.tokenParsed?.UserId
+    !tokenParsed.UserId
   )
     return;
 
@@ -190,11 +197,11 @@ export const handleUpdateEnrollment = async (
       const response = await putEnrollmentsByActivityIdByMemberId({
         path: {
           activityId: activity.id,
-          memberId: keycloak.tokenParsed?.UserId,
+          memberId: tokenParsed.UserId,
         },
         body: {
           activityId: activity.id,
-          memberId: keycloak.tokenParsed?.UserId,
+          memberId: tokenParsed.UserId,
           specificationAnswers: Object.entries(answers).map(
             ([questionId, answer]) => ({
               questionId: Number(questionId),
@@ -209,7 +216,7 @@ export const handleUpdateEnrollment = async (
       }
 
       const existingEnrollment = activity.enrollments.find(
-        (e) => e.member.id === keycloak.tokenParsed?.UserId,
+        (e) => e.member.id === tokenParsed.UserId,
       );
       const existingAnswerIds = new Map(
         (existingEnrollment?.specificationAnswers ?? []).map((answer) => [
@@ -227,7 +234,7 @@ export const handleUpdateEnrollment = async (
       );
 
       const updatedEnrollments = activity.enrollments.map((e) => {
-        if (e.member.id === keycloak.tokenParsed?.UserId) {
+        if (e.member.id === tokenParsed.UserId) {
           return {
             ...e,
             specificationAnswers: updatedSpecificationAnswers,
@@ -256,24 +263,25 @@ export const handleUpdateEnrollment = async (
  * Removes the current user from an activity's enrollment list.
  *
  * @param initialized - Authentication initialization status.
- * @param keycloak - Keycloak instance.
+ * @param authService - The authentication service instance.
  * @param activity - The activity from which to unenroll.
  * @param setActivity - State setter to update the activity's enrollment list locally.
  * @param setSubmitting - Callback to toggle loading state.
  */
 export const handleUnenrollment = async (
-  initialized: boolean,
-  keycloak: Keycloak,
+  authService: IAuthService,
   activity: ActivityResponseDto,
   setActivity: any,
   setSubmitting: (submitting: boolean) => void,
 ) => {
+  const tokenParsed = await authService.getTokenParsed();
+
   if (
-    !initialized ||
-    !keycloak.authenticated ||
+    !authService.isAuthenticated() ||
     !activity.id ||
-    !keycloak.tokenParsed?.UserId
+    !tokenParsed
   ) {
+    console.error("User not authenticated or activity missing");
     return;
   }
 
@@ -284,7 +292,7 @@ export const handleUnenrollment = async (
       const response = await deleteEnrollmentsByActivityIdByMemberId({
         path: {
           activityId: Number(activity.id),
-          memberId: String(keycloak.tokenParsed?.UserId),
+          memberId: String(tokenParsed.UserId),
         },
       });
 
@@ -293,7 +301,7 @@ export const handleUnenrollment = async (
       }
 
       activity.enrollments = activity.enrollments.filter(
-        (e) => e.member.id !== keycloak.tokenParsed?.UserId,
+        (e) => e.member.id !== tokenParsed.UserId,
       );
       setActivity?.({ ...activity });
     } catch (error) {

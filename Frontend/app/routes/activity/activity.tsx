@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,6 +14,8 @@ import {
   handleEditActivityClick,
   loadActivityData,
 } from "./activity.handlers";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * Detailed view for a specific activity, including description and participant lists.
@@ -35,7 +36,32 @@ import {
  * @param {Route.LoaderArgs} props - Route parameters provided by the framework, including the activity ID.
  */
 export default function ActivityPage({ params }: Route.LoaderArgs) {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      setTokenParsed(tokenParsed);
+
+      if (!tokenParsed) {
+        console.error("User not authenticated");
+        return;
+      }
+    };
+    loadToken();
+  }, [authService]);
+
+  useEffect(() => {
+    if (!tokenParsed || activity == null) {
+      setCanEdit(false);
+      return;
+    }
+
+    setCanEdit(canEditActivity(activity, tokenParsed));
+  }, [activity, tokenParsed]);
+
   const navigate = useNavigate();
   const { pathname } = window.location;
 
@@ -43,22 +69,17 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
   const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
   useEffect(() => {
+    if (!tokenParsed) return;
     const activityId = Number(params.id);
     if (activity?.id === activityId) return;
-
     loadActivityData({
-      initialized,
-      authenticated: keycloak.authenticated,
       activityId,
       setLoading,
       setActivity: (next) => setActivity(next),
     });
-  }, [activity?.id, initialized, keycloak.authenticated, params.id]);
+  }, [activity?.id, params.id, tokenParsed]);
 
-  const canEdit =
-    activity == null ? false : canEditActivity(activity, keycloak.tokenParsed);
-
-  if (loading) return t("loading");
+  if (loading || !tokenParsed) return t("loading");
 
   if (activity == null) return t("failed_fetching");
 

@@ -1,9 +1,11 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
+import { useEffect, useState } from "react";
 import type { GetSpecificationQuestionResponseDto } from "~/api";
 import Tile from "../Tiles/Tile";
 import Input from "../UI/Input";
 import Select from "../UI/Select";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * A dynamic form component that renders a list of activity-specific questions.
@@ -12,7 +14,7 @@ import Select from "../UI/Select";
  * - **Polymorphic Inputs**: Automatically switches between `Input` (text, number, date, checkbox)
  *   and `Select` components based on the `question.type`.
  * - **Localization**: Displays question labels in Dutch or English based on the
- *   Keycloak user's locale preference.
+ *   user's locale preference.
  * - **Controlled Inputs**: Uses parent-owned answer state, so rerenders never
  *   reset in-progress typing.
  * - **Validation Visuals**: Appends a red asterisk to labels for mandatory questions.
@@ -44,7 +46,18 @@ export default function AnswerQuestionsTile({
   disabled?: boolean;
   onChange: (id: number, value: string) => void;
 }) {
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getTokenParsed();
+      setTokenParsed(token);
+    };
+    loadToken();
+  }, [authService]);
+
+  if(!tokenParsed) return null;
 
   const renderInput = (q: GetSpecificationQuestionResponseDto) => {
     if (q.id === undefined) return null;
@@ -150,7 +163,7 @@ export default function AnswerQuestionsTile({
         {questions.map((q) => (
           <div key={q.id}>
             <label className="font-semibold block mb-1">
-              {keycloak.tokenParsed?.locale === "NL"
+              {tokenParsed.locale === "NL"
                 ? q.questionDutch
                 : q.questionEnglish}
 

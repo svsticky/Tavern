@@ -1,9 +1,10 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
+import { useEffect, useState } from "react";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 
 /**
  * The primary profile management page for the authenticated user.
@@ -15,16 +16,30 @@ import { useApp } from "~/context/AppContext";
  *   via the `ChangeAccountForm` component.
  *
  * The component relies on the global `useApp` context for current member data
- * and Keycloak for identifying the logged-in user's ID.
+ * and the `useAuth` context for identifying the logged-in user's ID.
  *
  * @page
  * @component
  */
 export default function AccountPage() {
-  const { keycloak } = useKeycloak();
-  const userId = keycloak.tokenParsed?.UserId;
+  const authService = useAuth();
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadUserId = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      setUserId(tokenParsed?.UserId || null);
+      if(!tokenParsed?.UserId) {
+        console.error("User not authenticated");
+        return;
+      }
+    };
+    loadUserId();
+  }, [authService]);
 
   const { member } = useApp();
+
+  if(!userId) return null;
 
   return (
     <>

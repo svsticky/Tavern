@@ -6,7 +6,7 @@ import {
 } from "@react-router/dev/routes";
 
 export default [
-  layout("layout/keycloak.tsx", [
+  layout("layout/auth-service.tsx", [
     layout("layout/authenticated.tsx", [
       layout("layout/navbar.tsx", [
         index("routes/home/home.tsx"),

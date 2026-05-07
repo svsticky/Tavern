@@ -1,0 +1,14 @@
+import type { JSX } from "react";
+import type { TokenParsed } from "./TokenParsed";
+
+export interface IAuthService {
+    login: () => Promise<void>;
+    logout: (redirectUri: string) => Promise<void>;
+    isAuthenticated: () => boolean;
+    getToken: () => Promise<string | null>;
+    getTokenParsed: () => Promise<TokenParsed | null>;
+    AuthProvider: ({ children }: { children: React.ReactNode }) => JSX.Element;
+    getUpdateEmailUrl: () => Promise<string>;
+    getUpdatePasswordUrl: () => Promise<string>;
+    resetCredentials: () => Promise<string>;
+}

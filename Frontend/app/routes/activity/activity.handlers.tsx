@@ -2,14 +2,13 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivitiesById } from "~/api";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * Arguments for the loadActivityData handler.
  */
 type LoadActivityArgs = {
-  initialized: boolean;
-  authenticated: boolean | undefined;
   activityId: number;
   setLoading: (loading: boolean) => void;
   setActivity: (activity: ActivityResponseDto) => void;
@@ -22,14 +21,10 @@ type LoadActivityArgs = {
  * @param {LoadActivityArgs} args - Configuration, activity ID, and state setter functions.
  */
 export const loadActivityData = async ({
-  initialized,
-  authenticated,
   activityId,
   setLoading,
   setActivity,
 }: LoadActivityArgs) => {
-  if (!initialized || !authenticated) return;
-
   try {
     setLoading(true);
     const activitiesResponse = await getActivitiesById({
@@ -57,12 +52,12 @@ export const loadActivityData = async ({
  *   external systems (Website/Koala) and the event hasn't started yet.
  *
  * @param {ActivityResponseDto} activity - The activity data to check against.
- * @param {any} tokenParsed - The parsed Keycloak JWT containing user roles and ID.
+ * @param {TokenParsed} tokenParsed - The parsed token containing user roles and ID.
  * @returns {boolean} True if the user is authorized to edit.
  */
 export const canEditActivity = (
   activity: ActivityResponseDto,
-  tokenParsed: any,
+  tokenParsed: TokenParsed,
 ) => {
   return (
     isBoardOrCandidateBoard(tokenParsed) ||

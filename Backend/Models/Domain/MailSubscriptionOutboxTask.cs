@@ -1,7 +1,7 @@
 namespace Backend.Models.Domain;
 
 /// <summary>
-/// Represents a task in the outbox for mail subscription operations. This entity is used to track tasks that need to be processed for managing mail subscriptions, such as adding or removing a user from a mail subscription list. Each task is associated with a specific Keycloak user and includes information about when it was created, how many times it has been retried, and the type of task being performed.
+/// Represents a task in the outbox for mail subscription operations. This entity is used to track tasks that need to be processed for managing mail subscriptions, such as adding or removing a user from a mail subscription list. Each task is associated with a specific user and includes information about when it was created, how many times it has been retried, and the type of task being performed.
 /// </summary>
 public class MailSubscriptionOutboxTask
 {
@@ -11,7 +11,7 @@ public class MailSubscriptionOutboxTask
     public long Id { get; set; }
 
     /// <summary>
-    /// The identifier of the Keycloak user associated with this outbox task. This is a foreign key referencing the Keycloak user.
+    /// The email address of the user associated with this outbox task. This is used to identify the target user for the mail subscription operation and is essential for processing the task correctly.
     /// </summary>
     public required string Email { get; set; }
 

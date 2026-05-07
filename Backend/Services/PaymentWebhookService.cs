@@ -70,7 +70,7 @@ namespace Backend.Services
                 foreach (var payment in payments)
                 {
                     MarkPaymentPaid(payment, result);
-                    QueueKeycloakSyncIfNeeded(payment);
+                    QueueAuthenticationSystemSyncIfNeeded(payment);
                     QueueAccountingTaskIfNeeded(payment);
                 }
 
@@ -90,18 +90,18 @@ namespace Backend.Services
             payment.PaidAt = result.PaidAt;
         }
 
-        private void QueueKeycloakSyncIfNeeded(Payment payment)
+        private void QueueAuthenticationSystemSyncIfNeeded(Payment payment)
         {
             if (payment is MembershipPayment membershipPayment)
             {
-                var task = new KeycloakOutboxTask
+                var task = new AuthOutboxTask
                 {
-                    TaskType = KeycloakTaskType.Sync,
-                    KeycloakId = membershipPayment.Member?.KeycloakId
-                        ?? throw new Exception("Member does not have a Keycloak ID")
+                    TaskType = AuthTaskType.Sync,
+                    AuthSystemUserId = membershipPayment.Member?.AuthSystemUserId
+                        ?? throw new Exception("Member does not have a authentication system ID")
                 };
 
-                db.KeycloakOutboxTasks.Add(task);
+                db.AuthOutboxTasks.Add(task);
             }
         }
 
