@@ -426,5 +426,6 @@
   "add_mailing_list": "Add mailing list",
   "no_mailing_lists": "No mailing lists",
   "service_id": "Service ID",
-  "weekoverview": "Week overview"
+  "weekoverview": "Week overview",
+  "enrollment_waiting_list": "You are on the waiting list."
 }

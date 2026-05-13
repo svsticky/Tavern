@@ -426,5 +426,6 @@
   "add_mailing_list": "Mailinglijst toevoegen",
   "no_mailing_lists": "Geen mailinglijsten",
   "service_id": "Service ID",
-  "weekoverview": "Weekoverzicht"
+  "weekoverview": "Weekoverzicht",
+  "enrollment_waiting_list": "Je staat op de wachtlijst."
 }

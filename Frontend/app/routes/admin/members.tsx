@@ -189,7 +189,7 @@ export default function Members() {
 
           <Button
             variant="secondary"
-            className="h-[42px]"
+            className="w-full sm:w-auto"
             onClick={() => setIsFiltersOpen(true)}
           >
             {t("filters")}

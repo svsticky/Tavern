@@ -1,5 +1,6 @@
 import { t } from "i18next";
 import type Keycloak from "keycloak-js";
+import { AlertTriangle, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   type ActivityResponseDto,
@@ -120,6 +121,8 @@ export const handleEnrollment = async (
           : [newEnrollment];
 
         setActivity?.({ ...activity });
+
+        return response.data;
       } else {
         throw new Error("No enrollment data returned from API");
       }
@@ -132,8 +135,22 @@ export const handleEnrollment = async (
   };
 
   toast.promise(enrollmentProcess(), {
-    loading: t("signing_in"),
-    success: t("enrollment_successful"),
+  loading: t("signing_in"),
+  success: (data) => {
+      if (data.isOnWaitingList) {
+        toast(t("enrollment_waiting_list"), {
+          icon: <AlertTriangle className="text-yellow-500" />,
+        });
+
+        return "";
+      }
+
+      toast.success(t("enrollment_successful"), {
+        icon: <Check className="text-green-500" />,
+      });
+
+      return "";
+    },
     error: t("enrollment_failed"),
   });
 };

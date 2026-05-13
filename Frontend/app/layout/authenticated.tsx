@@ -61,7 +61,10 @@ export default function AuthenticatedLayout() {
       },
     );
 
-    const userLocale = keycloak.tokenParsed?.locale?.toLowerCase();
+    const preferredLocale = member?.preferredLanguage?.toLowerCase();
+    const keycloakLocale = keycloak.tokenParsed?.locale?.toLowerCase();
+    const userLocale = preferredLocale || keycloakLocale;
+
     if (userLocale && i18n.language !== userLocale) {
       i18n.changeLanguage(userLocale);
     }
@@ -190,7 +193,7 @@ export default function AuthenticatedLayout() {
     keycloak.logout,
     keycloak.tokenParsed?.UserId,
     keycloak.tokenParsed?.access_level,
-    keycloak.tokenParsed?.locale?.toLowerCase,
+    keycloak.tokenParsed?.locale,
     member,
     setBoardGroupId,
     setCandidateBoardGroupId,
