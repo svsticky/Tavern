@@ -1,13 +1,12 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import type { EnrollmentResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import {
   handleParticipantUnenroll,
-  handlePriceBlur,
-  handlePriceChange,
   savePriceToServer,
 } from "./EditParticipantTile.handlers";
 
@@ -16,8 +15,7 @@ import {
  *
  * Features:
  * - **Price Management**: Provides a controlled input to adjust the price for a specific enrollment.
- *   Includes a 600ms debounce to minimize API calls during typing and an `onBlur` trigger to
- *   ensure final values are saved.
+ *   Saves once editing is finished (`onBlur` or Enter), while keeping typing unformatted.
  * - **Unenrollment**: Allows administrators to remove a participant with a single action,
  *   guarded by a loading state and toast notifications.
  * - **State Syncing**: Automatically updates the local price state if the enrollment prop changes
@@ -37,21 +35,49 @@ import {
  * ```
  */
 export default function EditParticipantTile({
+  activityId,
   enrollment,
   onUnenroll,
 }: {
+  activityId: number;
   enrollment: EnrollmentResponseDto;
   onUnenroll: () => void;
 }) {
   const [loading, setLoading] = useState(false);
-  const [price, setPrice] = useState(enrollment.price ?? 0);
-  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(
-    null,
+  const [priceInput, setPriceInput] = useState(
+    enrollment.price == null ? "" : enrollment.price.toFixed(2),
   );
 
   useEffect(() => {
-    setPrice(enrollment.price ?? 0);
+    setPriceInput(enrollment.price == null ? "" : enrollment.price.toFixed(2));
   }, [enrollment.price]);
+
+  const savePrice = async () => {
+    const normalizedInput = priceInput.trim().replace(",", ".");
+    const parsedPrice = normalizedInput === "" ? 0 : Number(normalizedInput);
+    if (Number.isNaN(parsedPrice)) {
+      setPriceInput(enrollment.price == null ? "" : enrollment.price.toFixed(2));
+      return;
+    }
+
+    const roundedPrice = Math.round(parsedPrice * 100) / 100;
+    setPriceInput(roundedPrice === 0 ? "" : roundedPrice.toFixed(2));
+
+    await toast.promise(
+      savePriceToServer({
+        activityId,
+        targetPrice: roundedPrice,
+        enrollment,
+        setLoading,
+        setPrice: (price) => setPriceInput(price === 0 ? "" : price.toFixed(2)),
+      }),
+      {
+        loading: t("updating_price"),
+        success: t("price_updated"),
+        error: t("failed_to_update_price"),
+      },
+    );
+  };
 
   return (
     <BorderedTile className="bg-gray-50 p-2" noPadding>
@@ -65,39 +91,23 @@ export default function EditParticipantTile({
           <div className="flex-1 min-w-0">
             <Input
               min="0"
-              type="number"
+              type="text"
               step="0.01"
-              value={price === 0 ? "" : price.toFixed(2)}
+              value={priceInput}
               placeholder="0.00"
               className="h-8 text-sm text-right px-2 w-full"
-              onChange={(e) =>
-                handlePriceChange({
-                  e,
-                  debounceTimeout,
-                  setPrice,
-                  setDebounceTimeout,
-                  saveAction: (targetPrice) =>
-                    savePriceToServer({
-                      targetPrice,
-                      enrollment,
-                      setLoading,
-                      setPrice,
-                    }),
-                })
-              }
-              onBlur={() =>
-                handlePriceBlur({
-                  debounceTimeout,
-                  price,
-                  saveAction: (targetPrice) =>
-                    savePriceToServer({
-                      targetPrice,
-                      enrollment,
-                      setLoading,
-                      setPrice,
-                    }),
-                })
-              }
+              onChange={(e) => setPriceInput(e.target.value)}
+              onBlur={() => {
+                void savePrice();
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                void savePrice();
+                (e.target as HTMLInputElement).blur();
+              }}
+              inputMode="decimal"
+              pattern="^[0-9]*[.,]?[0-9]*$"
               disabled={loading}
             />
           </div>
@@ -107,7 +117,12 @@ export default function EditParticipantTile({
           variant="danger"
           className="shrink-0 whitespace-nowrap"
           onClick={() =>
-            handleParticipantUnenroll({ enrollment, setLoading, onUnenroll })
+            handleParticipantUnenroll({
+              activityId,
+              enrollment,
+              setLoading,
+              onUnenroll,
+            })
           }
           disabled={loading}
         >

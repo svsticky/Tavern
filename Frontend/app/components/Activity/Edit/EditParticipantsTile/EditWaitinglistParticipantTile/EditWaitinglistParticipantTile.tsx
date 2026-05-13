@@ -17,9 +17,11 @@ import {
  * @param {() => void} props.onMoveToParticipants - Callback function to move the participant to participants.
  */
 export default function EditWaitinglistParticipantTile({
+  activityId,
   enrollment,
   onUnenroll,
 }: {
+  activityId: number;
   enrollment: EnrollmentResponseDto;
   onUnenroll: () => void;
   onMoveToParticipants: () => void;
@@ -37,7 +39,12 @@ export default function EditWaitinglistParticipantTile({
           variant="secondary"
           className="flex-1 w-full overflow-hidden"
           onClick={() =>
-            handleMoveFromWaitinglist({ enrollment, setLoading, onUnenroll })
+            handleMoveFromWaitinglist({
+              activityId,
+              enrollment,
+              setLoading,
+              onUnenroll,
+            })
           }
           disabled={loading}
         >
@@ -50,7 +57,12 @@ export default function EditWaitinglistParticipantTile({
           variant="danger"
           className="flex-1 w-full overflow-hidden"
           onClick={() =>
-            handleWaitinglistUnenroll({ enrollment, setLoading, onUnenroll })
+            handleWaitinglistUnenroll({
+              activityId,
+              enrollment,
+              setLoading,
+              onUnenroll,
+            })
           }
           disabled={loading}
         >

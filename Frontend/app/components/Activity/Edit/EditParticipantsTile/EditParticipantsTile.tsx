@@ -77,6 +77,7 @@ export default function EditParticipantsTile({
               enrollments.map((e, index) => (
                 <EditParticipantTile
                   key={index}
+                  activityId={activity.id}
                   enrollment={e}
                   onUnenroll={() =>
                     handleUnenrollParticipant(
@@ -94,6 +95,7 @@ export default function EditParticipantsTile({
             )}
             {waitingList.length > 0 && (
               <EditWaitinglistParticipantTile
+                activityId={activity.id}
                 enrollment={waitingList[0]}
                 onUnenroll={() =>
                   handleUnenrollParticipant(

@@ -7,6 +7,7 @@ import {
 } from "~/api";
 
 type WaitingListActionArgs = {
+  activityId: number;
   enrollment: EnrollmentResponseDto;
   setLoading: (loading: boolean) => void;
   onUnenroll: () => void;
@@ -21,6 +22,7 @@ type WaitingListActionArgs = {
  * @param {() => void} args.onUnenroll - Callback function to handle unenrollment completion.
  */
 export const handleWaitinglistUnenroll = ({
+  activityId,
   enrollment,
   setLoading,
   onUnenroll,
@@ -30,7 +32,7 @@ export const handleWaitinglistUnenroll = ({
       setLoading(true);
       const response = await deleteApiEnrollmentsByActivityIdByMemberId({
         path: {
-          activityId: enrollment.activity.id,
+          activityId,
           memberId: enrollment.member.id!,
         },
       });
@@ -62,6 +64,7 @@ export const handleWaitinglistUnenroll = ({
  * @param {() => void} args.onUnenroll - Callback function to handle unenrollment completion.
  */
 export const handleMoveFromWaitinglist = ({
+  activityId,
   enrollment,
   setLoading,
   onUnenroll,
@@ -71,7 +74,7 @@ export const handleMoveFromWaitinglist = ({
       setLoading(true);
       const response = await patchApiEnrollmentsByActivityIdByMemberId({
         path: {
-          activityId: enrollment.activity.id!,
+          activityId,
           memberId: enrollment.member.id!,
         },
         body: [{ op: "replace", path: "/isOnWaitingList", value: false }],

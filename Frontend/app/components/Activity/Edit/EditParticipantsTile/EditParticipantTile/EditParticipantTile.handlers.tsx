@@ -19,10 +19,12 @@ import {
  * @param args.onUnenroll - Callback executed after a successful server-side unenrollment to refresh local state.
  */
 export const handleParticipantUnenroll = ({
+  activityId,
   enrollment,
   setLoading,
   onUnenroll,
 }: {
+  activityId: number;
   enrollment: EnrollmentResponseDto;
   setLoading: (loading: boolean) => void;
   onUnenroll: () => void;
@@ -32,7 +34,7 @@ export const handleParticipantUnenroll = ({
       setLoading(true);
       const response = await deleteApiEnrollmentsByActivityIdByMemberId({
         path: {
-          activityId: enrollment.activity.id,
+          activityId,
           memberId: enrollment.member.id!,
         },
       });
@@ -64,11 +66,13 @@ export const handleParticipantUnenroll = ({
  * @throws {Error} Throws if the API response contains an error.
  */
 export const savePriceToServer = async ({
+  activityId,
   targetPrice,
   enrollment,
   setLoading,
   setPrice,
 }: {
+  activityId: number;
   targetPrice: number;
   enrollment: EnrollmentResponseDto;
   setLoading: (loading: boolean) => void;
@@ -80,7 +84,7 @@ export const savePriceToServer = async ({
     setLoading(true);
     const response = await patchApiEnrollmentsByActivityIdByMemberId({
       path: {
-        activityId: enrollment.activity.id,
+        activityId,
         memberId: enrollment.member.id!,
       },
       body: [
