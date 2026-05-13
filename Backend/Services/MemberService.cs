@@ -69,6 +69,13 @@ namespace Backend.Services
         public async Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken)
         {
             logger.LogInformation("Creating member with email {Email}.", dto.Email);
+
+            // Check if date of birth is in the past
+            if(dto.DateOfBirth >= DateTimeOffset.UtcNow)
+            {
+                throw new ArgumentException("Date of birth must be in the past.");
+            }
+
             // Check if member is a minor and if so, require parent phone number
             if (dto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) &&
                 string.IsNullOrEmpty(dto.ParentPhoneNumber))
@@ -83,7 +90,7 @@ namespace Backend.Services
                 // Remove any existing member with same mail if they didn't pay membership
                 await RemoveExistingMemberWithSameEmail(dto.Email, cancellationToken);
 
-                // Creat the member
+                // Create the member
                 var member = BuildMember(dto);
                 StateValidator.Validate(member);
                 db.Members.Add(member);

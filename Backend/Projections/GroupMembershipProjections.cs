@@ -19,10 +19,12 @@ public static class GroupMembershipProjections
         {
             Id = gm.Id,
             MemberId = isBoard || gm.MemberId == userId ? gm.MemberId : null,
-            MemberName = isBoard || gm.MemberId == userId ? gm.Member.FirstName + " " + gm.Member.LastName : null,
+            MemberName = isBoard || gm.MemberId == userId
+                ? (gm.Member != null ? gm.Member.FirstName + " " + gm.Member.LastName : null)
+                : null,
             GroupId = gm.GroupId,
-            GroupName = gm.Group.Name,
-            GroupType = gm.Group.Type,
+            GroupName = gm.Group != null ? gm.Group.Name : string.Empty,
+            GroupType = gm.Group != null ? gm.Group.Type : default,
             MembershipYear = gm.MembershipYear,
             RoleAliasId = gm.RoleAlias != null ? gm.RoleAlias.Id : null,
             RoleAliasName = gm.RoleAlias != null ? gm.RoleAlias.Name : null

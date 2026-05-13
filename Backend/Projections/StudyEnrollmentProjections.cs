@@ -19,12 +19,12 @@ public static class StudyEnrollmentProjections
         {
             Id = se.Id,
             MemberId = se.MemberId,
-            MemberName = se.Member.FirstName + " " + se.Member.LastName,
+            MemberName = se.Member != null ? se.Member.FirstName + " " + se.Member.LastName : string.Empty,
             StudyId = se.StudyId,
-            StudyTitle = se.Study.Title,
+            StudyTitle = se.Study != null ? se.Study.Title : string.Empty,
             EnrollmentDate = se.EnrollmentDate,
             CompletionDate = se.CompletionDate,
-            StudyType = se.Study.Type,
+            StudyType = se.Study != null ? se.Study.Type : default,
             Status = se.Status
         };
     }

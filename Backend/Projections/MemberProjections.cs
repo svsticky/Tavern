@@ -40,7 +40,12 @@ public static class MemberProjections
                     .ToList()
                 : null,
             Suspended = isBoard || userId == m.Id ? m.Suspended : (bool?)null,
-            GroupMemberships = isBoard || userId == m.Id ? m.GroupMemberships.Select(gm => GroupMembershipProjections.ToDto(userId, isBoard).Compile()(gm)).ToList() : null
+            GroupMemberships = isBoard || userId == m.Id
+                ? m.GroupMemberships
+                    .AsQueryable()
+                    .Select(GroupMembershipProjections.ToDto(userId, isBoard))
+                    .ToList()
+                : null
         };
     }
 }
