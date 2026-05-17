@@ -21,6 +21,7 @@ public class ActivityService : IActivityService
     private readonly IFileCompressService _fileCompressor;
     private readonly IPermissionService _permissionService;
     private readonly IEnrollmentService _enrollmentService;
+    private readonly AbstractMailService _mailService;
     private readonly ILogger<ActivityService> _logger;
 
     private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
@@ -32,6 +33,7 @@ public class ActivityService : IActivityService
         IFileCompressService fileCompressor,
         IPermissionService permissionService,
         IEnrollmentService enrollmentService,
+        AbstractMailService mailService,
         ILogger<ActivityService> logger)
     {
         _db = db;
@@ -39,6 +41,7 @@ public class ActivityService : IActivityService
         _fileCompressor = fileCompressor;
         _permissionService = permissionService;
         _enrollmentService = enrollmentService;
+        _mailService = mailService;
         _logger = logger;
     }
 
@@ -216,11 +219,17 @@ public class ActivityService : IActivityService
 
             StateValidator.Validate(activity);
 
+            IEnumerable<Enrollment> promotedEnrollments;
+
             // Update waiting list
             if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
                 || activity.AllowedAudience != oldAudience)
             {
-                await ProcessWaitingList(id, activity.ParticipantLimit, ct);
+                promotedEnrollments = await ProcessWaitingList(id, activity.ParticipantLimit, ct);
+            }
+            else
+            {
+                promotedEnrollments = Enumerable.Empty<Enrollment>();
             }
 
             // Update enrollment prices if the price has changed
@@ -236,6 +245,18 @@ public class ActivityService : IActivityService
 
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
+
+            foreach(var enrollment in promotedEnrollments)
+            {
+                try
+                {
+                    await _mailService.SendEnrollmentPromotionEmail(enrollment);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed sending enrollment promotion email for enrollment {ActivityId} for {MemberId}.", enrollment.ActivityId, enrollment.MemberId);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -343,15 +364,33 @@ public class ActivityService : IActivityService
             // Save poster if a new one is provided
             await SavePosterIfProvided(activity, dto.Poster);
 
+            IEnumerable<Enrollment> promotedEnrollments;
+
             // Update waiting list if participant limit or allowed audience has changed
             if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
                 || activity.AllowedAudience != oldAudience)
             {
-                await ProcessWaitingList(id, activity.ParticipantLimit, default);
+                promotedEnrollments = await ProcessWaitingList(id, activity.ParticipantLimit, default);
+            }
+            else
+            {
+                promotedEnrollments = Enumerable.Empty<Enrollment>();
             }
 
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            foreach(var enrollment in promotedEnrollments)
+            {
+                try
+                {
+                    await _mailService.SendEnrollmentPromotionEmail(enrollment);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed sending enrollment promotion email for enrollment {ActivityId} for {MemberId}.", enrollment.ActivityId, enrollment.MemberId);
+                }
+            }
 
             // Delete old poster if a new one was uploaded and the activity had an existing poster
             if (existingPosterPath != null && dto.Poster != null)
@@ -466,7 +505,7 @@ public class ActivityService : IActivityService
         };
     }
 
-    private async Task ProcessWaitingList(uint activityId, uint? newLimit, CancellationToken ct)
+    private async Task<IEnumerable<Enrollment>> ProcessWaitingList(uint activityId, uint? newLimit, CancellationToken ct)
     {
         // Get the number of current participants (excluding those on the waiting list)
         int currentParticipants = await _db.Enrollments
@@ -480,8 +519,10 @@ public class ActivityService : IActivityService
         if (availableSpots > 0)
         {
             // Promote people from the waiting list based on the available spots
-            await _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
+            return await _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
         }
+
+        return Enumerable.Empty<Enrollment>();
     }
 
     private async Task SyncSpecificationQuestions(Activity activity, List<UpdateSpecificationQuestionDTO> dtoQuestions)

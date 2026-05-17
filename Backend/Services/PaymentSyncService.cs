@@ -3,7 +3,6 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

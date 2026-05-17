@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Backend.Interfaces;
+namespace Backend.Validators;
 
 /// <summary>
 /// Provides object-state validation based on data-annotation attributes.

@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import type { EnrollmentResponseDto } from "~/api/types.gen";
-import Tile from "../../Tiles/Tile";
 import { getEnv } from "~/util/config.utils";
-import { useKeycloak } from "@react-keycloak/web";
+import Tile from "../../Tiles/Tile";
 
 /**
  * A compact tile component used to display an individual participant's information.
@@ -29,8 +28,6 @@ export default function ParticipantTile({
 }: {
   enrollment: EnrollmentResponseDto;
 }) {
-  const { keycloak } = useKeycloak();
-
   const imageUrl = `${getEnv("ApiUrl")}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 

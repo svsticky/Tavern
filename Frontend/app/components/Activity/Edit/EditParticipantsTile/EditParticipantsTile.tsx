@@ -93,25 +93,32 @@ export default function EditParticipantsTile({
                 {t("no_participants_yet")}
               </p>
             )}
+
             {waitingList.length > 0 && (
-              <EditWaitinglistParticipantTile
-                activityId={activity.id}
-                enrollment={waitingList[0]}
-                onUnenroll={() =>
-                  handleUnenrollParticipant(
-                    waitingList[0].member.id!,
-                    activity,
-                    setActivity,
-                  )
-                }
-                onMoveToParticipants={() =>
-                  handleMoveToParticipants(
-                    waitingList[0].member.id!,
-                    activity,
-                    setActivity,
-                  )
-                }
-              />
+              <>
+                <FormHeader
+                  title={`${t("waiting_list")} (${waitingList.length})`}
+                  border
+                />
+                <EditWaitinglistParticipantTile
+                  activityId={activity.id}
+                  enrollment={waitingList[0]}
+                  onUnenroll={() =>
+                    handleUnenrollParticipant(
+                      waitingList[0].member.id!,
+                      activity,
+                      setActivity,
+                    )
+                  }
+                  onMoveToParticipants={() =>
+                    handleMoveToParticipants(
+                      waitingList[0].member.id!,
+                      activity,
+                      setActivity,
+                    )
+                  }
+                />
+              </>
             )}
           </div>
 

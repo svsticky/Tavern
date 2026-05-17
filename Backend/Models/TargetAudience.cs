@@ -1,4 +1,5 @@
 using Backend.Models.Domain;
+using Backend.Utils.DateTime;
 
 namespace Backend.Models;
 
@@ -14,7 +15,8 @@ public enum TargetAudience : uint
     ThirdYearsAndAbove = 1 << 2,  // 4
     Masters = 1 << 3,             // 8
     Gratie = 1 << 4,              // 16
-    All = FirstYears | SecondYears | ThirdYearsAndAbove | Masters | Gratie
+    ActiveMembers = 1 << 5,        // 32
+    All = FirstYears | SecondYears | ThirdYearsAndAbove | Masters | Gratie | ActiveMembers // 63
 }
 
 /// <summary>
@@ -63,6 +65,11 @@ public static class TargetAudienceHelper
         }
 
         if (targetAudience.HasFlag(TargetAudience.Gratie) && member.Gratie)
+        {
+            return true;
+        }
+
+        if (targetAudience.HasFlag(TargetAudience.ActiveMembers) && member.GroupMemberships?.Any(gm => gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear()) == true)
         {
             return true;
         }

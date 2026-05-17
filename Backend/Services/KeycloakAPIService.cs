@@ -1,11 +1,9 @@
 using System.Net.Http.Headers;
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

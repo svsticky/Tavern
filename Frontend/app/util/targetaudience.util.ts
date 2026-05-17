@@ -1,5 +1,6 @@
 import type { MemberResponseDto } from "~/api";
 import { AudienceFlags } from "~/types/AudienceMap";
+import { getAssociationYear } from "./date.util";
 
 /**
  * Determines if a member is in a specific target audience.
@@ -91,6 +92,16 @@ export const isMemberInTargetAudience = (
   // 5. Gratie
   if (audienceMask & AudienceFlags.Gratie) {
     if (member.gratie) return true;
+  }
+
+  // 6. Active Members
+  if (audienceMask & AudienceFlags.ActiveMembers) {
+    if (
+      member.groupMemberships?.some(
+        (gm) => gm.membershipYear === getAssociationYear(),
+      )
+    )
+      return true;
   }
 
   return false;

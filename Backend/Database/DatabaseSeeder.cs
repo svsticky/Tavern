@@ -3,7 +3,6 @@ using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 
 namespace Backend.Database;
 
@@ -51,6 +50,10 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         await EnsureSettingExists(db, "MollieFeeVATCode", "21");
 
         await EnsureSettingExists(db, "MembershipPrice", "7.50");
+
+        await EnsureSettingExists(db, "FinancialEmailSender", "");
+
+        await EnsureSettingExists(db, "ActivityUpdateEmailSender", "");
 
         var keycloakOutboxWorker = scope.ServiceProvider.GetRequiredService<KeycloakOutboxWorker>();
 

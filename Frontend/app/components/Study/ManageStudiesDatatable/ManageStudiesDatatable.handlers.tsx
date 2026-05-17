@@ -79,7 +79,7 @@ export const handleStudyEdited = ({
 
   setStudies((prev) => {
     const exists = prev.find((s) => s.id === study.id);
-    
+
     if (exists) {
       return prev.map((s) => (s.id === study.id ? study : s));
     } else {

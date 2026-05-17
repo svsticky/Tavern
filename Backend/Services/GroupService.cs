@@ -6,7 +6,6 @@ using Backend.Projections;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

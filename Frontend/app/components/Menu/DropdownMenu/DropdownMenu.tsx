@@ -72,16 +72,16 @@ export default function DropdownMenu({
         <div className="bg-(--board-primary) border-t border-opacity-20 border-white">
           <nav className="flex flex-col text-white text-xl gap-1 py-1">
             {childrenArray
-            .filter((child: any) => child.type === DropdownMenu.Item)
-            .map((child, index) => {
-              if (React.isValidElement(child)) {
-                return React.cloneElement(child as React.ReactElement<any>, {
-                  key: index,
-                  onClick: () => setIsNavBarOpen(false),
-                });
-              }
-              return child;
-            })}
+              .filter((child: any) => child.type === DropdownMenu.Item)
+              .map((child, index) => {
+                if (React.isValidElement(child)) {
+                  return React.cloneElement(child as React.ReactElement<any>, {
+                    key: index,
+                    onClick: () => setIsNavBarOpen(false),
+                  });
+                }
+                return child;
+              })}
           </nav>
 
           {childrenArray
@@ -94,8 +94,7 @@ export default function DropdownMenu({
                 });
               }
               return child;
-            })
-          }
+            })}
         </div>
       )}
     </header>

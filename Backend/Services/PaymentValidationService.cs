@@ -2,7 +2,6 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

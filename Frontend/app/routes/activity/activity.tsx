@@ -55,7 +55,8 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
     });
   }, [activity?.id, initialized, keycloak.authenticated, params.id]);
 
-  const canEdit = activity == null ? false : canEditActivity(activity, keycloak.tokenParsed);
+  const canEdit =
+    activity == null ? false : canEditActivity(activity, keycloak.tokenParsed);
 
   if (loading) return t("loading");
 

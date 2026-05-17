@@ -427,5 +427,8 @@
   "no_mailing_lists": "No mailing lists",
   "service_id": "Service ID",
   "weekoverview": "Week overview",
-  "enrollment_waiting_list": "You are on the waiting list."
+  "enrollment_waiting_list": "You are on the waiting list.",
+  "active_members": "Active members",
+  "financial_email_sender": "Financial email sender",
+  "activity_update_email_sender": "Activity update email sender"
 }

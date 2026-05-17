@@ -229,6 +229,14 @@ export default function EditActivityForm({
                     isEdit ? !!(activity?.allowedAudience ?? 0 & 16) : true
                   }
                 />
+                <Checkbox
+                  label={t("active_members")}
+                  name="AudienceBit"
+                  value="32"
+                  defaultChecked={
+                    isEdit ? !!(activity?.allowedAudience ?? 0 & 32) : true
+                  }
+                />
               </div>
             </div>
             <div>
@@ -301,17 +309,17 @@ export default function EditActivityForm({
                   <Checkbox
                     label={t("is_enrollable")}
                     name="IsEnrollable"
-                    defaultChecked={activity?.isEnrollable ?? true}
+                    defaultChecked={activity?.isEnrollable ?? false}
                   />
                   <Checkbox
                     label={t("show_in_koala")}
                     name="ShowInKoala"
-                    defaultChecked={activity?.showInKoala ?? true}
+                    defaultChecked={activity?.showInKoala ?? false}
                   />
                   <Checkbox
                     label={t("show_on_website")}
                     name="ShowOnWebsite"
-                    defaultChecked={activity?.showOnWebsite ?? true}
+                    defaultChecked={activity?.showOnWebsite ?? false}
                   />
                 </>
               )}

@@ -4,7 +4,6 @@ using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models.Payment.Response;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services
 {

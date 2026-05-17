@@ -56,7 +56,9 @@ export default function EditParticipantTile({
     const normalizedInput = priceInput.trim().replace(",", ".");
     const parsedPrice = normalizedInput === "" ? 0 : Number(normalizedInput);
     if (Number.isNaN(parsedPrice)) {
-      setPriceInput(enrollment.price == null ? "" : enrollment.price.toFixed(2));
+      setPriceInput(
+        enrollment.price == null ? "" : enrollment.price.toFixed(2),
+      );
       return;
     }
 

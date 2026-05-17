@@ -4,9 +4,9 @@ using Backend.Interfaces;
 using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Projections;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 
@@ -18,17 +18,20 @@ public class EnrollmentService : IEnrollmentService
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly IPaymentValidationService _paymentValidationService;
+    private readonly AbstractMailService _mailService;
     private readonly ILogger<EnrollmentService> _logger;
 
     public EnrollmentService(
         PostgresDbContext db,
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
+        AbstractMailService mailService,
         ILogger<EnrollmentService> logger)
     {
         _db = db;
         _permissionService = permissionService;
         _paymentValidationService = paymentValidationService;
+        _mailService = mailService;
         _logger = logger;
     }
 
@@ -97,20 +100,17 @@ public class EnrollmentService : IEnrollmentService
 
             EnrollmentValidator.ValidateEnrollment(dto.SpecificationAnswers, member, activity, isBoardMember, _paymentValidationService);
 
-            if (!isBoardMember)
-            {
-                await EnsureActivityEnrollmentsCanBeChanged(activity, isBoardMember, cancellationToken);
-                
-                if (!TargetAudienceHelper.IsMemberInTargetAudience(member, activity.AllowedAudience))
-                    throw new UnauthorizedAccessException("Member is not in the target audience for this activity.");
-            }
-
             // Determine if enrollment should be on waiting list
             int currentParticipants = activity.Enrollments.Count(e => !e.IsOnWaitingList);
 
             bool shouldBeOnWaitingList =
                 activity.ParticipantLimit.HasValue &&
-                currentParticipants >= activity.ParticipantLimit.Value;
+                currentParticipants >= activity.ParticipantLimit.Value || !TargetAudienceHelper.IsMemberInTargetAudience(member, activity.AllowedAudience);
+
+            if (!isBoardMember)
+            {
+                await EnsureActivityEnrollmentsCanBeChanged(activity, isBoardMember, cancellationToken);
+            }
 
             var enrollment = BuildEnrollment(dto, activity, shouldBeOnWaitingList, dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>());
 
@@ -172,13 +172,26 @@ public class EnrollmentService : IEnrollmentService
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
             _db.Enrollments.Remove(enrollment);
 
+            Enrollment? promotedEnrollment = null;
             if (!wasOnWaitingList)
             {
-                await PromoteFromWaitingList(activityId, cancellationToken);
+                promotedEnrollment = await PromoteFromWaitingList(activityId, cancellationToken);
             }
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
+
+            if(promotedEnrollment != null)
+            {
+                try
+                {
+                    await _mailService.SendEnrollmentPromotionEmail(promotedEnrollment);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed sending enrollment promotion email to member {MemberId} for activity {ActivityId}.", promotedEnrollment.MemberId, promotedEnrollment.ActivityId);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -282,7 +295,7 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public async Task PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct)
+    public async Task<IEnumerable<Enrollment>> PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct)
     {
         var next = await _db.Enrollments
             .Include(e => e.Member)
@@ -299,12 +312,14 @@ public class EnrollmentService : IEnrollmentService
         {
             enrollment.IsOnWaitingList = false;
         }
+
+        return toPromote;
     }
 
     /// <inheritdoc />
-    public async Task PromoteFromWaitingList(uint activityId, CancellationToken ct)
+    public async Task<Enrollment?> PromoteFromWaitingList(uint activityId, CancellationToken ct)
     {
-        await PromoteFromWaitingList(activityId, 1, ct);
+        return (await PromoteFromWaitingList(activityId, 1, ct)).FirstOrDefault();
     }
 
     private async Task EnsureActivityEnrollmentsCanBeChanged(Activity activity, bool isBoardMember, CancellationToken cancellationToken)

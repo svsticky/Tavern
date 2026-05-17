@@ -3,7 +3,6 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

@@ -20,5 +20,6 @@ export const AudienceFlags = {
   ThirdYearsAndAbove: 4,
   Masters: 8,
   Gratie: 16,
-  All: 31,
+  ActiveMembers: 32,
+  All: 63,
 };

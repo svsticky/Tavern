@@ -20,6 +20,7 @@ export default function EditWaitinglistParticipantTile({
   activityId,
   enrollment,
   onUnenroll,
+  onMoveToParticipants,
 }: {
   activityId: number;
   enrollment: EnrollmentResponseDto;
@@ -43,7 +44,7 @@ export default function EditWaitinglistParticipantTile({
               activityId,
               enrollment,
               setLoading,
-              onUnenroll,
+              onUnenroll: onMoveToParticipants,
             })
           }
           disabled={loading}

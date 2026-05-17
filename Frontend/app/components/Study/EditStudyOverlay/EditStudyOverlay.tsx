@@ -33,7 +33,7 @@ export default function EditStudyOverlay({
   const [formData, setFormData] = useState({
     title: study ? study.title : "",
     type: study?.type ?? "Bachelor",
-    nominalDurationYears: study?.nominalDurationYears
+    nominalDurationYears: study?.nominalDurationYears,
   });
   const [loading, setLoading] = useState(false);
 

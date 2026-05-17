@@ -74,24 +74,24 @@ export default function NavBar({
         >
           {childrenArray.filter((c: any) => c.type === NavBar.Branding)}
           {childrenArray.filter((c: any) => c.type === NavBar.Item)}
-            <DropdownMenu.Footer>
-              {childrenArray
-                .filter((c: any) => c.type === NavBar.ProfileDropdown)
-                .map((child, index) => {
-                  if (React.isValidElement(child)) {
-                    return React.cloneElement(child as React.ReactElement<any>, {
-                      key: index,
-                      onOptionSelect: (option: any) => {
-                        const props = child.props as any;
-                        if (props.onOptionSelect) props.onOptionSelect(option);
-                        
-                        if (props.onClose) props.onClose();
-                      },
-                    });
-                  }
-                  return child;
-                })}
-            </DropdownMenu.Footer>
+          <DropdownMenu.Footer>
+            {childrenArray
+              .filter((c: any) => c.type === NavBar.ProfileDropdown)
+              .map((child, index) => {
+                if (React.isValidElement(child)) {
+                  return React.cloneElement(child as React.ReactElement<any>, {
+                    key: index,
+                    onOptionSelect: (option: any) => {
+                      const props = child.props as any;
+                      if (props.onOptionSelect) props.onOptionSelect(option);
+
+                      if (props.onClose) props.onClose();
+                    },
+                  });
+                }
+                return child;
+              })}
+          </DropdownMenu.Footer>
         </DropdownMenu>
         <header
           className={cn(
@@ -147,12 +147,7 @@ NavBar.ProfileDropdown = function NavBarProfileDropdown(props: {
   options: ProfileDropdownOption[];
   onOptionSelect?: (option: ProfileDropdownOption) => void;
 }) {
-  return (
-    <ProfileDropdown 
-      context={ProfileDropdownContext} 
-      {...props}
-    />
-  );
+  return <ProfileDropdown context={ProfileDropdownContext} {...props} />;
 };
 
 /**

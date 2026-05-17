@@ -83,8 +83,7 @@ export const loadGroupData = async ({
     if (
       groupPictureResponse.error ||
       !(groupPictureResponse.data instanceof Blob)
-    )
-    {
+    ) {
       console.warn("Failed to load group picture, using default avatar");
       return;
     }

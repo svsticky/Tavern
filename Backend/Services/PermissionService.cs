@@ -2,7 +2,6 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

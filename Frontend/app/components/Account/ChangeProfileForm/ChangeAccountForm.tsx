@@ -152,7 +152,10 @@ export default function ChangeAccountForm({
           </div>
 
           <div className="pb-1">
-            <a className="hover:cursor-pointer" onClick={() => handleChangeEmail(keycloak)}>
+            <a
+              className="text-(--board-primary) hover:text-(--board-primary-light) underline decoration-transparent hover:decoration-current hover:cursor-pointer"
+              onClick={() => handleChangeEmail(keycloak)}
+            >
               {t("change_email")}
             </a>
           </div>

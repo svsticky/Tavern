@@ -1,10 +1,8 @@
-using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using MailKit.Net.Smtp;
 using MimeKit;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

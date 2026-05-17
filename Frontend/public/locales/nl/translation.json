@@ -427,5 +427,8 @@
   "no_mailing_lists": "Geen mailinglijsten",
   "service_id": "Service ID",
   "weekoverview": "Weekoverzicht",
-  "enrollment_waiting_list": "Je staat op de wachtlijst."
+  "enrollment_waiting_list": "Je staat op de wachtlijst.",
+  "active_members": "Actieve leden",
+  "financial_email_sender": "Afzender financiële e-mails",
+  "activity_update_email_sender": "Afzender activiteit update e-mails"
 }

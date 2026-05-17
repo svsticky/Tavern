@@ -34,7 +34,13 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
             .Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == lastYear)
             .ToListAsync();
 
-        if (candidates.Any())
+        var oldBoardMembers = await db.GroupMemberships
+            .Where(gm => gm.GroupId == boardGroupId && gm.MembershipYear == lastYear)
+            .ToListAsync();
+
+        using var transaction = await db.Database.BeginTransactionAsync();
+
+        try
         {
             foreach (var candidate in candidates)
             {
@@ -45,8 +51,22 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
                     RoleAliasId = candidate.RoleAliasId,
                     MembershipYear = currentYear
                 });
+
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, candidate.MemberId);
             }
+
+            foreach(var oldMember in oldBoardMembers)
+            {
+                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, oldMember.MemberId);
+            }
+
             await db.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
         }
     }
 }

@@ -210,11 +210,7 @@ export default function AuthenticatedLayout() {
         </h1>
         <p className="mb-6">{i18n.t("membership_payment_description")}</p>
         {paymentUrl && (
-          <Button
-            onClick={() => navigate(paymentUrl)}
-          >
-            {i18n.t("pay")}
-          </Button>
+          <Button onClick={() => navigate(paymentUrl)}>{i18n.t("pay")}</Button>
         )}
       </div>
     );

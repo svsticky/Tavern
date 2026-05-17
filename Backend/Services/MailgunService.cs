@@ -1,9 +1,7 @@
-using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using Mailgun;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Services;
 

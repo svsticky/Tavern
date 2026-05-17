@@ -10,12 +10,12 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
 import type { ActivityResponseDto } from "~/api";
+import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
-import { getEnv } from "~/util/config.utils";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -132,7 +132,9 @@ export default function ActivityTile({
               {activity.name}
             </p>
             <p className="shrink-0 text-nowrap text-(--board-primary)">
-              {(activity.price ?? 0) > 0 ? `€${activity.price.toFixed(2)}` : t("free")}
+              {(activity.price ?? 0) > 0
+                ? `€${activity.price.toFixed(2)}`
+                : t("free")}
             </p>
           </div>
 
@@ -158,7 +160,7 @@ export default function ActivityTile({
             <div className="mt-1 flex items-center gap-1.5">
               <UsersRound size={12} />
               {activity.participantLimit
-                ? `${activity.participantLimit - activity.enrollments.length} ${t("places_available")}`
+                ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
                 : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
             </div>
           </div>

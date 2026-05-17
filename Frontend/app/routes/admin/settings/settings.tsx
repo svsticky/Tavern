@@ -230,6 +230,28 @@ export default function SettingsPage() {
           </FormSection>
 
           <FormSection title={t("role_email_mapping")} columns={1}>
+            <Input
+              label={t("financial_email_sender")}
+              value={settings.FinancialEmailSender || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "FinancialEmailSender",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("activity_update_email_sender")}
+              value={settings.ActivityUpdateEmailSender || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "ActivityUpdateEmailSender",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
                 <div className="flex-1 w-full">

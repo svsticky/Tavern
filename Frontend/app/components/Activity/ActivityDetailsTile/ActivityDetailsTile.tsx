@@ -9,8 +9,12 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import Markdown from "react-markdown";
-import type { ActivityResponseDto, SpecificationAnswerResponseDto } from "~/api";
+import type {
+  ActivityResponseDto,
+  SpecificationAnswerResponseDto,
+} from "~/api";
 import { useApp } from "~/context/AppContext";
+import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { isMemberInTargetAudience } from "~/util/targetaudience.util";
@@ -25,7 +29,6 @@ import {
   handleUpdateEnrollment,
 } from "./ActivityDetailsTile.handlers";
 import InfoItem from "./InfoItem";
-import { getEnv } from "~/util/config.utils";
 
 const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
   const mapped: Record<number, string> = {};
@@ -108,13 +111,7 @@ export default function ActivityDetailsTile({
     (e) => e.member.id === keycloak.tokenParsed?.UserId,
   );
 
-  const ableToEnroll =
-    !member?.suspended &&
-    member?.studyEnrollments?.some(
-      (se) =>
-        se.completionDate == null ||
-        new Date(se.completionDate) > new Date(Date.now()),
-    );
+  const ableToEnroll = !member?.suspended;
 
   const inTargetAudience = isMemberInTargetAudience(
     member,

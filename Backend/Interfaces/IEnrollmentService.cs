@@ -69,8 +69,8 @@ public interface IEnrollmentService
     /// </summary>
     /// <param name="activityId">The activity ID.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    Task PromoteFromWaitingList(uint activityId, CancellationToken ct);
+    /// <returns>The promoted enrollment if any; otherwise <c>null</c>.</returns>
+    Task<Enrollment?> PromoteFromWaitingList(uint activityId, CancellationToken ct);
 
     /// <summary>
     /// Promotes a fixed number of members from the waiting list for an activity.
@@ -78,6 +78,6 @@ public interface IEnrollmentService
     /// <param name="activityId">The activity ID.</param>
     /// <param name="numberToPromote">The number of members to promote.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
-    Task PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct);
+    /// <returns>The promoted enrollments.</returns>
+    Task<IEnumerable<Enrollment>> PromoteFromWaitingList(uint activityId, int numberToPromote, CancellationToken ct);
 }

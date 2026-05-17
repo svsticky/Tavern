@@ -177,9 +177,4 @@ public class Member
     /// The file name of the profile picture of the member.
     /// </summary>
     public string? ProfilePictureFileName { get; set; }
-
-    /// <summary>
-    /// The date and time when the member joined the association.
-    /// </summary>
-    public DateTimeOffset JoinedOn { get; set; } = DateTime.UtcNow;
 }

@@ -3,11 +3,10 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Projections;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
-using Microsoft.Extensions.Logging;
-using Backend.Models;
 
 namespace Backend.Services
 {

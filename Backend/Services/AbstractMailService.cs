@@ -4,9 +4,7 @@ using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
-using Backend.Validators;
 using Backend.Utils.DateTime;
-using Microsoft.Extensions.Logging;
 
 namespace Backend.Interfaces;
 
@@ -32,6 +30,7 @@ public abstract class AbstractMailService
     protected readonly IPaymentValidationService _paymentValidationService;
 
     protected readonly IPermissionService _permissionService;
+
     protected readonly ILogger<AbstractMailService> _logger;
 
     public AbstractMailService(
@@ -107,10 +106,48 @@ public abstract class AbstractMailService
     }
 
     /// <summary>
+    /// Sends an enrollment promotion email to a member who has been promoted from the waiting list to an activity, informing them of their successful enrollment and providing relevant details about the activity. The email content is tailored to the member's preferred language, ensuring clear communication and a personalized touch. This method is typically called after a member is moved from the waiting list to the enrolled list for an activity, allowing the organization to promptly notify the member of their updated enrollment status and encourage their participation in the activity.
+    /// </summary>
+    /// <param name="promotedEnrollment">The enrollment that has been promoted from the waiting list to enrolled status.</param>
+    /// <returns>A task representing the asynchronous operation of sending the enrollment promotion email.</returns>
+    public async Task SendEnrollmentPromotionEmail(Enrollment promotedEnrollment)
+    {
+        var sender = _db.Settings.Where(s => s.Name == "ActivityUpdateEmailSender").Select(s => s.Value).FirstOrDefault();
+        if(string.IsNullOrEmpty(sender))
+        {
+            _logger.LogWarning("ActivityUpdateEmailSender setting is not configured. Skipping enrollment promotion mail.");
+            return;
+        }
+
+        string subject = promotedEnrollment.Member.PreferredLanguage switch
+        {
+            Language.NL => $"Je inschrijving voor {promotedEnrollment.Activity.Name} is bevestigd!",
+            Language.EN => $"Your enrollment for {promotedEnrollment.Activity.Name} is confirmed!",
+            _ => throw new InvalidOperationException("Unsupported language")
+        };
+        string htmlContent = promotedEnrollment.Member.PreferredLanguage switch
+        {
+            Language.NL => $"Beste {promotedEnrollment.Member.FirstName},<br><br>Er is een plek vrijgekomen voor {promotedEnrollment.Activity.Name} en je bent ingeschreven vanaf de reserve lijst! We kijken ernaar uit je te zien bij de activiteit!<br><br>Met vriendelijke groet,<br>Het bestuur",
+            Language.EN => $"Dear {promotedEnrollment.Member.FirstName},<br><br>A spot has opened up for {promotedEnrollment.Activity.Name} and you have been enrolled from the waiting list! We look forward to seeing you at the activity!<br><br>Best regards,<br>The board",
+            _ => throw new InvalidOperationException("Unsupported language")
+        };
+
+        await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = promotedEnrollment.Member.Email, Name = promotedEnrollment.Member.FirstName } }, subject, htmlContent, CancellationToken.None);
+    }
+
+    /// <summary>
     /// Builds outstanding-payment email content for members with unpaid enrollments.
     /// </summary>
-    public void SendOutstandingPaymentMails()
+    /// <returns>A task representing the asynchronous operation of sending outstanding payment emails to members with unpaid enrollments.</returns>
+    public async Task SendOutstandingPaymentMails()
     {
+        var sender = _db.Settings.Where(s => s.Name == "FinancialEmailSender").Select(s => s.Value).FirstOrDefault();
+        if(string.IsNullOrEmpty(sender))
+        {
+            _logger.LogWarning("FinancialEmailSender setting is not configured. Skipping outstanding payment mails.");
+            return;
+        }
+
         var unpaidEnrollmentBalances = _paymentValidationService.GetAllUnpaidEnrollments();
 
         if (unpaidEnrollmentBalances.Count() == 0) return;
@@ -138,6 +175,8 @@ public abstract class AbstractMailService
                 Language.EN => $"Dear {member.FirstName},<br><br>You have outstanding payments for the following activities:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Please settle these as soon as possible at https://koala.svsticky.nl.<br><br>Best regards,<br>The board",
                 _ => throw new InvalidOperationException("Unsupported language")
             };
+
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
         }
     }
 

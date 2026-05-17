@@ -135,8 +135,8 @@ export const handleEnrollment = async (
   };
 
   toast.promise(enrollmentProcess(), {
-  loading: t("signing_in"),
-  success: (data) => {
+    loading: t("signing_in"),
+    success: (data) => {
       if (data.isOnWaitingList) {
         toast(t("enrollment_waiting_list"), {
           icon: <AlertTriangle className="text-yellow-500" />,

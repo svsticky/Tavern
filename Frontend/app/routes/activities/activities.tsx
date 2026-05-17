@@ -75,37 +75,35 @@ export default function ActivitiesPage() {
             </div>
           }
         />
-          {isBoard && (
-            <>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  downloadPosters(activities, keycloak.token ?? "")
-                }
-                className="text-xs px-3 py-1"
-                title="Download Koala Posters"
-              >
-                <DownloadIcon size={20} className="mr-1" />
-                {t("download_posters")}
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => copyWeekOverview("NL", activities)}
-                className="text-xs px-3 py-1"
-              >
-                <CalendarDaysIcon size={20} className="mr-1" />
-                {t("copy")} {t("weekoverview").toLowerCase()} NL
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => copyWeekOverview("EN", activities)}
-                className="text-xs px-3 py-1 mb-4"
-              >
-                <CalendarDaysIcon size={20} className="mr-1" />
-                {t("copy")} {t("weekoverview").toLowerCase()} EN
-              </Button>
-            </>
-          )}
+        {isBoard && (
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => downloadPosters(activities, keycloak.token ?? "")}
+              className="text-xs px-3 py-1"
+              title="Download Koala Posters"
+            >
+              <DownloadIcon size={20} className="mr-1" />
+              {t("download_posters")}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => copyWeekOverview("NL", activities)}
+              className="text-xs px-3 py-1"
+            >
+              <CalendarDaysIcon size={20} className="mr-1" />
+              {t("copy")} {t("weekoverview").toLowerCase()} NL
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => copyWeekOverview("EN", activities)}
+              className="text-xs px-3 py-1 mb-4"
+            >
+              <CalendarDaysIcon size={20} className="mr-1" />
+              {t("copy")} {t("weekoverview").toLowerCase()} EN
+            </Button>
+          </>
+        )}
       </div>
       {loading ? (
         t("loading")
