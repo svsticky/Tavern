@@ -4,9 +4,9 @@ import {
   type ActivityResponseDto,
   type GetAnnouncementResponseDto,
   type GroupMembershipResponseDto,
-  getApiActivities,
-  getApiAnnouncements,
-  getApiGroupmemberships,
+  getActivities,
+  getAnnouncements,
+  getGroupmemberships,
 } from "~/api";
 
 /**
@@ -53,7 +53,7 @@ export const loadDashboardData = async ({
 
   try {
     setLoading(true);
-    const activitiesResponse = await getApiActivities({
+    const activitiesResponse = await getActivities({
       query: {
         IncludePast: false,
         IncludeFuture: true,
@@ -63,14 +63,14 @@ export const loadDashboardData = async ({
       throw new Error("Failed to load activities");
     setActivities(activitiesResponse.data as ActivityResponseDto[]);
 
-    const announcementsResponse = await getApiAnnouncements();
+    const announcementsResponse = await getAnnouncements();
     if (announcementsResponse.error || !announcementsResponse.data)
       throw new Error("Failed to load announcements");
     setAnnouncements(
       announcementsResponse.data as GetAnnouncementResponseDto[],
     );
 
-    const committeesResponse = await getApiGroupmemberships({
+    const committeesResponse = await getGroupmemberships({
       query: {
         MemberId: userId,
       },

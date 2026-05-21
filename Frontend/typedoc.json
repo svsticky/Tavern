@@ -1,0 +1,10 @@
+{
+  "entryPoints": ["app"],
+  "out": "../Docs/typedoc-files",
+  "tsconfig": "tsconfig.json",
+  "entryPointStrategy": "expand",
+  "readme": "none",
+  "skipErrorChecking": true,
+  "plugin": ["typedoc-plugin-markdown"],
+  "exclude": ["**/__tests__/**"]
+}

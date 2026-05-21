@@ -38,4 +38,10 @@ public interface IStorageService
     Task DeleteFileAsync(string bucketname, string? fileKey);
 }
 
+/// <summary>
+/// Represents a file retrieved from storage, including its content stream, content type, and original file name. This record is used to encapsulate the necessary information about a stored file when it is retrieved, allowing services to access the file's data and metadata in a structured way. The Stream property provides access to the file's content, while the ContentType and FileName properties offer additional context about the file for processing or delivery purposes.
+/// </summary>
+/// <param name="Stream">The stream containing the file's content.</param>
+/// <param name="ContentType">The content type of the file.</param>
+/// <param name="FileName">The original name of the file.</param>
 public record StorageFile(Stream Stream, string ContentType, string FileName);

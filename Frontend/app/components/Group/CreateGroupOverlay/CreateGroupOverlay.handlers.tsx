@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
-import { type GroupType, postApiGroups } from "~/api";
+import { type GroupType, postGroups } from "~/api";
 
 type CreateGroupFormData = {
   name: string;
@@ -81,7 +81,7 @@ export const handleCreateGroupSubmit = ({
         return;
       }
 
-      const response = await postApiGroups({
+      const response = await postGroups({
         body: {
           Name: formData.name,
           Type: formData.type as GroupType,

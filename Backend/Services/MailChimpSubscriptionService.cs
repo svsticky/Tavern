@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Interfaces;
 
+/// <summary>
+/// Defines the contract for a mail subscription service that manages user subscriptions to mailing lists. The IMailSubscriptionService interface provides a method for updating a user's subscription status based on their email address and a bitmap representing their subscription preferences. Implementations of this interface are responsible for integrating with external mailing list providers (such as MailChimp) to ensure that users are subscribed or unsubscribed according to their preferences, while also handling any necessary data transformations and API interactions required by the specific mailing list service being used.
+/// </summary>
 public class MailChimpSubscriptionService : IMailSubscriptionService
 {
     private readonly ILogger<MailChimpSubscriptionService> _logger;
@@ -13,6 +16,12 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     private readonly string _listKey = Environment.GetEnvironmentVariable("MAILCHIMP_LIST_KEY") ?? string.Empty;
     private readonly bool _isEnabled = Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE") == "MAILCHIMP";
 
+    /// <summary>
+    /// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve mailing list definitions. This setup is essential for ensuring that the service can effectively manage mail subscriptions by communicating with MailChimp and maintaining accurate subscription data based on user preferences stored in the database.
+    /// </summary>
+    /// <param name="logger">The logger.</param>
+    /// <param name="httpClient">The HTTP client.</param>
+    /// <param name="context">The database context.</param>
     public MailChimpSubscriptionService(
         ILogger<MailChimpSubscriptionService> logger, 
         HttpClient httpClient,
@@ -23,6 +32,13 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         _context = context;
     }
 
+    /// <summary>
+    /// Updates the mail subscription status for a given email address based on the provided mail subscription bitmap. The UpdateSubscriptionAsync method checks if the mail subscription service is enabled, calculates the MD5 hash of the email address for MailChimp API compatibility, and then either updates or deletes the member's subscription in MailChimp based on whether the mailSubscription bitmap is zero (indicating unsubscription) or not. The method also includes logging to track subscription updates and removals for monitoring and debugging purposes.
+    /// </summary>
+    /// <param name="email">The email address of the user.</param>
+    /// <param name="mailSubscription">The bitmap representing the user's subscription preferences.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task UpdateSubscriptionAsync(string email, uint mailSubscription, CancellationToken ct)
     {
         if(!_isEnabled) 

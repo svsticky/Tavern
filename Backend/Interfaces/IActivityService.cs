@@ -78,5 +78,12 @@ public interface IActivityService
     /// <returns>A task representing the asynchronous operation.</returns>
     Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid userId, uint id, bool download);
 
+    /// <summary>
+    /// Generates a CSV file containing the enrollment details for a specific activity based on the provided activity ID. This method takes the user's ID, the activity's ID, and a cancellation token as parameters, and it returns a tuple containing the byte array of the generated CSV file and its file name. The generation process should ensure that the user has appropriate permissions to access the enrollment details, validate that the activity exists, and handle potential errors or exceptions that may arise during the data access while maintaining data integrity and security within the system. The method should also ensure that the generated CSV file is correctly formatted to include relevant enrollment information such as participant names, contact details, and any other pertinent data associated with the enrollments for the specified activity.
+    /// </summary>
+    /// <param name="userId">The ID of the user generating the CSV.</param>
+    /// <param name="activityId">The ID of the activity for which to generate enrollment details.</param>
+    /// <param name="ct">The cancellation token for the asynchronous operation.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     Task<(byte[] Content, string FileName)> GetEnrollmentsCsv(Guid userId, uint activityId, CancellationToken ct);
 }

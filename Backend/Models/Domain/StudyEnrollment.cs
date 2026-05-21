@@ -8,8 +8,19 @@ namespace Backend.Models.Domain;
 /// </summary>
 public enum StudyStatus
 {
+    /// <summary>
+    /// Indicates that the study enrollment is currently active, meaning that the member is currently enrolled in the study program and has not yet completed or dropped out. This status is used to track ongoing enrollments and can be important for determining eligibility for certain activities or programs that require active enrollment in a study program.
+    /// </summary>
     Enrolled,
+
+    /// <summary>
+    /// Indicates that the study enrollment has been completed, meaning that the member has successfully finished the study program. This status is used to track completed enrollments and can be important for reporting and analytics purposes, as well as for determining eligibility for certain activities or programs that may require completion of a study program.
+    /// </summary>
     Completed,
+
+    /// <summary>
+    /// Indicates that the study enrollment has been dropped out, meaning that the member has discontinued their enrollment in the study program before completion. This status is used to track dropped-out enrollments and can be important for reporting and analytics purposes, as well as for determining eligibility for certain activities or programs that may require active enrollment or completion of a study program.
+    /// </summary>
     DroppedOut
 }
 

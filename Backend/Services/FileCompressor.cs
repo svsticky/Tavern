@@ -4,6 +4,8 @@ using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
+namespace Backend.Services;
+
 /// <summary>
 /// Implements image compression for uploaded files.
 /// </summary>
@@ -12,6 +14,10 @@ public class FileCompressService : IFileCompressService
     private const int _maxWidth = 1280;
     private readonly ILogger<FileCompressService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the FileCompressService class with the specified logger. The constructor sets up the necessary dependency for logging operations within the service, allowing it to log important events and errors that occur during file compression. This setup is essential for monitoring the service's behavior and troubleshooting any issues that may arise during the compression process.
+    /// </summary>
+    /// <param name="logger">The logger used for logging operations within the service.</param>
     public FileCompressService(ILogger<FileCompressService> logger)
     {
         _logger = logger;

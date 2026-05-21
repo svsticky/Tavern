@@ -2,14 +2,14 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
-  deleteApiStudyenrollmentsById,
-  getApiMembersById,
-  getApiMembersByIdProfilePicture,
-  getApiStudies,
-  getApiStudyenrollments,
-  patchApiMembersById,
-  patchApiStudyenrollmentsById,
-  postApiStudyenrollments,
+  deleteStudyenrollmentsById,
+  getMembersById,
+  getMembersByIdProfilePicture,
+  getStudies,
+  getStudyenrollments,
+  patchMembersById,
+  patchStudyenrollmentsById,
+  postStudyenrollments,
   type Study,
   type StudyEnrollmentResponseDto,
   type StudyStatus,
@@ -82,7 +82,7 @@ export const loadMemberData = async ({
   let url = null as string | null;
 
   try {
-    const memberResponse = await getApiMembersById({ path: { id: memberId } });
+    const memberResponse = await getMembersById({ path: { id: memberId } });
     if (memberResponse.error || !memberResponse.data)
       throw new Error("Failed to load member data");
     setFormData({
@@ -110,19 +110,19 @@ export const loadMemberData = async ({
 
     setEmail(memberResponse.data.email!);
 
-    const studyEnrollmentsResponse = await getApiStudyenrollments({
+    const studyEnrollmentsResponse = await getStudyenrollments({
       query: { MemberId: memberId },
     });
     if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data)
       throw new Error("Failed to load study enrollments");
     setEnrollments(studyEnrollmentsResponse.data);
 
-    const studiesResponse = await getApiStudies();
+    const studiesResponse = await getStudies();
     if (studiesResponse.error || !studiesResponse.data)
       throw new Error("Failed to load available studies");
     setAvailableStudies(studiesResponse.data);
 
-    const profilePictureResponse = await getApiMembersByIdProfilePicture({
+    const profilePictureResponse = await getMembersByIdProfilePicture({
       path: { id: memberId },
       responseType: "blob",
     });
@@ -169,7 +169,7 @@ export const handleSaveMember = async (
         value: formData[key as keyof typeof formData],
       }));
 
-      const response = await patchApiMembersById({
+      const response = await patchMembersById({
         path: { id: memberId },
         body: patchDoc as any,
       });
@@ -210,7 +210,7 @@ export const handleDeleteEnrollment = async (
   const deleteProcess = async () => {
     try {
       setLoading(true);
-      const response = await deleteApiStudyenrollmentsById({ path: { id } });
+      const response = await deleteStudyenrollmentsById({ path: { id } });
 
       if (response.error) throw new Error("Failed to delete enrollment");
 
@@ -251,7 +251,7 @@ export const handleAddEnrollment = async (
   const executeProcess = async () => {
     try {
       setLoading(true);
-      const res = await postApiStudyenrollments({
+      const res = await postStudyenrollments({
         body: {
           memberId,
           studyId: selectedStudyId,
@@ -298,7 +298,7 @@ export const handleUpdateEnrollmentStatus = async (
   const saveProcess = async () => {
     try {
       setLoading(true);
-      const response = await patchApiStudyenrollmentsById({
+      const response = await patchStudyenrollmentsById({
         path: { id: enrollmentId },
         body: [{ op: "replace", path: "/status", value: newStatus }] as any,
       });

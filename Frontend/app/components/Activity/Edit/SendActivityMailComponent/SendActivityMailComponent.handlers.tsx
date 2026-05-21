@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { postApiMailsActivity } from "~/api";
+import { postMailsActivity } from "~/api";
 
 /**
  * Handles the logic for sending a broadcast email to activity participants.
@@ -54,7 +54,7 @@ export const handleSendMail = async ({
   const sendMailAction = async () => {
     setLoading(true);
     try {
-      const response = await postApiMailsActivity({
+      const response = await postMailsActivity({
         body: {
           activityId,
           htmlContent: content,

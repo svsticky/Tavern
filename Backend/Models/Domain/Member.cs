@@ -7,7 +7,17 @@ namespace Backend.Models.Domain;
 /// <summary>
 /// Defines the language preference of a member, which can be either Dutch (NL) or English (EN). This enumeration is used to indicate the preferred language for communication and content presentation for a member within the system.
 /// </summary>
-public enum Language { NL, EN }
+public enum Language { 
+    /// <summary>
+    /// Indicates that the member's preferred language is Dutch (NL), which may be used for communication, content presentation, and other interactions within the system that are tailored to Dutch-speaking members.
+    /// </summary>
+    NL, 
+
+    /// <summary>
+    /// Indicates that the member's preferred language is English (EN), which may be used for communication, content presentation, and other interactions within the system that are tailored to English-speaking members.
+    /// </summary>
+    EN 
+}
 
 /// <summary>
 /// Represents a member of the organization. A member has various properties such as personal information, contact details, registration date, and relationships with other entities such as enrollments, group memberships, and announcements. This entity is used to manage and organize members within the system, allowing for better communication, access control, and personalized experiences based on member preferences and attributes.
@@ -17,6 +27,9 @@ public enum Language { NL, EN }
 [Index(nameof(Email), IsUnique = true)]
 public class Member
 {
+    /// <summary>
+    /// A list of fields that are restricted and cannot be modified by certain operations, such as updates through the API. This list includes sensitive information such as email, ID, student number, personal details, and membership status. The presence of this list helps to enforce data integrity and security by preventing unauthorized changes to critical member information, ensuring that only authorized users or processes can modify these fields when necessary.
+    /// </summary>
     public static readonly IList<string> RestrictedFields = new[] { "/email", "/id", "/studentnumber", "/firstname", "/lastname", "/dateofbirth", "/notes", "/registeredon", "/gratie", "/lidvanverdienste", "/erelid", "/begunstiger", "/suspended" };
 
     /// <summary>

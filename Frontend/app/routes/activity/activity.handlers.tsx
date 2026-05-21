@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getApiActivitiesById } from "~/api";
+import { type ActivityResponseDto, getActivitiesById } from "~/api";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
@@ -32,7 +32,7 @@ export const loadActivityData = async ({
 
   try {
     setLoading(true);
-    const activitiesResponse = await getApiActivitiesById({
+    const activitiesResponse = await getActivitiesById({
       path: { id: activityId },
     });
 

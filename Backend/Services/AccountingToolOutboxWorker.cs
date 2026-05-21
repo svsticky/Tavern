@@ -3,6 +3,8 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
+namespace Backend.Services;
+
 /// <summary>
 /// Background worker that processes queued accounting synchronization tasks.
 /// </summary>
@@ -33,6 +35,11 @@ public class AccountingToolOutboxWorker(
         logger.LogInformation("Enqueued accounting outbox task {TaskType} for payment {PaymentId}.", taskType, paymentId);
     }
 
+    /// <summary>
+    /// Executes the background worker, continuously processing accounting outbox tasks until the service is stopped. The worker retrieves tasks from the database, processes them using the appropriate accounting tool service, and handles any failures with retry logic and exponential backoff. The worker also includes logging for monitoring task processing and any errors that occur during execution.
+    /// </summary>
+    /// <param name="stoppingToken">The cancellation token for stopping the worker.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!_isEnabled)

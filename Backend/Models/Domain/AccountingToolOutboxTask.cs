@@ -1,6 +1,24 @@
 namespace Backend.Models.Domain;
 
-public enum AccountingToolTaskType { EnrollmentPayment, MembershipPayment, MollieFeePayment }
+/// <summary>
+/// Defines the type of an accounting tool task. This enumeration is used to specify the specific type of task that needs to be processed for the accounting tool
+/// </summary>
+public enum AccountingToolTaskType { 
+    /// <summary>
+    /// Indicates that the task is to process an enrollment payment. This task type is used when a payment related to an enrollment needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the enrollment transaction.
+    /// </summary>
+    EnrollmentPayment, 
+
+    /// <summary>
+    /// Indicates that the task is to process a membership payment. This task type is used when a payment related to a membership needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the membership transaction.
+    /// </summary>
+    MembershipPayment,
+
+    /// <summary>
+    /// Indicates that the task is to process a Mollie fee payment. This task type is used when a payment related to a fee from the Mollie payment provider needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the fee transaction.
+    /// </summary>
+    MollieFeePayment 
+}
 
 /// <summary>
 /// Represents a task in the outbox for the accounting tool. This entity is used to track tasks that need to be processed for the accounting tool, such as processing payments or updating financial records. Each task is associated with a specific payment and includes information about when it was created, how many times it has been retried, and the type of task being performed.

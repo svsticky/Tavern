@@ -3,9 +3,9 @@ import type React from "react";
 import toast from "react-hot-toast";
 import {
   type ActivityResponseDto,
-  getApiActivitiesByIdEnrollmentsExport,
+  getActivitiesByIdEnrollmentsExport,
   type MemberResponseDto,
-  postApiEnrollments,
+  postEnrollments,
 } from "~/api";
 
 /**
@@ -19,7 +19,7 @@ import {
 export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
   const handleDownloadAction = async () => {
     try {
-      const response = await getApiActivitiesByIdEnrollmentsExport({
+      const response = await getActivitiesByIdEnrollmentsExport({
         path: { id: activity.id },
         responseType: "blob",
       });
@@ -83,7 +83,7 @@ export const handleEnrollParticipant = async ({
   setLoading(true);
   const enrollProcess = async () => {
     try {
-      const enrollment = await postApiEnrollments({
+      const enrollment = await postEnrollments({
         body: { activityId: activity.id, memberId: member.id! },
       });
 

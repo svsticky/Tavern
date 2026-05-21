@@ -1,0 +1,56 @@
+{
+    "name": "website",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "npm run build-docs && next dev",
+        "build": "fumadocs-mdx && next build",
+        "start": "next start",
+        "lint": "next lint",
+        "build-docs": "npm run prepare-for-build-api-docs && node scripts/generate-api-docs.mjs && node scripts/generate-backend-docs.js && node scripts/generate-frontend-docs.mjs",
+        "prepare-for-build-api-docs": "cd ../Backend && dotnet build Backend.csproj -c Release && DOTNET_ENVIRONMENT=docs swagger tofile --output ../Docs/swagger.json bin/Release/net8.0/Backend.dll v1 && cd ../Docs"
+    },
+        "dependencies": {
+        "@radix-ui/react-collapsible": "^1.1.4",
+        "@radix-ui/react-navigation-menu": "^1.2.5",
+        "@radix-ui/react-slot": "^1.2.0",
+        "class-variance-authority": "^0.7.1",
+        "clsx": "^2.1.1",
+        "fumadocs-core": "^16.0.0",
+        "fumadocs-mdx": "^14.2.4",
+        "fumadocs-openapi": "^9.7.3",
+        "fumadocs-ui": "^16.4.4",
+        "glob": "^11.0.1",
+        "lucide-react": "^0.479.0",
+        "next": "^16.1.1",
+        "react": "19.2.3",
+        "react-dom": "19.2.3",
+        "react-syntax-highlighter": "^15.6.6",
+        "refractor": "^5.0.0",
+        "shiki": "^3.1.0",
+        "tailwind-merge": "^3.0.2",
+        "tailwindcss-animate": "^1.0.7",
+        "typedoc-plugin-markdown": "^4.0.0-next.60"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "^3",
+        "@fumadocs/cli": "^0.0.8",
+        "@tailwindcss/postcss": "^4.0.9",
+        "@types/mdx": "^2.0.13",
+        "@types/node": "^20",
+        "@types/react": "19.0.10",
+        "@types/react-dom": "19.0.4",
+        "eslint": "^9",
+        "eslint-config-next": "16.1.1",
+        "postcss": "^8.5.3",
+        "prettier": "^3.5.2",
+        "prettier-plugin-tailwindcss": "^0.6.11",
+        "tailwindcss": "^4.0.9",
+        "typescript": "^5"
+    },
+    "overrides": {
+        "@types/react": "19.0.10",
+        "@types/react-dom": "19.0.4",
+        "prismjs": "1.30.0"
+    }
+}

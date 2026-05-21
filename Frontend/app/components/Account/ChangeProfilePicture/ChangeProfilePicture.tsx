@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { useEffect, useRef, useState } from "react";
-import { getApiMembersByIdProfilePicture } from "~/api";
+import { getMembersByIdProfilePicture } from "~/api";
 import { handleProfilePictureUpload } from "./ChangeProfilePicture.handlers";
 
 /**
@@ -26,7 +26,7 @@ export default function ChangeProfilePicture({
     let url = null as string | null;
     const loadProfilePicture = async () => {
       try {
-        const ppRes = await getApiMembersByIdProfilePicture({
+        const ppRes = await getMembersByIdProfilePicture({
           path: { id: userId },
           responseType: "blob",
         });

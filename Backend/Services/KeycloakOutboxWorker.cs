@@ -34,6 +34,11 @@ public class KeycloakOutboxWorker(
         logger.LogInformation("Enqueued Keycloak outbox task {TaskType} for {KeycloakId}.", taskType, keycloakId);
     }
 
+    /// <summary>
+    /// Executes the background worker, continuously processing Keycloak outbox tasks until the service is stopped. The worker retrieves tasks from the database, processes them using the Keycloak API service, and handles any failures with retry logic and exponential backoff. The worker also includes logging for monitoring task processing and any errors that occur during execution.
+    /// </summary>
+    /// <param name="stoppingToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Keycloak outbox worker started.");

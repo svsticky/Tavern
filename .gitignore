@@ -1,3 +1,5 @@
 **/.idea/
 **/.vscode/
 .env
+/Docs/content/docs/*
+!/Docs/content/docs/index.mdx

@@ -9,15 +9,15 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostStudyDTO
 {
-    /// <inheritdoc cref="Models.Study.Title"/>
+    /// <inheritdoc cref="Study.Title"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Study.NominalDurationYears"/>
+    /// <inheritdoc cref="Study.NominalDurationYears"/>
     public required uint NominalDurationYears { get; set; }
 
-    /// <inheritdoc cref="Models.Study.Type"/>
+    /// <inheritdoc cref="Study.Type"/>
     public required StudyType Type { get; set; }
 }
 
@@ -26,14 +26,14 @@ public class PostStudyDTO
 /// </summary>
 public class StudyUpdateDTO
 {
-    /// <inheritdoc cref="Models.Study.Title"/>
+    /// <inheritdoc cref="Study.Title"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Study.NominalDurationYears"/>
+    /// <inheritdoc cref="Study.NominalDurationYears"/>
     public required uint NominalDurationYears { get; set; }
 
-    /// <inheritdoc cref="Models.Study.Type"/>
+    /// <inheritdoc cref="Study.Type"/>
     public required StudyType Type { get; set; }
 }

@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { getApiStudies, type Study, type StudyType } from "~/api";
+import { getStudies, type Study, type StudyType } from "~/api";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
 /**
@@ -19,7 +19,7 @@ export const loadStudies = async (
 ) => {
   try {
     setLoading(true);
-    const response = await getApiStudies();
+    const response = await getStudies();
 
     if (response.error || !response.data) {
       throw new Error("Failed to load studies");

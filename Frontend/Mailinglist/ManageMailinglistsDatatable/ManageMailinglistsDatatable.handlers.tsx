@@ -1,7 +1,7 @@
 import type React from "react";
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { getApiMailinglists, type Mailinglist } from "~/api";
+import { getMailinglists, type Mailinglist } from "~/api";
 
 export const fetchMailingLists = async (
   setLoading: (loading: boolean) => void,
@@ -9,7 +9,7 @@ export const fetchMailingLists = async (
 ) => {
   try {
     setLoading(true);
-    const response = await getApiMailinglists();
+    const response = await getMailinglists();
     if (response.error || !response.data) throw new Error();
     setMailingLists(response.data);
   } catch (error) {

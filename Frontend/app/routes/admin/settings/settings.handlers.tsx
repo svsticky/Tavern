@@ -2,13 +2,13 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
-  deleteApiSettingsById,
+  deleteSettingsById,
   type GroupResponseDto,
-  getApiGroups,
-  getApiRoles,
-  getApiSettings,
-  patchApiSettingsById,
-  postApiSettings,
+  getGroups,
+  getRoles,
+  getSettings,
+  patchSettingsById,
+  postSettings,
   type Role,
   type Setting,
 } from "~/api";
@@ -38,9 +38,9 @@ export const loadSettingsPageData = async ({
 }: LoadSettingsArgs) => {
   try {
     const [settingsRes, groupsRes, rolesRes] = await Promise.all([
-      getApiSettings(),
-      getApiGroups({ query: { IncludeInactive: true } }),
-      getApiRoles(),
+      getSettings(),
+      getGroups({ query: { IncludeInactive: true } }),
+      getRoles(),
     ]);
 
     if (settingsRes.error || !settingsRes.data)
@@ -199,15 +199,15 @@ export const handleSaveSettings = async ({
       const promises = [];
 
       for (const id of deletedSettings) {
-        promises.push(deleteApiSettingsById({ path: { id } }));
+        promises.push(deleteSettingsById({ path: { id } }));
       }
 
       for (const [name, value] of Object.entries(settings)) {
         if (newSettings.has(name)) {
-          promises.push(postApiSettings({ query: { id: name, value } }));
+          promises.push(postSettings({ query: { id: name, value } }));
         } else {
           promises.push(
-            patchApiSettingsById({
+            patchSettingsById({
               path: { id: name },
               body: [{ op: "replace", path: "/Value", value }] as any,
             }),

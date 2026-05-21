@@ -1,7 +1,8 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Validators;
+
+namespace Backend.Validators;
 
 /// <summary>
 /// Provides validation helpers for enrollment requests and specification answers.

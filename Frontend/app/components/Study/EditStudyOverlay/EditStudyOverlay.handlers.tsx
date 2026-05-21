@@ -2,9 +2,9 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
-  deleteApiStudiesById,
-  postApiStudies,
-  putApiStudiesById,
+  deleteStudiesById,
+  postStudies,
+  putStudiesById,
   type Study,
   type StudyType,
 } from "~/api";
@@ -63,7 +63,7 @@ export const handleStudySubmit = async ({
     setLoading(true);
     try {
       const response = study
-        ? await putApiStudiesById({
+        ? await putStudiesById({
             path: { id: study.id! },
             body: {
               title: formData.title,
@@ -71,7 +71,7 @@ export const handleStudySubmit = async ({
               nominalDurationYears: formData.nominalDurationYears ?? 0,
             },
           })
-        : await postApiStudies({
+        : await postStudies({
             body: {
               title: formData.title,
               type: formData.type as StudyType,
@@ -124,7 +124,7 @@ export const handleStudyDelete = async ({
   const deleteStudyProcess = async () => {
     setLoading(true);
     try {
-      const response = await deleteApiStudiesById({ path: { id: study.id! } });
+      const response = await deleteStudiesById({ path: { id: study.id! } });
       if (response.error) throw new Error("Failed to delete study");
       onComplete();
     } catch (error) {

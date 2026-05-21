@@ -7,16 +7,16 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostStudyEnrollmentDTO
 {
-    /// <inheritdoc cref="Models.StudyEnrollment.StudyId"/>
+    /// <inheritdoc cref="StudyEnrollment.StudyId"/>
     public required uint StudyId { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.MemberId"/>
+    /// <inheritdoc cref="StudyEnrollment.MemberId"/>
     public required Guid MemberId { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.EnrollmentDate"/>
+    /// <inheritdoc cref="StudyEnrollment.EnrollmentDate"/>
     public required DateTimeOffset EnrollmentDate { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.Status"/>
+    /// <inheritdoc cref="StudyEnrollment.Status"/>
     public StudyStatus Status { get; set; } = StudyStatus.Enrolled;
 }
 
@@ -25,31 +25,31 @@ public class PostStudyEnrollmentDTO
 /// </summary>
 public class StudyEnrollmentResponseDTO
 {
-    /// <inheritdoc cref="Models.StudyEnrollment.Id"/>
+    /// <inheritdoc cref="StudyEnrollment.Id"/>
     public required uint Id { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.MemberId"/>
+    /// <inheritdoc cref="StudyEnrollment.MemberId"/>
     public Guid? MemberId { get; set; }
 
-    /// <inheritdoc cref="Models.Member"/>
+    /// <inheritdoc cref="Member"/>
     public string? MemberName { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.StudyId"/>
+    /// <inheritdoc cref="StudyEnrollment.StudyId"/>
     public uint? StudyId { get; set; }
 
-    /// <inheritdoc cref="Models.Study"/>
+    /// <inheritdoc cref="Study"/>
     public string? StudyTitle { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.Study"/>
+    /// <inheritdoc cref="StudyEnrollment.Study"/>
     public StudyType? StudyType { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.EnrollmentDate"/>
+    /// <inheritdoc cref="StudyEnrollment.EnrollmentDate"/>
     public required DateTimeOffset EnrollmentDate { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.CompletionDate"/>
+    /// <inheritdoc cref="StudyEnrollment.CompletionDate"/>
     public DateTimeOffset? CompletionDate { get; set; }
 
-    /// <inheritdoc cref="Models.StudyEnrollment.Status"/>
+    /// <inheritdoc cref="StudyEnrollment.Status"/>
     public required StudyStatus Status { get; set; }
 }
 
@@ -58,6 +58,6 @@ public class StudyEnrollmentResponseDTO
 /// </summary>
 public class GetStudyEnrollmentsDTO
 {
-    /// <inheritdoc cref="Models.StudyEnrollment.MemberId"/>
+    /// <inheritdoc cref="StudyEnrollment.MemberId"/>
     public Guid? MemberId { get; set; }
 }

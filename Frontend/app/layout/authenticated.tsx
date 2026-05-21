@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
 import {
-  getApiMembersById,
-  getApiSettingsById,
-  postApiPaymentsMembership,
+  getMembersById,
+  getSettingsById,
+  postPaymentsMembership,
 } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
@@ -74,7 +74,7 @@ export default function AuthenticatedLayout() {
         "User has not paid for membership, redirecting to payment page if payment isn't expired...",
       );
 
-      postApiPaymentsMembership({
+      postPaymentsMembership({
         body: { memberId: keycloak.tokenParsed?.UserId ?? "" },
       })
         .then((res) => {
@@ -99,7 +99,7 @@ export default function AuthenticatedLayout() {
     }
 
     if (boardGroupId === null) {
-      getApiSettingsById({
+      getSettingsById({
         path: {
           id: "BoardGroupId",
         },
@@ -118,7 +118,7 @@ export default function AuthenticatedLayout() {
     }
 
     if (candidateBoardGroupId === null) {
-      getApiSettingsById({
+      getSettingsById({
         path: {
           id: "CandidateBoardGroupId",
         },
@@ -142,7 +142,7 @@ export default function AuthenticatedLayout() {
     }
 
     if (member == null) {
-      getApiMembersById({
+      getMembersById({
         path: {
           id: keycloak.tokenParsed?.UserId ?? "",
         },

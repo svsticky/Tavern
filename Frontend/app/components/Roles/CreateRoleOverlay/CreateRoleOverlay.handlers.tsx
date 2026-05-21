@@ -2,9 +2,9 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
-  getApiRoles,
-  postApiRolealiases,
-  postApiRoles,
+  getRoles,
+  postRolealiases,
+  postRoles,
   type Role,
   type RoleAlias,
 } from "~/api";
@@ -22,7 +22,7 @@ export const fetchRoles = async (
 ) => {
   setLoadingRoles(true);
   try {
-    const res = await getApiRoles();
+    const res = await getRoles();
 
     if (res.error || !res.data) throw new Error("Failed to fetch roles");
 
@@ -78,7 +78,7 @@ export const handleCreateRoleSubmit = ({
     try {
       setLoading(true);
       if (selectedType === "ParentRole") {
-        const response = await postApiRoles({
+        const response = await postRoles({
           body: {
             name,
           },
@@ -89,7 +89,7 @@ export const handleCreateRoleSubmit = ({
 
         onRoleCreated({ id: (response.data as any).id, name });
       } else if (selectedType === "RoleAlias") {
-        const response = await postApiRolealiases({
+        const response = await postRolealiases({
           body: {
             name,
             roleId: Number(selectedRoleId),

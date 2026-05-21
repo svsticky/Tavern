@@ -4,6 +4,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Projections;
 using Backend.Validators;
+using Backend.QueryExtensions;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;

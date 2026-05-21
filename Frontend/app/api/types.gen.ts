@@ -4,40 +4,133 @@ export type ClientOptions = {
     baseURL: 'http://localhost:8080' | (string & {});
 };
 
+/**
+ * Represents an activity that members can enroll in. An activity has various properties such as name, price, description, location, and enrollment deadlines. It also has relationships with other entities such as enrollments and specification questions. This entity is used to manage and organize activities within the system, allowing members to view and enroll in activities based on their preferences and eligibility.
+ */
 export type Activity = {
+    /**
+     * The unique identifier of an activity, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The name of the activity.
+     */
     name: string;
+    /**
+     * The price of the activity.
+     */
     price?: number;
+    /**
+     * The filename of the poster for the activity, if any.
+     */
     posterFileName?: string | null;
+    /**
+     * The Path where the poster for the activity is stored, if any.
+     */
     posterPath?: string | null;
+    /**
+     * A dutch description or arbitrary length, explaining everything there is to know about the activity.
+     */
     dutchDescription?: string;
+    /**
+     * An english description or arbitrary length, explaining everything there is to know about the activity.
+     */
     englishDescription?: string;
+    /**
+     * The date and time at which the activity will start.
+     */
     dateTimeStart?: string;
+    /**
+     * The date and time at which the activity will end.
+     */
     dateTimeEnd?: string;
+    /**
+     * The deadline for unenrollment from the activity.
+     */
     unenrollmentDeadline?: string | null;
+    /**
+     * The deadline for enrollment from the activity.
+     */
     enrollmentDeadline?: string | null;
+    /**
+     * The date and time at which the activity will be open for enrolling.
+     */
     enrollOpenDate?: string | null;
+    /**
+     * The location where the activity will take place.
+     */
     location?: string;
+    /**
+     * The maximum number of participants for the activity.
+     */
     participantLimit?: number | null;
+    /**
+     * The unique identifier of the organizer group.
+     */
     organizerId?: number | null;
     organizer?: Group;
+    /**
+     * An extra specification question for the activity.
+     */
     specificationQuestions?: Array<SpecificationQuestion>;
+    /**
+     * Whether the activity is shown in Koala.
+     */
     showInKoala?: boolean;
+    /**
+     * Whether the activity is shown on the website.
+     */
     showOnWebsite?: boolean;
+    /**
+     * Whether the activity is open for enrollment.
+     */
     isEnrollable?: boolean;
+    /**
+     * Whether the participants are visible to each other.
+     */
     areParticipantsVisible?: boolean;
+    /**
+     * Whether the activity is 18+ only.
+     */
     isAdultOnly?: boolean;
+    /**
+     * Whether the activity belongs to the weekly drinks or not.
+     */
     isWeeklyDrinks?: boolean;
     allowedAudience?: TargetAudience;
+    /**
+     * Whether the activity is open for payment.
+     */
     isOpenForPayment?: boolean;
+    /**
+     * The VAT rate applicable to the activity.
+     */
     vatRate?: number | null;
+    /**
+     * The members enrolled in this activity.
+     */
     enrollments?: Array<Enrollment>;
+    /**
+     * The general ledger account associated with this activity for financial tracking. Dutch: Grootboekrekening
+     */
     glAccountId?: string | null;
+    /**
+     * The cost center associated with this activity for financial tracking. Dutch: Kostenplaats
+     */
     costCenterId?: string | null;
+    /**
+     * The cost unit associated with this activity for financial tracking. Dutch: Kostendrager
+     */
     costUnitId?: string | null;
+    /**
+     * The payment deadline for the activity.
+     */
     paymentDeadline: string;
 };
 
+/**
+ * Represents the response DTO for an activity, containing all relevant information about the activity, including its properties and related entities such as enrollments and specification questions. The ActivityResponseDTO is used to transfer comprehensive activity data from the server to the client when retrieving activity information, allowing for a complete representation of the activity's details, enrollment status, and associated specification questions in the response payload.
+ */
 export type ActivityResponseDto = {
     id: number;
     name: string;
@@ -71,45 +164,123 @@ export type ActivityResponseDto = {
     isOpenForPayment?: boolean | null;
 };
 
+/**
+ * Represents an announcement that can be created by members. An announcement has a title, content, and information about when it was created and who created it. This entity is used to manage and display announcements within the system, allowing members to stay informed about important updates, events, or news related to the organization or community.
+ */
 export type Announcement = {
+    /**
+     * The unique identifier of the announcement, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The title of the announcement.
+     */
     title: string;
+    /**
+     * The content of the announcement.
+     */
     content: string;
+    /**
+     * The date and time when the announcement was created.
+     */
     createdAt?: string;
+    /**
+     * The member id who created the announcement.
+     */
     createdById?: string;
     createdBy?: Member;
 };
 
+/**
+ * Represents an enrollment of a member in an activity. An enrollment is associated with a specific activity and member, and it contains information about the price paid for the enrollment, any specification answers provided by the member, the date and time when the enrollment was placed, and whether the enrollment is on a waiting list. This entity is used to manage and track enrollments for activities within the system, allowing members to participate in activities based on their preferences and eligibility.
+ */
 export type Enrollment = {
+    /**
+     * Reference to the unique identifier of the activity which is enrolled for.
+     */
     activityId: number;
     activity?: Activity;
+    /**
+     * The ID of the user, as determined by the used OAuth application, which enrolls for the activity.
+     */
     memberId?: string;
     member?: Member;
+    /**
+     * The price paid for the enrollment.
+     */
     price?: number;
+    /**
+     * The answers for the specification questions associated with this enrollment.
+     */
     specificationAnswers?: Array<SpecificationAnswer>;
+    /**
+     * The date and time at which the enrollment was placed.
+     */
     registeredOn?: string;
+    /**
+     * If the enrollment is placed on a waiting list due to the associated activity being fully booked, this field indicates the position of the enrollment on the waiting list.
+     */
     isOnWaitingList?: boolean;
 };
 
+/**
+ * Represents the balance of an enrollment, which includes the enrollment itself and the corresponding balance amount. This entity is used to manage and track the financial balance associated with a specific enrollment, allowing for better financial management and reporting related to enrollments within the system. The Enrollment property is required to ensure that each EnrollmentBalance is associated with a specific enrollment, while the Balance property captures the current financial balance for that enrollment, which can be used for various purposes such as determining outstanding payments or providing financial summaries for members and administrators.
+ */
 export type EnrollmentBalance = {
     enrollment: Enrollment;
+    /**
+     * The current financial balance for the associated enrollment. This property captures the amount that is currently owed or has been paid for the enrollment, allowing for better financial management and reporting related to enrollments within the system. The Balance property is required to ensure that each EnrollmentBalance has a defined financial balance, which can be used for various purposes such as determining outstanding payments, providing financial summaries for members and administrators, and facilitating financial decision-making related to enrollments.
+     */
     balance: number;
 };
 
+/**
+ * Represents a payment made for an enrollment. This class inherits from the Payment base class and includes additional properties specific to enrollment payments, such as the associated activity. This entity is used to specifically represent payments that are made for enrollments within the system, allowing for better organization and management of different types of payments while still utilizing the common properties defined in the Payment base class. The ActivityId property is a foreign key referencing the Activity entity, and the Activity navigation property allows access to the related Activity entity, providing context for the enrollment payment and enabling better tracking and reporting of payments related to specific activities.
+ */
 export type EnrollmentPayment = {
+    /**
+     * The unique identifier of the payment, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The price of the payment.
+     */
     price?: number;
+    /**
+     * The identifier provided by Mollie for this payment. This is used to track the payment in the Mollie system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Mollie payment gateway.
+     */
     mollieId: string;
+    /**
+     * The URL provided by Mollie for the payment intent. This URL is used to redirect the member to the Mollie payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Mollie payment gateway and ensuring that members can easily access the payment page to complete their transactions.
+     */
     paymentIntentUrl: string;
+    /**
+     * The timestamp indicating when the payment was paid. This is used to track when the payment was completed and can be useful for financial reporting, auditing, and determining the status of the payment. This property is nullable because a payment may be created before it is completed, and in such cases, the PaidAt timestamp would not be set until the payment is successfully processed.
+     */
     paidAt?: string | null;
+    /**
+     * The identifier of the member who made the payment. This is a foreign key referencing the Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the MemberId would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
+     */
     memberId?: string | null;
     member?: Member;
+    /**
+     * The identifier of the corresponding entry in the accounting tool, if applicable. This is used to correlate the payment record in our system with the corresponding financial record in the accounting tool. This property is nullable because not all payments may have a corresponding entry in the accounting tool, especially if they are manually marked as paid or if there are issues with the payment processing that prevent it from being recorded in the accounting tool. In such cases, the AccountingToolEntryId would be set to null to indicate that there is no corresponding entry for this payment in the accounting tool.
+     */
     accountingToolEntryId?: string | null;
+    /**
+     * Indicates whether the payment was manually marked as paid by an administrator. This is used to differentiate between payments that were processed through the normal payment flow and those that were manually marked as paid, which may require different handling in terms of accounting and reporting. This property is set to false by default, and can be set to true by an administrator when they manually mark a payment as paid, allowing for better tracking and management of payments that may not have gone through the standard payment processing flow.
+     */
     manuallyMarkedAsPaid?: boolean;
+    /**
+     * The identifier of the activity associated with this enrollment payment. This is a foreign key referencing the Activity entity. This property is nullable because in some cases, an enrollment payment may not be directly associated with a specific activity, such as when a payment is made for a general enrollment or when the activity information is not available at the time of payment. In such cases, the ActivityId would be set to null to indicate that there is no specific activity associated with this enrollment payment.
+     */
     activityId?: number | null;
     activity?: Activity;
 };
 
+/**
+ * Represents the response DTO for an enrollment, containing all relevant information about the enrollment, including its properties and information about the associated member and activity. The EnrollmentResponseDTO is used to transfer comprehensive enrollment data from the server to the client when retrieving enrollment information, allowing for a complete representation of the enrollment's details, member information, activity information, and any specification answers provided by the member in the response payload.
+ */
 export type EnrollmentResponseDto = {
     isOnWaitingList: boolean;
     member: MemberResponseDto;
@@ -118,15 +289,24 @@ export type EnrollmentResponseDto = {
     activity: ActivityResponseDto;
 };
 
+/**
+ * Represents the response DTO for an announcement, containing all relevant information about the announcement, including its properties and information about the creator. The GetAnnouncementResponseDTO is used to transfer comprehensive announcement data from the server to the client when retrieving announcement information, allowing for a complete representation of the announcement's details, creator information, and creation timestamp in the response payload.
+ */
 export type GetAnnouncementResponseDto = {
     id: number;
     title: string;
     content: string;
+    /**
+     * The name of the user who created the announcement, providing information about the creator of the announcement for display purposes in the client application. This field allows for better identification and attribution of announcements to their respective creators, enhancing the user experience by providing context about the source of the announcement in the system.
+     */
     createdByName: string;
     createdById?: string | null;
     createdAt: string;
 };
 
+/**
+ * Represents the response DTO for a specification question, containing all relevant information about the specification question, including its properties and any associated data. The GetSpecificationQuestionResponseDTO is used to transfer comprehensive specification question data from the server to the client when retrieving specification question information, allowing for a complete representation of the specification question's details in the response payload. The GetSpecificationQuestionResponseDTO can include properties such as the question ID, activity ID, question text in both Dutch and English, question type, mandatory status, public visibility, and any associated options, providing a comprehensive view of the specification question data for the client application.
+ */
 export type GetSpecificationQuestionResponseDto = {
     questionDutch: string;
     questionEnglish: string;
@@ -137,29 +317,78 @@ export type GetSpecificationQuestionResponseDto = {
     id: number;
 };
 
+/**
+ * Represents a Group within the organization. A Group can be a Committee, Working Group, or Dispute group. Each Group has a unique identifier, a name, an active status, and can have multiple members associated with it through GroupMemberships. The Group entity also includes properties for the type of group and default financial information such as GL account and cost center. This entity is used to manage and organize different groups within the system, allowing for better collaboration and communication among members.
+ */
 export type Group = {
+    /**
+     * The unique identifier of a Group, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The name of the Group.
+     */
     name: string;
+    /**
+     * Status of the group. Inactive groups are hidden from administrative views to prevent clutter,
+     * but are preserved in the database for historical records and statistics (e.g., the Almanac).
+     */
     active?: boolean;
+    /**
+     * The members associated with this Group.
+     */
     groupMemberships?: Array<GroupMembership>;
     type?: GroupType;
+    /**
+     * The default GL account for the group, used for financial transactions.
+     */
     defaultGLAccount?: string | null;
+    /**
+     * The default cost center for the group, used for financial transactions.
+     */
     defaultCostCenter?: string | null;
+    /**
+     * The path where the picture for the group is stored, if any.
+     */
     groupPicturePath?: string | null;
+    /**
+     * The filename of the picture for the group, if any.
+     */
     groupPictureFileName?: string | null;
 };
 
+/**
+ * Represents a GroupMembership which links a Member to a Group. A GroupMembership has a unique identifier, references to the associated Member and Group, the year of the membership, and an optional role alias that defines the role of the member within the group. This entity is used to manage the relationships between members and groups within the system, allowing for better organization and access control based on group memberships and roles.
+ */
 export type GroupMembership = {
+    /**
+     * The unique identifier of a group membership, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The member associated with this membership.
+     */
     memberId?: string;
     member?: Member;
+    /**
+     * The group associated with this membership.
+     */
     groupId?: number;
     group?: Group;
+    /**
+     * The year of the membership.
+     */
     membershipYear?: number;
+    /**
+     * The role of the member in this group membership.
+     */
     roleAliasId?: number | null;
     roleAlias?: RoleAlias;
 };
 
+/**
+ * Represents the response DTO for a group membership, containing all relevant information about the group membership, including its properties and information about the associated member and group. The GroupMembershipResponseDTO is used to transfer comprehensive group membership data from the server to the client when retrieving group membership information, allowing for a complete representation of the group membership's details, member information, group information, and any associated role alias information in the response payload.
+ */
 export type GroupMembershipResponseDto = {
     id: number;
     memberId?: string | null;
@@ -172,10 +401,16 @@ export type GroupMembershipResponseDto = {
     roleAliasName?: string | null;
 };
 
+/**
+ * Defines the DTO for updating an existing group membership, containing all necessary information for modifying a group membership's properties. The GroupMembershipUpdateDTO is used to transfer data from the client to the server when updating an existing group membership, allowing for changes to be made to the group membership's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type GroupMembershipUpdateDto = {
     roleAliasId?: number | null;
 };
 
+/**
+ * Represents the response DTO for a group, containing all relevant information about the group, including its properties and any associated data. The GroupResponseDTO is used to transfer comprehensive group data from the server to the client when retrieving group information, allowing for a complete representation of the group's details in the response payload. The GroupResponseDTO can include properties such as the group's unique identifier, name, active status, type, and any associated group picture information, providing a comprehensive view of the group data for the client application.
+ */
 export type GroupResponseDto = {
     id: number;
     name: string;
@@ -184,60 +419,179 @@ export type GroupResponseDto = {
     groupPicturePath?: string | null;
 };
 
+/**
+ * Defines the type of a Group.
+ */
 export type GroupType = 'Committee' | 'WorkingGroup' | 'Dispute';
 
+/**
+ * Defines the DTO for updating an existing group, containing all necessary information for modifying a group's properties. The GroupUpdateDTO is used to transfer data from the client to the server when updating an existing group, allowing for changes to be made to the group's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type GroupUpdateDto = {
     name: string;
     active: boolean;
     type: GroupType;
 };
 
+/**
+ * Defines the language preference of a member, which can be either Dutch (NL) or English (EN). This enumeration is used to indicate the preferred language for communication and content presentation for a member within the system.
+ */
 export type Language = 'NL' | 'EN';
 
+/**
+ * Represents a mail recipient with their email address and name. This entity is used to manage and store information about individuals who are recipients of email communications within the system. The MailRecipient class includes properties for the recipient's email address (Mail) and their name (Name), allowing for personalized email communications and better organization of recipient information for various email-related functionalities, such as notifications, newsletters, or other forms of communication sent to members or users of the system.
+ */
 export type MailRecipient = {
+    /**
+     * The unique identifier of the mail recipient, assigned incrementally.
+     */
     mail?: string;
+    /**
+     * The name of the recipient, which can be used for personalization in email communications. The Name property allows for a more personalized and engaging experience when sending emails, as it can be used to address the recipient directly in the email content, making the communication feel more tailored and relevant to the individual recipient. This can help improve engagement and response rates for email campaigns or notifications sent to recipients.
+     */
     name?: string;
 };
 
+/**
+ * Represents a mailing list entity that defines a specific category of email communications that members can subscribe to. The Mailinglist class includes properties such as Id, BitValue, Name, and ServiceId. The Id is a unique identifier for the mailing list, while the BitValue is used to represent the mailing list as a flag in a bitmask for efficient storage and retrieval of subscription preferences. The Name property provides a human-readable name for the mailing list, and the ServiceId is used to associate the mailing list with an external email service. This entity is essential for managing and organizing different types of email communications within the application, allowing members to subscribe to relevant categories of emails based on their preferences.
+ */
 export type Mailinglist = {
+    /**
+     * Gets or sets the unique identifier for the mailing list. This property serves as the primary key for the Mailinglist entity and is used to uniquely identify each mailing list in the database. It is typically generated by the database upon insertion of a new mailing list record and is used in various operations such as retrieval, updating, and deletion of mailing lists.
+     */
     id?: number;
+    /**
+     * Gets or sets the bit value representing the mailing list as a flag in a bitmask. This property is used to efficiently store and manage subscription preferences for members, allowing them to subscribe to multiple mailing lists by combining the bit values using bitwise operations. Each mailing list is assigned a unique bit value, which can be used to determine a member's subscriptions by performing bitwise checks against their stored subscription preferences.
+     */
     bitValue?: number;
+    /**
+     * Gets or sets the name of the mailing list. This property provides a human-readable name for the mailing list, which is used for display purposes in the user interface and for identifying the mailing list in logs and other outputs. The name should be descriptive enough to convey the purpose of the mailing list to users, such as "General Member Meetings" or "Company Mails".
+     */
     name?: string;
+    /**
+     * Gets or sets the service ID associated with the mailing list. This property is used to link the mailing list to an external email service, allowing for integration with third-party email providers for sending communications to subscribers. The ServiceId can be used to store identifiers such as API keys, list IDs, or other relevant information needed to manage the mailing list within the context of the external service.
+     */
     serviceId?: string;
 };
 
+/**
+ * Represents a member of the organization. A member has various properties such as personal information, contact details, registration date, and relationships with other entities such as enrollments, group memberships, and announcements. This entity is used to manage and organize members within the system, allowing for better communication, access control, and personalized experiences based on member preferences and attributes.
+ */
 export type Member = {
+    /**
+     * The unique identifier of a member, assigned incrementally.
+     */
     id?: string;
+    /**
+     * The keycloak id of the member, used for authentication and authorization.
+     */
     keycloakId?: string | null;
+    /**
+     * The student number of the member.
+     */
     studentNumber?: number;
+    /**
+     * The first name of the member.
+     */
     firstName: string;
+    /**
+     * The last name of the member.
+     */
     lastName: string;
+    /**
+     * The email address of the member.
+     */
     email: string;
+    /**
+     * The phone number of the member.
+     */
     phoneNumber: string;
+    /**
+     * Phone number of the member's parent or guardian, if the member is a minor.
+     */
     parentPhoneNumber?: string | null;
+    /**
+     * The street of the member.
+     */
     street: string;
+    /**
+     * The house number of the member.
+     */
     houseNumber: string;
+    /**
+     * The postal code of the member.
+     */
     postalCode: string;
+    /**
+     * The city of the member.
+     */
     city: string;
+    /**
+     * The date of birth of the member.
+     */
     dateOfBirth?: string;
+    /**
+     * The mail subscriptions of the member.
+     */
     mailSubscriptions?: number;
+    /**
+     * The notes about the member.
+     */
     notes?: string | null;
+    /**
+     * The date and time at which the member registered.
+     */
     registeredOn?: string;
+    /**
+     * The enrollments associated with this member.
+     */
     studyEnrollments?: Array<StudyEnrollment>;
+    /**
+     * The activities this member is enrolled in.
+     */
     enrollments?: Array<Enrollment>;
+    /**
+     * The groups this member is part of.
+     */
     groupMemberships?: Array<GroupMembership>;
     preferredLanguage?: Language;
+    /**
+     * Indicates whether the member is granted a fee waiver.
+     */
     gratie?: boolean;
+    /**
+     * Indicates whether the member is a "Lid van Verdienste".
+     */
     lidVanVerdienste?: boolean;
+    /**
+     * Indicates whether the member is an honorary member.
+     */
     ereLid?: boolean;
+    /**
+     * Indicates whether the member is a "Begunstiger".
+     */
     begunstiger?: boolean;
+    /**
+     * Indicates whether the member is suspended.
+     */
     suspended?: boolean;
+    /**
+     * The announcements created by this member.
+     */
     announcements?: Array<Announcement>;
+    /**
+     * The path to the profile picture of the member.
+     */
     profilePicturePath?: string | null;
+    /**
+     * The file name of the profile picture of the member.
+     */
     profilePictureFileName?: string | null;
-    joinedOn?: string;
 };
 
+/**
+ * Defines the DTO for retrieving member information, containing all relevant details about a member, including personal information, contact details, and any associated data such as study enrollments and group memberships. The MemberResponseDTO is used to transfer comprehensive member data from the server to the client when retrieving member information, allowing for a complete representation of the member's details in the response payload. The MemberResponseDTO can include properties such as the member's unique identifier, name, email, phone number, address details, date of birth, mail subscriptions, preferred language, and any associated study enrollments or group memberships, providing a comprehensive view of the member data for the client application.
+ */
 export type MemberResponseDto = {
     id?: string | null;
     studentNumber?: number | null;
@@ -255,7 +609,13 @@ export type MemberResponseDto = {
     notes?: string | null;
     registeredOn?: string | null;
     preferredLanguage?: Language;
+    /**
+     * Studies where the member is enrolled.
+     */
     studyEnrollments?: Array<StudyEnrollmentResponseDto> | null;
+    /**
+     * Groups where the member is a part of.
+     */
     groupMemberships?: Array<GroupMembershipResponseDto> | null;
     gratie?: boolean | null;
     lidVanVerdienste?: boolean | null;
@@ -265,6 +625,9 @@ export type MemberResponseDto = {
     profilePicturePath?: string | null;
 };
 
+/**
+ * Defines the DTO for updating an existing member, containing all necessary information for modifying a member's properties. The MemberUpdateDTO is used to transfer data from the client to the server when updating an existing member, allowing for changes to be made to the member's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type MemberUpdateDto = {
     studentNumber: number;
     firstName: string;
@@ -287,15 +650,42 @@ export type MemberUpdateDto = {
     suspended?: boolean;
 };
 
+/**
+ * Represents a payment made for a membership. This class inherits from the Payment base class and does not add any additional properties, as all relevant information for a membership payment is already captured in the base Payment class. This entity is used to specifically represent payments that are made for memberships within the system, allowing for better organization and management of different types of payments while still utilizing the common properties defined in the Payment base class.
+ */
 export type MembershipPayment = {
+    /**
+     * The unique identifier of the payment, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The price of the payment.
+     */
     price?: number;
+    /**
+     * The identifier provided by Mollie for this payment. This is used to track the payment in the Mollie system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Mollie payment gateway.
+     */
     mollieId: string;
+    /**
+     * The URL provided by Mollie for the payment intent. This URL is used to redirect the member to the Mollie payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Mollie payment gateway and ensuring that members can easily access the payment page to complete their transactions.
+     */
     paymentIntentUrl: string;
+    /**
+     * The timestamp indicating when the payment was paid. This is used to track when the payment was completed and can be useful for financial reporting, auditing, and determining the status of the payment. This property is nullable because a payment may be created before it is completed, and in such cases, the PaidAt timestamp would not be set until the payment is successfully processed.
+     */
     paidAt?: string | null;
+    /**
+     * The identifier of the member who made the payment. This is a foreign key referencing the Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the MemberId would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
+     */
     memberId?: string | null;
     member?: Member;
+    /**
+     * The identifier of the corresponding entry in the accounting tool, if applicable. This is used to correlate the payment record in our system with the corresponding financial record in the accounting tool. This property is nullable because not all payments may have a corresponding entry in the accounting tool, especially if they are manually marked as paid or if there are issues with the payment processing that prevent it from being recorded in the accounting tool. In such cases, the AccountingToolEntryId would be set to null to indicate that there is no corresponding entry for this payment in the accounting tool.
+     */
     accountingToolEntryId?: string | null;
+    /**
+     * Indicates whether the payment was manually marked as paid by an administrator. This is used to differentiate between payments that were processed through the normal payment flow and those that were manually marked as paid, which may require different handling in terms of accounting and reporting. This property is set to false by default, and can be set to true by an administrator when they manually mark a payment as paid, allowing for better tracking and management of payments that may not have gone through the standard payment processing flow.
+     */
     manuallyMarkedAsPaid?: boolean;
 };
 
@@ -309,30 +699,60 @@ export type Operation = {
 
 export type OperationType = 'Add' | 'Remove' | 'Replace' | 'Move' | 'Copy' | 'Test' | 'Invalid';
 
+/**
+ * Defines the DTO for posting an activity mail, containing the necessary information for creating a new mail related to a specific activity, including the activity ID and an option to include waiting list members. The PostActivityMailDTO is used to transfer data from the client to the server when creating an activity-related mail, ensuring that all required information is provided and validated appropriately for the creation process. The PostActivityMailDTO allows for the specification of whether to include waiting list members in the mail, enabling effective communication with both confirmed participants and those on the waiting list based on the provided criteria in the request payload. This DTO ensures that the activity mail is created with the necessary information to effectively communicate relevant updates or information about the specified activity to the intended recipients, providing a structured and validated approach to activity mail creation in the application.
+ */
 export type PostActivityMailDto = {
+    /**
+     * The subject of the mail to be sent. This field is required to provide a clear and concise subject line for the email, allowing recipients to understand the purpose and content of the mail at a glance. The subject should be relevant to the content of the mail and should effectively convey the main message or topic being communicated in the email.
+     */
     subject: string;
+    /**
+     * The HTML content of the mail to be sent. This field is required to provide the actual body of the email in HTML format, allowing for rich formatting and presentation of the mail content. The HTML content can include various elements such as text, images, links, and other formatting options to enhance the visual appeal and readability of the email, ensuring that the message is effectively communicated to the recipients based on the specified content and formatting. The HTML content should be well-structured and properly formatted to ensure that it renders correctly in different email clients and devices, providing a consistent and engaging experience for the recipients of the mail.
+     */
     htmlContent: string;
+    /**
+     * The unique identifier of the activity for which the mail is being created. This field is required to associate the mail with the correct activity within the system, allowing for effective communication about specific activities based on the provided activity ID in the request payload. The activity ID should correspond to an existing activity in the system to ensure that the mail is relevant and targeted to the appropriate audience based on their involvement or interest in the specified activity. The PostActivityMailDTO ensures that the mail is created with the necessary information to effectively communicate updates or information about the specified activity to the intended recipients, providing a structured and validated approach to activity mail creation in the application.
+     */
     activityId: number;
+    /**
+     * Indicates whether to include waiting list members in the mail. If set to true, both confirmed participants and those on the waiting list will receive the mail; if set to false, only confirmed participants will receive the mail. This field allows for filtering recipients based on their involvement in the activity, enabling effective communication with both confirmed participants and those on the waiting list based on the provided criteria in the request payload. The PostActivityMailDTO ensures that the activity mail is created with the necessary information to effectively communicate relevant updates or information about the specified activity to the intended recipients, providing a structured and validated approach to activity mail creation in the application.
+     */
     includeWaitingList?: boolean;
 };
 
+/**
+ * Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, a list of activity IDs, and an optional flag indicating whether the payment was manually marked as paid. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostActivityPaymentDto = {
     memberId?: string;
+    /**
+     * The list of unique identifiers of the activities for which the activity payment is being created. This field is required to associate the activity payment with the correct activities within the system, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload. The PostActivityPaymentDTO ensures that the activity payment is created with the necessary information to effectively manage and track activity payments for the specified activities, providing a structured and validated approach to activity payment creation in the application.
+     */
     activityIds?: Array<number>;
     manuallyMarkedAsPaid?: boolean;
 };
 
+/**
+ * Defines Data Transfer Object (DTO) for posting announcements, containing the necessary information for creating a new announcement, including its title and content. The PostAnnouncementDTO is used to transfer data from the client to the server when creating a new announcement, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostAnnouncementDto = {
     title: string;
     content: string;
 };
 
+/**
+ * Defines Data Transfer Object (DTO) for posting enrollments, containing the necessary information for creating a new enrollment, including the activity ID, member ID, and any specification answers provided by the member. The PostEnrollmentDTO is used to transfer data from the client to the server when creating a new enrollment, ensuring that all required information is provided and validated appropriately for the enrollment creation process.
+ */
 export type PostEnrollmentDto = {
     activityId?: number;
     memberId?: string;
     specificationAnswers?: Array<PostSpecificationAnswerDto> | null;
 };
 
+/**
+ * Defines the DTO for posting a group membership, containing the necessary information for creating a new group membership, including member ID, group ID, membership year, and an optional role alias ID. The PostGroupMembershipDTO is used to transfer data from the client to the server when creating a new group membership, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostGroupMembershipDto = {
     memberId: string;
     groupId: number;
@@ -340,17 +760,35 @@ export type PostGroupMembershipDto = {
     roleAliasId?: number | null;
 };
 
+/**
+ * Defines the DTO for posting a mail, containing the necessary information for creating a new mail, including its subject, HTML content, and recipients. The PostMailDTO is used to transfer data from the client to the server when creating a new mail, ensuring that all required information is provided and validated appropriately for the creation process. The PostMailDTO allows for the specification of multiple recipients for the mail, enabling effective communication with multiple individuals or groups based on the provided recipient information in the request payload. The recipients can be specified using the MailRecipient class, which includes properties such as the recipient's email address and name, allowing for personalized and targeted communication through email based on the specified recipient details. The PostMailDTO ensures that the mail is created with the necessary information to effectively communicate the intended message to the specified recipients, providing a structured and validated approach to mail creation in the application.
+ */
 export type PostMailDto = {
+    /**
+     * The subject of the mail to be sent. This field is required to provide a clear and concise subject line for the email, allowing recipients to understand the purpose and content of the mail at a glance. The subject should be relevant to the content of the mail and should effectively convey the main message or topic being communicated in the email.
+     */
     subject: string;
+    /**
+     * The HTML content of the mail to be sent. This field is required to provide the actual body of the email in HTML format, allowing for rich formatting and presentation of the mail content. The HTML content can include various elements such as text, images, links, and other formatting options to enhance the visual appeal and readability of the email, ensuring that the message is effectively communicated to the recipients based on the specified content and formatting. The HTML content should be well-structured and properly formatted to ensure that it renders correctly in different email clients and devices, providing a consistent and engaging experience for the recipients of the mail.
+     */
     htmlContent: string;
+    /**
+     * The recipients of the mail to be sent. This field is required to specify the individuals or groups who will receive the email, allowing for effective communication with the intended audience based on the provided recipient information in the request payload. The recipients can be specified using the MailRecipient class, which includes properties such as the recipient's email address and name, enabling personalized and targeted communication through email based on the specified recipient details. The recipients field should contain valid email addresses and relevant recipient information to ensure that the mail is delivered successfully to the intended recipients and that the communication is effective and meaningful based on the provided recipient data in the request payload.
+     */
     recipients: Array<MailRecipient>;
 };
 
+/**
+ * Data Transfer Object for creating or updating a mailing list. The PostMailinglistDTO class encapsulates the necessary information required to create or update a mailing list entity, including the Name of the mailing list and the ServiceId that identifies the associated email service. This DTO is used in the Mailinglists controller to receive data from client requests when creating new mailing lists or updating existing ones, ensuring that the required fields are provided and structured correctly for processing by the underlying business logic in the MailinglistService.
+ */
 export type PostMailinglistDto = {
     name?: string;
     serviceId?: string;
 };
 
+/**
+ * Defines the DTO for posting a member, containing the necessary information for creating a new member, including personal details, contact information, and other relevant properties. The PostMemberDTO is used to transfer data from the client to the server when creating a new member, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostMemberDto = {
     studentNumber: number;
     firstName: string;
@@ -365,37 +803,61 @@ export type PostMemberDto = {
     parentPhoneNumber?: string | null;
     mailSubscriptions?: number;
     preferredLanguage: Language;
+    /**
+     * Studies where the member is enrolled.
+     */
     studyEnrollments?: Array<PostStudyEnrollmentDto> | null;
 };
 
+/**
+ * Defines the DTO for posting a membership payment, containing the necessary information for creating a new membership payment, including the member ID. The PostMembershipPaymentDTO is used to transfer data from the client to the server when creating a new membership payment, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostMembershipPaymentDto = {
     memberId?: string;
 };
 
+/**
+ * Defines the response DTO for a payment, containing the necessary information about the payment response, including an optional checkout URL. The PostPaymentResponse is used to transfer data from the server to the client after creating a new payment, allowing for the inclusion of relevant information such as a checkout URL if applicable, providing a structured and informative response for payment-related operations in the application.
+ */
 export type PostPaymentResponse = {
     checkoutUrl?: string | null;
 };
 
+/**
+ * Defines the DTO for posting a role alias, containing the necessary information for creating a new role alias, including its name and the associated parent role ID. The PostRoleAliasDTO is used to transfer data from the client to the server when creating a new role alias, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostRoleAliasDto = {
     name: string;
     roleId?: number;
 };
 
+/**
+ * Defines the DTO for posting a role, containing the necessary information for creating a new role, including its name. The PostRoleDTO is used to transfer data from the client to the server when creating a new role, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostRoleDto = {
     name: string;
 };
 
+/**
+ * Defines the DTO for posting a specification answer, containing the necessary information for creating a new specification answer, including the question ID and the answer text. The PostSpecificationAnswerDTO is used to transfer data from the client to the server when creating a new specification answer, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostSpecificationAnswerDto = {
     questionId?: number;
     answer: string;
 };
 
+/**
+ * Defines the DTO for posting a study, containing the necessary information for creating a new study, including its title, nominal duration in years, and type. The PostStudyDTO is used to transfer data from the client to the server when creating a new study, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostStudyDto = {
     title: string;
     nominalDurationYears: number;
     type: StudyType;
 };
 
+/**
+ * Defines the DTO for posting a study enrollment, containing the necessary information for creating a new study enrollment, including the study ID, member ID, enrollment date, and status. The PostStudyEnrollmentDTO is used to transfer data from the client to the server when creating a new study enrollment, ensuring that all required information is provided and validated appropriately for the creation process.
+ */
 export type PostStudyEnrollmentDto = {
     studyId: number;
     memberId: string;
@@ -403,82 +865,211 @@ export type PostStudyEnrollmentDto = {
     status?: StudyStatus;
 };
 
+export type ProblemDetails = {
+    type?: string | null;
+    title?: string | null;
+    status?: number | null;
+    detail?: string | null;
+    instance?: string | null;
+    [key: string]: unknown | string | null | string | null | number | null | string | null | string | null | undefined;
+};
+
+/**
+ * The type of a specification question, determining the content and format of the answers provided for this question. The QuestionType enum defines the possible types of specification questions, including String, Boolean, Number, Date, DateTime, and MultipleChoice. Each type corresponds to a specific format for the answers that can be provided for that question, allowing for better organization and management of different types of questions and their associated answers within the system.
+ */
 export type QuestionType = 'String' | 'Boolean' | 'Number' | 'Date' | 'DateTime' | 'MultipleChoice';
 
+/**
+ * A role for a member in a committee. E.g.: "Chair" or "Treasurer".
+ */
 export type Role = {
+    /**
+     * The unique identifier of a role, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The name of the role.
+     */
     name: string;
 };
 
+/**
+ * A role alias for a member in a committee. E.g.: "Fotofeut" or "Man van Geld".
+ */
 export type RoleAlias = {
+    /**
+     * The unique identifier of a role alias, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The id of the role that this alias belongs to.
+     */
     roleId?: number;
     role?: Role;
+    /**
+     * The name of the role alias.
+     */
     name: string;
 };
 
+/**
+ * Defines the DTO for updating an existing role alias, containing all necessary information for modifying a role alias's properties. The RoleAliasUpdateDTO is used to transfer data from the client to the server when updating an existing role alias, allowing for changes to be made to the role alias's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type RoleAliasUpdateDto = {
     name: string;
     roleId?: number;
 };
 
+/**
+ * Defines the DTO for updating an existing role, containing all necessary information for modifying a role's properties. The RoleUpdateDTO is used to transfer data from the client to the server when updating an existing role, allowing for changes to be made to the role's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type RoleUpdateDto = {
     name: string;
 };
 
+/**
+ * Represents a setting within the system, which consists of a name and a corresponding value. This entity is used to manage various configuration settings for the application, allowing for easy retrieval and modification of settings as needed. The Name property serves as the unique identifier for each setting, while the Value property holds the actual value associated with that setting. This structure allows for flexible and dynamic management of application settings, enabling administrators to customize and configure the behavior of the system without requiring code changes or redeployments.
+ */
 export type Setting = {
+    /**
+     * The unique name of the setting, which serves as the primary key for this entity. The Name property is used to identify and retrieve specific settings within the system, allowing for easy access and management of configuration settings. Each setting must have a unique name to ensure that it can be accurately referenced and modified without ambiguity.
+     */
     name?: string;
+    /**
+     * The value associated with this setting. The Value property holds the actual configuration value for the setting, which can be of any type (e.g., string, number, boolean) depending on the specific setting being represented. This property allows for flexible storage of various types of configuration data, enabling administrators to easily manage and modify settings as needed to customize the behavior of the system. The Value property is required to ensure that each setting has an associated value, which is essential for the proper functioning of the application based on the defined settings.
+     */
     value?: string;
 };
 
+/**
+ * Represents an answer provided for a specification question by a member. This entity is used to capture and manage the responses given by members to specific questions that are part of the activity enrollment process. Each SpecificationAnswer is associated with a specific SpecificationQuestion and a Member, allowing for better organization and retrieval of answers based on the related question and member. The Answer property holds the actual response provided by the member, which can be of various formats depending on the type of the associated specification question (e.g., text, multiple choice, etc.). This entity plays a crucial role in facilitating the collection and management of member responses during the enrollment process for activities within the system.
+ */
 export type SpecificationAnswer = {
+    /**
+     * The unique identifier of a specification answer, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The unique identifier of the specification question for which this answer is provided.
+     */
     specificationQuestionId?: number;
+    /**
+     * The unique identifier of the member for which this answer is provided.
+     */
     memberId: string;
     member?: Member;
+    /**
+     * The answer provided for the specification question. The content and format of this answer depend on the type of the associated specification question.
+     */
     answer: string;
     question?: SpecificationQuestion;
     enrollment?: Enrollment;
 };
 
+/**
+ * Represents the response DTO for a specification answer, containing all relevant information about the specification answer, including its properties and any associated data. The SpecificationAnswerResponseDTO is used to transfer comprehensive specification answer data from the server to the client when retrieving specification answer information, allowing for a complete representation of the specification answer's details in the response payload. The SpecificationAnswerResponseDTO can include properties such as the question ID, answer ID, and the answer text, providing a comprehensive view of the specification answer data for the client application.
+ */
 export type SpecificationAnswerResponseDto = {
     questionId: number;
     answerId: number;
     answer: string;
 };
 
+/**
+ * Represents a specification question that is associated with an activity. This entity is used to define specific questions that members are required or allowed to answer when enrolling for an activity. Each SpecificationQuestion is linked to a specific Activity and can have various properties such as the question text in both Dutch and English, the type of the question (e.g., string, boolean, multiple choice), whether answering the question is mandatory for enrollment, and whether the answers provided for this question are visible to other members who enrolled for the same activity. Additionally, if the question type is MultipleChoice, the Options property can be used to define the available options for that question. This entity plays a crucial role in facilitating the collection of relevant information from members during the enrollment process for activities within the system.
+ */
 export type SpecificationQuestion = {
+    /**
+     * The unique identifier of a specification question, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The unique identifier of the activity to which this specification question belongs.
+     */
     activityId?: number;
+    /**
+     * The question in Dutch.
+     */
     questionDutch: string;
+    /**
+     * The question in English.
+     */
     questionEnglish: string;
     type?: QuestionType;
+    /**
+     * Whether providing an answer for this specification question is mandatory when enrolling for the associated activity.
+     */
     isMandatory?: boolean;
+    /**
+     * Whether the answers provided for this specification question are visible to other members who enrolled for the same activity.
+     */
     isPublic?: boolean;
     activity?: Activity;
+    /**
+     * The collection of answers provided for this specification question. The content and format of these answers depend on the type of this specification question.
+     */
     answers?: Array<SpecificationAnswer>;
+    /**
+     * The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
+     */
     options?: string | null;
 };
 
+/**
+ * Represents a study program. A Study has a unique identifier, a title, a nominal duration in years, and a type (e.g., Bachelor, Master). Each Study can have multiple enrollments associated with it through the StudyEnrollment entity. This entity is used to manage and organize different study programs within the system, allowing for better tracking of student enrollments and academic programs offered by the organization.
+ */
 export type Study = {
+    /**
+     * The unique identifier of a study, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The title of the study.
+     */
     title: string;
+    /**
+     * The default duration of the study in years.
+     */
     nominalDurationYears?: number;
     type?: StudyType;
+    /**
+     * The enrollments associated with this study.
+     */
     enrollments?: Array<StudyEnrollment>;
 };
 
+/**
+ * Represents a study enrollment of a member in a study program. A StudyEnrollment has a unique identifier, references to the associated Member and Study, the date and time when the enrollment started, an optional completion date, and the current status of the enrollment (e.g., Enrolled, Completed, DroppedOut). This entity is used to manage and track enrollments for study programs within the system, allowing members to participate in academic programs based on their preferences and eligibility, and enabling better organization and reporting of student enrollments and academic progress.
+ */
 export type StudyEnrollment = {
+    /**
+     * The unique identifier of a study enrollment, assigned incrementally.
+     */
     id?: number;
+    /**
+     * The member associated with this enrollment.
+     */
     memberId?: string;
     member?: Member;
+    /**
+     * The study associated with this enrollment.
+     */
     studyId?: number;
     study?: Study;
+    /**
+     * The date and time when the enrollment started.
+     */
     enrollmentDate?: string;
+    /**
+     * The date and time when the enrollment ended, if applicable.
+     */
     completionDate?: string | null;
     status?: StudyStatus;
 };
 
+/**
+ * Represents the response DTO for a study enrollment, containing all relevant information about the study enrollment, including its properties and any associated data. The StudyEnrollmentResponseDTO is used to transfer comprehensive study enrollment data from the server to the client when retrieving study enrollment information, allowing for a complete representation of the study enrollment's details in the response payload. The StudyEnrollmentResponseDTO can include properties such as the enrollment ID, member ID, member name, study ID, study title, study type, enrollment date, completion date, and status, providing a comprehensive view of the study enrollment data for the client application.
+ */
 export type StudyEnrollmentResponseDto = {
     id: number;
     memberId?: string | null;
@@ -491,48 +1082,101 @@ export type StudyEnrollmentResponseDto = {
     status: StudyStatus;
 };
 
+/**
+ * Defines the status of a study enrollment, indicating whether the enrollment is currently active (Enrolled), has been completed (Completed), or has been dropped out (DroppedOut). The StudyStatus enum is used to track the current state of a study enrollment, allowing for better management and organization of student enrollments within the system. This status information can be crucial for various functionalities such as reporting, analytics, and determining eligibility for certain activities or programs based on the student's enrollment status in their study program.
+ */
 export type StudyStatus = 'Enrolled' | 'Completed' | 'DroppedOut';
 
+/**
+ * Defines the type of a Study.
+ */
 export type StudyType = 'Bachelor' | 'Master';
 
+/**
+ * Defines the DTO for updating an existing study, containing all necessary information for modifying a study's properties. The StudyUpdateDTO is used to transfer data from the client to the server when updating an existing study, allowing for changes to be made to the study's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type StudyUpdateDto = {
     title: string;
     nominalDurationYears: number;
     type: StudyType;
 };
 
-export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'Gratie' | 'All';
+/**
+ * Represents the target audience for an activity, allowing for the specification of which groups of members are eligible to participate in a given activity. The TargetAudience enum defines various audience options, such as FirstYears, SecondYears, ThirdYearsAndAbove, and Masters, which can be combined using bitwise operations to create more specific audience groups. This entity is used to manage and enforce eligibility criteria for activities based on the academic standing of members, ensuring that activities are appropriately targeted and accessible to the intended audience within the system.
+ */
+export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'Gratie' | 'ActiveMembers' | 'All';
 
+/**
+ * Defines the DTO for updating an existing announcement, containing all necessary information for modifying an announcement's properties. The UpdateAnnouncementDTO is used to transfer data from the client to the server when updating an existing announcement, allowing for changes to be made to the announcement's details while ensuring that the provided information is validated appropriately for the update process.
+ */
 export type UpdateAnnouncementDto = {
     title: string;
     content: string;
 };
 
-export type GetApiActivitiesData = {
+/**
+ * Represents the response returned after successfully uploading a profile picture. The UploadPictureResponse class encapsulates the essential information about the uploaded image, primarily the generated path where the profile picture is stored. This DTO is used to communicate the result of the upload operation back to the client, allowing it to reference the new profile picture in subsequent requests or updates. By providing a clear and concise response structure, this class facilitates seamless integration between the client and server during profile picture management operations.
+ */
+export type UploadPictureResponse = {
+    /**
+     * Gets or sets the generated path of the uploaded profile picture. This path is typically a relative or encoded reference to the location where the image is stored, which can be used for retrieval or display purposes in the client application.
+     */
+    path: string | null;
+};
+
+export type GetActivitiesData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * Indicates whether to include past activities in the response. If set to true, activities that have already occurred will be included in the response; if set to false, only upcoming activities will be included.
+         */
         IncludePast?: boolean;
+        /**
+         * Indicates whether to include future activities in the response. If set to true, activities that are scheduled for the future will be included in the response; if set to false, only past activities will be included.
+         */
         IncludeFuture?: boolean;
+        /**
+         * Indicates the year for which to retrieve activities. If specified, only activities that are associated with the given year will be included in the response.
+         */
         Year?: number;
+        /**
+         * Indicates whether to include activities that are open for payment in the response. If set to true, activities that are currently open for payment will be included in the response; if set to false, only activities that are not open for payment will be included.
+         */
         OpenForPayment?: boolean;
     };
-    url: '/api/activities';
+    url: '/activities';
 };
 
-export type GetApiActivitiesResponses = {
+export type GetActivitiesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetActivitiesError = GetActivitiesErrors[keyof GetActivitiesErrors];
+
+export type GetActivitiesResponses = {
     /**
      * OK
      */
     200: Array<ActivityResponseDto>;
 };
 
-export type GetApiActivitiesResponse = GetApiActivitiesResponses[keyof GetApiActivitiesResponses];
+export type GetActivitiesResponse = GetActivitiesResponses[keyof GetActivitiesResponses];
 
-export type PostApiActivitiesData = {
+export type PostActivitiesData = {
     body?: {
         Name: string;
         Price?: number;
+        /**
+         * The poster file for the activity, which can be uploaded when creating or updating an activity. The Poster property is of type IFormFile, allowing for the handling of file uploads in ASP.NET Core. This property is used to manage the visual representation of the activity, as the poster can be displayed on the website or in the Koala app to attract participants and provide information about the activity. When a poster is uploaded, it can be stored on the server and associated with the activity, enabling better organization and presentation of activities within the system.
+         */
         Poster?: Blob | File;
         DutchDescription: string;
         EnglishDescription: string;
@@ -544,6 +1188,9 @@ export type PostApiActivitiesData = {
         Location: string;
         ParticipantLimit?: number;
         OrganizerId?: number;
+        /**
+         * A JSON string representing the specification questions associated with the activity. This property is used to capture the details of the specification questions in a structured format, allowing for easy serialization and deserialization when creating or updating an activity. The JSON string can contain an array of specification question objects, each with its own properties such as question text, question type, and possible answers. This approach allows for flexibility in managing the specification questions while ensuring that they are properly associated with the activity in the system.
+         */
         SpecificationQuestionsJson?: string;
         ShowInKoala: boolean;
         ShowOnWebsite: boolean;
@@ -560,72 +1207,155 @@ export type PostApiActivitiesData = {
     };
     path?: never;
     query?: never;
-    url: '/api/activities';
+    url: '/activities';
 };
 
-export type PostApiActivitiesResponses = {
+export type PostActivitiesErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: Activity;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type PostApiActivitiesResponse = PostApiActivitiesResponses[keyof PostApiActivitiesResponses];
+export type PostActivitiesError = PostActivitiesErrors[keyof PostActivitiesErrors];
 
-export type DeleteApiActivitiesByIdData = {
+export type PostActivitiesResponses = {
+    /**
+     * Created
+     */
+    201: Activity;
+};
+
+export type PostActivitiesResponse = PostActivitiesResponses[keyof PostActivitiesResponses];
+
+export type DeleteActivitiesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the activity to delete.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}';
+    url: '/activities/{id}';
 };
 
-export type DeleteApiActivitiesByIdResponses = {
+export type DeleteActivitiesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiActivitiesByIdData = {
+export type DeleteActivitiesByIdError = DeleteActivitiesByIdErrors[keyof DeleteActivitiesByIdErrors];
+
+export type DeleteActivitiesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteActivitiesByIdResponse = DeleteActivitiesByIdResponses[keyof DeleteActivitiesByIdResponses];
+
+export type GetActivitiesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the activity to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}';
+    url: '/activities/{id}';
 };
 
-export type GetApiActivitiesByIdResponses = {
+export type GetActivitiesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetActivitiesByIdError = GetActivitiesByIdErrors[keyof GetActivitiesByIdErrors];
+
+export type GetActivitiesByIdResponses = {
     /**
      * OK
      */
     200: ActivityResponseDto;
 };
 
-export type GetApiActivitiesByIdResponse = GetApiActivitiesByIdResponses[keyof GetApiActivitiesByIdResponses];
+export type GetActivitiesByIdResponse = GetActivitiesByIdResponses[keyof GetActivitiesByIdResponses];
 
-export type PatchApiActivitiesByIdData = {
+export type PatchActivitiesByIdData = {
+    /**
+     * The JSON Patch document containing the changes to apply.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the activity to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}';
+    url: '/activities/{id}';
 };
 
-export type PatchApiActivitiesByIdResponses = {
+export type PatchActivitiesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiActivitiesByIdData = {
+export type PatchActivitiesByIdError = PatchActivitiesByIdErrors[keyof PatchActivitiesByIdErrors];
+
+export type PatchActivitiesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchActivitiesByIdResponse = PatchActivitiesByIdResponses[keyof PatchActivitiesByIdResponses];
+
+export type PutActivitiesByIdData = {
     body?: {
         Name: string;
         Price?: number;
+        /**
+         * The poster file for the activity, which can be uploaded when creating or updating an activity. The Poster property is of type IFormFile, allowing for the handling of file uploads in ASP.NET Core. This property is used to manage the visual representation of the activity, as the poster can be displayed on the website or in the Koala app to attract participants and provide information about the activity. When a poster is uploaded, it can be stored on the server and associated with the activity, enabling better organization and presentation of activities within the system.
+         */
         Poster?: Blob | File;
         DutchDescription: string;
         EnglishDescription: string;
@@ -637,6 +1367,9 @@ export type PutApiActivitiesByIdData = {
         Location: string;
         ParticipantLimit?: number;
         OrganizerId?: number;
+        /**
+         * A JSON string representing the specification questions associated with the activity. This property is used to capture the details of the specification questions in a structured format, allowing for easy serialization and deserialization when creating or updating an activity. The JSON string can contain an array of specification question objects, each with its own properties such as question text, question type, and possible answers. This approach allows for flexibility in managing the specification questions while ensuring that they are properly associated with the activity in the system.
+         */
         SpecificationQuestionsJson?: string;
         ShowInKoala: boolean;
         ShowOnWebsite: boolean;
@@ -652,286 +1385,653 @@ export type PutApiActivitiesByIdData = {
         PaymentDeadline?: string;
     };
     path: {
+        /**
+         * The unique identifier of the activity to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}';
+    url: '/activities/{id}';
 };
 
-export type PutApiActivitiesByIdResponses = {
+export type PutActivitiesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiActivitiesByIdPosterData = {
+export type PutActivitiesByIdError = PutActivitiesByIdErrors[keyof PutActivitiesByIdErrors];
+
+export type PutActivitiesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutActivitiesByIdResponse = PutActivitiesByIdResponses[keyof PutActivitiesByIdResponses];
+
+export type GetActivitiesByIdPosterData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the activity for which to retrieve the poster.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}/poster';
+    url: '/activities/{id}/poster';
 };
 
-export type GetApiActivitiesByIdPosterResponses = {
+export type GetActivitiesByIdPosterErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetActivitiesByIdPosterError = GetActivitiesByIdPosterErrors[keyof GetActivitiesByIdPosterErrors];
+
+export type GetActivitiesByIdPosterResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type PostApiActivitiesByIdPosterData = {
+export type GetActivitiesByIdPosterResponse = GetActivitiesByIdPosterResponses[keyof GetActivitiesByIdPosterResponses];
+
+export type PostActivitiesByIdPosterData = {
     body?: {
         poster?: Blob | File;
     };
     path: {
+        /**
+         * The unique identifier of the activity for which to upload a poster.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}/poster';
+    url: '/activities/{id}/poster';
 };
 
-export type PostApiActivitiesByIdPosterResponses = {
+export type PostActivitiesByIdPosterErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PostActivitiesByIdPosterError = PostActivitiesByIdPosterErrors[keyof PostActivitiesByIdPosterErrors];
+
+export type PostActivitiesByIdPosterResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiActivitiesByIdPosterDownloadData = {
+export type GetActivitiesByIdPosterDownloadData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the activity for which to download the poster.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}/poster/download';
+    url: '/activities/{id}/poster/download';
 };
 
-export type GetApiActivitiesByIdPosterDownloadResponses = {
+export type GetActivitiesByIdPosterDownloadErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetActivitiesByIdPosterDownloadError = GetActivitiesByIdPosterDownloadErrors[keyof GetActivitiesByIdPosterDownloadErrors];
+
+export type GetActivitiesByIdPosterDownloadResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type GetApiActivitiesByIdEnrollmentsExportData = {
+export type GetActivitiesByIdPosterDownloadResponse = GetActivitiesByIdPosterDownloadResponses[keyof GetActivitiesByIdPosterDownloadResponses];
+
+export type GetActivitiesByIdEnrollmentsExportData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the activity for which to export enrollments.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/activities/{id}/enrollments/export';
+    url: '/activities/{id}/enrollments/export';
 };
 
-export type GetApiActivitiesByIdEnrollmentsExportResponses = {
+export type GetActivitiesByIdEnrollmentsExportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetActivitiesByIdEnrollmentsExportError = GetActivitiesByIdEnrollmentsExportErrors[keyof GetActivitiesByIdEnrollmentsExportErrors];
+
+export type GetActivitiesByIdEnrollmentsExportResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type GetApiAnnouncementsData = {
+export type GetActivitiesByIdEnrollmentsExportResponse = GetActivitiesByIdEnrollmentsExportResponses[keyof GetActivitiesByIdEnrollmentsExportResponses];
+
+export type GetAnnouncementsData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/announcements';
+    url: '/announcements';
 };
 
-export type GetApiAnnouncementsResponses = {
+export type GetAnnouncementsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetAnnouncementsError = GetAnnouncementsErrors[keyof GetAnnouncementsErrors];
+
+export type GetAnnouncementsResponses = {
     /**
      * OK
      */
     200: Array<GetAnnouncementResponseDto>;
 };
 
-export type GetApiAnnouncementsResponse = GetApiAnnouncementsResponses[keyof GetApiAnnouncementsResponses];
+export type GetAnnouncementsResponse = GetAnnouncementsResponses[keyof GetAnnouncementsResponses];
 
-export type PostApiAnnouncementsData = {
+export type PostAnnouncementsData = {
+    /**
+     * The data transfer object containing the announcement data.
+     */
     body?: PostAnnouncementDto;
     path?: never;
     query?: never;
-    url: '/api/announcements';
+    url: '/announcements';
 };
 
-export type PostApiAnnouncementsResponses = {
+export type PostAnnouncementsErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type DeleteApiAnnouncementsByIdData = {
+export type PostAnnouncementsError = PostAnnouncementsErrors[keyof PostAnnouncementsErrors];
+
+export type PostAnnouncementsResponses = {
+    /**
+     * Created
+     */
+    201: Announcement;
+};
+
+export type PostAnnouncementsResponse = PostAnnouncementsResponses[keyof PostAnnouncementsResponses];
+
+export type DeleteAnnouncementsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the announcement to delete.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/announcements/{id}';
+    url: '/announcements/{id}';
 };
 
-export type DeleteApiAnnouncementsByIdResponses = {
+export type DeleteAnnouncementsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiAnnouncementsByIdData = {
+export type DeleteAnnouncementsByIdError = DeleteAnnouncementsByIdErrors[keyof DeleteAnnouncementsByIdErrors];
+
+export type DeleteAnnouncementsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteAnnouncementsByIdResponse = DeleteAnnouncementsByIdResponses[keyof DeleteAnnouncementsByIdResponses];
+
+export type GetAnnouncementsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the announcement to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/announcements/{id}';
+    url: '/announcements/{id}';
 };
 
-export type GetApiAnnouncementsByIdResponses = {
+export type GetAnnouncementsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetAnnouncementsByIdError = GetAnnouncementsByIdErrors[keyof GetAnnouncementsByIdErrors];
+
+export type GetAnnouncementsByIdResponses = {
     /**
      * OK
      */
     200: GetAnnouncementResponseDto;
 };
 
-export type GetApiAnnouncementsByIdResponse = GetApiAnnouncementsByIdResponses[keyof GetApiAnnouncementsByIdResponses];
+export type GetAnnouncementsByIdResponse = GetAnnouncementsByIdResponses[keyof GetAnnouncementsByIdResponses];
 
-export type PatchApiAnnouncementsByIdData = {
+export type PatchAnnouncementsByIdData = {
+    /**
+     * The JSON Patch document containing the changes to apply.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the announcement to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/announcements/{id}';
+    url: '/announcements/{id}';
 };
 
-export type PatchApiAnnouncementsByIdResponses = {
+export type PatchAnnouncementsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiAnnouncementsByIdData = {
+export type PatchAnnouncementsByIdError = PatchAnnouncementsByIdErrors[keyof PatchAnnouncementsByIdErrors];
+
+export type PatchAnnouncementsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchAnnouncementsByIdResponse = PatchAnnouncementsByIdResponses[keyof PatchAnnouncementsByIdResponses];
+
+export type PutAnnouncementsByIdData = {
+    /**
+     * The data transfer object containing the updated announcement data.
+     */
     body?: UpdateAnnouncementDto;
     path: {
+        /**
+         * The unique identifier of the announcement to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/announcements/{id}';
+    url: '/announcements/{id}';
 };
 
-export type PutApiAnnouncementsByIdResponses = {
+export type PutAnnouncementsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiEnrollmentsData = {
+export type PutAnnouncementsByIdError = PutAnnouncementsByIdErrors[keyof PutAnnouncementsByIdErrors];
+
+export type PutAnnouncementsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutAnnouncementsByIdResponse = PutAnnouncementsByIdResponses[keyof PutAnnouncementsByIdResponses];
+
+export type GetEnrollmentsData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * The unique identifier of the member for which to retrieve enrollments. This field is optional, and if provided, it allows for filtering enrollments based on the associated member, enabling the retrieval of enrollments specific to a particular member within the system. If not provided, enrollments for all members may be retrieved based on other criteria or without any member-specific filtering.
+         */
         FromMemberId?: string;
     };
-    url: '/api/enrollments';
+    url: '/enrollments';
 };
 
-export type GetApiEnrollmentsResponses = {
+export type GetEnrollmentsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetEnrollmentsError = GetEnrollmentsErrors[keyof GetEnrollmentsErrors];
+
+export type GetEnrollmentsResponses = {
     /**
      * OK
      */
     200: Array<EnrollmentResponseDto>;
 };
 
-export type GetApiEnrollmentsResponse = GetApiEnrollmentsResponses[keyof GetApiEnrollmentsResponses];
+export type GetEnrollmentsResponse = GetEnrollmentsResponses[keyof GetEnrollmentsResponses];
 
-export type PostApiEnrollmentsData = {
+export type PostEnrollmentsData = {
+    /**
+     * The data transfer object containing the enrollment data.
+     */
     body?: PostEnrollmentDto;
     path?: never;
     query?: never;
-    url: '/api/enrollments';
+    url: '/enrollments';
 };
 
-export type PostApiEnrollmentsResponses = {
+export type PostEnrollmentsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostEnrollmentsError = PostEnrollmentsErrors[keyof PostEnrollmentsErrors];
+
+export type PostEnrollmentsResponses = {
+    /**
+     * Created
+     */
+    201: EnrollmentResponseDto;
+};
+
+export type PostEnrollmentsResponse = PostEnrollmentsResponses[keyof PostEnrollmentsResponses];
+
+export type DeleteEnrollmentsByActivityIdByMemberIdData = {
+    body?: never;
+    path: {
+        /**
+         * The unique identifier of the activity for which to delete enrollment.
+         */
+        activityId: number;
+        /**
+         * The unique identifier of the member for whom to delete enrollment.
+         */
+        memberId: string;
+    };
+    query?: never;
+    url: '/enrollments/{activityId}/{memberId}';
+};
+
+export type DeleteEnrollmentsByActivityIdByMemberIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteEnrollmentsByActivityIdByMemberIdError = DeleteEnrollmentsByActivityIdByMemberIdErrors[keyof DeleteEnrollmentsByActivityIdByMemberIdErrors];
+
+export type DeleteEnrollmentsByActivityIdByMemberIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteEnrollmentsByActivityIdByMemberIdResponse = DeleteEnrollmentsByActivityIdByMemberIdResponses[keyof DeleteEnrollmentsByActivityIdByMemberIdResponses];
+
+export type GetEnrollmentsByActivityIdByMemberIdData = {
+    body?: never;
+    path: {
+        /**
+         * The unique identifier of the activity for which to retrieve enrollment.
+         */
+        activityId: number;
+        /**
+         * The unique identifier of the member for whom to retrieve enrollment.
+         */
+        memberId: string;
+    };
+    query?: never;
+    url: '/enrollments/{activityId}/{memberId}';
+};
+
+export type GetEnrollmentsByActivityIdByMemberIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetEnrollmentsByActivityIdByMemberIdError = GetEnrollmentsByActivityIdByMemberIdErrors[keyof GetEnrollmentsByActivityIdByMemberIdErrors];
+
+export type GetEnrollmentsByActivityIdByMemberIdResponses = {
     /**
      * OK
      */
     200: EnrollmentResponseDto;
 };
 
-export type PostApiEnrollmentsResponse = PostApiEnrollmentsResponses[keyof PostApiEnrollmentsResponses];
+export type GetEnrollmentsByActivityIdByMemberIdResponse = GetEnrollmentsByActivityIdByMemberIdResponses[keyof GetEnrollmentsByActivityIdByMemberIdResponses];
 
-export type DeleteApiEnrollmentsByActivityIdByMemberIdData = {
-    body?: never;
-    path: {
-        activityId: number;
-        memberId: string;
-    };
-    query?: never;
-    url: '/api/enrollments/{activityId}/{memberId}';
-};
-
-export type DeleteApiEnrollmentsByActivityIdByMemberIdResponses = {
+export type PatchEnrollmentsByActivityIdByMemberIdData = {
     /**
-     * OK
+     * The JSON Patch document specifying the changes to be made.
      */
-    200: unknown;
-};
-
-export type GetApiEnrollmentsByActivityIdByMemberIdData = {
-    body?: never;
-    path: {
-        activityId: number;
-        memberId: string;
-    };
-    query?: never;
-    url: '/api/enrollments/{activityId}/{memberId}';
-};
-
-export type GetApiEnrollmentsByActivityIdByMemberIdResponses = {
-    /**
-     * OK
-     */
-    200: EnrollmentResponseDto;
-};
-
-export type GetApiEnrollmentsByActivityIdByMemberIdResponse = GetApiEnrollmentsByActivityIdByMemberIdResponses[keyof GetApiEnrollmentsByActivityIdByMemberIdResponses];
-
-export type PatchApiEnrollmentsByActivityIdByMemberIdData = {
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the activity for which to patch enrollment.
+         */
         activityId: number;
+        /**
+         * The unique identifier of the member for whom to patch enrollment.
+         */
         memberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{activityId}/{memberId}';
+    url: '/enrollments/{activityId}/{memberId}';
 };
 
-export type PatchApiEnrollmentsByActivityIdByMemberIdResponses = {
+export type PatchEnrollmentsByActivityIdByMemberIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiEnrollmentsByActivityIdByMemberIdData = {
+export type PatchEnrollmentsByActivityIdByMemberIdError = PatchEnrollmentsByActivityIdByMemberIdErrors[keyof PatchEnrollmentsByActivityIdByMemberIdErrors];
+
+export type PatchEnrollmentsByActivityIdByMemberIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchEnrollmentsByActivityIdByMemberIdResponse = PatchEnrollmentsByActivityIdByMemberIdResponses[keyof PatchEnrollmentsByActivityIdByMemberIdResponses];
+
+export type PutEnrollmentsByActivityIdByMemberIdData = {
+    /**
+     * The data transfer object containing the updated enrollment data.
+     */
     body?: PostEnrollmentDto;
     path: {
+        /**
+         * The unique identifier of the activity for which to update enrollment.
+         */
         activityId: number;
+        /**
+         * The unique identifier of the member for whom to update enrollment.
+         */
         memberId: string;
     };
     query?: never;
-    url: '/api/enrollments/{activityId}/{memberId}';
+    url: '/enrollments/{activityId}/{memberId}';
 };
 
-export type PutApiEnrollmentsByActivityIdByMemberIdResponses = {
+export type PutEnrollmentsByActivityIdByMemberIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiGroupmembershipsData = {
+export type PutEnrollmentsByActivityIdByMemberIdError = PutEnrollmentsByActivityIdByMemberIdErrors[keyof PutEnrollmentsByActivityIdByMemberIdErrors];
+
+export type PutEnrollmentsByActivityIdByMemberIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutEnrollmentsByActivityIdByMemberIdResponse = PutEnrollmentsByActivityIdByMemberIdResponses[keyof PutEnrollmentsByActivityIdByMemberIdResponses];
+
+export type GetGroupmembershipsData = {
     body?: never;
     path?: never;
     query?: {
@@ -939,1226 +2039,2666 @@ export type GetApiGroupmembershipsData = {
         MembershipYear?: number;
         MemberId?: string;
     };
-    url: '/api/groupmemberships';
+    url: '/groupmemberships';
 };
 
-export type GetApiGroupmembershipsResponses = {
+export type GetGroupmembershipsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetGroupmembershipsError = GetGroupmembershipsErrors[keyof GetGroupmembershipsErrors];
+
+export type GetGroupmembershipsResponses = {
     /**
      * OK
      */
     200: Array<GroupMembershipResponseDto>;
 };
 
-export type GetApiGroupmembershipsResponse = GetApiGroupmembershipsResponses[keyof GetApiGroupmembershipsResponses];
+export type GetGroupmembershipsResponse = GetGroupmembershipsResponses[keyof GetGroupmembershipsResponses];
 
-export type PostApiGroupmembershipsData = {
+export type PostGroupmembershipsData = {
+    /**
+     * The data transfer object containing the group membership information.
+     */
     body?: PostGroupMembershipDto;
     path?: never;
     query?: never;
-    url: '/api/groupmemberships';
+    url: '/groupmemberships';
 };
 
-export type PostApiGroupmembershipsResponses = {
+export type PostGroupmembershipsErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: GroupMembership;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type PostApiGroupmembershipsResponse = PostApiGroupmembershipsResponses[keyof PostApiGroupmembershipsResponses];
+export type PostGroupmembershipsError = PostGroupmembershipsErrors[keyof PostGroupmembershipsErrors];
 
-export type DeleteApiGroupmembershipsByIdData = {
+export type PostGroupmembershipsResponses = {
+    /**
+     * Created
+     */
+    201: GroupMembership;
+};
+
+export type PostGroupmembershipsResponse = PostGroupmembershipsResponses[keyof PostGroupmembershipsResponses];
+
+export type DeleteGroupmembershipsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the group membership to delete.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groupmemberships/{id}';
+    url: '/groupmemberships/{id}';
 };
 
-export type DeleteApiGroupmembershipsByIdResponses = {
+export type DeleteGroupmembershipsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiGroupmembershipsByIdData = {
+export type DeleteGroupmembershipsByIdError = DeleteGroupmembershipsByIdErrors[keyof DeleteGroupmembershipsByIdErrors];
+
+export type DeleteGroupmembershipsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteGroupmembershipsByIdResponse = DeleteGroupmembershipsByIdResponses[keyof DeleteGroupmembershipsByIdResponses];
+
+export type GetGroupmembershipsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the group membership to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groupmemberships/{id}';
+    url: '/groupmemberships/{id}';
 };
 
-export type GetApiGroupmembershipsByIdResponses = {
+export type GetGroupmembershipsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetGroupmembershipsByIdError = GetGroupmembershipsByIdErrors[keyof GetGroupmembershipsByIdErrors];
+
+export type GetGroupmembershipsByIdResponses = {
     /**
      * OK
      */
     200: GroupMembershipResponseDto;
 };
 
-export type GetApiGroupmembershipsByIdResponse = GetApiGroupmembershipsByIdResponses[keyof GetApiGroupmembershipsByIdResponses];
+export type GetGroupmembershipsByIdResponse = GetGroupmembershipsByIdResponses[keyof GetGroupmembershipsByIdResponses];
 
-export type PatchApiGroupmembershipsByIdData = {
+export type PatchGroupmembershipsByIdData = {
+    /**
+     * The JSON Patch document containing the changes to apply.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the group membership to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groupmemberships/{id}';
+    url: '/groupmemberships/{id}';
 };
 
-export type PatchApiGroupmembershipsByIdResponses = {
+export type PatchGroupmembershipsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiGroupmembershipsByIdData = {
+export type PatchGroupmembershipsByIdError = PatchGroupmembershipsByIdErrors[keyof PatchGroupmembershipsByIdErrors];
+
+export type PatchGroupmembershipsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchGroupmembershipsByIdResponse = PatchGroupmembershipsByIdResponses[keyof PatchGroupmembershipsByIdResponses];
+
+export type PutGroupmembershipsByIdData = {
+    /**
+     * The data transfer object containing the updated group membership information.
+     */
     body?: GroupMembershipUpdateDto;
     path: {
+        /**
+         * The unique identifier of the group membership to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groupmemberships/{id}';
+    url: '/groupmemberships/{id}';
 };
 
-export type PutApiGroupmembershipsByIdResponses = {
+export type PutGroupmembershipsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiGroupsData = {
+export type PutGroupmembershipsByIdError = PutGroupmembershipsByIdErrors[keyof PutGroupmembershipsByIdErrors];
+
+export type PutGroupmembershipsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutGroupmembershipsByIdResponse = PutGroupmembershipsByIdResponses[keyof PutGroupmembershipsByIdResponses];
+
+export type GetGroupsData = {
     body?: never;
     path?: never;
     query?: {
         MembershipYear?: number;
+        /**
+         * Indicates whether to include inactive groups in the retrieved group data. If set to true, both active and inactive groups will be included in the response; if set to false, only active groups will be included. This field allows for filtering group data based on their active status, enabling the retrieval of groups that are currently active or all groups regardless of their active status based on the client's needs.
+         */
         IncludeInactive?: boolean;
     };
-    url: '/api/groups';
+    url: '/groups';
 };
 
-export type GetApiGroupsResponses = {
+export type GetGroupsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetGroupsError = GetGroupsErrors[keyof GetGroupsErrors];
+
+export type GetGroupsResponses = {
     /**
      * OK
      */
     200: Array<GroupResponseDto>;
 };
 
-export type GetApiGroupsResponse = GetApiGroupsResponses[keyof GetApiGroupsResponses];
+export type GetGroupsResponse = GetGroupsResponses[keyof GetGroupsResponses];
 
-export type PostApiGroupsData = {
+export type PostGroupsData = {
     body?: {
         Name: string;
         Type: GroupType;
+        /**
+         * The group picture file to be uploaded and associated with the newly created group. This field is optional and can be included in the request to provide a visual representation of the group, allowing for better identification and differentiation of groups within the system. If provided, the group picture will be processed and stored appropriately based on the application's file handling and storage mechanisms.
+         */
         GroupPicture: Blob | File;
     };
     path?: never;
     query?: never;
-    url: '/api/groups';
+    url: '/groups';
 };
 
-export type PostApiGroupsResponses = {
+export type PostGroupsErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: Group;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type PostApiGroupsResponse = PostApiGroupsResponses[keyof PostApiGroupsResponses];
+export type PostGroupsError = PostGroupsErrors[keyof PostGroupsErrors];
 
-export type DeleteApiGroupsByIdData = {
+export type PostGroupsResponses = {
+    /**
+     * Created
+     */
+    201: Group;
+};
+
+export type PostGroupsResponse = PostGroupsResponses[keyof PostGroupsResponses];
+
+export type DeleteGroupsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the group to be deleted.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groups/{id}';
+    url: '/groups/{id}';
 };
 
-export type DeleteApiGroupsByIdResponses = {
+export type DeleteGroupsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiGroupsByIdData = {
+export type DeleteGroupsByIdError = DeleteGroupsByIdErrors[keyof DeleteGroupsByIdErrors];
+
+export type DeleteGroupsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteGroupsByIdResponse = DeleteGroupsByIdResponses[keyof DeleteGroupsByIdResponses];
+
+export type GetGroupsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the group to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groups/{id}';
+    url: '/groups/{id}';
 };
 
-export type GetApiGroupsByIdResponses = {
+export type GetGroupsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetGroupsByIdError = GetGroupsByIdErrors[keyof GetGroupsByIdErrors];
+
+export type GetGroupsByIdResponses = {
     /**
      * OK
      */
     200: GroupResponseDto;
 };
 
-export type GetApiGroupsByIdResponse = GetApiGroupsByIdResponses[keyof GetApiGroupsByIdResponses];
+export type GetGroupsByIdResponse = GetGroupsByIdResponses[keyof GetGroupsByIdResponses];
 
-export type PatchApiGroupsByIdData = {
+export type PatchGroupsByIdData = {
+    /**
+     * The JSON Patch document containing the set of modifications.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the group to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groups/{id}';
+    url: '/groups/{id}';
 };
 
-export type PatchApiGroupsByIdResponses = {
+export type PatchGroupsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiGroupsByIdData = {
+export type PatchGroupsByIdError = PatchGroupsByIdErrors[keyof PatchGroupsByIdErrors];
+
+export type PatchGroupsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchGroupsByIdResponse = PatchGroupsByIdResponses[keyof PatchGroupsByIdResponses];
+
+export type PutGroupsByIdData = {
+    /**
+     * The data transfer object containing the updated group information.
+     */
     body?: GroupUpdateDto;
     path: {
+        /**
+         * The unique identifier of the group to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groups/{id}';
+    url: '/groups/{id}';
 };
 
-export type PutApiGroupsByIdResponses = {
+export type PutGroupsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiGroupsByIdGroupPictureData = {
+export type PutGroupsByIdError = PutGroupsByIdErrors[keyof PutGroupsByIdErrors];
+
+export type PutGroupsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutGroupsByIdResponse = PutGroupsByIdResponses[keyof PutGroupsByIdResponses];
+
+export type GetGroupsByIdGroupPictureData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the group whose picture is being retrieved.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groups/{id}/group-picture';
+    url: '/groups/{id}/group-picture';
 };
 
-export type GetApiGroupsByIdGroupPictureResponses = {
+export type GetGroupsByIdGroupPictureErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetGroupsByIdGroupPictureError = GetGroupsByIdGroupPictureErrors[keyof GetGroupsByIdGroupPictureErrors];
+
+export type GetGroupsByIdGroupPictureResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type PostApiGroupsByIdGroupPictureData = {
+export type GetGroupsByIdGroupPictureResponse = GetGroupsByIdGroupPictureResponses[keyof GetGroupsByIdGroupPictureResponses];
+
+export type PostGroupsByIdGroupPictureData = {
     body?: {
         image?: Blob | File;
     };
     path: {
+        /**
+         * The unique identifier of the group for which the picture is being uploaded.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/groups/{id}/group-picture';
+    url: '/groups/{id}/group-picture';
 };
 
-export type PostApiGroupsByIdGroupPictureResponses = {
+export type PostGroupsByIdGroupPictureErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostGroupsByIdGroupPictureError = PostGroupsByIdGroupPictureErrors[keyof PostGroupsByIdGroupPictureErrors];
+
+export type PostGroupsByIdGroupPictureResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: UploadPictureResponse;
 };
 
-export type GetApiMailinglistsData = {
+export type PostGroupsByIdGroupPictureResponse = PostGroupsByIdGroupPictureResponses[keyof PostGroupsByIdGroupPictureResponses];
+
+export type GetMailinglistsData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/mailinglists';
+    url: '/mailinglists';
 };
 
-export type GetApiMailinglistsResponses = {
+export type GetMailinglistsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetMailinglistsError = GetMailinglistsErrors[keyof GetMailinglistsErrors];
+
+export type GetMailinglistsResponses = {
     /**
      * OK
      */
     200: Array<Mailinglist>;
 };
 
-export type GetApiMailinglistsResponse = GetApiMailinglistsResponses[keyof GetApiMailinglistsResponses];
+export type GetMailinglistsResponse = GetMailinglistsResponses[keyof GetMailinglistsResponses];
 
-export type PostApiMailinglistsData = {
+export type PostMailinglistsData = {
+    /**
+     * The DTO containing the details for the new mailing list.
+     */
     body?: PostMailinglistDto;
     path?: never;
     query?: never;
-    url: '/api/mailinglists';
+    url: '/mailinglists';
 };
 
-export type PostApiMailinglistsResponses = {
+export type PostMailinglistsErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type DeleteApiMailinglistsByIdData = {
+export type PostMailinglistsError = PostMailinglistsErrors[keyof PostMailinglistsErrors];
+
+export type PostMailinglistsResponses = {
+    /**
+     * Created
+     */
+    201: Mailinglist;
+};
+
+export type PostMailinglistsResponse = PostMailinglistsResponses[keyof PostMailinglistsResponses];
+
+export type DeleteMailinglistsByIdData = {
     body?: never;
     path: {
+        /**
+         * The ID of the mailing list to delete.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/mailinglists/{id}';
+    url: '/mailinglists/{id}';
 };
 
-export type DeleteApiMailinglistsByIdResponses = {
+export type DeleteMailinglistsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiMailinglistsByIdData = {
+export type DeleteMailinglistsByIdError = DeleteMailinglistsByIdErrors[keyof DeleteMailinglistsByIdErrors];
+
+export type DeleteMailinglistsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteMailinglistsByIdResponse = DeleteMailinglistsByIdResponses[keyof DeleteMailinglistsByIdResponses];
+
+export type GetMailinglistsByIdData = {
     body?: never;
     path: {
+        /**
+         * The ID of the mailing list to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/mailinglists/{id}';
+    url: '/mailinglists/{id}';
 };
 
-export type GetApiMailinglistsByIdResponses = {
+export type GetMailinglistsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetMailinglistsByIdError = GetMailinglistsByIdErrors[keyof GetMailinglistsByIdErrors];
+
+export type GetMailinglistsByIdResponses = {
     /**
      * OK
      */
     200: Mailinglist;
 };
 
-export type GetApiMailinglistsByIdResponse = GetApiMailinglistsByIdResponses[keyof GetApiMailinglistsByIdResponses];
+export type GetMailinglistsByIdResponse = GetMailinglistsByIdResponses[keyof GetMailinglistsByIdResponses];
 
-export type PatchApiMailinglistsByIdData = {
+export type PatchMailinglistsByIdData = {
+    /**
+     * The JSON Patch document containing the update operations.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The ID of the mailing list to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/mailinglists/{id}';
+    url: '/mailinglists/{id}';
 };
 
-export type PatchApiMailinglistsByIdResponses = {
+export type PatchMailinglistsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiMailinglistsByIdData = {
+export type PatchMailinglistsByIdError = PatchMailinglistsByIdErrors[keyof PatchMailinglistsByIdErrors];
+
+export type PatchMailinglistsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchMailinglistsByIdResponse = PatchMailinglistsByIdResponses[keyof PatchMailinglistsByIdResponses];
+
+export type PutMailinglistsByIdData = {
+    /**
+     * The DTO containing the updated details for the mailing list.
+     */
     body?: PostMailinglistDto;
     path: {
+        /**
+         * The ID of the mailing list to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/mailinglists/{id}';
+    url: '/mailinglists/{id}';
 };
 
-export type PutApiMailinglistsByIdResponses = {
+export type PutMailinglistsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PostApiMailsNormalData = {
+export type PutMailinglistsByIdError = PutMailinglistsByIdErrors[keyof PutMailinglistsByIdErrors];
+
+export type PutMailinglistsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutMailinglistsByIdResponse = PutMailinglistsByIdResponses[keyof PutMailinglistsByIdResponses];
+
+export type PostMailsNormalData = {
+    /**
+     * The data transfer object containing the standard email details.
+     */
     body?: PostMailDto;
     path?: never;
     query?: never;
-    url: '/api/mails/normal';
+    url: '/mails/normal';
 };
 
-export type PostApiMailsNormalResponses = {
+export type PostMailsNormalErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostMailsNormalError = PostMailsNormalErrors[keyof PostMailsNormalErrors];
+
+export type PostMailsNormalResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type PostApiMailsActivityData = {
+export type PostMailsActivityData = {
+    /**
+     * The data transfer object containing activity-specific email parameters.
+     */
     body?: PostActivityMailDto;
     path?: never;
     query?: never;
-    url: '/api/mails/activity';
+    url: '/mails/activity';
 };
 
-export type PostApiMailsActivityResponses = {
+export type PostMailsActivityErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostMailsActivityError = PostMailsActivityErrors[keyof PostMailsActivityErrors];
+
+export type PostMailsActivityResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiMembersData = {
+export type GetMembersData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * The search term used to filter members based on their first name, last name, or email. This field allows for searching and retrieving members that match the specified search criteria, enabling users to quickly find members based on their name or email information in the system. The Search property is essential for providing a convenient and efficient way to filter member data based on relevant keywords, enhancing the user experience when retrieving member information in the client application based on their name or email details in the system.
+         */
         Search?: string;
+        /**
+         * The size of the page to be retrieved when paginating member data. This field is used to specify the number of member records to be included in each page of the response when retrieving member information in a paginated format. The PageSize property is essential for controlling the amount of member data returned in each page, allowing for efficient retrieval and display of member information in the client application based on pagination criteria in the system.
+         */
         PageSize?: number;
+        /**
+         * The page number to be retrieved when paginating member data. This field is used to specify the page of member records to be included in the response when retrieving member information in a paginated format. The Page property is essential for controlling the specific page of member data returned in the response, allowing for efficient retrieval and display of member information in the client application based on pagination criteria in the system.
+         */
         Page?: number;
+        /**
+         * The unique identifier of the study for which to filter members based on their study enrollments. This field is optional, and if provided, it allows for filtering members based on their association with a specific study, enabling the retrieval of members that are enrolled in a particular study within the system. If not provided, member data may be retrieved without any study-specific filtering, allowing for a broader retrieval of member information based on other criteria or without any specific filtering based on study enrollments in the system.
+         */
         StudyId?: number;
         Gratie?: boolean;
         LidVanVerdienste?: boolean;
         EreLid?: boolean;
         Begunstiger?: boolean;
         Suspended?: boolean;
+        /**
+         * Indicates whether to include inactive members in the retrieved member data. If set to true, both active and inactive members will be included in the response; if set to false, only active members will be included. This field allows for filtering members based on their active status, enabling the retrieval of either all members or only those that are currently active in the system based on the provided criteria in the request payload. The GetMembersDto ensures that member data is retrieved with the necessary information to effectively filter and manage member information based on their active status, providing a structured and validated approach to member retrieval in the application.
+         */
         Inactive?: boolean;
         StudyType?: StudyType;
     };
-    url: '/api/members';
+    url: '/members';
 };
 
-export type GetApiMembersResponses = {
+export type GetMembersErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetMembersError = GetMembersErrors[keyof GetMembersErrors];
+
+export type GetMembersResponses = {
     /**
      * OK
      */
     200: Array<MemberResponseDto>;
 };
 
-export type GetApiMembersResponse = GetApiMembersResponses[keyof GetApiMembersResponses];
+export type GetMembersResponse = GetMembersResponses[keyof GetMembersResponses];
 
-export type PostApiMembersData = {
+export type PostMembersData = {
+    /**
+     * The data transfer object containing registration information.
+     */
     body?: PostMemberDto;
     path?: never;
     query?: never;
-    url: '/api/members';
+    url: '/members';
 };
 
-export type PostApiMembersResponses = {
+export type PostMembersErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: Member;
+    400: ProblemDetails;
 };
 
-export type PostApiMembersResponse = PostApiMembersResponses[keyof PostApiMembersResponses];
+export type PostMembersError = PostMembersErrors[keyof PostMembersErrors];
 
-export type DeleteApiMembersByIdData = {
+export type PostMembersResponses = {
+    /**
+     * Created
+     */
+    201: Member;
+};
+
+export type PostMembersResponse = PostMembersResponses[keyof PostMembersResponses];
+
+export type DeleteMembersByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the member to be deleted.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/members/{id}';
+    url: '/members/{id}';
 };
 
-export type DeleteApiMembersByIdResponses = {
+export type DeleteMembersByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiMembersByIdData = {
+export type DeleteMembersByIdError = DeleteMembersByIdErrors[keyof DeleteMembersByIdErrors];
+
+export type DeleteMembersByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteMembersByIdResponse = DeleteMembersByIdResponses[keyof DeleteMembersByIdResponses];
+
+export type GetMembersByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier (Guid) of the member to retrieve.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/members/{id}';
+    url: '/members/{id}';
 };
 
-export type GetApiMembersByIdResponses = {
+export type GetMembersByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetMembersByIdError = GetMembersByIdErrors[keyof GetMembersByIdErrors];
+
+export type GetMembersByIdResponses = {
     /**
      * OK
      */
     200: MemberResponseDto;
 };
 
-export type GetApiMembersByIdResponse = GetApiMembersByIdResponses[keyof GetApiMembersByIdResponses];
+export type GetMembersByIdResponse = GetMembersByIdResponses[keyof GetMembersByIdResponses];
 
-export type PatchApiMembersByIdData = {
+export type PatchMembersByIdData = {
+    /**
+     * The JSON Patch document containing the intended modifications.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the member to update.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/members/{id}';
+    url: '/members/{id}';
 };
 
-export type PatchApiMembersByIdResponses = {
+export type PatchMembersByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiMembersByIdData = {
+export type PatchMembersByIdError = PatchMembersByIdErrors[keyof PatchMembersByIdErrors];
+
+export type PatchMembersByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchMembersByIdResponse = PatchMembersByIdResponses[keyof PatchMembersByIdResponses];
+
+export type PutMembersByIdData = {
+    /**
+     * The data transfer object containing the complete updated profile information.
+     */
     body?: MemberUpdateDto;
     path: {
+        /**
+         * The unique identifier of the member to update.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/members/{id}';
+    url: '/members/{id}';
 };
 
-export type PutApiMembersByIdResponses = {
+export type PutMembersByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type DeleteApiMembersByIdProfilePictureData = {
+export type PutMembersByIdError = PutMembersByIdErrors[keyof PutMembersByIdErrors];
+
+export type PutMembersByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutMembersByIdResponse = PutMembersByIdResponses[keyof PutMembersByIdResponses];
+
+export type DeleteMembersByIdProfilePictureData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the member whose picture is to be removed.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/members/{id}/profile-picture';
+    url: '/members/{id}/profile-picture';
 };
 
-export type DeleteApiMembersByIdProfilePictureResponses = {
+export type DeleteMembersByIdProfilePictureErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiMembersByIdProfilePictureData = {
+export type DeleteMembersByIdProfilePictureError = DeleteMembersByIdProfilePictureErrors[keyof DeleteMembersByIdProfilePictureErrors];
+
+export type DeleteMembersByIdProfilePictureResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteMembersByIdProfilePictureResponse = DeleteMembersByIdProfilePictureResponses[keyof DeleteMembersByIdProfilePictureResponses];
+
+export type GetMembersByIdProfilePictureData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the member whose picture is being requested.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/members/{id}/profile-picture';
+    url: '/members/{id}/profile-picture';
 };
 
-export type GetApiMembersByIdProfilePictureResponses = {
+export type GetMembersByIdProfilePictureErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetMembersByIdProfilePictureError = GetMembersByIdProfilePictureErrors[keyof GetMembersByIdProfilePictureErrors];
+
+export type GetMembersByIdProfilePictureResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type PostApiMembersWebhookRefreshEmailData = {
+export type GetMembersByIdProfilePictureResponse = GetMembersByIdProfilePictureResponses[keyof GetMembersByIdProfilePictureResponses];
+
+export type PostMembersWebhookRefreshEmailData = {
+    /**
+     * The unique identifier of the user whose email needs refreshing.
+     */
     body?: string;
     headers?: {
+        /**
+         * the shared webhook secret provided in the request headers.
+         */
         'X-Webhook-Secret'?: string;
     };
     path?: never;
     query?: never;
-    url: '/api/members/webhook/refresh-email';
+    url: '/members/webhook/refresh-email';
 };
 
-export type PostApiMembersWebhookRefreshEmailResponses = {
+export type PostMembersWebhookRefreshEmailErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+};
+
+export type PostMembersWebhookRefreshEmailError = PostMembersWebhookRefreshEmailErrors[keyof PostMembersWebhookRefreshEmailErrors];
+
+export type PostMembersWebhookRefreshEmailResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiPaymentsMembershipData = {
+export type GetPaymentsMembershipData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/payments/membership';
+    url: '/payments/membership';
 };
 
-export type GetApiPaymentsMembershipResponses = {
+export type GetPaymentsMembershipErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetPaymentsMembershipError = GetPaymentsMembershipErrors[keyof GetPaymentsMembershipErrors];
+
+export type GetPaymentsMembershipResponses = {
     /**
      * OK
      */
     200: Array<MembershipPayment>;
 };
 
-export type GetApiPaymentsMembershipResponse = GetApiPaymentsMembershipResponses[keyof GetApiPaymentsMembershipResponses];
+export type GetPaymentsMembershipResponse = GetPaymentsMembershipResponses[keyof GetPaymentsMembershipResponses];
 
-export type PostApiPaymentsMembershipData = {
+export type PostPaymentsMembershipData = {
+    /**
+     * The data transfer object containing membership payment details.
+     */
     body?: PostMembershipPaymentDto;
     path?: never;
     query?: never;
-    url: '/api/payments/membership';
+    url: '/payments/membership';
 };
 
-export type PostApiPaymentsMembershipResponses = {
+export type PostPaymentsMembershipErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostPaymentsMembershipError = PostPaymentsMembershipErrors[keyof PostPaymentsMembershipErrors];
+
+export type PostPaymentsMembershipResponses = {
     /**
      * OK
      */
     200: PostPaymentResponse;
 };
 
-export type PostApiPaymentsMembershipResponse = PostApiPaymentsMembershipResponses[keyof PostApiPaymentsMembershipResponses];
+export type PostPaymentsMembershipResponse = PostPaymentsMembershipResponses[keyof PostPaymentsMembershipResponses];
 
-export type GetApiPaymentsMembershipByIdData = {
+export type GetPaymentsMembershipByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the membership payment record.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/payments/membership/{id}';
+    url: '/payments/membership/{id}';
 };
 
-export type GetApiPaymentsMembershipByIdResponses = {
+export type GetPaymentsMembershipByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetPaymentsMembershipByIdError = GetPaymentsMembershipByIdErrors[keyof GetPaymentsMembershipByIdErrors];
+
+export type GetPaymentsMembershipByIdResponses = {
     /**
      * OK
      */
     200: MembershipPayment;
 };
 
-export type GetApiPaymentsMembershipByIdResponse = GetApiPaymentsMembershipByIdResponses[keyof GetApiPaymentsMembershipByIdResponses];
+export type GetPaymentsMembershipByIdResponse = GetPaymentsMembershipByIdResponses[keyof GetPaymentsMembershipByIdResponses];
 
-export type GetApiPaymentsEnrollmentData = {
+export type GetPaymentsEnrollmentData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/payments/enrollment';
+    url: '/payments/enrollment';
 };
 
-export type GetApiPaymentsEnrollmentResponses = {
+export type GetPaymentsEnrollmentErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetPaymentsEnrollmentError = GetPaymentsEnrollmentErrors[keyof GetPaymentsEnrollmentErrors];
+
+export type GetPaymentsEnrollmentResponses = {
     /**
      * OK
      */
     200: Array<EnrollmentPayment>;
 };
 
-export type GetApiPaymentsEnrollmentResponse = GetApiPaymentsEnrollmentResponses[keyof GetApiPaymentsEnrollmentResponses];
+export type GetPaymentsEnrollmentResponse = GetPaymentsEnrollmentResponses[keyof GetPaymentsEnrollmentResponses];
 
-export type GetApiPaymentsEnrollmentByIdData = {
+export type GetPaymentsEnrollmentByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the enrollment payment record.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/payments/enrollment/{id}';
+    url: '/payments/enrollment/{id}';
 };
 
-export type GetApiPaymentsEnrollmentByIdResponses = {
+export type GetPaymentsEnrollmentByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetPaymentsEnrollmentByIdError = GetPaymentsEnrollmentByIdErrors[keyof GetPaymentsEnrollmentByIdErrors];
+
+export type GetPaymentsEnrollmentByIdResponses = {
     /**
      * OK
      */
     200: EnrollmentPayment;
 };
 
-export type GetApiPaymentsEnrollmentByIdResponse = GetApiPaymentsEnrollmentByIdResponses[keyof GetApiPaymentsEnrollmentByIdResponses];
+export type GetPaymentsEnrollmentByIdResponse = GetPaymentsEnrollmentByIdResponses[keyof GetPaymentsEnrollmentByIdResponses];
 
-export type PostApiPaymentsActivityData = {
+export type PostPaymentsActivityData = {
+    /**
+     * The data transfer object containing activity-specific payment details.
+     */
     body?: PostActivityPaymentDto;
     path?: never;
     query?: never;
-    url: '/api/payments/activity';
+    url: '/payments/activity';
 };
 
-export type PostApiPaymentsActivityResponses = {
+export type PostPaymentsActivityErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostPaymentsActivityError = PostPaymentsActivityErrors[keyof PostPaymentsActivityErrors];
+
+export type PostPaymentsActivityResponses = {
     /**
      * OK
      */
     200: PostPaymentResponse;
 };
 
-export type PostApiPaymentsActivityResponse = PostApiPaymentsActivityResponses[keyof PostApiPaymentsActivityResponses];
+export type PostPaymentsActivityResponse = PostPaymentsActivityResponses[keyof PostPaymentsActivityResponses];
 
-export type PostApiPaymentsWebhookData = {
+export type PostPaymentsWebhookData = {
     body?: {
         id?: string;
     };
     path?: never;
     query?: never;
-    url: '/api/payments/webhook';
+    url: '/payments/webhook';
 };
 
-export type PostApiPaymentsWebhookResponses = {
+export type PostPaymentsWebhookErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type PostPaymentsWebhookError = PostPaymentsWebhookErrors[keyof PostPaymentsWebhookErrors];
+
+export type PostPaymentsWebhookResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiPaymentsUnpaidData = {
+export type GetPaymentsUnpaidData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * A boolean flag indicating whether to fetch unpaid balances for all users (requires admin permissions).
+         */
         allUsers?: boolean;
     };
-    url: '/api/payments/unpaid';
+    url: '/payments/unpaid';
 };
 
-export type GetApiPaymentsUnpaidResponses = {
+export type GetPaymentsUnpaidErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetPaymentsUnpaidError = GetPaymentsUnpaidErrors[keyof GetPaymentsUnpaidErrors];
+
+export type GetPaymentsUnpaidResponses = {
     /**
      * OK
      */
     200: Array<EnrollmentBalance>;
 };
 
-export type GetApiPaymentsUnpaidResponse = GetApiPaymentsUnpaidResponses[keyof GetApiPaymentsUnpaidResponses];
+export type GetPaymentsUnpaidResponse = GetPaymentsUnpaidResponses[keyof GetPaymentsUnpaidResponses];
 
-export type GetApiPaymentsOverpaidData = {
+export type GetPaymentsOverpaidData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/payments/overpaid';
+    url: '/payments/overpaid';
 };
 
-export type GetApiPaymentsOverpaidResponses = {
+export type GetPaymentsOverpaidErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetPaymentsOverpaidError = GetPaymentsOverpaidErrors[keyof GetPaymentsOverpaidErrors];
+
+export type GetPaymentsOverpaidResponses = {
     /**
      * OK
      */
     200: Array<EnrollmentBalance>;
 };
 
-export type GetApiPaymentsOverpaidResponse = GetApiPaymentsOverpaidResponses[keyof GetApiPaymentsOverpaidResponses];
+export type GetPaymentsOverpaidResponse = GetPaymentsOverpaidResponses[keyof GetPaymentsOverpaidResponses];
 
-export type GetApiPaymentsMemberByUserIdStatusData = {
+export type GetPaymentsMemberByUserIdStatusData = {
     body?: never;
     path: {
         userId: string;
     };
     query?: {
+        /**
+         * The unique identifier of the member whose status is being queried.
+         */
         fromUserId?: string;
     };
-    url: '/api/payments/member/{userId}/status';
+    url: '/payments/member/{userId}/status';
 };
 
-export type GetApiPaymentsMemberByUserIdStatusResponses = {
+export type GetPaymentsMemberByUserIdStatusErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetPaymentsMemberByUserIdStatusError = GetPaymentsMemberByUserIdStatusErrors[keyof GetPaymentsMemberByUserIdStatusErrors];
+
+export type GetPaymentsMemberByUserIdStatusResponses = {
     /**
      * OK
      */
     200: unknown;
 };
 
-export type GetApiPaymentsExportData = {
+export type GetPaymentsExportData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * The beginning of the date range for the export.
+         */
         startDate?: string;
+        /**
+         * The end of the date range for the export.
+         */
         endDate?: string;
     };
-    url: '/api/payments/export';
+    url: '/payments/export';
 };
 
-export type GetApiPaymentsExportResponses = {
+export type GetPaymentsExportErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetPaymentsExportError = GetPaymentsExportErrors[keyof GetPaymentsExportErrors];
+
+export type GetPaymentsExportResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type GetApiProfilepictureViewByPathData = {
+export type GetPaymentsExportResponse = GetPaymentsExportResponses[keyof GetPaymentsExportResponses];
+
+export type GetProfilepictureViewByPathData = {
     body?: never;
     path: {
+        /**
+         * The encoded or relative path to the profile picture asset.
+         */
         path: string;
     };
     query?: never;
-    url: '/api/profilepicture/view/{path}';
+    url: '/profilepicture/view/{path}';
 };
 
-export type GetApiProfilepictureViewByPathResponses = {
+export type GetProfilepictureViewByPathErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetProfilepictureViewByPathError = GetProfilepictureViewByPathErrors[keyof GetProfilepictureViewByPathErrors];
+
+export type GetProfilepictureViewByPathResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: Blob | File;
 };
 
-export type PostApiProfilepictureByIdProfilePictureData = {
+export type GetProfilepictureViewByPathResponse = GetProfilepictureViewByPathResponses[keyof GetProfilepictureViewByPathResponses];
+
+export type PostProfilepictureByIdProfilePictureData = {
     body?: {
         image?: Blob | File;
     };
     path: {
+        /**
+         * The unique identifier of the member for whom the picture is being uploaded.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/profilepicture/{id}/profile-picture';
+    url: '/profilepicture/{id}/profile-picture';
 };
 
-export type PostApiProfilepictureByIdProfilePictureResponses = {
+export type PostProfilepictureByIdProfilePictureErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostProfilepictureByIdProfilePictureError = PostProfilepictureByIdProfilePictureErrors[keyof PostProfilepictureByIdProfilePictureErrors];
+
+export type PostProfilepictureByIdProfilePictureResponses = {
     /**
      * OK
      */
-    200: unknown;
+    200: UploadPictureResponse;
 };
 
-export type GetApiRolealiasesData = {
+export type PostProfilepictureByIdProfilePictureResponse = PostProfilepictureByIdProfilePictureResponses[keyof PostProfilepictureByIdProfilePictureResponses];
+
+export type GetRolealiasesData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/rolealiases';
+    url: '/rolealiases';
 };
 
-export type GetApiRolealiasesResponses = {
+export type GetRolealiasesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type GetRolealiasesError = GetRolealiasesErrors[keyof GetRolealiasesErrors];
+
+export type GetRolealiasesResponses = {
     /**
      * OK
      */
     200: Array<RoleAlias>;
 };
 
-export type GetApiRolealiasesResponse = GetApiRolealiasesResponses[keyof GetApiRolealiasesResponses];
+export type GetRolealiasesResponse = GetRolealiasesResponses[keyof GetRolealiasesResponses];
 
-export type PostApiRolealiasesData = {
+export type PostRolealiasesData = {
+    /**
+     * The data transfer object containing the role alias definition.
+     */
     body?: PostRoleAliasDto;
     path?: never;
     query?: never;
-    url: '/api/rolealiases';
+    url: '/rolealiases';
 };
 
-export type PostApiRolealiasesResponses = {
+export type PostRolealiasesErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type DeleteApiRolealiasesByIdData = {
+export type PostRolealiasesError = PostRolealiasesErrors[keyof PostRolealiasesErrors];
+
+export type PostRolealiasesResponses = {
+    /**
+     * Created
+     */
+    201: RoleAlias;
+};
+
+export type PostRolealiasesResponse = PostRolealiasesResponses[keyof PostRolealiasesResponses];
+
+export type DeleteRolealiasesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the role alias to be deleted.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/rolealiases/{id}';
+    url: '/rolealiases/{id}';
 };
 
-export type DeleteApiRolealiasesByIdResponses = {
+export type DeleteRolealiasesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiRolealiasesByIdData = {
+export type DeleteRolealiasesByIdError = DeleteRolealiasesByIdErrors[keyof DeleteRolealiasesByIdErrors];
+
+export type DeleteRolealiasesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteRolealiasesByIdResponse = DeleteRolealiasesByIdResponses[keyof DeleteRolealiasesByIdResponses];
+
+export type GetRolealiasesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the role alias to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/rolealiases/{id}';
+    url: '/rolealiases/{id}';
 };
 
-export type GetApiRolealiasesByIdResponses = {
+export type GetRolealiasesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRolealiasesByIdError = GetRolealiasesByIdErrors[keyof GetRolealiasesByIdErrors];
+
+export type GetRolealiasesByIdResponses = {
     /**
      * OK
      */
     200: RoleAlias;
 };
 
-export type GetApiRolealiasesByIdResponse = GetApiRolealiasesByIdResponses[keyof GetApiRolealiasesByIdResponses];
+export type GetRolealiasesByIdResponse = GetRolealiasesByIdResponses[keyof GetRolealiasesByIdResponses];
 
-export type PatchApiRolealiasesByIdData = {
+export type PatchRolealiasesByIdData = {
+    /**
+     * The JSON Patch document containing the modifications.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the role alias to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/rolealiases/{id}';
+    url: '/rolealiases/{id}';
 };
 
-export type PatchApiRolealiasesByIdResponses = {
+export type PatchRolealiasesByIdErrors = {
     /**
-     * OK
+     * Forbidden
      */
-    200: unknown;
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiRolealiasesByIdData = {
+export type PatchRolealiasesByIdError = PatchRolealiasesByIdErrors[keyof PatchRolealiasesByIdErrors];
+
+export type PatchRolealiasesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchRolealiasesByIdResponse = PatchRolealiasesByIdResponses[keyof PatchRolealiasesByIdResponses];
+
+export type PutRolealiasesByIdData = {
+    /**
+     * The data transfer object containing the updated alias information.
+     */
     body?: RoleAliasUpdateDto;
     path: {
+        /**
+         * The unique identifier of the role alias to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/rolealiases/{id}';
+    url: '/rolealiases/{id}';
 };
 
-export type PutApiRolealiasesByIdResponses = {
+export type PutRolealiasesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiRolesData = {
+export type PutRolealiasesByIdError = PutRolealiasesByIdErrors[keyof PutRolealiasesByIdErrors];
+
+export type PutRolealiasesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutRolealiasesByIdResponse = PutRolealiasesByIdResponses[keyof PutRolealiasesByIdResponses];
+
+export type GetRolesData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/roles';
+    url: '/roles';
 };
 
-export type GetApiRolesResponses = {
+export type GetRolesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type GetRolesError = GetRolesErrors[keyof GetRolesErrors];
+
+export type GetRolesResponses = {
     /**
      * OK
      */
     200: Array<Role>;
 };
 
-export type GetApiRolesResponse = GetApiRolesResponses[keyof GetApiRolesResponses];
+export type GetRolesResponse = GetRolesResponses[keyof GetRolesResponses];
 
-export type PostApiRolesData = {
+export type PostRolesData = {
+    /**
+     * The data transfer object containing the initial role configuration.
+     */
     body?: PostRoleDto;
     path?: never;
     query?: never;
-    url: '/api/roles';
+    url: '/roles';
 };
 
-export type PostApiRolesResponses = {
+export type PostRolesErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type DeleteApiRolesByIdData = {
+export type PostRolesError = PostRolesErrors[keyof PostRolesErrors];
+
+export type PostRolesResponses = {
+    /**
+     * Created
+     */
+    201: Role;
+};
+
+export type PostRolesResponse = PostRolesResponses[keyof PostRolesResponses];
+
+export type DeleteRolesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the role to be deleted.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/roles/{id}';
+    url: '/roles/{id}';
 };
 
-export type DeleteApiRolesByIdResponses = {
+export type DeleteRolesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiRolesByIdData = {
+export type DeleteRolesByIdError = DeleteRolesByIdErrors[keyof DeleteRolesByIdErrors];
+
+export type DeleteRolesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteRolesByIdResponse = DeleteRolesByIdResponses[keyof DeleteRolesByIdResponses];
+
+export type GetRolesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the role to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/roles/{id}';
+    url: '/roles/{id}';
 };
 
-export type GetApiRolesByIdResponses = {
+export type GetRolesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRolesByIdError = GetRolesByIdErrors[keyof GetRolesByIdErrors];
+
+export type GetRolesByIdResponses = {
     /**
      * OK
      */
     200: Role;
 };
 
-export type GetApiRolesByIdResponse = GetApiRolesByIdResponses[keyof GetApiRolesByIdResponses];
+export type GetRolesByIdResponse = GetRolesByIdResponses[keyof GetRolesByIdResponses];
 
-export type PatchApiRolesByIdData = {
+export type PatchRolesByIdData = {
+    /**
+     * The JSON Patch document containing the set of intended modifications.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the role to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/roles/{id}';
+    url: '/roles/{id}';
 };
 
-export type PatchApiRolesByIdResponses = {
+export type PatchRolesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiRolesByIdData = {
+export type PatchRolesByIdError = PatchRolesByIdErrors[keyof PatchRolesByIdErrors];
+
+export type PatchRolesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchRolesByIdResponse = PatchRolesByIdResponses[keyof PatchRolesByIdResponses];
+
+export type PutRolesByIdData = {
+    /**
+     * The data transfer object containing the full updated role information.
+     */
     body?: RoleUpdateDto;
     path: {
+        /**
+         * The unique identifier of the role to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/roles/{id}';
+    url: '/roles/{id}';
 };
 
-export type PutApiRolesByIdResponses = {
+export type PutRolesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiSettingsData = {
+export type PutRolesByIdError = PutRolesByIdErrors[keyof PutRolesByIdErrors];
+
+export type PutRolesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutRolesByIdResponse = PutRolesByIdResponses[keyof PutRolesByIdResponses];
+
+export type GetSettingsData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/settings';
+    url: '/settings';
 };
 
-export type GetApiSettingsResponses = {
+export type GetSettingsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetSettingsError = GetSettingsErrors[keyof GetSettingsErrors];
+
+export type GetSettingsResponses = {
     /**
      * OK
      */
     200: Array<Setting>;
 };
 
-export type GetApiSettingsResponse = GetApiSettingsResponses[keyof GetApiSettingsResponses];
+export type GetSettingsResponse = GetSettingsResponses[keyof GetSettingsResponses];
 
-export type PostApiSettingsData = {
+export type PostSettingsData = {
     body?: never;
     path?: never;
     query?: {
+        /**
+         * The name/key for the new setting.
+         */
         id?: string;
+        /**
+         * The initial value to assign to the setting.
+         */
         value?: string;
     };
-    url: '/api/settings';
+    url: '/settings';
 };
 
-export type PostApiSettingsResponses = {
+export type PostSettingsErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type DeleteApiSettingsByIdData = {
+export type PostSettingsError = PostSettingsErrors[keyof PostSettingsErrors];
+
+export type PostSettingsResponses = {
+    /**
+     * Created
+     */
+    201: Setting;
+};
+
+export type PostSettingsResponse = PostSettingsResponses[keyof PostSettingsResponses];
+
+export type DeleteSettingsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier or name of the setting to delete.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/settings/{id}';
+    url: '/settings/{id}';
 };
 
-export type DeleteApiSettingsByIdResponses = {
+export type DeleteSettingsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiSettingsByIdData = {
+export type DeleteSettingsByIdError = DeleteSettingsByIdErrors[keyof DeleteSettingsByIdErrors];
+
+export type DeleteSettingsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteSettingsByIdResponse = DeleteSettingsByIdResponses[keyof DeleteSettingsByIdResponses];
+
+export type GetSettingsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier or name of the setting to retrieve.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/settings/{id}';
+    url: '/settings/{id}';
 };
 
-export type GetApiSettingsByIdResponses = {
+export type GetSettingsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetSettingsByIdError = GetSettingsByIdErrors[keyof GetSettingsByIdErrors];
+
+export type GetSettingsByIdResponses = {
     /**
      * OK
      */
     200: Setting;
 };
 
-export type GetApiSettingsByIdResponse = GetApiSettingsByIdResponses[keyof GetApiSettingsByIdResponses];
+export type GetSettingsByIdResponse = GetSettingsByIdResponses[keyof GetSettingsByIdResponses];
 
-export type PatchApiSettingsByIdData = {
+export type PatchSettingsByIdData = {
+    /**
+     * The JSON Patch document containing the intended changes.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The identifier of the setting to update.
+         */
         id: string;
     };
     query?: never;
-    url: '/api/settings/{id}';
+    url: '/settings/{id}';
 };
 
-export type PatchApiSettingsByIdResponses = {
+export type PatchSettingsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiSettingsByIdData = {
+export type PatchSettingsByIdError = PatchSettingsByIdErrors[keyof PatchSettingsByIdErrors];
+
+export type PatchSettingsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchSettingsByIdResponse = PatchSettingsByIdResponses[keyof PatchSettingsByIdResponses];
+
+export type PutSettingsByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier or name of the setting to update.
+         */
         id: string;
     };
     query?: {
+        /**
+         * The new value to assign to the specified setting.
+         */
         value?: string;
     };
-    url: '/api/settings/{id}';
+    url: '/settings/{id}';
 };
 
-export type PutApiSettingsByIdResponses = {
+export type PutSettingsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PatchApiSpecificationanswersByAnswerIdData = {
+export type PutSettingsByIdError = PutSettingsByIdErrors[keyof PutSettingsByIdErrors];
+
+export type PutSettingsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutSettingsByIdResponse = PutSettingsByIdResponses[keyof PutSettingsByIdResponses];
+
+export type PatchSpecificationanswersByAnswerIdData = {
+    /**
+     * The JSON Patch document containing the set of modifications to apply.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the specification answer to be patched.
+         */
         answerId: number;
     };
     query?: never;
-    url: '/api/specificationanswers/{answerId}';
+    url: '/specificationanswers/{answerId}';
 };
 
-export type PatchApiSpecificationanswersByAnswerIdResponses = {
+export type PatchSpecificationanswersByAnswerIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiStudiesData = {
+export type PatchSpecificationanswersByAnswerIdError = PatchSpecificationanswersByAnswerIdErrors[keyof PatchSpecificationanswersByAnswerIdErrors];
+
+export type PatchSpecificationanswersByAnswerIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchSpecificationanswersByAnswerIdResponse = PatchSpecificationanswersByAnswerIdResponses[keyof PatchSpecificationanswersByAnswerIdResponses];
+
+export type GetStudiesData = {
     body?: never;
     path?: never;
     query?: never;
-    url: '/api/studies';
+    url: '/studies';
 };
 
-export type GetApiStudiesResponses = {
+export type GetStudiesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+};
+
+export type GetStudiesError = GetStudiesErrors[keyof GetStudiesErrors];
+
+export type GetStudiesResponses = {
     /**
      * OK
      */
     200: Array<Study>;
 };
 
-export type GetApiStudiesResponse = GetApiStudiesResponses[keyof GetApiStudiesResponses];
+export type GetStudiesResponse = GetStudiesResponses[keyof GetStudiesResponses];
 
-export type PostApiStudiesData = {
+export type PostStudiesData = {
+    /**
+     * The data transfer object containing the initial study configuration.
+     */
     body?: PostStudyDto;
     path?: never;
     query?: never;
-    url: '/api/studies';
+    url: '/studies';
 };
 
-export type PostApiStudiesResponses = {
+export type PostStudiesErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
 };
 
-export type DeleteApiStudiesByIdData = {
+export type PostStudiesError = PostStudiesErrors[keyof PostStudiesErrors];
+
+export type PostStudiesResponses = {
+    /**
+     * Created
+     */
+    201: Study;
+};
+
+export type PostStudiesResponse = PostStudiesResponses[keyof PostStudiesResponses];
+
+export type DeleteStudiesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the study to be deleted.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/studies/{id}';
+    url: '/studies/{id}';
 };
 
-export type DeleteApiStudiesByIdResponses = {
+export type DeleteStudiesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiStudiesByIdData = {
+export type DeleteStudiesByIdError = DeleteStudiesByIdErrors[keyof DeleteStudiesByIdErrors];
+
+export type DeleteStudiesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteStudiesByIdResponse = DeleteStudiesByIdResponses[keyof DeleteStudiesByIdResponses];
+
+export type GetStudiesByIdData = {
     body?: never;
     path: {
+        /**
+         * The unique identifier of the study to retrieve.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/studies/{id}';
+    url: '/studies/{id}';
 };
 
-export type GetApiStudiesByIdResponses = {
+export type GetStudiesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetStudiesByIdError = GetStudiesByIdErrors[keyof GetStudiesByIdErrors];
+
+export type GetStudiesByIdResponses = {
     /**
      * OK
      */
     200: Study;
 };
 
-export type GetApiStudiesByIdResponse = GetApiStudiesByIdResponses[keyof GetApiStudiesByIdResponses];
+export type GetStudiesByIdResponse = GetStudiesByIdResponses[keyof GetStudiesByIdResponses];
 
-export type PatchApiStudiesByIdData = {
+export type PatchStudiesByIdData = {
+    /**
+     * The JSON Patch document containing the intended modifications.
+     */
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the study to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/studies/{id}';
+    url: '/studies/{id}';
 };
 
-export type PatchApiStudiesByIdResponses = {
+export type PatchStudiesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type PutApiStudiesByIdData = {
+export type PatchStudiesByIdError = PatchStudiesByIdErrors[keyof PatchStudiesByIdErrors];
+
+export type PatchStudiesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchStudiesByIdResponse = PatchStudiesByIdResponses[keyof PatchStudiesByIdResponses];
+
+export type PutStudiesByIdData = {
+    /**
+     * The data transfer object containing the full updated study information.
+     */
     body?: StudyUpdateDto;
     path: {
+        /**
+         * The unique identifier of the study to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/studies/{id}';
+    url: '/studies/{id}';
 };
 
-export type PutApiStudiesByIdResponses = {
+export type PutStudiesByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
 
-export type GetApiStudyenrollmentsData = {
+export type PutStudiesByIdError = PutStudiesByIdErrors[keyof PutStudiesByIdErrors];
+
+export type PutStudiesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutStudiesByIdResponse = PutStudiesByIdResponses[keyof PutStudiesByIdResponses];
+
+export type GetStudyenrollmentsData = {
     body?: never;
     path?: never;
     query?: {
         MemberId?: string;
     };
-    url: '/api/studyenrollments';
+    url: '/studyenrollments';
 };
 
-export type GetApiStudyenrollmentsResponses = {
+export type GetStudyenrollmentsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type GetStudyenrollmentsError = GetStudyenrollmentsErrors[keyof GetStudyenrollmentsErrors];
+
+export type GetStudyenrollmentsResponses = {
     /**
      * OK
      */
     200: Array<StudyEnrollmentResponseDto>;
 };
 
-export type GetApiStudyenrollmentsResponse = GetApiStudyenrollmentsResponses[keyof GetApiStudyenrollmentsResponses];
+export type GetStudyenrollmentsResponse = GetStudyenrollmentsResponses[keyof GetStudyenrollmentsResponses];
 
-export type PostApiStudyenrollmentsData = {
+export type PostStudyenrollmentsData = {
+    /**
+     * The data transfer object containing the new enrollment configuration.
+     */
     body?: PostStudyEnrollmentDto;
     path?: never;
     query?: never;
-    url: '/api/studyenrollments';
+    url: '/studyenrollments';
 };
 
-export type PostApiStudyenrollmentsResponses = {
+export type PostStudyenrollmentsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostStudyenrollmentsError = PostStudyenrollmentsErrors[keyof PostStudyenrollmentsErrors];
+
+export type PostStudyenrollmentsResponses = {
+    /**
+     * Created
+     */
+    201: StudyEnrollmentResponseDto;
+};
+
+export type PostStudyenrollmentsResponse = PostStudyenrollmentsResponses[keyof PostStudyenrollmentsResponses];
+
+export type DeleteStudyenrollmentsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * The unique identifier of the study enrollment to delete.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/studyenrollments/{id}';
+};
+
+export type DeleteStudyenrollmentsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteStudyenrollmentsByIdError = DeleteStudyenrollmentsByIdErrors[keyof DeleteStudyenrollmentsByIdErrors];
+
+export type DeleteStudyenrollmentsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteStudyenrollmentsByIdResponse = DeleteStudyenrollmentsByIdResponses[keyof DeleteStudyenrollmentsByIdResponses];
+
+export type GetStudyenrollmentsByIdData = {
+    body?: never;
+    path: {
+        /**
+         * The unique identifier of the study enrollment to retrieve.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/studyenrollments/{id}';
+};
+
+export type GetStudyenrollmentsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetStudyenrollmentsByIdError = GetStudyenrollmentsByIdErrors[keyof GetStudyenrollmentsByIdErrors];
+
+export type GetStudyenrollmentsByIdResponses = {
     /**
      * OK
      */
     200: StudyEnrollmentResponseDto;
 };
 
-export type PostApiStudyenrollmentsResponse = PostApiStudyenrollmentsResponses[keyof PostApiStudyenrollmentsResponses];
+export type GetStudyenrollmentsByIdResponse = GetStudyenrollmentsByIdResponses[keyof GetStudyenrollmentsByIdResponses];
 
-export type DeleteApiStudyenrollmentsByIdData = {
-    body?: never;
-    path: {
-        id: number;
-    };
-    query?: never;
-    url: '/api/studyenrollments/{id}';
-};
-
-export type DeleteApiStudyenrollmentsByIdResponses = {
+export type PatchStudyenrollmentsByIdData = {
     /**
-     * OK
+     * The JSON Patch document containing the intended modifications.
      */
-    200: unknown;
-};
-
-export type GetApiStudyenrollmentsByIdData = {
-    body?: never;
-    path: {
-        id: number;
-    };
-    query?: never;
-    url: '/api/studyenrollments/{id}';
-};
-
-export type GetApiStudyenrollmentsByIdResponses = {
-    /**
-     * OK
-     */
-    200: StudyEnrollmentResponseDto;
-};
-
-export type GetApiStudyenrollmentsByIdResponse = GetApiStudyenrollmentsByIdResponses[keyof GetApiStudyenrollmentsByIdResponses];
-
-export type PatchApiStudyenrollmentsByIdData = {
     body?: Array<Operation>;
     path: {
+        /**
+         * The unique identifier of the study enrollment to update.
+         */
         id: number;
     };
     query?: never;
-    url: '/api/studyenrollments/{id}';
+    url: '/studyenrollments/{id}';
 };
 
-export type PatchApiStudyenrollmentsByIdResponses = {
+export type PatchStudyenrollmentsByIdErrors = {
     /**
-     * OK
+     * Bad Request
      */
-    200: unknown;
+    400: ProblemDetails;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
 };
+
+export type PatchStudyenrollmentsByIdError = PatchStudyenrollmentsByIdErrors[keyof PatchStudyenrollmentsByIdErrors];
+
+export type PatchStudyenrollmentsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PatchStudyenrollmentsByIdResponse = PatchStudyenrollmentsByIdResponses[keyof PatchStudyenrollmentsByIdResponses];

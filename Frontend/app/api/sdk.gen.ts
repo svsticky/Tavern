@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { DeleteApiActivitiesByIdData, DeleteApiActivitiesByIdResponses, DeleteApiAnnouncementsByIdData, DeleteApiAnnouncementsByIdResponses, DeleteApiEnrollmentsByActivityIdByMemberIdData, DeleteApiEnrollmentsByActivityIdByMemberIdResponses, DeleteApiGroupmembershipsByIdData, DeleteApiGroupmembershipsByIdResponses, DeleteApiGroupsByIdData, DeleteApiGroupsByIdResponses, DeleteApiMailinglistsByIdData, DeleteApiMailinglistsByIdResponses, DeleteApiMembersByIdData, DeleteApiMembersByIdProfilePictureData, DeleteApiMembersByIdProfilePictureResponses, DeleteApiMembersByIdResponses, DeleteApiRolealiasesByIdData, DeleteApiRolealiasesByIdResponses, DeleteApiRolesByIdData, DeleteApiRolesByIdResponses, DeleteApiSettingsByIdData, DeleteApiSettingsByIdResponses, DeleteApiStudiesByIdData, DeleteApiStudiesByIdResponses, DeleteApiStudyenrollmentsByIdData, DeleteApiStudyenrollmentsByIdResponses, GetApiActivitiesByIdData, GetApiActivitiesByIdEnrollmentsExportData, GetApiActivitiesByIdEnrollmentsExportResponses, GetApiActivitiesByIdPosterData, GetApiActivitiesByIdPosterDownloadData, GetApiActivitiesByIdPosterDownloadResponses, GetApiActivitiesByIdPosterResponses, GetApiActivitiesByIdResponses, GetApiActivitiesData, GetApiActivitiesResponses, GetApiAnnouncementsByIdData, GetApiAnnouncementsByIdResponses, GetApiAnnouncementsData, GetApiAnnouncementsResponses, GetApiEnrollmentsByActivityIdByMemberIdData, GetApiEnrollmentsByActivityIdByMemberIdResponses, GetApiEnrollmentsData, GetApiEnrollmentsResponses, GetApiGroupmembershipsByIdData, GetApiGroupmembershipsByIdResponses, GetApiGroupmembershipsData, GetApiGroupmembershipsResponses, GetApiGroupsByIdData, GetApiGroupsByIdGroupPictureData, GetApiGroupsByIdGroupPictureResponses, GetApiGroupsByIdResponses, GetApiGroupsData, GetApiGroupsResponses, GetApiMailinglistsByIdData, GetApiMailinglistsByIdResponses, GetApiMailinglistsData, GetApiMailinglistsResponses, GetApiMembersByIdData, GetApiMembersByIdProfilePictureData, GetApiMembersByIdProfilePictureResponses, GetApiMembersByIdResponses, GetApiMembersData, GetApiMembersResponses, GetApiPaymentsEnrollmentByIdData, GetApiPaymentsEnrollmentByIdResponses, GetApiPaymentsEnrollmentData, GetApiPaymentsEnrollmentResponses, GetApiPaymentsExportData, GetApiPaymentsExportResponses, GetApiPaymentsMemberByUserIdStatusData, GetApiPaymentsMemberByUserIdStatusResponses, GetApiPaymentsMembershipByIdData, GetApiPaymentsMembershipByIdResponses, GetApiPaymentsMembershipData, GetApiPaymentsMembershipResponses, GetApiPaymentsOverpaidData, GetApiPaymentsOverpaidResponses, GetApiPaymentsUnpaidData, GetApiPaymentsUnpaidResponses, GetApiProfilepictureViewByPathData, GetApiProfilepictureViewByPathResponses, GetApiRolealiasesByIdData, GetApiRolealiasesByIdResponses, GetApiRolealiasesData, GetApiRolealiasesResponses, GetApiRolesByIdData, GetApiRolesByIdResponses, GetApiRolesData, GetApiRolesResponses, GetApiSettingsByIdData, GetApiSettingsByIdResponses, GetApiSettingsData, GetApiSettingsResponses, GetApiStudiesByIdData, GetApiStudiesByIdResponses, GetApiStudiesData, GetApiStudiesResponses, GetApiStudyenrollmentsByIdData, GetApiStudyenrollmentsByIdResponses, GetApiStudyenrollmentsData, GetApiStudyenrollmentsResponses, PatchApiActivitiesByIdData, PatchApiActivitiesByIdResponses, PatchApiAnnouncementsByIdData, PatchApiAnnouncementsByIdResponses, PatchApiEnrollmentsByActivityIdByMemberIdData, PatchApiEnrollmentsByActivityIdByMemberIdResponses, PatchApiGroupmembershipsByIdData, PatchApiGroupmembershipsByIdResponses, PatchApiGroupsByIdData, PatchApiGroupsByIdResponses, PatchApiMailinglistsByIdData, PatchApiMailinglistsByIdResponses, PatchApiMembersByIdData, PatchApiMembersByIdResponses, PatchApiRolealiasesByIdData, PatchApiRolealiasesByIdResponses, PatchApiRolesByIdData, PatchApiRolesByIdResponses, PatchApiSettingsByIdData, PatchApiSettingsByIdResponses, PatchApiSpecificationanswersByAnswerIdData, PatchApiSpecificationanswersByAnswerIdResponses, PatchApiStudiesByIdData, PatchApiStudiesByIdResponses, PatchApiStudyenrollmentsByIdData, PatchApiStudyenrollmentsByIdResponses, PostApiActivitiesByIdPosterData, PostApiActivitiesByIdPosterResponses, PostApiActivitiesData, PostApiActivitiesResponses, PostApiAnnouncementsData, PostApiAnnouncementsResponses, PostApiEnrollmentsData, PostApiEnrollmentsResponses, PostApiGroupmembershipsData, PostApiGroupmembershipsResponses, PostApiGroupsByIdGroupPictureData, PostApiGroupsByIdGroupPictureResponses, PostApiGroupsData, PostApiGroupsResponses, PostApiMailinglistsData, PostApiMailinglistsResponses, PostApiMailsActivityData, PostApiMailsActivityResponses, PostApiMailsNormalData, PostApiMailsNormalResponses, PostApiMembersData, PostApiMembersResponses, PostApiMembersWebhookRefreshEmailData, PostApiMembersWebhookRefreshEmailResponses, PostApiPaymentsActivityData, PostApiPaymentsActivityResponses, PostApiPaymentsMembershipData, PostApiPaymentsMembershipResponses, PostApiPaymentsWebhookData, PostApiPaymentsWebhookResponses, PostApiProfilepictureByIdProfilePictureData, PostApiProfilepictureByIdProfilePictureResponses, PostApiRolealiasesData, PostApiRolealiasesResponses, PostApiRolesData, PostApiRolesResponses, PostApiSettingsData, PostApiSettingsResponses, PostApiStudiesData, PostApiStudiesResponses, PostApiStudyenrollmentsData, PostApiStudyenrollmentsResponses, PutApiActivitiesByIdData, PutApiActivitiesByIdResponses, PutApiAnnouncementsByIdData, PutApiAnnouncementsByIdResponses, PutApiEnrollmentsByActivityIdByMemberIdData, PutApiEnrollmentsByActivityIdByMemberIdResponses, PutApiGroupmembershipsByIdData, PutApiGroupmembershipsByIdResponses, PutApiGroupsByIdData, PutApiGroupsByIdResponses, PutApiMailinglistsByIdData, PutApiMailinglistsByIdResponses, PutApiMembersByIdData, PutApiMembersByIdResponses, PutApiRolealiasesByIdData, PutApiRolealiasesByIdResponses, PutApiRolesByIdData, PutApiRolesByIdResponses, PutApiSettingsByIdData, PutApiSettingsByIdResponses, PutApiStudiesByIdData, PutApiStudiesByIdResponses } from './types.gen';
+import type { DeleteActivitiesByIdData, DeleteActivitiesByIdErrors, DeleteActivitiesByIdResponses, DeleteAnnouncementsByIdData, DeleteAnnouncementsByIdErrors, DeleteAnnouncementsByIdResponses, DeleteEnrollmentsByActivityIdByMemberIdData, DeleteEnrollmentsByActivityIdByMemberIdErrors, DeleteEnrollmentsByActivityIdByMemberIdResponses, DeleteGroupmembershipsByIdData, DeleteGroupmembershipsByIdErrors, DeleteGroupmembershipsByIdResponses, DeleteGroupsByIdData, DeleteGroupsByIdErrors, DeleteGroupsByIdResponses, DeleteMailinglistsByIdData, DeleteMailinglistsByIdErrors, DeleteMailinglistsByIdResponses, DeleteMembersByIdData, DeleteMembersByIdErrors, DeleteMembersByIdProfilePictureData, DeleteMembersByIdProfilePictureErrors, DeleteMembersByIdProfilePictureResponses, DeleteMembersByIdResponses, DeleteRolealiasesByIdData, DeleteRolealiasesByIdErrors, DeleteRolealiasesByIdResponses, DeleteRolesByIdData, DeleteRolesByIdErrors, DeleteRolesByIdResponses, DeleteSettingsByIdData, DeleteSettingsByIdErrors, DeleteSettingsByIdResponses, DeleteStudiesByIdData, DeleteStudiesByIdErrors, DeleteStudiesByIdResponses, DeleteStudyenrollmentsByIdData, DeleteStudyenrollmentsByIdErrors, DeleteStudyenrollmentsByIdResponses, GetActivitiesByIdData, GetActivitiesByIdEnrollmentsExportData, GetActivitiesByIdEnrollmentsExportErrors, GetActivitiesByIdEnrollmentsExportResponses, GetActivitiesByIdErrors, GetActivitiesByIdPosterData, GetActivitiesByIdPosterDownloadData, GetActivitiesByIdPosterDownloadErrors, GetActivitiesByIdPosterDownloadResponses, GetActivitiesByIdPosterErrors, GetActivitiesByIdPosterResponses, GetActivitiesByIdResponses, GetActivitiesData, GetActivitiesErrors, GetActivitiesResponses, GetAnnouncementsByIdData, GetAnnouncementsByIdErrors, GetAnnouncementsByIdResponses, GetAnnouncementsData, GetAnnouncementsErrors, GetAnnouncementsResponses, GetEnrollmentsByActivityIdByMemberIdData, GetEnrollmentsByActivityIdByMemberIdErrors, GetEnrollmentsByActivityIdByMemberIdResponses, GetEnrollmentsData, GetEnrollmentsErrors, GetEnrollmentsResponses, GetGroupmembershipsByIdData, GetGroupmembershipsByIdErrors, GetGroupmembershipsByIdResponses, GetGroupmembershipsData, GetGroupmembershipsErrors, GetGroupmembershipsResponses, GetGroupsByIdData, GetGroupsByIdErrors, GetGroupsByIdGroupPictureData, GetGroupsByIdGroupPictureErrors, GetGroupsByIdGroupPictureResponses, GetGroupsByIdResponses, GetGroupsData, GetGroupsErrors, GetGroupsResponses, GetMailinglistsByIdData, GetMailinglistsByIdErrors, GetMailinglistsByIdResponses, GetMailinglistsData, GetMailinglistsErrors, GetMailinglistsResponses, GetMembersByIdData, GetMembersByIdErrors, GetMembersByIdProfilePictureData, GetMembersByIdProfilePictureErrors, GetMembersByIdProfilePictureResponses, GetMembersByIdResponses, GetMembersData, GetMembersErrors, GetMembersResponses, GetPaymentsEnrollmentByIdData, GetPaymentsEnrollmentByIdErrors, GetPaymentsEnrollmentByIdResponses, GetPaymentsEnrollmentData, GetPaymentsEnrollmentErrors, GetPaymentsEnrollmentResponses, GetPaymentsExportData, GetPaymentsExportErrors, GetPaymentsExportResponses, GetPaymentsMemberByUserIdStatusData, GetPaymentsMemberByUserIdStatusErrors, GetPaymentsMemberByUserIdStatusResponses, GetPaymentsMembershipByIdData, GetPaymentsMembershipByIdErrors, GetPaymentsMembershipByIdResponses, GetPaymentsMembershipData, GetPaymentsMembershipErrors, GetPaymentsMembershipResponses, GetPaymentsOverpaidData, GetPaymentsOverpaidErrors, GetPaymentsOverpaidResponses, GetPaymentsUnpaidData, GetPaymentsUnpaidErrors, GetPaymentsUnpaidResponses, GetProfilepictureViewByPathData, GetProfilepictureViewByPathErrors, GetProfilepictureViewByPathResponses, GetRolealiasesByIdData, GetRolealiasesByIdErrors, GetRolealiasesByIdResponses, GetRolealiasesData, GetRolealiasesErrors, GetRolealiasesResponses, GetRolesByIdData, GetRolesByIdErrors, GetRolesByIdResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetSettingsByIdData, GetSettingsByIdErrors, GetSettingsByIdResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, GetStudiesByIdData, GetStudiesByIdErrors, GetStudiesByIdResponses, GetStudiesData, GetStudiesErrors, GetStudiesResponses, GetStudyenrollmentsByIdData, GetStudyenrollmentsByIdErrors, GetStudyenrollmentsByIdResponses, GetStudyenrollmentsData, GetStudyenrollmentsErrors, GetStudyenrollmentsResponses, PatchActivitiesByIdData, PatchActivitiesByIdErrors, PatchActivitiesByIdResponses, PatchAnnouncementsByIdData, PatchAnnouncementsByIdErrors, PatchAnnouncementsByIdResponses, PatchEnrollmentsByActivityIdByMemberIdData, PatchEnrollmentsByActivityIdByMemberIdErrors, PatchEnrollmentsByActivityIdByMemberIdResponses, PatchGroupmembershipsByIdData, PatchGroupmembershipsByIdErrors, PatchGroupmembershipsByIdResponses, PatchGroupsByIdData, PatchGroupsByIdErrors, PatchGroupsByIdResponses, PatchMailinglistsByIdData, PatchMailinglistsByIdErrors, PatchMailinglistsByIdResponses, PatchMembersByIdData, PatchMembersByIdErrors, PatchMembersByIdResponses, PatchRolealiasesByIdData, PatchRolealiasesByIdErrors, PatchRolealiasesByIdResponses, PatchRolesByIdData, PatchRolesByIdErrors, PatchRolesByIdResponses, PatchSettingsByIdData, PatchSettingsByIdErrors, PatchSettingsByIdResponses, PatchSpecificationanswersByAnswerIdData, PatchSpecificationanswersByAnswerIdErrors, PatchSpecificationanswersByAnswerIdResponses, PatchStudiesByIdData, PatchStudiesByIdErrors, PatchStudiesByIdResponses, PatchStudyenrollmentsByIdData, PatchStudyenrollmentsByIdErrors, PatchStudyenrollmentsByIdResponses, PostActivitiesByIdPosterData, PostActivitiesByIdPosterErrors, PostActivitiesByIdPosterResponses, PostActivitiesData, PostActivitiesErrors, PostActivitiesResponses, PostAnnouncementsData, PostAnnouncementsErrors, PostAnnouncementsResponses, PostEnrollmentsData, PostEnrollmentsErrors, PostEnrollmentsResponses, PostGroupmembershipsData, PostGroupmembershipsErrors, PostGroupmembershipsResponses, PostGroupsByIdGroupPictureData, PostGroupsByIdGroupPictureErrors, PostGroupsByIdGroupPictureResponses, PostGroupsData, PostGroupsErrors, PostGroupsResponses, PostMailinglistsData, PostMailinglistsErrors, PostMailinglistsResponses, PostMailsActivityData, PostMailsActivityErrors, PostMailsActivityResponses, PostMailsNormalData, PostMailsNormalErrors, PostMailsNormalResponses, PostMembersData, PostMembersErrors, PostMembersResponses, PostMembersWebhookRefreshEmailData, PostMembersWebhookRefreshEmailErrors, PostMembersWebhookRefreshEmailResponses, PostPaymentsActivityData, PostPaymentsActivityErrors, PostPaymentsActivityResponses, PostPaymentsMembershipData, PostPaymentsMembershipErrors, PostPaymentsMembershipResponses, PostPaymentsWebhookData, PostPaymentsWebhookErrors, PostPaymentsWebhookResponses, PostProfilepictureByIdProfilePictureData, PostProfilepictureByIdProfilePictureErrors, PostProfilepictureByIdProfilePictureResponses, PostRolealiasesData, PostRolealiasesErrors, PostRolealiasesResponses, PostRolesData, PostRolesErrors, PostRolesResponses, PostSettingsData, PostSettingsErrors, PostSettingsResponses, PostStudiesData, PostStudiesErrors, PostStudiesResponses, PostStudyenrollmentsData, PostStudyenrollmentsErrors, PostStudyenrollmentsResponses, PutActivitiesByIdData, PutActivitiesByIdErrors, PutActivitiesByIdResponses, PutAnnouncementsByIdData, PutAnnouncementsByIdErrors, PutAnnouncementsByIdResponses, PutEnrollmentsByActivityIdByMemberIdData, PutEnrollmentsByActivityIdByMemberIdErrors, PutEnrollmentsByActivityIdByMemberIdResponses, PutGroupmembershipsByIdData, PutGroupmembershipsByIdErrors, PutGroupmembershipsByIdResponses, PutGroupsByIdData, PutGroupsByIdErrors, PutGroupsByIdResponses, PutMailinglistsByIdData, PutMailinglistsByIdErrors, PutMailinglistsByIdResponses, PutMembersByIdData, PutMembersByIdErrors, PutMembersByIdResponses, PutRolealiasesByIdData, PutRolealiasesByIdErrors, PutRolealiasesByIdResponses, PutRolesByIdData, PutRolesByIdErrors, PutRolesByIdResponses, PutSettingsByIdData, PutSettingsByIdErrors, PutSettingsByIdResponses, PutStudiesByIdData, PutStudiesByIdErrors, PutStudiesByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -18,18 +18,24 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
     meta?: Record<string, unknown>;
 };
 
-export const getApiActivities = <ThrowOnError extends boolean = false>(options?: Options<GetApiActivitiesData, ThrowOnError>) => (options?.client ?? client).get<GetApiActivitiesResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of activities based on the provided query parameters. The GetActivities endpoint allows clients to fetch a collection of activities, optionally filtered and paginated according to the criteria specified in the GetActivitiesDTO. This endpoint is designed to return a comprehensive list of activities that match the given parameters, enabling clients to efficiently retrieve relevant activity data while supporting various filtering and pagination options for optimal performance and usability.
+ */
+export const getActivities = <ThrowOnError extends boolean = false>(options?: Options<GetActivitiesData, ThrowOnError>) => (options?.client ?? client).get<GetActivitiesResponses, GetActivitiesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities',
+    url: '/activities',
     ...options
 });
 
-export const postApiActivities = <ThrowOnError extends boolean = false>(options?: Options<PostApiActivitiesData, ThrowOnError>) => (options?.client ?? client).post<PostApiActivitiesResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new activity based on the provided data. The PostActivity endpoint allows clients to submit a request to create a new activity by providing the necessary information in the PostActivityDTO. This endpoint is designed to handle the creation of activities, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can create new activities within the system. Upon successful creation, the endpoint returns the details of the newly created activity along with a 201 Created status code, allowing clients to easily access and reference the new activity in subsequent operations.
+ */
+export const postActivities = <ThrowOnError extends boolean = false>(options?: Options<PostActivitiesData, ThrowOnError>) => (options?.client ?? client).post<PostActivitiesResponses, PostActivitiesErrors, ThrowOnError>({
     ...formDataBodySerializer,
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities',
+    url: '/activities',
     ...options,
     headers: {
         'Content-Type': null,
@@ -37,33 +43,45 @@ export const postApiActivities = <ThrowOnError extends boolean = false>(options?
     }
 });
 
-export const deleteApiActivitiesById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiActivitiesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiActivitiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Deletes a specific activity by its unique identifier. The DeleteActivity endpoint allows clients to remove an existing activity from the system based on the provided ID. This endpoint is designed to handle the deletion of activities, ensuring that proper authorization is enforced to allow only authorized users to delete activities, while also providing appropriate error handling for cases where the activity may not be found or the user does not have access rights. Upon successful deletion, the endpoint returns a 204 No Content status code, indicating that the activity has been successfully removed from the system without returning any content in the response body.
+ */
+export const deleteActivitiesById = <ThrowOnError extends boolean = false>(options: Options<DeleteActivitiesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteActivitiesByIdResponses, DeleteActivitiesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}',
+    url: '/activities/{id}',
     ...options
 });
 
-export const getApiActivitiesById = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a specific activity by its unique identifier. The GetActivity endpoint allows clients to fetch detailed information about a single activity based on the provided ID. This endpoint is designed to return comprehensive data about the specified activity, including its properties and any associated information, enabling clients to access specific activity details efficiently while ensuring proper authorization and error handling for cases where the activity may not be found or the user does not have access rights.
+ */
+export const getActivitiesById = <ThrowOnError extends boolean = false>(options: Options<GetActivitiesByIdData, ThrowOnError>) => (options.client ?? client).get<GetActivitiesByIdResponses, GetActivitiesByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}',
+    url: '/activities/{id}',
     ...options
 });
 
-export const patchApiActivitiesById = <ThrowOnError extends boolean = false>(options: Options<PatchApiActivitiesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiActivitiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates a specific activity by its unique identifier using a JSON Patch document. The PatchActivity endpoint allows clients to submit a request to modify an existing activity by providing a JSON Patch document that specifies the changes to be made to the activity's properties. This endpoint is designed to handle partial updates of activities, ensuring that the provided patch document is validated and applied correctly, while also enforcing proper authorization to ensure that only authorized users can modify existing activities within the system. Upon successful application of the patch, the endpoint returns a 204 No Content status code, indicating that the activity has been successfully updated without returning any content in the response body. This approach allows for efficient updates to activity data without requiring clients to send the entire activity object, enabling more flexible and targeted modifications to activity properties as needed.
+ */
+export const patchActivitiesById = <ThrowOnError extends boolean = false>(options: Options<PatchActivitiesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchActivitiesByIdResponses, PatchActivitiesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}',
+    url: '/activities/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiActivitiesById = <ThrowOnError extends boolean = false>(options: Options<PutApiActivitiesByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiActivitiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates a specific activity by its unique identifier with the provided data. The PutActivity endpoint allows clients to submit a request to update an existing activity by providing the necessary information in the PutActivityDTO. This endpoint is designed to handle the updating of activities, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can update existing activities within the system. Upon successful update, the endpoint returns a 204 No Content status code, indicating that the activity has been successfully updated without returning any content in the response body, allowing clients to easily manage and modify activity details as needed.
+ */
+export const putActivitiesById = <ThrowOnError extends boolean = false>(options: Options<PutActivitiesByIdData, ThrowOnError>) => (options.client ?? client).put<PutActivitiesByIdResponses, PutActivitiesByIdErrors, ThrowOnError>({
     ...formDataBodySerializer,
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}',
+    url: '/activities/{id}',
     ...options,
     headers: {
         'Content-Type': null,
@@ -71,16 +89,23 @@ export const putApiActivitiesById = <ThrowOnError extends boolean = false>(optio
     }
 });
 
-export const getApiActivitiesByIdPoster = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdPosterData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdPosterResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the poster image for a specific activity by its unique identifier. The GetPoster endpoint allows clients to fetch the poster image associated with an existing activity based on the provided ID. This endpoint is designed to return the poster image file, ensuring that proper authorization is enforced to allow only authorized users to access activity posters, while also providing appropriate error handling for cases where the activity or poster may not be found. Upon successful retrieval, the endpoint returns the poster image file with the correct content type, allowing clients to easily display or manage activity posters as needed. Additionally, this endpoint supports an optional download parameter that allows clients to specify whether they want to download the poster file directly or display it in the browser, providing flexibility in how clients can access and utilize activity posters within their applications.
+ */
+export const getActivitiesByIdPoster = <ThrowOnError extends boolean = false>(options: Options<GetActivitiesByIdPosterData, ThrowOnError>) => (options.client ?? client).get<GetActivitiesByIdPosterResponses, GetActivitiesByIdPosterErrors, ThrowOnError>({
+    responseType: 'blob',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}/poster',
+    url: '/activities/{id}/poster',
     ...options
 });
 
-export const postApiActivitiesByIdPoster = <ThrowOnError extends boolean = false>(options: Options<PostApiActivitiesByIdPosterData, ThrowOnError>) => (options.client ?? client).post<PostApiActivitiesByIdPosterResponses, unknown, ThrowOnError>({
+/**
+ * Uploads a poster image for a specific activity by its unique identifier. The UploadPoster endpoint allows clients to submit a request to upload a poster image file for an existing activity, associating the uploaded image with the specified activity ID. This endpoint is designed to handle file uploads, ensuring that the provided file is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can upload posters for activities within the system. Upon successful upload, the endpoint returns a 200 OK status code, indicating that the poster has been successfully uploaded and associated with the activity, allowing clients to easily manage and update activity posters as needed.
+ */
+export const postActivitiesByIdPoster = <ThrowOnError extends boolean = false>(options: Options<PostActivitiesByIdPosterData, ThrowOnError>) => (options.client ?? client).post<PostActivitiesByIdPosterResponses, PostActivitiesByIdPosterErrors, ThrowOnError>({
     ...formDataBodySerializer,
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}/poster',
+    url: '/activities/{id}/poster',
     ...options,
     headers: {
         'Content-Type': null,
@@ -88,182 +113,251 @@ export const postApiActivitiesByIdPoster = <ThrowOnError extends boolean = false
     }
 });
 
-export const getApiActivitiesByIdPosterDownload = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdPosterDownloadData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdPosterDownloadResponses, unknown, ThrowOnError>({
+/**
+ * Downloads the poster image for a specific activity by its unique identifier. The DownloadPoster endpoint allows clients to fetch the poster image associated with an existing activity based on the provided ID, specifically for the purpose of downloading the file directly. This endpoint is designed to return the poster image file with the appropriate content type and a content disposition that prompts the client to download the file, ensuring that proper authorization is enforced to allow only authorized users to access activity posters, while also providing appropriate error handling for cases where the activity or poster may not be found. Upon successful retrieval, the endpoint returns the poster image file with a filename, allowing clients to easily download and manage activity posters as needed. This endpoint provides a convenient way for clients to access and utilize activity posters within their applications by enabling direct downloads of poster files.
+ */
+export const getActivitiesByIdPosterDownload = <ThrowOnError extends boolean = false>(options: Options<GetActivitiesByIdPosterDownloadData, ThrowOnError>) => (options.client ?? client).get<GetActivitiesByIdPosterDownloadResponses, GetActivitiesByIdPosterDownloadErrors, ThrowOnError>({
+    responseType: 'blob',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}/poster/download',
+    url: '/activities/{id}/poster/download',
     ...options
 });
 
-export const getApiActivitiesByIdEnrollmentsExport = <ThrowOnError extends boolean = false>(options: Options<GetApiActivitiesByIdEnrollmentsExportData, ThrowOnError>) => (options.client ?? client).get<GetApiActivitiesByIdEnrollmentsExportResponses, unknown, ThrowOnError>({
+/**
+ * Exports the enrollments for a specific activity by its unique identifier in CSV format. The ExportEnrollments endpoint allows clients to fetch the enrollment data associated with an existing activity based on the provided ID, specifically formatted as a CSV file for easy analysis and reporting. This endpoint is designed to return the enrollment data in a structured CSV format, ensuring that proper authorization is enforced to allow only authorized users to access enrollment information, while also providing appropriate error handling for cases where the activity or enrollments may not be found. Upon successful retrieval, the endpoint returns the enrollment data as a downloadable CSV file with a filename, allowing clients to easily export and manage enrollment information for activities as needed. This endpoint provides a convenient way for clients to access and utilize enrollment data within their applications by enabling direct downloads of enrollment information in a widely used format.
+ */
+export const getActivitiesByIdEnrollmentsExport = <ThrowOnError extends boolean = false>(options: Options<GetActivitiesByIdEnrollmentsExportData, ThrowOnError>) => (options.client ?? client).get<GetActivitiesByIdEnrollmentsExportResponses, GetActivitiesByIdEnrollmentsExportErrors, ThrowOnError>({
+    responseType: 'text',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/activities/{id}/enrollments/export',
+    url: '/activities/{id}/enrollments/export',
     ...options
 });
 
-export const getApiAnnouncements = <ThrowOnError extends boolean = false>(options?: Options<GetApiAnnouncementsData, ThrowOnError>) => (options?.client ?? client).get<GetApiAnnouncementsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of all announcements. The GetAnnouncements endpoint allows clients to fetch a collection of announcements that have been created within the system. This endpoint is designed to return a list of announcements, ensuring that proper authorization is enforced to allow only authorized users to access the announcement data, while also providing appropriate error handling for cases where announcements may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns a list of announcements with a 200 OK status code, allowing clients to easily access and display announcement information as needed. This endpoint provides a convenient way for clients to stay informed about important updates, events, or news related to the organization or community by accessing the latest announcements available within the system.
+ */
+export const getAnnouncements = <ThrowOnError extends boolean = false>(options?: Options<GetAnnouncementsData, ThrowOnError>) => (options?.client ?? client).get<GetAnnouncementsResponses, GetAnnouncementsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements',
+    url: '/announcements',
     ...options
 });
 
-export const postApiAnnouncements = <ThrowOnError extends boolean = false>(options?: Options<PostApiAnnouncementsData, ThrowOnError>) => (options?.client ?? client).post<PostApiAnnouncementsResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new announcement based on the provided data. The PostAnnouncement endpoint allows clients to submit a request to create a new announcement by providing the necessary information in the PostAnnouncementDTO. This endpoint is designed to handle the creation of announcements, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can create new announcements within the system. Upon successful creation, the endpoint returns the details of the newly created announcement along with a 201 Created status code, allowing clients to easily access and reference the new announcement in subsequent operations.
+ */
+export const postAnnouncements = <ThrowOnError extends boolean = false>(options?: Options<PostAnnouncementsData, ThrowOnError>) => (options?.client ?? client).post<PostAnnouncementsResponses, PostAnnouncementsErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements',
+    url: '/announcements',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiAnnouncementsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Deletes a specific announcement by its unique identifier. The DeleteAnnouncement endpoint allows clients to remove an existing announcement from the system based on the provided ID. This endpoint is designed to handle the deletion of announcements, ensuring that proper authorization is enforced to allow only authorized users to delete announcements, while also providing appropriate error handling for cases where the announcement may not be found or the user does not have access rights. Upon successful deletion, the endpoint returns a 204 No Content status code, indicating that the announcement has been successfully removed from the system without returning any content in the response body.
+ */
+export const deleteAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<DeleteAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteAnnouncementsByIdResponses, DeleteAnnouncementsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements/{id}',
+    url: '/announcements/{id}',
     ...options
 });
 
-export const getApiAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<GetApiAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiAnnouncementsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a specific announcement by its unique identifier. The GetAnnouncement endpoint allows clients to fetch the details of a single announcement based on the provided ID. This endpoint is designed to return the announcement data, ensuring that proper authorization is enforced to allow only authorized users to access the announcement information, while also providing appropriate error handling for cases where the announcement may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns the details of the specified announcement with a 200 OK status code, allowing clients to easily access and display specific announcement information as needed. This endpoint provides a convenient way for clients to stay informed about important updates, events, or news related to the organization or community by accessing detailed information about individual announcements available within the system.
+ */
+export const getAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<GetAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).get<GetAnnouncementsByIdResponses, GetAnnouncementsByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements/{id}',
+    url: '/announcements/{id}',
     ...options
 });
 
-export const patchApiAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<PatchApiAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiAnnouncementsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates a specific announcement by its unique identifier using a JSON Patch document. The PatchAnnouncement endpoint allows clients to submit a request to modify an existing announcement by providing a JSON Patch document that specifies the changes to be made to the announcement's properties. This endpoint is designed to handle partial updates of announcements, ensuring that the provided patch document is validated and applied correctly, while also enforcing proper authorization to ensure that only authorized users can modify existing announcements within the system. Upon successful application of the patch, the endpoint returns a 204 No Content status code, indicating that the announcement has been successfully updated without returning any content in the response body. This approach allows for efficient updates to announcement data without requiring clients to send the entire announcement object, enabling more flexible and targeted modifications to announcement properties as needed.
+ */
+export const patchAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<PatchAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchAnnouncementsByIdResponses, PatchAnnouncementsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements/{id}',
+    url: '/announcements/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<PutApiAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiAnnouncementsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates a specific announcement by its unique identifier with the provided data. The PutAnnouncement endpoint allows clients to submit a request to update an existing announcement by providing the necessary information in the UpdateAnnouncementDTO. This endpoint is designed to handle the updating of announcements, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can update existing announcements within the system. Upon successful update, the endpoint returns a 204 No Content status code, indicating that the announcement has been successfully updated without returning any content in the response body, allowing clients to easily manage and modify announcement details as needed.
+ */
+export const putAnnouncementsById = <ThrowOnError extends boolean = false>(options: Options<PutAnnouncementsByIdData, ThrowOnError>) => (options.client ?? client).put<PutAnnouncementsByIdResponses, PutAnnouncementsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/announcements/{id}',
+    url: '/announcements/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiEnrollments = <ThrowOnError extends boolean = false>(options?: Options<GetApiEnrollmentsData, ThrowOnError>) => (options?.client ?? client).get<GetApiEnrollmentsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of enrollments based on the provided filtering criteria. The GetEnrollments endpoint allows clients to fetch a collection of enrollments that match the specified criteria in the GetEnrollmentsDTO, such as filtering by member ID or activity ID. This endpoint is designed to return a list of enrollments, ensuring that proper authorization is enforced to allow only authorized users to access enrollment data, while also providing appropriate error handling for cases where enrollments may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns a list of enrollments with a 200 OK status code, allowing clients to easily access and display enrollment information as needed. This endpoint provides a convenient way for clients to stay informed about enrollment details related to specific members or activities by accessing the relevant enrollment data available within the system.
+ */
+export const getEnrollments = <ThrowOnError extends boolean = false>(options?: Options<GetEnrollmentsData, ThrowOnError>) => (options?.client ?? client).get<GetEnrollmentsResponses, GetEnrollmentsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments',
+    url: '/enrollments',
     ...options
 });
 
-export const postApiEnrollments = <ThrowOnError extends boolean = false>(options?: Options<PostApiEnrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostApiEnrollmentsResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new enrollment based on the provided data. The PostEnrollment endpoint allows clients to submit a request to create a new enrollment by providing the necessary information in the PostEnrollmentDTO. This endpoint is designed to handle the creation of enrollments, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can create new enrollments within the system. Upon successful creation, the endpoint returns the details of the newly created enrollment along with a 201 Created status code, allowing clients to easily access and reference the new enrollment in subsequent operations.
+ */
+export const postEnrollments = <ThrowOnError extends boolean = false>(options?: Options<PostEnrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostEnrollmentsResponses, PostEnrollmentsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments',
+    url: '/enrollments',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<DeleteApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
+/**
+ * Deletes a specific enrollment by its unique identifier. The DeleteEnrollment endpoint allows clients to remove an existing enrollment from the system based on the provided activity ID and member ID. This endpoint is designed to handle the deletion of enrollments, ensuring that proper authorization is enforced to allow only authorized users to delete enrollments, while also providing appropriate error handling for cases where the enrollment may not be found or the user does not have access rights. Upon successful deletion, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully removed from the system without returning any content in the response body.
+ */
+export const deleteEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<DeleteEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteEnrollmentsByActivityIdByMemberIdResponses, DeleteEnrollmentsByActivityIdByMemberIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{activityId}/{memberId}',
+    url: '/enrollments/{activityId}/{memberId}',
     ...options
 });
 
-export const getApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<GetApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).get<GetApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a specific enrollment based on the provided activity ID and member ID. The GetEnrollment endpoint allows clients to fetch the details of a single enrollment by providing the unique combination of activity ID and member ID in the EnrollmentKeyDTO. This endpoint is designed to return the enrollment data, ensuring that proper authorization is enforced to allow only authorized users to access the enrollment information, while also providing appropriate error handling for cases where the enrollment may not be found or the user does not have access rights. Upon successful retrieval, the endpoint returns the details of the specified enrollment with a 200 OK status code, allowing clients to easily access and display specific enrollment information as needed. This endpoint provides a convenient way for clients to stay informed about enrollment details related to specific members and activities by accessing detailed information about individual enrollments available within the system.
+ */
+export const getEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<GetEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).get<GetEnrollmentsByActivityIdByMemberIdResponses, GetEnrollmentsByActivityIdByMemberIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{activityId}/{memberId}',
+    url: '/enrollments/{activityId}/{memberId}',
     ...options
 });
 
-export const patchApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PatchApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates a specific enrollment by its unique identifier using a JSON Patch document. The PatchEnrollment endpoint allows clients to submit a request to modify an existing enrollment by providing a JSON Patch document that specifies the changes to be made to the enrollment's properties. This endpoint is designed to handle partial updates of enrollments, ensuring that the provided patch document is validated and applied correctly, while also enforcing proper authorization to ensure that only authorized users can modify existing enrollments within the system. Upon successful application of the patch, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully updated without returning any content in the response body. This approach allows for efficient updates to enrollment data without requiring clients to send the entire enrollment object, enabling more flexible and targeted modifications to enrollment properties as needed.
+ */
+export const patchEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PatchEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).patch<PatchEnrollmentsByActivityIdByMemberIdResponses, PatchEnrollmentsByActivityIdByMemberIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{activityId}/{memberId}',
+    url: '/enrollments/{activityId}/{memberId}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PutApiEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).put<PutApiEnrollmentsByActivityIdByMemberIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates a specific enrollment by its unique identifier with the provided data. The PutEnrollment endpoint allows clients to submit a request to update an existing enrollment by providing the necessary information in the PostEnrollmentDTO. This endpoint is designed to handle the updating of enrollments, ensuring that the provided data is validated and processed correctly, while also enforcing proper authorization to ensure that only authorized users can update existing enrollments within the system. Upon successful update, the endpoint returns a 204 No Content status code, indicating that the enrollment has been successfully updated without returning any content in the response body, allowing clients to easily manage and modify enrollment details as needed.
+ */
+export const putEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolean = false>(options: Options<PutEnrollmentsByActivityIdByMemberIdData, ThrowOnError>) => (options.client ?? client).put<PutEnrollmentsByActivityIdByMemberIdResponses, PutEnrollmentsByActivityIdByMemberIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/enrollments/{activityId}/{memberId}',
+    url: '/enrollments/{activityId}/{memberId}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiGroupmemberships = <ThrowOnError extends boolean = false>(options?: Options<GetApiGroupmembershipsData, ThrowOnError>) => (options?.client ?? client).get<GetApiGroupmembershipsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of group memberships based on the provided query parameters. The GetGroupMemberships endpoint allows clients to fetch a collection of group memberships that match the specified criteria, such as filtering by group ID, member ID, or other relevant parameters defined in the GetGroupMembershipsDTO. This endpoint ensures that the requesting user is authorized to access the group membership information and returns a list of GroupMembershipResponseDTO objects that represent the matching group memberships. If no group memberships are found that match the criteria, it returns an empty list with a 200 OK status code. Additionally, if the user is not authorized to access the resource, it returns a 403 Forbidden status code, and any other exceptions encountered during the process will result in a 400 Bad Request response with an appropriate error message.
+ */
+export const getGroupmemberships = <ThrowOnError extends boolean = false>(options?: Options<GetGroupmembershipsData, ThrowOnError>) => (options?.client ?? client).get<GetGroupmembershipsResponses, GetGroupmembershipsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groupmemberships',
+    url: '/groupmemberships',
     ...options
 });
 
-export const postApiGroupmemberships = <ThrowOnError extends boolean = false>(options?: Options<PostApiGroupmembershipsData, ThrowOnError>) => (options?.client ?? client).post<PostApiGroupmembershipsResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new group membership based on the provided data. The PostGroupMembership endpoint allows clients to submit a request to create a new group membership by providing the necessary information in the form of a PostGroupMembershipDTO. This endpoint ensures that the requesting user is authorized to create a group membership and processes the creation logic through the IGroupMembershipService. Upon successful creation, it returns a 201 Created status code along with the details of the newly created group membership in the response body. If the user is not authorized to perform this action, it returns a 403 Forbidden status code, and any other exceptions encountered during the process will result in a 400 Bad Request response with an appropriate error message.
+ */
+export const postGroupmemberships = <ThrowOnError extends boolean = false>(options?: Options<PostGroupmembershipsData, ThrowOnError>) => (options?.client ?? client).post<PostGroupmembershipsResponses, PostGroupmembershipsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groupmemberships',
+    url: '/groupmemberships',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiGroupmembershipsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Deletes a specific group membership by its unique identifier. The DeleteGroupMembership endpoint allows clients to submit a request to remove an existing group membership based on the provided ID. This endpoint ensures that the requesting user is authorized to delete the group membership and processes the deletion logic through the IGroupMembershipService. Upon successful deletion, it returns a 204 No Content status code, indicating that the group membership has been successfully removed. If the specified group membership does not exist, it returns a 404 Not Found status code, and if the user is not authorized to perform this action, it returns a 403 Forbidden status code. Additionally, any other exceptions encountered during the process will result in a 400 Bad Request response with an appropriate error message.
+ */
+export const deleteGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<DeleteGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteGroupmembershipsByIdResponses, DeleteGroupmembershipsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groupmemberships/{id}',
+    url: '/groupmemberships/{id}',
     ...options
 });
 
-export const getApiGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<GetApiGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiGroupmembershipsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a specific group membership by its unique identifier. The GetGroupMembership endpoint allows clients to fetch the details of a single group membership based on the provided ID. This endpoint ensures that the requesting user is authorized to access the group membership information and returns the corresponding GroupMembershipResponseDTO if found. If the specified group membership does not exist, it returns a 404 Not Found status code, and if the user is not authorized to access the resource, it returns a 403 Forbidden status code. Additionally, any other exceptions encountered during the process will result in a 400 Bad Request response with an appropriate error message.
+ */
+export const getGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<GetGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).get<GetGroupmembershipsByIdResponses, GetGroupmembershipsByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groupmemberships/{id}',
+    url: '/groupmemberships/{id}',
     ...options
 });
 
-export const patchApiGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<PatchApiGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiGroupmembershipsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates a specific group membership by its unique identifier using a JSON Patch document. The PatchGroupMembership endpoint allows clients to submit a request to modify an existing group membership by providing a JSON Patch document that specifies the changes to be made to the group membership's properties. This endpoint is designed to handle partial updates of group memberships, ensuring that the provided patch document is validated and applied correctly, while also enforcing proper authorization to ensure that only authorized users can modify existing group memberships within the system. Upon successful application of the patch, the endpoint returns a 204 No Content status code, indicating that the group membership has been successfully updated without returning any content in the response body. This approach allows for efficient updates to group membership data without requiring clients to send the entire group membership object, enabling more flexible and targeted modifications to group membership properties as needed.
+ */
+export const patchGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<PatchGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchGroupmembershipsByIdResponses, PatchGroupmembershipsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groupmemberships/{id}',
+    url: '/groupmemberships/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<PutApiGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiGroupmembershipsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Fully updates a specific group membership by its unique identifier. The PutGroupMembership endpoint allows clients to submit a request to replace an existing group membership with new data based on the provided ID. This endpoint ensures that the requesting user is authorized to update the group membership and processes the update logic through the IGroupMembershipService. Upon successful update, it returns a 204 No Content status code, indicating that the group membership has been successfully updated without returning any content in the response body. If the specified group membership does not exist, it returns a 404 Not Found status code, and if the user is not authorized to perform this action, it returns a 403 Forbidden status code. Additionally, any other exceptions encountered during the process will result in a 400 Bad Request response with an appropriate error message.
+ */
+export const putGroupmembershipsById = <ThrowOnError extends boolean = false>(options: Options<PutGroupmembershipsByIdData, ThrowOnError>) => (options.client ?? client).put<PutGroupmembershipsByIdResponses, PutGroupmembershipsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groupmemberships/{id}',
+    url: '/groupmemberships/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiGroups = <ThrowOnError extends boolean = false>(options?: Options<GetApiGroupsData, ThrowOnError>) => (options?.client ?? client).get<GetApiGroupsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a collection of groups based on the provided query filters and pagination parameters. The GetGroups endpoint allows clients to fetch a list of groups that match specific criteria defined in the GetGroupDTO. This endpoint is designed to support efficient data retrieval by allowing users to filter through available groups while ensuring that the returned results are scoped according to the user's authorization level. It provides a robust way for clients to browse and search for groups within the application's ecosystem.
+ */
+export const getGroups = <ThrowOnError extends boolean = false>(options?: Options<GetGroupsData, ThrowOnError>) => (options?.client ?? client).get<GetGroupsResponses, GetGroupsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups',
+    url: '/groups',
     ...options
 });
 
-export const postApiGroups = <ThrowOnError extends boolean = false>(options?: Options<PostApiGroupsData, ThrowOnError>) => (options?.client ?? client).post<PostApiGroupsResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new group within the system using the provided data. The PostGroup endpoint processes requests to establish a new group entity, taking inputs from the PostGroupDTO. This process includes validating the provided data, assigning ownership to the creating user, and persisting the new group to the data store. Upon successful creation, the endpoint returns the newly created group's details and its unique location, following standard RESTful practices for resource creation.
+ */
+export const postGroups = <ThrowOnError extends boolean = false>(options?: Options<PostGroupsData, ThrowOnError>) => (options?.client ?? client).post<PostGroupsResponses, PostGroupsErrors, ThrowOnError>({
     ...formDataBodySerializer,
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups',
+    url: '/groups',
     ...options,
     headers: {
         'Content-Type': null,
@@ -271,49 +365,69 @@ export const postApiGroups = <ThrowOnError extends boolean = false>(options?: Op
     }
 });
 
-export const deleteApiGroupsById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiGroupsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiGroupsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently removes a group from the system based on its unique identifier. The DeleteGroup endpoint ensures that the requested group is deleted only after verifying that the requesting user has the necessary administrative permissions. This operation is destructive and removes all associated group metadata. Upon successful completion, the endpoint returns a 204 No Content status, signaling that the resource no longer exists without returning an unnecessary response body.
+ */
+export const deleteGroupsById = <ThrowOnError extends boolean = false>(options: Options<DeleteGroupsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteGroupsByIdResponses, DeleteGroupsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups/{id}',
+    url: '/groups/{id}',
     ...options
 });
 
-export const getApiGroupsById = <ThrowOnError extends boolean = false>(options: Options<GetApiGroupsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiGroupsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the detailed information of a specific group by its unique identifier. The GetGroup endpoint is designed to return a single, comprehensive group record based on the provided ID. This allows clients to access full details about a specific group's properties and configuration. If the group is not found within the system, the endpoint provides appropriate error feedback, ensuring the client is aware of the missing resource while maintaining a secure and predictable API response.
+ */
+export const getGroupsById = <ThrowOnError extends boolean = false>(options: Options<GetGroupsByIdData, ThrowOnError>) => (options.client ?? client).get<GetGroupsByIdResponses, GetGroupsByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups/{id}',
+    url: '/groups/{id}',
     ...options
 });
 
-export const patchApiGroupsById = <ThrowOnError extends boolean = false>(options: Options<PatchApiGroupsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiGroupsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Performs a partial update on an existing group's properties using a JSON Patch document. The PatchGroup endpoint allows clients to modify specific fields of a group without providing the entire resource representation. This is particularly useful for making small adjustments to group metadata while minimizing data transfer. The endpoint validates the patch operations against the group domain model and ensures that the user is authorized to perform these specific modifications before applying changes to the database.
+ */
+export const patchGroupsById = <ThrowOnError extends boolean = false>(options: Options<PatchGroupsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchGroupsByIdResponses, PatchGroupsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups/{id}',
+    url: '/groups/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiGroupsById = <ThrowOnError extends boolean = false>(options: Options<PutApiGroupsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiGroupsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates the entire representation of an existing group with the provided data. The PutActivity endpoint replaces the current group information with the data provided in the GroupUpdateDTO. This endpoint is typically used for comprehensive updates where multiple group attributes are changed simultaneously. It enforces authorization to ensure only group managers can perform the update and provides detailed error handling for validation failures or missing resources, returning a 204 No Content status upon a successful operation.
+ */
+export const putGroupsById = <ThrowOnError extends boolean = false>(options: Options<PutGroupsByIdData, ThrowOnError>) => (options.client ?? client).put<PutGroupsByIdResponses, PutGroupsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups/{id}',
+    url: '/groups/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiGroupsByIdGroupPicture = <ThrowOnError extends boolean = false>(options: Options<GetApiGroupsByIdGroupPictureData, ThrowOnError>) => (options.client ?? client).get<GetApiGroupsByIdGroupPictureResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the binary file content of a specific group's profile picture. The GetGroupPicture endpoint fetches the stored image associated with a group and streams it back to the client with the appropriate content type. This endpoint includes checks to ensure both the group and the physical file exist on the server. It provides a direct way for client applications to render group imagery while centralizing the file retrieval logic through the service layer.
+ */
+export const getGroupsByIdGroupPicture = <ThrowOnError extends boolean = false>(options: Options<GetGroupsByIdGroupPictureData, ThrowOnError>) => (options.client ?? client).get<GetGroupsByIdGroupPictureResponses, GetGroupsByIdGroupPictureErrors, ThrowOnError>({
+    responseType: 'blob',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups/{id}/group-picture',
+    url: '/groups/{id}/group-picture',
     ...options
 });
 
-export const postApiGroupsByIdGroupPicture = <ThrowOnError extends boolean = false>(options: Options<PostApiGroupsByIdGroupPictureData, ThrowOnError>) => (options.client ?? client).post<PostApiGroupsByIdGroupPictureResponses, unknown, ThrowOnError>({
+/**
+ * Uploads and associates a profile picture with a specific group. The UploadGroupPicture endpoint handles multipart form-data requests to save an image file and link it to the group identified by the provided ID. This endpoint ensures that only authorized administrators of the group can modify its visual identity. Once processed, the path to the stored image is returned, allowing the client to immediately reference the new asset within the application's interface.
+ */
+export const postGroupsByIdGroupPicture = <ThrowOnError extends boolean = false>(options: Options<PostGroupsByIdGroupPictureData, ThrowOnError>) => (options.client ?? client).post<PostGroupsByIdGroupPictureResponses, PostGroupsByIdGroupPictureErrors, ThrowOnError>({
     ...formDataBodySerializer,
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/groups/{id}/group-picture',
+    url: '/groups/{id}/group-picture',
     ...options,
     headers: {
         'Content-Type': null,
@@ -321,203 +435,277 @@ export const postApiGroupsByIdGroupPicture = <ThrowOnError extends boolean = fal
     }
 });
 
-export const getApiMailinglists = <ThrowOnError extends boolean = false>(options?: Options<GetApiMailinglistsData, ThrowOnError>) => (options?.client ?? client).get<GetApiMailinglistsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of all mailing lists. This endpoint allows authorized users to fetch the complete collection of mailing lists available in the system. The method calls the GetMailinglists function of the IMailinglistService, which interacts with the data layer to retrieve the mailing list entities. The result is returned as an HTTP 200 OK response containing the list of mailing lists. If any exceptions occur during the process, appropriate error responses are returned, such as 403 Forbidden for unauthorized access or 400 Bad Request for other errors. This endpoint is essential for displaying available mailing lists to users and enabling them to manage their email communication preferences effectively.
+ */
+export const getMailinglists = <ThrowOnError extends boolean = false>(options?: Options<GetMailinglistsData, ThrowOnError>) => (options?.client ?? client).get<GetMailinglistsResponses, GetMailinglistsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mailinglists',
+    url: '/mailinglists',
     ...options
 });
 
-export const postApiMailinglists = <ThrowOnError extends boolean = false>(options?: Options<PostApiMailinglistsData, ThrowOnError>) => (options?.client ?? client).post<PostApiMailinglistsResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new mailing list. This endpoint allows authorized users to create a new mailing list by providing the necessary details in the request body, encapsulated in the PostMailinglistDTO. The method calls the CreateMailinglist function of the IMailinglistService, passing the DTO, user ID, and cancellation token to handle the creation logic. If the mailing list is successfully created, it returns an HTTP 201 Created response with the details of the newly created mailing list. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality is essential for users to expand their communication channels by adding new mailing lists as needed.
+ */
+export const postMailinglists = <ThrowOnError extends boolean = false>(options?: Options<PostMailinglistsData, ThrowOnError>) => (options?.client ?? client).post<PostMailinglistsResponses, PostMailinglistsErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mailinglists',
+    url: '/mailinglists',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiMailinglistsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Deletes an existing mailing list identified by its ID. This endpoint allows authorized users to remove a mailing list from the system. The method calls the DeleteMailinglist function of the IMailinglistService, passing the ID, user ID, and cancellation token to handle the deletion logic. If the deletion is successful, it returns an HTTP 204 No Content response; if the mailing list is not found, a 404 Not Found response is returned. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality is essential for users to manage their mailing lists effectively by removing those that are no longer needed.
+ */
+export const deleteMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<DeleteMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteMailinglistsByIdResponses, DeleteMailinglistsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mailinglists/{id}',
+    url: '/mailinglists/{id}',
     ...options
 });
 
-export const getApiMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<GetApiMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiMailinglistsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a specific mailing list by its ID. This endpoint allows authorized users to fetch the details of a single mailing list identified by its unique ID. The method calls the GetMailinglist function of the IMailinglistService, passing the ID and cancellation token to retrieve the corresponding mailing list entity from the data layer. If the mailing list is found, it is returned as an HTTP 200 OK response; if not found, a 404 Not Found response is returned. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality is crucial for users to view and manage specific mailing lists within the application.
+ */
+export const getMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<GetMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).get<GetMailinglistsByIdResponses, GetMailinglistsByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mailinglists/{id}',
+    url: '/mailinglists/{id}',
     ...options
 });
 
-export const patchApiMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<PatchApiMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiMailinglistsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates an existing mailing list identified by its ID using a JSON Patch document. This endpoint allows authorized users to modify specific fields of an existing mailing list without needing to provide the entire entity. The method accepts a Microsoft.AspNetCore.JsonPatch.JsonPatchDocument`1 in the request body, which specifies the operations to be performed on the mailing list. The UpdateMailinglist function of the IMailinglistService is called with the ID, patch document, user ID, and cancellation token to handle the patching logic. If the patch is successful, it returns an HTTP 204 No Content response; if the mailing list is not found, a 404 Not Found response is returned. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality provides flexibility for users to make partial updates to mailing lists efficiently.
+ */
+export const patchMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<PatchMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchMailinglistsByIdResponses, PatchMailinglistsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mailinglists/{id}',
+    url: '/mailinglists/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<PutApiMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiMailinglistsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates an existing mailing list identified by its ID. This endpoint allows authorized users to modify the details of an existing mailing list by providing the updated information in the request body, encapsulated in the PostMailinglistDTO. The method calls the UpdateMailinglist function of the IMailinglistService, passing the ID, DTO, user ID, and cancellation token to handle the update logic. If the update is successful, it returns an HTTP 204 No Content response; if the mailing list is not found, a 404 Not Found response is returned. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality is crucial for users to maintain accurate and up-to-date mailing list information within the application.
+ */
+export const putMailinglistsById = <ThrowOnError extends boolean = false>(options: Options<PutMailinglistsByIdData, ThrowOnError>) => (options.client ?? client).put<PutMailinglistsByIdResponses, PutMailinglistsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mailinglists/{id}',
+    url: '/mailinglists/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const postApiMailsNormal = <ThrowOnError extends boolean = false>(options?: Options<PostApiMailsNormalData, ThrowOnError>) => (options?.client ?? client).post<PostApiMailsNormalResponses, unknown, ThrowOnError>({
+/**
+ * Sends a standard email based on the provided recipient and content data. The PostNormalMail endpoint allows authorized users to dispatch general-purpose emails by providing a PostMailDTO containing the necessary details such as recipient address, subject, and body content. This endpoint is designed to facilitate flexible communication within the system, ensuring that the request is validated and the sender is authorized before the mail service processes the delivery. Upon successful dispatch, the endpoint returns a 200 OK status, confirming that the email has been queued or sent successfully.
+ */
+export const postMailsNormal = <ThrowOnError extends boolean = false>(options?: Options<PostMailsNormalData, ThrowOnError>) => (options?.client ?? client).post<PostMailsNormalResponses, PostMailsNormalErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mails/normal',
+    url: '/mails/normal',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const postApiMailsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostApiMailsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostApiMailsActivityResponses, unknown, ThrowOnError>({
+/**
+ * Sends an activity-specific email notification using specialized templates and data. The PostActivityMail endpoint is designed to handle communications related specifically to system activities, such as enrollment confirmations or activity updates. By utilizing the PostActivityMailDTO, clients can trigger emails that are context-aware, ensuring that relevant activity data is correctly injected into the communication. This endpoint enforces strict authorization to prevent unauthorized users from sending activity-related notifications and provides clear feedback through appropriate HTTP status codes in case of delivery failure or permission issues.
+ */
+export const postMailsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostMailsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostMailsActivityResponses, PostMailsActivityErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/mails/activity',
+    url: '/mails/activity',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const getApiMembers = <ThrowOnError extends boolean = false>(options?: Options<GetApiMembersData, ThrowOnError>) => (options?.client ?? client).get<GetApiMembersResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a filtered and paginated list of members. The GetMembers endpoint allows authorized users to search through the system's member directory using criteria specified in the GetMembersDto. This endpoint is designed to return summarized member profiles, facilitating directory browsing and administrative oversight while respecting privacy constraints and authorization rules.
+ */
+export const getMembers = <ThrowOnError extends boolean = false>(options?: Options<GetMembersData, ThrowOnError>) => (options?.client ?? client).get<GetMembersResponses, GetMembersErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members',
+    url: '/members',
     ...options
 });
 
-export const postApiMembers = <ThrowOnError extends boolean = false>(options?: Options<PostApiMembersData, ThrowOnError>) => (options?.client ?? client).post<PostApiMembersResponses, unknown, ThrowOnError>({
+/**
+ * Registers a new member in the system. The PostMember endpoint is accessible without authentication to allow for new user sign-ups. It processes the PostMemberDTO to create a new member record, validates the input for business rule compliance (such as email uniqueness), and returns the created member details. This endpoint serves as the primary entry point for user onboarding.
+ */
+export const postMembers = <ThrowOnError extends boolean = false>(options?: Options<PostMembersData, ThrowOnError>) => (options?.client ?? client).post<PostMembersResponses, PostMembersErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members',
+    url: '/members',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiMembersById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiMembersByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiMembersByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently deletes a member's account and associated data. The DeleteMember endpoint handles the removal of a member from the system, ensuring that only the member themselves or an administrator can execute the action. This operation involves cleaning up related resources and may trigger cascading deletions where appropriate to maintain data integrity and comply with privacy regulations.
+ */
+export const deleteMembersById = <ThrowOnError extends boolean = false>(options: Options<DeleteMembersByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteMembersByIdResponses, DeleteMembersByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}',
+    url: '/members/{id}',
     ...options
 });
 
-export const getApiMembersById = <ThrowOnError extends boolean = false>(options: Options<GetApiMembersByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiMembersByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the detailed profile of a specific member by their unique identifier. The GetMember endpoint provides full access to a single member's data, including contact information and system preferences. It ensures that the requesting user has the appropriate permissions to view the target member's details, returning a 404 status if the member does not exist or a 403 status if access is denied.
+ */
+export const getMembersById = <ThrowOnError extends boolean = false>(options: Options<GetMembersByIdData, ThrowOnError>) => (options.client ?? client).get<GetMembersByIdResponses, GetMembersByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}',
+    url: '/members/{id}',
     ...options
 });
 
-export const patchApiMembersById = <ThrowOnError extends boolean = false>(options: Options<PatchApiMembersByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiMembersByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates specific fields of a member's profile using JSON Patch. The PatchMember endpoint provides a flexible way to modify individual attributes of a member record without requiring the full object. This is ideal for background updates or specific profile settings changes, ensuring that only the specified fields are touched while validating the resulting state against domain requirements.
+ */
+export const patchMembersById = <ThrowOnError extends boolean = false>(options: Options<PatchMembersByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchMembersByIdResponses, PatchMembersByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}',
+    url: '/members/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiMembersById = <ThrowOnError extends boolean = false>(options: Options<PutApiMembersByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiMembersByIdResponses, unknown, ThrowOnError>({
+/**
+ * Performs a full update of a member's profile data. The PutMember endpoint replaces the existing member information with the data provided in the MemberUpdateDTO. This is used for comprehensive profile edits where a user modifies several aspects of their account at once. The endpoint verifies ownership and validates the new data before persisting changes.
+ */
+export const putMembersById = <ThrowOnError extends boolean = false>(options: Options<PutMembersByIdData, ThrowOnError>) => (options.client ?? client).put<PutMembersByIdResponses, PutMembersByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}',
+    url: '/members/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const deleteApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<DeleteApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
+/**
+ * Removes a member's profile picture and reverts their profile to use a default avatar. The DeleteProfilePicture endpoint handles the deletion of the physical image file and updates the member's record to clear the picture path. This action is restricted to the account owner or authorized staff.
+ */
+export const deleteMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<DeleteMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).delete<DeleteMembersByIdProfilePictureResponses, DeleteMembersByIdProfilePictureErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}/profile-picture',
+    url: '/members/{id}/profile-picture',
     ...options
 });
 
-export const getApiMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<GetApiMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).get<GetApiMembersByIdProfilePictureResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the profile picture file for a specific member. The GetProfilePicture endpoint locates the image asset associated with the member's profile and streams it to the client with the correct content type. This allows the application to dynamically render user avatars while keeping the storage logic abstracted within the service layer.
+ */
+export const getMembersByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<GetMembersByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).get<GetMembersByIdProfilePictureResponses, GetMembersByIdProfilePictureErrors, ThrowOnError>({
+    responseType: 'blob',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/{id}/profile-picture',
+    url: '/members/{id}/profile-picture',
     ...options
 });
 
-export const postApiMembersWebhookRefreshEmail = <ThrowOnError extends boolean = false>(options?: Options<PostApiMembersWebhookRefreshEmailData, ThrowOnError>) => (options?.client ?? client).post<PostApiMembersWebhookRefreshEmailResponses, unknown, ThrowOnError>({
+/**
+ * Handles incoming webhooks from Keycloak to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.
+ */
+export const postMembersWebhookRefreshEmail = <ThrowOnError extends boolean = false>(options?: Options<PostMembersWebhookRefreshEmailData, ThrowOnError>) => (options?.client ?? client).post<PostMembersWebhookRefreshEmailResponses, PostMembersWebhookRefreshEmailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/members/webhook/refresh-email',
+    url: '/members/webhook/refresh-email',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const getApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsMembershipResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentService, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
+ */
+export const getPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<GetPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).get<GetPaymentsMembershipResponses, GetPaymentsMembershipErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/membership',
+    url: '/payments/membership',
     ...options
 });
 
-export const postApiPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsMembershipResponses, unknown, ThrowOnError>({
+/**
+ * Initiates a new membership payment process. The PostMembershipPayment endpoint receives the PostMembershipPaymentDTO to trigger the creation of a payment intent. This usually involves communicating with an external payment gateway to generate a checkout URL, allowing the user to securely complete their membership purchase.
+ */
+export const postPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<PostPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).post<PostPaymentsMembershipResponses, PostPaymentsMembershipErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/membership',
+    url: '/payments/membership',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const getApiPaymentsMembershipById = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsMembershipByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsMembershipByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the details of a specific membership payment by its unique identifier. The GetMembershipPayment endpoint provides a granular view of a single transaction, including status, amount, and timestamp. This is essential for resolving billing inquiries and providing users with detailed receipts or proof of payment for their membership status.
+ */
+export const getPaymentsMembershipById = <ThrowOnError extends boolean = false>(options: Options<GetPaymentsMembershipByIdData, ThrowOnError>) => (options.client ?? client).get<GetPaymentsMembershipByIdResponses, GetPaymentsMembershipByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/membership/{id}',
+    url: '/payments/membership/{id}',
     ...options
 });
 
-export const getApiPaymentsEnrollment = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsEnrollmentData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsEnrollmentResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of payments specifically associated with activity enrollments. The GetEnrollmentPayments endpoint allows users to review the costs and payment statuses of the activities they have registered for. This helps maintain clarity regarding which events have been fully paid for and which require further financial action.
+ */
+export const getPaymentsEnrollment = <ThrowOnError extends boolean = false>(options?: Options<GetPaymentsEnrollmentData, ThrowOnError>) => (options?.client ?? client).get<GetPaymentsEnrollmentResponses, GetPaymentsEnrollmentErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/enrollment',
+    url: '/payments/enrollment',
     ...options
 });
 
-export const getApiPaymentsEnrollmentById = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsEnrollmentByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsEnrollmentByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a specific enrollment payment detail by its unique identifier. This endpoint serves to verify the payment status of a particular activity registration, offering a breakdown of the transaction details for both the user and administrative staff.
+ */
+export const getPaymentsEnrollmentById = <ThrowOnError extends boolean = false>(options: Options<GetPaymentsEnrollmentByIdData, ThrowOnError>) => (options.client ?? client).get<GetPaymentsEnrollmentByIdResponses, GetPaymentsEnrollmentByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/enrollment/{id}',
+    url: '/payments/enrollment/{id}',
     ...options
 });
 
-export const postApiPaymentsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsActivityResponses, unknown, ThrowOnError>({
+/**
+ * Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the service layer to reserve the spot and handle the transaction initiation.
+ */
+export const postPaymentsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostPaymentsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostPaymentsActivityResponses, PostPaymentsActivityErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/activity',
+    url: '/payments/activity',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const postApiPaymentsWebhook = <ThrowOnError extends boolean = false>(options?: Options<PostApiPaymentsWebhookData, ThrowOnError>) => (options?.client ?? client).post<PostApiPaymentsWebhookResponses, unknown, ThrowOnError>({
+/**
+ * Processes asynchronous status updates from the Mollie payment gateway. The MollieWebhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
+ */
+export const postPaymentsWebhook = <ThrowOnError extends boolean = false>(options?: Options<PostPaymentsWebhookData, ThrowOnError>) => (options?.client ?? client).post<PostPaymentsWebhookResponses, PostPaymentsWebhookErrors, ThrowOnError>({
     ...urlSearchParamsBodySerializer,
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/webhook',
+    url: '/payments/webhook',
     ...options,
     headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -525,42 +713,64 @@ export const postApiPaymentsWebhook = <ThrowOnError extends boolean = false>(opt
     }
 });
 
-export const getApiPaymentsUnpaid = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsUnpaidData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsUnpaidResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of outstanding balances or unpaid enrollments. The GetUnpaid endpoint identifies members who have pending financial obligations. It can be filtered to show only the current user's debts or, for administrators, a comprehensive list of all unpaid activities across the organization, facilitating debt collection and financial planning.
+ */
+export const getPaymentsUnpaid = <ThrowOnError extends boolean = false>(options?: Options<GetPaymentsUnpaidData, ThrowOnError>) => (options?.client ?? client).get<GetPaymentsUnpaidResponses, GetPaymentsUnpaidErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/unpaid',
+    url: '/payments/unpaid',
     ...options
 });
 
-export const getApiPaymentsOverpaid = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsOverpaidData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsOverpaidResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of enrollment balances that have been overpaid. The GetOverpaid endpoint is designed for financial reconciliation, highlighting instances where users have paid more than the required amount. This allows administrators to manage refunds or apply credits to future activities, ensuring accurate accounting and member satisfaction.
+ */
+export const getPaymentsOverpaid = <ThrowOnError extends boolean = false>(options?: Options<GetPaymentsOverpaidData, ThrowOnError>) => (options?.client ?? client).get<GetPaymentsOverpaidResponses, GetPaymentsOverpaidErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/overpaid',
+    url: '/payments/overpaid',
     ...options
 });
 
-export const getApiPaymentsMemberByUserIdStatus = <ThrowOnError extends boolean = false>(options: Options<GetApiPaymentsMemberByUserIdStatusData, ThrowOnError>) => (options.client ?? client).get<GetApiPaymentsMemberByUserIdStatusResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the current payment and membership status for a specific member. The GetMemberPaymentStatus endpoint provides a high-level summary of a user's financial standing, including whether they are considered a "paid member" and if they have any critical outstanding debts. This is frequently used by other modules to determine eligibility for activity registration or access to certain system features.
+ */
+export const getPaymentsMemberByUserIdStatus = <ThrowOnError extends boolean = false>(options: Options<GetPaymentsMemberByUserIdStatusData, ThrowOnError>) => (options.client ?? client).get<GetPaymentsMemberByUserIdStatusResponses, GetPaymentsMemberByUserIdStatusErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/member/{userId}/status',
+    url: '/payments/member/{userId}/status',
     ...options
 });
 
-export const getApiPaymentsExport = <ThrowOnError extends boolean = false>(options?: Options<GetApiPaymentsExportData, ThrowOnError>) => (options?.client ?? client).get<GetApiPaymentsExportResponses, unknown, ThrowOnError>({
+/**
+ * Exports all payment transactions within a specified date range to a CSV file. The ExportPaymentsToCsv endpoint is a powerful administrative tool for financial reporting and external auditing. It gathers all relevant transaction data between the start and end dates, formats it into a structured CSV file, and provides it as a download, enabling deep-dive analysis in spreadsheet software.
+ */
+export const getPaymentsExport = <ThrowOnError extends boolean = false>(options?: Options<GetPaymentsExportData, ThrowOnError>) => (options?.client ?? client).get<GetPaymentsExportResponses, GetPaymentsExportErrors, ThrowOnError>({
+    responseType: 'text',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/payments/export',
+    url: '/payments/export',
     ...options
 });
 
-export const getApiProfilepictureViewByPath = <ThrowOnError extends boolean = false>(options: Options<GetApiProfilepictureViewByPathData, ThrowOnError>) => (options.client ?? client).get<GetApiProfilepictureViewByPathResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves and streams a profile picture file based on its storage path. The GetProfilePictureByPath endpoint allows the system to serve image assets directly to the client. By providing the internal path, the endpoint retrieves the file stream and returns it with the correct content-type header, enabling browsers and applications to render the image correctly. This approach avoids exposing direct file system paths to the client and centralizes image delivery through a secured API route.
+ */
+export const getProfilepictureViewByPath = <ThrowOnError extends boolean = false>(options: Options<GetProfilepictureViewByPathData, ThrowOnError>) => (options.client ?? client).get<GetProfilepictureViewByPathResponses, GetProfilepictureViewByPathErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/profilepicture/view/{path}',
+    url: '/profilepicture/view/{path}',
     ...options
 });
 
-export const postApiProfilepictureByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<PostApiProfilepictureByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).post<PostApiProfilepictureByIdProfilePictureResponses, unknown, ThrowOnError>({
+/**
+ * Uploads a new profile picture for a specific member. The UploadProfilePicture endpoint processes multipart form-data containing an image file and associates it with the member identified by the provided ID. This endpoint ensures that the upload is authorized by verifying the requester's identity against the target profile. Upon successful processing, it returns the generated path of the stored asset, which can then be used for subsequent retrieval or profile updates.
+ */
+export const postProfilepictureByIdProfilePicture = <ThrowOnError extends boolean = false>(options: Options<PostProfilepictureByIdProfilePictureData, ThrowOnError>) => (options.client ?? client).post<PostProfilepictureByIdProfilePictureResponses, PostProfilepictureByIdProfilePictureErrors, ThrowOnError>({
     ...formDataBodySerializer,
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/profilepicture/{id}/profile-picture',
+    url: '/profilepicture/{id}/profile-picture',
     ...options,
     headers: {
         'Content-Type': null,
@@ -568,245 +778,339 @@ export const postApiProfilepictureByIdProfilePicture = <ThrowOnError extends boo
     }
 });
 
-export const getApiRolealiases = <ThrowOnError extends boolean = false>(options?: Options<GetApiRolealiasesData, ThrowOnError>) => (options?.client ?? client).get<GetApiRolealiasesResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of all role aliases defined in the system. The GetRoleAliases endpoint allows clients to fetch the complete collection of defined aliases, which is useful for populating dropdowns or displaying role-based information with user-friendly labels. This endpoint provides a comprehensive view of how internal roles are presented within the user interface.
+ */
+export const getRolealiases = <ThrowOnError extends boolean = false>(options?: Options<GetRolealiasesData, ThrowOnError>) => (options?.client ?? client).get<GetRolealiasesResponses, GetRolealiasesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/rolealiases',
+    url: '/rolealiases',
     ...options
 });
 
-export const postApiRolealiases = <ThrowOnError extends boolean = false>(options?: Options<PostApiRolealiasesData, ThrowOnError>) => (options?.client ?? client).post<PostApiRolealiasesResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new role alias within the system. The PostRoleAlias endpoint allows authorized administrators to define new custom names for existing system roles by providing a PostRoleAliasDTO. This process ensures that the provided alias is validated and correctly linked to a system role, while enforcing strict authorization to prevent unauthorized modifications to the system's naming configuration. Upon successful creation, the endpoint returns the details of the new alias along with its unique location.
+ */
+export const postRolealiases = <ThrowOnError extends boolean = false>(options?: Options<PostRolealiasesData, ThrowOnError>) => (options?.client ?? client).post<PostRolealiasesResponses, PostRolealiasesErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/rolealiases',
+    url: '/rolealiases',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiRolealiasesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently removes a role alias from the system. The DeleteRoleAlias endpoint ensures that a specific alias mapping is deleted, reverting the system to its default naming for the associated role. This action is restricted to authorized users and includes checks to ensure the resource exists before attempting deletion. Upon success, a 204 No Content status is returned to signify the resource's removal.
+ */
+export const deleteRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<DeleteRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteRolealiasesByIdResponses, DeleteRolealiasesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/rolealiases/{id}',
+    url: '/rolealiases/{id}',
     ...options
 });
 
-export const getApiRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<GetApiRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiRolealiasesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the details of a specific role alias by its unique identifier. The GetRoleAlias endpoint is designed to provide specific information about a single alias mapping, enabling clients to inspect individual role definitions and their associated system role identifiers. If the alias does not exist, the endpoint returns a 404 Not Found status to signal the absence of the resource.
+ */
+export const getRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<GetRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).get<GetRolealiasesByIdResponses, GetRolealiasesByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/rolealiases/{id}',
+    url: '/rolealiases/{id}',
     ...options
 });
 
-export const patchApiRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<PatchApiRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiRolealiasesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates an existing role alias using a JSON Patch document. The PatchRoleAlias endpoint provides the flexibility to modify specific fields of an alias—such as the displayed name—without requiring the submission of the entire object. This is particularly useful for fine-tuning role nomenclature while ensuring that the updates are validated against system constraints and authorized by the proper administrative permissions.
+ */
+export const patchRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<PatchRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchRolealiasesByIdResponses, PatchRolealiasesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/rolealiases/{id}',
+    url: '/rolealiases/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<PutApiRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiRolealiasesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Performs a full update of an existing role alias definition. The PutRoleAlias endpoint replaces the current state of a role alias with the data provided in the RoleAliasUpdateDTO. This is the standard method for comprehensive changes to an alias, ensuring that the updated record is fully validated and that the user has the necessary administrative rights to modify system role mappings.
+ */
+export const putRolealiasesById = <ThrowOnError extends boolean = false>(options: Options<PutRolealiasesByIdData, ThrowOnError>) => (options.client ?? client).put<PutRolealiasesByIdResponses, PutRolealiasesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/rolealiases/{id}',
+    url: '/rolealiases/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiRoles = <ThrowOnError extends boolean = false>(options?: Options<GetApiRolesData, ThrowOnError>) => (options?.client ?? client).get<GetApiRolesResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a collection of all roles defined within the system. The GetRoles endpoint allows authorized clients to fetch the full registry of available roles, facilitating administrative oversight and providing the necessary data for role assignment interfaces. This endpoint is designed to return a comprehensive list of role entities, ensuring that clients have access to the current organizational structure and permission tiers established within the application.
+ */
+export const getRoles = <ThrowOnError extends boolean = false>(options?: Options<GetRolesData, ThrowOnError>) => (options?.client ?? client).get<GetRolesResponses, GetRolesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/roles',
+    url: '/roles',
     ...options
 });
 
-export const postApiRoles = <ThrowOnError extends boolean = false>(options?: Options<PostApiRolesData, ThrowOnError>) => (options?.client ?? client).post<PostApiRolesResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new system role based on the provided configuration data. The PostRole endpoint allows authorized users to expand the system's organizational hierarchy by defining new roles through the PostRoleDTO. This process includes validating the role's properties, ensuring there are no naming conflicts, and associating the creation event with the requesting administrator. Upon successful creation, the endpoint returns the full details of the newly established role, including its system-generated identifier.
+ */
+export const postRoles = <ThrowOnError extends boolean = false>(options?: Options<PostRolesData, ThrowOnError>) => (options?.client ?? client).post<PostRolesResponses, PostRolesErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/roles',
+    url: '/roles',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiRolesById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiRolesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiRolesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently removes a specific role from the system by its unique identifier. The DeleteRole endpoint facilitates the decommissioning of roles that are no longer required, ensuring that the operation is performed only by users with the requisite administrative authority. This operation involves cleaning up the role record and ensuring that the system's security integrity is maintained. Upon successful deletion, a 204 No Content status is returned, confirming that the resource has been removed.
+ */
+export const deleteRolesById = <ThrowOnError extends boolean = false>(options: Options<DeleteRolesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteRolesByIdResponses, DeleteRolesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/roles/{id}',
+    url: '/roles/{id}',
     ...options
 });
 
-export const getApiRolesById = <ThrowOnError extends boolean = false>(options: Options<GetApiRolesByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiRolesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the details of a specific role by its unique identifier. The GetRole endpoint provides a focused view of a single role entity, including its properties and associated metadata. This endpoint is useful for inspecting individual role configurations or verifying the details of a role before performing updates. If the requested role cannot be found, the endpoint provides appropriate feedback to ensure a secure and predictable API experience.
+ */
+export const getRolesById = <ThrowOnError extends boolean = false>(options: Options<GetRolesByIdData, ThrowOnError>) => (options.client ?? client).get<GetRolesByIdResponses, GetRolesByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/roles/{id}',
+    url: '/roles/{id}',
     ...options
 });
 
-export const patchApiRolesById = <ThrowOnError extends boolean = false>(options: Options<PatchApiRolesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiRolesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates the properties of an existing role using a JSON Patch document. The PatchRole endpoint provides a highly flexible mechanism for modifying specific attributes of a role—such as its name or description—without the need to transmit the entire role object. This endpoint validates the proposed changes against the role's domain model and ensures that the user is authorized to perform the requested modifications before persisting the changes to the system.
+ */
+export const patchRolesById = <ThrowOnError extends boolean = false>(options: Options<PatchRolesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchRolesByIdResponses, PatchRolesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/roles/{id}',
+    url: '/roles/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiRolesById = <ThrowOnError extends boolean = false>(options: Options<PutApiRolesByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiRolesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates the complete representation of an existing role with the provided data. The PutRole endpoint is used for comprehensive updates where a role's configuration needs to be entirely refreshed. By providing a RoleUpdateDTO, clients can ensure the role's attributes are set to a specific state. This endpoint enforces strict authorization to ensure that only designated administrators can modify the foundational role definitions of the application.
+ */
+export const putRolesById = <ThrowOnError extends boolean = false>(options: Options<PutRolesByIdData, ThrowOnError>) => (options.client ?? client).put<PutRolesByIdResponses, PutRolesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/roles/{id}',
+    url: '/roles/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiSettings = <ThrowOnError extends boolean = false>(options?: Options<GetApiSettingsData, ThrowOnError>) => (options?.client ?? client).get<GetApiSettingsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a comprehensive list of all system settings. The GetSettings endpoint allows authorized administrators to fetch the entire collection of configuration parameters, providing a complete overview of the current system state. This endpoint is designed to facilitate administrative dashboards and auditing processes, ensuring that those with the appropriate permissions can review all active configuration keys and their associated values.
+ */
+export const getSettings = <ThrowOnError extends boolean = false>(options?: Options<GetSettingsData, ThrowOnError>) => (options?.client ?? client).get<GetSettingsResponses, GetSettingsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/settings',
+    url: '/settings',
     ...options
 });
 
-export const postApiSettings = <ThrowOnError extends boolean = false>(options?: Options<PostApiSettingsData, ThrowOnError>) => (options?.client ?? client).post<PostApiSettingsResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/settings',
-    ...options
-});
-
-export const deleteApiSettingsById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiSettingsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiSettingsByIdResponses, unknown, ThrowOnError>({
-    security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/settings/{id}',
-    ...options
-});
-
-export const getApiSettingsById = <ThrowOnError extends boolean = false>(options: Options<GetApiSettingsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiSettingsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new system setting with a specified key and value. The PostSetting endpoint allows for the dynamic expansion of the system's configuration by defining new parameters. This endpoint validates that the provided setting does not already exist and that the requesting user has the necessary administrative rights to add new global configurations. Upon successful creation, the endpoint returns the newly established setting detail.
+ */
+export const postSettings = <ThrowOnError extends boolean = false>(options?: Options<PostSettingsData, ThrowOnError>) => (options?.client ?? client).post<PostSettingsResponses, PostSettingsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/settings/{id}',
+    url: '/settings',
     ...options
 });
 
-export const patchApiSettingsById = <ThrowOnError extends boolean = false>(options: Options<PatchApiSettingsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiSettingsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently removes a specific system setting by its identifier. The DeleteSetting endpoint is used to decommission configuration parameters that are no longer required by the application. This operation is destructive and restricted to authorized personnel, ensuring that critical system settings are not removed accidentally. Upon success, the endpoint returns a 204 No Content status to signify the resource has been removed.
+ */
+export const deleteSettingsById = <ThrowOnError extends boolean = false>(options: Options<DeleteSettingsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteSettingsByIdResponses, DeleteSettingsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/settings/{id}',
+    url: '/settings/{id}',
+    ...options
+});
+
+/**
+ * Retrieves a specific system setting by its unique identifier (name). The GetSetting endpoint provides a focused view of a single configuration parameter, allowing clients to fetch the value and metadata for a specific key. This is particularly useful for individual feature checks or targeted administrative updates, ensuring that setting data is accessible in a granular fashion while maintaining strict authorization checks.
+ */
+export const getSettingsById = <ThrowOnError extends boolean = false>(options: Options<GetSettingsByIdData, ThrowOnError>) => (options.client ?? client).get<GetSettingsByIdResponses, GetSettingsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/settings/{id}',
+    ...options
+});
+
+/**
+ * Partially updates a specific system setting using a JSON Patch document. The PatchSetting endpoint enables granular modifications to a setting's properties, allowing administrators to change only specific fields without overwriting the entire resource. This is ideal for adjusting metadata or performing surgical updates to configuration values while ensuring all changes are validated and authorized.
+ */
+export const patchSettingsById = <ThrowOnError extends boolean = false>(options: Options<PatchSettingsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchSettingsByIdResponses, PatchSettingsByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/settings/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiSettingsById = <ThrowOnError extends boolean = false>(options: Options<PutApiSettingsByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiSettingsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Updates the value of an existing system setting. The PutSetting endpoint is designed for straightforward value replacements, allowing administrators to reconfigure existing keys with new data. This operation ensures that the setting exists and that the update is performed within the bounds of the user's permissions, returning a 204 No Content status upon a successful modification of the configuration value.
+ */
+export const putSettingsById = <ThrowOnError extends boolean = false>(options: Options<PutSettingsByIdData, ThrowOnError>) => (options.client ?? client).put<PutSettingsByIdResponses, PutSettingsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/settings/{id}',
+    url: '/settings/{id}',
     ...options
 });
 
-export const patchApiSpecificationanswersByAnswerId = <ThrowOnError extends boolean = false>(options: Options<PatchApiSpecificationanswersByAnswerIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiSpecificationanswersByAnswerIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates a specific specification answer by its unique identifier using a JSON Patch document. The PatchSpecificationAnswer endpoint allows clients to modify individual properties of an existing answer—such as its value or status—without having to submit the entire answer entity. This approach is highly efficient for targeted updates and ensures that only the intended fields are altered. The endpoint validates the patch operations against the specification's requirements and ensures that the requesting user has the necessary permissions to perform the update. Upon a successful operation, it returns a 204 No Content status, indicating that the changes have been applied successfully.
+ */
+export const patchSpecificationanswersByAnswerId = <ThrowOnError extends boolean = false>(options: Options<PatchSpecificationanswersByAnswerIdData, ThrowOnError>) => (options.client ?? client).patch<PatchSpecificationanswersByAnswerIdResponses, PatchSpecificationanswersByAnswerIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/specificationanswers/{answerId}',
+    url: '/specificationanswers/{answerId}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiStudies = <ThrowOnError extends boolean = false>(options?: Options<GetApiStudiesData, ThrowOnError>) => (options?.client ?? client).get<GetApiStudiesResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of all academic studies available in the system. The GetStudies endpoint is accessible to all users, including anonymous guests, to allow for public browsing of the study catalog. This endpoint provides a comprehensive overview of the different academic programs supported by the organization, serving as a foundational data source for registration forms and informational displays.
+ */
+export const getStudies = <ThrowOnError extends boolean = false>(options?: Options<GetStudiesData, ThrowOnError>) => (options?.client ?? client).get<GetStudiesResponses, GetStudiesErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studies',
+    url: '/studies',
     ...options
 });
 
-export const postApiStudies = <ThrowOnError extends boolean = false>(options?: Options<PostApiStudiesData, ThrowOnError>) => (options?.client ?? client).post<PostApiStudiesResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new academic study within the system based on the provided data. The PostStudy endpoint processes requests from authorized administrators to add new programs to the catalog using the PostStudyDTO. This process ensures that the study data is validated against system requirements and that the creation event is correctly attributed to the authenticated user. Upon successful creation, the endpoint returns the new study details and its unique resource location.
+ */
+export const postStudies = <ThrowOnError extends boolean = false>(options?: Options<PostStudiesData, ThrowOnError>) => (options?.client ?? client).post<PostStudiesResponses, PostStudiesErrors, ThrowOnError>({
+    responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studies',
+    url: '/studies',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiStudiesById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiStudiesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiStudiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The service layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
+ */
+export const deleteStudiesById = <ThrowOnError extends boolean = false>(options: Options<DeleteStudiesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteStudiesByIdResponses, DeleteStudiesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studies/{id}',
+    url: '/studies/{id}',
     ...options
 });
 
-export const getApiStudiesById = <ThrowOnError extends boolean = false>(options: Options<GetApiStudiesByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiStudiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the details of a specific study by its unique identifier. The GetStudy endpoint allows clients to fetch in-depth information about a single academic program, including its properties and associated metadata. This granular access is vital for displaying detailed program descriptions or verifying specific study configurations before administrative updates. If the study is not found, the endpoint returns a 404 Not Found status.
+ */
+export const getStudiesById = <ThrowOnError extends boolean = false>(options: Options<GetStudiesByIdData, ThrowOnError>) => (options.client ?? client).get<GetStudiesByIdResponses, GetStudiesByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studies/{id}',
+    url: '/studies/{id}',
     ...options
 });
 
-export const patchApiStudiesById = <ThrowOnError extends boolean = false>(options: Options<PatchApiStudiesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiStudiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates the properties of an existing study using a JSON Patch document. The PatchStudy endpoint allows for precise modifications—such as renaming a program or updating a specific attribute—without requiring the submission of the full study object. This approach is efficient and minimizes data transfer, while ensuring that all changes are validated against business rules and authorized by the proper security checks.
+ */
+export const patchStudiesById = <ThrowOnError extends boolean = false>(options: Options<PatchStudiesByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchStudiesByIdResponses, PatchStudiesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studies/{id}',
+    url: '/studies/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const putApiStudiesById = <ThrowOnError extends boolean = false>(options: Options<PutApiStudiesByIdData, ThrowOnError>) => (options.client ?? client).put<PutApiStudiesByIdResponses, unknown, ThrowOnError>({
+/**
+ * Performs a full update of an existing study's representation. The PutStudy endpoint is designed for comprehensive edits where the entire state of a study record needs to be refreshed using the data provided in the StudyUpdateDTO. This endpoint enforces strict authorization to ensure only academic administrators can modify the catalog, returning a 204 No Content status once the changes have been successfully persisted.
+ */
+export const putStudiesById = <ThrowOnError extends boolean = false>(options: Options<PutStudiesByIdData, ThrowOnError>) => (options.client ?? client).put<PutStudiesByIdResponses, PutStudiesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studies/{id}',
+    url: '/studies/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });
 
-export const getApiStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<GetApiStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).get<GetApiStudyenrollmentsResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves a list of study enrollments based on the provided query parameters. The GetStudyEnrollments endpoint allows authorized users to fetch enrollment records, which can be filtered and paginated via the GetStudyEnrollmentsDTO. This is primarily used by administrators to oversee student demographics or by individual users to view their own academic history within the system. The endpoint ensures that the returned data is scoped according to the requester's permissions, preventing unauthorized access to other members' academic records.
+ */
+export const getStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<GetStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).get<GetStudyenrollmentsResponses, GetStudyenrollmentsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studyenrollments',
+    url: '/studyenrollments',
     ...options
 });
 
-export const postApiStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<PostApiStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostApiStudyenrollmentsResponses, unknown, ThrowOnError>({
+/**
+ * Creates a new study enrollment record for a member. The PostStudyEnrollment endpoint processes requests to link a member to a specific academic study using the PostStudyEnrollmentDTO. This operation involves validating the enrollment period and ensuring the member is not already enrolled in a conflicting program. The endpoint enforces authorization to ensure that users can only create enrollments for themselves or, in the case of staff, for other members. Upon success, it returns the newly created enrollment details.
+ */
+export const postStudyenrollments = <ThrowOnError extends boolean = false>(options?: Options<PostStudyenrollmentsData, ThrowOnError>) => (options?.client ?? client).post<PostStudyenrollmentsResponses, PostStudyenrollmentsErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studyenrollments',
+    url: '/studyenrollments',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options?.headers
     }
 });
 
-export const deleteApiStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiStudyenrollmentsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Permanently removes a study enrollment record from the system. The DeleteStudyEnrollment endpoint allows for the removal of incorrectly entered or obsolete enrollment data. This operation is strictly guarded to prevent accidental loss of academic history and requires the requester to have administrative rights or ownership of the record. Following successful deletion, a 204 No Content status is returned to the client.
+ */
+export const deleteStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<DeleteStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteStudyenrollmentsByIdResponses, DeleteStudyenrollmentsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studyenrollments/{id}',
+    url: '/studyenrollments/{id}',
     ...options
 });
 
-export const getApiStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<GetApiStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).get<GetApiStudyenrollmentsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Retrieves the details of a specific study enrollment by its unique identifier. The GetStudyEnrollment endpoint provides a comprehensive view of a single enrollment record, including the associated study details, start/end dates, and the current status of the enrollment. This granular access is necessary for verifying specific academic claims or troubleshooting individual member profiles. If the enrollment record is not found or access is denied, the endpoint returns the appropriate HTTP status code.
+ */
+export const getStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<GetStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).get<GetStudyenrollmentsByIdResponses, GetStudyenrollmentsByIdErrors, ThrowOnError>({
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studyenrollments/{id}',
+    url: '/studyenrollments/{id}',
     ...options
 });
 
-export const patchApiStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<PatchApiStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiStudyenrollmentsByIdResponses, unknown, ThrowOnError>({
+/**
+ * Partially updates an existing study enrollment using a JSON Patch document. The PatchStudy endpoint (targeting a specific StudyEnrollment) allows for the modification of specific enrollment attributes—such as adjusting a graduation date or changing a status—without the need to resend the entire record. This ensures that updates are targeted and efficient. The endpoint validates the proposed changes against the enrollment domain rules and verifies the user's authority to modify the record before persisting the changes.
+ */
+export const patchStudyenrollmentsById = <ThrowOnError extends boolean = false>(options: Options<PatchStudyenrollmentsByIdData, ThrowOnError>) => (options.client ?? client).patch<PatchStudyenrollmentsByIdResponses, PatchStudyenrollmentsByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
-    url: '/api/studyenrollments/{id}',
+    url: '/studyenrollments/{id}',
     ...options,
     headers: {
-        'Content-Type': 'application/json-patch+json',
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });

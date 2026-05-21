@@ -3,7 +3,27 @@ namespace Backend.Models.Domain;
 /// <summary>
 /// Represents a task in the outbox for Keycloak operations. This entity is used to track tasks that need to be processed for Keycloak, such as creating, synchronizing, deleting users, or refreshing user emails. Each task is associated with a specific Keycloak user and includes information about when it was created, how many times it has been retried, and the type of task being performed.
 /// </summary>
-public enum KeycloakTaskType { Create, Sync, Delete, RefreshEmail }
+public enum KeycloakTaskType { 
+    /// <summary>
+    /// Indicates that the task is to create a new user in Keycloak. This task type is used when a new member is added to the system and needs to have a corresponding user account created in Keycloak for authentication and authorization purposes.
+    /// </summary>
+    Create, 
+
+    /// <summary>
+    /// Indicates that the task is to synchronize user data between the system and Keycloak. This task type is used when there are updates to a member's information (e.g., email, name, group memberships) that need to be reflected in Keycloak to ensure that the user's account information is up-to-date and consistent across both systems.
+    /// </summary>
+    Sync, 
+
+    /// <summary>
+    /// Indicates that the task is to delete a user from Keycloak. This task type is used when a member is removed from the system or when their account needs to be deactivated, ensuring that the corresponding user account in Keycloak is also deleted to prevent unauthorized access.
+    /// </summary>
+    Delete, 
+
+    /// <summary>
+    /// Indicates that the task is to refresh a user's email in Keycloak. This task type is used when a member's email address is updated in the system and needs to be updated in Keycloak as well, ensuring that the user's contact information is accurate and consistent across both systems.
+    /// </summary>
+    RefreshEmail 
+}
 
 /// <summary>
 /// Represents a task in the outbox for Keycloak operations. This entity is used to track tasks that need to be processed for Keycloak, such as creating, synchronizing, deleting users, or refreshing user emails. Each task is associated with a specific Keycloak user and includes information about when it was created, how many times it has been retried, and the type of task being performed.

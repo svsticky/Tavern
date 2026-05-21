@@ -4,6 +4,9 @@ using System.Linq.Expressions;
 
 namespace Backend.Projections;
 
+/// <summary>
+/// The MemberProjections class provides a method to project a Member entity into a MemberResponseDTO, including conditional logic to determine which fields to include based on the requester's role. This projection is used to transform the data from the Member model into a format that is suitable for API responses, ensuring that sensitive information is only included when appropriate while still providing relevant details about the member when necessary. The inclusion of related entities like study enrollments and group memberships further enriches the response with contextual information about the member's involvement in various activities and groups within the system.
+/// </summary>
 public static class MemberProjections
 {
     /// <summary>

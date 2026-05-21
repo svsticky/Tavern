@@ -2,9 +2,9 @@ import type React from "react";
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import { 
-    deleteApiMailinglistsById,
-    postApiMailinglists, 
-    putApiMailinglistsById, 
+    deleteMailinglistsById,
+    postMailinglists, 
+    putMailinglistsById, 
     type Mailinglist, 
     type PostMailinglistDto
 } from "~/api";
@@ -24,7 +24,7 @@ export const handleMailingListSubmit = async ({
 
     try {
         if (mailingList?.id) {
-            const response = await putApiMailinglistsById({ 
+            const response = await putMailinglistsById({ 
                 path: { id: mailingList.id }, 
                 body: formData as PostMailinglistDto 
             });
@@ -39,7 +39,7 @@ export const handleMailingListSubmit = async ({
             toast.success(t("mailing_list_updated"));
             onComplete(updatedList); 
         } else {
-            const response = await postApiMailinglists({ 
+            const response = await postMailinglists({ 
                 body: formData as PostMailinglistDto 
             });
 
@@ -73,7 +73,7 @@ type HandleDeleteArgs = {
 export const handleMailingListDelete = async ({ mailingList, setLoading, onComplete }: HandleDeleteArgs) => {
     setLoading(true);
     try {
-        const response = await deleteApiMailinglistsById({ path: { id: mailingList.id! } });
+        const response = await deleteMailinglistsById({ path: { id: mailingList.id! } });
         
         if (response.error) throw new Error();
 

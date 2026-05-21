@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getApiActivities } from "~/api";
+import { type ActivityResponseDto, getActivities } from "~/api";
 
 /**
  * Fetches all activities for a specific year for administrative purposes.
@@ -22,7 +22,7 @@ export const loadAdminActivities = async (
 ) => {
   try {
     setLoading(true);
-    const response = await getApiActivities({
+    const response = await getActivities({
       query: {
         IncludePast: true,
         IncludeFuture: true,

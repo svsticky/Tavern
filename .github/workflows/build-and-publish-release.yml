@@ -21,6 +21,7 @@ jobs:
     env:
       IMAGE_BACKEND: ghcr.io/${{ github.repository_owner }}/tavern-backend
       IMAGE_FRONTEND: ghcr.io/${{ github.repository_owner }}/tavern-frontend
+      IMAGE_DOCS: ghcr.io/${{ github.repository_owner }}/tavern-docs
 
     steps:
       - name: Checkout repository
@@ -65,3 +66,16 @@ jobs:
             ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE_FRONTEND) || '' }}
             ${{ github.ref == 'refs/heads/development' && format('{0}:dev', env.IMAGE_FRONTEND) || '' }}
             ${{ github.event_name == 'release' && format('{0}:{1}', env.IMAGE_FRONTEND, github.event.release.tag_name) || '' }}
+
+      # --- Docs Build & Push ---
+      - name: Build and push Docs
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Docs/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE_DOCS) || '' }}
+            ${{ github.ref == 'refs/heads/development' && format('{0}:dev', env.IMAGE_DOCS) || '' }}
+            ${{ github.event_name == 'release' && format('{0}:{1}', env.IMAGE_DOCS, github.event.release.tag_name) || '' }}

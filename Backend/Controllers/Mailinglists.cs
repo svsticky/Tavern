@@ -10,7 +10,7 @@ namespace Backend.Controllers;
 /// <summary>
 /// Controller for managing mailing lists. The Mailinglists controller provides a set of endpoints for authorized users to perform CRUD operations on mailing list entities. This includes retrieving all mailing lists, fetching specific mailing list details, creating new mailing lists, updating existing ones, and deleting mailing lists as needed. The controller ensures that only users with appropriate permissions can access these operations, leveraging the IMailinglistService to handle the underlying business logic and data persistence while maintaining a secure and efficient interface for managing communication channels within the application.
 /// </summary>
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class Mailinglists : ControllerBase
@@ -39,6 +39,10 @@ public class Mailinglists : ControllerBase
     /// <returns>The list of mailing lists.</returns>
     [HttpGet]
     [AllowAnonymous]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(IEnumerable<Mailinglist>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<Mailinglist>>> GetMailinglists(CancellationToken ct)
     {
         try
@@ -47,7 +51,7 @@ public class Mailinglists : ControllerBase
             return Ok(result);
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
     }
 
     /// <summary>
@@ -57,6 +61,11 @@ public class Mailinglists : ControllerBase
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The mailing list if found, otherwise a 404 Not Found response.</returns>
     [HttpGet("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Mailinglist), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Mailinglist>> GetMailinglist(int id, CancellationToken ct)
     {
         try
@@ -65,7 +74,7 @@ public class Mailinglists : ControllerBase
             return result != null ? Ok(result) : NotFound();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
     }
 
     /// <summary>
@@ -75,7 +84,12 @@ public class Mailinglists : ControllerBase
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The created mailing list.</returns>
     [HttpPost]
-    public async Task<ActionResult> PostMailinglist([FromBody] PostMailinglistDTO mailinglist, CancellationToken ct)
+    [Produces("application/json")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(Mailinglist), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<Mailinglist>> PostMailinglist([FromBody] PostMailinglistDTO mailinglist, CancellationToken ct)
     {
         try
         {
@@ -83,7 +97,7 @@ public class Mailinglists : ControllerBase
             return CreatedAtAction(nameof(GetMailinglist), new { id = result.Id, bitValue = result.BitValue }, result);
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
     }
 
     /// <summary>
@@ -94,6 +108,12 @@ public class Mailinglists : ControllerBase
     /// <param name="ct">The cancellation token.</param>
     /// <returns>No content.</returns>
     [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PutMailinglist(int id, [FromBody] PostMailinglistDTO mailinglist, CancellationToken ct)
     {
         try
@@ -102,18 +122,24 @@ public class Mailinglists : ControllerBase
             return NoContent();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
     }
 
     /// <summary>
-    /// Partially updates an existing mailing list identified by its ID using a JSON Patch document. This endpoint allows authorized users to modify specific fields of an existing mailing list without needing to provide the entire entity. The method accepts a JsonPatchDocument<Mailinglist> in the request body, which specifies the operations to be performed on the mailing list. The UpdateMailinglist function of the IMailinglistService is called with the ID, patch document, user ID, and cancellation token to handle the patching logic. If the patch is successful, it returns an HTTP 204 No Content response; if the mailing list is not found, a 404 Not Found response is returned. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality provides flexibility for users to make partial updates to mailing lists efficiently.
+    /// Partially updates an existing mailing list identified by its ID using a JSON Patch document. This endpoint allows authorized users to modify specific fields of an existing mailing list without needing to provide the entire entity. The method accepts a <see cref="JsonPatchDocument{MMailinglistr}"/> in the request body, which specifies the operations to be performed on the mailing list. The UpdateMailinglist function of the IMailinglistService is called with the ID, patch document, user ID, and cancellation token to handle the patching logic. If the patch is successful, it returns an HTTP 204 No Content response; if the mailing list is not found, a 404 Not Found response is returned. The endpoint also handles exceptions, returning a 403 Forbidden response for unauthorized access and a 400 Bad Request response for other errors. This functionality provides flexibility for users to make partial updates to mailing lists efficiently.
     /// </summary>
     /// <param name="id">The ID of the mailing list to update.</param>
     /// <param name="patchDoc">The JSON Patch document containing the update operations.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>No content.</returns>
     [HttpPatch("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PatchMailinglist(int id, [FromBody] JsonPatchDocument<Mailinglist> patchDoc, CancellationToken ct)
     {
         try
@@ -122,8 +148,8 @@ public class Mailinglists : ControllerBase
             return NoContent();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
     }
 
     /// <summary>
@@ -133,6 +159,12 @@ public class Mailinglists : ControllerBase
     /// <param name="ct">The cancellation token.</param>
     /// <returns>No content.</returns>
     [HttpDelete("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> DeleteMailinglist(int id, CancellationToken ct)
     {
         try
@@ -141,7 +173,7 @@ public class Mailinglists : ControllerBase
             return NoContent();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException ex) { return NotFound(ex.Message); }
-        catch (Exception ex) { return BadRequest(ex.Message); }
+        catch (KeyNotFoundException) { return NotFound(); }
+        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
     }
 }

@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { getApiMembers, type MemberResponseDto } from "~/api";
+import { getMembers, type MemberResponseDto } from "~/api";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 
@@ -37,7 +37,7 @@ export default function SearchMemberOverlay({
     const searchMembers = async () => {
       setSearching(true);
       try {
-        const res = await getApiMembers({ query: { Search: query } });
+        const res = await getMembers({ query: { Search: query } });
 
         if (res.error || !res.data) throw new Error("Search failed");
 

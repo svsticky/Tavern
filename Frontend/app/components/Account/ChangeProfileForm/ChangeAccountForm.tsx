@@ -2,7 +2,7 @@ import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { getApiMailinglists } from "~/api";
+import { getMailinglists } from "~/api";
 import type { Mailinglist, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
@@ -98,7 +98,7 @@ export default function ChangeAccountForm({
     const fetchMailingLists = async () => {
       setLoadingMailingLists(true);
       try {
-        const response = await getApiMailinglists();
+        const response = await getMailinglists();
 
         if (response.error || !response.data)
           throw new Error("Failed to fetch mailing lists");

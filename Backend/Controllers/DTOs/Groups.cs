@@ -8,12 +8,12 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostGroupDTO
 {
-    /// <inheritdoc cref="Models.Group.Name"/>
+    /// <inheritdoc cref="Group.Name"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Type"/>
+    /// <inheritdoc cref="Group.Type"/>
     public required GroupType Type { get; set; }
 
     /// <summary>
@@ -27,7 +27,7 @@ public class PostGroupDTO
 /// </summary>
 public class GetGroupDTO
 {
-    /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
+    /// <inheritdoc cref="GroupMembership.MembershipYear"/>
     public uint? MembershipYear { get; set; }
 
     /// <summary>
@@ -41,19 +41,19 @@ public class GetGroupDTO
 /// </summary>
 public class GroupResponseDTO
 {
-    /// <inheritdoc cref="Models.Group.Id"/>
+    /// <inheritdoc cref="Group.Id"/>
     public required uint Id { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Name"/>
+    /// <inheritdoc cref="Group.Name"/>
     public required string Name { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Active"/>
+    /// <inheritdoc cref="Group.Active"/>
     public required bool Active { get; set; } = true;
 
-    /// <inheritdoc cref="Models.Group.Type"/>
+    /// <inheritdoc cref="Group.Type"/>
     public required GroupType Type { get; set; }
 
-    /// <inheritdoc cref="Models.Group.GroupPicturePath"/>
+    /// <inheritdoc cref="Group.GroupPicturePath"/>
     public string? GroupPicturePath { get; set; }
 }
 
@@ -62,14 +62,14 @@ public class GroupResponseDTO
 /// </summary>
 public class GroupUpdateDTO
 {
-    /// <inheritdoc cref="Models.Group.Name"/>
+    /// <inheritdoc cref="Group.Name"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Active"/>
+    /// <inheritdoc cref="Group.Active"/>
     public required bool Active { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Type"/>
+    /// <inheritdoc cref="Group.Type"/>
     public required GroupType Type { get; set; }
 }

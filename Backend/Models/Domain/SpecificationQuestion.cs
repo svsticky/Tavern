@@ -8,11 +8,34 @@ namespace Backend.Models.Domain;
 /// </summary>
 public enum QuestionType
 {
+    /// <summary>
+    /// Indicates that the specification question is of type String, meaning that the answers provided for this question should be in the form of text strings. This type allows for open-ended responses where members can provide detailed information or explanations in their answers, making it suitable for questions that require more descriptive or narrative responses.
+    /// </summary>
     String,
+
+    /// <summary>
+    /// Indicates that the specification question is of type Boolean, meaning that the answers provided for this question should be in the form of true/false or yes/no responses. This type is suitable for questions that require a simple binary response, allowing for quick and straightforward answers that can be easily analyzed and categorized within the system.
+    /// </summary>
     Boolean,
+
+    /// <summary>
+    /// Indicates that the specification question is of type Number, meaning that the answers provided for this question should be in the form of numerical values. This type is suitable for questions that require quantitative responses, allowing for the collection of data that can be used for calculations, comparisons, or statistical analysis within the system.
+    /// </summary>
     Number,
+
+    /// <summary>
+    /// Indicates that the specification question is of type Date, meaning that the answers provided for this question should be in the form of date values. This type is suitable for questions that require responses related to specific dates, such as birthdates, event dates, or other relevant date information that can be used for scheduling, age verification, or other date-related functionalities within the system.
+    /// </summary>
     Date,
+
+    /// <summary>
+    /// Indicates that the specification question is of type DateTime, meaning that the answers provided for this question should be in the form of date and time values. This type is suitable for questions that require responses related to specific dates and times, such as appointment scheduling, event timing, or other relevant date and time information that can be used for scheduling, reminders, or other date and time-related functionalities within the system.
+    /// </summary>
     DateTime,
+
+    /// <summary>
+    /// Indicates that the specification question is of type MultipleChoice, meaning that the answers provided for this question should be selected from a predefined set of options. This type is suitable for questions that require responses to be chosen from a specific list of choices, allowing for easier analysis and categorization of responses based on the selected options. The available options for this type of question can be defined in the Options property of the SpecificationQuestion entity, providing flexibility in the range of choices that can be offered to members when answering this type of question.
+    /// </summary>
     MultipleChoice
 }
 

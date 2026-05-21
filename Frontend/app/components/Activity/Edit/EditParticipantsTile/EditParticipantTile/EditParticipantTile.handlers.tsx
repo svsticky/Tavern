@@ -2,9 +2,9 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
-  deleteApiEnrollmentsByActivityIdByMemberId,
+  deleteEnrollmentsByActivityIdByMemberId,
   type EnrollmentResponseDto,
-  patchApiEnrollmentsByActivityIdByMemberId,
+  patchEnrollmentsByActivityIdByMemberId,
 } from "~/api";
 
 /**
@@ -32,7 +32,7 @@ export const handleParticipantUnenroll = ({
   const handleUnenrollAction = async () => {
     try {
       setLoading(true);
-      const response = await deleteApiEnrollmentsByActivityIdByMemberId({
+      const response = await deleteEnrollmentsByActivityIdByMemberId({
         path: {
           activityId,
           memberId: enrollment.member.id!,
@@ -82,7 +82,7 @@ export const savePriceToServer = async ({
 
   try {
     setLoading(true);
-    const response = await patchApiEnrollmentsByActivityIdByMemberId({
+    const response = await patchEnrollmentsByActivityIdByMemberId({
       path: {
         activityId,
         memberId: enrollment.member.id!,

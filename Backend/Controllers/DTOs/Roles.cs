@@ -7,7 +7,7 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostRoleDTO
 {
-    /// <inheritdoc cref="Models.Role.Name"/>
+    /// <inheritdoc cref="Models.Domain.Role.Name"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
@@ -18,7 +18,7 @@ public class PostRoleDTO
 /// </summary>
 public class RoleUpdateDTO
 {
-    /// <inheritdoc cref="Models.Role.Name"/>
+    /// <inheritdoc cref="Models.Domain.Role.Name"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }

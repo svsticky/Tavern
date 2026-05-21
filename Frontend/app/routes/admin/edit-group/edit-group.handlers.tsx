@@ -2,17 +2,17 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
-  deleteApiGroupmembershipsById,
+  deleteGroupmembershipsById,
   type GroupMembershipResponseDto,
-  getApiGroupmemberships,
-  getApiGroupsById,
-  getApiGroupsByIdGroupPicture,
-  getApiRolealiases,
+  getGroupmemberships,
+  getGroupsById,
+  getGroupsByIdGroupPicture,
+  getRolealiases,
   type MemberResponseDto,
-  patchApiGroupmembershipsById,
-  patchApiGroupsById,
-  postApiGroupmemberships,
-  postApiGroupsByIdGroupPicture,
+  patchGroupmembershipsById,
+  patchGroupsById,
+  postGroupmemberships,
+  postGroupsByIdGroupPicture,
   type RoleAlias,
 } from "~/api";
 
@@ -59,7 +59,7 @@ export const loadGroupData = async ({
   let url = null as string | null;
 
   try {
-    const groupResponse = await getApiGroupsById({ path: { id } });
+    const groupResponse = await getGroupsById({ path: { id } });
 
     if (groupResponse.error || !groupResponse.data)
       throw new Error("Failed to load group data");
@@ -70,12 +70,12 @@ export const loadGroupData = async ({
       Active: groupResponse.data.active,
     });
 
-    const roleAliasesResponse = await getApiRolealiases();
+    const roleAliasesResponse = await getRolealiases();
     if (roleAliasesResponse.error || !roleAliasesResponse.data)
       throw new Error("Failed to load role aliases");
     setRoleAliases(roleAliasesResponse.data);
 
-    const groupPictureResponse = await getApiGroupsByIdGroupPicture({
+    const groupPictureResponse = await getGroupsByIdGroupPicture({
       path: { id },
       responseType: "blob",
     });
@@ -122,7 +122,7 @@ export const loadGroupMemberships = async (
   if (!id) return;
   try {
     setLoadingMemberships(true);
-    const groupMembershipsResponse = await getApiGroupmemberships({
+    const groupMembershipsResponse = await getGroupmemberships({
       query: {
         GroupId: id,
         MembershipYear: selectedYear,
@@ -165,7 +165,7 @@ export const handleSaveGroup = async (
         value: formData[key as keyof typeof formData],
       }));
 
-      const response = await patchApiGroupsById({
+      const response = await patchGroupsById({
         path: { id },
         body: patchDoc as any,
       });
@@ -208,7 +208,7 @@ export const handleGroupProfilePictureUpload = async (
 
   const saveProcess = async () => {
     try {
-      const response = await postApiGroupsByIdGroupPicture({
+      const response = await postGroupsByIdGroupPicture({
         path: { id },
         body: { image: file },
       });
@@ -249,7 +249,7 @@ export const handleDeleteGroupEnrollment = async (
   const deleteProcess = async () => {
     try {
       setLoading(true);
-      const response = await deleteApiGroupmembershipsById({ path: { id } });
+      const response = await deleteGroupmembershipsById({ path: { id } });
 
       if (response.error) throw new Error("Failed to delete enrollment");
 
@@ -294,7 +294,7 @@ export const handleAddGroupEnrollment = async (
   const executeProcess = async () => {
     try {
       setLoading(true);
-      const res = await postApiGroupmemberships({
+      const res = await postGroupmemberships({
         body: {
           memberId: member.id!,
           groupId: id,
@@ -353,7 +353,7 @@ export const handleUpdateGroupRole = async (
   const saveProcess = async () => {
     try {
       setLoadingChangeRole(true);
-      const response = await patchApiGroupmembershipsById({
+      const response = await patchGroupmembershipsById({
         path: { id: enrollmentId },
         body: [
           { op: "replace", path: "/roleAliasId", value: newRoleAliasId },

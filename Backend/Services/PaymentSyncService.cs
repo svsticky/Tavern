@@ -14,6 +14,11 @@ public class PaymentSyncService(
     ILogger<PaymentSyncService> logger) : BackgroundService
 {
 
+    /// <summary>
+    /// Executes the payment synchronization loop, which periodically checks for pending payments in the database and reconciles their status with the payment provider. The loop runs indefinitely until the application is stopped, with a delay between each synchronization cycle to prevent excessive load on the payment provider's API. During each cycle, the service retrieves all pending payments, checks their status with the payment provider, and updates the local database accordingly, marking payments as paid or removing expired/canceled payments as needed. This ensures that the application's payment records remain accurate and up-to-date with the external payment provider's status.
+    /// </summary>
+    /// <param name="stoppingToken">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Wait a bit before starting the sync to ensure the application has fully started and all services are available. 

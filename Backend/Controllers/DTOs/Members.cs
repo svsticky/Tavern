@@ -9,61 +9,61 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostMemberDTO
 {
-    /// <inheritdoc cref="Models.Member.StudentNumber"/>
+    /// <inheritdoc cref="Member.StudentNumber"/>
     public required uint StudentNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.FirstName"/>
+    /// <inheritdoc cref="Member.FirstName"/>
     [StringLength(60)]
     [Required(AllowEmptyStrings = false)]
     public required string FirstName { get; set; }
 
-    /// <inheritdoc cref="Models.Member.LastName"/>
+    /// <inheritdoc cref="Member.LastName"/>
     [StringLength(60)]
     [Required(AllowEmptyStrings = false)]
     public required string LastName { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Email"/>
+    /// <inheritdoc cref="Member.Email"/>
     [StringLength(100)]
     [EmailAddress]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PhoneNumber"/>
+    /// <inheritdoc cref="Member.PhoneNumber"/>
     [Required(AllowEmptyStrings = false)]
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public required string PhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Street"/>
+    /// <inheritdoc cref="Member.Street"/>
     [StringLength(40)]
     [Required(AllowEmptyStrings = false)]
     public required string Street { get; set; }
 
-    /// <inheritdoc cref="Models.Member.HouseNumber"/>
+    /// <inheritdoc cref="Member.HouseNumber"/>
     [Required(AllowEmptyStrings = false)]
     [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
     public required string HouseNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PostalCode"/>
+    /// <inheritdoc cref="Member.PostalCode"/>
     [StringLength(10)]
     [Required(AllowEmptyStrings = false)]
     public required string PostalCode { get; set; }
 
-    /// <inheritdoc cref="Models.Member.City"/>
+    /// <inheritdoc cref="Member.City"/>
     [StringLength(40)]
     [Required(AllowEmptyStrings = false)]
     public required string City { get; set; }
 
-    /// <inheritdoc cref="Models.Member.DateOfBirth"/>
+    /// <inheritdoc cref="Member.DateOfBirth"/>
     public required DateTimeOffset DateOfBirth { get; set; }
    
-    /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>
+    /// <inheritdoc cref="Member.ParentPhoneNumber"/>
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public string? ParentPhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
+    /// <inheritdoc cref="Member.MailSubscriptions"/>
     public uint MailSubscriptions { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
+    /// <inheritdoc cref="Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
 
     /// <summary>
@@ -77,56 +77,56 @@ public class PostMemberDTO
 /// </summary>
 public class MemberResponseDTO
 {
-    /// <inheritdoc cref="Models.Member.Id"/>
+    /// <inheritdoc cref="Member.Id"/>
     public Guid? Id { get; set; }
 
-    /// <inheritdoc cref="Models.Member.StudentNumber"/>
+    /// <inheritdoc cref="Member.StudentNumber"/>
     public uint? StudentNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.FirstName"/>
+    /// <inheritdoc cref="Member.FirstName"/>
     public string? FirstName { get; set; }
 
-    /// <inheritdoc cref="Models.Member.LastName"/>
+    /// <inheritdoc cref="Member.LastName"/>
     public string? LastName { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Email"/>
+    /// <inheritdoc cref="Member.Email"/>
     [EmailAddress]
     public string? Email { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PhoneNumber"/>
+    /// <inheritdoc cref="Member.PhoneNumber"/>
     public string? PhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Street"/>
+    /// <inheritdoc cref="Member.Street"/>
     [StringLength(40)]
     public string? Street { get; set; }
 
-    /// <inheritdoc cref="Models.Member.HouseNumber"/>
+    /// <inheritdoc cref="Member.HouseNumber"/>
     public string? HouseNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PostalCode"/>
+    /// <inheritdoc cref="Member.PostalCode"/>
     [StringLength(10)]
     public string? PostalCode { get; set; }
 
-    /// <inheritdoc cref="Models.Member.City"/>
+    /// <inheritdoc cref="Member.City"/>
     [StringLength(40)]
     public string? City { get; set; }
 
-    /// <inheritdoc cref="Models.Member.DateOfBirth"/>
+    /// <inheritdoc cref="Member.DateOfBirth"/>
     public DateTimeOffset? DateOfBirth { get; set; }
 
-    /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>
+    /// <inheritdoc cref="Member.ParentPhoneNumber"/>
     public string? ParentPhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
+    /// <inheritdoc cref="Member.MailSubscriptions"/>
     public uint? MailSubscriptions { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Notes"/>
+    /// <inheritdoc cref="Member.Notes"/>
     public string? Notes { get; set; }
 
-    /// <inheritdoc cref="Models.Member.RegisteredOn"/>
+    /// <inheritdoc cref="Member.RegisteredOn"/>
     public DateTimeOffset? RegisteredOn { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
+    /// <inheritdoc cref="Member.PreferredLanguage"/>
     public Language? PreferredLanguage { get; set; }
 
     /// <summary>
@@ -139,19 +139,19 @@ public class MemberResponseDTO
     /// </summary>
     public List<GroupMembershipResponseDTO>? GroupMemberships { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Gratie"/>
+    /// <inheritdoc cref="Member.Gratie"/>
     public bool? Gratie { get; set; }
 
-    /// <inheritdoc cref="Models.Member.LidVanVerdienste"/>
+    /// <inheritdoc cref="Member.LidVanVerdienste"/>
     public bool? LidVanVerdienste { get; set; }
-    /// <inheritdoc cref="Models.Member.EreLid"/>
+    /// <inheritdoc cref="Member.EreLid"/>
     public bool? EreLid { get; set; }
-    /// <inheritdoc cref="Models.Member.Begunstiger"/>
+    /// <inheritdoc cref="Member.Begunstiger"/>
     public bool? Begunstiger { get; set; }
-    /// <inheritdoc cref="Models.Member.Suspended"/>
+    /// <inheritdoc cref="Member.Suspended"/>
     public bool? Suspended { get; set; }
 
-    /// <inheritdoc cref="Models.Member.ProfilePicturePath"/>
+    /// <inheritdoc cref="Member.ProfilePicturePath"/>
     public string? ProfilePicturePath { get; set; }
 }
 
@@ -160,80 +160,80 @@ public class MemberResponseDTO
 /// </summary>
 public class MemberUpdateDTO
 {
-    /// <inheritdoc cref="Models.Member.StudentNumber"/>
+    /// <inheritdoc cref="Member.StudentNumber"/>
     public required uint StudentNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.FirstName"/>
+    /// <inheritdoc cref="Member.FirstName"/>
     [StringLength(60)]
     [Required(AllowEmptyStrings = false)]
     public required string FirstName { get; set; }
 
-    /// <inheritdoc cref="Models.Member.LastName"/>
+    /// <inheritdoc cref="Member.LastName"/>
     [StringLength(60)]
     [Required(AllowEmptyStrings = false)]
     public required string LastName { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Email"/>
+    /// <inheritdoc cref="Member.Email"/>
     [StringLength(100)]
     [EmailAddress]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PhoneNumber"/>
+    /// <inheritdoc cref="Member.PhoneNumber"/>
     [Required(AllowEmptyStrings = false)]
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public required string PhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Street"/>
+    /// <inheritdoc cref="Member.Street"/>
     [StringLength(40)]
     [Required(AllowEmptyStrings = false)]
     public required string Street { get; set; }
 
-    /// <inheritdoc cref="Models.Member.HouseNumber"/>
+    /// <inheritdoc cref="Member.HouseNumber"/>
     [StringLength(10)]
     [Required(AllowEmptyStrings = false)]
     [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
     public required string HouseNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PostalCode"/>
+    /// <inheritdoc cref="Member.PostalCode"/>
     [StringLength(10)]
     [Required(AllowEmptyStrings = false)]
     public required string PostalCode { get; set; }
 
-    /// <inheritdoc cref="Models.Member.City"/>
+    /// <inheritdoc cref="Member.City"/>
     [StringLength(40)]
     [Required(AllowEmptyStrings = false)]
     public required string City { get; set; }
 
-    /// <inheritdoc cref="Models.Member.DateOfBirth"/>
+    /// <inheritdoc cref="Member.DateOfBirth"/>
     public required DateTimeOffset DateOfBirth { get; set; }
 
-    /// <inheritdoc cref="Models.Member.ParentPhoneNumber"/>  
+    /// <inheritdoc cref="Member.ParentPhoneNumber"/>  
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public string? ParentPhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Models.Member.MailSubscriptions"/>
+    /// <inheritdoc cref="Member.MailSubscriptions"/>
     public uint MailSubscriptions { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Notes"/>
+    /// <inheritdoc cref="Member.Notes"/>
     public string? Notes { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
+    /// <inheritdoc cref="Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Gratie"/>
+    /// <inheritdoc cref="Member.Gratie"/>
     public bool Gratie { get; set; }
 
-    /// <inheritdoc cref="Models.Member.LidVanVerdienste"/>
+    /// <inheritdoc cref="Member.LidVanVerdienste"/>
     public bool LidVanVerdienste { get; set; }
 
-    /// <inheritdoc cref="Models.Member.EreLid"/>
+    /// <inheritdoc cref="Member.EreLid"/>
     public bool EreLid { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Begunstiger"/>
+    /// <inheritdoc cref="Member.Begunstiger"/>
     public bool Begunstiger { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Suspended"/>
+    /// <inheritdoc cref="Member.Suspended"/>
     public bool Suspended { get; set; }
 }
 
@@ -263,25 +263,27 @@ public class GetMembersDto
     /// </summary>
     public uint? StudyId { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Gratie"/>
+    /// <inheritdoc cref="Member.Gratie"/>
     public bool? Gratie { get; set; }
 
-    /// <inheritdoc cref="Models.Member.LidVanVerdienste"/>
+    /// <inheritdoc cref="Member.LidVanVerdienste"/>
     public bool? LidVanVerdienste { get; set; }
 
-    /// <inheritdoc cref="Models.Member.EreLid"/>
+    /// <inheritdoc cref="Member.EreLid"/>
     public bool? EreLid { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Begunstiger"/>
+    /// <inheritdoc cref="Member.Begunstiger"/>
     public bool? Begunstiger { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Suspended"/>
+    /// <inheritdoc cref="Member.Suspended"/>
     public bool? Suspended { get; set; }
 
-    /// <inheritdoc cref="Models.Member.Inactive"/>
+    /// <summary>
+    /// Indicates whether to include inactive members in the retrieved member data. If set to true, both active and inactive members will be included in the response; if set to false, only active members will be included. This field allows for filtering members based on their active status, enabling the retrieval of either all members or only those that are currently active in the system based on the provided criteria in the request payload. The GetMembersDto ensures that member data is retrieved with the necessary information to effectively filter and manage member information based on their active status, providing a structured and validated approach to member retrieval in the application.
+    /// </summary>
     public bool? Inactive { get; set; }
 
-    /// <inheritdoc cref="Models.Member.PreferredLanguage"/>
+    /// <inheritdoc cref="Member.PreferredLanguage"/>
     public StudyType? StudyType { get; set; }
     
 }

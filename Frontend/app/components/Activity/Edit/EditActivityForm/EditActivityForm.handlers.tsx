@@ -5,9 +5,9 @@ import type { NavigateFunction } from "react-router";
 import {
   type GetSpecificationQuestionResponseDto,
   type GroupResponseDto,
-  getApiGroups,
-  postApiActivities,
-  putApiActivitiesById,
+  getGroups,
+  postActivities,
+  putActivitiesById,
 } from "~/api";
 import { audienceMap } from "~/types/AudienceMap";
 import { getAssociationYear } from "~/util/date.util";
@@ -42,7 +42,7 @@ export const loadGroups = async (
   setGroups: (groups: GroupResponseDto[]) => void,
 ) => {
   try {
-    const groupsRes = await getApiGroups({
+    const groupsRes = await getGroups({
       query: { IncludeInactive: false, MembershipYear: getAssociationYear() },
     });
     if (groupsRes.error) throw new Error("Failed to load groups");
@@ -243,14 +243,14 @@ export const handleActivitySubmit = async ({
     try {
       const redirectPathBase = `${pathname.startsWith("/admin") ? "/admin" : ""}/activities/`;
       if (isEdit) {
-        const response = await putApiActivitiesById({
+        const response = await putActivitiesById({
           path: { id: Number(id) },
           ...payload,
         });
         if (response.error) throw new Error("Failed to update activity");
         navigate(`${redirectPathBase}${id}`);
       } else {
-        const response = await postApiActivities(payload);
+        const response = await postActivities(payload);
         if (response.error || !response.data?.id)
           throw new Error("Failed to create activity");
         navigate(`${redirectPathBase}${response.data?.id}`);

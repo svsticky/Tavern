@@ -49,7 +49,7 @@ public interface IEnrollmentService
     /// <summary>
     /// Replaces an existing enrollment.
     /// </summary>
-    /// <param name="activityId">The activity ID.</param>
+    /// <param name="dto">The enrollment payload.</param>
     /// <param name="userId">The ID of the user updating the enrollment.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken);

@@ -10,7 +10,7 @@ namespace Backend.Controllers;
 /// <summary>
 /// Controller for managing academic studies and curricula within the system. The StudiesController provides a centralized interface for defining, retrieving, and updating study programs, which are essential for categorizing members and academic activities. This controller supports the full range of CRUD operations, allowing authorized administrators to manage the academic catalog while providing public access for browsing available studies. By coordinating with the IStudyService, the controller ensures that study data is kept consistent and secure, enforcing authorization rules to prevent unauthorized modification of the educational framework while facilitating ease of access for the general user base.
 /// </summary>
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class StudiesController : ControllerBase
@@ -35,7 +35,7 @@ public class StudiesController : ControllerBase
         return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
     }
 
-    // GET: api/studies
+    // GET: studies
     /// <summary>
     /// Retrieves a list of all academic studies available in the system. The GetStudies endpoint is accessible to all users, including anonymous guests, to allow for public browsing of the study catalog. This endpoint provides a comprehensive overview of the different academic programs supported by the organization, serving as a foundational data source for registration forms and informational displays.
     /// </summary>
@@ -43,6 +43,9 @@ public class StudiesController : ControllerBase
     /// <returns>A collection of all study entities.</returns>
     [HttpGet]
     [AllowAnonymous]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(IEnumerable<Study>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<Study>>> GetStudies(CancellationToken ct)
     {
         try
@@ -51,11 +54,11 @@ public class StudiesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // GET: api/studies/{id}
+    // GET: studies/{id}
     /// <summary>
     /// Retrieves the details of a specific study by its unique identifier. The GetStudy endpoint allows clients to fetch in-depth information about a single academic program, including its properties and associated metadata. This granular access is vital for displaying detailed program descriptions or verifying specific study configurations before administrative updates. If the study is not found, the endpoint returns a 404 Not Found status.
     /// </summary>
@@ -63,6 +66,10 @@ public class StudiesController : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The requested study entity if found; otherwise, a 404 status.</returns>
     [HttpGet("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Study), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Study>> GetStudy(uint id, CancellationToken ct)
     {
         try
@@ -72,11 +79,11 @@ public class StudiesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // POST: api/studies
+    // POST: studies
     /// <summary>
     /// Creates a new academic study within the system based on the provided data. The PostStudy endpoint processes requests from authorized administrators to add new programs to the catalog using the PostStudyDTO. This process ensures that the study data is validated against system requirements and that the creation event is correctly attributed to the authenticated user. Upon successful creation, the endpoint returns the new study details and its unique resource location.
     /// </summary>
@@ -84,7 +91,12 @@ public class StudiesController : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The newly created study entity with a 201 Created status.</returns>
     [HttpPost]
-    public async Task<ActionResult> PostStudy(PostStudyDTO dto, CancellationToken ct)
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Study), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<Study>> PostStudy(PostStudyDTO dto, CancellationToken ct)
     {
         try
         {
@@ -97,11 +109,11 @@ public class StudiesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // DELETE: api/studies/{id}
+    // DELETE: studies/{id}
     /// <summary>
     /// Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The service layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
     /// </summary>
@@ -109,6 +121,12 @@ public class StudiesController : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status upon successful deletion.</returns>
     [HttpDelete("{id}")]
+    [Produces("application/json")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> DeleteStudy(uint id, CancellationToken ct)
     {
         try
@@ -116,17 +134,21 @@ public class StudiesController : ControllerBase
             await _service.DeleteStudy(id, GetUserId(), ct);
             return NoContent();
         }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
         catch (UnauthorizedAccessException)
         {
             return Forbid();
         }
         catch (Exception ex)
         {
-            return NotFound(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // PATCH: api/studies/{id}
+    // PATCH: studies/{id}
     /// <summary>
     /// Partially updates the properties of an existing study using a JSON Patch document. The PatchStudy endpoint allows for precise modifications—such as renaming a program or updating a specific attribute—without requiring the submission of the full study object. This approach is efficient and minimizes data transfer, while ensuring that all changes are validated against business rules and authorized by the proper security checks.
     /// </summary>
@@ -135,6 +157,12 @@ public class StudiesController : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status if the patch was applied successfully.</returns>
     [HttpPatch("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, CancellationToken ct)
     {
         try
@@ -148,11 +176,11 @@ public class StudiesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // PUT: api/studies/{id}
+    // PUT: studies/{id}
     /// <summary>
     /// Performs a full update of an existing study's representation. The PutStudy endpoint is designed for comprehensive edits where the entire state of a study record needs to be refreshed using the data provided in the StudyUpdateDTO. This endpoint enforces strict authorization to ensure only academic administrators can modify the catalog, returning a 204 No Content status once the changes have been successfully persisted.
     /// </summary>
@@ -161,6 +189,12 @@ public class StudiesController : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status upon a successful full update.</returns>
     [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PutStudy(uint id, StudyUpdateDTO dto, CancellationToken ct)
     {
         try
@@ -174,7 +208,7 @@ public class StudiesController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 }

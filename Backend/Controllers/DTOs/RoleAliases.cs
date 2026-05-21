@@ -7,12 +7,12 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostRoleAliasDTO
 {
-    /// <inheritdoc cref="Models.RoleAlias.Name"/>
+    /// <inheritdoc cref="Models.Domain.RoleAlias.Name"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
-    /// <inheritdoc cref="Models.RoleAlias.RoleId"/>
+    /// <inheritdoc cref="Models.Domain.RoleAlias.RoleId"/>
     public uint RoleId { get; set; }
 }
 
@@ -21,11 +21,11 @@ public class PostRoleAliasDTO
 /// </summary>
 public class RoleAliasUpdateDTO
 {
-    /// <inheritdoc cref="Models.RoleAlias.Name"/>
+    /// <inheritdoc cref="Models.Domain.RoleAlias.Name"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Name { get; set; }
 
-    /// <inheritdoc cref="Models.RoleAlias.RoleId"/>
+    /// <inheritdoc cref="Models.Domain.RoleAlias.RoleId"/>
     public uint RoleId { get; set; }
 }

@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getApiActivities } from "~/api";
+import { type ActivityResponseDto, getActivities } from "~/api";
 import { getEnv } from "~/util/config.utils";
 import { generateA3Pdf } from "~/util/pdf.util";
 
@@ -31,7 +31,7 @@ export const loadActivities = async ({
 
   try {
     setLoading(true);
-    const activitiesResponse = await getApiActivities({
+    const activitiesResponse = await getActivities({
       query: {
         IncludePast: false,
         IncludeFuture: true,

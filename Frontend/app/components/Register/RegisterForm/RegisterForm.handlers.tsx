@@ -3,12 +3,12 @@ import type React from "react";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
-  getApiMailinglists,
-  getApiStudies,
+  getMailinglists,
+  getStudies,
   type Mailinglist,
   type PostMemberDto,
-  postApiMembers,
-  postApiPaymentsMembership,
+  postMembers,
+  postPaymentsMembership,
   type Study,
 } from "~/api";
 import i18n from "~/i18n";
@@ -38,7 +38,7 @@ export type RegisterFormData = {
  */
 export const loadStudies = async (setStudies: (studies: Study[]) => void) => {
   try {
-    const response = await getApiStudies();
+    const response = await getStudies();
 
     if (response.error || !response.data)
       throw new Error("Failed to fetch studies");
@@ -59,7 +59,7 @@ export const loadMailingLists = async (
   setMailingLists: (lists: Mailinglist[]) => void,
 ) => {
   try {
-    const response = await getApiMailinglists();
+    const response = await getMailinglists();
 
     if (response.error || !response.data)
       throw new Error("Failed to fetch mailing lists");
@@ -160,7 +160,7 @@ export const handleRegisterSubmit = async ({
         })),
       };
 
-      const response = await postApiMembers({ body: payload });
+      const response = await postMembers({ body: payload });
 
       if (response.status === 201 && response.data) {
         if (
@@ -168,7 +168,7 @@ export const handleRegisterSubmit = async ({
             (s) => selectedStudies.includes(s.id!) && s.type === "Master",
           )
         ) {
-          const paymentResponse = await postApiPaymentsMembership({
+          const paymentResponse = await postPaymentsMembership({
             body: {
               memberId: response.data.id,
             },

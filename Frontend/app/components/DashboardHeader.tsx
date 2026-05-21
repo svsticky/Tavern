@@ -12,9 +12,9 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import {
   type ActivityResponseDto,
-  getApiEnrollments,
-  getApiPaymentsUnpaid,
-  postApiPaymentsActivity,
+  getEnrollments,
+  getPaymentsUnpaid,
+  postPaymentsActivity,
 } from "~/api";
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
@@ -67,7 +67,7 @@ export default function DashboardHeader({
       if (!initialized || !keycloak.authenticated) return;
 
       try {
-        const outstandingPaymentsResponse = await getApiPaymentsUnpaid();
+        const outstandingPaymentsResponse = await getPaymentsUnpaid();
 
         if (outstandingPaymentsResponse.data) {
           setOutstandingPayments(
@@ -83,7 +83,7 @@ export default function DashboardHeader({
           );
         }
 
-        const enrollmentAmountResponse = await getApiEnrollments({
+        const enrollmentAmountResponse = await getEnrollments({
           query: {
             FromMemberId: keycloak.tokenParsed?.UserId,
           },
@@ -127,7 +127,7 @@ export default function DashboardHeader({
     const _payAction = async () => {
       try {
         setLoadingPayments(true);
-        const urlResponse = await postApiPaymentsActivity({
+        const urlResponse = await postPaymentsActivity({
           body: {
             memberId: keycloak.tokenParsed?.UserId ?? 0,
             activityIds: unpaidActivityIds,

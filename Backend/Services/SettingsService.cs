@@ -15,6 +15,12 @@ public class SettingsService : ISettingsService
     private readonly ILogger<SettingsService> _logger;
     private readonly string[] _openSettings = new string[] { "boardgroupid", "candidateboardgroupid" };
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SettingsService"/> class with the specified dependencies. The constructor takes in a database context for data access, a permission service for enforcing authorization, and a logger for logging operations. It also initializes an array of open setting names that can be accessed without board membership. This setup allows the service to manage application settings while ensuring that only authorized users can create, update, or delete settings, while still allowing certain settings to be accessed by all users.
+    /// </summary>
+    /// <param name="db">The database context used for data access.</param>
+    /// <param name="permissionService">The permission service used to enforce authorization.</param>
+    /// <param name="logger">The logger used for logging operations.</param>
     public SettingsService(PostgresDbContext db, IPermissionService permissionService, ILogger<SettingsService> logger)
     {
         _db = db;

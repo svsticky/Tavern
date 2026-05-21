@@ -4,12 +4,12 @@ import {
   type Activity,
   type ActivityResponseDto,
   type EnrollmentBalance,
-  getApiActivities,
-  getApiPaymentsExport,
-  getApiPaymentsOverpaid,
-  getApiPaymentsUnpaid,
+  getActivities,
+  getPaymentsExport,
+  getPaymentsOverpaid,
+  getPaymentsUnpaid,
   type Member,
-  postApiPaymentsActivity,
+  postPaymentsActivity,
 } from "~/api";
 
 /**
@@ -105,7 +105,7 @@ export const refreshUnpaidPayments = async ({
   setUnpaidActivities,
   setMembersWithOverduePayment,
 }: RefreshUnpaidArgs) => {
-  const unpaidBalances = await getApiPaymentsUnpaid({
+  const unpaidBalances = await getPaymentsUnpaid({
     query: {
       allUsers: true,
     },
@@ -220,7 +220,7 @@ export const handleMarkAsPaid = ({
   const process = async () => {
     try {
       setLoading(true);
-      const response = await postApiPaymentsActivity({
+      const response = await postPaymentsActivity({
         body: {
           memberId: member.id,
           activityIds: enrollments.map((e) => e.enrollment.activityId),
@@ -262,7 +262,7 @@ export const handlePaymentsExport = (
   const exportAction = async () => {
     try {
       setExporting(true);
-      const response = await getApiPaymentsExport({
+      const response = await getPaymentsExport({
         query: {
           startDate: exportStartDate,
           endDate: exportEndDate,
@@ -339,7 +339,7 @@ export const loadFinancesData = async ({
   try {
     setLoading(true);
 
-    const expiredActivitiesResponse = await getApiActivities({
+    const expiredActivitiesResponse = await getActivities({
       query: {
         IncludePast: true,
         IncludeFuture: false,
@@ -360,7 +360,7 @@ export const loadFinancesData = async ({
       setMembersWithOverduePayment,
     });
 
-    const overpaidBalances = await getApiPaymentsOverpaid();
+    const overpaidBalances = await getPaymentsOverpaid();
     if (overpaidBalances.data) {
       setOverpaidBalances(overpaidBalances.data.filter((b) => b.balance !== 0));
     }

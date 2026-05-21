@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
-import { getApiStudies, type Study } from "~/api";
+import { getStudies, type Study } from "~/api";
 
 /**
  * Fetches the list of studies from the API and updates the provided state.
@@ -18,7 +18,7 @@ export const fetchStudies = async (
   const fetchStudiesAction = async () => {
     try {
       setLoading(true);
-      const response = await getApiStudies();
+      const response = await getStudies();
 
       if (response.error || !response.data)
         throw new Error("Failed to fetch studies");

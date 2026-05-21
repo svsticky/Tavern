@@ -3,6 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
+using Backend.Projections;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,13 @@ public class GroupMembershipService : IGroupMembershipService
     private readonly KeycloakOutboxWorker _keycloakOutboxWorker;
     private readonly ILogger<GroupMembershipService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the Keycloak outbox worker for synchronizing membership changes with Keycloak, and logging for monitoring group membership operations. This setup allows the GroupMembershipService to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="permissionService">The permission service.</param>
+    /// <param name="keycloakOutboxService">The Keycloak outbox worker.</param>
+    /// <param name="logger">The logger.</param>
     public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxService, ILogger<GroupMembershipService> logger)
     {
         _db = db;

@@ -3,10 +3,10 @@ import type React from "react";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
-  deleteApiAnnouncementsById,
-  getApiAnnouncementsById,
-  postApiAnnouncements,
-  putApiAnnouncementsById,
+  deleteAnnouncementsById,
+  getAnnouncementsById,
+  postAnnouncements,
+  putAnnouncementsById,
 } from "~/api";
 
 /**
@@ -37,7 +37,7 @@ export const loadAnnouncementData = async ({
 }: LoadAnnouncementArgs) => {
   if (!isEdit || !id) return;
 
-  await getApiAnnouncementsById({ path: { id: Number(id) } })
+  await getAnnouncementsById({ path: { id: Number(id) } })
     .then((res) => {
       if (res.data) {
         setInitialData({ Title: res.data.title, Content: res.data.content });
@@ -90,13 +90,13 @@ export const handleAnnouncementSubmit = async ({
   const submitProcess = async () => {
     try {
       if (isEdit) {
-        const response = await putApiAnnouncementsById({
+        const response = await putAnnouncementsById({
           path: { id: Number(id) },
           body,
         });
         if (response.error) throw new Error("Failed to update announcement");
       } else {
-        const response = await postApiAnnouncements({ body });
+        const response = await postAnnouncements({ body });
         if (response.error) throw new Error("Failed to create announcement");
       }
       navigate("/announcements");
@@ -132,7 +132,7 @@ export const handleDeleteAnnouncement = async (
 
   const deleteProcess = async () => {
     try {
-      const response = await deleteApiAnnouncementsById({
+      const response = await deleteAnnouncementsById({
         path: { id: Number(id) },
       });
       if (response.error) throw new Error("Failed to delete announcement");

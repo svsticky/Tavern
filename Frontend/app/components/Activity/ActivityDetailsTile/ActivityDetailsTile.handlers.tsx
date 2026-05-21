@@ -4,10 +4,10 @@ import { AlertTriangle, Check } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   type ActivityResponseDto,
-  deleteApiEnrollmentsByActivityIdByMemberId,
+  deleteEnrollmentsByActivityIdByMemberId,
   type Language,
-  postApiEnrollments,
-  putApiEnrollmentsByActivityIdByMemberId,
+  postEnrollments,
+  putEnrollmentsByActivityIdByMemberId,
 } from "~/api";
 import { formatDate } from "~/util/date.util";
 import {
@@ -76,7 +76,7 @@ export const handleEnrollment = async (
     try {
       setSubmitting(true);
 
-      const response = await postApiEnrollments({
+      const response = await postEnrollments({
         body: {
           activityId: activity.id,
           memberId: keycloak.tokenParsed?.UserId,
@@ -187,7 +187,7 @@ export const handleUpdateEnrollment = async (
     try {
       setSubmitting(true);
 
-      const response = await putApiEnrollmentsByActivityIdByMemberId({
+      const response = await putEnrollmentsByActivityIdByMemberId({
         path: {
           activityId: activity.id,
           memberId: keycloak.tokenParsed?.UserId,
@@ -281,7 +281,7 @@ export const handleUnenrollment = async (
     try {
       setSubmitting(true);
 
-      const response = await deleteApiEnrollmentsByActivityIdByMemberId({
+      const response = await deleteEnrollmentsByActivityIdByMemberId({
         path: {
           activityId: Number(activity.id),
           memberId: String(keycloak.tokenParsed?.UserId),

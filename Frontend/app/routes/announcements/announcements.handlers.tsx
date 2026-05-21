@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { toast } from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type GetAnnouncementResponseDto, getApiAnnouncements } from "~/api";
+import { type GetAnnouncementResponseDto, getAnnouncements } from "~/api";
 
 /**
  * Arguments for the loadAnnouncements handler.
@@ -33,7 +33,7 @@ export const loadAnnouncements = async ({
 
   try {
     setLoading(true);
-    const announcementsResponse = await getApiAnnouncements();
+    const announcementsResponse = await getAnnouncements();
 
     if (announcementsResponse.error || !announcementsResponse.data)
       throw new Error("Failed to load announcements");

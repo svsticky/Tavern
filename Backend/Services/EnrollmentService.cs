@@ -5,6 +5,7 @@ using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Projections;
 using Backend.Validators;
+using Backend.QueryExtensions;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,6 +22,14 @@ public class EnrollmentService : IEnrollmentService
     private readonly AbstractMailService _mailService;
     private readonly ILogger<EnrollmentService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the EnrollmentService class with the specified database context, permission service, payment validation service, mail service, and logger. The constructor sets up the necessary dependencies for managing enrollments, allowing the service to interact with the database for enrollment operations, perform permission checks to ensure that only authorized users can manage enrollments, validate payments when necessary, send emails related to enrollment actions, and log important events and errors that occur during enrollment management for monitoring and debugging purposes.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="permissionService">The permission service.</param>
+    /// <param name="paymentValidationService">The payment validation service.</param>
+    /// <param name="mailService">The mail service.</param>
+    /// <param name="logger">The logger.</param>
     public EnrollmentService(
         PostgresDbContext db,
         IPermissionService permissionService,

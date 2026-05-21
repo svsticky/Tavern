@@ -10,7 +10,7 @@ namespace Backend.Controllers;
 /// <summary>
 /// Controller for managing organizational groups within the system. The GroupsController provides a comprehensive set of endpoints for handling the lifecycle of groups, including creation, retrieval, full and partial updates, and deletion. It also manages group-specific assets such as group profile pictures. This controller is designed to enforce strict ownership and authorization rules, ensuring that only authorized users can modify group data. By interacting with the IGroupService, the controller maintains a clean separation between the API layer and the business logic required to manage group structures and their associated metadata effectively.
 /// </summary>
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class GroupsController : ControllerBase
@@ -35,7 +35,7 @@ public class GroupsController : ControllerBase
         return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
     }
 
-    // GET: api/groups
+    // GET: groups
     /// <summary>
     /// Retrieves a collection of groups based on the provided query filters and pagination parameters. The GetGroups endpoint allows clients to fetch a list of groups that match specific criteria defined in the GetGroupDTO. This endpoint is designed to support efficient data retrieval by allowing users to filter through available groups while ensuring that the returned results are scoped according to the user's authorization level. It provides a robust way for clients to browse and search for groups within the application's ecosystem.
     /// </summary>
@@ -43,6 +43,10 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A list of group response objects matching the specified criteria.</returns>
     [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(IEnumerable<GroupResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<GroupResponseDTO>>> GetGroups(
         [FromQuery] GetGroupDTO dto,
         CancellationToken cancellationToken)
@@ -60,11 +64,11 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // GET: api/groups/5
+    // GET: groups/5
     /// <summary>
     /// Retrieves the detailed information of a specific group by its unique identifier. The GetGroup endpoint is designed to return a single, comprehensive group record based on the provided ID. This allows clients to access full details about a specific group's properties and configuration. If the group is not found within the system, the endpoint provides appropriate error feedback, ensuring the client is aware of the missing resource while maintaining a secure and predictable API response.
     /// </summary>
@@ -72,17 +76,33 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The detailed group information if found; otherwise, a 404 Not Found status.</returns>
     [HttpGet("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(GroupResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
     {
-        var result = await _groupService.GetGroup(id, cancellationToken);
+        try
+        {
+            var result = await _groupService.GetGroup(id, cancellationToken);
 
-        if (result == null)
-            return NotFound();
+            if (result == null)
+                return NotFound();
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
+        }
     }
 
-    // POST: api/groups
+    // POST: groups
     /// <summary>
     /// Creates a new group within the system using the provided data. The PostGroup endpoint processes requests to establish a new group entity, taking inputs from the PostGroupDTO. This process includes validating the provided data, assigning ownership to the creating user, and persisting the new group to the data store. Upon successful creation, the endpoint returns the newly created group's details and its unique location, following standard RESTful practices for resource creation.
     /// </summary>
@@ -90,6 +110,11 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The details of the newly created group with a 201 Created status.</returns>
     [HttpPost]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Group), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<Group>> PostGroup(
         [FromForm] PostGroupDTO groupDto,
         CancellationToken cancellationToken)
@@ -110,17 +135,13 @@ public class GroupsController : ControllerBase
         {
             return Forbid();
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // POST: api/groups/{id}/group-picture
+    // POST: groups/{id}/group-picture
     /// <summary>
     /// Uploads and associates a profile picture with a specific group. The UploadGroupPicture endpoint handles multipart form-data requests to save an image file and link it to the group identified by the provided ID. This endpoint ensures that only authorized administrators of the group can modify its visual identity. Once processed, the path to the stored image is returned, allowing the client to immediately reference the new asset within the application's interface.
     /// </summary>
@@ -129,13 +150,17 @@ public class GroupsController : ControllerBase
     /// <returns>An OK status containing the new image path upon successful upload.</returns>
     [HttpPost("{id}/group-picture")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult> UploadGroupPicture(uint id, IFormFile? image)
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(UploadPictureResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<UploadPictureResponse>> UploadGroupPicture(uint id, IFormFile? image)
     {
         try
         {
             var path = await _groupService.UploadGroupPicture(id, GetUserId(), image);
 
-            return Ok(new { path });
+            return Ok(new UploadPictureResponse { Path = path });
         }
         catch (UnauthorizedAccessException)
         {
@@ -143,11 +168,11 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // GET: api/groups/5/group-picture
+    // GET: groups/5/group-picture
     /// <summary>
     /// Retrieves the binary file content of a specific group's profile picture. The GetGroupPicture endpoint fetches the stored image associated with a group and streams it back to the client with the appropriate content type. This endpoint includes checks to ensure both the group and the physical file exist on the server. It provides a direct way for client applications to render group imagery while centralizing the file retrieval logic through the service layer.
     /// </summary>
@@ -155,7 +180,12 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The image file stream with the correct MIME type.</returns>
     [HttpGet("{id}/group-picture")]
-    public async Task<IActionResult> GetGroupPicture(uint id, CancellationToken cancellationToken)
+    [Produces("image/jpeg", "image/png", "image/gif")]
+    [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<Stream>> GetGroupPicture(uint id, CancellationToken cancellationToken)
     {
         try
         {
@@ -175,12 +205,12 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)         
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
         
     }
 
-    // DELETE: api/groups/5
+    // DELETE: groups/5
     /// <summary>
     /// Permanently removes a group from the system based on its unique identifier. The DeleteGroup endpoint ensures that the requested group is deleted only after verifying that the requesting user has the necessary administrative permissions. This operation is destructive and removes all associated group metadata. Upon successful completion, the endpoint returns a 204 No Content status, signaling that the resource no longer exists without returning an unnecessary response body.
     /// </summary>
@@ -188,6 +218,12 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status if deletion is successful.</returns>
     [HttpDelete("{id}")]
+    [Produces("application/json")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
     {
         try
@@ -208,11 +244,11 @@ public class GroupsController : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // PATCH: api/groups/5
+    // PATCH: groups/5
     /// <summary>
     /// Performs a partial update on an existing group's properties using a JSON Patch document. The PatchGroup endpoint allows clients to modify specific fields of a group without providing the entire resource representation. This is particularly useful for making small adjustments to group metadata while minimizing data transfer. The endpoint validates the patch operations against the group domain model and ensures that the user is authorized to perform these specific modifications before applying changes to the database.
     /// </summary>
@@ -221,6 +257,12 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status upon successful update.</returns>
     [HttpPatch("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PatchGroup(
         uint id,
         [FromBody] JsonPatchDocument<Group> patchDoc,
@@ -242,17 +284,13 @@ public class GroupsController : ControllerBase
         {
             return NotFound();
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // PUT: api/groups/5
+    // PUT: groups/5
     /// <summary>
     /// Updates the entire representation of an existing group with the provided data. The PutActivity endpoint replaces the current group information with the data provided in the GroupUpdateDTO. This endpoint is typically used for comprehensive updates where multiple group attributes are changed simultaneously. It enforces authorization to ensure only group managers can perform the update and provides detailed error handling for validation failures or missing resources, returning a 204 No Content status upon a successful operation.
     /// </summary>
@@ -261,6 +299,12 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status if the group was successfully updated.</returns>
     [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PutGroup(
         uint id,
         GroupUpdateDTO groupDto,
@@ -282,13 +326,9 @@ public class GroupsController : ControllerBase
         {
             return NotFound();
         }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 }

@@ -1,13 +1,15 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
 
+namespace Backend.QueryExtensions;
+
 /// <summary>
-/// The ActivityQueryExtensions class provides an extension method for filtering a queryable collection of Activity entities based on various criteria specified in a GetActivitiesDTO object. This method allows for dynamic filtering of activities based on whether the requester is a board member, the user's group memberships, and specific filters such as including past or future activities, filtering by year, and checking if activities are open for payment. The Filter method centralizes the logic for applying these filters to an IQueryable<Activity>, ensuring that the relevant activities are returned based on the specified criteria while maintaining appropriate access control based on the user's role within the system.
+/// The ActivityQueryExtensions class provides an extension method for filtering a queryable collection of Activity entities based on various criteria specified in a GetActivitiesDTO object. This method allows for dynamic filtering of activities based on whether the requester is a board member, the user's group memberships, and specific filters such as including past or future activities, filtering by year, and checking if activities are open for payment. The Filter method centralizes the logic for applying these filters to an <see cref="IQueryable{Activity}"/>, ensuring that the relevant activities are returned based on the specified criteria while maintaining appropriate access control based on the user's role within the system.
 /// </summary>
 public static class ActivityQueryExtensions
 {
     /// <summary>
-    /// Filters a queryable collection of Activity entities based on various criteria specified in a GetActivitiesDTO object. This method allows for dynamic filtering of activities based on whether the requester is a board member, the user's group memberships, and specific filters such as including past or future activities, filtering by year, and checking if activities are open for payment. The Filter method centralizes the logic for applying these filters to an IQueryable<Activity>, ensuring that the relevant activities are returned based on the specified criteria while maintaining appropriate access control based on the user's role within the system.
+    /// Filters a queryable collection of Activity entities based on various criteria specified in a GetActivitiesDTO object. This method allows for dynamic filtering of activities based on whether the requester is a board member, the user's group memberships, and specific filters such as including past or future activities, filtering by year, and checking if activities are open for payment. The Filter method centralizes the logic for applying these filters to an <see cref="IQueryable{Activity}"/>, ensuring that the relevant activities are returned based on the specified criteria while maintaining appropriate access control based on the user's role within the system.
     /// </summary>
     /// <param name="query">The queryable collection of Activity entities to filter.</param>
     /// <param name="dto">The data transfer object containing the filtering criteria.</param>

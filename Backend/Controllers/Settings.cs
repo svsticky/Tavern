@@ -3,13 +3,14 @@ using Backend.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Backend.Controllers.DTOs;
 
 namespace Backend.Controllers;
 
 /// <summary>
 /// Controller for managing global application settings and system-wide configurations. The Settings controller provides a suite of administrative endpoints for viewing, defining, and modifying key-value pairs that govern the behavior of the application. This centralized configuration management allows authorized administrators to adjust system parameters—such as feature toggles, business rules, or integration endpoints—without requiring code changes. The controller ensures strict authorization for all operations, utilizing the ISettingsService to handle the underlying persistence and validation logic while maintaining a secure and audit-ready configuration layer.
 /// </summary>
-[Route("api/[controller]")]
+[Route("[controller]")]
 [ApiController]
 [Authorize]
 public class Settings : ControllerBase
@@ -34,13 +35,17 @@ public class Settings : ControllerBase
         return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
     }
 
-    // GET: api/settings
+    // GET: settings
     /// <summary>
     /// Retrieves a comprehensive list of all system settings. The GetSettings endpoint allows authorized administrators to fetch the entire collection of configuration parameters, providing a complete overview of the current system state. This endpoint is designed to facilitate administrative dashboards and auditing processes, ensuring that those with the appropriate permissions can review all active configuration keys and their associated values.
     /// </summary>
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A collection of all system setting entities.</returns>
     [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(IEnumerable<Setting>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IEnumerable<Setting>>> GetSettings(CancellationToken ct)
     {
         try
@@ -54,11 +59,11 @@ public class Settings : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // GET: api/settings/{id}
+    // GET: settings/{id}
     /// <summary>
     /// Retrieves a specific system setting by its unique identifier (name). The GetSetting endpoint provides a focused view of a single configuration parameter, allowing clients to fetch the value and metadata for a specific key. This is particularly useful for individual feature checks or targeted administrative updates, ensuring that setting data is accessible in a granular fashion while maintaining strict authorization checks.
     /// </summary>
@@ -66,6 +71,11 @@ public class Settings : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The requested setting object if found; otherwise, a 404 Not Found status.</returns>
     [HttpGet("{id}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(Setting), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<Setting>> GetSetting(string id, CancellationToken ct)
     {
         try
@@ -79,11 +89,11 @@ public class Settings : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // POST: api/settings
+    // POST: settings
     /// <summary>
     /// Creates a new system setting with a specified key and value. The PostSetting endpoint allows for the dynamic expansion of the system's configuration by defining new parameters. This endpoint validates that the provided setting does not already exist and that the requesting user has the necessary administrative rights to add new global configurations. Upon successful creation, the endpoint returns the newly established setting detail.
     /// </summary>
@@ -92,7 +102,12 @@ public class Settings : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The newly created setting entity with a 201 Created status.</returns>
     [HttpPost]
-    public async Task<ActionResult> PostSetting([FromQuery] string id, [FromQuery] string value, CancellationToken ct)
+    [Produces("application/json")]
+    [Consumes("application/json")]
+    [ProducesResponseType(typeof(Setting), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<Setting>> PostSetting([FromQuery] string id, [FromQuery] string value, CancellationToken ct)
     {
         try
         {
@@ -105,11 +120,11 @@ public class Settings : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // DELETE: api/settings/{id}
+    // DELETE: settings/{id}
     /// <summary>
     /// Permanently removes a specific system setting by its identifier. The DeleteSetting endpoint is used to decommission configuration parameters that are no longer required by the application. This operation is destructive and restricted to authorized personnel, ensuring that critical system settings are not removed accidentally. Upon success, the endpoint returns a 204 No Content status to signify the resource has been removed.
     /// </summary>
@@ -117,6 +132,12 @@ public class Settings : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status upon successful deletion.</returns>
     [HttpDelete("{id}")]
+    [Produces("application/json")]
+    [Consumes("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> DeleteSetting(string id, CancellationToken ct)
     {
         try
@@ -124,17 +145,21 @@ public class Settings : ControllerBase
             await _service.DeleteSetting(id, GetUserId(), ct);
             return NoContent();
         }
+        catch(KeyNotFoundException )
+        {
+            return NotFound();
+        }
         catch (UnauthorizedAccessException)
         {
             return Forbid();
         }
         catch (Exception ex)
         {
-            return NotFound(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // PATCH: api/settings/{id}
+    // PATCH: settings/{id}
     /// <summary>
     /// Partially updates a specific system setting using a JSON Patch document. The PatchSetting endpoint enables granular modifications to a setting's properties, allowing administrators to change only specific fields without overwriting the entire resource. This is ideal for adjusting metadata or performing surgical updates to configuration values while ensuring all changes are validated and authorized.
     /// </summary>
@@ -143,6 +168,12 @@ public class Settings : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status if the update was successful.</returns>
     [HttpPatch("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PatchSetting(string id, JsonPatchDocument<Setting> patchDoc, CancellationToken ct)
     {
         try
@@ -156,11 +187,11 @@ public class Settings : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 
-    // PUT: api/settings/{id}
+    // PUT: settings/{id}
     /// <summary>
     /// Updates the value of an existing system setting. The PutSetting endpoint is designed for straightforward value replacements, allowing administrators to reconfigure existing keys with new data. This operation ensures that the setting exists and that the update is performed within the bounds of the user's permissions, returning a 204 No Content status upon a successful modification of the configuration value.
     /// </summary>
@@ -169,6 +200,12 @@ public class Settings : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A 204 No Content status upon a successful value update.</returns>
     [HttpPut("{id}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> PutSetting(string id, string value, CancellationToken ct)
     {
         try
@@ -182,7 +219,7 @@ public class Settings : ControllerBase
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
         }
     }
 }

@@ -5,6 +5,8 @@ using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.Formats.Webp;
 using Backend.Interfaces;
 
+namespace Backend.Services;
+
 /// <summary>
 /// Implements file storage operations using Amazon S3.
 /// </summary>

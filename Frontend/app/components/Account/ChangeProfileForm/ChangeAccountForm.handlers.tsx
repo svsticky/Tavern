@@ -2,7 +2,7 @@ import { t } from "i18next";
 import type Keycloak from "keycloak-js";
 import type { Dispatch, SetStateAction } from "react";
 import toast from "react-hot-toast";
-import { type MemberResponseDto, patchApiMembersById } from "~/api";
+import { type MemberResponseDto, patchMembersById } from "~/api";
 import i18n from "~/i18n";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 
@@ -75,7 +75,7 @@ export const handleSaveAccount = async (
 
   const saveProcess = async () => {
     try {
-      const response = await patchApiMembersById({
+      const response = await patchMembersById({
         path: { id: userId },
         body: [
           { op: "replace", path: "/phoneNumber", value: formData.phoneNumber },

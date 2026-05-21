@@ -5,13 +5,13 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostEnrollmentDTO
 {
-    /// <inheritdoc cref="Models.Enrollment.ActivityId"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.ActivityId"/>
     public uint ActivityId { get; set; }
     
-    /// <inheritdoc cref="Models.Enrollment.MemberId"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.MemberId"/>
     public Guid MemberId { get; set; }
 
-    /// <inheritdoc cref="Models.Enrollment.SpecificationAnswers"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.SpecificationAnswers"/>
     public List<PostSpecificationAnswerDTO>? SpecificationAnswers { get; set; }
 }
 
@@ -20,19 +20,19 @@ public class PostEnrollmentDTO
 /// </summary>
 public class EnrollmentResponseDTO
 {
-    /// <inheritdoc cref="Models.Enrollment.IsOnWaitingList"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.IsOnWaitingList"/>
     public required bool IsOnWaitingList { get; set; }
     
-    /// <inheritdoc cref="Models.Enrollment.Member"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
     public required MemberResponseDTO Member { get; set; }
 
-    /// <inheritdoc cref="Models.Enrollment.SpecificationAnswers"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.SpecificationAnswers"/>
     public List<SpecificationAnswerResponseDTO>? SpecificationAnswers { get; set; }
 
-    /// <inheritdoc cref="Models.Enrollment.Price"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.Price"/>
     public decimal? Price { get; set; }
 
-    /// <inheritdoc cref="Models.Enrollment.Activity"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.Activity"/>
     public required ActivityResponseDTO Activity { get; set; }
 }
 
@@ -52,9 +52,9 @@ public class GetEnrollmentsDTO
 /// </summary>
 public class PostEnrollmentResponseDTO
 {
-    /// <inheritdoc cref="Models.Enrollment.ActivityId"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.ActivityId"/>
     public uint ActivityId { get; set; }
 
-    /// <inheritdoc cref="Models.Enrollment.MemberId"/>
+    /// <inheritdoc cref="Models.Domain.Enrollment.MemberId"/>
     public Guid MemberId { get; set; }
 }

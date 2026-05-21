@@ -20,6 +20,14 @@ public class GroupService : IGroupService
     private readonly IStorageService _storageService;
     private readonly ILogger<GroupService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the GroupService class with the specified dependencies. The constructor sets up the necessary services for managing groups, including database access, permission checks, file compression for group pictures, storage service for saving group pictures, and logging for monitoring group-related operations. This setup allows the GroupService to effectively handle group creation, retrieval, updating, deletion, and picture management while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="permissionService">The permission service.</param>
+    /// <param name="fileCompressService">The file compression service.</param>
+    /// <param name="storageService">The storage service.</param>
+    /// <param name="logger">The logger.</param>
     public GroupService(PostgresDbContext db, IPermissionService permissionService, IFileCompressService fileCompressService, IStorageService storageService, ILogger<GroupService> logger)
     {
         _db = db;

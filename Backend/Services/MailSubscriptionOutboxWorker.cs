@@ -3,6 +3,8 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
+namespace Backend.Services;
+
 /// <summary>
 /// Background worker that processes queued mail subscription tasks.
 /// </summary>
@@ -15,8 +17,8 @@ public class MailSubscriptionOutboxWorker(
     /// <summary>
     /// Enqueues an mail subscription outbox task.
     /// </summary>
-    /// <param name="taskType">The mail subscription task type.</param>
     /// <param name="email">The email address to process.</param>
+    /// <param name="mailSubscriptions">The mail subscription settings to apply.</param>
     /// <param name="db">The database context used to persist the task.</param>
     public void EnqueueTask(string email, uint mailSubscriptions, PostgresDbContext db)
     {

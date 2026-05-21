@@ -5,8 +5,8 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostMailinglistDTO
 {
-    /// <inheritdoc cref="Domain.MailingList.Name"/>
+    /// <inheritdoc cref="Models.Domain.Mailinglist.Name"/>
     public string Name { get; set; } = null!;
-    /// <inheritdoc cref="Domain.MailingList.ServiceId"/>
+    /// <inheritdoc cref="Models.Domain.Mailinglist.ServiceId"/>
     public string ServiceId { get; set; } = null!;
 }

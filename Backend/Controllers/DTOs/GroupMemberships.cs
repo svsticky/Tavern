@@ -7,16 +7,16 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostGroupMembershipDTO
 {
-    /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
+    /// <inheritdoc cref="GroupMembership.MemberId"/>
     public required Guid MemberId { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.GroupId"/>
+    /// <inheritdoc cref="GroupMembership.GroupId"/>
     public required uint GroupId { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
+    /// <inheritdoc cref="GroupMembership.MembershipYear"/>
     public required uint MembershipYear { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.RoleAliasId"/>
+    /// <inheritdoc cref="GroupMembership.RoleAliasId"/>
     public uint? RoleAliasId { get; set; }
 }
 
@@ -25,31 +25,31 @@ public class PostGroupMembershipDTO
 /// </summary>
 public class GroupMembershipResponseDTO
 {
-    /// <inheritdoc cref="Models.GroupMembership.Id"/>
+    /// <inheritdoc cref="GroupMembership.Id"/>
     public required uint Id { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
+    /// <inheritdoc cref="GroupMembership.MemberId"/>
     public Guid? MemberId { get; set; }
 
-    /// <inheritdoc cref="Models.Member"/>
+    /// <inheritdoc cref="Member.FirstName"/>
     public string? MemberName { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.GroupId"/>
+    /// <inheritdoc cref="GroupMembership.GroupId"/>
     public required uint GroupId { get; set; }
 
-    /// <inheritdoc cref="Models.Group"/>
+    /// <inheritdoc cref="Group"/>
     public required string GroupName { get; set; }
 
-    /// <inheritdoc cref="Models.Group.Type"/>
+    /// <inheritdoc cref="Group.Type"/>
     public required GroupType GroupType { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
+    /// <inheritdoc cref="GroupMembership.MembershipYear"/>
     public required uint MembershipYear { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.RoleAliasId"/>
+    /// <inheritdoc cref="GroupMembership.RoleAliasId"/>
     public uint? RoleAliasId { get; set; }
 
-    /// <inheritdoc cref="Models.RoleAlias.Name"/>
+    /// <inheritdoc cref="RoleAlias.Name"/>
     public string? RoleAliasName { get; set; }
 }
 
@@ -58,7 +58,7 @@ public class GroupMembershipResponseDTO
 /// </summary>
 public class GroupMembershipUpdateDTO
 {
-    /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
+    /// <inheritdoc cref="GroupMembership.MemberId"/>
     public uint? RoleAliasId { get; set; }
 }
 
@@ -67,12 +67,12 @@ public class GroupMembershipUpdateDTO
 /// </summary>
 public class GetGroupMembershipsDTO
 {
-    /// <inheritdoc cref="Models.GroupMembership.GroupId"/>
+    /// <inheritdoc cref="GroupMembership.GroupId"/>
     public uint? GroupId { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.MembershipYear"/>
+    /// <inheritdoc cref="GroupMembership.MembershipYear"/>
     public uint? MembershipYear { get; set; }
 
-    /// <inheritdoc cref="Models.GroupMembership.MemberId"/>
+    /// <inheritdoc cref="GroupMembership.MemberId"/>
     public Guid? MemberId { get; set; }
 }

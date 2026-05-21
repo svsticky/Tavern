@@ -7,12 +7,12 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostAnnouncementDTO
 {
-    /// <inheritdoc cref="Models.Announcement.Title"/>>
+    /// <inheritdoc cref="Models.Domain.Announcement.Title"/>>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.Content"/>>
+    /// <inheritdoc cref="Models.Domain.Announcement.Content"/>>
     [StringLength(1000)]
     [Required(AllowEmptyStrings = false)]
     public required string Content { get; set; }
@@ -23,12 +23,12 @@ public class PostAnnouncementDTO
 /// </summary>
 public class UpdateAnnouncementDTO
 {
-    /// <inheritdoc cref="Models.Announcement.Title"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.Title"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.Content"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.Content"/>
     [StringLength(1000)]
     [Required(AllowEmptyStrings = false)]
     public required string Content { get; set; }
@@ -39,21 +39,23 @@ public class UpdateAnnouncementDTO
 /// </summary>
 public class GetAnnouncementResponseDTO
 {
-    /// <inheritdoc cref="Models.Announcement.Id"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.Id"/>
     public required uint Id { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.Title"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.Title"/>
     public required string Title { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.Content"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.Content"/>
     public required string Content { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.CreatedByName"/>
+    /// <summary>
+    /// The name of the user who created the announcement, providing information about the creator of the announcement for display purposes in the client application. This field allows for better identification and attribution of announcements to their respective creators, enhancing the user experience by providing context about the source of the announcement in the system.
+    /// </summary>
     public required string CreatedByName { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.CreatedById"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.CreatedById"/>
     public Guid? CreatedById { get; set; }
 
-    /// <inheritdoc cref="Models.Announcement.CreatedAt"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.CreatedAt"/>
     public required DateTimeOffset CreatedAt { get; set; }
 }

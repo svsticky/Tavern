@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { type ActivityResponseDto, getApiActivitiesById } from "~/api";
+import { type ActivityResponseDto, getActivitiesById } from "~/api";
 
 /**
  * Arguments for the loadEditActivityData handler.
@@ -34,7 +34,7 @@ export const loadEditActivityData = async ({
 }: LoadEditActivityArgs) => {
   try {
     if (isEdit) {
-      const activityRes = await getApiActivitiesById({
+      const activityRes = await getActivitiesById({
         path: { id: Number(id) },
       });
       if (activityRes.error || !activityRes.data)

@@ -16,8 +16,11 @@ using Microsoft.AspNetCore.HttpLogging;
 using System.Text;
 using System.Net.Http.Headers;
 using Npgsql;
+using System.Reflection;
 
 Env.Load();
+
+bool isGeneratingDocs = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") == "docs";
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -119,15 +122,24 @@ builder.Services.AddScoped<KeycloakAPIService>();
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddControllers().AddNewtonsoftJson(options =>
-{
-    options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
-});
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
+    });
+
 builder.Services.Configure<RouteOptions>(options => options.LowercaseUrls = true);
 builder.Services.AddSwaggerGen(c =>
 {
     c.SupportNonNullableReferenceTypes();
-    
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
+    c.IncludeXmlComments(xmlPath);
+    c.SchemaFilter<InheritdocSchemaFilter>(xmlPath);
+    c.OperationFilter<FormRequestBodyInheritdocFilter>(xmlPath);
+
     c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -159,7 +171,6 @@ builder.Services.AddSwaggerGen(c =>
 });
 string connectionstring = Environment.GetEnvironmentVariable("PostgresqlConnectionString") ?? string.Empty;
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: connectionstring);
-builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddMollieApi(options => 
 {
     options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? string.Empty;
@@ -171,14 +182,17 @@ builder.Services.AddHttpClient("KeycloakAdmin", client =>
     client.BaseAddress = new Uri(baseUri.EndsWith("/") ? baseUri : baseUri + "/");
 });
 
-builder.Services.AddCors(options =>
-   {
-       options.AddDefaultPolicy(policy =>
-           policy.WithOrigins(Environment.GetEnvironmentVariable("HostUrl")!)
-                 .AllowAnyHeader()
-                 .AllowAnyMethod()
-                 .AllowCredentials());
- });
+if(!isGeneratingDocs)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+            policy.WithOrigins(Environment.GetEnvironmentVariable("HostUrl")!)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials());
+    });
+}
 builder.Services.AddHttpLogging(options =>
 {
     options.LoggingFields = HttpLoggingFields.RequestMethod
@@ -280,14 +294,18 @@ builder.Services.AddScoped<IMailinglistService, MailinglistService>();
 
 builder.Services.AddScoped<ICreateNewBoardService, CreateNewBoardService>();
 builder.Services.AddHostedService<DatabaseSeeder>();
-builder.Services.AddHangfire(config => config
-    .UsePostgreSqlStorage(options => 
-    {
-        options.UseNpgsqlConnection(connectionstring);
-    })
-    .UseRecommendedSerializerSettings());
 
-builder.Services.AddHangfireServer();
+if(!isGeneratingDocs)
+{
+    builder.Services.AddHangfire(config => config
+        .UsePostgreSqlStorage(options => 
+        {
+            options.UseNpgsqlConnection(connectionstring);
+        })
+        .UseRecommendedSerializerSettings());
+
+    builder.Services.AddHangfireServer();
+}
 
 WebApplication app = builder.Build();
 app.Logger.LogInformation("Starting Tavern backend. Environment: {EnvironmentName}", app.Environment.EnvironmentName);
@@ -296,7 +314,7 @@ app.UseForwardedHeaders();
 app.UseHttpLogging();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || isGeneratingDocs)
 {
 	app.UseSwagger();
 	app.UseSwaggerUI();
@@ -311,38 +329,41 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.UseHangfireDashboard();
-
-using (var scope = app.Services.CreateScope())
+if(!isGeneratingDocs)
 {
-    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    app.UseHangfireDashboard();
 
-    var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
-
-    var recurringJobOptions = new RecurringJobOptions
+    using (var scope = app.Services.CreateScope())
     {
-        TimeZone = amsterdamTimeZone
-    };
-    
-    recurringJobManager.AddOrUpdate<AbstractMailService>(
-        "outstanding-payments-mail", 
-        service => service.SendOutstandingPaymentMails(), 
-        "0 10 * * 5", // Each Friday at 10:00 AM
-        recurringJobOptions
-    );
+        var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
 
-    recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
-        "annual-board-rotation",
-        service => service.PromoteCandidateBoardToBoardAsync(),
-        "0 0 1 8 *", // 1 Augustus
-        recurringJobOptions
-    );
-}
+        var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
 
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-    await db.Database.MigrateAsync();
+        var recurringJobOptions = new RecurringJobOptions
+        {
+            TimeZone = amsterdamTimeZone
+        };
+        
+        recurringJobManager.AddOrUpdate<AbstractMailService>(
+            "outstanding-payments-mail", 
+            service => service.SendOutstandingPaymentMails(), 
+            "0 10 * * 5", // Each Friday at 10:00 AM
+            recurringJobOptions
+        );
+
+        recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
+            "annual-board-rotation",
+            service => service.PromoteCandidateBoardToBoardAsync(),
+            "0 0 1 8 *", // 1 Augustus
+            recurringJobOptions
+        );
+    }
+
+    using (var scope = app.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
+        await db.Database.MigrateAsync();
+    }
 }
 
 app.Run();

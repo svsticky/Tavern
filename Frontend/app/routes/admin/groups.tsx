@@ -3,7 +3,7 @@ import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
-import { type GroupResponseDto, getApiGroups } from "~/api";
+import { type GroupResponseDto, getGroups } from "~/api";
 import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
@@ -44,7 +44,7 @@ export default function Groups() {
     const fetchGroups = async () => {
       try {
         setLoading(true);
-        const response = await getApiGroups();
+        const response = await getGroups();
 
         if (response.error || !response.data)
           throw new Error("Failed to fetch groups");

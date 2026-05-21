@@ -25,14 +25,33 @@ public abstract class AbstractMailService
     
     private readonly Dictionary<uint, string> _roleMailMap;
 
+    /// <summary>
+    /// The database context used for retrieving settings and user information necessary for email operations, such as determining the sender's email address based on their role and fetching recipient details. This context allows the mail service to interact with the database to access relevant data required for composing and sending emails effectively.
+    /// </summary>
     protected readonly PostgresDbContext _db;
 
+    /// <summary>
+    /// The payment validation service used for validating payments when sending emails related to financial transactions, such as outstanding payment notifications. This service allows the mail service to ensure that any payment-related information included in emails is accurate and up-to-date, providing recipients with reliable information about their financial obligations or statuses.
+    /// </summary>
     protected readonly IPaymentValidationService _paymentValidationService;
 
+    /// <summary>
+    /// The permission service used for enforcing access control on email sending operations, ensuring that only authorized users can send emails through the system. This service allows the mail service to check the permissions of the requesting user before allowing them to send emails, helping to maintain security and prevent unauthorized use of the email functionality within the application.
+    /// </summary>
     protected readonly IPermissionService _permissionService;
 
+    /// <summary>
+    /// The logger used for logging important events and errors that occur during email operations, providing visibility into the mail service's behavior and facilitating troubleshooting and monitoring of email-related activities. This logger allows the mail service to record significant actions, such as when emails are sent, who initiated the sending, and any issues that arise during the process, helping developers and administrators keep track of email operations and identify any problems that may need attention.
+    /// </summary>
     protected readonly ILogger<AbstractMailService> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the AbstractMailService class with the specified database context, payment validation service, permission service, and logger. The constructor sets up the necessary dependencies for the mail service to function correctly, allowing it to interact with the database for retrieving settings and user information, validate payments when necessary, perform permission checks to ensure that only authorized users can send emails, and log important events and errors that occur during email operations for monitoring and debugging purposes. Additionally, the constructor initializes a mapping of role IDs to email addresses based on settings retrieved from the database, which can be used to determine the sender's email address based on their role when sending emails.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="paymentValidationService">The payment validation service.</param>
+    /// <param name="permissionService">The permission service.</param>
+    /// <param name="logger">The logger.</param>
     public AbstractMailService(
         PostgresDbContext db,
         IPaymentValidationService paymentValidationService,
@@ -180,6 +199,13 @@ public abstract class AbstractMailService
         }
     }
 
+    /// <summary>
+    /// Retrieves the sender information, including email address and name, for the specified user ID by checking their group memberships and associated roles. The method ensures that the user has the necessary permissions to send emails by verifying their membership in either the board group or candidate board group for the current financial year. If the user is authorized, their email address is determined based on their role using a predefined mapping, and their full name is constructed from their first and last name. If the user does not have permission to send emails or if their information cannot be retrieved, appropriate exceptions are thrown or null is returned.
+    /// </summary>
+    /// <param name="userId">The ID of the user for whom to retrieve sender information.</param>
+    /// <param name="ct">The cancellation token for the asynchronous operation.</param>
+    /// <returns>The mail recipient information for the sender, or null if not found.</returns>
+    /// <exception cref="UnauthorizedAccessException">Thrown when the user does not have permission to send emails.</exception>
     protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
         int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
@@ -204,6 +230,14 @@ public abstract class AbstractMailService
         return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
     }
 
+    /// <summary>
+    /// Retrieves the recipients for an activity-based email by fetching the enrollments for the specified activity and determining the email addresses of the enrolled members. The method takes into account whether to include members on the waiting list based on the provided flag and constructs an array of mail recipients with their email addresses and names. If the activity is not found, an exception is thrown. This method is used to gather the appropriate recipients when sending emails related to specific activities, such as updates or notifications for enrolled members.
+    /// </summary>
+    /// <param name="activityId">The ID of the activity for which to retrieve recipients.</param>
+    /// <param name="includeWaitingList">A flag indicating whether to include members on the waiting list.</param>
+    /// <param name="ct">The cancellation token for the asynchronous operation.</param>
+    /// <returns>An array of mail recipients for the specified activity.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the activity is not found.</exception>
     protected async Task<MailRecipient[]> GetRecipientsFromActivity(uint activityId, bool includeWaitingList, CancellationToken ct)
     {
         MailRecipient[] resultRecipients = Array.Empty<MailRecipient>();
@@ -221,6 +255,11 @@ public abstract class AbstractMailService
         return resultRecipients;
     }
 
+    /// <summary>
+    /// Strips HTML tags from the provided text and converts it to plain text by replacing line breaks and multiple spaces with appropriate formatting. This method is useful for generating plain text versions of email content that may originally be in HTML format, ensuring that the resulting text is clean and readable without any HTML tags or excessive whitespace. The method uses regular expressions to identify and replace HTML elements and whitespace patterns effectively.
+    /// </summary>
+    /// <param name="text">The text from which to strip HTML tags.</param>
+    /// <returns>The plain text version of the input text.</returns>
     protected string StripHtml(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;

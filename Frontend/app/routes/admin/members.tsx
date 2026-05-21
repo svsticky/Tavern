@@ -3,7 +3,7 @@ import { Mail, Phone } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
-import { getApiMembers, type MemberResponseDto } from "~/api";
+import { getMembers, type MemberResponseDto } from "~/api";
 import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
@@ -50,7 +50,7 @@ export default function Members() {
     async (pageNum: number, search: string, isInitial: boolean) => {
       try {
         setLoading(true);
-        const response = await getApiMembers({
+        const response = await getMembers({
           query: {
             Page: pageNum,
             PageSize: PAGE_SIZE,

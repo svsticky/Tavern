@@ -8,7 +8,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router";
-import { getApiMembersByIdProfilePicture } from "~/api";
+import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
@@ -38,7 +38,7 @@ export default function NavBarLayout() {
       if (!initialized || !keycloak.authenticated) return;
 
       try {
-        const profilePictureResponse = await getApiMembersByIdProfilePicture({
+        const profilePictureResponse = await getMembersByIdProfilePicture({
           path: {
             id: keycloak.tokenParsed?.UserId ?? 0,
           },

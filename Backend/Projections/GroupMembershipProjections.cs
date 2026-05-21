@@ -2,6 +2,8 @@ using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
 using System.Linq.Expressions;
 
+namespace Backend.Projections;
+
 /// <summary>
 /// The GroupMembershipProjections class provides a method to project a GroupMembership entity into a GroupMembershipResponseDTO. This projection is used to transform the data from the GroupMembership model into a format that is suitable for API responses, including related member and group information, as well as role alias details. The ToDto method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information based on the user's role. This class helps to centralize the logic for mapping GroupMembership entities to their corresponding DTOs, ensuring consistency and maintainability in the codebase when handling group membership-related data transformations for API responses.
 /// </summary>

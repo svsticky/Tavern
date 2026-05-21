@@ -10,7 +10,14 @@ namespace Backend.Models.Domain;
 /// </summary>
 public enum StudyType
 {
+    /// <summary>
+    /// Indicates that the study is a Bachelor's program, which typically has a nominal duration of three to four years and is designed to provide students with foundational knowledge and skills in their chosen field of study. Bachelor's programs often serve as a stepping stone for further education or entry into the workforce, offering a broad range of academic disciplines and opportunities for specialization.
+    /// </summary>
     Bachelor,
+
+    /// <summary>
+    /// Indicates that the study is a Master's program, which typically has a nominal duration of one to two years and is designed for students who have already completed a Bachelor's degree. Master's programs often provide more advanced and specialized knowledge in a particular field of study, allowing students to deepen their expertise and prepare for careers that require higher levels of education or research opportunities.
+    /// </summary>
     Master
 }
 

@@ -321,8 +321,8 @@ namespace Backend.Services
                 Description = $"Membership payment for {member.FirstName} {member.LastName}",
                 RedirectUrl = $"{_frontendUrl}/confirm-mail",
                 WebhookUrl = string.IsNullOrEmpty(_ngrokUrl) ? 
-                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/api/payments/webhook")
-                    : $"{_ngrokUrl}/api/payments/webhook",
+                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
+                    : $"{_ngrokUrl}/payments/webhook",
                 Metadata = $"membership_{memberId}"
             };
         }
@@ -350,7 +350,7 @@ namespace Backend.Services
                 Amount = new Amount(Currency.EUR, totalPrice + GetMollieFee()),
                 Description = $"Activity payment for {member.FirstName} {member.LastName}",
                 RedirectUrl = _frontendUrl,
-                WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/api/payments/webhook",
+                WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/payments/webhook",
                 Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
             };
 

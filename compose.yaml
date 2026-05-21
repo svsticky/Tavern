@@ -33,3 +33,20 @@ services:
       - VITE_BOARD_PRIMARY_LIGHT=${BOARD_PRIMARY_LIGHT}
       - VITE_BOARD_PRIMARY=${BOARD_PRIMARY}
       - VITE_BOARD_PRIMARY_DARK=${BOARD_PRIMARY_DARK}
+
+  tavern-docs:
+    build:
+      context: .
+      dockerfile: Docs/Dockerfile
+      target: production # Use production target
+    ports:
+      - "${DocsPort:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - ApiUrl=${ApiUrl:-http://localhost:8080}
+    restart: unless-stopped
+    logging:
+      driver: "local"
+      options:
+        max-size: "10m"
+        max-file: "5"

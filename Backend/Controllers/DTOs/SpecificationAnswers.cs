@@ -7,10 +7,10 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostSpecificationAnswerDTO
 {
-    /// <inheritdoc cref="Models.SpecificationAnswer.QuestionId"/>
+    /// <inheritdoc cref="Models.Domain.SpecificationAnswer.SpecificationQuestionId"/>
     public uint QuestionId { get; set; }
 
-    /// <inheritdoc cref="Models.SpecificationAnswer.Answer"/>
+    /// <inheritdoc cref="Models.Domain.SpecificationAnswer.Answer"/>
     [StringLength(1000)]
     [Required(AllowEmptyStrings = false)]
     public string Answer { get; set; } = string.Empty;
@@ -21,12 +21,12 @@ public class PostSpecificationAnswerDTO
 /// </summary>
 public class SpecificationAnswerResponseDTO
 {
-    /// <inheritdoc cref="Models.SpecificationAnswer.QuestionId"/>
+    /// <inheritdoc cref="Models.Domain.SpecificationAnswer.SpecificationQuestionId"/>
     public required uint QuestionId { get; set; }
 
-    /// <inheritdoc cref="Models.SpecificationAnswer.AnswerId"/>
+    /// <inheritdoc cref="Models.Domain.SpecificationAnswer.Id"/>
     public required uint AnswerId { get; set; }
 
-    /// <inheritdoc cref="Models.SpecificationAnswer.Answer"/>
+    /// <inheritdoc cref="Models.Domain.SpecificationAnswer.Answer"/>
     public required string Answer { get; set; }
 }

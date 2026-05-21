@@ -5,7 +5,7 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostMembershipPaymentDTO
 {
-    /// <inheritdoc cref="Models.MembershipPayment.MemberId"/>
+    /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
     public Guid MemberId { get; set; }
 }
 
@@ -14,7 +14,7 @@ public class PostMembershipPaymentDTO
 /// </summary>
 public class PostActivityPaymentDTO
 {
-    /// <inheritdoc cref="Models.ActivityPayment.MemberId"/>
+    /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
     public Guid MemberId { get; set; }
 
     /// <summary>
@@ -22,7 +22,7 @@ public class PostActivityPaymentDTO
     /// </summary>
     public List<uint> ActivityIds { get; set; } = new();
 
-    /// <inheritdoc cref="Models.ActivityPayment.ManuallyMarkedAsPaid"/>
+    /// <inheritdoc cref="Models.Domain.Payment.ManuallyMarkedAsPaid"/>
     public bool ManuallyMarkedAsPaid { get; set; } = false;
 }
 
@@ -31,6 +31,6 @@ public class PostActivityPaymentDTO
 /// </summary>
 public class PostPaymentResponse
 {
-    /// <inheritdoc cref="Models.Payment.CheckoutUrl"/>
+    /// <inheritdoc cref="Models.Domain.Payment.PaymentIntentUrl"/>
     public string? CheckoutUrl { get; set; }
 }

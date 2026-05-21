@@ -22,6 +22,12 @@ namespace Backend.Services
 
         private readonly string _membershipGLAccount = Environment.GetEnvironmentVariable("EXACT_MEMBERSHIP_GL_ACCOUNT")!;
 
+        /// <summary>
+        /// Initializes a new instance of the ExactService class with the specified HTTP client, database context, and logger. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to make HTTP requests to the Exact Online API, interact with the database to retrieve payment information, and log important events and errors that occur during the synchronization process. This setup is essential for ensuring that the service can effectively synchronize payment data to Exact Online while providing visibility into its operations through logging.
+        /// </summary>
+        /// <param name="http">The HTTP client.</param>
+        /// <param name="db">The database context.</param>
+        /// <param name="logger">The logger.</param>
         public ExactService(HttpClient http, PostgresDbContext db, ILogger<ExactService> logger)
         {
             _http = http;

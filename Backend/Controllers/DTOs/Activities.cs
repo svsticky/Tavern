@@ -58,7 +58,9 @@ public abstract class BaseActivityDTO<TQuestion>
     /// <inheritdoc cref="Activity.OrganizerId"/>
     public uint? OrganizerId { get; set; }
 
-    /// <inheritdoc cref="Activity.SpecificationQuestionsJson"/>
+    /// <summary>
+    /// A JSON string representing the specification questions associated with the activity. This property is used to capture the details of the specification questions in a structured format, allowing for easy serialization and deserialization when creating or updating an activity. The JSON string can contain an array of specification question objects, each with its own properties such as question text, question type, and possible answers. This approach allows for flexibility in managing the specification questions while ensuring that they are properly associated with the activity in the system.
+    /// </summary>
     public string? SpecificationQuestionsJson { get; set; }
 
     /// <inheritdoc cref="Activity.ShowInKoala"/>
@@ -148,7 +150,7 @@ public class ActivityResponseDTO
     /// <inheritdoc cref="Activity.OrganizerId"/>
     public uint? OrganizerId { get; set; }
 
-    /// <inheritdoc cref="Activity.SpecificationQuestionsJson"/>
+    /// <inheritdoc cref="Activity.ShowInKoala"/>
     public required bool ShowInKoala { get; set; }
 
     /// <inheritdoc cref="Activity.ShowOnWebsite"/>

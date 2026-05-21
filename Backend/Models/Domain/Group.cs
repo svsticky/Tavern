@@ -10,8 +10,19 @@ namespace Backend.Models.Domain;
 /// </summary>
 public enum GroupType
 {
+    /// <summary>
+    /// Indicates that the group is a Committee, which typically consists of members who are responsible for overseeing specific areas of the organization, making decisions, and providing guidance on various matters. Committees often play a crucial role in the governance and management of the organization, working together to achieve common goals and objectives.
+    /// </summary>
+    /// 
     Committee,
+    /// <summary>
+    /// Indicates that the group is a Working Group, which typically consists of members who are responsible for working on specific projects or tasks within the organization. Working groups are often formed to address particular issues or to develop solutions for specific problems.
+    /// </summary>
     WorkingGroup,
+
+    /// <summary>
+    /// Indicates that the group is a Dispute group, which typically consists of members and not members to organize their own activities
+    /// </summary>
     Dispute
 }
 

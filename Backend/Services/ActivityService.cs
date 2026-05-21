@@ -4,6 +4,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Projections;
 using Backend.Validators;
+using Backend.QueryExtensions;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -27,6 +28,16 @@ public class ActivityService : IActivityService
     private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
     private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/enrollOpenDate", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
+    /// <summary>
+    /// Initializes a new instance of the ActivityService class with the specified database context, storage service, file compressor, permission service, enrollment service, mail service, and logger. The constructor sets up the necessary dependencies for managing activities, including database access for activity data, storage service for handling activity posters, file compressor for optimizing poster files, permission service for enforcing access control on activity operations, enrollment service for managing enrollments related to activities, mail service for sending notifications about activity-related events, and logging for monitoring activity management operations and troubleshooting any issues that may arise.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="storageService">The storage service.</param>
+    /// <param name="fileCompressor">The file compressor.</param>
+    /// <param name="permissionService">The permission service.</param>
+    /// <param name="enrollmentService">The enrollment service.</param>
+    /// <param name="mailService">The mail service.</param>
+    /// <param name="logger">The logger.</param>
     public ActivityService(
         PostgresDbContext db,
         IStorageService storageService,

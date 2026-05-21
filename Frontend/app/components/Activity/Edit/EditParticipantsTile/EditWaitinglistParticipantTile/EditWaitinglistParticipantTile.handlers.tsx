@@ -1,9 +1,9 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import {
-  deleteApiEnrollmentsByActivityIdByMemberId,
+  deleteEnrollmentsByActivityIdByMemberId,
   type EnrollmentResponseDto,
-  patchApiEnrollmentsByActivityIdByMemberId,
+  patchEnrollmentsByActivityIdByMemberId,
 } from "~/api";
 
 type WaitingListActionArgs = {
@@ -30,7 +30,7 @@ export const handleWaitinglistUnenroll = ({
   const handleUnenrollAction = async () => {
     try {
       setLoading(true);
-      const response = await deleteApiEnrollmentsByActivityIdByMemberId({
+      const response = await deleteEnrollmentsByActivityIdByMemberId({
         path: {
           activityId,
           memberId: enrollment.member.id!,
@@ -72,7 +72,7 @@ export const handleMoveFromWaitinglist = ({
   const handleMoveToParticipantsAction = async () => {
     try {
       setLoading(true);
-      const response = await patchApiEnrollmentsByActivityIdByMemberId({
+      const response = await patchEnrollmentsByActivityIdByMemberId({
         path: {
           activityId,
           memberId: enrollment.member.id!,

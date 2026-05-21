@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
-import { postApiProfilepictureByIdProfilePicture } from "~/api";
+import { postProfilepictureByIdProfilePicture } from "~/api";
 
 /**
  * Handles the profile picture upload process.
@@ -16,7 +16,7 @@ export const handleProfilePictureUpload = async (
 
   const saveProcess = async (userId: string) => {
     try {
-      const response = await postApiProfilepictureByIdProfilePicture({
+      const response = await postProfilepictureByIdProfilePicture({
         path: { id: userId },
         body: { image: file },
       });
