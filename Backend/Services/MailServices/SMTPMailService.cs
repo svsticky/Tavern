@@ -4,7 +4,7 @@ using Backend.Models;
 using MailKit.Net.Smtp;
 using MimeKit;
 
-namespace Backend.Services;
+namespace Backend.Services.MailServices;
 
 /// <summary>
 /// Sends emails through an SMTP server.

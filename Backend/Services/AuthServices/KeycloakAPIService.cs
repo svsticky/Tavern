@@ -2,10 +2,11 @@ using System.Net.Http.Headers;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Services.AuthServices;
 
 /// <summary>
 /// Implements the auth-service contract against Keycloak.

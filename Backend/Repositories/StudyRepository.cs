@@ -6,15 +6,15 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements study management operations.
     /// </summary>
-    public class StudyService(
+    public class StudyRepository(
             PostgresDbContext db,
             IPermissionService permissionService,
-            ILogger<StudyService> logger
+            ILogger<StudyRepository> logger
         ) : IStudyService
     {
         /// <inheritdoc />

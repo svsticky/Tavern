@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace Backend.Services
+namespace Backend.Services.AccountingToolServices
 {
     /// <summary>
     /// Implements synchronization of payment data to Exact Online.

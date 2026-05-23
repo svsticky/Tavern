@@ -2,20 +2,21 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements role-alias management operations.
     /// </summary>
-    public class RoleAliasService(
+    public class RoleAliasRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
         AuthOutboxWorker authOutboxWorker,
-        ILogger<RoleAliasService> logger
+        ILogger<RoleAliasRepository> logger
     ) : IRoleAliasService
     {
         /// <inheritdoc />

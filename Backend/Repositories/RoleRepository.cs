@@ -6,15 +6,15 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements role management operations.
     /// </summary>
-    public class RoleService(
+    public class RoleRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
-        ILogger<RoleService> logger
+        ILogger<RoleRepository> logger
     ) : IRoleService
     {
         /// <inheritdoc />

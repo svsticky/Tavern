@@ -4,29 +4,30 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Backend.Projections;
+using Backend.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Repositories;
 
 /// <summary>
 /// Implements group-membership management operations.
 /// </summary>
-public class GroupMembershipService : IGroupMembershipService
+public class GroupMembershipRepository : IGroupMembershipService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly AuthOutboxWorker _authOutboxWorker;
-    private readonly ILogger<GroupMembershipService> _logger;
+    private readonly ILogger<GroupMembershipRepository> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the authentication outbox worker for synchronizing membership changes with the configured auth system, and logging for monitoring group membership operations. This setup allows the GroupMembershipService to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// Initializes a new instance of the GroupMembershipRepository class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the authentication outbox worker for synchronizing membership changes with the configured auth system, and logging for monitoring group membership operations. This setup allows the GroupMembershipRepository to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="permissionService">The permission service.</param>
     /// <param name="authOutboxWorker">The authentication outbox worker.</param>
     /// <param name="logger">The logger.</param>
-    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, AuthOutboxWorker authOutboxWorker, ILogger<GroupMembershipService> logger)
+    public GroupMembershipRepository(PostgresDbContext db, IPermissionService permissionService, AuthOutboxWorker authOutboxWorker, ILogger<GroupMembershipRepository> logger)
     {
         _db = db;
         _permissionService = permissionService;

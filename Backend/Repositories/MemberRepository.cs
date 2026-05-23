@@ -5,16 +5,17 @@ using Backend.Models.Domain;
 using Backend.Projections;
 using Backend.Validators;
 using Backend.QueryExtensions;
+using Backend.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements member management and profile-related operations.
     /// </summary>
-    public class MemberService(
+    public class MemberRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
@@ -23,7 +24,7 @@ namespace Backend.Services
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
         IAuthService authService,
-        ILogger<MemberService> logger
+        ILogger<MemberRepository> logger
     ) : IMemberService
     {
         /// <inheritdoc />

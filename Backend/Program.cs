@@ -1,5 +1,12 @@
 using Backend.Database;
+using Backend.Repositories;
 using Backend.Services;
+using Backend.Services.AccountingToolServices;
+using Backend.Services.AuthServices;
+using Backend.Services.FileCompressServices;
+using Backend.Services.MailServices;
+using Backend.Services.MailSubscriptionServices;
+using Backend.Services.StorageServices;
 using DotNetEnv;
 using Mollie.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -235,7 +242,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 
 builder.Services.AddScoped<IStorageService, S3StorageService>();
 builder.Services.AddScoped<IFileCompressService, FileCompressService>();
-builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();
+builder.Services.AddScoped<IPaymentValidationService, PaymentValidationRepository>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 string? mailProvider = Environment.GetEnvironmentVariable("MAIL_SERVICE");
@@ -283,23 +290,23 @@ switch(mailSubscriptionService)
         break;
 }
 
-builder.Services.AddScoped<IActivityService, ActivityService>();
-builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
-builder.Services.AddScoped<IEnrollmentService, EnrollmentService>();
-builder.Services.AddScoped<IGroupMembershipService, GroupMembershipService>();
-builder.Services.AddScoped<IGroupService, GroupService>();
-builder.Services.AddScoped<IMemberService, MemberService>();
-builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<IActivityService, ActivityRepository>();
+builder.Services.AddScoped<IAnnouncementService, AnnouncementRepository>();
+builder.Services.AddScoped<IEnrollmentService, EnrollmentRepository>();
+builder.Services.AddScoped<IGroupMembershipService, GroupMembershipRepository>();
+builder.Services.AddScoped<IGroupService, GroupRepository>();
+builder.Services.AddScoped<IMemberService, MemberRepository>();
+builder.Services.AddScoped<IPaymentService, PaymentRepository>();
 builder.Services.AddScoped<IPaymentWebhookService, PaymentWebhookService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<IProfilePictureService, ProfilePictureService>();
-builder.Services.AddScoped<IRoleAliasService, RoleAliasService>();
-builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IStudyEnrollmentService, StudyEnrollmentService>();
-builder.Services.AddScoped<IStudyService, StudyService>();
-builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
-builder.Services.AddScoped<ISettingsService, SettingsService>();
-builder.Services.AddScoped<IMailinglistService, MailinglistService>();
+builder.Services.AddScoped<IProfilePictureService, ProfilePictureRepository>();
+builder.Services.AddScoped<IRoleAliasService, RoleAliasRepository>();
+builder.Services.AddScoped<IRoleService, RoleRepository>();
+builder.Services.AddScoped<IStudyEnrollmentService, StudyEnrollmentRepository>();
+builder.Services.AddScoped<IStudyService, StudyRepository>();
+builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerRepository>();
+builder.Services.AddScoped<ISettingsService, SettingsRepository>();
+builder.Services.AddScoped<IMailinglistService, MailinglistRepository>();
 
 builder.Services.AddScoped<ICreateNewBoardService, CreateNewBoardService>();
 builder.Services.AddHostedService<DatabaseSeeder>();

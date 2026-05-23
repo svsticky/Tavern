@@ -7,28 +7,28 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Repositories;
 
 /// <summary>
 /// Implements group management and group picture operations.
 /// </summary>
-public class GroupService : IGroupService
+public class GroupRepository : IGroupService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly IFileCompressService _fileCompressService;
     private readonly IStorageService _storageService;
-    private readonly ILogger<GroupService> _logger;
+    private readonly ILogger<GroupRepository> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the GroupService class with the specified dependencies. The constructor sets up the necessary services for managing groups, including database access, permission checks, file compression for group pictures, storage service for saving group pictures, and logging for monitoring group-related operations. This setup allows the GroupService to effectively handle group creation, retrieval, updating, deletion, and picture management while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// Initializes a new instance of the GroupRepository class with the specified dependencies. The constructor sets up the necessary services for managing groups, including database access, permission checks, file compression for group pictures, storage service for saving group pictures, and logging for monitoring group-related operations. This setup allows the GroupRepository to effectively handle group creation, retrieval, updating, deletion, and picture management while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="permissionService">The permission service.</param>
     /// <param name="fileCompressService">The file compression service.</param>
     /// <param name="storageService">The storage service.</param>
     /// <param name="logger">The logger.</param>
-    public GroupService(PostgresDbContext db, IPermissionService permissionService, IFileCompressService fileCompressService, IStorageService storageService, ILogger<GroupService> logger)
+    public GroupRepository(PostgresDbContext db, IPermissionService permissionService, IFileCompressService fileCompressService, IStorageService storageService, ILogger<GroupRepository> logger)
     {
         _db = db;
         _permissionService = permissionService;

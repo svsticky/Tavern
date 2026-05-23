@@ -1,12 +1,13 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Backend.Utils.DateTime;
 
-namespace Backend.Interfaces;
+namespace Backend.Services.MailServices;
 
 /// <summary>
 /// Provides shared mail-sending workflow and recipient resolution logic.

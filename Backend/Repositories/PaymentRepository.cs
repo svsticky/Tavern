@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services;
 using Microsoft.EntityFrameworkCore;
 using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models;
@@ -10,18 +11,18 @@ using Mollie.Api.Models.Payment.Response;
 using System.Text;
 using Backend.Validators;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements payment creation, retrieval, export, and status operations.
     /// </summary>
-    public class PaymentService(
+    public class PaymentRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
         IPaymentClient mollieClient,
         AuthOutboxWorker authOutboxWorker,
-        ILogger<PaymentService> logger
+        ILogger<PaymentRepository> logger
     ) : IPaymentService
     {
         private readonly string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;

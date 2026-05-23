@@ -4,15 +4,15 @@ using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 
-namespace Backend.Services;
+namespace Backend.Repositories;
 
 /// <summary>
 /// Implements updates for specification answers.
 /// </summary>
-public class SpecificationAnswerService(
+public class SpecificationAnswerRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
-        ILogger<SpecificationAnswerService> logger
+        ILogger<SpecificationAnswerRepository> logger
 ) : ISpecificationAnswerService
 {
     /// <inheritdoc />

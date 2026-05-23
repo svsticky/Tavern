@@ -3,14 +3,14 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Repositories;
 
 /// <summary>
 /// Implements payment validation and balance calculations.
 /// </summary>
-public class PaymentValidationService(
+public class PaymentValidationRepository(
     PostgresDbContext db,
-    ILogger<PaymentValidationService> logger) : IPaymentValidationService
+    ILogger<PaymentValidationRepository> logger) : IPaymentValidationService
 {
     /// <inheritdoc />
     public bool HasPaidMembershipPayment(Guid memberId)

@@ -8,15 +8,15 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements study-enrollment management operations.
     /// </summary>
-    public class StudyEnrollmentService(
+    public class StudyEnrollmentRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
-        ILogger<StudyEnrollmentService> logger
+        ILogger<StudyEnrollmentRepository> logger
     ) : IStudyEnrollmentService
     {
         /// <inheritdoc />

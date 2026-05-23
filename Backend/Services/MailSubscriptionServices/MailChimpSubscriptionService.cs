@@ -1,9 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
 using Backend.Database;
+using Backend.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Interfaces;
+namespace Backend.Services.MailSubscriptionServices;
 
 /// <summary>
 /// Defines the contract for a mail subscription service that manages user subscriptions to mailing lists. The IMailSubscriptionService interface provides a method for updating a user's subscription status based on their email address and a bitmap representing their subscription preferences. Implementations of this interface are responsible for integrating with external mailing list providers (such as MailChimp) to ensure that users are subscribed or unsubscribed according to their preferences, while also handling any necessary data transformations and API interactions required by the specific mailing list service being used.

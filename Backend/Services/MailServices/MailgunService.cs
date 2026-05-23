@@ -3,7 +3,7 @@ using Backend.Interfaces;
 using Backend.Models;
 using Mailgun;
 
-namespace Backend.Services;
+namespace Backend.Services.MailServices;
 
 /// <summary>
 /// Sends emails through the Mailgun provider.

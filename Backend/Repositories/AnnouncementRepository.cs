@@ -7,24 +7,24 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Repositories;
 
 /// <summary>
 /// Implements announcement management operations.
 /// </summary>
-public class AnnouncementService : IAnnouncementService
+public class AnnouncementRepository : IAnnouncementService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
-    private readonly ILogger<AnnouncementService> _logger;
+    private readonly ILogger<AnnouncementRepository> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the AnnouncementService class with the specified database context, permission service, and logger. The constructor sets up the necessary dependencies for managing announcements, allowing the service to interact with the database for CRUD operations on announcements, perform permission checks to ensure that only authorized users can create, update, or delete announcements, and log important events and errors that occur during announcement management for monitoring and debugging purposes.
+    /// Initializes a new instance of the AnnouncementRepository class with the specified database context, permission service, and logger. The constructor sets up the necessary dependencies for managing announcements, allowing the service to interact with the database for CRUD operations on announcements, perform permission checks to ensure that only authorized users can create, update, or delete announcements, and log important events and errors that occur during announcement management for monitoring and debugging purposes.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="permissionService">The permission service.</param>
     /// <param name="logger">The logger.</param>
-    public AnnouncementService(PostgresDbContext db, IPermissionService permissionService, ILogger<AnnouncementService> logger)
+    public AnnouncementRepository(PostgresDbContext db, IPermissionService permissionService, ILogger<AnnouncementRepository> logger)
     {
         _db = db;
         _permissionService = permissionService;

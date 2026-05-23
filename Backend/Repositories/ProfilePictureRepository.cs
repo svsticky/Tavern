@@ -3,17 +3,17 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 
-namespace Backend.Services
+namespace Backend.Repositories
 {
     /// <summary>
     /// Implements profile picture retrieval and upload operations.
     /// </summary>
-    public class ProfilePictureService(
+    public class ProfilePictureRepository(
         PostgresDbContext db,
         IStorageService storageService,
         IPermissionService permissionService,
         IFileCompressService fileCompressor,
-        ILogger<ProfilePictureService> logger
+        ILogger<ProfilePictureRepository> logger
     ) : IProfilePictureService
     {
         /// <inheritdoc />

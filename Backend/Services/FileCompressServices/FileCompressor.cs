@@ -4,7 +4,7 @@ using SixLabors.ImageSharp.Formats.Gif;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
-namespace Backend.Services;
+namespace Backend.Services.FileCompressServices;
 
 /// <summary>
 /// Implements image compression for uploaded files.
