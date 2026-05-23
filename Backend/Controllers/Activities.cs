@@ -263,7 +263,7 @@ namespace Backend.Controllers
         /// <param name="id">The unique identifier of the activity for which to retrieve the poster.</param>
         /// <returns>The poster image file.</returns>
         [HttpGet("{id}/poster")]
-        [Produces("image/jpeg", "image/png", "image/gif")]
+        [Produces("image/webp", "image/jpeg", "image/png", "image/gif")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -296,7 +296,7 @@ namespace Backend.Controllers
         /// <param name="id">The unique identifier of the activity for which to download the poster.</param>
         /// <returns>The poster image file.</returns>
         [HttpGet("{id}/poster/download")]
-        [Produces("image/jpeg", "image/png", "image/gif")]
+        [Produces("image/webp", "image/jpeg", "image/png", "image/gif")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

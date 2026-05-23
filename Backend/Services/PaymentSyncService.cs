@@ -83,12 +83,12 @@ public class PaymentSyncService(
                     {
                         if(fullPayment.Member != null)
                         {
-                            if(fullPayment.Member.KeycloakId == null) throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status.");
+                            if(fullPayment.Member.AuthSystemUserId == null) throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status.");
 
-                            db.KeycloakOutboxTasks.Add(new KeycloakOutboxTask
+                            db.AuthOutboxTasks.Add(new AuthOutboxTask
                             {
-                                KeycloakId = fullPayment.Member.KeycloakId.Value,
-                                TaskType = KeycloakTaskType.Sync,
+                                AuthSystemUserId = fullPayment.Member.AuthSystemUserId.Value,
+                                TaskType = AuthTaskType.Sync,
                                 CreatedAt = DateTime.UtcNow
                             });
                         }

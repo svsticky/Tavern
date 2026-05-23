@@ -21,6 +21,7 @@ using System.Reflection;
 Env.Load();
 
 bool isGeneratingDocs = Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT") == "docs";
+var authSystem = (Environment.GetEnvironmentVariable("AUTH_SYSTEM") ?? "keycloak").Trim().ToLowerInvariant();
 
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -39,86 +40,94 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
-        
-        options.Events = new JwtBearerEvents
-        {
-            OnMessageReceived = context =>
+switch (authSystem)
+{
+    case "keycloak":
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
             {
-                var token = context.Request.Cookies["access_token"];
-
-                if (!string.IsNullOrEmpty(token))
-                {
-                    context.Token = token;
-                }
-
-                return Task.CompletedTask;
-            },
-
-            OnTokenValidated = async context =>
-            {
-                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
-                var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
-                var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
+                options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
                 
-                var keycloakIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email) 
-                                 ?? context.Principal?.FindFirst("email");
-
-                if (keycloakIdClaim != null && Guid.TryParse(keycloakIdClaim.Value, out var keycloakId))
+                options.Events = new JwtBearerEvents
                 {
-                    var member = await dbContext.Members.FirstOrDefaultAsync(m => m.KeycloakId == keycloakId);
-
-                    if (member != null && emailClaim != null)
+                    OnMessageReceived = context =>
                     {
-                        var newEmail = emailClaim.Value;
+                        var token = context.Request.Cookies["access_token"];
 
-                        if (!string.Equals(member.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+                        if (!string.IsNullOrEmpty(token))
                         {
-                            using var transaction = await dbContext.Database.BeginTransactionAsync();
-                            try
+                            context.Token = token;
+                        }
+
+                        return Task.CompletedTask;
+                    },
+
+                    OnTokenValidated = async context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
+                        var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
+                        var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
+                        
+                        var authIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                        var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email) 
+                                         ?? context.Principal?.FindFirst("email");
+
+                        if (authIdClaim != null && Guid.TryParse(authIdClaim.Value, out var authId))
+                        {
+                            var member = await dbContext.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == authId);
+
+                            if (member != null && emailClaim != null)
                             {
-                                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, dbContext);
-                                member.Email = newEmail;
-                                mailSubscriptionOutboxWorker.EnqueueTask(newEmail, member.MailSubscriptions, dbContext);
-                                await dbContext.SaveChangesAsync();
-                                logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
-                                await transaction.CommitAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                logger.LogError(ex, "Error updating member email for member {MemberId}.", member.Id);
-                                await transaction.RollbackAsync();
-                                throw;
+                                var newEmail = emailClaim.Value;
+
+                                if (!string.Equals(member.Email, newEmail, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    using var transaction = await dbContext.Database.BeginTransactionAsync();
+                                    try
+                                    {
+                                        mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, dbContext);
+                                        member.Email = newEmail;
+                                        mailSubscriptionOutboxWorker.EnqueueTask(newEmail, member.MailSubscriptions, dbContext);
+                                        await dbContext.SaveChangesAsync();
+                                        logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
+                                        await transaction.CommitAsync();
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        logger.LogError(ex, "Error updating member email for member {MemberId}.", member.Id);
+                                        await transaction.RollbackAsync();
+                                        throw;
+                                    }
+                                }
                             }
                         }
+                    },
+
+                    OnAuthenticationFailed = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
+                        logger.LogWarning(context.Exception, "JWT authentication failed.");
+                        return Task.CompletedTask;
                     }
-                }
-            },
+                };
+                
+                options.RequireHttpsMetadata = false;
+                
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidIssuer = Environment.GetEnvironmentVariable("KeycloakUrl") + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
+                };
+            });
 
-            OnAuthenticationFailed = context =>
-            {
-                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
-                logger.LogWarning(context.Exception, "JWT authentication failed.");
-                return Task.CompletedTask;
-            }
-        };
-        
-        options.RequireHttpsMetadata = false;
-        
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ValidIssuer = Environment.GetEnvironmentVariable("KeycloakUrl") + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
-        };
-    });
+        builder.Services.AddScoped<IAuthService, KeycloakAPIService>();
+        break;
 
-builder.Services.AddScoped<KeycloakAPIService>();
+    default:
+        throw new NotSupportedException($"Unsupported AUTH_SYSTEM '{authSystem}'.");
+}
 
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
@@ -202,9 +211,8 @@ builder.Services.AddHttpLogging(options =>
 });
 
 builder.Services.AddHttpClient();
-builder.Services.AddScoped<KeycloakAPIService>();
-builder.Services.AddSingleton<KeycloakOutboxWorker>();
-builder.Services.AddHostedService(sp => sp.GetRequiredService<KeycloakOutboxWorker>());
+builder.Services.AddSingleton<AuthOutboxWorker>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<AuthOutboxWorker>());
 builder.Services.AddHostedService<AccountingToolOutboxWorker>();
 builder.Services.AddSingleton<MailSubscriptionOutboxWorker>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());

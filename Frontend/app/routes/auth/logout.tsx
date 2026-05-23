@@ -1,14 +1,14 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect } from "react";
 import { useNavigate } from "react-router";
+import { useAuth } from "~/context/AuthContext";
 
 /**
  * A dedicated session termination component.
  *
  * This page handles the secure teardown of the user's session. It orchestrates
  * two primary scenarios:
- * - **Authenticated Users**: Triggers the Keycloak OIDC logout flow. This invalidates
+ * - **Authenticated Users**: Triggers the auth logout flow. This invalidates
  *   the session on the SSO server and redirects the browser back to the login page
  *   to ensure no stale tokens remain in memory.
  * - **Unauthenticated/Stale Sessions**: If the user is already logged out or the
@@ -22,18 +22,18 @@ import { useNavigate } from "react-router";
  * @component
  */
 export default function LogoutPage() {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (initialized && keycloak.authenticated) {
-      keycloak.logout({
-        redirectUri: `${window.location.origin}/login`,
-      });
-    } else if (initialized && !keycloak.authenticated) {
+    if (!authService.isReady()) return;
+
+    if (authService.isAuthenticated()) {
+      authService.logout(`${window.location.origin}/login`);
+    } else {
       navigate("/login", { replace: true });
     }
-  }, [initialized, keycloak, navigate]);
+  }, [authService, navigate]);
 
   return (
     <div className="flex items-center justify-center min-h-screen">

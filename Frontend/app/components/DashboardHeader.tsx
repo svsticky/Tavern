@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import {
   Calendar,
   CircleCheckBig,
@@ -16,6 +15,8 @@ import {
   getPaymentsUnpaid,
   postPaymentsActivity,
 } from "~/api";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
@@ -40,8 +41,7 @@ type DashboardHeaderProps = {
  * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
  * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
  *
- * It manages its own data fetching state for payments and enrollment totals, and integrates
- * with Keycloak for user identification and Lucide for iconography.
+ * It manages its own data fetching state for payments and enrollment totals.
  *
  * @component
  * @param {DashboardHeaderProps} props - The component properties.
@@ -51,7 +51,8 @@ export default function DashboardHeader({
   nextActivity,
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -63,8 +64,24 @@ export default function DashboardHeader({
   const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadData() {
-      if (!initialized || !keycloak.authenticated) return;
+      if (!authService.isAuthenticated()) {
+        setLoading(false);
+        return;
+      }
+
+      const parsedToken = await authService.getTokenParsed();
+      if (cancelled) return;
+
+      setTokenParsed(parsedToken);
+
+      if (!parsedToken) {
+        console.error("Failed to parse token");
+        setLoading(false);
+        return;
+      }
 
       try {
         const outstandingPaymentsResponse = await getPaymentsUnpaid();
@@ -85,7 +102,7 @@ export default function DashboardHeader({
 
         const enrollmentAmountResponse = await getEnrollments({
           query: {
-            FromMemberId: keycloak.tokenParsed?.UserId,
+            FromMemberId: parsedToken.UserId,
           },
         });
 
@@ -119,43 +136,46 @@ export default function DashboardHeader({
     }
 
     loadData();
-  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authService, t]);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
   const payActivities = async () => {
-    const _payAction = async () => {
+    if (!tokenParsed) return;
+
+    const payAction = async () => {
       try {
         setLoadingPayments(true);
         const urlResponse = await postPaymentsActivity({
           body: {
-            memberId: keycloak.tokenParsed?.UserId ?? 0,
+            memberId: tokenParsed.UserId,
             activityIds: unpaidActivityIds,
           },
         });
 
-        if (urlResponse.error)
+        if (urlResponse.error) {
           throw new Error("Failed to initiate payment process");
+        }
 
         if (urlResponse.data?.checkoutUrl) {
-          console.log(urlResponse.data);
           window.location.href = urlResponse.data.checkoutUrl;
-        } else {
-          throw new Error("No checkout URL returned from API");
+          return;
         }
-      } catch (error) {
-        console.error("Error while initiating payment:", error);
-        throw error;
+
+        throw new Error("No checkout URL returned from API");
       } finally {
         setLoadingPayments(false);
       }
-
-      toast.promise(_payAction(), {
-        loading: t("paying"),
-        success: t("redirecting_to_payment"),
-        error: t("payment_initiation_failed"),
-      });
     };
+
+    toast.promise(payAction(), {
+      loading: t("paying"),
+      success: t("redirecting_to_payment"),
+      error: t("payment_initiation_failed"),
+    });
   };
 
   return (

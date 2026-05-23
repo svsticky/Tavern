@@ -1,8 +1,8 @@
 import { t } from "i18next";
-import type Keycloak from "keycloak-js";
 import type { Dispatch, SetStateAction } from "react";
 import toast from "react-hot-toast";
 import { type MemberResponseDto, patchMembersById } from "~/api";
+import type { IAuthService } from "~/auth/IAuthService";
 import i18n from "~/i18n";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 
@@ -27,14 +27,11 @@ export const handleSubscriptionChange = (
 
 /**
  * Handles changing the password for a user.
- * @param {Keycloak} keycloak - The Keycloak instance.
+ * @param {IAuthService} authService - The authentication service instance.
  */
-export const handleChangePassword = async (keycloak: Keycloak) => {
-  if (keycloak) {
-    const url = await keycloak.createLoginUrl({
-      action: "UPDATE_PASSWORD",
-      redirectUri: window.location.href,
-    });
+export const handleChangePassword = async (authService: IAuthService) => {
+  if (authService) {
+    const url = await authService.getUpdatePasswordUrl();
     window.location.href = url;
   } else {
     window.location.href = "/logout";
@@ -43,14 +40,11 @@ export const handleChangePassword = async (keycloak: Keycloak) => {
 
 /**
  * Handles changing the email for a user.
- * @param {Keycloak} keycloak - The Keycloak instance.
+ * @param {IAuthService} authService - The authentication service instance.
  */
-export const handleChangeEmail = async (keycloak: Keycloak) => {
-  if (keycloak) {
-    const url = await keycloak.createLoginUrl({
-      action: "UPDATE_EMAIL",
-      redirectUri: window.location.href,
-    });
+export const handleChangeEmail = async (authService: IAuthService) => {
+  if (authService) {
+    const url = await authService.getUpdateEmailUrl();
     window.location.href = url;
   } else {
     window.location.href = "/logout";

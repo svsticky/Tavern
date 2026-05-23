@@ -1,9 +1,11 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { GetAnnouncementResponseDto } from "~/api";
 import Markdown from "~/components/UI/Markdown";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
@@ -42,10 +44,20 @@ export default function AnnouncementTile({
   announcement: GetAnnouncementResponseDto;
   className?: string;
 }) {
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
   const navigate = useNavigate();
+  const [isBoard, setIsBoard] = useState(false);
 
-  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getTokenParsed();
+      setIsBoard(
+        isBoardOrCandidateBoard(token, boardGroupId, candidateBoardGroupId),
+      );
+    };
+    loadToken();
+  }, [authService, boardGroupId, candidateBoardGroupId]);
 
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>

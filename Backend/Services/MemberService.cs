@@ -20,9 +20,9 @@ namespace Backend.Services
         IPaymentValidationService paymentValidationService,
         IStorageService storageService,
         IPaymentClient mollieClient,
-        KeycloakOutboxWorker keycloakOutboxWorker,
+        AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
-        KeycloakAPIService keycloakAPIService,
+        IAuthService authService,
         ILogger<MemberService> logger
     ) : IMemberService
     {
@@ -101,8 +101,8 @@ namespace Backend.Services
                     AddStudyEnrollments(member.Id, dto.StudyEnrollments);
                 }
 
-                // Sync with Keycloak 
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, member.Id);
+                // Sync with the auth system 
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Create, member.Id);
 
                 // Enqueue mail subscription update
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
@@ -176,7 +176,7 @@ namespace Backend.Services
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
 
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
 
@@ -222,7 +222,7 @@ namespace Backend.Services
                 ApplyMemberUpdate(member, dto);
                 StateValidator.Validate(member);
 
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
 
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
 
@@ -272,8 +272,8 @@ namespace Backend.Services
             try
             {
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.RefreshEmail, member.Id);
-                var newMail = await keycloakAPIService.GetEmail(member.KeycloakId ?? throw new InvalidOperationException("Member does not have a Keycloak ID."));
+                await authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id);
+                var newMail = await authService.GetEmail(member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
                 mailSubscriptionOutboxWorker.EnqueueTask(newMail, member.MailSubscriptions, db);
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -316,9 +316,9 @@ namespace Backend.Services
             }
 
             db.Members.Remove(existingMember);
-            await keycloakOutboxWorker.EnqueueTask(
-                KeycloakTaskType.Delete,
-                existingMember.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status.")
+            await authOutboxWorker.EnqueueTask(
+                AuthTaskType.Delete,
+                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status.")
             );
         }
 

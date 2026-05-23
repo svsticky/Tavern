@@ -55,11 +55,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "ActivityUpdateEmailSender", "");
 
-        var keycloakOutboxWorker = scope.ServiceProvider.GetRequiredService<KeycloakOutboxWorker>();
+        var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();
 
-        await EnsureBoardAccountExists(db, keycloakOutboxWorker, createNewBoardService);
+        await EnsureBoardAccountExists(db, authOutboxWorker, createNewBoardService);
     }
 
     /// <summary>
@@ -136,10 +136,10 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
     /// Ensures that a backup board account exists in the database. This method checks if there are any existing board members in the group specified by the "BoardGroupId" setting. If no board members are found, it creates a backup member with predefined details and adds them to the board group. This is a safety measure to ensure that there is always at least one member in the board group, providing a fallback option for administrative access in case all other board members are removed or become inactive. The method also handles the creation of a membership payment for the backup member and ensures that the database state remains consistent through the use of transactions.
     /// </summary>
     /// <param name="db">The database context.</param>
-    /// <param name="keycloakOutboxWorker">The Keycloak outbox worker.</param>
+    /// <param name="authOutboxWorker">The authentication outbox worker.</param>
     /// <param name="createNewBoardService">The service for creating new board members.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private static async Task EnsureBoardAccountExists(PostgresDbContext db, KeycloakOutboxWorker keycloakOutboxWorker, ICreateNewBoardService createNewBoardService)
+    private static async Task EnsureBoardAccountExists(PostgresDbContext db, AuthOutboxWorker authOutboxWorker, ICreateNewBoardService createNewBoardService)
     {
         uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
 
@@ -189,7 +189,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     MembershipYear = FinancialYearUtils.GetCurrentFinancialYear()
                 });
 
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Create, backupMember.Id);
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id);
 
                 db.MembershipPayments.Add(new MembershipPayment
                 {

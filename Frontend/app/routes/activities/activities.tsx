@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { CalendarDaysIcon, DownloadIcon, PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,6 +7,9 @@ import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   copyWeekOverview,
@@ -38,23 +40,50 @@ import {
  * @component
  */
 export default function ActivitiesPage() {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
+  const [token, setToken] = useState<string | null>(null);
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [isBoard, setIsBoard] = useState(false);
+
+  useEffect(() => {
+    const loadToken = async () => {
+      const token = await authService.getToken();
+      const tokenParsed = await authService.getTokenParsed();
+      setToken(token);
+      setTokenParsed(tokenParsed);
+
+      if (!tokenParsed) {
+        console.error("User not authenticated");
+        return;
+      }
+
+      setIsBoard(
+        isBoardOrCandidateBoard(
+          tokenParsed,
+          boardGroupId,
+          candidateBoardGroupId,
+        ),
+      );
+    };
+    loadToken();
+  }, [authService, boardGroupId, candidateBoardGroupId]);
 
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   useEffect(() => {
+    if (!tokenParsed) return;
     loadActivities({
-      initialized,
-      authenticated: keycloak.authenticated,
       setLoading,
       setActivities,
     });
-  }, [initialized, keycloak.authenticated]);
+  }, [tokenParsed]);
 
-  const isInGroup = (keycloak.tokenParsed?.group_memberships ?? []).length > 0;
-  const isBoard = isBoardOrCandidateBoard(keycloak.tokenParsed);
+  if (!tokenParsed) return null;
+
+  const isInGroup = tokenParsed.group_memberships.length > 0;
 
   return (
     <>
@@ -79,7 +108,7 @@ export default function ActivitiesPage() {
           <>
             <Button
               variant="secondary"
-              onClick={() => downloadPosters(activities, keycloak.token ?? "")}
+              onClick={() => downloadPosters(activities, token ?? "")}
               className="text-xs px-3 py-1"
               title="Download Koala Posters"
             >

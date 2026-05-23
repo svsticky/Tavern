@@ -1,21 +1,18 @@
-import type { KeycloakTokenParsed } from "keycloak-js";
-import { useApp } from "~/context/AppContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { getAssociationYear } from "./date.util";
 
 /**
  * Checks if the current user is in a specific group with an optional role.
- * @param tokenParsed The parsed keycloak token.
+ * @param tokenParsed The parsed token.
  * @param group The name of the group to check.
  * @param role The optional role within the group.
  * @returns True if the user is in the specified group, false otherwise.
  */
 export const isInGroupWithName = (
-  tokenParsed: KeycloakTokenParsed | undefined,
+  tokenParsed: TokenParsed,
   group: string,
   role?: string,
 ): boolean => {
-  if (!tokenParsed?.group_memberships) return false;
-
   const year = getAssociationYear();
 
   return tokenParsed.group_memberships.some((g: string) => {
@@ -34,18 +31,16 @@ export const isInGroupWithName = (
 
 /**
  * Checks if the current user is in a specific group by ID with an optional role.
- * @param tokenParsed The parsed keycloak token.
+ * @param tokenParsed The parsed token.
  * @param group The ID of the group to check.
  * @param role The optional role within the group.
  * @returns True if the user is in the specified group, false otherwise.
  */
 export const isInGroupWithId = (
-  tokenParsed: KeycloakTokenParsed | undefined,
+  tokenParsed: TokenParsed,
   group: number,
   role?: string,
 ): boolean => {
-  if (!tokenParsed?.group_memberships) return false;
-
   const year = getAssociationYear();
 
   return tokenParsed.group_memberships.some((g: string) => {
@@ -64,14 +59,13 @@ export const isInGroupWithId = (
 
 /**
  * Checks if the current user is a board member.
- * @param tokenParsed The parsed keycloak token.
+ * @param tokenParsed The parsed token.
  * @returns True if the user is a board member, false otherwise.
  */
 export const isBoard = (
-  tokenParsed: KeycloakTokenParsed | undefined,
+  tokenParsed: TokenParsed,
+  boardGroupId: number | null,
 ): boolean => {
-  const { boardGroupId } = useApp();
-
   if (!boardGroupId) return false;
 
   return isInGroupWithId(tokenParsed, boardGroupId);
@@ -79,15 +73,15 @@ export const isBoard = (
 
 /**
  * Checks if the current user is a board member or candidate board member.
- * @param tokenParsed The parsed keycloak token.
+ * @param tokenParsed The parsed token.
  * @returns True if the user is a board member or candidate board member, false otherwise.
  */
 export const isBoardOrCandidateBoard = (
-  tokenParsed: KeycloakTokenParsed | undefined,
+  tokenParsed: TokenParsed | null,
+  boardGroupId: number | null,
+  candidateBoardGroupId: number | null,
 ): boolean => {
-  const { boardGroupId, candidateBoardGroupId } = useApp();
-
-  if (!boardGroupId || !candidateBoardGroupId) return false;
+  if (!tokenParsed || !boardGroupId || !candidateBoardGroupId) return false;
 
   return (
     isInGroupWithId(tokenParsed, boardGroupId) ||

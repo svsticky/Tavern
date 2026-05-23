@@ -34,8 +34,11 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+const getDocumentLanguage = () =>
+  (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
+
 export function Layout({ children }: { children: React.ReactNode }) {
-  const currentLang = i18n.language || "en";
+  const currentLang = getDocumentLanguage();
   return (
     <html lang={currentLang}>
       <head>

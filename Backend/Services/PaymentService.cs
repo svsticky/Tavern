@@ -20,7 +20,7 @@ namespace Backend.Services
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
         IPaymentClient mollieClient,
-        KeycloakOutboxWorker keycloakOutboxWorker,
+        AuthOutboxWorker authOutboxWorker,
         ILogger<PaymentService> logger
     ) : IPaymentService
     {
@@ -305,7 +305,7 @@ namespace Backend.Services
             db.MembershipPayments.Remove(existingPayment);
             
             db.Members.Remove(member);
-            await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Delete, member.KeycloakId ?? throw new Exception("Member isn't synced with Keycloak yet, cannot sync payment status."));
+            await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status."));
             
             await db.SaveChangesAsync();
             await db.Database.CommitTransactionAsync();

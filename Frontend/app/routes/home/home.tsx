@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
@@ -13,6 +12,8 @@ import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import Button from "~/components/UI/Button";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { loadDashboardData } from "./home.handlers";
 
 /**
@@ -27,7 +28,7 @@ import { loadDashboardData } from "./home.handlers";
  *
  * Features:
  * - **Contextual Loading**: Displays a skeleton-style loading state while coordinating multiple API requests.
- * - **Auth Integration**: Deeply integrates with Keycloak to filter data based on the user's `UserId`.
+ * - **Auth Integration**: Deeply integrates with auth service to filter data based on the user's `UserId`.
  * - **Responsive Layout**: Uses a grid system that transitions from a single-column mobile view to a
  *   split main/sidebar layout on larger screens.
  *
@@ -36,7 +37,22 @@ import { loadDashboardData } from "./home.handlers";
  */
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const loadTokenAndAuth = async () => {
+      if (!authService.isReady()) return;
+
+      const tokenParsed = await authService.getTokenParsed();
+      const authenticated = await authService.isAuthenticated();
+      setTokenParsed(tokenParsed);
+      setAuthenticated(authenticated);
+    };
+    loadTokenAndAuth();
+  }, [authService]);
+
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
@@ -49,22 +65,31 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   useEffect(() => {
+    if (authenticated === null || tokenParsed === null) {
+      return;
+    }
+
+    if (!authenticated) return;
+
     loadDashboardData({
-      initialized,
-      authenticated: keycloak.authenticated,
-      userId: keycloak.tokenParsed?.UserId,
+      authenticated: authenticated,
+      userId: tokenParsed.UserId,
       setLoading,
       setActivities,
       setAnnouncements,
       setGroupMemberships,
     });
-  }, [initialized, keycloak.authenticated, keycloak.tokenParsed?.UserId]);
+  }, [authenticated, tokenParsed]);
+
+  if (!tokenParsed) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col items-center gap-5 max-w-8xl mx-auto w-full">
       {/* Dashboard Header */}
       <DashboardHeader
-        name={keycloak.tokenParsed?.given_name}
+        name={tokenParsed.given_name}
         nextActivity={activities[0]}
       />
 
@@ -120,9 +145,7 @@ export default function DashboardPage() {
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview
               enrolledActivities={activities.filter((a) =>
-                a.enrollments!.some(
-                  (e) => e.member.id === keycloak.tokenParsed?.UserId,
-                ),
+                a.enrollments!.some((e) => e.member.id === tokenParsed.UserId),
               )}
             />
 

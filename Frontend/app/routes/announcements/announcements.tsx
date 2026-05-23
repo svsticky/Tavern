@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web/lib/useKeycloak";
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,6 +7,9 @@ import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   handleCreateAnnouncementClick,
@@ -21,7 +23,6 @@ import {
  * - **Permission-based Actions**: Board and Candidate Board members see a
  *   plus icon in the header to create new announcements.
  * - **Dynamic Data Loading**: Uses the `loadAnnouncements` handler to fetch data
- *   once Keycloak is initialized and the user is authenticated.
  * - **State-driven Rendering**: Handles loading states, empty list scenarios
  *   (via `NoContentTile`), and populated list views (via `AnnouncementsList`).
  *
@@ -29,9 +30,13 @@ import {
  * @component
  */
 export default function AnnouncementsPage() {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   const [loading, setLoading] = useState(true);
+
+  const [isBoard, setIsBoard] = useState(false);
 
   const [announcements, setAnnouncements] = useState<
     GetAnnouncementResponseDto[]
@@ -40,13 +45,32 @@ export default function AnnouncementsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    loadAnnouncements({
-      initialized,
-      authenticated: keycloak.authenticated,
-      setLoading,
-      setAnnouncements,
-    });
-  }, [initialized, keycloak.authenticated]);
+    const loadToken = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      setTokenParsed(tokenParsed);
+      if (!tokenParsed) {
+        console.error("User not authenticated");
+        return;
+      }
+      setIsBoard(
+        isBoardOrCandidateBoard(
+          tokenParsed,
+          boardGroupId,
+          candidateBoardGroupId,
+        ),
+      );
+    };
+    loadToken();
+  }, [authService, boardGroupId, candidateBoardGroupId]);
+
+  useEffect(() => {
+    if (tokenParsed) {
+      loadAnnouncements({
+        setLoading,
+        setAnnouncements,
+      });
+    }
+  }, [tokenParsed]);
 
   return (
     <>
@@ -54,7 +78,7 @@ export default function AnnouncementsPage() {
         <PageHeader
           title={t("announcements")}
           action={
-            isBoardOrCandidateBoard(keycloak.tokenParsed) && (
+            isBoard && (
               <Button
                 variant="secondary"
                 onClick={() => handleCreateAnnouncementClick(navigate)}

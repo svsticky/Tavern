@@ -13,7 +13,6 @@ import {
  * Arguments for the loadDashboardData handler.
  */
 type LoadDashboardArgs = {
-  initialized: boolean;
   authenticated: boolean | undefined;
   userId: string | undefined;
   setLoading: (loading: boolean) => void;
@@ -41,7 +40,6 @@ type LoadDashboardArgs = {
  * @param {Function} args.setGroupMemberships - Function to update the user's committees state.
  */
 export const loadDashboardData = async ({
-  initialized,
   authenticated,
   userId,
   setLoading,
@@ -49,7 +47,7 @@ export const loadDashboardData = async ({
   setAnnouncements,
   setGroupMemberships,
 }: LoadDashboardArgs) => {
-  if (!initialized || !authenticated) return;
+  if (!authenticated) return;
 
   try {
     setLoading(true);

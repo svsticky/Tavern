@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -12,6 +11,7 @@ import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 import {
   handleChangeEmail,
   handleChangePassword,
@@ -31,7 +31,7 @@ export default function ChangeAccountForm({
 }: {
   member: MemberResponseDto;
 }) {
-  const { keycloak } = useKeycloak();
+  const authService = useAuth();
   const { setMember } = useApp();
   const [saving, setSaving] = useState(false);
   const [loadingMailingLists, setLoadingMailingLists] = useState(false);
@@ -154,7 +154,7 @@ export default function ChangeAccountForm({
           <div className="pb-1">
             <a
               className="text-(--board-primary) hover:text-(--board-primary-light) underline decoration-transparent hover:decoration-current hover:cursor-pointer"
-              onClick={() => handleChangeEmail(keycloak)}
+              onClick={() => handleChangeEmail(authService)}
             >
               {t("change_email")}
             </a>
@@ -260,7 +260,7 @@ export default function ChangeAccountForm({
           <Button
             variant="secondary"
             className="w-full"
-            onClick={() => handleChangePassword(keycloak)}
+            onClick={() => handleChangePassword(authService)}
           >
             {t("change_password")}
           </Button>

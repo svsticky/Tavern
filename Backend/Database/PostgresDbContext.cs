@@ -33,8 +33,8 @@ public class PostgresDbContext : DbContext
     public DbSet<Announcement> Announcements { get; set; }
     /// <summary>Reference to the RoleAliases relational table. </summary>
     public DbSet<RoleAlias> RoleAliases { get; set; }
-    /// <summary>Reference to the KeycloakOutboxTasks relational table. </summary>
-    public DbSet<KeycloakOutboxTask> KeycloakOutboxTasks { get; set; }
+    /// <summary>Reference to the AuthOutboxTasks relational table. </summary>
+    public DbSet<AuthOutboxTask> AuthOutboxTasks { get; set; }
     /// <summary>Reference to the ExactOutboxTasks relational table. </summary>
     public DbSet<AccountingToolOutboxTask> AccountingToolOutboxTasks { get; set; }
     /// <summary>Reference to the Membership Payments relational table. </summary>

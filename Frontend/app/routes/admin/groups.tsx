@@ -140,7 +140,7 @@ export default function Groups() {
       </BorderedTile>
 
       {loading ? (
-        "loading"
+        t("loading")
       ) : (
         <BorderedTile className="bg-white p-0">
           <DataTable data={filteredGroups ?? []} columns={columns} />

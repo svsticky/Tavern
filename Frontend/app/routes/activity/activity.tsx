@@ -1,4 +1,3 @@
-import { useKeycloak } from "@react-keycloak/web";
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -8,6 +7,9 @@ import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/Activ
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import type { Route } from "./+types/activity";
 import {
   canEditActivity,
@@ -35,30 +37,56 @@ import {
  * @param {Route.LoaderArgs} props - Route parameters provided by the framework, including the activity ID.
  */
 export default function ActivityPage({ params }: Route.LoaderArgs) {
-  const { keycloak, initialized } = useKeycloak();
+  const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
   const navigate = useNavigate();
   const { pathname } = window.location;
-
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
   useEffect(() => {
+    const loadToken = async () => {
+      const tokenParsed = await authService.getTokenParsed();
+      setTokenParsed(tokenParsed);
+
+      if (!tokenParsed) {
+        console.error("User not authenticated");
+        return;
+      }
+    };
+    loadToken();
+  }, [authService]);
+
+  useEffect(() => {
+    if (!tokenParsed) return;
     const activityId = Number(params.id);
     if (activity?.id === activityId) return;
-
     loadActivityData({
-      initialized,
-      authenticated: keycloak.authenticated,
       activityId,
       setLoading,
       setActivity: (next) => setActivity(next),
     });
-  }, [activity?.id, initialized, keycloak.authenticated, params.id]);
+  }, [activity?.id, params.id, tokenParsed]);
 
-  const canEdit =
-    activity == null ? false : canEditActivity(activity, keycloak.tokenParsed);
+  useEffect(() => {
+    if (!tokenParsed || activity == null) {
+      setCanEdit(false);
+      return;
+    }
 
-  if (loading) return t("loading");
+    setCanEdit(
+      canEditActivity(
+        activity,
+        tokenParsed,
+        boardGroupId,
+        candidateBoardGroupId,
+      ),
+    );
+  }, [activity, tokenParsed, boardGroupId, candidateBoardGroupId]);
+
+  if (loading || !tokenParsed) return t("loading");
 
   if (activity == null) return t("failed_fetching");
 

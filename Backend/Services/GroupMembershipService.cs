@@ -16,21 +16,21 @@ public class GroupMembershipService : IGroupMembershipService
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
-    private readonly KeycloakOutboxWorker _keycloakOutboxWorker;
+    private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly ILogger<GroupMembershipService> _logger;
 
     /// <summary>
-    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the Keycloak outbox worker for synchronizing membership changes with Keycloak, and logging for monitoring group membership operations. This setup allows the GroupMembershipService to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the authentication outbox worker for synchronizing membership changes with the configured auth system, and logging for monitoring group membership operations. This setup allows the GroupMembershipService to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="permissionService">The permission service.</param>
-    /// <param name="keycloakOutboxService">The Keycloak outbox worker.</param>
+    /// <param name="authOutboxWorker">The authentication outbox worker.</param>
     /// <param name="logger">The logger.</param>
-    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, KeycloakOutboxWorker keycloakOutboxService, ILogger<GroupMembershipService> logger)
+    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, AuthOutboxWorker authOutboxWorker, ILogger<GroupMembershipService> logger)
     {
         _db = db;
         _permissionService = permissionService;
-        _keycloakOutboxWorker = keycloakOutboxService;
+        _authOutboxWorker = authOutboxWorker;
         _logger = logger;
     }
 
@@ -110,7 +110,7 @@ public class GroupMembershipService : IGroupMembershipService
 
             var entry = _db.GroupMemberships.Add(membership);
 
-            await _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
+            await _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new Exception("Member does not have a authentication system ID."));
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -144,7 +144,7 @@ public class GroupMembershipService : IGroupMembershipService
         {
             _db.GroupMemberships.Remove(membership);
 
-            await _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
+            await _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.Member.AuthSystemUserId ?? throw new Exception("Member does not have a authentication system ID."));
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -193,14 +193,14 @@ public class GroupMembershipService : IGroupMembershipService
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            await _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
+            await _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.Member.AuthSystemUserId ?? throw new Exception("Member does not have a authentication system ID."));
 
             if (oldMemberId != membership.MemberId)
             {
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    await _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."));
+                    await _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.AuthSystemUserId ?? throw new Exception("Old member does not have a authentication system ID."));
                 }
             }
 
@@ -240,14 +240,14 @@ public class GroupMembershipService : IGroupMembershipService
 
             StateValidator.Validate(membership);
 
-            await _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, membership.Member.KeycloakId ?? throw new Exception("Member does not have a Keycloak ID."));
+            await _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.Member.AuthSystemUserId ?? throw new Exception("Member does not have a authentication system ID."));
 
             if (oldMemberId != membership.MemberId)
             {
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    await _keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, oldMember.KeycloakId ?? throw new Exception("Old member does not have a Keycloak ID."));
+                    await _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.AuthSystemUserId ?? throw new Exception("Old member does not have a authentication system ID."));
                 }
             }
 

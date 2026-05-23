@@ -7,8 +7,6 @@ import { type GetAnnouncementResponseDto, getAnnouncements } from "~/api";
  * Arguments for the loadAnnouncements handler.
  */
 type LoadAnnouncementsArgs = {
-  initialized: boolean;
-  authenticated: boolean | undefined;
   setLoading: (loading: boolean) => void;
   setAnnouncements: (announcements: GetAnnouncementResponseDto[]) => void;
 };
@@ -24,13 +22,9 @@ type LoadAnnouncementsArgs = {
  * @param {LoadAnnouncementsArgs} args - Configuration and state setter functions.
  */
 export const loadAnnouncements = async ({
-  initialized,
-  authenticated,
   setLoading,
   setAnnouncements,
 }: LoadAnnouncementsArgs) => {
-  if (!initialized || !authenticated) return;
-
   try {
     setLoading(true);
     const announcementsResponse = await getAnnouncements();

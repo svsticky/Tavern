@@ -14,7 +14,7 @@ namespace Backend.Services
     public class RoleAliasService(
         PostgresDbContext db,
         IPermissionService permissionService,
-        KeycloakOutboxWorker keycloakOutboxWorker,
+        AuthOutboxWorker authOutboxWorker,
         ILogger<RoleAliasService> logger
     ) : IRoleAliasService
     {
@@ -69,7 +69,7 @@ namespace Backend.Services
 
             await ExecuteInTransaction(ct, async () =>
             {
-                var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
+                var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
 
                 db.RoleAliases.Remove(roleAlias);
                 await QueueSyncTasks(affectedMembers);
@@ -98,7 +98,7 @@ namespace Backend.Services
 
                 StateValidator.Validate(roleAlias);
 
-                var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
+                var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
                 await QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
@@ -120,7 +120,7 @@ namespace Backend.Services
 
                 StateValidator.Validate(roleAlias);
 
-                var affectedMembers = await GetAffectedMemberKeycloakIds(id, ct);
+                var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
                 await QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
@@ -133,22 +133,22 @@ namespace Backend.Services
             return roleAlias ?? throw new Exception("Role alias not found");
         }
 
-        private async Task<List<Guid?>> GetAffectedMemberKeycloakIds(uint roleAliasId, CancellationToken ct)
+        private async Task<List<Guid?>> GetAffectedMemberAuthSystemIds(uint roleAliasId, CancellationToken ct)
         {
             return await db.GroupMemberships
                 .Where(gm => gm.RoleAliasId == roleAliasId)
-                .Select(gm => gm.Member.KeycloakId)
+                .Select(gm => gm.Member.AuthSystemUserId)
                 .Distinct()
                 .ToListAsync(ct);
         }
 
-        private async Task QueueSyncTasks(IEnumerable<Guid?> keycloakIds)
+        private async Task QueueSyncTasks(IEnumerable<Guid?> authSystemIds)
         {
-            foreach (var keycloakId in keycloakIds)
+            foreach (var authSystemId in authSystemIds)
             {
-                if (keycloakId.HasValue)
+                if (authSystemId.HasValue)
                 {
-                    await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, keycloakId.Value);
+                    await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, authSystemId.Value);
                 }
             }
         }
