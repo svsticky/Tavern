@@ -316,7 +316,6 @@ export const handleAddGroupEnrollment = async (
           id: res.data.id!,
         },
       ]);
-      toast.success(t("enrollment_added"));
       setAddEnrollmentModalIsOpen(false);
     } catch (err) {
       console.error("Failed to add enrollment:", err);

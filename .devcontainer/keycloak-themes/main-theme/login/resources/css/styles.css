@@ -1,0 +1,191 @@
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+
+html, body {
+    height: 100% !important;
+    margin: 0;
+}
+
+body {
+    background-color: #f3f4f6 !important;
+    background-image: url('https://koala.svsticky.nl/assets/bg-pattern.svg') !important;
+    background-size: cover;
+    
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: hidden;
+}
+
+.card-pf {
+    border-top: none !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+    position: relative;
+    padding: 2rem 3rem !important;
+    max-width: 450px !important;
+    width: 100%;
+    
+    margin-bottom: 10vh !important; 
+    
+    background-color: white !important;
+    border-radius: 4px !important;
+}
+
+.card-pf::before {
+    content: "";
+    position: absolute;
+    top: -90px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250px;
+    height: 70px;
+    background: url('https://public.svsticky.nl/logos/logo_compact_outline_kleur.png') no-repeat center;
+    background-size: contain;
+}
+
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #111827 !important;
+    }
+    
+    .card-pf {
+        background-color: #1f2937 !important;
+        color: white !important;
+    }
+
+    .card-pf::before {
+        background-image: url('https://public.svsticky.nl/logos/logo_compact_outline_wit_kleur.svg') !important;
+    }
+
+    label {
+        color: #e5e7eb !important;
+    }
+    
+    .form-control {
+        background-color: #374151 !important;
+        border-color: #4b5563 !important;
+        color: white !important;
+    }
+}
+
+#kc-login {
+    background-color: #fa6b20 !important;
+    border: none !important;
+    font-weight: 600;
+    margin-top: 15px;
+}
+
+#kc-login:hover {
+    background-color: #d65a1b !important;
+}
+
+#kc-header, .login-pf-header { display: none !important; }
+
+#custom-sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 70px;
+    background-color: #1f2937;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.footer-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.footer-section {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.section-links {
+    justify-content: flex-start;
+}
+
+.footer-logo {
+    height: 40px;
+    width: 40px;
+    margin-right: 15px;
+}
+
+.link-group a {
+    color: white !important;
+    text-decoration: none;
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+.section-socials a {
+    color: white !important;
+    font-size: 20px;
+    padding: 0 15px;
+}
+
+.section-privacy {
+    justify-content: flex-end;
+}
+
+.section-privacy a {
+    color: white !important;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.koala-version-bottom {
+    position: absolute;
+    bottom: -35px;
+    width: 100%;
+    text-align: center;
+    color: #6b7280;
+    font-size: 11px;
+    pointer-events: none;
+}
+
+#kc-form-options a {
+    color: #fa6b20 !important;
+    font-size: 0.9rem;
+    text-decoration: none;
+}
+
+#kc-form-options a:hover {
+    text-decoration: underline !important;
+    color: #d65a1b !important;
+}
+
+.btn-primary, 
+input[type="submit"], 
+input[name="login"], 
+#kc-login {
+    background-color: #fa6b20 !important;
+    background-image: none !important;
+    border: 1px solid #fa6b20 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    padding: 10px 20px !important;
+    border-radius: 4px !important;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.btn-primary:hover, 
+input[type="submit"]:hover, 
+#kc-login:hover {
+    background-color: #d65a1b !important;
+    border-color: #d65a1b !important;
+    cursor: pointer;
+}
+
+.btn-primary:disabled {
+    background-color: #fca5a5 !important;
+    border-color: #fca5a5 !important;
+}

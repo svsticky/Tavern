@@ -171,7 +171,7 @@ export default function AuthenticatedLayout() {
         if (error.response) {
           if (error.response.status === 401) {
             console.warn("Unauthorized, redirecting...");
-            window.location.href = `/logout`;
+            //window.location.href = `/logout`;
           } else if (error.response.status === 403) {
             console.warn(
               "Forbidden - user does not have access to this resource.",

@@ -7,15 +7,15 @@ services:
     volumes:
       - ..:/workspaces:cached
     command: sleep infinity
-    environment:
-      - PostgresqlConnectionString=Host=db;Port=5432;Database=postgres;Username=postgres;Password=postgres
     env_file:
       - ../.env
+      - ./devcontainer.env
     networks:
       - tavern-net
     depends_on:
       - db
       - localstack
+      - keycloak
 
   db:
     image: postgres:17
@@ -57,6 +57,22 @@ services:
       - tavern-net
     depends_on:
       - devcontainer
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1
+    container_name: tavern-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_IMPORT_OVERWRITE: "true"
+    volumes:
+      - ./keycloak-setup:/opt/keycloak/data/import
+      - ./keycloak-themes:/opt/keycloak/themes
+    ports:
+      - "8082:8080"
+    networks:
+      - tavern-net
 
 volumes:
   postgres-data:

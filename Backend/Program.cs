@@ -43,6 +43,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 switch (authSystem)
 {
     case "keycloak":
+        string? devcontainer_issuer = Environment.GetEnvironmentVariable("VITE_KeycloakUrl");
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
@@ -118,7 +119,7 @@ switch (authSystem)
                     ValidateIssuer = true,
                     ValidateAudience = false,
                     ValidateLifetime = true,
-                    ValidIssuer = Environment.GetEnvironmentVariable("KeycloakUrl") + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
+                    ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
                 };
             });
 

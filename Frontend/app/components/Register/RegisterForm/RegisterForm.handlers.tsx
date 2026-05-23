@@ -181,6 +181,9 @@ export const handleRegisterSubmit = async ({
           ) {
             window.location.href = paymentResponse.data.checkoutUrl;
           }
+          else{
+            throw new Error("Payment initiation failed");
+          }
         } else {
           navigate("/confirm-mail");
         }

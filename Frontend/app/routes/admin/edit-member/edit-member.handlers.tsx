@@ -262,7 +262,6 @@ export const handleAddEnrollment = async (
       if (res.error || !res.data) throw new Error("Failed to add enrollment");
 
       setEnrollments((prev) => [...prev, res.data]);
-      toast.success("Studie toegevoegd");
     } catch (err) {
       console.error("Failed to add enrollment:", err);
       throw err;
