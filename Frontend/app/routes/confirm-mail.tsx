@@ -2,7 +2,6 @@ import { t } from "i18next";
 import { useEffect } from "react";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 import { useAuth } from "~/context/AuthContext";
-import { getEnv } from "~/util/config.utils";
 
 /**
  * A bridge component used during the email confirmation or password reset flow.
@@ -24,6 +23,7 @@ export default function ConfirmMail() {
   const authService = useAuth();
 
   useEffect(() => {
+    if (!authService) return;
     const redirectAction = async () => {
       // Give auth service some time to process the email token and set up the session before redirecting
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -31,7 +31,7 @@ export default function ConfirmMail() {
       window.location.href = await authService.resetCredentials();
     };
     redirectAction();
-  }, []);
+  }, [authService]);
 
   return (
     <>

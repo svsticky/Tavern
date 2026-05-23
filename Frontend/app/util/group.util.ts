@@ -1,5 +1,5 @@
-import { getAssociationYear } from "./date.util";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { getAssociationYear } from "./date.util";
 
 /**
  * Checks if the current user is in a specific group with an optional role.

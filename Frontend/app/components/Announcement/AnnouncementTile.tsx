@@ -1,16 +1,15 @@
 import { t } from "i18next";
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { GetAnnouncementResponseDto } from "~/api";
 import Markdown from "~/components/UI/Markdown";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../Tiles/Tile";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
-import { useEffect, useState } from "react";
 
 /**
  * A detailed tile component for displaying an individual association announcement.
@@ -54,11 +53,7 @@ export default function AnnouncementTile({
     const loadToken = async () => {
       const token = await authService.getTokenParsed();
       setIsBoard(
-        isBoardOrCandidateBoard(
-          token,
-          boardGroupId,
-          candidateBoardGroupId,
-        ),
+        isBoardOrCandidateBoard(token, boardGroupId, candidateBoardGroupId),
       );
     };
     loadToken();

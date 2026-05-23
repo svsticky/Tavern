@@ -38,7 +38,7 @@ export default function AdminLayout() {
   }, [authService]);
 
   useEffect(() => {
-    if(!tokenParsed) return;
+    if (!tokenParsed) return;
     if (
       boardGroupId === null ||
       candidateBoardGroupId === null ||

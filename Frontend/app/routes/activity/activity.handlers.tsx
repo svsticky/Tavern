@@ -62,16 +62,12 @@ export const canEditActivity = (
   candidateBoardGroupId: number | null,
 ) => {
   return (
-    isBoardOrCandidateBoard(
-      tokenParsed,
-      boardGroupId,
-      candidateBoardGroupId,
-    ) ||
+    isBoardOrCandidateBoard(tokenParsed, boardGroupId, candidateBoardGroupId) ||
     Boolean(
       !activity.showInKoala &&
-      !activity.showOnWebsite &&
-      activity.organizerId &&
-      new Date(activity.dateTimeStart) > new Date(Date.now()),
+        !activity.showOnWebsite &&
+        activity.organizerId &&
+        new Date(activity.dateTimeStart) > new Date(Date.now()),
     )
   );
 };

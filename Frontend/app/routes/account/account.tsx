@@ -29,7 +29,7 @@ export default function AccountPage() {
     const loadUserId = async () => {
       const tokenParsed = await authService.getTokenParsed();
       setUserId(tokenParsed?.UserId || null);
-      if(!tokenParsed?.UserId) {
+      if (!tokenParsed?.UserId) {
         console.error("User not authenticated");
         return;
       }
@@ -39,7 +39,7 @@ export default function AccountPage() {
 
   const { member } = useApp();
 
-  if(!userId) return null;
+  if (!userId) return null;
 
   return (
     <>

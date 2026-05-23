@@ -9,7 +9,9 @@ import { getEnv } from "~/util/config.utils";
  * @component
  */
 export default function AuthServiceLayout() {
-  const authServiceVar = (getEnv("AUTH_SYSTEM") ?? "keycloak").trim().toLowerCase();
+  const authServiceVar = (getEnv("AUTH_SYSTEM") ?? "keycloak")
+    .trim()
+    .toLowerCase();
 
   const authService = React.useMemo(() => {
     if (authServiceVar === "keycloak") {

@@ -7,6 +7,9 @@ import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   copyWeekOverview,
@@ -14,9 +17,6 @@ import {
   handleCreateActivityClick,
   loadActivities,
 } from "./activities.handlers";
-import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * The main activities listing page for both members and administrators.
@@ -74,14 +74,14 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   useEffect(() => {
-    if(!tokenParsed) return;
+    if (!tokenParsed) return;
     loadActivities({
       setLoading,
       setActivities,
     });
   }, [tokenParsed]);
 
-  if(!tokenParsed) return null;
+  if (!tokenParsed) return null;
 
   const isInGroup = tokenParsed.group_memberships.length > 0;
 

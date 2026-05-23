@@ -11,6 +11,7 @@ import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 import {
   handleChangeEmail,
   handleChangePassword,
@@ -18,7 +19,6 @@ import {
   handleSubscriptionChange,
 } from "./ChangeAccountForm.handlers";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
-import { useAuth } from "~/context/AuthContext";
 
 /**
  * Renders a form for changing account details.

@@ -2,12 +2,7 @@ import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
-import {
-  getMembersById,
-  getSettingsById,
-  postPaymentsMembership,
-} from "~/api/sdk.gen";
-import Button from "~/components/UI/Button";
+import { getMembersById, getSettingsById } from "~/api/sdk.gen";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
@@ -72,8 +67,6 @@ export default function AuthenticatedLayout() {
     };
   }, [authService, navigate]);
 
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-
   const {
     boardGroupId,
     setBoardGroupId,
@@ -106,31 +99,6 @@ export default function AuthenticatedLayout() {
     const userLocale = preferredLocale || tokenParsed.locale?.toLowerCase();
     if (userLocale && i18n.language !== userLocale) {
       i18n.changeLanguage(userLocale);
-    }
-
-    if (tokenParsed.access_level === "not_paid") {
-      console.log(
-        "User has not paid for membership, redirecting to payment page if payment isn't expired...",
-      );
-
-      postPaymentsMembership({ body: { memberId: tokenParsed.UserId } })
-        .then((res) => {
-          console.log("Received response from payment API:", res);
-          if (res.data?.checkoutUrl) {
-            console.log("Redirecting to checkout URL:", res.data.checkoutUrl);
-            setPaymentUrl(res.data.checkoutUrl);
-          } else {
-            throw new Error(
-              "No checkout URL received, cannot redirect to payment page.",
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("Error checking membership payment status:", err);
-          authService.logout('/login');
-        });
-
-      return;
     }
 
     if (boardGroupId === null) {
@@ -225,7 +193,6 @@ export default function AuthenticatedLayout() {
     tokenParsed,
     boardGroupId,
     candidateBoardGroupId,
-    authService,
     member,
     setBoardGroupId,
     setCandidateBoardGroupId,

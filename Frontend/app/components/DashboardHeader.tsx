@@ -15,11 +15,11 @@ import {
   getPaymentsUnpaid,
   postPaymentsActivity,
 } from "~/api";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * Props for the DashboardHeader component.

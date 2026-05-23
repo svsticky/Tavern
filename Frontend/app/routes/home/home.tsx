@@ -12,9 +12,9 @@ import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import Button from "~/components/UI/Button";
-import { loadDashboardData } from "./home.handlers";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { loadDashboardData } from "./home.handlers";
 
 /**
  * The main application landing page for authenticated members.
@@ -145,9 +145,7 @@ export default function DashboardPage() {
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview
               enrolledActivities={activities.filter((a) =>
-                a.enrollments!.some(
-                  (e) => e.member.id === tokenParsed.UserId,
-                ),
+                a.enrollments!.some((e) => e.member.id === tokenParsed.UserId),
               )}
             />
 

@@ -62,15 +62,12 @@ export const handleEnrollment = async (
   setSubmitting: (submitting: boolean) => void,
 ) => {
   const tokenParsed = await authService.getTokenParsed();
-  if(!tokenParsed) {
+  if (!tokenParsed) {
     console.error("User not authenticated");
     return;
   }
 
-  if (
-    !authService.isAuthenticated() ||
-    !activity.id 
-  ) {
+  if (!authService.isAuthenticated() || !activity.id) {
     console.error("User not authenticated or activity missing");
     return;
   }
@@ -178,16 +175,12 @@ export const handleUpdateEnrollment = async (
   setSubmitting: (submitting: boolean) => void,
 ) => {
   const tokenParsed = await authService.getTokenParsed();
-  if(!tokenParsed) {
+  if (!tokenParsed) {
     console.error("User not authenticated");
     return;
   }
 
-  if (
-    !authService.isAuthenticated() ||
-    !activity.id ||
-    !tokenParsed.UserId
-  )
+  if (!authService.isAuthenticated() || !activity.id || !tokenParsed.UserId)
     return;
 
   const updateProcess = async () => {
@@ -276,11 +269,7 @@ export const handleUnenrollment = async (
 ) => {
   const tokenParsed = await authService.getTokenParsed();
 
-  if (
-    !authService.isAuthenticated() ||
-    !activity.id ||
-    !tokenParsed
-  ) {
+  if (!authService.isAuthenticated() || !activity.id || !tokenParsed) {
     console.error("User not authenticated or activity missing");
     return;
   }

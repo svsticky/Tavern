@@ -10,13 +10,13 @@ import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
 import type { ActivityResponseDto } from "~/api";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
-import { useAuth } from "~/context/AuthContext";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -58,15 +58,13 @@ export default function ActivityTile({
     const loadToken = async () => {
       const token = await authService.getTokenParsed();
       setCanEdit(
-        !!(isBoardOrCandidateBoard(
-          token,
-          boardGroupId,
-          candidateBoardGroupId,
-        ) ||
+        !!(
+          isBoardOrCandidateBoard(token, boardGroupId, candidateBoardGroupId) ||
           (!activity.showInKoala &&
             !activity.showOnWebsite &&
             activity.organizerId &&
-            new Date(activity.dateTimeStart) > new Date(Date.now())))
+            new Date(activity.dateTimeStart) > new Date(Date.now()))
+        ),
       );
     };
     loadToken();

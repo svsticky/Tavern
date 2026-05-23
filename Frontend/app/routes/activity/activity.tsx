@@ -8,6 +8,8 @@ import ActivityParticipantsTile from "~/components/Activity/ActivityParticipants
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import type { Route } from "./+types/activity";
 import {
   canEditActivity,
@@ -15,8 +17,6 @@ import {
   handleEditActivityClick,
   loadActivityData,
 } from "./activity.handlers";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * Detailed view for a specific activity, including description and participant lists.

@@ -7,14 +7,14 @@ import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   handleCreateAnnouncementClick,
   loadAnnouncements,
 } from "./announcements.handlers";
-import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * The public-facing and administrative announcements page.

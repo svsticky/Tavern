@@ -1,5 +1,5 @@
-import React, { createContext, useContext } from 'react';
-import type { IAuthService } from '~/auth/IAuthService';
+import { createContext, useContext } from "react";
+import type { IAuthService } from "~/auth/IAuthService";
 
 const AuthContext = createContext<IAuthService | null>(null);
 

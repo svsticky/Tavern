@@ -1,11 +1,11 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import type { GetSpecificationQuestionResponseDto } from "~/api";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import Tile from "../Tiles/Tile";
 import Input from "../UI/Input";
 import Select from "../UI/Select";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * A dynamic form component that renders a list of activity-specific questions.
@@ -57,7 +57,7 @@ export default function AnswerQuestionsTile({
     loadToken();
   }, [authService]);
 
-  if(!tokenParsed) return null;
+  if (!tokenParsed) return null;
 
   const renderInput = (q: GetSpecificationQuestionResponseDto) => {
     if (q.id === undefined) return null;

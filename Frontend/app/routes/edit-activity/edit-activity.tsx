@@ -5,6 +5,9 @@ import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
@@ -12,9 +15,6 @@ import {
   getEditActivityBackPath,
   loadEditActivityData,
 } from "./edit-activity.handlers";
-import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 
 /**
  * A dynamic page for creating new activities or editing existing ones.
@@ -69,7 +69,7 @@ export default function ActivityFormPage() {
   }, [authService, boardGroupId, candidateBoardGroupId]);
 
   useEffect(() => {
-    if(!tokenParsed) return;
+    if (!tokenParsed) return;
     loadEditActivityData({
       isEdit,
       id,

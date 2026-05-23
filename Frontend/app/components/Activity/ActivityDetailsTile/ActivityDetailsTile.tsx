@@ -14,11 +14,11 @@ import type {
 } from "~/api";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { isMemberInTargetAudience } from "~/util/targetaudience.util";
-import type { TokenParsed } from "~/types/TokenParsed";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
 import AnswerQuestionsTile from "../AnswerQuestionsTile";
@@ -30,6 +30,7 @@ import {
   handleUpdateEnrollment,
 } from "./ActivityDetailsTile.handlers";
 import InfoItem from "./InfoItem";
+
 const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
   const mapped: Record<number, string> = {};
   answers?.forEach((answer) => {
