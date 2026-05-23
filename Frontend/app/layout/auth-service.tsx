@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router";
-import { KeycloakAuthService } from "~/types/KeycloakService";
+import { KeycloakAuthService } from "~/auth/KeycloakService";
 import { getEnv } from "~/util/config.utils";
 
 /**
@@ -9,11 +9,11 @@ import { getEnv } from "~/util/config.utils";
  * @component
  */
 export default function AuthServiceLayout() {
-  const authServiceVar = getEnv("AUTH_SYSTEM") ?? "keycloak";
+  const authServiceVar = (getEnv("AUTH_SYSTEM") ?? "keycloak").trim().toLowerCase();
 
   const authService = React.useMemo(() => {
     if (authServiceVar === "keycloak") {
-        return new KeycloakAuthService();
+      return new KeycloakAuthService();
     }
     return null;
   }, [authServiceVar]);

@@ -3,7 +3,7 @@ using Backend.Models.Domain;
 namespace Backend.Interfaces
 {
     /// <summary>
-    /// Interface for authentication-related operations, such as sending action emails to users.
+    /// Defines the auth-provider operations used to keep local members in sync.
     /// </summary>
     public interface IAuthService
     {

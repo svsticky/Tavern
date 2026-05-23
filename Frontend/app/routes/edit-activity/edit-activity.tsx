@@ -12,6 +12,7 @@ import {
   getEditActivityBackPath,
   loadEditActivityData,
 } from "./edit-activity.handlers";
+import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -40,6 +41,7 @@ export default function ActivityFormPage() {
   const { pathname } = useLocation();
 
   const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [isBoard, setIsBoard] = useState(false);
 
@@ -55,10 +57,16 @@ export default function ActivityFormPage() {
         console.error("User not authenticated");
         return;
       }
-      setIsBoard(isBoardOrCandidateBoard(tokenParsed));
+      setIsBoard(
+        isBoardOrCandidateBoard(
+          tokenParsed,
+          boardGroupId,
+          candidateBoardGroupId,
+        ),
+      );
     };
     loadToken();
-  }, [authService]);
+  }, [authService, boardGroupId, candidateBoardGroupId]);
 
   useEffect(() => {
     if(!tokenParsed) return;

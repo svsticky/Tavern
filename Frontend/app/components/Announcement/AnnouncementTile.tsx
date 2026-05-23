@@ -3,6 +3,7 @@ import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { useNavigate } from "react-router";
 import type { GetAnnouncementResponseDto } from "~/api";
 import Markdown from "~/components/UI/Markdown";
+import { useApp } from "~/context/AppContext";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
@@ -45,16 +46,23 @@ export default function AnnouncementTile({
   className?: string;
 }) {
   const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
   const navigate = useNavigate();
   const [isBoard, setIsBoard] = useState(false);
 
   useEffect(() => {
     const loadToken = async () => {
       const token = await authService.getTokenParsed();
-      setIsBoard(isBoardOrCandidateBoard(token));
+      setIsBoard(
+        isBoardOrCandidateBoard(
+          token,
+          boardGroupId,
+          candidateBoardGroupId,
+        ),
+      );
     };
     loadToken();
-  }, [authService]);
+  }, [authService, boardGroupId, candidateBoardGroupId]);
 
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>

@@ -31,7 +31,7 @@ namespace Backend.Controllers
         /// <param name="path">The encoded or relative path to the profile picture asset.</param>
         /// <returns>A file stream result containing the image data; otherwise, a 404 Not Found status.</returns>
         [HttpGet("view/{path}")]
-        [Produces("application/json")]
+        [Produces("image/webp", "image/jpeg", "image/png")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]

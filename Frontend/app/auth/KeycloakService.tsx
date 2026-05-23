@@ -4,11 +4,15 @@ import { getEnv } from '~/util/config.utils';
 import React from 'react';
 import { t } from 'i18next';
 import AuthContext from '~/context/AuthContext';
-import type { TokenParsed } from './TokenParsed';
+import type { TokenParsed } from '~/types/TokenParsed';
 
+/**
+ * Keycloak-backed implementation of the frontend auth service contract.
+ */
 export class KeycloakAuthService implements IAuthService {
     private keycloak: Keycloak;
-    private isInitialized = false;
+    private ready = false;
+    private initPromise: Promise<void> | null = null;
 
     constructor() {
         this.keycloak = new Keycloak({
@@ -19,11 +23,26 @@ export class KeycloakAuthService implements IAuthService {
     }
 
     public async init(): Promise<void> {
-        await this.keycloak.init({
+        if (this.ready) return;
+        if (this.initPromise) return this.initPromise;
+
+        this.initPromise = this.keycloak.init({
             onLoad: 'check-sso',
             silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
             pkceMethod: 'S256',
+        })
+        .then(() => {
+            this.ready = true;
+        })
+        .catch(err => {
+            this.ready = false;
+            throw err;
+        })
+        .finally(() => {
+            this.initPromise = null;
         });
+
+        return this.initPromise;
     }
 
     public async login(): Promise<void> {
@@ -37,7 +56,11 @@ export class KeycloakAuthService implements IAuthService {
     }
 
     public isAuthenticated(): boolean {
-        return !!this.keycloak.token;
+        return this.keycloak.authenticated ?? !!this.keycloak.token;
+    }
+
+    public isReady(): boolean {
+        return this.ready;
     }
 
     public async getToken(): Promise<string | null> {
@@ -45,11 +68,11 @@ export class KeycloakAuthService implements IAuthService {
 
         try {
             await this.keycloak.updateToken(30);
-            return this.keycloak.token;
         } catch (error) {
             console.error("Failed to refresh token", error);
-            return null;
         }
+
+        return this.keycloak.token;
     }
 
     public async getTokenParsed(): Promise<TokenParsed | null> {
@@ -57,34 +80,31 @@ export class KeycloakAuthService implements IAuthService {
 
         try {
             await this.keycloak.updateToken(30);
-            return this.keycloak.tokenParsed as TokenParsed;
         } catch (error) {
             console.error("Failed to refresh token", error);
-            return null;
         }
+
+        return this.keycloak.tokenParsed as TokenParsed;
     }
 
     public AuthProvider = ({ children }: { children: React.ReactNode }): React.JSX.Element => {
         const [initialized, setInitialized] = React.useState(false);
 
         React.useEffect(() => {
-            if (this.isInitialized) {
-                setInitialized(true);
-                return;
-            }
+            let cancelled = false;
 
-            this.isInitialized = true;
-
-            this.keycloak.init({
-                onLoad: 'check-sso',
-                silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
-                pkceMethod: 'S256',
+            this.init()
+            .then(() => {
+                if (!cancelled) setInitialized(true);
             })
-            .then(() => setInitialized(true))
             .catch(err => {
                 console.error("Keycloak init fail", err);
-                this.isInitialized = false; 
+                if (!cancelled) setInitialized(false);
             });
+
+            return () => {
+                cancelled = true;
+            };
         }, []);
 
         if (!initialized) return <>{t("loading")}</>;

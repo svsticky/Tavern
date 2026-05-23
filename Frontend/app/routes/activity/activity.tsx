@@ -7,6 +7,7 @@ import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/Activ
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { useApp } from "~/context/AppContext";
 import type { Route } from "./+types/activity";
 import {
   canEditActivity,
@@ -37,8 +38,13 @@ import type { TokenParsed } from "~/types/TokenParsed";
  */
 export default function ActivityPage({ params }: Route.LoaderArgs) {
   const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [canEdit, setCanEdit] = useState(false);
+  const navigate = useNavigate();
+  const { pathname } = window.location;
+  const [loading, setLoading] = useState(true);
+  const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
   useEffect(() => {
     const loadToken = async () => {
@@ -54,21 +60,6 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
   }, [authService]);
 
   useEffect(() => {
-    if (!tokenParsed || activity == null) {
-      setCanEdit(false);
-      return;
-    }
-
-    setCanEdit(canEditActivity(activity, tokenParsed));
-  }, [activity, tokenParsed]);
-
-  const navigate = useNavigate();
-  const { pathname } = window.location;
-
-  const [loading, setLoading] = useState(true);
-  const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
-
-  useEffect(() => {
     if (!tokenParsed) return;
     const activityId = Number(params.id);
     if (activity?.id === activityId) return;
@@ -78,6 +69,22 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
       setActivity: (next) => setActivity(next),
     });
   }, [activity?.id, params.id, tokenParsed]);
+
+  useEffect(() => {
+    if (!tokenParsed || activity == null) {
+      setCanEdit(false);
+      return;
+    }
+
+    setCanEdit(
+      canEditActivity(
+        activity,
+        tokenParsed,
+        boardGroupId,
+        candidateBoardGroupId,
+      ),
+    );
+  }, [activity, tokenParsed, boardGroupId, candidateBoardGroupId]);
 
   if (loading || !tokenParsed) return t("loading");
 

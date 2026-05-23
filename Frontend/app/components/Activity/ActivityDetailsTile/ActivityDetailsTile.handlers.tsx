@@ -8,7 +8,7 @@ import {
   postEnrollments,
   putEnrollmentsByActivityIdByMemberId,
 } from "~/api";
-import type { IAuthService } from "~/types/IAuthService";
+import type { IAuthService } from "~/auth/IAuthService";
 import { formatDate } from "~/util/date.util";
 import {
   formatForGoogleCalendar,

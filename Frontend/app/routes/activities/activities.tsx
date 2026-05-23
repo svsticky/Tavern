@@ -14,6 +14,7 @@ import {
   handleCreateActivityClick,
   loadActivities,
 } from "./activities.handlers";
+import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -40,6 +41,7 @@ import type { TokenParsed } from "~/types/TokenParsed";
  */
 export default function ActivitiesPage() {
   const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [isBoard, setIsBoard] = useState(false);
@@ -56,10 +58,16 @@ export default function ActivitiesPage() {
         return;
       }
 
-      setIsBoard(isBoardOrCandidateBoard(tokenParsed));
+      setIsBoard(
+        isBoardOrCandidateBoard(
+          tokenParsed,
+          boardGroupId,
+          candidateBoardGroupId,
+        ),
+      );
     };
     loadToken();
-  }, [authService]);
+  }, [authService, boardGroupId, candidateBoardGroupId]);
 
   const navigate = useNavigate();
 

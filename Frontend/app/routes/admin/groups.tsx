@@ -139,9 +139,7 @@ export default function Groups() {
         </div>
       </BorderedTile>
 
-      {loading ? (
-        "loading"
-      ) : (
+      {loading ? t("loading") : (
         <BorderedTile className="bg-white p-0">
           <DataTable data={filteredGroups ?? []} columns={columns} />
         </BorderedTile>

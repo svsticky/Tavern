@@ -64,12 +64,20 @@ export default function DashboardHeader({
   const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>([]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadData() {
-      if (tokenParsed == null || !authService.isAuthenticated()) return;
+      if (!authService.isAuthenticated()) {
+        setLoading(false);
+        return;
+      }
 
-      setTokenParsed(await authService.getTokenParsed());
+      const parsedToken = await authService.getTokenParsed();
+      if (cancelled) return;
 
-      if(!tokenParsed) {
+      setTokenParsed(parsedToken);
+
+      if (!parsedToken) {
         console.error("Failed to parse token");
         setLoading(false);
         return;
@@ -94,10 +102,10 @@ export default function DashboardHeader({
 
         const enrollmentAmountResponse = await getEnrollments({
           query: {
-            FromMemberId: tokenParsed.UserId,
+            FromMemberId: parsedToken.UserId,
           },
         });
-        
+
         if (enrollmentAmountResponse.error)
           throw new Error("Failed to load enrollments");
 
@@ -128,43 +136,46 @@ export default function DashboardHeader({
     }
 
     loadData();
-  }, [t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authService, t]);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
   const payActivities = async () => {
-    const _payAction = async () => {
+    if (!tokenParsed) return;
+
+    const payAction = async () => {
       try {
         setLoadingPayments(true);
         const urlResponse = await postPaymentsActivity({
           body: {
-            memberId: tokenParsed?.UserId,
+            memberId: tokenParsed.UserId,
             activityIds: unpaidActivityIds,
           },
         });
 
-        if (urlResponse.error)
+        if (urlResponse.error) {
           throw new Error("Failed to initiate payment process");
+        }
 
         if (urlResponse.data?.checkoutUrl) {
-          console.log(urlResponse.data);
           window.location.href = urlResponse.data.checkoutUrl;
-        } else {
-          throw new Error("No checkout URL returned from API");
+          return;
         }
-      } catch (error) {
-        console.error("Error while initiating payment:", error);
-        throw error;
+
+        throw new Error("No checkout URL returned from API");
       } finally {
         setLoadingPayments(false);
       }
-
-      toast.promise(_payAction(), {
-        loading: t("paying"),
-        success: t("redirecting_to_payment"),
-        error: t("payment_initiation_failed"),
-      });
     };
+
+    toast.promise(payAction(), {
+      loading: t("paying"),
+      success: t("redirecting_to_payment"),
+      error: t("payment_initiation_failed"),
+    });
   };
 
   return (

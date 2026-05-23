@@ -30,7 +30,7 @@ public enum AuthTaskType
 }
 
 /// <summary>
-/// Represents a task in the outbox for authentication-system operations.
+/// Represents a queued auth-system operation waiting to be processed.
 /// </summary>
 public class AuthOutboxTask
 {

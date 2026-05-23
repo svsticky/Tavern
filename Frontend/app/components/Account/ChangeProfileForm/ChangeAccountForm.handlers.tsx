@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import { type MemberResponseDto, patchMembersById } from "~/api";
 import i18n from "~/i18n";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
-import type { IAuthService } from "~/types/IAuthService";
+import type { IAuthService } from "~/auth/IAuthService";
 
 /**
  * Handles the change in subscription status for a mailing list.

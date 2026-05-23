@@ -34,19 +34,42 @@ export default function AuthenticatedLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const loadToken = async () => {
-      const token = await authService.getToken();
-      const tokenParsed = await authService.getTokenParsed();
-      setToken(token);
-      setTokenParsed(tokenParsed);
+    if (!authService.isReady()) return;
 
-      if (!tokenParsed) {
+    let cancelled = false;
+    let retryTimer: number | undefined;
+
+    const loadToken = async () => {
+      if (!authService.isAuthenticated()) {
         console.error("User not authenticated");
-        navigate("/login");
+        navigate("/login", { replace: true });
         return;
       }
+
+      const token = await authService.getToken();
+      const tokenParsed = await authService.getTokenParsed();
+      if (cancelled) return;
+
+      setToken(token);
+
+      if (!tokenParsed) {
+        retryTimer = window.setTimeout(() => {
+          if (!cancelled) loadToken();
+        }, 250);
+        return;
+      }
+
+      setTokenParsed(tokenParsed);
     };
+
     loadToken();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer !== undefined) {
+        window.clearTimeout(retryTimer);
+      }
+    };
   }, [authService, navigate]);
 
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
@@ -59,8 +82,6 @@ export default function AuthenticatedLayout() {
     member,
     setMember,
   } = useApp();
-
-  if(!tokenParsed) return null;
 
   useEffect(() => {
     if (!client.instance || !tokenParsed) return;
@@ -211,6 +232,8 @@ export default function AuthenticatedLayout() {
     setMember,
   ]);
 
+  if (!tokenParsed) return null;
+
   if (tokenParsed.access_level === "not_paid") {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -218,9 +241,6 @@ export default function AuthenticatedLayout() {
           {i18n.t("membership_payment_required")}
         </h1>
         <p className="mb-6">{i18n.t("membership_payment_description")}</p>
-        {paymentUrl && (
-          <Button onClick={() => navigate(paymentUrl)}>{i18n.t("pay")}</Button>
-        )}
       </div>
     );
   }

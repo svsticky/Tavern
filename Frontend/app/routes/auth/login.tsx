@@ -25,12 +25,13 @@ export default function Login() {
   const authService = useAuth();
 
   useEffect(() => {
-    if(!authService) return;
+    if (!authService.isReady()) return;
+
     if (!authService.isAuthenticated()) {
       console.log("User not authenticated, redirecting to login...");
       authService.login();
     } else {
-      window.location.href = "/";
+      window.location.replace("/");
     }
   }, [authService]);
 

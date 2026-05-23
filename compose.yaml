@@ -12,6 +12,7 @@ services:
       - .env
     environment:
       - PostgresqlConnectionString=${PostgresqlConnectionString}
+      - AUTH_SYSTEM=${AUTH_SYSTEM:-KEYCLOAK}
       - ASPNETCORE_ENVIRONMENT=Production
 
   tavern-frontend:
@@ -24,6 +25,7 @@ services:
     ports:
       - "${FrontendPort:-5173}:3000"
     environment:
+      - VITE_AUTH_SYSTEM=${AUTH_SYSTEM:-KEYCLOAK}
       - VITE_KeycloakUrl=${KeycloakUrl}
       - VITE_KeycloakRealm=${KeycloakRealm}
       - VITE_KeycloakClientId=${KeycloakClientId}

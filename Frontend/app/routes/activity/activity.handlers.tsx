@@ -58,13 +58,21 @@ export const loadActivityData = async ({
 export const canEditActivity = (
   activity: ActivityResponseDto,
   tokenParsed: TokenParsed,
+  boardGroupId: number | null,
+  candidateBoardGroupId: number | null,
 ) => {
   return (
-    isBoardOrCandidateBoard(tokenParsed) ||
-    (!activity.showInKoala &&
+    isBoardOrCandidateBoard(
+      tokenParsed,
+      boardGroupId,
+      candidateBoardGroupId,
+    ) ||
+    Boolean(
+      !activity.showInKoala &&
       !activity.showOnWebsite &&
       activity.organizerId &&
-      new Date(activity.dateTimeStart) > new Date(Date.now()))
+      new Date(activity.dateTimeStart) > new Date(Date.now()),
+    )
   );
 };
 

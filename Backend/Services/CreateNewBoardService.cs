@@ -52,12 +52,12 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
                     MembershipYear = currentYear
                 });
 
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, candidate.MemberId);
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, candidate.MemberId);
             }
 
             foreach(var oldMember in oldBoardMembers)
             {
-                await keycloakOutboxWorker.EnqueueTask(KeycloakTaskType.Sync, oldMember.MemberId);
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.MemberId);
             }
 
             await db.SaveChangesAsync();

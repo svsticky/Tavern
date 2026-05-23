@@ -26,7 +26,8 @@ export default function LogoutPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if(!authService) return;
+    if (!authService.isReady()) return;
+
     if (authService.isAuthenticated()) {
       authService.logout(`${window.location.origin}/login`);
     } else {

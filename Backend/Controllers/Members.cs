@@ -234,7 +234,7 @@ namespace Backend.Controllers
         /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
         /// <returns>The image file stream or a 404 status if the member or file is missing.</returns>
         [HttpGet("{id}/profile-picture")]
-        [Produces("image/jpeg", "image/png", "image/gif")]
+        [Produces("image/webp", "image/jpeg", "image/png", "image/gif")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]

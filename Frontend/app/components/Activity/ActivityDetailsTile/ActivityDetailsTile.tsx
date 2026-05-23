@@ -71,6 +71,7 @@ export default function ActivityDetailsTile({
   >;
 }) {
   const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId, member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   useEffect(() => {
@@ -84,8 +85,6 @@ export default function ActivityDetailsTile({
     };
     loadToken();
   }, [authService]);
-
-  const { member } = useApp();
 
   const [submitting, setSubmitting] = useState(false);
   const [posterStatus, setPosterStatus] = useState<
@@ -137,6 +136,11 @@ export default function ActivityDetailsTile({
     : undefined;
   const isEnrolled = !!currentEnrollment;
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const isBoard = isBoardOrCandidateBoard(
+    tokenParsed,
+    boardGroupId,
+    candidateBoardGroupId,
+  );
 
   useEffect(() => {
     setAnswers(toAnswerMap(currentEnrollment?.specificationAnswers));
@@ -209,7 +213,7 @@ export default function ActivityDetailsTile({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
             <h3 className="font-bold text-slate-900">{t("description")}</h3>
 
-            {tokenParsed && isBoardOrCandidateBoard(tokenParsed) && (
+            {isBoard && (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   variant="secondary"

@@ -124,8 +124,7 @@ namespace Backend.Migrations
                     Begunstiger = table.Column<bool>(type: "boolean", nullable: false),
                     Suspended = table.Column<bool>(type: "boolean", nullable: false),
                     ProfilePicturePath = table.Column<string>(type: "text", nullable: true),
-                    ProfilePictureFileName = table.Column<string>(type: "text", nullable: true),
-                    JoinedOn = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    ProfilePictureFileName = table.Column<string>(type: "text", nullable: true)
                 },
                 constraints: table =>
                 {

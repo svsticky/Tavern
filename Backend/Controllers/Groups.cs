@@ -180,7 +180,7 @@ public class GroupsController : ControllerBase
     /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The image file stream with the correct MIME type.</returns>
     [HttpGet("{id}/group-picture")]
-    [Produces("image/jpeg", "image/png", "image/gif")]
+    [Produces("image/webp", "image/jpeg", "image/png", "image/gif")]
     [ProducesResponseType(typeof(Stream), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

@@ -43,6 +43,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadTokenAndAuth = async () => {
+      if (!authService.isReady()) return;
+
       const tokenParsed = await authService.getTokenParsed();
       const authenticated = await authService.isAuthenticated();
       setTokenParsed(tokenParsed);
@@ -51,10 +53,6 @@ export default function DashboardPage() {
     loadTokenAndAuth();
   }, [authService]);
 
-  if (!tokenParsed) {
-    console.error("User not authenticated");
-    return null;
-  }
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
@@ -67,10 +65,12 @@ export default function DashboardPage() {
 
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    if(!authenticated || !tokenParsed) {
-      console.error("User not authenticated");
+    if (authenticated === null || tokenParsed === null) {
       return;
     }
+
+    if (!authenticated) return;
+
     loadDashboardData({
       authenticated: authenticated,
       userId: tokenParsed.UserId,
@@ -80,6 +80,10 @@ export default function DashboardPage() {
       setGroupMemberships,
     });
   }, [authenticated, tokenParsed]);
+
+  if (!tokenParsed) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col items-center gap-5 max-w-8xl mx-auto w-full">

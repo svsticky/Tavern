@@ -1,4 +1,3 @@
-import { useApp } from "~/context/AppContext";
 import { getAssociationYear } from "./date.util";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -65,9 +64,8 @@ export const isInGroupWithId = (
  */
 export const isBoard = (
   tokenParsed: TokenParsed,
+  boardGroupId: number | null,
 ): boolean => {
-  const { boardGroupId } = useApp();
-
   if (!boardGroupId) return false;
 
   return isInGroupWithId(tokenParsed, boardGroupId);
@@ -80,12 +78,10 @@ export const isBoard = (
  */
 export const isBoardOrCandidateBoard = (
   tokenParsed: TokenParsed | null,
+  boardGroupId: number | null,
+  candidateBoardGroupId: number | null,
 ): boolean => {
-  if(!tokenParsed) return false;
-
-  const { boardGroupId, candidateBoardGroupId } = useApp();
-
-  if (!boardGroupId || !candidateBoardGroupId) return false;
+  if (!tokenParsed || !boardGroupId || !candidateBoardGroupId) return false;
 
   return (
     isInGroupWithId(tokenParsed, boardGroupId) ||

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Backend.Services;
 
 /// <summary>
-/// Background worker that processes queued auth synchronization tasks.
+/// Processes queued auth-system tasks in the background.
 /// </summary>
 public class AuthOutboxWorker(
     IServiceProvider serviceProvider, 
@@ -35,6 +35,7 @@ public class AuthOutboxWorker(
         logger.LogInformation("Enqueued auth outbox task {TaskType} for {AuthSystemUserId}.", taskType, authSystemUserId);
     }
 
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Auth outbox worker started.");

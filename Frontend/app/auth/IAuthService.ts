@@ -1,10 +1,14 @@
 import type { JSX } from "react";
-import type { TokenParsed } from "./TokenParsed";
+import type { TokenParsed } from "~/types/TokenParsed";
 
+/**
+ * Defines the frontend auth service contract used by auth flows and route guards.
+ */
 export interface IAuthService {
     login: () => Promise<void>;
     logout: (redirectUri: string) => Promise<void>;
     isAuthenticated: () => boolean;
+    isReady: () => boolean;
     getToken: () => Promise<string | null>;
     getTokenParsed: () => Promise<TokenParsed | null>;
     AuthProvider: ({ children }: { children: React.ReactNode }) => JSX.Element;

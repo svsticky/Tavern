@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
 import type { ActivityResponseDto } from "~/api";
+import { useApp } from "~/context/AppContext";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -51,12 +52,17 @@ export default function ActivityTile({
 }) {
   const { t } = useTranslation();
   const authService = useAuth();
+  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [canEdit, setCanEdit] = useState(false);
   useEffect(() => {
     const loadToken = async () => {
       const token = await authService.getTokenParsed();
       setCanEdit(
-        !!(isBoardOrCandidateBoard(token) ||
+        !!(isBoardOrCandidateBoard(
+          token,
+          boardGroupId,
+          candidateBoardGroupId,
+        ) ||
           (!activity.showInKoala &&
             !activity.showOnWebsite &&
             activity.organizerId &&
@@ -64,7 +70,7 @@ export default function ActivityTile({
       );
     };
     loadToken();
-  }, [authService]);
+  }, [authService, boardGroupId, candidateBoardGroupId, activity]);
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(

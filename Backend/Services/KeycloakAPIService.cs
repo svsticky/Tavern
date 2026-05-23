@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Backend.Services;
 
 /// <summary>
-/// Provides operations for managing and synchronizing users in Keycloak.
+/// Implements the auth-service contract against Keycloak.
 /// </summary>
 public class KeycloakAPIService(
     PostgresDbContext db,
