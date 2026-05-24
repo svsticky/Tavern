@@ -22,6 +22,8 @@ import {
   handleSettingsChange,
   loadSettingsPageData,
 } from "./settings.handlers";
+import Tile from "~/components/Tiles/Tile";
+import Checkbox from "~/components/UI/Checkbox";
 
 /**
  * The primary configuration dashboard for the application's global settings.
@@ -67,7 +69,7 @@ export default function SettingsPage() {
     });
   }, []);
 
-  const hasEmptyFields = Object.entries(settings).some(
+  const hasEmptyFields = Object.entries(settings).filter(([key]) => key !== "MembershipPaymentExpirationTimeYears").some(
     ([_key, value]) => !value.trim(),
   );
 
@@ -156,6 +158,62 @@ export default function SettingsPage() {
                 )
               }
             />
+            <Input
+              label={t("membership_payment_expiration_time_years")}
+              type="number"
+              step="1"
+              value={settings.MembershipPaymentExpirationTimeYears || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MembershipPaymentExpirationTimeYears",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+            />
+            <Tile className="bg-gray-50 border border-gray-100">
+              <div className="flex flex-col row-span-2">
+                  <FormHeader title={t("should_pay_membership")} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-5 ">
+                    <Checkbox
+                      label={t("masters")}
+                      checked={settings.MastersShouldPayMembership !== "0"}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingsChange(
+                        "MastersShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )}
+                    />
+                    <Checkbox
+                      label={t("gratie")}
+                      checked={settings.GratieShouldPayMembership !== "0"}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingsChange(
+                        "GratieShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )}
+                    />
+                    <Checkbox
+                      label={t("erelid")}
+                      checked={settings.ErelidShouldPayMembership !== "0"}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingsChange(
+                        "ErelidShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )}
+                    />
+                    <Checkbox
+                      label={t("lid_van_verdienste")}
+                      checked={settings.LidVanVerdiensteShouldPayMembership !== "0"}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSettingsChange(
+                        "LidVanVerdiensteShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )}
+                    />
+                  </div>
+              </div>
+            </Tile>
             <Input
               label={t("membership_vat_code")}
               type="number"

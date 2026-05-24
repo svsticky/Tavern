@@ -304,13 +304,13 @@ namespace Backend.Controllers
         /// <param name="fromUserId">The unique identifier of the member whose status is being queried.</param>
         /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
         /// <returns>A status object reflecting the member's current financial standing.</returns>
-        [HttpGet("member/{userId}/status")]
+        [HttpGet("member/{fromUserId}/status")]
         [Produces("application/json")]
-        [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaymentStatusResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<object?>> GetMemberPaymentStatus(Guid fromUserId, CancellationToken ct)
+        public async Task<ActionResult<PaymentStatusResponse>> GetMemberPaymentStatus(Guid fromUserId, CancellationToken ct)
         {
             try
             {
