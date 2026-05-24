@@ -8,13 +8,13 @@ using Backend.Interfaces;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing activities within the system. The ActivitiesController provides endpoints for creating, retrieving, updating, and deleting activities, as well as handling related operations such as uploading posters and exporting enrollments. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify activity data while providing appropriate error handling for various scenarios. The ActivitiesController interacts with the IActivityService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing activities effectively within the application.
+    /// Controller for managing activities within the system. The ActivitiesController provides endpoints for creating, retrieving, updating, and deleting activities, as well as handling related operations such as uploading posters and exporting enrollments. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify activity data while providing appropriate error handling for various scenarios. The ActivitiesController interacts with the IActivityRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing activities effectively within the application.
     /// </summary>
-    /// <param name="service">The activity service for managing activity operations.</param>
+    /// <param name="activitiesRepository">The activity repository for managing activity operations.</param>
     [ApiController]
     [Route("[controller]")]
     [Authorize]
-    public class ActivitiesController(IActivityService service) : ControllerBase
+    public class ActivitiesController(IActivityRepository activitiesRepository) : ControllerBase
     {
         /// <summary>
         /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
@@ -40,7 +40,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await service.GetActivities(GetUserId(), dto);
+                var result = await activitiesRepository.GetActivities(GetUserId(), dto);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -69,7 +69,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var activity = await service.GetActivity(GetUserId(), id);
+                var activity = await activitiesRepository.GetActivity(GetUserId(), id);
 
                 if (activity == null)
                     return NotFound();
@@ -102,7 +102,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var activity = await service.CreateActivity(GetUserId(), dto);
+                var activity = await activitiesRepository.CreateActivity(GetUserId(), dto);
 
                 return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
             }
@@ -133,7 +133,7 @@ namespace Backend.Controllers
         {
             try
             {
-                await service.DeleteActivity(GetUserId(), id);
+                await activitiesRepository.DeleteActivity(GetUserId(), id);
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -169,7 +169,7 @@ namespace Backend.Controllers
         {
             try
             {
-                await service.PatchActivity(GetUserId(), id, patchDoc, ct);
+                await activitiesRepository.PatchActivity(GetUserId(), id, patchDoc, ct);
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -204,7 +204,7 @@ namespace Backend.Controllers
         {
             try
             {
-                await service.UploadPoster(GetUserId(), id, poster);
+                await activitiesRepository.UploadPoster(GetUserId(), id, poster);
                 return Ok();
             }
             catch (UnauthorizedAccessException)
@@ -239,7 +239,7 @@ namespace Backend.Controllers
         {
             try
             {
-                await service.UpdateActivity(GetUserId(), id, dto);
+                await activitiesRepository.UpdateActivity(GetUserId(), id, dto);
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -272,7 +272,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await service.GetPoster(GetUserId(), id, download: false);
+                var result = await activitiesRepository.GetPoster(GetUserId(), id, download: false);
 
                 if (result == null)
                     return NotFound();
@@ -305,7 +305,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await service.GetPoster(GetUserId(), id, download: true);
+                var result = await activitiesRepository.GetPoster(GetUserId(), id, download: true);
 
                 if (result == null)
                     return NotFound();
@@ -338,7 +338,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await service.GetEnrollmentsCsv(GetUserId(), id, ct);
+                var result = await activitiesRepository.GetEnrollmentsCsv(GetUserId(), id, ct);
 
                 return File(result.Content, "text/csv", result.FileName);
             }

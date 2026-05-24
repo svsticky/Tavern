@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing group memberships within the system. The GroupMembershipsController provides endpoints for creating, retrieving, updating, and deleting group memberships, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify group membership data while providing appropriate error handling for various scenarios. The GroupMembershipsController interacts with the IGroupMembershipService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing group memberships effectively within the application.
+/// Controller for managing group memberships within the system. The GroupMembershipsController provides endpoints for creating, retrieving, updating, and deleting group memberships, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify group membership data while providing appropriate error handling for various scenarios. The GroupMembershipsController interacts with the IGroupMembershipRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing group memberships effectively within the application.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class GroupMembershipsController : ControllerBase
 {
-    private readonly IGroupMembershipService _groupMembershipService;
+    private readonly IGroupMembershipRepository _groupMembershipRepository;
 
     /// <summary>
-    /// Initializes a new instance of the GroupMembershipsController class with the specified group membership service. The constructor takes an IGroupMembershipService as a parameter, which is used to perform various operations related to group memberships, such as creating, retrieving, updating, and deleting group memberships. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the service layer.
+    /// Initializes a new instance of the GroupMembershipsController class with the specified group membership repository. The constructor takes an IGroupMembershipRepository as a parameter, which is used to perform various operations related to group memberships, such as creating, retrieving, updating, and deleting group memberships. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the repository layer.
     /// </summary>
-    /// <param name="groupMembershipService">The group membership service for managing group membership operations.</param>
-    public GroupMembershipsController(IGroupMembershipService groupMembershipService)
+    /// <param name="groupMembershipRepository">The group membership repository for managing group membership operations.</param>
+    public GroupMembershipsController(IGroupMembershipRepository groupMembershipRepository)
     {
-        _groupMembershipService = groupMembershipService;
+        _groupMembershipRepository = groupMembershipRepository;
     }
 
     private Guid GetUserId()
@@ -51,7 +51,7 @@ public class GroupMembershipsController : ControllerBase
         {
             var userId = GetUserId();
 
-            var result = await _groupMembershipService.GetGroupMemberships(dto, userId, cancellationToken);
+            var result = await _groupMembershipRepository.GetGroupMemberships(dto, userId, cancellationToken);
             return Ok(result);
         }
         catch (UnauthorizedAccessException)
@@ -83,7 +83,7 @@ public class GroupMembershipsController : ControllerBase
         {
             var userId = GetUserId();
 
-            var result = await _groupMembershipService.GetGroupMembership(id, userId, cancellationToken);
+            var result = await _groupMembershipRepository.GetGroupMembership(id, userId, cancellationToken);
 
             if (result == null)
                 return NotFound();
@@ -121,7 +121,7 @@ public class GroupMembershipsController : ControllerBase
         {
             var userId = GetUserId();
 
-            var created = await _groupMembershipService.CreateGroupMembership(membershipDto, userId, cancellationToken);
+            var created = await _groupMembershipRepository.CreateGroupMembership(membershipDto, userId, cancellationToken);
 
             return CreatedAtAction(
                 nameof(GetGroupMembership),
@@ -157,7 +157,7 @@ public class GroupMembershipsController : ControllerBase
         {
             var userId = GetUserId();
 
-            await _groupMembershipService.DeleteGroupMembership(id, userId, cancellationToken);
+            await _groupMembershipRepository.DeleteGroupMembership(id, userId, cancellationToken);
 
             return NoContent();
         }
@@ -202,7 +202,7 @@ public class GroupMembershipsController : ControllerBase
         {
             var userId = GetUserId();
 
-            await _groupMembershipService.PatchGroupMembership(id, userId, patchDoc, cancellationToken);
+            await _groupMembershipRepository.PatchGroupMembership(id, userId, patchDoc, cancellationToken);
 
             return NoContent();
         }
@@ -244,7 +244,7 @@ public class GroupMembershipsController : ControllerBase
         {
             var userId = GetUserId();
 
-            await _groupMembershipService.UpdateGroupMembership(id, userId, membershipDto, cancellationToken);
+            await _groupMembershipRepository.UpdateGroupMembership(id, userId, membershipDto, cancellationToken);
 
             return NoContent();
         }

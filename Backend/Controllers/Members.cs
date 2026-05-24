@@ -8,14 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing system members and their profiles. The MembersController provides a comprehensive suite of endpoints for user lifecycle management, including registration, profile retrieval, data updates, and account deletion. It also handles profile picture management and integrates with identity provider webhooks to ensure data synchronization. This controller enforces security through role-based or ownership-based authorization while allowing specific public actions like self-registration. By coordinating between the IMemberService and specialized services like the AuthOutboxWorker, it ensures that member data remains consistent across the internal database and external identity providers.
+    /// Controller for managing system members and their profiles. The MembersController provides a comprehensive suite of endpoints for user lifecycle management, including registration, profile retrieval, data updates, and account deletion. It also handles profile picture management and integrates with identity provider webhooks to ensure data synchronization. This controller enforces security through role-based or ownership-based authorization while allowing specific public actions like self-registration. By coordinating between the IMemberRepository and specialized services like the AuthOutboxWorker, it ensures that member data remains consistent across the internal database and external identity providers.
     /// </summary>
-    /// <param name="memberService">The service responsible for member business logic and persistence.</param>
-    /// <param name="profilePictureService">The service dedicated to handling profile picture file operations.</param>
+    /// <param name="memberRepository">The repository responsible for member business logic and persistence.</param>
+    /// <param name="profilePictureRepository">The repository dedicated to handling profile picture file operations.</param>
     [Route("[controller]")]
     [ApiController]
     [Authorize]
-    public class MembersController(IMemberService memberService, IProfilePictureService profilePictureService) : ControllerBase
+    public class MembersController(IMemberRepository memberRepository, IProfilePictureRepository profilePictureRepository) : ControllerBase
     {
         private readonly string? _authWebhookSecret = Environment.GetEnvironmentVariable("AUTH_WEBHOOK_SECRET");
 
@@ -45,7 +45,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await memberService.GetMembers(dto, userId, cancellationToken);
+                var result = await memberRepository.GetMembers(dto, userId, cancellationToken);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -76,7 +76,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId();
-                var result = await memberService.GetMember(id, userId, cancellationToken);
+                var result = await memberRepository.GetMember(id, userId, cancellationToken);
                 if (result == null) return NotFound();
 
                 return Ok(result);
@@ -108,7 +108,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var member = await memberService.CreateMember(dto, cancellationToken);
+                var member = await memberRepository.CreateMember(dto, cancellationToken);
                 return CreatedAtAction(nameof(GetMember), new { id = member.Id }, member);
             }
             catch (Exception ex)
@@ -136,7 +136,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId();
-                await memberService.DeleteMember(id, userId, cancellationToken);
+                await memberRepository.DeleteMember(id, userId, cancellationToken);
 
                 return NoContent();
             }
@@ -174,7 +174,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId();
-                await memberService.PatchMember(id, patchDoc, userId, cancellationToken);
+                await memberRepository.PatchMember(id, patchDoc, userId, cancellationToken);
 
                 return NoContent();
             }
@@ -208,7 +208,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId();
-                await memberService.UpdateMember(id, dto, userId, cancellationToken);
+                await memberRepository.UpdateMember(id, dto, userId, cancellationToken);
 
                 return NoContent();
             }
@@ -243,11 +243,11 @@ namespace Backend.Controllers
             try
             {
                 var userId = GetUserId();
-                var member = await memberService.GetMember(id, userId, cancellationToken);
+                var member = await memberRepository.GetMember(id, userId, cancellationToken);
                 if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
                     return NotFound("Member or profile picture not found.");
 
-                var file = await profilePictureService.GetProfilePictureByPath(member.ProfilePicturePath);
+                var file = await profilePictureRepository.GetProfilePictureByPath(member.ProfilePicturePath);
                 if (file == null)
                     return NotFound("File is no longer present on the server.");
 
@@ -278,7 +278,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-                await memberService.DeleteProfilePicture(id, userId, cancellationToken);
+                await memberRepository.DeleteProfilePicture(id, userId, cancellationToken);
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -319,7 +319,7 @@ namespace Backend.Controllers
                     return Unauthorized("Invalid webhook secret.");
                 }
 
-                await memberService.RefreshEmail(userId, cancellationToken);
+                await memberRepository.RefreshEmail(userId, cancellationToken);
                 return Ok();
             }
             catch (Exception ex)

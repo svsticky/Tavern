@@ -1,8 +1,8 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.PaymentServices;
 using Microsoft.EntityFrameworkCore;
-using Mollie.Api.Client.Abstract;
 
 namespace Backend.Services;
 
@@ -39,34 +39,34 @@ public class PaymentSyncService(
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-        var paymentClient = scope.ServiceProvider.GetRequiredService<IPaymentClient>();
+        var paymentService = scope.ServiceProvider.GetRequiredService<AbstractPaymentService>();
         var paymentValidationService = scope.ServiceProvider.GetRequiredService<IPaymentValidationService>();
 
         var pendingMembershipPayments = await db.MembershipPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingEnrollmentPayments = await db.EnrollmentPayments.Where(p => p.PaidAt == null).ToListAsync();
-        var pendingMollieFeePayments = await db.MollieFeePayments.Where(p => p.PaidAt == null).ToListAsync();
+        var pendingPaymentServiceFeePayments = await db.PaymentServiceFeePayments.Where(p => p.PaidAt == null).ToListAsync();
 
-        var pendingPayments = pendingMembershipPayments.Cast<Payment>().Concat(pendingMollieFeePayments.Cast<Payment>()).Concat(pendingEnrollmentPayments.Cast<Payment>());
-        logger.LogInformation("Syncing pending payments. Membership: {MembershipCount}, Enrollment: {EnrollmentCount}, MollieFee: {MollieFeeCount}",
-            pendingMembershipPayments.Count, pendingEnrollmentPayments.Count, pendingMollieFeePayments.Count);
+        var pendingPayments = pendingMembershipPayments.Cast<Payment>().Concat(pendingPaymentServiceFeePayments.Cast<Payment>()).Concat(pendingEnrollmentPayments.Cast<Payment>());
+        logger.LogInformation("Syncing pending payments. Membership: {MembershipCount}, Enrollment: {EnrollmentCount}, PaymentServiceFee: {PaymentServiceFeeCount}",
+            pendingMembershipPayments.Count, pendingEnrollmentPayments.Count, pendingPaymentServiceFeePayments.Count);
 
         foreach (var payment in pendingPayments)
         {
             try 
             {
-                var mollieStatus = await paymentClient.GetPaymentAsync(payment.MollieId);
-                if (mollieStatus.Status == "paid")
+                var paymentResponse = await paymentService.GetPaymentAsync(payment.PaymentServiceId);
+                if (paymentResponse.Status == PaymentStatus.Paid)
                 {
-                    logger.LogInformation("Payment {PaymentId} marked paid in Mollie. Processing sync.", payment.Id);
+                    logger.LogInformation("Payment {PaymentId} marked paid in the payment service system. Processing sync.", payment.Id);
                     Payment fullPayment;
 
                     if(payment is MembershipPayment)
                     {
                         fullPayment = await db.MembershipPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
                     }
-                    else if (payment is MollieFeePayment)
+                    else if (payment is PaymentServiceFeePayment)
                     {
-                        fullPayment = await db.MollieFeePayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
+                        fullPayment = await db.PaymentServiceFeePayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
                     }
                     else if (payment is EnrollmentPayment)
                     {
@@ -92,12 +92,12 @@ public class PaymentSyncService(
                                 CreatedAt = DateTime.UtcNow
                             });
                         }
-                        payment.PaidAt = mollieStatus.PaidAt;
+                        payment.PaidAt = paymentResponse.PaidAt;
 
                         db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                         {
                             PaymentId = payment.Id,
-                            TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : payment is MollieFeePayment ? AccountingToolTaskType.MollieFeePayment : AccountingToolTaskType.EnrollmentPayment
+                            TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : payment is PaymentServiceFeePayment ? AccountingToolTaskType.PaymentServiceFeePayment : AccountingToolTaskType.EnrollmentPayment
                         });
 
                         await db.SaveChangesAsync();
@@ -110,9 +110,9 @@ public class PaymentSyncService(
                     }
                 }
                 
-                if (mollieStatus.Status == "expired" || mollieStatus.Status == "canceled")
+                if (paymentResponse.Status == PaymentStatus.Failed)
                 {
-                    logger.LogInformation("Payment {PaymentId} is {Status}. Removing stale payment records.", payment.Id, mollieStatus.Status);
+                    logger.LogInformation("Payment {PaymentId} is {Status}. Removing stale payment records.", payment.Id, paymentResponse.Status);
                     // If the payment is expired or canceled, we can remove it from our database as it can no longer be paid.
                     using var transaction = await db.Database.BeginTransactionAsync();
                     try

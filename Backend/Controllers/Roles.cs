@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing system roles and their associated permissions within the application. The RolesController provides a robust set of endpoints for the creation, retrieval, modification, and deletion of roles, which serve as the foundation for the system's access control and organizational structure. By coordinating with the IRoleService, this controller ensures that role definitions are managed securely and consistently, allowing administrators to define the levels of authority and responsibilities assigned to different users. Proper authorization is enforced across all endpoints to maintain the integrity of the system's security model, preventing unauthorized modifications to the foundational role data.
+/// Controller for managing system roles and their associated permissions within the application. The RolesController provides a robust set of endpoints for the creation, retrieval, modification, and deletion of roles, which serve as the foundation for the system's access control and organizational structure. By coordinating with the IRoleRepository, this controller ensures that role definitions are managed securely and consistently, allowing administrators to define the levels of authority and responsibilities assigned to different users. Proper authorization is enforced across all endpoints to maintain the integrity of the system's security model, preventing unauthorized modifications to the foundational role data.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class RolesController : ControllerBase
 {
-    private readonly IRoleService _service;
+    private readonly IRoleRepository _roleRepository;
 
     /// <summary>
     /// Initializes a new instance of the RolesController with the required role management service.
     /// </summary>
-    /// <param name="service">The service responsible for role-related business logic and data persistence.</param>
-    public RolesController(IRoleService service)
+    /// <param name="roleRepository">The repository responsible for role-related business logic and data persistence.</param>
+    public RolesController(IRoleRepository roleRepository)
     {
-        _service = service;
+        _roleRepository = roleRepository;
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            return Ok(await _service.GetRoles(ct));
+            return Ok(await _roleRepository.GetRoles(ct));
         }
         catch (Exception ex)
         {
@@ -73,7 +73,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var role = await _service.GetRole(id, ct);
+            var role = await _roleRepository.GetRole(id, ct);
             return role != null ? Ok(role) : NotFound();
         }
         catch (Exception ex)
@@ -99,7 +99,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            var result = await _service.CreateRole(dto, GetUserId(), ct);
+            var result = await _roleRepository.CreateRole(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetRole), new { id = result.Id }, result);
         }
         catch (UnauthorizedAccessException)
@@ -130,7 +130,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            await _service.DeleteRole(id, GetUserId(), ct);
+            await _roleRepository.DeleteRole(id, GetUserId(), ct);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -166,7 +166,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            await _service.PatchRole(id, patchDoc, GetUserId(), ct);
+            await _roleRepository.PatchRole(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -198,7 +198,7 @@ public class RolesController : ControllerBase
     {
         try
         {
-            await _service.UpdateRole(id, dto, GetUserId(), ct);
+            await _roleRepository.UpdateRole(id, dto, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)

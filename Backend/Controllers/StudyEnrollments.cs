@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing the association between members and their specific academic studies. The StudyEnrollmentsController provides a set of endpoints to track when and how users are enrolled in various programs, maintaining a historical and current record of their academic status. This controller is crucial for verifying eligibility for student-specific activities and benefits within the system. It enforces strict authorization to ensure that enrollment data—which often contains sensitive academic timelines—is only accessible to the account owner or authorized administrators. By utilizing the IStudyEnrollmentService, the controller abstracts the complex logic of managing overlapping enrollments and status transitions.
+/// Controller for managing the association between members and their specific academic studies. The StudyEnrollmentsController provides a set of endpoints to track when and how users are enrolled in various programs, maintaining a historical and current record of their academic status. This controller is crucial for verifying eligibility for student-specific activities and benefits within the system. It enforces strict authorization to ensure that enrollment data—which often contains sensitive academic timelines—is only accessible to the account owner or authorized administrators. By utilizing the IStudyEnrollmentRepository, the controller abstracts the complex logic of managing overlapping enrollments and status transitions.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class StudyEnrollmentsController : ControllerBase
 {
-    private readonly IStudyEnrollmentService _service;
+    private readonly IStudyEnrollmentRepository _studyEnrollmentRepository;
 
     /// <summary>
-    /// Initializes a new instance of the StudyEnrollmentsController with the required enrollment management service.
+    /// Initializes a new instance of the StudyEnrollmentsController with the required enrollment management repository.
     /// </summary>
-    /// <param name="service">The service responsible for study enrollment business logic and data persistence.</param>
-    public StudyEnrollmentsController(IStudyEnrollmentService service)
+    /// <param name="studyEnrollmentRepository">The study enrollment repository responsible for study enrollment business logic and data persistence.</param>
+    public StudyEnrollmentsController(IStudyEnrollmentRepository studyEnrollmentRepository)
     {
-        _service = service;
+        _studyEnrollmentRepository = studyEnrollmentRepository;
     }
 
     /// <summary>
@@ -51,7 +51,7 @@ public class StudyEnrollmentsController : ControllerBase
     {
         try
         {
-            var result = await _service.GetStudyEnrollments(dto, GetUserId(), ct);
+            var result = await _studyEnrollmentRepository.GetStudyEnrollments(dto, GetUserId(), ct);
             return Ok(result);
         }
         catch (UnauthorizedAccessException)
@@ -81,7 +81,7 @@ public class StudyEnrollmentsController : ControllerBase
     {
         try
         {
-            var result = await _service.GetStudyEnrollment(id, GetUserId(), ct);
+            var result = await _studyEnrollmentRepository.GetStudyEnrollment(id, GetUserId(), ct);
             return result != null ? Ok(result) : NotFound();
         }
         catch (UnauthorizedAccessException)
@@ -111,7 +111,7 @@ public class StudyEnrollmentsController : ControllerBase
     {
         try
         {
-            var result = await _service.CreateStudyEnrollment(dto, GetUserId(), ct);
+            var result = await _studyEnrollmentRepository.CreateStudyEnrollment(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetStudyEnrollment), new { id = result.Id }, result);
         }
         catch (UnauthorizedAccessException)
@@ -142,7 +142,7 @@ public class StudyEnrollmentsController : ControllerBase
     {
         try
         {
-            await _service.DeleteStudyEnrollment(id, GetUserId(), ct);
+            await _studyEnrollmentRepository.DeleteStudyEnrollment(id, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -174,7 +174,7 @@ public class StudyEnrollmentsController : ControllerBase
     {
         try
         {
-            await _service.PatchStudy(id, patchDoc, GetUserId(), ct);
+            await _studyEnrollmentRepository.PatchStudy(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)

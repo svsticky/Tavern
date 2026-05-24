@@ -15,7 +15,7 @@ namespace Backend.Repositories
         PostgresDbContext db,
         IPermissionService permissionService,
         ILogger<RoleRepository> logger
-    ) : IRoleService
+    ) : IRoleRepository
     {
         /// <inheritdoc />
         public async Task<List<Role>> GetRoles(CancellationToken ct)

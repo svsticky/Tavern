@@ -619,7 +619,7 @@ export const getMembersByIdProfilePicture = <ThrowOnError extends boolean = fals
 });
 
 /**
- * Handles incoming webhooks from Keycloak to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.
+ * Handles incoming webhooks from authentication system to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.
  */
 export const postMembersWebhookRefreshEmail = <ThrowOnError extends boolean = false>(options?: Options<PostMembersWebhookRefreshEmailData, ThrowOnError>) => (options?.client ?? client).post<PostMembersWebhookRefreshEmailResponses, PostMembersWebhookRefreshEmailErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],
@@ -632,7 +632,7 @@ export const postMembersWebhookRefreshEmail = <ThrowOnError extends boolean = fa
 });
 
 /**
- * Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentService, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
+ * Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentRepository, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
  */
 export const getPaymentsMembership = <ThrowOnError extends boolean = false>(options?: Options<GetPaymentsMembershipData, ThrowOnError>) => (options?.client ?? client).get<GetPaymentsMembershipResponses, GetPaymentsMembershipErrors, ThrowOnError>({
     responseType: 'json',
@@ -686,7 +686,7 @@ export const getPaymentsEnrollmentById = <ThrowOnError extends boolean = false>(
 });
 
 /**
- * Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the service layer to reserve the spot and handle the transaction initiation.
+ * Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the repository layer to reserve the spot and handle the transaction initiation.
  */
 export const postPaymentsActivity = <ThrowOnError extends boolean = false>(options?: Options<PostPaymentsActivityData, ThrowOnError>) => (options?.client ?? client).post<PostPaymentsActivityResponses, PostPaymentsActivityErrors, ThrowOnError>({
     responseType: 'json',
@@ -700,7 +700,7 @@ export const postPaymentsActivity = <ThrowOnError extends boolean = false>(optio
 });
 
 /**
- * Processes asynchronous status updates from the Mollie payment gateway. The MollieWebhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
+ * Processes asynchronous status updates from the paymentservice payment gateway. The webhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
  */
 export const postPaymentsWebhook = <ThrowOnError extends boolean = false>(options?: Options<PostPaymentsWebhookData, ThrowOnError>) => (options?.client ?? client).post<PostPaymentsWebhookResponses, PostPaymentsWebhookErrors, ThrowOnError>({
     ...urlSearchParamsBodySerializer,
@@ -757,7 +757,7 @@ export const getPaymentsExport = <ThrowOnError extends boolean = false>(options?
  * Retrieves and streams a profile picture file based on its storage path. The GetProfilePictureByPath endpoint allows the system to serve image assets directly to the client. By providing the internal path, the endpoint retrieves the file stream and returns it with the correct content-type header, enabling browsers and applications to render the image correctly. This approach avoids exposing direct file system paths to the client and centralizes image delivery through a secured API route.
  */
 export const getProfilepictureViewByPath = <ThrowOnError extends boolean = false>(options: Options<GetProfilepictureViewByPathData, ThrowOnError>) => (options.client ?? client).get<GetProfilepictureViewByPathResponses, GetProfilepictureViewByPathErrors, ThrowOnError>({
-    responseType: 'json',
+    responseType: 'blob',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/profilepicture/view/{path}',
     ...options
@@ -1015,7 +1015,7 @@ export const postStudies = <ThrowOnError extends boolean = false>(options?: Opti
 });
 
 /**
- * Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The service layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
+ * Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The repository layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
  */
 export const deleteStudiesById = <ThrowOnError extends boolean = false>(options: Options<DeleteStudiesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteStudiesByIdResponses, DeleteStudiesByIdErrors, ThrowOnError>({
     security: [{ scheme: 'bearer', type: 'http' }],

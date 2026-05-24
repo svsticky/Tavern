@@ -12,7 +12,7 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements group management and group picture operations.
 /// </summary>
-public class GroupRepository : IGroupService
+public class GroupRepository : IGroupRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;

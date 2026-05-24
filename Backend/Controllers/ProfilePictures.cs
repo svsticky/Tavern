@@ -6,22 +6,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing profile picture assets across the system. The ProfilePictureController provides dedicated endpoints for the retrieval and uploading of user avatars. It serves as a specialized handler for file-based operations, ensuring that image data is correctly processed, stored, and served with the appropriate MIME types. This controller integrates with the IProfilePictureService to abstract the underlying storage mechanism—whether local or cloud-based—while enforcing authorization rules to ensure that only authenticated users can access or modify personal profile imagery.
+    /// Controller for managing profile picture assets across the system. The ProfilePictureController provides dedicated endpoints for the retrieval and uploading of user avatars. It serves as a specialized handler for file-based operations, ensuring that image data is correctly processed, stored, and served with the appropriate MIME types. This controller integrates with the IProfilePictureRepository to abstract the underlying storage mechanism—whether local or cloud-based—while enforcing authorization rules to ensure that only authenticated users can access or modify personal profile imagery.
     /// </summary>
     [Route("[controller]")]
     [ApiController]
     [Authorize]
     public class ProfilePictureController : ControllerBase
     {
-        private readonly IProfilePictureService _service;
+        private readonly IProfilePictureRepository _profilePictureRepository;
 
         /// <summary>
-        /// Initializes a new instance of the ProfilePictureController with the required profile picture service.
+        /// Initializes a new instance of the ProfilePictureController with the required profile picture repository.
         /// </summary>
-        /// <param name="service">The service responsible for file system interactions and image processing logic.</param>
-        public ProfilePictureController(IProfilePictureService service)
+        /// <param name="profilePictureRepository">The repository responsible for file system interactions and image processing logic.</param>
+        public ProfilePictureController(IProfilePictureRepository profilePictureRepository)
         {
-            _service = service;
+            _profilePictureRepository = profilePictureRepository;
         }
 
         // GET: profilepicture/view/{path}
@@ -39,7 +39,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await _service.GetProfilePictureByPath(path);
+                var result = await _profilePictureRepository.GetProfilePictureByPath(path);
 
                 if (result == null)
                     return NotFound();
@@ -70,7 +70,7 @@ namespace Backend.Controllers
             try
             {
                 Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-                var path = await _service.UploadProfilePicture(id, userId, image);
+                var path = await _profilePictureRepository.UploadProfilePicture(id, userId, image);
 
                 return Ok(new UploadPictureResponse { Path = path });
             }

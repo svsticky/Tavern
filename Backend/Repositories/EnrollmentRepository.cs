@@ -15,7 +15,7 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements enrollment workflows, including waiting-list promotion.
 /// </summary>
-public class EnrollmentRepository : IEnrollmentService
+public class EnrollmentRepository : IEnrollmentRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;

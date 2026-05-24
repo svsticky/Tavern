@@ -31,23 +31,23 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         
         await EnsureGroupExists(db, "Candidate Board", GroupType.Committee, uint.Parse(candidateBoardGroupId));
 
-        await EnsureSettingExists(db, "MollieFee", "0.39");
+        await EnsureSettingExists(db, "PaymentServiceFee", "0.39");
 
-        await EnsureSettingExists(db, "MollieFeeGLAccount", "5007");
+        await EnsureSettingExists(db, "PaymentServiceFeeGLAccount", "5007");
 
-        await EnsureSettingExists(db, "MollieFeeCostUnit", "TRX");
+        await EnsureSettingExists(db, "PaymentServiceFeeCostUnit", "TRX");
 
         await EnsureSettingExists(db, "MembershipGLAccount", "8000");
         
         await EnsureSettingExists(db, "ActivityGLAccount", "7001");
 
-        await EnsureSettingExists(db, "MolliePaymentsCondition", "2");
+        await EnsureSettingExists(db, "PaymentServicePaymentsCondition", "2");
 
-        await EnsureSettingExists(db, "MollieRelationCode", "473");
+        await EnsureSettingExists(db, "PaymentServiceRelationCode", "473");
 
         await EnsureSettingExists(db, "MembershipVATCode", "0");
 
-        await EnsureSettingExists(db, "MollieFeeVATCode", "21");
+        await EnsureSettingExists(db, "PaymentServiceVATCode", "21");
 
         await EnsureSettingExists(db, "MembershipPrice", "7.50");
 
@@ -193,9 +193,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
                 db.MembershipPayments.Add(new MembershipPayment
                 {
-                    MollieId = "",
+                    PaymentServiceId = "",
                     PaymentIntentUrl = "",
-                    Price = 7.50m,
+                    Price = decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"),
                     PaidAt = DateTime.UtcNow,
                     MemberId = backupMember.Id,
                     ManuallyMarkedAsPaid = true

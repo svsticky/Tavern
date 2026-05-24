@@ -17,7 +17,7 @@ namespace Backend.Repositories
         PostgresDbContext db,
         IPermissionService permissionService,
         ILogger<StudyEnrollmentRepository> logger
-    ) : IStudyEnrollmentService
+    ) : IStudyEnrollmentRepository
     {
         /// <inheritdoc />
         public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct)

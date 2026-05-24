@@ -132,35 +132,122 @@ export type Activity = {
  * Represents the response DTO for an activity, containing all relevant information about the activity, including its properties and related entities such as enrollments and specification questions. The ActivityResponseDTO is used to transfer comprehensive activity data from the server to the client when retrieving activity information, allowing for a complete representation of the activity's details, enrollment status, and associated specification questions in the response payload.
  */
 export type ActivityResponseDto = {
+    /**
+     * The unique identifier of an activity, assigned incrementally.
+     */
     id: number;
+    /**
+     * The name of the activity.
+     */
     name: string;
+    /**
+     * The price of the activity.
+     */
     price: number;
+    /**
+     * The Path where the poster for the activity is stored, if any.
+     */
     posterPath?: string | null;
+    /**
+     * The filename of the poster for the activity, if any.
+     */
     posterFileName?: string | null;
+    /**
+     * A dutch description or arbitrary length, explaining everything there is to know about the activity.
+     */
     dutchDescription: string;
+    /**
+     * An english description or arbitrary length, explaining everything there is to know about the activity.
+     */
     englishDescription: string;
+    /**
+     * The date and time at which the activity will start.
+     */
     dateTimeStart: string;
+    /**
+     * The date and time at which the activity will end.
+     */
     dateTimeEnd: string;
+    /**
+     * The deadline for unenrollment from the activity.
+     */
     unenrollmentDeadline?: string | null;
+    /**
+     * The deadline for enrollment from the activity.
+     */
     enrollmentDeadline?: string | null;
+    /**
+     * The date and time at which the activity will be open for enrolling.
+     */
     enrollOpenDate?: string | null;
+    /**
+     * The location where the activity will take place.
+     */
     location: string;
+    /**
+     * The maximum number of participants for the activity.
+     */
     participantLimit?: number | null;
+    /**
+     * The unique identifier of the organizer group.
+     */
     organizerId?: number | null;
+    /**
+     * Whether the activity is shown in Koala.
+     */
     showInKoala: boolean;
+    /**
+     * Whether the activity is shown on the website.
+     */
     showOnWebsite: boolean;
+    /**
+     * Whether the activity is open for enrollment.
+     */
     isEnrollable: boolean;
+    /**
+     * Whether the participants are visible to each other.
+     */
     areParticipantsVisible: boolean;
+    /**
+     * Whether the activity is 18+ only.
+     */
     isAdultOnly: boolean;
     allowedAudience?: TargetAudience;
+    /**
+     * Whether the activity belongs to the weekly drinks or not.
+     */
     isWeeklyDrinks: boolean;
+    /**
+     * The VAT rate applicable to the activity.
+     */
     vatRate?: number | null;
+    /**
+     * The general ledger account associated with this activity for financial tracking. Dutch: Grootboekrekening
+     */
     glAccountId?: string | null;
+    /**
+     * The cost center associated with this activity for financial tracking. Dutch: Kostenplaats
+     */
     costCenterId?: string | null;
+    /**
+     * The cost unit associated with this activity for financial tracking. Dutch: Kostendrager
+     */
     costUnitId?: string | null;
+    /**
+     * The members enrolled in this activity.
+     */
     enrollments: Array<EnrollmentResponseDto>;
+    /**
+     * An extra specification question for the activity.
+     */
     specificationQuestions: Array<GetSpecificationQuestionResponseDto>;
+    /**
+     * The payment deadline for the activity.
+     */
     paymentDeadline?: string | null;
+    /**
+     * Whether the activity is open for payment.
+     */
     isOpenForPayment?: boolean | null;
 };
 
@@ -247,11 +334,11 @@ export type EnrollmentPayment = {
      */
     price?: number;
     /**
-     * The identifier provided by Mollie for this payment. This is used to track the payment in the Mollie system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Mollie payment gateway.
+     * The identifier provided by the Payment Service for this payment. This is used to track the payment in the Payment Service system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Payment Service payment gateway.
      */
-    mollieId: string;
+    paymentServiceId: string;
     /**
-     * The URL provided by Mollie for the payment intent. This URL is used to redirect the member to the Mollie payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Mollie payment gateway and ensuring that members can easily access the payment page to complete their transactions.
+     * The URL provided by the Payment Service for the payment intent. This URL is used to redirect the member to the Payment Service payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Payment Service payment gateway and ensuring that members can easily access the payment page to complete their transactions.
      */
     paymentIntentUrl: string;
     /**
@@ -282,25 +369,59 @@ export type EnrollmentPayment = {
  * Represents the response DTO for an enrollment, containing all relevant information about the enrollment, including its properties and information about the associated member and activity. The EnrollmentResponseDTO is used to transfer comprehensive enrollment data from the server to the client when retrieving enrollment information, allowing for a complete representation of the enrollment's details, member information, activity information, and any specification answers provided by the member in the response payload.
  */
 export type EnrollmentResponseDto = {
+    /**
+     * If the enrollment is placed on a waiting list due to the associated activity being fully booked, this field indicates the position of the enrollment on the waiting list.
+     */
     isOnWaitingList: boolean;
     member: MemberResponseDto;
+    /**
+     * The answers for the specification questions associated with this enrollment.
+     */
     specificationAnswers?: Array<SpecificationAnswerResponseDto> | null;
+    /**
+     * The price paid for the enrollment.
+     */
     price?: number | null;
     activity: ActivityResponseDto;
+};
+
+/**
+ * Represents an error response.
+ */
+export type ErrorResponseDto = {
+    /**
+     * The error message describing the issue that occurred.
+     */
+    message: string;
 };
 
 /**
  * Represents the response DTO for an announcement, containing all relevant information about the announcement, including its properties and information about the creator. The GetAnnouncementResponseDTO is used to transfer comprehensive announcement data from the server to the client when retrieving announcement information, allowing for a complete representation of the announcement's details, creator information, and creation timestamp in the response payload.
  */
 export type GetAnnouncementResponseDto = {
+    /**
+     * The unique identifier of the announcement, assigned incrementally.
+     */
     id: number;
+    /**
+     * The title of the announcement.
+     */
     title: string;
+    /**
+     * The content of the announcement.
+     */
     content: string;
     /**
      * The name of the user who created the announcement, providing information about the creator of the announcement for display purposes in the client application. This field allows for better identification and attribution of announcements to their respective creators, enhancing the user experience by providing context about the source of the announcement in the system.
      */
     createdByName: string;
+    /**
+     * The member id who created the announcement.
+     */
     createdById?: string | null;
+    /**
+     * The date and time when the announcement was created.
+     */
     createdAt: string;
 };
 
@@ -308,12 +429,30 @@ export type GetAnnouncementResponseDto = {
  * Represents the response DTO for a specification question, containing all relevant information about the specification question, including its properties and any associated data. The GetSpecificationQuestionResponseDTO is used to transfer comprehensive specification question data from the server to the client when retrieving specification question information, allowing for a complete representation of the specification question's details in the response payload. The GetSpecificationQuestionResponseDTO can include properties such as the question ID, activity ID, question text in both Dutch and English, question type, mandatory status, public visibility, and any associated options, providing a comprehensive view of the specification question data for the client application.
  */
 export type GetSpecificationQuestionResponseDto = {
+    /**
+     * The question in Dutch.
+     */
     questionDutch: string;
+    /**
+     * The question in English.
+     */
     questionEnglish: string;
     type: QuestionType;
+    /**
+     * Whether providing an answer for this specification question is mandatory when enrolling for the associated activity.
+     */
     isMandatory: boolean;
+    /**
+     * The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
+     */
     isPublic: boolean;
+    /**
+     * The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
+     */
     options?: Array<string> | null;
+    /**
+     * The unique identifier of a specification question, assigned incrementally.
+     */
     id: number;
 };
 
@@ -390,14 +529,38 @@ export type GroupMembership = {
  * Represents the response DTO for a group membership, containing all relevant information about the group membership, including its properties and information about the associated member and group. The GroupMembershipResponseDTO is used to transfer comprehensive group membership data from the server to the client when retrieving group membership information, allowing for a complete representation of the group membership's details, member information, group information, and any associated role alias information in the response payload.
  */
 export type GroupMembershipResponseDto = {
+    /**
+     * The unique identifier of a group membership, assigned incrementally.
+     */
     id: number;
+    /**
+     * The member associated with this membership.
+     */
     memberId?: string | null;
+    /**
+     * The first name of the member.
+     */
     memberName?: string | null;
+    /**
+     * The group associated with this membership.
+     */
     groupId: number;
+    /**
+     * Represents a Group within the organization. A Group can be a Committee, Working Group, or Dispute group. Each Group has a unique identifier, a name, an active status, and can have multiple members associated with it through GroupMemberships. The Group entity also includes properties for the type of group and default financial information such as GL account and cost center. This entity is used to manage and organize different groups within the system, allowing for better collaboration and communication among members.
+     */
     groupName: string;
     groupType: GroupType;
+    /**
+     * The year of the membership.
+     */
     membershipYear: number;
+    /**
+     * The role of the member in this group membership.
+     */
     roleAliasId?: number | null;
+    /**
+     * The name of the role alias.
+     */
     roleAliasName?: string | null;
 };
 
@@ -405,6 +568,9 @@ export type GroupMembershipResponseDto = {
  * Defines the DTO for updating an existing group membership, containing all necessary information for modifying a group membership's properties. The GroupMembershipUpdateDTO is used to transfer data from the client to the server when updating an existing group membership, allowing for changes to be made to the group membership's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type GroupMembershipUpdateDto = {
+    /**
+     * The member associated with this membership.
+     */
     roleAliasId?: number | null;
 };
 
@@ -412,10 +578,22 @@ export type GroupMembershipUpdateDto = {
  * Represents the response DTO for a group, containing all relevant information about the group, including its properties and any associated data. The GroupResponseDTO is used to transfer comprehensive group data from the server to the client when retrieving group information, allowing for a complete representation of the group's details in the response payload. The GroupResponseDTO can include properties such as the group's unique identifier, name, active status, type, and any associated group picture information, providing a comprehensive view of the group data for the client application.
  */
 export type GroupResponseDto = {
+    /**
+     * The unique identifier of a Group, assigned incrementally.
+     */
     id: number;
+    /**
+     * The name of the Group.
+     */
     name: string;
+    /**
+     * Status of the group. Inactive groups are hidden from administrative views to prevent clutter, but are preserved in the database for historical records and statistics (e.g., the Almanac).
+     */
     active: boolean;
     type: GroupType;
+    /**
+     * The path where the picture for the group is stored, if any.
+     */
     groupPicturePath?: string | null;
 };
 
@@ -428,7 +606,13 @@ export type GroupType = 'Committee' | 'WorkingGroup' | 'Dispute';
  * Defines the DTO for updating an existing group, containing all necessary information for modifying a group's properties. The GroupUpdateDTO is used to transfer data from the client to the server when updating an existing group, allowing for changes to be made to the group's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type GroupUpdateDto = {
+    /**
+     * The name of the Group.
+     */
     name: string;
+    /**
+     * Status of the group. Inactive groups are hidden from administrative views to prevent clutter, but are preserved in the database for historical records and statistics (e.g., the Almanac).
+     */
     active: boolean;
     type: GroupType;
 };
@@ -483,9 +667,9 @@ export type Member = {
      */
     id?: string;
     /**
-     * The keycloak id of the member, used for authentication and authorization.
+     * The id of the member int he authenticatioin system, used for authentication and authorization.
      */
-    keycloakId?: string | null;
+    authSystemUserId?: string | null;
     /**
      * The student number of the member.
      */
@@ -593,20 +777,65 @@ export type Member = {
  * Defines the DTO for retrieving member information, containing all relevant details about a member, including personal information, contact details, and any associated data such as study enrollments and group memberships. The MemberResponseDTO is used to transfer comprehensive member data from the server to the client when retrieving member information, allowing for a complete representation of the member's details in the response payload. The MemberResponseDTO can include properties such as the member's unique identifier, name, email, phone number, address details, date of birth, mail subscriptions, preferred language, and any associated study enrollments or group memberships, providing a comprehensive view of the member data for the client application.
  */
 export type MemberResponseDto = {
+    /**
+     * The unique identifier of a member, assigned incrementally.
+     */
     id?: string | null;
+    /**
+     * The student number of the member.
+     */
     studentNumber?: number | null;
+    /**
+     * The first name of the member.
+     */
     firstName?: string | null;
+    /**
+     * The last name of the member.
+     */
     lastName?: string | null;
+    /**
+     * The email address of the member.
+     */
     email?: string | null;
+    /**
+     * The phone number of the member.
+     */
     phoneNumber?: string | null;
+    /**
+     * The street of the member.
+     */
     street?: string | null;
+    /**
+     * The house number of the member.
+     */
     houseNumber?: string | null;
+    /**
+     * The postal code of the member.
+     */
     postalCode?: string | null;
+    /**
+     * The city of the member.
+     */
     city?: string | null;
+    /**
+     * The date of birth of the member.
+     */
     dateOfBirth?: string | null;
+    /**
+     * Phone number of the member's parent or guardian, if the member is a minor.
+     */
     parentPhoneNumber?: string | null;
+    /**
+     * The mail subscriptions of the member.
+     */
     mailSubscriptions?: number | null;
+    /**
+     * The notes about the member.
+     */
     notes?: string | null;
+    /**
+     * The date and time at which the member registered.
+     */
     registeredOn?: string | null;
     preferredLanguage?: Language;
     /**
@@ -617,11 +846,29 @@ export type MemberResponseDto = {
      * Groups where the member is a part of.
      */
     groupMemberships?: Array<GroupMembershipResponseDto> | null;
+    /**
+     * Indicates whether the member is granted a fee waiver.
+     */
     gratie?: boolean | null;
+    /**
+     * Indicates whether the member is a "Lid van Verdienste".
+     */
     lidVanVerdienste?: boolean | null;
+    /**
+     * Indicates whether the member is an honorary member.
+     */
     ereLid?: boolean | null;
+    /**
+     * Indicates whether the member is a "Begunstiger".
+     */
     begunstiger?: boolean | null;
+    /**
+     * Indicates whether the member is suspended.
+     */
     suspended?: boolean | null;
+    /**
+     * The path to the profile picture of the member.
+     */
     profilePicturePath?: string | null;
 };
 
@@ -629,24 +876,78 @@ export type MemberResponseDto = {
  * Defines the DTO for updating an existing member, containing all necessary information for modifying a member's properties. The MemberUpdateDTO is used to transfer data from the client to the server when updating an existing member, allowing for changes to be made to the member's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type MemberUpdateDto = {
+    /**
+     * The student number of the member.
+     */
     studentNumber: number;
+    /**
+     * The first name of the member.
+     */
     firstName: string;
+    /**
+     * The last name of the member.
+     */
     lastName: string;
+    /**
+     * The email address of the member.
+     */
     email: string;
+    /**
+     * The phone number of the member.
+     */
     phoneNumber: string;
+    /**
+     * The street of the member.
+     */
     street: string;
+    /**
+     * The house number of the member.
+     */
     houseNumber: string;
+    /**
+     * The postal code of the member.
+     */
     postalCode: string;
+    /**
+     * The city of the member.
+     */
     city: string;
+    /**
+     * The date of birth of the member.
+     */
     dateOfBirth: string;
+    /**
+     * Phone number of the member's parent or guardian, if the member is a minor.
+     */
     parentPhoneNumber?: string | null;
+    /**
+     * The mail subscriptions of the member.
+     */
     mailSubscriptions?: number;
+    /**
+     * The notes about the member.
+     */
     notes?: string | null;
     preferredLanguage: Language;
+    /**
+     * Indicates whether the member is granted a fee waiver.
+     */
     gratie?: boolean;
+    /**
+     * Indicates whether the member is a "Lid van Verdienste".
+     */
     lidVanVerdienste?: boolean;
+    /**
+     * Indicates whether the member is an honorary member.
+     */
     ereLid?: boolean;
+    /**
+     * Indicates whether the member is a "Begunstiger".
+     */
     begunstiger?: boolean;
+    /**
+     * Indicates whether the member is suspended.
+     */
     suspended?: boolean;
 };
 
@@ -663,11 +964,11 @@ export type MembershipPayment = {
      */
     price?: number;
     /**
-     * The identifier provided by Mollie for this payment. This is used to track the payment in the Mollie system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Mollie payment gateway.
+     * The identifier provided by the Payment Service for this payment. This is used to track the payment in the Payment Service system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Payment Service payment gateway.
      */
-    mollieId: string;
+    paymentServiceId: string;
     /**
-     * The URL provided by Mollie for the payment intent. This URL is used to redirect the member to the Mollie payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Mollie payment gateway and ensuring that members can easily access the payment page to complete their transactions.
+     * The URL provided by the Payment Service for the payment intent. This URL is used to redirect the member to the Payment Service payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Payment Service payment gateway and ensuring that members can easily access the payment page to complete their transactions.
      */
     paymentIntentUrl: string;
     /**
@@ -725,11 +1026,17 @@ export type PostActivityMailDto = {
  * Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, a list of activity IDs, and an optional flag indicating whether the payment was manually marked as paid. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostActivityPaymentDto = {
+    /**
+     * The identifier of the member who made the payment. This is a foreign key referencing the Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the MemberId would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
+     */
     memberId?: string;
     /**
      * The list of unique identifiers of the activities for which the activity payment is being created. This field is required to associate the activity payment with the correct activities within the system, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload. The PostActivityPaymentDTO ensures that the activity payment is created with the necessary information to effectively manage and track activity payments for the specified activities, providing a structured and validated approach to activity payment creation in the application.
      */
     activityIds?: Array<number>;
+    /**
+     * Indicates whether the payment was manually marked as paid by an administrator. This is used to differentiate between payments that were processed through the normal payment flow and those that were manually marked as paid, which may require different handling in terms of accounting and reporting. This property is set to false by default, and can be set to true by an administrator when they manually mark a payment as paid, allowing for better tracking and management of payments that may not have gone through the standard payment processing flow.
+     */
     manuallyMarkedAsPaid?: boolean;
 };
 
@@ -737,7 +1044,13 @@ export type PostActivityPaymentDto = {
  * Defines Data Transfer Object (DTO) for posting announcements, containing the necessary information for creating a new announcement, including its title and content. The PostAnnouncementDTO is used to transfer data from the client to the server when creating a new announcement, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostAnnouncementDto = {
+    /**
+     * The title of the announcement.
+     */
     title: string;
+    /**
+     * The content of the announcement.
+     */
     content: string;
 };
 
@@ -745,8 +1058,17 @@ export type PostAnnouncementDto = {
  * Defines Data Transfer Object (DTO) for posting enrollments, containing the necessary information for creating a new enrollment, including the activity ID, member ID, and any specification answers provided by the member. The PostEnrollmentDTO is used to transfer data from the client to the server when creating a new enrollment, ensuring that all required information is provided and validated appropriately for the enrollment creation process.
  */
 export type PostEnrollmentDto = {
+    /**
+     * Reference to the unique identifier of the activity which is enrolled for.
+     */
     activityId?: number;
+    /**
+     * The ID of the user, as determined by the used OAuth application, which enrolls for the activity.
+     */
     memberId?: string;
+    /**
+     * The answers for the specification questions associated with this enrollment.
+     */
     specificationAnswers?: Array<PostSpecificationAnswerDto> | null;
 };
 
@@ -754,9 +1076,21 @@ export type PostEnrollmentDto = {
  * Defines the DTO for posting a group membership, containing the necessary information for creating a new group membership, including member ID, group ID, membership year, and an optional role alias ID. The PostGroupMembershipDTO is used to transfer data from the client to the server when creating a new group membership, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostGroupMembershipDto = {
+    /**
+     * The member associated with this membership.
+     */
     memberId: string;
+    /**
+     * The group associated with this membership.
+     */
     groupId: number;
+    /**
+     * The year of the membership.
+     */
     membershipYear: number;
+    /**
+     * The role of the member in this group membership.
+     */
     roleAliasId?: number | null;
 };
 
@@ -782,7 +1116,13 @@ export type PostMailDto = {
  * Data Transfer Object for creating or updating a mailing list. The PostMailinglistDTO class encapsulates the necessary information required to create or update a mailing list entity, including the Name of the mailing list and the ServiceId that identifies the associated email service. This DTO is used in the Mailinglists controller to receive data from client requests when creating new mailing lists or updating existing ones, ensuring that the required fields are provided and structured correctly for processing by the underlying business logic in the MailinglistService.
  */
 export type PostMailinglistDto = {
+    /**
+     * Gets or sets the name of the mailing list. This property provides a human-readable name for the mailing list, which is used for display purposes in the user interface and for identifying the mailing list in logs and other outputs. The name should be descriptive enough to convey the purpose of the mailing list to users, such as "General Member Meetings" or "Company Mails".
+     */
     name?: string;
+    /**
+     * Gets or sets the service ID associated with the mailing list. This property is used to link the mailing list to an external email service, allowing for integration with third-party email providers for sending communications to subscribers. The ServiceId can be used to store identifiers such as API keys, list IDs, or other relevant information needed to manage the mailing list within the context of the external service.
+     */
     serviceId?: string;
 };
 
@@ -790,17 +1130,53 @@ export type PostMailinglistDto = {
  * Defines the DTO for posting a member, containing the necessary information for creating a new member, including personal details, contact information, and other relevant properties. The PostMemberDTO is used to transfer data from the client to the server when creating a new member, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostMemberDto = {
+    /**
+     * The student number of the member.
+     */
     studentNumber: number;
+    /**
+     * The first name of the member.
+     */
     firstName: string;
+    /**
+     * The last name of the member.
+     */
     lastName: string;
+    /**
+     * The email address of the member.
+     */
     email: string;
+    /**
+     * The phone number of the member.
+     */
     phoneNumber: string;
+    /**
+     * The street of the member.
+     */
     street: string;
+    /**
+     * The house number of the member.
+     */
     houseNumber: string;
+    /**
+     * The postal code of the member.
+     */
     postalCode: string;
+    /**
+     * The city of the member.
+     */
     city: string;
+    /**
+     * The date of birth of the member.
+     */
     dateOfBirth: string;
+    /**
+     * Phone number of the member's parent or guardian, if the member is a minor.
+     */
     parentPhoneNumber?: string | null;
+    /**
+     * The mail subscriptions of the member.
+     */
     mailSubscriptions?: number;
     preferredLanguage: Language;
     /**
@@ -813,6 +1189,9 @@ export type PostMemberDto = {
  * Defines the DTO for posting a membership payment, containing the necessary information for creating a new membership payment, including the member ID. The PostMembershipPaymentDTO is used to transfer data from the client to the server when creating a new membership payment, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostMembershipPaymentDto = {
+    /**
+     * The identifier of the member who made the payment. This is a foreign key referencing the Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the MemberId would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
+     */
     memberId?: string;
 };
 
@@ -820,6 +1199,9 @@ export type PostMembershipPaymentDto = {
  * Defines the response DTO for a payment, containing the necessary information about the payment response, including an optional checkout URL. The PostPaymentResponse is used to transfer data from the server to the client after creating a new payment, allowing for the inclusion of relevant information such as a checkout URL if applicable, providing a structured and informative response for payment-related operations in the application.
  */
 export type PostPaymentResponse = {
+    /**
+     * The URL provided by the Payment Service for the payment intent. This URL is used to redirect the member to the Payment Service payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Payment Service payment gateway and ensuring that members can easily access the payment page to complete their transactions.
+     */
     checkoutUrl?: string | null;
 };
 
@@ -827,7 +1209,13 @@ export type PostPaymentResponse = {
  * Defines the DTO for posting a role alias, containing the necessary information for creating a new role alias, including its name and the associated parent role ID. The PostRoleAliasDTO is used to transfer data from the client to the server when creating a new role alias, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostRoleAliasDto = {
+    /**
+     * The name of the role alias.
+     */
     name: string;
+    /**
+     * The id of the role that this alias belongs to.
+     */
     roleId?: number;
 };
 
@@ -835,6 +1223,9 @@ export type PostRoleAliasDto = {
  * Defines the DTO for posting a role, containing the necessary information for creating a new role, including its name. The PostRoleDTO is used to transfer data from the client to the server when creating a new role, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostRoleDto = {
+    /**
+     * The name of the role.
+     */
     name: string;
 };
 
@@ -842,7 +1233,13 @@ export type PostRoleDto = {
  * Defines the DTO for posting a specification answer, containing the necessary information for creating a new specification answer, including the question ID and the answer text. The PostSpecificationAnswerDTO is used to transfer data from the client to the server when creating a new specification answer, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostSpecificationAnswerDto = {
+    /**
+     * The unique identifier of the specification question for which this answer is provided.
+     */
     questionId?: number;
+    /**
+     * The answer provided for the specification question. The content and format of this answer depend on the type of the associated specification question.
+     */
     answer: string;
 };
 
@@ -850,7 +1247,13 @@ export type PostSpecificationAnswerDto = {
  * Defines the DTO for posting a study, containing the necessary information for creating a new study, including its title, nominal duration in years, and type. The PostStudyDTO is used to transfer data from the client to the server when creating a new study, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostStudyDto = {
+    /**
+     * The title of the study.
+     */
     title: string;
+    /**
+     * The default duration of the study in years.
+     */
     nominalDurationYears: number;
     type: StudyType;
 };
@@ -859,8 +1262,17 @@ export type PostStudyDto = {
  * Defines the DTO for posting a study enrollment, containing the necessary information for creating a new study enrollment, including the study ID, member ID, enrollment date, and status. The PostStudyEnrollmentDTO is used to transfer data from the client to the server when creating a new study enrollment, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostStudyEnrollmentDto = {
+    /**
+     * The study associated with this enrollment.
+     */
     studyId: number;
+    /**
+     * The member associated with this enrollment.
+     */
     memberId: string;
+    /**
+     * The date and time when the enrollment started.
+     */
     enrollmentDate: string;
     status?: StudyStatus;
 };
@@ -916,7 +1328,13 @@ export type RoleAlias = {
  * Defines the DTO for updating an existing role alias, containing all necessary information for modifying a role alias's properties. The RoleAliasUpdateDTO is used to transfer data from the client to the server when updating an existing role alias, allowing for changes to be made to the role alias's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type RoleAliasUpdateDto = {
+    /**
+     * The name of the role alias.
+     */
     name: string;
+    /**
+     * The id of the role that this alias belongs to.
+     */
     roleId?: number;
 };
 
@@ -924,6 +1342,9 @@ export type RoleAliasUpdateDto = {
  * Defines the DTO for updating an existing role, containing all necessary information for modifying a role's properties. The RoleUpdateDTO is used to transfer data from the client to the server when updating an existing role, allowing for changes to be made to the role's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type RoleUpdateDto = {
+    /**
+     * The name of the role.
+     */
     name: string;
 };
 
@@ -970,8 +1391,17 @@ export type SpecificationAnswer = {
  * Represents the response DTO for a specification answer, containing all relevant information about the specification answer, including its properties and any associated data. The SpecificationAnswerResponseDTO is used to transfer comprehensive specification answer data from the server to the client when retrieving specification answer information, allowing for a complete representation of the specification answer's details in the response payload. The SpecificationAnswerResponseDTO can include properties such as the question ID, answer ID, and the answer text, providing a comprehensive view of the specification answer data for the client application.
  */
 export type SpecificationAnswerResponseDto = {
+    /**
+     * The unique identifier of the specification question for which this answer is provided.
+     */
     questionId: number;
+    /**
+     * The unique identifier of a specification answer, assigned incrementally.
+     */
     answerId: number;
+    /**
+     * The answer provided for the specification question. The content and format of this answer depend on the type of the associated specification question.
+     */
     answer: string;
 };
 
@@ -1071,13 +1501,34 @@ export type StudyEnrollment = {
  * Represents the response DTO for a study enrollment, containing all relevant information about the study enrollment, including its properties and any associated data. The StudyEnrollmentResponseDTO is used to transfer comprehensive study enrollment data from the server to the client when retrieving study enrollment information, allowing for a complete representation of the study enrollment's details in the response payload. The StudyEnrollmentResponseDTO can include properties such as the enrollment ID, member ID, member name, study ID, study title, study type, enrollment date, completion date, and status, providing a comprehensive view of the study enrollment data for the client application.
  */
 export type StudyEnrollmentResponseDto = {
+    /**
+     * The unique identifier of a study enrollment, assigned incrementally.
+     */
     id: number;
+    /**
+     * The member associated with this enrollment.
+     */
     memberId?: string | null;
+    /**
+     * Represents a member of the organization. A member has various properties such as personal information, contact details, registration date, and relationships with other entities such as enrollments, group memberships, and announcements. This entity is used to manage and organize members within the system, allowing for better communication, access control, and personalized experiences based on member preferences and attributes.
+     */
     memberName?: string | null;
+    /**
+     * The study associated with this enrollment.
+     */
     studyId?: number | null;
+    /**
+     * Represents a study program. A Study has a unique identifier, a title, a nominal duration in years, and a type (e.g., Bachelor, Master). Each Study can have multiple enrollments associated with it through the StudyEnrollment entity. This entity is used to manage and organize different study programs within the system, allowing for better tracking of student enrollments and academic programs offered by the organization.
+     */
     studyTitle?: string | null;
     studyType?: StudyType;
+    /**
+     * The date and time when the enrollment started.
+     */
     enrollmentDate: string;
+    /**
+     * The date and time when the enrollment ended, if applicable.
+     */
     completionDate?: string | null;
     status: StudyStatus;
 };
@@ -1096,7 +1547,13 @@ export type StudyType = 'Bachelor' | 'Master';
  * Defines the DTO for updating an existing study, containing all necessary information for modifying a study's properties. The StudyUpdateDTO is used to transfer data from the client to the server when updating an existing study, allowing for changes to be made to the study's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type StudyUpdateDto = {
+    /**
+     * The title of the study.
+     */
     title: string;
+    /**
+     * The default duration of the study in years.
+     */
     nominalDurationYears: number;
     type: StudyType;
 };
@@ -1110,7 +1567,13 @@ export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYears
  * Defines the DTO for updating an existing announcement, containing all necessary information for modifying an announcement's properties. The UpdateAnnouncementDTO is used to transfer data from the client to the server when updating an existing announcement, allowing for changes to be made to the announcement's details while ensuring that the provided information is validated appropriately for the update process.
  */
 export type UpdateAnnouncementDto = {
+    /**
+     * The title of the announcement.
+     */
     title: string;
+    /**
+     * The content of the announcement.
+     */
     content: string;
 };
 
@@ -1152,7 +1615,7 @@ export type GetActivitiesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1171,38 +1634,110 @@ export type GetActivitiesResponses = {
 export type GetActivitiesResponse = GetActivitiesResponses[keyof GetActivitiesResponses];
 
 export type PostActivitiesData = {
+    /**
+     * Represents the DTO for creating a new activity, containing all necessary information for defining an activity, including its properties and associated specification questions. The PostActivityDTO is used to transfer data from the client to the server when creating a new activity, ensuring that all required information is provided and validated appropriately for the creation process.
+     */
     body?: {
+        /**
+         * The name of the activity.
+         */
         Name: string;
+        /**
+         * The price of the activity.
+         */
         Price?: number;
         /**
          * The poster file for the activity, which can be uploaded when creating or updating an activity. The Poster property is of type IFormFile, allowing for the handling of file uploads in ASP.NET Core. This property is used to manage the visual representation of the activity, as the poster can be displayed on the website or in the Koala app to attract participants and provide information about the activity. When a poster is uploaded, it can be stored on the server and associated with the activity, enabling better organization and presentation of activities within the system.
          */
         Poster?: Blob | File;
+        /**
+         * A dutch description or arbitrary length, explaining everything there is to know about the activity.
+         */
         DutchDescription: string;
+        /**
+         * An english description or arbitrary length, explaining everything there is to know about the activity.
+         */
         EnglishDescription: string;
+        /**
+         * The date and time at which the activity will start.
+         */
         DateTimeStart: string;
+        /**
+         * The date and time at which the activity will end.
+         */
         DateTimeEnd: string;
+        /**
+         * The deadline for unenrollment from the activity.
+         */
         UnenrollmentDeadline?: string;
+        /**
+         * The deadline for enrollment from the activity.
+         */
         EnrollmentDeadline?: string;
+        /**
+         * The date and time at which the activity will be open for enrolling.
+         */
         EnrollOpenDate?: string;
+        /**
+         * The location where the activity will take place.
+         */
         Location: string;
+        /**
+         * The maximum number of participants for the activity.
+         */
         ParticipantLimit?: number;
+        /**
+         * The unique identifier of the organizer group.
+         */
         OrganizerId?: number;
         /**
          * A JSON string representing the specification questions associated with the activity. This property is used to capture the details of the specification questions in a structured format, allowing for easy serialization and deserialization when creating or updating an activity. The JSON string can contain an array of specification question objects, each with its own properties such as question text, question type, and possible answers. This approach allows for flexibility in managing the specification questions while ensuring that they are properly associated with the activity in the system.
          */
         SpecificationQuestionsJson?: string;
+        /**
+         * Whether the activity is shown in Koala.
+         */
         ShowInKoala: boolean;
+        /**
+         * Whether the activity is shown on the website.
+         */
         ShowOnWebsite: boolean;
+        /**
+         * Whether the activity is open for enrollment.
+         */
         IsEnrollable: boolean;
+        /**
+         * Whether the participants are visible to each other.
+         */
         AreParticipantsVisible: boolean;
+        /**
+         * Whether the activity is 18+ only.
+         */
         IsAdultOnly: boolean;
+        /**
+         * Whether the activity belongs to the weekly drinks or not.
+         */
         IsWeeklyDrinks: boolean;
         AllowedAudience?: TargetAudience;
+        /**
+         * The VAT rate applicable to the activity.
+         */
         VatRate?: number;
+        /**
+         * The general ledger account associated with this activity for financial tracking. Dutch: Grootboekrekening
+         */
         GLAccountId?: string;
+        /**
+         * The cost center associated with this activity for financial tracking. Dutch: Kostenplaats
+         */
         CostCenterId?: string;
+        /**
+         * The cost unit associated with this activity for financial tracking. Dutch: Kostendrager
+         */
         CostUnitId?: string;
+        /**
+         * The payment deadline for the activity.
+         */
         PaymentDeadline?: string;
     };
     path?: never;
@@ -1214,7 +1749,7 @@ export type PostActivitiesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1248,7 +1783,7 @@ export type DeleteActivitiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1286,7 +1821,7 @@ export type GetActivitiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1327,7 +1862,7 @@ export type PatchActivitiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1350,38 +1885,110 @@ export type PatchActivitiesByIdResponses = {
 export type PatchActivitiesByIdResponse = PatchActivitiesByIdResponses[keyof PatchActivitiesByIdResponses];
 
 export type PutActivitiesByIdData = {
+    /**
+     * Represents the DTO for updating an existing activity, containing all necessary information for modifying an activity's properties and associated specification questions. The PutActivityDTO is used to transfer data from the client to the server when updating an existing activity, allowing for changes to be made to the activity's details while ensuring that the provided information is validated appropriately for the update process.
+     */
     body?: {
+        /**
+         * The name of the activity.
+         */
         Name: string;
+        /**
+         * The price of the activity.
+         */
         Price?: number;
         /**
          * The poster file for the activity, which can be uploaded when creating or updating an activity. The Poster property is of type IFormFile, allowing for the handling of file uploads in ASP.NET Core. This property is used to manage the visual representation of the activity, as the poster can be displayed on the website or in the Koala app to attract participants and provide information about the activity. When a poster is uploaded, it can be stored on the server and associated with the activity, enabling better organization and presentation of activities within the system.
          */
         Poster?: Blob | File;
+        /**
+         * A dutch description or arbitrary length, explaining everything there is to know about the activity.
+         */
         DutchDescription: string;
+        /**
+         * An english description or arbitrary length, explaining everything there is to know about the activity.
+         */
         EnglishDescription: string;
+        /**
+         * The date and time at which the activity will start.
+         */
         DateTimeStart: string;
+        /**
+         * The date and time at which the activity will end.
+         */
         DateTimeEnd: string;
+        /**
+         * The deadline for unenrollment from the activity.
+         */
         UnenrollmentDeadline?: string;
+        /**
+         * The deadline for enrollment from the activity.
+         */
         EnrollmentDeadline?: string;
+        /**
+         * The date and time at which the activity will be open for enrolling.
+         */
         EnrollOpenDate?: string;
+        /**
+         * The location where the activity will take place.
+         */
         Location: string;
+        /**
+         * The maximum number of participants for the activity.
+         */
         ParticipantLimit?: number;
+        /**
+         * The unique identifier of the organizer group.
+         */
         OrganizerId?: number;
         /**
          * A JSON string representing the specification questions associated with the activity. This property is used to capture the details of the specification questions in a structured format, allowing for easy serialization and deserialization when creating or updating an activity. The JSON string can contain an array of specification question objects, each with its own properties such as question text, question type, and possible answers. This approach allows for flexibility in managing the specification questions while ensuring that they are properly associated with the activity in the system.
          */
         SpecificationQuestionsJson?: string;
+        /**
+         * Whether the activity is shown in Koala.
+         */
         ShowInKoala: boolean;
+        /**
+         * Whether the activity is shown on the website.
+         */
         ShowOnWebsite: boolean;
+        /**
+         * Whether the activity is open for enrollment.
+         */
         IsEnrollable: boolean;
+        /**
+         * Whether the participants are visible to each other.
+         */
         AreParticipantsVisible: boolean;
+        /**
+         * Whether the activity is 18+ only.
+         */
         IsAdultOnly: boolean;
+        /**
+         * Whether the activity belongs to the weekly drinks or not.
+         */
         IsWeeklyDrinks: boolean;
         AllowedAudience?: TargetAudience;
+        /**
+         * The VAT rate applicable to the activity.
+         */
         VatRate?: number;
+        /**
+         * The general ledger account associated with this activity for financial tracking. Dutch: Grootboekrekening
+         */
         GLAccountId?: string;
+        /**
+         * The cost center associated with this activity for financial tracking. Dutch: Kostenplaats
+         */
         CostCenterId?: string;
+        /**
+         * The cost unit associated with this activity for financial tracking. Dutch: Kostendrager
+         */
         CostUnitId?: string;
+        /**
+         * The payment deadline for the activity.
+         */
         PaymentDeadline?: string;
     };
     path: {
@@ -1398,7 +2005,7 @@ export type PutActivitiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1436,7 +2043,7 @@ export type GetActivitiesByIdPosterErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1476,7 +2083,7 @@ export type PostActivitiesByIdPosterErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1512,7 +2119,7 @@ export type GetActivitiesByIdPosterDownloadErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1550,7 +2157,7 @@ export type GetActivitiesByIdEnrollmentsExportErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1583,7 +2190,7 @@ export type GetAnnouncementsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1615,7 +2222,7 @@ export type PostAnnouncementsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1649,7 +2256,7 @@ export type DeleteAnnouncementsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1687,7 +2294,7 @@ export type GetAnnouncementsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1728,7 +2335,7 @@ export type PatchAnnouncementsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1769,7 +2376,7 @@ export type PutAnnouncementsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1807,7 +2414,7 @@ export type GetEnrollmentsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1839,7 +2446,7 @@ export type PostEnrollmentsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1877,7 +2484,7 @@ export type DeleteEnrollmentsByActivityIdByMemberIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1919,7 +2526,7 @@ export type GetEnrollmentsByActivityIdByMemberIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -1964,7 +2571,7 @@ export type PatchEnrollmentsByActivityIdByMemberIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2009,7 +2616,7 @@ export type PutEnrollmentsByActivityIdByMemberIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2046,7 +2653,7 @@ export type GetGroupmembershipsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2078,7 +2685,7 @@ export type PostGroupmembershipsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2112,7 +2719,7 @@ export type DeleteGroupmembershipsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2150,7 +2757,7 @@ export type GetGroupmembershipsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2191,7 +2798,7 @@ export type PatchGroupmembershipsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2232,7 +2839,7 @@ export type PutGroupmembershipsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2271,7 +2878,7 @@ export type GetGroupsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2290,7 +2897,13 @@ export type GetGroupsResponses = {
 export type GetGroupsResponse = GetGroupsResponses[keyof GetGroupsResponses];
 
 export type PostGroupsData = {
+    /**
+     * Defines the DTO for posting a group, containing the necessary information for creating a new group, including its name, type, and an optional group picture. The PostGroupDTO is used to transfer data from the client to the server when creating a new group, ensuring that all required information is provided and validated appropriately for the creation process.
+     */
     body?: {
+        /**
+         * The name of the Group.
+         */
         Name: string;
         Type: GroupType;
         /**
@@ -2307,7 +2920,7 @@ export type PostGroupsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2341,7 +2954,7 @@ export type DeleteGroupsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2379,7 +2992,7 @@ export type GetGroupsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2420,7 +3033,7 @@ export type PatchGroupsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2461,7 +3074,7 @@ export type PutGroupsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2499,7 +3112,7 @@ export type GetGroupsByIdGroupPictureErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2539,7 +3152,7 @@ export type PostGroupsByIdGroupPictureErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2568,7 +3181,7 @@ export type GetMailinglistsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2600,7 +3213,7 @@ export type PostMailinglistsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2634,7 +3247,7 @@ export type DeleteMailinglistsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2672,7 +3285,7 @@ export type GetMailinglistsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2713,7 +3326,7 @@ export type PatchMailinglistsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2754,7 +3367,7 @@ export type PutMailinglistsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2790,7 +3403,7 @@ export type PostMailsNormalErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2820,7 +3433,7 @@ export type PostMailsActivityErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2874,7 +3487,7 @@ export type GetMembersErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2906,7 +3519,7 @@ export type PostMembersErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
 };
 
 export type PostMembersError = PostMembersErrors[keyof PostMembersErrors];
@@ -2936,7 +3549,7 @@ export type DeleteMembersByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -2974,7 +3587,7 @@ export type GetMembersByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3015,7 +3628,7 @@ export type PatchMembersByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3056,7 +3669,7 @@ export type PutMembersByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3094,7 +3707,7 @@ export type DeleteMembersByIdProfilePictureErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3132,7 +3745,7 @@ export type GetMembersByIdProfilePictureErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Not Found
      */
@@ -3170,7 +3783,7 @@ export type PostMembersWebhookRefreshEmailErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Unauthorized
      */
@@ -3197,7 +3810,7 @@ export type GetPaymentsMembershipErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3229,7 +3842,7 @@ export type PostPaymentsMembershipErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3263,7 +3876,7 @@ export type GetPaymentsMembershipByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3296,7 +3909,7 @@ export type GetPaymentsEnrollmentErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3330,7 +3943,7 @@ export type GetPaymentsEnrollmentByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3366,7 +3979,7 @@ export type PostPaymentsActivityErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3397,7 +4010,7 @@ export type PostPaymentsWebhookErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
 };
 
 export type PostPaymentsWebhookError = PostPaymentsWebhookErrors[keyof PostPaymentsWebhookErrors];
@@ -3425,7 +4038,7 @@ export type GetPaymentsUnpaidErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3458,7 +4071,7 @@ export type GetPaymentsOverpaidErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3498,7 +4111,7 @@ export type GetPaymentsMemberByUserIdStatusErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3538,7 +4151,7 @@ export type GetPaymentsExportErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3572,7 +4185,7 @@ export type GetProfilepictureViewByPathErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Not Found
      */
@@ -3608,7 +4221,7 @@ export type PostProfilepictureByIdProfilePictureErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3637,7 +4250,7 @@ export type GetRolealiasesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
 };
 
 export type GetRolealiasesError = GetRolealiasesErrors[keyof GetRolealiasesErrors];
@@ -3665,7 +4278,7 @@ export type PostRolealiasesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3699,7 +4312,7 @@ export type DeleteRolealiasesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3737,7 +4350,7 @@ export type GetRolealiasesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Not Found
      */
@@ -3811,7 +4424,7 @@ export type PutRolealiasesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3844,7 +4457,7 @@ export type GetRolesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
 };
 
 export type GetRolesError = GetRolesErrors[keyof GetRolesErrors];
@@ -3872,7 +4485,7 @@ export type PostRolesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3906,7 +4519,7 @@ export type DeleteRolesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -3944,7 +4557,7 @@ export type GetRolesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Not Found
      */
@@ -3981,7 +4594,7 @@ export type PatchRolesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4022,7 +4635,7 @@ export type PutRolesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4055,7 +4668,7 @@ export type GetSettingsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4093,7 +4706,7 @@ export type PostSettingsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4127,7 +4740,7 @@ export type DeleteSettingsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4165,7 +4778,7 @@ export type GetSettingsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4206,7 +4819,7 @@ export type PatchSettingsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4249,7 +4862,7 @@ export type PutSettingsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4290,7 +4903,7 @@ export type PatchSpecificationanswersByAnswerIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4323,7 +4936,7 @@ export type GetStudiesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
 };
 
 export type GetStudiesError = GetStudiesErrors[keyof GetStudiesErrors];
@@ -4351,7 +4964,7 @@ export type PostStudiesErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4385,7 +4998,7 @@ export type DeleteStudiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4423,7 +5036,7 @@ export type GetStudiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Not Found
      */
@@ -4460,7 +5073,7 @@ export type PatchStudiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4501,7 +5114,7 @@ export type PutStudiesByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4536,7 +5149,7 @@ export type GetStudyenrollmentsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4568,7 +5181,7 @@ export type PostStudyenrollmentsErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4602,7 +5215,7 @@ export type DeleteStudyenrollmentsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4640,7 +5253,7 @@ export type GetStudyenrollmentsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */
@@ -4681,7 +5294,7 @@ export type PatchStudyenrollmentsByIdErrors = {
     /**
      * Bad Request
      */
-    400: ProblemDetails;
+    400: ErrorResponseDto;
     /**
      * Forbidden
      */

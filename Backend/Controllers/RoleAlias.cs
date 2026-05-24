@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing role aliases within the system. The RoleAliasesController provides a set of endpoints for defining and managing alternative names for system roles, allowing for greater flexibility and user-friendly nomenclature across the application. This controller handles the full CRUD lifecycle for role aliases, ensuring that changes to role naming conventions are performed securely by authorized personnel. By interacting with the IRoleAliasService, the controller maintains a mapping between internal system roles and their public-facing aliases, facilitating a more intuitive experience for end-users while preserving the integrity of the underlying authorization logic.
+/// Controller for managing role aliases within the system. The RoleAliasesController provides a set of endpoints for defining and managing alternative names for system roles, allowing for greater flexibility and user-friendly nomenclature across the application. This controller handles the full CRUD lifecycle for role aliases, ensuring that changes to role naming conventions are performed securely by authorized personnel. By interacting with the IRoleAliasRepository, the controller maintains a mapping between internal system roles and their public-facing aliases, facilitating a more intuitive experience for end-users while preserving the integrity of the underlying authorization logic.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class RoleAliasesController : ControllerBase
 {
-    private readonly IRoleAliasService _service;
+    private readonly IRoleAliasRepository _roleAliasRepository;
 
     /// <summary>
     /// Initializes a new instance of the RoleAliasesController with the required role alias management service.
     /// </summary>
-    /// <param name="service">The service responsible for role alias business logic and data persistence.</param>
-    public RoleAliasesController(IRoleAliasService service)
+    /// <param name="roleAliasRepository">The repository responsible for role alias business logic and data persistence.</param>
+    public RoleAliasesController(IRoleAliasRepository roleAliasRepository)
     {
-        _service = service;
+        _roleAliasRepository = roleAliasRepository;
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class RoleAliasesController : ControllerBase
     {
         try
         {
-            return Ok(await _service.GetRoleAliases(ct));
+            return Ok(await _roleAliasRepository.GetRoleAliases(ct));
         }
         catch (Exception ex)
         {
@@ -73,7 +73,7 @@ public class RoleAliasesController : ControllerBase
     {
         try
         {
-            var result = await _service.GetRoleAlias(id, ct);
+            var result = await _roleAliasRepository.GetRoleAlias(id, ct);
             return result != null ? Ok(result) : NotFound();
         }
         catch (Exception ex)
@@ -99,7 +99,7 @@ public class RoleAliasesController : ControllerBase
     {
         try
         {
-            var result = await _service.CreateRoleAlias(dto, GetUserId(), ct);
+            var result = await _roleAliasRepository.CreateRoleAlias(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetRoleAlias), new { id = result.Id }, result);
         }
         catch (UnauthorizedAccessException)
@@ -130,7 +130,7 @@ public class RoleAliasesController : ControllerBase
     {
         try
         {
-            await _service.DeleteRoleAlias(id, GetUserId(), ct);
+            await _roleAliasRepository.DeleteRoleAlias(id, GetUserId(), ct);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -165,7 +165,7 @@ public class RoleAliasesController : ControllerBase
     {
         try
         {
-            await _service.PatchRoleAlias(id, patchDoc, GetUserId(), ct);
+            await _roleAliasRepository.PatchRoleAlias(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -197,7 +197,7 @@ public class RoleAliasesController : ControllerBase
     {
         try
         {
-            await _service.UpdateRoleAlias(id, dto, GetUserId(), ct);
+            await _roleAliasRepository.UpdateRoleAlias(id, dto, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)

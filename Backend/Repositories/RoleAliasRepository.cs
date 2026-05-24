@@ -17,7 +17,7 @@ namespace Backend.Repositories
         IPermissionService permissionService,
         AuthOutboxWorker authOutboxWorker,
         ILogger<RoleAliasRepository> logger
-    ) : IRoleAliasService
+    ) : IRoleAliasRepository
     {
         /// <inheritdoc />
         public async Task<List<RoleAlias>> GetRoleAliases(CancellationToken ct)

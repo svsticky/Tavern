@@ -291,6 +291,3 @@ __pycache__/
 
 Migrations/*.dll
 Migrations/*.pdb
-
-# Ignore the poster folder
-Posters/

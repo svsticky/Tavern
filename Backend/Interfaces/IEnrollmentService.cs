@@ -7,7 +7,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing enrollments and waiting-list promotion.
 /// </summary>
-public interface IEnrollmentService
+public interface IEnrollmentRepository
 {
     /// <summary>
     /// Retrieves enrollments visible to the requesting user.

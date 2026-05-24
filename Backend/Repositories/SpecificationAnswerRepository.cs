@@ -13,7 +13,7 @@ public class SpecificationAnswerRepository(
         PostgresDbContext db,
         IPermissionService permissionService,
         ILogger<SpecificationAnswerRepository> logger
-) : ISpecificationAnswerService
+) : ISpecificationAnswerRepository
 {
     /// <inheritdoc />
     public async Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)

@@ -8,7 +8,7 @@ using Backend.QueryExtensions;
 using Backend.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using Mollie.Api.Client.Abstract;
+using Backend.Services.PaymentServices;
 
 namespace Backend.Repositories
 {
@@ -20,12 +20,12 @@ namespace Backend.Repositories
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
         IStorageService storageService,
-        IPaymentClient mollieClient,
+        AbstractPaymentService paymentService,
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
         IAuthService authService,
         ILogger<MemberRepository> logger
-    ) : IMemberService
+    ) : IMemberRepository
     {
         /// <inheritdoc />
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
@@ -299,18 +299,18 @@ namespace Backend.Repositories
 
             if (existingPayment != null)
             {
-                var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
+                var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
 
                 // Make sure there is no paid membership with the same email, if there is, we don't want to delete the member
-                if (molliePayment.Status == "paid")
+                if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     throw new InvalidOperationException("Existing member with same email address that has paid membership found.");
                 }
 
                 // If there is a pending payment, we cancel it to prevent the member from paying for a membership they won't get
-                if (molliePayment.Status == "pending")
+                if (paymentResponse.Status == PaymentStatus.Pending)
                 {
-                    await mollieClient.CancelPaymentAsync(existingPayment.MollieId);
+                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
                 }
 
                 db.MembershipPayments.Remove(existingPayment);

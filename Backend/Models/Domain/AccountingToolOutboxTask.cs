@@ -15,9 +15,9 @@ public enum AccountingToolTaskType {
     MembershipPayment,
 
     /// <summary>
-    /// Indicates that the task is to process a Mollie fee payment. This task type is used when a payment related to a fee from the Mollie payment provider needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the fee transaction.
+    /// Indicates that the task is to process a Payment Service fee payment. This task type is used when a payment related to a fee from the Payment Service payment provider needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the fee transaction.
     /// </summary>
-    MollieFeePayment 
+    PaymentServiceFeePayment 
 }
 
 /// <summary>
@@ -51,7 +51,7 @@ public class AccountingToolOutboxTask
     public int RetryCount { get; set; } = 0;
 
     /// <summary>
-    /// The type of the accounting tool task. This is an enumeration that indicates the specific type of task being performed, such as processing an enrollment payment, a membership payment, or a Mollie fee payment. This information can be used to determine how the task should be handled and processed.
+    /// The type of the accounting tool task. This is an enumeration that indicates the specific type of task being performed, such as processing an enrollment payment, a membership payment, or a Payment Service fee payment. This information can be used to determine how the task should be handled and processed.
     /// </summary>
     public AccountingToolTaskType TaskType { get; set; } = AccountingToolTaskType.EnrollmentPayment;
 }

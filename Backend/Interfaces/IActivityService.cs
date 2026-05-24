@@ -7,7 +7,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing activities and their related assets.
 /// </summary>
-public interface IActivityService
+public interface IActivityRepository
 {
     /// <summary>
     /// Retrieves a list of activities based on the specified criteria in the GetActivitiesDTO object. This method allows for dynamic filtering of activities based on various parameters such as date range, activity type, and other relevant attributes. The method returns an enumerable collection of ActivityResponseDTO objects that match the specified criteria, providing a structured representation of the activities for API responses. The retrieval process should be designed to be efficient and scalable, handling potential errors or exceptions that may arise during the data access while maintaining appropriate access control based on the user's role within the system.

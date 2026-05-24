@@ -12,7 +12,7 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements announcement management operations.
 /// </summary>
-public class AnnouncementRepository : IAnnouncementService
+public class AnnouncementRepository : IAnnouncementRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;

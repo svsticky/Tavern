@@ -473,14 +473,14 @@ namespace Backend.Migrations
                     b.Property<Guid?>("MemberId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("MollieId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTimeOffset?>("PaidAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PaymentIntentUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaymentServiceId")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -704,11 +704,11 @@ namespace Backend.Migrations
                     b.ToTable("MembershipPayments", (string)null);
                 });
 
-            modelBuilder.Entity("Backend.Models.Domain.MollieFeePayment", b =>
+            modelBuilder.Entity("Backend.Models.Domain.PaymentServiceFeePayment", b =>
                 {
                     b.HasBaseType("Backend.Models.Domain.Payment");
 
-                    b.ToTable("MollieFeePayments");
+                    b.ToTable("PaymentServiceFeePayments");
                 });
 
             modelBuilder.Entity("Backend.Models.Domain.AccountingToolOutboxTask", b =>

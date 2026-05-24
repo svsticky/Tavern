@@ -16,12 +16,12 @@ public abstract class Payment
     public decimal Price { get; set; }
     
     /// <summary>
-    /// The identifier provided by Mollie for this payment. This is used to track the payment in the Mollie system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Mollie payment gateway.
+    /// The identifier provided by the Payment Service for this payment. This is used to track the payment in the Payment Service system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Payment Service payment gateway.
     /// </summary>
-    public required string MollieId { get; set; }
+    public required string PaymentServiceId { get; set; }
 
     /// <summary>
-    /// The URL provided by Mollie for the payment intent. This URL is used to redirect the member to the Mollie payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Mollie payment gateway and ensuring that members can easily access the payment page to complete their transactions.
+    /// The URL provided by the Payment Service for the payment intent. This URL is used to redirect the member to the Payment Service payment page where they can complete the payment process. This property is required for all payments, as it is essential for facilitating the payment process through the Payment Service payment gateway and ensuring that members can easily access the payment page to complete their transactions.
     /// </summary>
     public required string PaymentIntentUrl { get; set; }
 
@@ -92,9 +92,9 @@ public class EnrollmentBalance
 }
 
 /// <summary>
-/// Represents a payment made for a Mollie fee. This class inherits from the Payment base class and does not add any additional properties, as all relevant information for a Mollie fee payment is already captured in the base Payment class. This entity is used to specifically represent payments that are made for Mollie fees within the system, allowing for better organization and management of different types of payments while still utilizing the common properties defined in the Payment base class. Mollie fee payments are typically associated with processing fees charged by the Mollie payment gateway for handling transactions, and this entity allows for better tracking and reporting of these specific types of payments within the system.
+/// Represents a payment made for a Payment Service fee. This class inherits from the Payment base class and does not add any additional properties, as all relevant information for a Payment Service fee payment is already captured in the base Payment class. This entity is used to specifically represent payments that are made for Payment Service fees within the system, allowing for better organization and management of different types of payments while still utilizing the common properties defined in the Payment base class. Payment Service fee payments are typically associated with processing fees charged by the Payment Service payment gateway for handling transactions, and this entity allows for better tracking and reporting of these specific types of payments within the system.
 /// </summary>
-public class MollieFeePayment : Payment
+public class PaymentServiceFeePayment : Payment
 {
     
 }

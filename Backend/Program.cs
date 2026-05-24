@@ -24,6 +24,7 @@ using System.Text;
 using System.Net.Http.Headers;
 using Npgsql;
 using System.Reflection;
+using Backend.Services.PaymentServices;
 
 Env.Load();
 
@@ -188,11 +189,20 @@ builder.Services.AddSwaggerGen(c =>
 });
 string connectionstring = Environment.GetEnvironmentVariable("PostgresqlConnectionString") ?? string.Empty;
 builder.Services.AddNpgsql<PostgresDbContext>(connectionString: connectionstring);
-builder.Services.AddMollieApi(options => 
+
+string? paymentProvider = Environment.GetEnvironmentVariable("PAYMENT_PROVIDER")?.Trim().ToUpperInvariant();
+switch(paymentProvider)
 {
-    options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? string.Empty;
-});
+    default:
+        builder.Services.AddMollieApi(options => 
+        {
+            options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? string.Empty;
+        });
+        builder.Services.AddScoped<AbstractPaymentService, MollieService>();
+        break;
+}
 builder.Services.AddHostedService<PaymentSyncService>();
+
 builder.Services.AddHttpClient("KeycloakAdmin", client =>
 {
     var baseUri = Environment.GetEnvironmentVariable("KeycloakUrl") + "/admin/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm");
@@ -242,7 +252,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 
 builder.Services.AddScoped<IStorageService, S3StorageService>();
 builder.Services.AddScoped<IFileCompressService, FileCompressService>();
-builder.Services.AddScoped<IPaymentValidationService, PaymentValidationRepository>();
+builder.Services.AddScoped<IPaymentValidationService, PaymentValidationService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 string? mailProvider = Environment.GetEnvironmentVariable("MAIL_SERVICE");
@@ -290,23 +300,23 @@ switch(mailSubscriptionService)
         break;
 }
 
-builder.Services.AddScoped<IActivityService, ActivityRepository>();
-builder.Services.AddScoped<IAnnouncementService, AnnouncementRepository>();
-builder.Services.AddScoped<IEnrollmentService, EnrollmentRepository>();
-builder.Services.AddScoped<IGroupMembershipService, GroupMembershipRepository>();
-builder.Services.AddScoped<IGroupService, GroupRepository>();
-builder.Services.AddScoped<IMemberService, MemberRepository>();
-builder.Services.AddScoped<IPaymentService, PaymentRepository>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+builder.Services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
+builder.Services.AddScoped<IGroupMembershipRepository, GroupMembershipRepository>();
+builder.Services.AddScoped<IGroupRepository, GroupRepository>();
+builder.Services.AddScoped<IMemberRepository, MemberRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
 builder.Services.AddScoped<IPaymentWebhookService, PaymentWebhookService>();
 builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<IProfilePictureService, ProfilePictureRepository>();
-builder.Services.AddScoped<IRoleAliasService, RoleAliasRepository>();
-builder.Services.AddScoped<IRoleService, RoleRepository>();
-builder.Services.AddScoped<IStudyEnrollmentService, StudyEnrollmentRepository>();
-builder.Services.AddScoped<IStudyService, StudyRepository>();
-builder.Services.AddScoped<ISpecificationAnswerService, SpecificationAnswerRepository>();
-builder.Services.AddScoped<ISettingsService, SettingsRepository>();
-builder.Services.AddScoped<IMailinglistService, MailinglistRepository>();
+builder.Services.AddScoped<IProfilePictureRepository, ProfilePictureRepository>();
+builder.Services.AddScoped<IRoleAliasRepository, RoleAliasRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IStudyEnrollmentRepository, StudyEnrollmentRepository>();
+builder.Services.AddScoped<IStudyRepository, StudyRepository>();
+builder.Services.AddScoped<ISpecificationAnswerRepository, SpecificationAnswerRepository>();
+builder.Services.AddScoped<ISettingsRepository, SettingsRepository>();
+builder.Services.AddScoped<IMailinglistRepository, MailinglistRepository>();
 
 builder.Services.AddScoped<ICreateNewBoardService, CreateNewBoardService>();
 builder.Services.AddHostedService<DatabaseSeeder>();

@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing organizational groups within the system. The GroupsController provides a comprehensive set of endpoints for handling the lifecycle of groups, including creation, retrieval, full and partial updates, and deletion. It also manages group-specific assets such as group profile pictures. This controller is designed to enforce strict ownership and authorization rules, ensuring that only authorized users can modify group data. By interacting with the IGroupService, the controller maintains a clean separation between the API layer and the business logic required to manage group structures and their associated metadata effectively.
+/// Controller for managing organizational groups within the system. The GroupsController provides a comprehensive set of endpoints for handling the lifecycle of groups, including creation, retrieval, full and partial updates, and deletion. It also manages group-specific assets such as group profile pictures. This controller is designed to enforce strict ownership and authorization rules, ensuring that only authorized users can modify group data. By interacting with the IGroupRepository, the controller maintains a clean separation between the API layer and the business logic required to manage group structures and their associated metadata effectively.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class GroupsController : ControllerBase
 {
-    private readonly IGroupService _groupService;
+    private readonly IGroupRepository _groupRepository;
 
     /// <summary>
-    /// Initializes a new instance of the GroupsController with the required group management service.
+    /// Initializes a new instance of the GroupsController with the required group management repository.
     /// </summary>
-    /// <param name="groupService">The group service used for managing group-related business operations.</param>
-    public GroupsController(IGroupService groupService)
+    /// <param name="groupRepository">The group repository used for managing group-related data operations.</param>
+    public GroupsController(IGroupRepository groupRepository)
     {
-        _groupService = groupService;
+        _groupRepository = groupRepository;
     }
 
     /// <summary>
@@ -55,7 +55,7 @@ public class GroupsController : ControllerBase
         {
             var userId = GetUserId();
 
-            var result = await _groupService.GetGroups(userId, dto, cancellationToken);
+            var result = await _groupRepository.GetGroups(userId, dto, cancellationToken);
             return Ok(result);
         }
         catch (UnauthorizedAccessException)
@@ -85,7 +85,7 @@ public class GroupsController : ControllerBase
     {
         try
         {
-            var result = await _groupService.GetGroup(id, cancellationToken);
+            var result = await _groupRepository.GetGroup(id, cancellationToken);
 
             if (result == null)
                 return NotFound();
@@ -123,7 +123,7 @@ public class GroupsController : ControllerBase
         {
             var userId = GetUserId();
 
-            var created = await _groupService.CreateGroup(groupDto, userId, cancellationToken);
+            var created = await _groupRepository.CreateGroup(groupDto, userId, cancellationToken);
 
             return CreatedAtAction(
                 nameof(GetGroup),
@@ -158,7 +158,7 @@ public class GroupsController : ControllerBase
     {
         try
         {
-            var path = await _groupService.UploadGroupPicture(id, GetUserId(), image);
+            var path = await _groupRepository.UploadGroupPicture(id, GetUserId(), image);
 
             return Ok(new UploadPictureResponse { Path = path });
         }
@@ -189,11 +189,11 @@ public class GroupsController : ControllerBase
     {
         try
         {
-            var group = await _groupService.GetGroup(id, cancellationToken);
+            var group = await _groupRepository.GetGroup(id, cancellationToken);
             if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
                 return NotFound("Group or group picture not found.");
 
-            var file = await _groupService.GetGroupPictureFile(group.GroupPicturePath);
+            var file = await _groupRepository.GetGroupPictureFile(group.GroupPicturePath);
             if (file == null)
                 return NotFound("File is no longer present on the server.");
 
@@ -230,7 +230,7 @@ public class GroupsController : ControllerBase
         {
             var userId = GetUserId();
 
-            await _groupService.DeleteGroup(id, userId, cancellationToken);
+            await _groupRepository.DeleteGroup(id, userId, cancellationToken);
 
             return NoContent();
         }
@@ -272,7 +272,7 @@ public class GroupsController : ControllerBase
         {
             var userId = GetUserId();
 
-            await _groupService.PatchGroup(id, userId, patchDoc, cancellationToken);
+            await _groupRepository.PatchGroup(id, userId, patchDoc, cancellationToken);
 
             return NoContent();
         }
@@ -314,7 +314,7 @@ public class GroupsController : ControllerBase
         {
             var userId = GetUserId();
 
-            await _groupService.UpdateGroup(id, userId, groupDto, cancellationToken);
+            await _groupRepository.UpdateGroup(id, userId, groupDto, cancellationToken);
 
             return NoContent();
         }

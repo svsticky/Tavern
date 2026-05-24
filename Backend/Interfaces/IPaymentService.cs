@@ -1,13 +1,12 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
-using Mollie.Api.Client.Abstract;
 
 namespace Backend.Interfaces
 {
     /// <summary>
     /// Defines the contract for creating payments and querying payment status data.
     /// </summary>
-    public interface IPaymentService
+    public interface IPaymentRepository
     {
         /// <summary>
         /// Retrieves membership payments visible to the requesting user.

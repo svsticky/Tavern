@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Backend.Interfaces;
 
 /// <summary>
@@ -44,4 +46,5 @@ public interface IStorageService
 /// <param name="Stream">The stream containing the file's content.</param>
 /// <param name="ContentType">The content type of the file.</param>
 /// <param name="FileName">The original name of the file.</param>
+[ExcludeFromCodeCoverage]
 public record StorageFile(Stream Stream, string ContentType, string FileName);

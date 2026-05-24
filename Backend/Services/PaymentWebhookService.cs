@@ -1,9 +1,8 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.PaymentServices;
 using Microsoft.EntityFrameworkCore;
-using Mollie.Api.Client.Abstract;
-using Mollie.Api.Models.Payment.Response;
 
 namespace Backend.Services
 {
@@ -12,7 +11,7 @@ namespace Backend.Services
     /// </summary>
     public class PaymentWebhookService(
         PostgresDbContext db,
-        IPaymentClient paymentClient,
+        AbstractPaymentService paymentService,
         ILogger<PaymentWebhookService> logger
     ) : IPaymentWebhookService
     {
@@ -21,47 +20,47 @@ namespace Backend.Services
         /// <inheritdoc />
         public async Task HandleWebhookAsync(string id)
         {
-            logger.LogInformation("Handling Mollie webhook for payment id {MollieId}.", id);
-            PaymentResponse result = await paymentClient.GetPaymentAsync(id);
-            var payments = await GetPaymentsByMollieId(id);
+            logger.LogInformation("Handling payment service webhook for payment id {Id}.", id);
+            GetPaymentResponse result = await paymentService.GetPaymentAsync(id);
+            var payments = await GetPaymentsByPaymentServiceId(id);
 
             if (!payments.Any())
                 throw new Exception("Payment not found");
 
-            if (result.Status == "paid")
+            if (result.Status == PaymentStatus.Paid)
             {
                 await ProcessPaidPayments(payments, result);
-                logger.LogInformation("Processed paid webhook for Mollie id {MollieId}. Matched {PaymentCount} local payments.", id, payments.Count);
+                logger.LogInformation("Processed paid webhook for payment id {Id}. Matched {PaymentCount} local payments.", id, payments.Count);
             }
         }
 
-        private async Task<List<Payment>> GetPaymentsByMollieId(string id)
+        private async Task<List<Payment>> GetPaymentsByPaymentServiceId(string id)
         {
             var membershipPayments = await db.MembershipPayments
                 .Include(p => p.Member)
-                .Where(p => p.MollieId == id)
+                .Where(p => p.PaymentServiceId == id)
                 .Cast<Payment>()
                 .ToListAsync();
 
             var enrollmentPayments = await db.EnrollmentPayments
                 .Include(p => p.Member)
-                .Where(p => p.MollieId == id)
+                .Where(p => p.PaymentServiceId == id)
                 .Cast<Payment>()
                 .ToListAsync();
 
-            var mollieFeePayments = await db.MollieFeePayments
+            var paymentServiceFeePayments = await db.PaymentServiceFeePayments
                 .Include(p => p.Member)
-                .Where(p => p.MollieId == id)
+                .Where(p => p.PaymentServiceId == id)
                 .Cast<Payment>()
                 .ToListAsync();
 
             return membershipPayments
                 .Concat(enrollmentPayments)
-                .Concat(mollieFeePayments)
+                .Concat(paymentServiceFeePayments)
                 .ToList();
         }
 
-        private async Task ProcessPaidPayments(IEnumerable<Payment> payments, PaymentResponse result)
+        private async Task ProcessPaidPayments(IEnumerable<Payment> payments, GetPaymentResponse result)
         {
             using var transaction = await db.Database.BeginTransactionAsync();
 
@@ -80,12 +79,12 @@ namespace Backend.Services
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                logger.LogError(ex, "Failed processing paid webhook transaction for Mollie id {MollieId}.", result.Id);
+                logger.LogError(ex, "Failed processing paid webhook transaction for payment id {PaymentId}.", result.PaymentId);
                 throw;
             }
         }
 
-        private static void MarkPaymentPaid(Payment payment, PaymentResponse result)
+        private static void MarkPaymentPaid(Payment payment, GetPaymentResponse result)
         {
             payment.PaidAt = result.PaidAt;
         }

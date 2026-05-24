@@ -7,7 +7,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing groups and group profile images.
 /// </summary>
-public interface IGroupService
+public interface IGroupRepository
 {
     /// <summary>
     /// Retrieves groups visible to the requesting user.

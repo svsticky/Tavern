@@ -7,7 +7,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines the contract for managing role definitions.
     /// </summary>
-    public interface IRoleService
+    public interface IRoleRepository
     {
         /// <summary>
         /// Retrieves all roles.

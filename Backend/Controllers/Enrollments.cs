@@ -7,21 +7,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing enrollments within the system. The EnrollmentsController provides endpoints for creating, retrieving, updating, and deleting enrollments, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify enrollment data while providing appropriate error handling for various scenarios. The EnrollmentsController interacts with the IEnrollmentService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing enrollments effectively within the application.
+/// Controller for managing enrollments within the system. The EnrollmentsController provides endpoints for creating, retrieving, updating, and deleting enrollments, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify enrollment data while providing appropriate error handling for various scenarios. The EnrollmentsController interacts with the IEnrollmentRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing enrollments effectively within the application.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 public class EnrollmentsController : ControllerBase
 {
-    private readonly IEnrollmentService _enrollmentService;
+    private readonly IEnrollmentRepository _enrollmentRepository;
 
     /// <summary>
-    /// Initializes a new instance of the EnrollmentsController class with the specified enrollment service. The constructor takes an IEnrollmentService as a parameter, which is used to perform various operations related to enrollments, such as creating, retrieving, updating, and deleting enrollments. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the service layer.
+    /// Initializes a new instance of the EnrollmentsController class with the specified enrollment repository. The constructor takes an IEnrollmentRepository as a parameter, which is used to perform various operations related to enrollments, such as creating, retrieving, updating, and deleting enrollments. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the repository layer.
     /// </summary>
-    /// <param name="enrollmentService">The enrollment service for managing enrollment operations.</param>
-    public EnrollmentsController(IEnrollmentService enrollmentService)
+    /// <param name="enrollmentRepository">The enrollment repository for managing enrollment operations.</param>
+    public EnrollmentsController(IEnrollmentRepository enrollmentRepository)
     {
-        _enrollmentService = enrollmentService;
+        _enrollmentRepository = enrollmentRepository;
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class EnrollmentsController : ControllerBase
     {
         try
         {
-            var enrollments = await _enrollmentService.GetEnrollments(dto, GetUserId(), cancellationToken);
+            var enrollments = await _enrollmentRepository.GetEnrollments(dto, GetUserId(), cancellationToken);
             return Ok(enrollments);
         }
         catch (UnauthorizedAccessException)
@@ -80,7 +80,7 @@ public class EnrollmentsController : ControllerBase
     {
         try
         {
-            var enrollment = await _enrollmentService.GetEnrollment(activityId, memberId, GetUserId(), cancellationToken);
+            var enrollment = await _enrollmentRepository.GetEnrollment(activityId, memberId, GetUserId(), cancellationToken);
 
             if (enrollment == null)
                 return NotFound();
@@ -116,7 +116,7 @@ public class EnrollmentsController : ControllerBase
     {
         try
         {
-            var created = await _enrollmentService.CreateEnrollment(dto, GetUserId(), cancellationToken);
+            var created = await _enrollmentRepository.CreateEnrollment(dto, GetUserId(), cancellationToken);
 
             return CreatedAtAction(
                 nameof(GetEnrollment),
@@ -153,7 +153,7 @@ public class EnrollmentsController : ControllerBase
     {
         try
         {
-            await _enrollmentService.DeleteEnrollment(activityId, memberId, GetUserId(), cancellationToken);
+            await _enrollmentRepository.DeleteEnrollment(activityId, memberId, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -192,7 +192,7 @@ public class EnrollmentsController : ControllerBase
             if(activityId != dto.ActivityId || memberId != dto.MemberId)
                 return BadRequest("ActivityId and MemberId in the URL must match those in the body.");
 
-            await _enrollmentService.UpdateEnrollment(dto, GetUserId(), cancellationToken);
+            await _enrollmentRepository.UpdateEnrollment(dto, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -231,7 +231,7 @@ public class EnrollmentsController : ControllerBase
 
         try
         {
-            await _enrollmentService.PatchEnrollment(activityId, memberId, patchDoc, GetUserId(), cancellationToken);
+            await _enrollmentRepository.PatchEnrollment(activityId, memberId, patchDoc, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)

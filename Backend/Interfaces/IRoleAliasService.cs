@@ -7,7 +7,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines the contract for managing role-alias metadata.
     /// </summary>
-    public interface IRoleAliasService
+    public interface IRoleAliasRepository
     {
         /// <summary>
         /// Retrieves all role aliases.

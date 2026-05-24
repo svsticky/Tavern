@@ -8,7 +8,7 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements application setting management.
 /// </summary>
-public class SettingsRepository : ISettingsService
+public class SettingsRepository : ISettingsRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;

@@ -15,7 +15,7 @@ namespace Backend.Repositories
             PostgresDbContext db,
             IPermissionService permissionService,
             ILogger<StudyRepository> logger
-        ) : IStudyService
+        ) : IStudyRepository
     {
         /// <inheritdoc />
         public async Task<List<Study>> GetStudies(CancellationToken ct)

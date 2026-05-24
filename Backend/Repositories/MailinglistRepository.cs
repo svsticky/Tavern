@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Backend.Repositories;
 
 /// <summary>
-/// Represents the service responsible for managing mailing lists within the application. The MailinglistRepository class implements the IMailinglistService interface, providing concrete implementations for operations such as retrieving all mailing lists, fetching a specific mailing list by ID, creating a new mailing list, updating an existing mailing list, deleting a mailing list, and partially updating a mailing list using a JSON Patch document. The service interacts with the database context to perform CRUD operations on the Mailinglist entities and includes authorization checks to ensure that only authorized users can perform certain actions on the mailing lists. Additionally, it incorporates logging to track significant events and actions related to mailing list management for monitoring and debugging purposes.
+/// Represents the service responsible for managing mailing lists within the application. The MailinglistRepository class implements the IMailinglistRepository interface, providing concrete implementations for operations such as retrieving all mailing lists, fetching a specific mailing list by ID, creating a new mailing list, updating an existing mailing list, deleting a mailing list, and partially updating a mailing list using a JSON Patch document. The service interacts with the database context to perform CRUD operations on the Mailinglist entities and includes authorization checks to ensure that only authorized users can perform certain actions on the mailing lists. Additionally, it incorporates logging to track significant events and actions related to mailing list management for monitoring and debugging purposes.
 /// </summary>
-public class MailinglistRepository : IMailinglistService
+public class MailinglistRepository : IMailinglistRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;

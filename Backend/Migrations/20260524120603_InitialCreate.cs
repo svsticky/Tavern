@@ -243,7 +243,7 @@ namespace Backend.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false, defaultValueSql: "nextval('\"PaymentSequence\"')"),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
-                    MollieId = table.Column<string>(type: "text", nullable: false),
+                    PaymentServiceId = table.Column<string>(type: "text", nullable: false),
                     PaymentIntentUrl = table.Column<string>(type: "text", nullable: false),
                     PaidAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     MemberId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -262,12 +262,12 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MollieFeePayments",
+                name: "PaymentServiceFeePayments",
                 columns: table => new
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false, defaultValueSql: "nextval('\"PaymentSequence\"')"),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
-                    MollieId = table.Column<string>(type: "text", nullable: false),
+                    PaymentServiceId = table.Column<string>(type: "text", nullable: false),
                     PaymentIntentUrl = table.Column<string>(type: "text", nullable: false),
                     PaidAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     MemberId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -276,9 +276,9 @@ namespace Backend.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MollieFeePayments", x => x.Id);
+                    table.PrimaryKey("PK_PaymentServiceFeePayments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MollieFeePayments_Members_MemberId",
+                        name: "FK_PaymentServiceFeePayments_Members_MemberId",
                         column: x => x.MemberId,
                         principalTable: "Members",
                         principalColumn: "Id",
@@ -340,7 +340,7 @@ namespace Backend.Migrations
                 {
                     Id = table.Column<long>(type: "bigint", nullable: false, defaultValueSql: "nextval('\"PaymentSequence\"')"),
                     Price = table.Column<decimal>(type: "numeric", nullable: false),
-                    MollieId = table.Column<string>(type: "text", nullable: false),
+                    PaymentServiceId = table.Column<string>(type: "text", nullable: false),
                     PaymentIntentUrl = table.Column<string>(type: "text", nullable: false),
                     PaidAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     MemberId = table.Column<Guid>(type: "uuid", nullable: true),
@@ -551,8 +551,8 @@ namespace Backend.Migrations
                 filter: "\"MemberId\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
-                name: "IX_MollieFeePayments_MemberId",
-                table: "MollieFeePayments",
+                name: "IX_PaymentServiceFeePayments_MemberId",
+                table: "PaymentServiceFeePayments",
                 column: "MemberId",
                 unique: true,
                 filter: "\"MemberId\" IS NOT NULL");
@@ -621,7 +621,7 @@ namespace Backend.Migrations
                 name: "MembershipPayments");
 
             migrationBuilder.DropTable(
-                name: "MollieFeePayments");
+                name: "PaymentServiceFeePayments");
 
             migrationBuilder.DropTable(
                 name: "Settings");

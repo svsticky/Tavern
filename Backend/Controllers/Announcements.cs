@@ -7,21 +7,21 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing announcements within the system. The AnnouncementsController provides endpoints for creating, retrieving, updating, and deleting announcements, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify announcement data while providing appropriate error handling for various scenarios. The AnnouncementsController interacts with the IAnnouncementService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing announcements effectively within the application.
+/// Controller for managing announcements within the system. The AnnouncementsController provides endpoints for creating, retrieving, updating, and deleting announcements, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify announcement data while providing appropriate error handling for various scenarios. The AnnouncementsController interacts with the IAnnouncementRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing announcements effectively within the application.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 public class AnnouncementsController : ControllerBase
 {
-    private readonly IAnnouncementService _announcementService;
+    private readonly IAnnouncementRepository _announcementRepository;
 
     /// <summary>
-    /// Initializes a new instance of the AnnouncementsController class with the specified announcement service. The constructor takes an IAnnouncementService as a parameter, which is used to perform various operations related to announcements, such as creating, retrieving, updating, and deleting announcements. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the service layer.
+    /// Initializes a new instance of the AnnouncementsController class with the specified announcement repository. The constructor takes an IAnnouncementRepository as a parameter, which is used to perform various operations related to announcements, such as creating, retrieving, updating, and deleting announcements. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the repository layer.
     /// </summary>
-    /// <param name="announcementService">The announcement service for managing announcement operations.</param>
-    public AnnouncementsController(IAnnouncementService announcementService)
+    /// <param name="announcementRepository">The announcement repository for managing announcement operations.</param>
+    public AnnouncementsController(IAnnouncementRepository announcementRepository)
     {
-        _announcementService = announcementService;
+        _announcementRepository = announcementRepository;
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            var announcements = await _announcementService.GetAnnouncements(GetUserId(), cancellationToken);
+            var announcements = await _announcementRepository.GetAnnouncements(GetUserId(), cancellationToken);
             return Ok(announcements);
         }
         catch (UnauthorizedAccessException)
@@ -78,7 +78,7 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            var announcement = await _announcementService.GetAnnouncement(id, GetUserId(), cancellationToken);
+            var announcement = await _announcementRepository.GetAnnouncement(id, GetUserId(), cancellationToken);
             
             if (announcement == null)
                 return NotFound();
@@ -113,7 +113,7 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            var created = await _announcementService.CreateAnnouncement(GetUserId(), dto, cancellationToken);
+            var created = await _announcementRepository.CreateAnnouncement(GetUserId(), dto, cancellationToken);
             return CreatedAtAction(nameof(GetAnnouncement), new { id = created.Id }, created);
         }
         catch (UnauthorizedAccessException)
@@ -144,7 +144,7 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            await _announcementService.DeleteAnnouncement(id, GetUserId(), cancellationToken);
+            await _announcementRepository.DeleteAnnouncement(id, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -183,7 +183,7 @@ public class AnnouncementsController : ControllerBase
 
         try
         {
-            await _announcementService.PatchAnnouncement(id, patchDoc, GetUserId(), cancellationToken);
+            await _announcementRepository.PatchAnnouncement(id, patchDoc, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -223,7 +223,7 @@ public class AnnouncementsController : ControllerBase
     {
         try
         {
-            await _announcementService.UpdateAnnouncement(id, dto, GetUserId(), cancellationToken);
+            await _announcementRepository.UpdateAnnouncement(id, dto, GetUserId(), cancellationToken);
             return NoContent();
         }
         catch (KeyNotFoundException)

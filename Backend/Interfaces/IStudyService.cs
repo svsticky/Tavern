@@ -7,7 +7,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines the contract for managing study entities.
     /// </summary>
-    public interface IStudyService
+    public interface IStudyRepository
     {
         /// <summary>
         /// Retrieves all studies.

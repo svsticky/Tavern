@@ -41,8 +41,8 @@ public class PostgresDbContext : DbContext
     public DbSet<MembershipPayment> MembershipPayments { get; set; }
     /// <summary>Reference to the Activity Payments relational table. </summary>
     public DbSet<EnrollmentPayment> EnrollmentPayments { get; set; }
-    /// <summary>Reference to the Mollie Fee Payments relational table. </summary>
-    public DbSet<MollieFeePayment> MollieFeePayments { get; set; }
+    /// <summary>Reference to the Payment Service Fee Payments relational table. </summary>
+    public DbSet<PaymentServiceFeePayment> PaymentServiceFeePayments { get; set; }
     /// <summary>Reference to the Settings relational table. </summary>
     public DbSet<Setting> Settings { get; set; }
     /// <summary>Reference to the MailSubscriptionOutboxTasks relational table. </summary>

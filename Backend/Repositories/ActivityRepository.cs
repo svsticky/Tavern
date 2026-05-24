@@ -16,13 +16,13 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements activity management, poster handling, and enrollment exports.
 /// </summary>
-public class ActivityRepository : IActivityService
+public class ActivityRepository : IActivityRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IStorageService _storageService;
     private readonly IFileCompressService _fileCompressor;
     private readonly IPermissionService _permissionService;
-    private readonly IEnrollmentService _enrollmentService;
+    private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly AbstractMailService _mailService;
     private readonly ILogger<ActivityRepository> _logger;
 
@@ -30,13 +30,13 @@ public class ActivityRepository : IActivityService
     private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/enrollOpenDate", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
     /// <summary>
-    /// Initializes a new instance of the ActivityRepository class with the specified database context, storage service, file compressor, permission service, enrollment service, mail service, and logger. The constructor sets up the necessary dependencies for managing activities, including database access for activity data, storage service for handling activity posters, file compressor for optimizing poster files, permission service for enforcing access control on activity operations, enrollment service for managing enrollments related to activities, mail service for sending notifications about activity-related events, and logging for monitoring activity management operations and troubleshooting any issues that may arise.
+    /// Initializes a new instance of the ActivityRepository class with the specified database context, storage service, file compressor, permission service, enrollment repository, mail service, and logger. The constructor sets up the necessary dependencies for managing activities, including database access for activity data, storage service for handling activity posters, file compressor for optimizing poster files, permission service for enforcing access control on activity operations, enrollment repository for managing enrollments related to activities, mail service for sending notifications about activity-related events, and logging for monitoring activity management operations and troubleshooting any issues that may arise.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="storageService">The storage service.</param>
     /// <param name="fileCompressor">The file compressor.</param>
     /// <param name="permissionService">The permission service.</param>
-    /// <param name="enrollmentService">The enrollment service.</param>
+    /// <param name="enrollmentRepository">The enrollment repository.</param>
     /// <param name="mailService">The mail service.</param>
     /// <param name="logger">The logger.</param>
     public ActivityRepository(
@@ -44,7 +44,7 @@ public class ActivityRepository : IActivityService
         IStorageService storageService,
         IFileCompressService fileCompressor,
         IPermissionService permissionService,
-        IEnrollmentService enrollmentService,
+        IEnrollmentRepository enrollmentRepository,
         AbstractMailService mailService,
         ILogger<ActivityRepository> logger)
     {
@@ -52,7 +52,7 @@ public class ActivityRepository : IActivityService
         _storageService = storageService;
         _fileCompressor = fileCompressor;
         _permissionService = permissionService;
-        _enrollmentService = enrollmentService;
+        _enrollmentRepository = enrollmentRepository;
         _mailService = mailService;
         _logger = logger;
     }
@@ -531,7 +531,7 @@ public class ActivityRepository : IActivityService
         if (availableSpots > 0)
         {
             // Promote people from the waiting list based on the available spots
-            return await _enrollmentService.PromoteFromWaitingList(activityId, availableSpots, ct);
+            return await _enrollmentRepository.PromoteFromWaitingList(activityId, availableSpots, ct);
         }
 
         return Enumerable.Empty<Enrollment>();

@@ -8,22 +8,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing academic studies and curricula within the system. The StudiesController provides a centralized interface for defining, retrieving, and updating study programs, which are essential for categorizing members and academic activities. This controller supports the full range of CRUD operations, allowing authorized administrators to manage the academic catalog while providing public access for browsing available studies. By coordinating with the IStudyService, the controller ensures that study data is kept consistent and secure, enforcing authorization rules to prevent unauthorized modification of the educational framework while facilitating ease of access for the general user base.
+/// Controller for managing academic studies and curricula within the system. The StudiesController provides a centralized interface for defining, retrieving, and updating study programs, which are essential for categorizing members and academic activities. This controller supports the full range of CRUD operations, allowing authorized administrators to manage the academic catalog while providing public access for browsing available studies. By coordinating with the IStudyRepository, the controller ensures that study data is kept consistent and secure, enforcing authorization rules to prevent unauthorized modification of the educational framework while facilitating ease of access for the general user base.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class StudiesController : ControllerBase
 {
-    private readonly IStudyService _service;
+    private readonly IStudyRepository _studyRepository;
 
     /// <summary>
     /// Initializes a new instance of the StudiesController with the required study management service.
     /// </summary>
-    /// <param name="service">The study service responsible for academic data logic and persistence.</param>
-    public StudiesController(IStudyService service)
+    /// <param name="_studyRepository">The study repository responsible for academic data logic and persistence.</param>
+    public StudiesController(IStudyRepository _studyRepository)
     {
-        _service = service;
+        this._studyRepository = _studyRepository;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class StudiesController : ControllerBase
     {
         try
         {
-            return Ok(await _service.GetStudies(ct));
+            return Ok(await _studyRepository.GetStudies(ct));
         }
         catch (Exception ex)
         {
@@ -74,7 +74,7 @@ public class StudiesController : ControllerBase
     {
         try
         {
-            var study = await _service.GetStudy(id, ct);
+            var study = await _studyRepository.GetStudy(id, ct);
             return study != null ? Ok(study) : NotFound();
         }
         catch (Exception ex)
@@ -100,7 +100,7 @@ public class StudiesController : ControllerBase
     {
         try
         {
-            var result = await _service.CreateStudy(dto, GetUserId(), ct);
+            var result = await _studyRepository.CreateStudy(dto, GetUserId(), ct);
             return CreatedAtAction(nameof(GetStudy), new { id = result.Id }, result);
         }
         catch (UnauthorizedAccessException)
@@ -115,7 +115,7 @@ public class StudiesController : ControllerBase
 
     // DELETE: studies/{id}
     /// <summary>
-    /// Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The service layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
+    /// Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The repository layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
     /// </summary>
     /// <param name="id">The unique identifier of the study to be deleted.</param>
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
@@ -131,7 +131,7 @@ public class StudiesController : ControllerBase
     {
         try
         {
-            await _service.DeleteStudy(id, GetUserId(), ct);
+            await _studyRepository.DeleteStudy(id, GetUserId(), ct);
             return NoContent();
         }
         catch (KeyNotFoundException)
@@ -167,7 +167,7 @@ public class StudiesController : ControllerBase
     {
         try
         {
-            await _service.PatchStudy(id, patchDoc, GetUserId(), ct);
+            await _studyRepository.PatchStudy(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -199,7 +199,7 @@ public class StudiesController : ControllerBase
     {
         try
         {
-            await _service.UpdateStudy(id, dto, GetUserId(), ct);
+            await _studyRepository.UpdateStudy(id, dto, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)

@@ -7,7 +7,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines the contract for managing member profiles and related member data.
     /// </summary>
-    public interface IMemberService
+    public interface IMemberRepository
     {
         /// <summary>
         /// Retrieves members visible to the requesting user.

@@ -20,7 +20,7 @@ namespace Backend.Services.AccountingToolServices
 
         private readonly string _accessToken = Environment.GetEnvironmentVariable("EXACT_ACCESS_TOKEN")!;
 
-        private readonly string _membershipGLAccount = Environment.GetEnvironmentVariable("EXACT_MEMBERSHIP_GL_ACCOUNT")!;
+        private readonly string _paymentService = Environment.GetEnvironmentVariable("PAYMENT_PROVIDER")!;
 
         /// <summary>
         /// Initializes a new instance of the ExactService class with the specified HTTP client, database context, and logger. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to make HTTP requests to the Exact Online API, interact with the database to retrieve payment information, and log important events and errors that occur during the synchronization process. This setup is essential for ensuring that the service can effectively synchronize payment data to Exact Online while providing visibility into its operations through logging.
@@ -84,7 +84,7 @@ namespace Backend.Services.AccountingToolServices
             return new
             {
                 EntryDate = DateTime.UtcNow,
-                Description = $"Mollie payment {payment.MollieId}",
+                Description = $"{char.ToUpper(_paymentService[0])}{_paymentService.Substring(1).ToLower()} payment {payment.PaymentServiceId}",
                 YourRef = $"{(payment is EnrollmentPayment ? "Enrollment payment" : "Membership payment")}-{payment.Id}",
 
                 SalesEntryLines = new[]
@@ -100,7 +100,7 @@ namespace Backend.Services.AccountingToolServices
             {
                 EnrollmentPayment ep => BuildEnrollmentLine(ep),
                 MembershipPayment mp => BuildMembershipLine(mp),
-                MollieFeePayment mfp => BuildMollieFeeLine(mfp),
+                PaymentServiceFeePayment mfp => BuildPaymentFeeLine(mfp),
                 _ => throw new Exception("Unsupported payment type")
             };
         }
@@ -129,12 +129,12 @@ namespace Backend.Services.AccountingToolServices
             };
         }
 
-        private object BuildMollieFeeLine(MollieFeePayment payment)
+        private object BuildPaymentFeeLine(PaymentServiceFeePayment payment)
         {
             return new
             {
-                GLAccount = _db.Settings.Where(s => s.Name == "MollieFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
-                Description = "Mollie fee",
+                GLAccount = _db.Settings.Where(s => s.Name == "PaymentServiceFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
+                Description = $"{char.ToUpper(_paymentService[0])}{_paymentService.Substring(1).ToLower()} fee",
                 VATCode = "0",
                 AmountDC = payment.Price
             };

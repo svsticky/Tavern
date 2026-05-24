@@ -8,22 +8,22 @@ using Backend.Controllers.DTOs;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing global application settings and system-wide configurations. The Settings controller provides a suite of administrative endpoints for viewing, defining, and modifying key-value pairs that govern the behavior of the application. This centralized configuration management allows authorized administrators to adjust system parameters—such as feature toggles, business rules, or integration endpoints—without requiring code changes. The controller ensures strict authorization for all operations, utilizing the ISettingsService to handle the underlying persistence and validation logic while maintaining a secure and audit-ready configuration layer.
+/// Controller for managing global application settings and system-wide configurations. The Settings controller provides a suite of administrative endpoints for viewing, defining, and modifying key-value pairs that govern the behavior of the application. This centralized configuration management allows authorized administrators to adjust system parameters—such as feature toggles, business rules, or integration endpoints—without requiring code changes. The controller ensures strict authorization for all operations, utilizing the ISettingsRepository to handle the underlying persistence and validation logic while maintaining a secure and audit-ready configuration layer.
 /// </summary>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
 public class Settings : ControllerBase
 {
-    private readonly ISettingsService _service;
+    private readonly ISettingsRepository _settingsRepository;
 
     /// <summary>
     /// Initializes a new instance of the Settings controller with the required configuration management service.
     /// </summary>
-    /// <param name="service">The settings service responsible for managing configuration data.</param>
-    public Settings(ISettingsService service)
+    /// <param name="settingsRepository">The settings repository responsible for managing configuration data.</param>
+    public Settings(ISettingsRepository settingsRepository)
     {
-        _service = service;
+        _settingsRepository = settingsRepository;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public class Settings : ControllerBase
     {
         try
         {
-            var result = await _service.GetSettings(GetUserId(), ct);
+            var result = await _settingsRepository.GetSettings(GetUserId(), ct);
             return Ok(result);
         }
         catch (UnauthorizedAccessException)
@@ -80,7 +80,7 @@ public class Settings : ControllerBase
     {
         try
         {
-            var result = await _service.GetSetting(id, GetUserId(), ct);
+            var result = await _settingsRepository.GetSetting(id, GetUserId(), ct);
             return result != null ? Ok(result) : NotFound();
         }
         catch (UnauthorizedAccessException)
@@ -111,7 +111,7 @@ public class Settings : ControllerBase
     {
         try
         {
-            var result = await _service.CreateSetting(id, value, GetUserId(), ct);
+            var result = await _settingsRepository.CreateSetting(id, value, GetUserId(), ct);
             return CreatedAtAction(nameof(GetSetting), new { id = result.Name }, result);
         }
         catch (UnauthorizedAccessException)
@@ -142,7 +142,7 @@ public class Settings : ControllerBase
     {
         try
         {
-            await _service.DeleteSetting(id, GetUserId(), ct);
+            await _settingsRepository.DeleteSetting(id, GetUserId(), ct);
             return NoContent();
         }
         catch(KeyNotFoundException )
@@ -178,7 +178,7 @@ public class Settings : ControllerBase
     {
         try
         {
-            await _service.PatchSetting(id, patchDoc, GetUserId(), ct);
+            await _settingsRepository.PatchSetting(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)
@@ -210,7 +210,7 @@ public class Settings : ControllerBase
     {
         try
         {
-            await _service.UpdateSetting(id, value, GetUserId(), ct);
+            await _settingsRepository.UpdateSetting(id, value, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)

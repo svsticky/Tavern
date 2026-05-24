@@ -8,9 +8,9 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements payment validation and balance calculations.
 /// </summary>
-public class PaymentValidationRepository(
+public class PaymentValidationService(
     PostgresDbContext db,
-    ILogger<PaymentValidationRepository> logger) : IPaymentValidationService
+    ILogger<PaymentValidationService> logger) : IPaymentValidationService
 {
     /// <inheritdoc />
     public bool HasPaidMembershipPayment(Guid memberId)

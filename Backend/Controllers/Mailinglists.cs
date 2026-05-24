@@ -15,15 +15,15 @@ namespace Backend.Controllers;
 [Authorize]
 public class Mailinglists : ControllerBase
 {
-    private readonly IMailinglistService _service;
+    private readonly IMailinglistRepository _mailinglistRepository;
 
     /// <summary>
-    /// Initializes a new instance of the Mailinglists controller with the specified mailing list service. The constructor injects the IMailinglistService dependency, which is used to handle the business logic for managing mailing lists. This allows the controller to delegate operations such as creating, updating, retrieving, and deleting mailing lists to the service layer, ensuring a separation of concerns and promoting maintainability and testability of the codebase.
+    /// Initializes a new instance of the Mailinglists controller with the specified mailing list repository. The constructor injects the IMailinglistRepository dependency, which is used to handle the data operations for managing mailing lists. This allows the controller to delegate operations such as creating, updating, retrieving, and deleting mailing lists to the repository layer, ensuring a separation of concerns and promoting maintainability and testability of the codebase.
     /// </summary>
-    /// <param name="service">The mailing list service to use.</param>
-    public Mailinglists(IMailinglistService service)
+    /// <param name="mailinglistRepository">The mailing list repository to use.</param>
+    public Mailinglists(IMailinglistRepository mailinglistRepository)
     {
-        _service = service;
+        _mailinglistRepository = mailinglistRepository;
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class Mailinglists : ControllerBase
     {
         try
         {
-            var result = await _service.GetMailinglists(ct);
+            var result = await _mailinglistRepository.GetMailinglists(ct);
             return Ok(result);
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
@@ -70,7 +70,7 @@ public class Mailinglists : ControllerBase
     {
         try
         {
-            var result = await _service.GetMailinglist(id, ct);
+            var result = await _mailinglistRepository.GetMailinglist(id, ct);
             return result != null ? Ok(result) : NotFound();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
@@ -93,7 +93,7 @@ public class Mailinglists : ControllerBase
     {
         try
         {
-            var result = await _service.CreateMailinglist(mailinglist, GetUserId(), ct);
+            var result = await _mailinglistRepository.CreateMailinglist(mailinglist, GetUserId(), ct);
             return CreatedAtAction(nameof(GetMailinglist), new { id = result.Id, bitValue = result.BitValue }, result);
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
@@ -118,7 +118,7 @@ public class Mailinglists : ControllerBase
     {
         try
         {
-            await _service.UpdateMailinglist(id, mailinglist, GetUserId(), ct);
+            await _mailinglistRepository.UpdateMailinglist(id, mailinglist, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
@@ -144,7 +144,7 @@ public class Mailinglists : ControllerBase
     {
         try
         {
-            await _service.PatchMailinglist(id, patchDoc, GetUserId(), ct);
+            await _mailinglistRepository.PatchMailinglist(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }
@@ -169,7 +169,7 @@ public class Mailinglists : ControllerBase
     {
         try
         {
-            await _service.DeleteMailinglist(id, GetUserId(), ct);
+            await _mailinglistRepository.DeleteMailinglist(id, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException) { return Forbid(); }

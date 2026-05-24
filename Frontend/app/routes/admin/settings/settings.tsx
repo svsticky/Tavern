@@ -122,22 +122,22 @@ export default function SettingsPage() {
 
           <FormSection title={t("finances")} columns={2}>
             <Input
-              label={t("mollie_fee")}
+              label={t("payment_service_fee")}
               type="number"
               step="0.01"
-              value={settings.MollieFee || ""}
+              value={settings.PaymentServiceFee || ""}
               onChange={(e) =>
-                handleSettingsChange("MollieFee", e.target.value, setSettings)
+                handleSettingsChange("PaymentServiceFee", e.target.value, setSettings)
               }
             />
             <Input
-              label={t("mollie_fee_vat_code")}
+              label={t("payment_service_fee_vat_code")}
               type="number"
               step="1"
-              value={settings.MollieFeeVATCode || ""}
+              value={settings.PaymentServiceFeeVATCode || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "MollieFeeVATCode",
+                  "PaymentServiceFeeVATCode",
                   e.target.value,
                   setSettings,
                 )
@@ -195,33 +195,33 @@ export default function SettingsPage() {
               }
             />
             <Input
-              label={t("mollie_fee_gl_account")}
-              value={settings.MollieFeeGLAccount || ""}
+              label={t("payment_service_fee_gl_account")}
+              value={settings.PaymentServiceFeeGLAccount || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "MollieFeeGLAccount",
+                  "PaymentServiceFeeGLAccount",
                   e.target.value,
                   setSettings,
                 )
               }
             />
             <Input
-              label={t("mollie_relation_code")}
-              value={settings.MollieRelationCode || ""}
+              label={t("payment_service_relation_code")}
+              value={settings.PaymentServiceRelationCode || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "MollieRelationCode",
+                  "PaymentServiceRelationCode",
                   e.target.value,
                   setSettings,
                 )
               }
             />
             <Input
-              label={t("mollie_payments_condition")}
-              value={settings.MolliePaymentsCondition || ""}
+              label={t("payment_service_payments_condition")}
+              value={settings.PaymentServicePaymentsCondition || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "MolliePaymentsCondition",
+                  "PaymentServicePaymentsCondition",
                   e.target.value,
                   setSettings,
                 )

@@ -13,7 +13,7 @@ namespace Backend.Repositories;
 /// <summary>
 /// Implements group-membership management operations.
 /// </summary>
-public class GroupMembershipRepository : IGroupMembershipService
+public class GroupMembershipRepository : IGroupMembershipRepository
 {
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;

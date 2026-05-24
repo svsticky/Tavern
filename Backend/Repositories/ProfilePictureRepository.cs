@@ -14,7 +14,7 @@ namespace Backend.Repositories
         IPermissionService permissionService,
         IFileCompressService fileCompressor,
         ILogger<ProfilePictureRepository> logger
-    ) : IProfilePictureService
+    ) : IProfilePictureRepository
     {
         /// <inheritdoc />
         public async Task<(Stream Stream, string ContentType)?> GetProfilePictureByPath(string path)

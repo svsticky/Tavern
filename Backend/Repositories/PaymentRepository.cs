@@ -4,12 +4,9 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
 using Microsoft.EntityFrameworkCore;
-using Mollie.Api.Client.Abstract;
-using Mollie.Api.Models;
-using Mollie.Api.Models.Payment.Request;
-using Mollie.Api.Models.Payment.Response;
 using System.Text;
 using Backend.Validators;
+using Backend.Services.PaymentServices;
 
 namespace Backend.Repositories
 {
@@ -20,10 +17,10 @@ namespace Backend.Repositories
         PostgresDbContext db,
         IPermissionService permissionService,
         IPaymentValidationService paymentValidationService,
-        IPaymentClient mollieClient,
+        AbstractPaymentService paymentService,
         AuthOutboxWorker authOutboxWorker,
         ILogger<PaymentRepository> logger
-    ) : IPaymentService
+    ) : IPaymentRepository
     {
         private readonly string _frontendUrl = Environment.GetEnvironmentVariable("HostUrl")!;
         private readonly string _backendUrl = Environment.GetEnvironmentVariable("ApiUrl")!;
@@ -87,14 +84,9 @@ namespace Backend.Repositories
 
 
                 // create new payment
-                var request = BuildMembershipPaymentRequest(member, dto.MemberId);
-                var mollieResponse = await mollieClient.CreatePaymentAsync(request);
+                var paymentResponse = await BuildMembershipPaymentRequest(member, dto.MemberId);
 
-                // Build the payment record and save to database
-                if (mollieResponse.Links.Checkout == null)
-                    throw new Exception("No checkout URL from Mollie");
-
-                var payment = await BuildMembershipPayment(dto.MemberId, mollieResponse);
+                var payment = await BuildMembershipPayment(dto.MemberId, paymentResponse);
                 StateValidator.Validate(payment);
 
                 db.MembershipPayments.Add(payment);
@@ -102,7 +94,7 @@ namespace Backend.Repositories
                 await transaction.CommitAsync();
                 logger.LogInformation("Created membership payment {PaymentId} for member {MemberId}.", payment.Id, dto.MemberId);
 
-                return ToCheckoutResponse(mollieResponse.Links.Checkout.Href);
+                return ToCheckoutResponse(paymentResponse.PaymentUrl);
             }
             catch
             {
@@ -129,13 +121,13 @@ namespace Backend.Repositories
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var mollieFeePayments = await db.MollieFeePayments
+            var paymentServiceFeePayments = await db.PaymentServiceFeePayments
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, mollieFeePayments);
-            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, MollieFee: {MollieFeeCount}",
-                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, mollieFeePayments.Count);
+            var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, paymentServiceFeePayments);
+            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}",
+                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count);
 
             var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
@@ -171,7 +163,7 @@ namespace Backend.Repositories
 
                 if (dto.ManuallyMarkedAsPaid)
                 {
-                    // If payment is manually marked as paid, we can skip creating a molliepayment and create it directly in the database
+                    // If payment is manually marked as paid, we can skip creating a payment service fee payment and create it directly in the database
                     permissionService.EnsureBoardOrCandidateBoardMember(userId);
                     CreateEnrollmentPayments(dto.MemberId, enrollments, true);
 
@@ -182,29 +174,29 @@ namespace Backend.Repositories
                 }
                 else
                 {
-                    // Create Mollie payment
-                    PaymentResponse mollieResponse = await CreateMolliePaymentRequest(totalPrice, member, dto);
+                    // Create payment service fee payment
+                    CreatePaymentResponse paymentResponse = await BuildPaymentServiceFeePaymentRequest(totalPrice, member, dto);
 
-                    // Create the payment for the mollie fee
-                    MollieFeePayment mollieFeePayment = new MollieFeePayment
+                    // Create the payment for the payment service fee
+                    PaymentServiceFeePayment paymentServiceFeePayment = new PaymentServiceFeePayment
                     {
                         MemberId = dto.MemberId,
-                        Price = GetMollieFee(),
-                        MollieId = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Id,
-                        PaymentIntentUrl = dto.ManuallyMarkedAsPaid ? "" : mollieResponse!.Links.Checkout!.Href,
+                        Price = GetPaymentServiceFee(),
+                        PaymentServiceId = dto.ManuallyMarkedAsPaid ? "" : paymentResponse.PaymentId,
+                        PaymentIntentUrl = dto.ManuallyMarkedAsPaid ? "" : paymentResponse.PaymentUrl,
                         PaidAt = dto.ManuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
                     };
 
-                    db.MollieFeePayments.Add(mollieFeePayment);
+                    db.PaymentServiceFeePayments.Add(paymentServiceFeePayment);
 
-                    // Create the enrollment payment with mollieResponse information
-                    CreateEnrollmentPayments(dto.MemberId, enrollments, false, mollieResponse);
+                    // Create the enrollment payment with paymentResponse information
+                    CreateEnrollmentPayments(dto.MemberId, enrollments, false, paymentResponse);
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    logger.LogInformation("Created mollie-backed activity payment for member {MemberId}. MollieId: {MollieId}",
-                        dto.MemberId, mollieResponse.Id);
+                    logger.LogInformation("Created payment service fee-backed activity payment for member {MemberId}. PaymentId: {PaymentId}",
+                        dto.MemberId, paymentResponse.PaymentId);
 
-                    return new PostPaymentResponse { CheckoutUrl = mollieResponse.Links.Checkout!.Href };
+                    return new PostPaymentResponse { CheckoutUrl = paymentResponse.PaymentUrl };
                 }
             }
             catch (Exception ex)
@@ -292,13 +284,13 @@ namespace Backend.Repositories
             if (existingPayment == null)
                 return null;
 
-            var molliePayment = await mollieClient.GetPaymentAsync(existingPayment.MollieId);
-            if(molliePayment.Status == "paid")
+            var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
+            if(paymentResponse.Status == PaymentStatus.Paid)
             {
                 throw new InvalidOperationException("Member already paid membership");
             }
 
-            if (molliePayment.Status == "pending")
+            if (paymentResponse.Status == PaymentStatus.Pending)
             {
                 return ToCheckoutResponse(existingPayment.PaymentIntentUrl);
             }
@@ -314,28 +306,27 @@ namespace Backend.Repositories
             throw new InvalidOperationException("Payment is expired or canceled.");
         }
 
-        private PaymentRequest BuildMembershipPaymentRequest(Member member, Guid memberId)
+        private async Task<CreatePaymentResponse> BuildMembershipPaymentRequest(Member member, Guid memberId)
         {
-            return new PaymentRequest
-            {
-                Amount = new Amount(Currency.EUR, 7.50m),
-                Description = $"Membership payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = $"{_frontendUrl}/confirm-mail",
-                WebhookUrl = string.IsNullOrEmpty(_ngrokUrl) ? 
+            return await paymentService.CreatePaymentAsync(
+                decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"), 
+                $"Membership payment for {member.FirstName} {member.LastName}",
+                $"{_frontendUrl}/confirm-mail",
+                string.IsNullOrEmpty(_ngrokUrl) ? 
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
                     : $"{_ngrokUrl}/payments/webhook",
-                Metadata = $"membership_{memberId}"
-            };
+                $"membership_{memberId}"
+            );
         }
 
-        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, PaymentResponse mollieResponse)
+        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, CreatePaymentResponse paymentResponse)
         {
             return new MembershipPayment
             {
                 MemberId = memberId,
                 Price = decimal.TryParse((await db.Settings.FindAsync("MembershipPrice"))?.Value ?? "7.50", out var price) ? price : 7.50m,
-                MollieId = mollieResponse.Id,
-                PaymentIntentUrl = mollieResponse.Links.Checkout!.Href
+                PaymentServiceId = paymentResponse.PaymentId,
+                PaymentIntentUrl = paymentResponse.PaymentUrl
             };
         }
 
@@ -344,35 +335,29 @@ namespace Backend.Repositories
             return new PostPaymentResponse { CheckoutUrl = checkoutUrl };
         }
 
-        private async Task<PaymentResponse> CreateMolliePaymentRequest(decimal totalPrice, Member member, PostActivityPaymentDTO dto)
+        private async Task<CreatePaymentResponse> BuildPaymentServiceFeePaymentRequest(decimal totalPrice, Member member, PostActivityPaymentDTO dto)
         {
-            var request = new PaymentRequest
-            {
-                Amount = new Amount(Currency.EUR, totalPrice + GetMollieFee()),
-                Description = $"Activity payment for {member.FirstName} {member.LastName}",
-                RedirectUrl = _frontendUrl,
-                WebhookUrl = _backendUrl.ToLower().Contains("localhost") ? null : $"{_backendUrl}/payments/webhook",
-                Metadata = $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
-            };
-
-            var mollieResponse = await mollieClient.CreatePaymentAsync(request);
-
-            if (mollieResponse.Links.Checkout == null)
-                throw new Exception("No checkout URL from Mollie");
-
-            return mollieResponse;
+            return await paymentService.CreatePaymentAsync(
+                totalPrice + GetPaymentServiceFee(),
+                $"Activity payment for {member.FirstName} {member.LastName}",
+                _frontendUrl,
+                string.IsNullOrEmpty(_ngrokUrl) ? 
+                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
+                    : $"{_ngrokUrl}/payments/webhook",
+                $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
+            );
         }
 
-        private decimal GetMollieFee()
+        private decimal GetPaymentServiceFee()
         {
-            return db.Settings.Where(s => s.Name == "MollieFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault();
+            return db.Settings.Where(s => s.Name == "PaymentServiceFee").Select(s => decimal.Parse(s.Value)).FirstOrDefault();
         }
 
-        private void CreateEnrollmentPayments(Guid memberId, List<Enrollment> enrollments, bool manuallyMarkedAsPaid, PaymentResponse? mollieResponse = null)
+        private void CreateEnrollmentPayments(Guid memberId, List<Enrollment> enrollments, bool manuallyMarkedAsPaid, CreatePaymentResponse? paymentResponse = null)
         {
-            if(mollieResponse == null && !manuallyMarkedAsPaid)
+            if(paymentResponse == null && !manuallyMarkedAsPaid)
             {
-                throw new ArgumentException("Mollie response must be provided if payment is not manually marked as paid");
+                throw new ArgumentException("Payment response must be provided if payment is not manually marked as paid");
             }
 
             foreach (var enrollment in enrollments)
@@ -388,8 +373,8 @@ namespace Backend.Repositories
                     MemberId = memberId,
                     ActivityId = enrollment.ActivityId,
                     Price = price,
-                    MollieId = manuallyMarkedAsPaid ? "" : mollieResponse?.Id ?? "",
-                    PaymentIntentUrl = manuallyMarkedAsPaid ? "" : mollieResponse?.Links.Checkout?.Href ?? "",
+                    PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentId ?? "",
+                    PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentUrl ?? "",
                     PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
                 };
 
@@ -400,15 +385,15 @@ namespace Backend.Repositories
         }
 
 
-        private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<MollieFeePayment> mollieFeePayments)
+        private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<PaymentServiceFeePayment> paymentServiceFeePayments)
         {
             var csv = new StringBuilder();
             
             var invoiceDate = endDate.AddDays(-1).ToString("dd-MM-yyyy");
             var periodLabel = $"ideal - {startDate:dd-MM-yyyy} / {endDate:dd-MM-yyyy}";
-            var paymentsCondition = db.Settings.Where(s => s.Name == "MolliePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
-            var mollieRelationCode = db.Settings.Where(s => s.Name == "MollieRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
-            csv.AppendLine($"factuurdatum;{invoiceDate};{periodLabel};{paymentsCondition};{mollieRelationCode}");
+            var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
+            var paymentServiceRelationalCode = db.Settings.Where(s => s.Name == "PaymentServiceRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
+            csv.AppendLine($"factuurdatum;{invoiceDate};{periodLabel};{paymentsCondition};{paymentServiceRelationalCode}");
 
             foreach (var p in enrollmentPayments)
             {
@@ -434,7 +419,7 @@ namespace Backend.Repositories
                 csv.AppendLine($";{glAccount};{description};{VATCode};{price};;");
             }
 
-            var groupedFees = mollieFeePayments
+            var groupedFees = paymentServiceFeePayments
                 .GroupBy(p => p.Price)
                 .Select(g => new {
                     UnitPrice = g.Key,
@@ -442,9 +427,9 @@ namespace Backend.Repositories
                     TotalPrice = g.Sum(p => p.Price)
                 });
 
-            var mollieFeeGLAccount = db.Settings.FirstOrDefault(s => s.Name == "MollieFeeGLAccount")?.Value ?? "5007";
-            var mollieFeeCostCenter = db.Settings.FirstOrDefault(s => s.Name == "MollieFeeCostCenter")?.Value ?? "TRX";
-            var vatCode = db.Settings.FirstOrDefault(s => s.Name == "MollieFeeVATCode")?.Value ?? "21";
+            var paymentServiceFeeGLAccount = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeGLAccount")?.Value ?? "5007";
+            var paymentServiceFeeCostCenter = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value ?? "TRX";
+            var vatCode = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeVATCode")?.Value ?? "21";
 
             foreach (var group in groupedFees)
             {
@@ -452,7 +437,7 @@ namespace Backend.Repositories
                 
                 var totalPrice = group.TotalPrice;
 
-                csv.AppendLine($";{mollieFeeGLAccount};{description};{vatCode};{totalPrice};{mollieFeeCostCenter};;");
+                csv.AppendLine($";{paymentServiceFeeGLAccount};{description};{vatCode};{totalPrice};{paymentServiceFeeCostCenter};;");
             }
 
             return csv;

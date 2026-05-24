@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.PaymentServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -12,23 +13,20 @@ namespace Backend.Controllers
     [ApiController]
     public class PaymentsController : ControllerBase
     {
-        private readonly IPaymentService _paymentService;
-        private readonly IPermissionService _permissionService;
+        private readonly IPaymentRepository _paymentRepository;
 
         /// <summary>
         /// Initializes a new instance of the PaymentsController with the required payment and permission services.
         /// </summary>
-        /// <param name="paymentService">The service handling payment processing and ledger operations.</param>
-        /// <param name="permissionService">The service used to validate administrative and user-level permissions.</param>
-        public PaymentsController(IPaymentService paymentService, IPermissionService permissionService)
+        /// <param name="paymentRepository">The repository handling payment processing and ledger operations.</param>
+        public PaymentsController(IPaymentRepository paymentRepository)
         {
-            _paymentService = paymentService;
-            _permissionService = permissionService;
+            _paymentRepository = paymentRepository;
         }
 
         // GET: payments/membership
         /// <summary>
-        /// Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentService, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
+        /// Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentRepository, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
         /// </summary>
         /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
         /// <returns>A collection of membership payment records.</returns>
@@ -42,7 +40,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentService.GetMembershipPayments(userId, ct);
+                var result = await _paymentRepository.GetMembershipPayments(userId, ct);
                 return Ok(result);
             }
             catch(UnauthorizedAccessException)
@@ -73,7 +71,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentService.GetMembershipPayment(id, userId, ct);
+                var result = await _paymentRepository.GetMembershipPayment(id, userId, ct);
                 return result != null ? Ok(result) : NotFound();
             }
             catch(UnauthorizedAccessException)
@@ -102,7 +100,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentService.GetEnrollmentPayments(userId, ct);
+                var result = await _paymentRepository.GetEnrollmentPayments(userId, ct);
                 return Ok(result);
             }
             catch(UnauthorizedAccessException)
@@ -133,7 +131,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentService.GetEnrollmentPayment(id, userId, ct);
+                var result = await _paymentRepository.GetEnrollmentPayment(id, userId, ct);
                 return result != null ? Ok(result) : NotFound();
             }
             catch(UnauthorizedAccessException)
@@ -164,7 +162,7 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await _paymentService.CreateMembershipPayment(dto);
+                var result = await _paymentRepository.CreateMembershipPayment(dto);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -175,7 +173,7 @@ namespace Backend.Controllers
 
         // POST: payments/activity
         /// <summary>
-        /// Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the service layer to reserve the spot and handle the transaction initiation.
+        /// Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the repository layer to reserve the spot and handle the transaction initiation.
         /// </summary>
         /// <param name="dto">The data transfer object containing activity-specific payment details.</param>
         /// <returns>A response containing the payment status and instructions for completion.</returns>
@@ -192,7 +190,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentService.CreateActivityPayment(dto, userId);
+                var result = await _paymentRepository.CreateActivityPayment(dto, userId);
                 return Ok(result);
             }
             catch(UnauthorizedAccessException)
@@ -207,7 +205,7 @@ namespace Backend.Controllers
 
         // POST: payments/webhook
         /// <summary>
-        /// Processes asynchronous status updates from the Mollie payment gateway. The MollieWebhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
+        /// Processes asynchronous status updates from the paymentservice payment gateway. The webhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
         /// </summary>
         /// <param name="id">The transaction identifier provided by the payment gateway.</param>
         /// <param name="webhookService">The service dedicated to handling external payment status webhooks.</param>
@@ -216,9 +214,9 @@ namespace Backend.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> MollieWebhook(
+        public async Task<ActionResult> PaymentWebhook(
             [FromForm] string id,
-            [FromServices] IPaymentWebhookService webhookService
+            [FromServices] AbstractPaymentService webhookService
         )
         {
             try
@@ -249,7 +247,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = _paymentService.GetUnpaid(userId, allUsers);
+                var result = _paymentRepository.GetUnpaid(userId, allUsers);
 
                 if(result == null)
                     return NotFound();
@@ -282,7 +280,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = _paymentService.GetOverpaid(userId);
+                var result = _paymentRepository.GetOverpaid(userId);
 
                 if(result == null)
                     return NotFound();
@@ -317,7 +315,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentService.GetMemberPaymentStatus(fromUserId, userId, ct);
+                var result = await _paymentRepository.GetMemberPaymentStatus(fromUserId, userId, ct);
 
                 if(result == null)
                     return NotFound();
@@ -356,7 +354,7 @@ namespace Backend.Controllers
             try
             {
                 var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var (content, fileName) = await _paymentService.ExportPaymentsToCsv(startDate, endDate, userId, ct);
+                var (content, fileName) = await _paymentRepository.ExportPaymentsToCsv(startDate, endDate, userId, ct);
                 return File(content, "text/csv", fileName);
             }
             catch (Exception ex)
