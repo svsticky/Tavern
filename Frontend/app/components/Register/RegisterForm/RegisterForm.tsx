@@ -93,7 +93,7 @@ export default function RegisterForm({ className }: { className?: string }) {
 
   const [subscriptions, setSubscriptions] = useState<number>(0);
 
-  if(!loading && mastersMustPay === null) {
+  if (!loading && mastersMustPay === null) {
     return t("error_loading_page");
   }
 
@@ -112,7 +112,7 @@ export default function RegisterForm({ className }: { className?: string }) {
             subscriptions,
             studies,
             navigate,
-            mastersMustPay
+            mastersMustPay,
           })
         }
       >

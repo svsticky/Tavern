@@ -3,7 +3,14 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
-import { deleteMembersById, getMembersById, getPaymentsMemberByFromUserIdStatus, getSettingsById, patchMembersById, postPaymentsMembership } from "~/api/sdk.gen";
+import {
+  deleteMembersById,
+  getMembersById,
+  getPaymentsMemberByFromUserIdStatus,
+  getSettingsById,
+  patchMembersById,
+  postPaymentsMembership,
+} from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
@@ -77,7 +84,7 @@ export default function AuthenticatedLayout() {
     candidateBoardGroupId,
     setCandidateBoardGroupId,
     member,
-    setMember
+    setMember,
   } = useApp();
 
   useEffect(() => {
@@ -165,25 +172,28 @@ export default function AuthenticatedLayout() {
         );
     }
 
-    if(paymentStatus === null) {
+    if (paymentStatus === null) {
       getPaymentsMemberByFromUserIdStatus({
         path: {
           fromUserId: tokenParsed.UserId,
         },
       })
-      .then((res) => {
-        if (res.data) {
-          setPaymentStatus(res.data.hasEverPaidMembership && res.data.hasPaidMembershipBeforeExpirationTime);
-        }
-      })
-      .catch((err) =>
-        console.error(
-          "Could not fetch payment status for authenticated user",
-          err,
-        ),
-      );
+        .then((res) => {
+          if (res.data) {
+            setPaymentStatus(
+              res.data.hasEverPaidMembership &&
+                res.data.hasPaidMembershipBeforeExpirationTime,
+            );
+          }
+        })
+        .catch((err) =>
+          console.error(
+            "Could not fetch payment status for authenticated user",
+            err,
+          ),
+        );
 
-      if(paymentStatus === true && tokenParsed.access_level === "not_paid") {
+      if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
         console.warn(
           "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
         );
@@ -197,9 +207,7 @@ export default function AuthenticatedLayout() {
     }
 
     if (!paymentUrl && paymentStatus === false) {
-      console.log(
-        "User has not paid for membership, loading payment url...",
-      );
+      console.log("User has not paid for membership, loading payment url...");
 
       postPaymentsMembership({
         body: { memberId: tokenParsed?.UserId ?? "" },
@@ -253,7 +261,8 @@ export default function AuthenticatedLayout() {
     setBoardGroupId,
     setCandidateBoardGroupId,
     setMember,
-    setPaymentStatus,
+    paymentUrl,
+    paymentStatus,
   ]);
 
   if (!tokenParsed) return null;
@@ -267,29 +276,44 @@ export default function AuthenticatedLayout() {
         <p className="mb-6">{i18n.t("membership_payment_description")}</p>
         {paymentUrl && (
           <>
-            <Button onClick={async () => window.location.href = paymentUrl}>{i18n.t("pay")}</Button>
-            <p className="text-red-500 text-sm font-bold ">{i18n.t("delete_account_instead_of_paying")}</p>
-            <Button variant="danger" onClick={async () => {
-              if (!window.confirm(i18n.t("delete_account_confirmation"))) {
-                return;
-              }
-
-              try {
-                const response = await deleteMembersById({
-                  path: { id: tokenParsed.UserId },
-                });
-
-                if(response.error || response.status >= 400) {
-                  throw new Error(`Failed to delete account: ${response.error}`);
+            <Button
+              onClick={async () => {
+                window.location.href = paymentUrl;
+              }}
+            >
+              {i18n.t("pay")}
+            </Button>
+            <p className="text-red-500 text-sm font-bold ">
+              {i18n.t("delete_account_instead_of_paying")}
+            </p>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (!window.confirm(i18n.t("delete_account_confirmation"))) {
+                  return;
                 }
 
-                toast.success(i18n.t("account_deleted_successfully"));
-                authService.logout(`${window.location.origin}/login`);
-              } catch (err) {
-                console.error("Error deleting account:", err);
-                toast.error(i18n.t("delete_account_error"));
-              }
-            }}>Delete Account</Button>
+                try {
+                  const response = await deleteMembersById({
+                    path: { id: tokenParsed.UserId },
+                  });
+
+                  if (response.error || response.status >= 400) {
+                    throw new Error(
+                      `Failed to delete account: ${response.error}`,
+                    );
+                  }
+
+                  toast.success(i18n.t("account_deleted_successfully"));
+                  authService.logout(`${window.location.origin}/login`);
+                } catch (err) {
+                  console.error("Error deleting account:", err);
+                  toast.error(i18n.t("delete_account_error"));
+                }
+              }}
+            >
+              Delete Account
+            </Button>
           </>
         )}
       </div>
@@ -302,7 +326,9 @@ export default function AuthenticatedLayout() {
         <h1 className="text-2xl font-bold mb-4">
           {i18n.t("payment_not_processed")}
         </h1>
-        <p className="mb-6">{i18n.t("membership_payment_not_processed_description")}</p>
+        <p className="mb-6">
+          {i18n.t("membership_payment_not_processed_description")}
+        </p>
       </div>
     );
   }
