@@ -13,7 +13,55 @@ public class PaymentValidationService(
     ILogger<PaymentValidationService> logger) : IPaymentValidationService
 {
     /// <inheritdoc />
-    public bool HasPaidMembershipPayment(Guid memberId)
+    public bool HasPaidMembershipPaymentBeforeExpirationTime(Guid memberId)
+    {
+         var member = db.Members
+            .Include(m => m.StudyEnrollments)
+            .ThenInclude(se => se.Study)
+            .FirstOrDefault(m => m.Id == memberId);
+
+        if (member == null)
+        {
+            logger.LogWarning("Membership payment check failed: member {MemberId} not found.", memberId);
+            throw new Exception($"Member with id {memberId} not found.");
+        }
+
+        if (member.Begunstiger) return true;
+
+        if (db.Settings.Find("MastersShouldPayMembership")?.Value != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && (e.CompletionDate == null || e.CompletionDate > DateTime.UtcNow)))
+        {
+            return true;
+        }
+
+        if (db.Settings.Find("GratieShouldPayMembership")?.Value != "1" && member.Gratie)
+        {
+            return true;
+        }
+
+        if (db.Settings.Find("ErelidShouldPayMembership")?.Value != "1" && member.EreLid)
+        {
+            return true;
+        }
+
+        if (db.Settings.Find("LidVanVerdiensteShouldPayMembership")?.Value != "1" && member.LidVanVerdienste)
+        {
+            return true;
+        }
+
+        string? paymentExpirationTime = db.Settings.FirstOrDefault(s => s.Name == "MembershipPaymentExpirationTime")?.Value;
+        if(paymentExpirationTime != null && int.TryParse(paymentExpirationTime, out int expirationYears))
+        {
+            DateTime expirationThreshold = DateTime.UtcNow.AddYears(-expirationYears);
+            return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= expirationThreshold);
+        }
+        else
+        {
+            return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
+        }
+    }
+
+    /// <inheritdoc />
+    public bool HasEverPaidMembershipPayment(Guid memberId)
     {
          var member = db.Members
             .Include(m => m.StudyEnrollments)
@@ -32,7 +80,7 @@ public class PaymentValidationService(
         
         if (isMaster) return true;
 
-        return db.MembershipPayments.Any(p => p.MemberId == member.Id && p.PaidAt != null);
+        return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
     }
 
     /// <inheritdoc />

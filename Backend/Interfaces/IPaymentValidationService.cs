@@ -12,7 +12,15 @@ public interface IPaymentValidationService
     /// </summary>
     /// <param name="member">The member user ID.</param>
     /// <returns><c>true</c> when the membership payment is completed; otherwise <c>false</c>.</returns>
-    bool HasPaidMembershipPayment(Guid member);
+    bool HasPaidMembershipPaymentBeforeExpirationTime(Guid member);
+
+    /// <summary>
+    /// Checks whether a member has completed the required membership payment, regardless of expiration time.
+    /// This method is used for historical checks where we want to know if a member has ever paid, while the other method is used for current access checks where we want to ensure the payment is still valid.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <returns><c>true</c> when the membership payment is completed; otherwise <c>false</c>.</returns>
+    bool HasEverPaidMembershipPayment(Guid memberId);
 
     /// <summary>
     /// Retrieves unpaid enrollments for a member.

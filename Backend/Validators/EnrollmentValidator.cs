@@ -20,7 +20,7 @@ public static class EnrollmentValidator
     /// <exception cref="ArgumentException">Thrown when enrollment requirements are not met.</exception>
     public static void ValidateEnrollment(IEnumerable<PostSpecificationAnswerDTO>? providedAnswers, Member member, Activity activity, bool isBoardMember, IPaymentValidationService _paymentValidationService)
     {
-        if (!_paymentValidationService.HasPaidMembershipPayment(member.Id))
+        if (!_paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id))
             throw new ArgumentException("Member does not have a paid membership payment.");
 
         if (member.Suspended)

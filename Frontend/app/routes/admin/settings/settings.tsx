@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import type { GroupResponseDto, Role } from "~/api";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
+import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
+import Checkbox from "~/components/UI/Checkbox";
 import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
@@ -67,9 +69,9 @@ export default function SettingsPage() {
     });
   }, []);
 
-  const hasEmptyFields = Object.entries(settings).some(
-    ([_key, value]) => !value.trim(),
-  );
+  const hasEmptyFields = Object.entries(settings)
+    .filter(([key]) => key !== "MembershipPaymentExpirationTime")
+    .some(([_key, value]) => !value.trim());
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
@@ -127,7 +129,11 @@ export default function SettingsPage() {
               step="0.01"
               value={settings.PaymentServiceFee || ""}
               onChange={(e) =>
-                handleSettingsChange("PaymentServiceFee", e.target.value, setSettings)
+                handleSettingsChange(
+                  "PaymentServiceFee",
+                  e.target.value,
+                  setSettings,
+                )
               }
             />
             <Input
@@ -156,6 +162,72 @@ export default function SettingsPage() {
                 )
               }
             />
+            <Input
+              label={t("membership_payment_expiration_time")}
+              type="number"
+              step="1"
+              value={settings.MembershipPaymentExpirationTime || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MembershipPaymentExpirationTime",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+            />
+            <Tile className="bg-gray-50 border border-gray-100">
+              <div className="flex flex-col row-span-2">
+                <FormHeader title={t("should_pay_membership")} />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-5 ">
+                  <Checkbox
+                    label={t("masters")}
+                    checked={settings.MastersShouldPayMembership !== "0"}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSettingsChange(
+                        "MastersShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )
+                    }
+                  />
+                  <Checkbox
+                    label={t("gratie")}
+                    checked={settings.GratieShouldPayMembership !== "0"}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSettingsChange(
+                        "GratieShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )
+                    }
+                  />
+                  <Checkbox
+                    label={t("ere_lid")}
+                    checked={settings.ErelidShouldPayMembership !== "0"}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSettingsChange(
+                        "ErelidShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )
+                    }
+                  />
+                  <Checkbox
+                    label={t("lid_van_verdienste")}
+                    checked={
+                      settings.LidVanVerdiensteShouldPayMembership !== "0"
+                    }
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleSettingsChange(
+                        "LidVanVerdiensteShouldPayMembership",
+                        e.target.checked ? "1" : "0",
+                        setSettings,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            </Tile>
             <Input
               label={t("membership_vat_code")}
               type="number"

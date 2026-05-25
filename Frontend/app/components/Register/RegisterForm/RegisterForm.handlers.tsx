@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
   getMailinglists,
+  getSettingsById,
   getStudies,
   type Mailinglist,
   type PostMemberDto,
@@ -47,6 +48,20 @@ export const loadStudies = async (setStudies: (studies: Study[]) => void) => {
   } catch (error) {
     console.error("Failed to fetch studies", error);
     toast.error(t("failed_to_load_studies"));
+  }
+};
+
+export const loadMastersMustPay = async (
+  setMastersMustPay: (value: boolean) => void,
+) => {
+  try {
+    const response = await getSettingsById({
+      path: { id: "MastersShouldPayMembership" },
+    });
+    setMastersMustPay(response.data?.value === "1");
+  } catch (error) {
+    console.error("Failed to fetch masters must pay setting", error);
+    toast.error(t("failed_to_load_settings"));
   }
 };
 
@@ -111,6 +126,7 @@ type RegisterSubmitArgs = {
   subscriptions: number;
   studies: Study[];
   navigate: NavigateFunction;
+  mastersMustPay: boolean | null;
 };
 
 /**
@@ -129,6 +145,7 @@ export const handleRegisterSubmit = async ({
   subscriptions,
   studies,
   navigate,
+  mastersMustPay,
 }: RegisterSubmitArgs) => {
   e.preventDefault();
   if (!isFormValid) return;
@@ -164,6 +181,7 @@ export const handleRegisterSubmit = async ({
 
       if (response.status === 201 && response.data) {
         if (
+          !mastersMustPay ||
           !studies.some(
             (s) => selectedStudies.includes(s.id!) && s.type === "Master",
           )
@@ -180,8 +198,7 @@ export const handleRegisterSubmit = async ({
             paymentResponse.data.checkoutUrl
           ) {
             window.location.href = paymentResponse.data.checkoutUrl;
-          }
-          else{
+          } else {
             throw new Error("Payment initiation failed");
           }
         } else {

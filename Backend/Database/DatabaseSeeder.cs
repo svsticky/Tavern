@@ -55,6 +55,16 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "ActivityUpdateEmailSender", "");
 
+        await EnsureSettingExists(db, "MembershipPaymentExpirationTime", ""); // If empty, no expiration time will be set on payments, and they will not automatically expire.
+        
+        await EnsureSettingExists(db, "MastersShouldPayMembership", "0");
+
+        await EnsureSettingExists(db, "GratieShouldPayMembership", "0");
+
+        await EnsureSettingExists(db, "ErelidShouldPayMembership", "0");
+
+        await EnsureSettingExists(db, "LidVanVerdiensteShouldPayMembership", "0");
+
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();

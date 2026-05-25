@@ -237,7 +237,7 @@ namespace Backend.Repositories
         }
 
         /// <inheritdoc />
-        public async Task<object> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
+        public async Task<PaymentStatusResponse> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
         {
             if(fromUserId != userId)
             {
@@ -253,12 +253,14 @@ namespace Backend.Repositories
             if (member == null) throw new KeyNotFoundException("Member not found");
 
             var unpaid = paymentValidationService.GetUnpaidEnrollmentsForMember(member.Id);
-            var hasPaidMembership = paymentValidationService.HasPaidMembershipPayment(member.Id);
+            var hasPaidMembershipBeforeExpirationTime = paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
+            var hasEverPaidMembership = paymentValidationService.HasEverPaidMembershipPayment(member.Id);
 
-            return new
+            return new PaymentStatusResponse
             {
                 MemberId = member.Id,
-                HasPaidMembership = hasPaidMembership,
+                HasEverPaidMembership = hasEverPaidMembership,
+                HasPaidMembershipBeforeExpirationTime = hasPaidMembershipBeforeExpirationTime,
                 HasPaidAllActivities = !unpaid.Any(),
                 UnpaidEnrollments = unpaid
             };
@@ -272,7 +274,7 @@ namespace Backend.Repositories
 
         private void EnsureMemberHasNoPaidMembership(Guid memberId)
         {
-            if (paymentValidationService.HasPaidMembershipPayment(memberId))
+            if (paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(memberId))
             {
                 throw new InvalidOperationException("Member already paid membership");
             }

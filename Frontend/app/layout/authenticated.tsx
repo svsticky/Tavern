@@ -1,8 +1,17 @@
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
-import { getMembersById, getSettingsById } from "~/api/sdk.gen";
+import {
+  deleteMembersById,
+  getMembersById,
+  getPaymentsMemberByFromUserIdStatus,
+  getSettingsById,
+  patchMembersById,
+  postPaymentsMembership,
+} from "~/api/sdk.gen";
+import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
@@ -26,6 +35,8 @@ export default function AuthenticatedLayout() {
   const authService = useAuth();
   const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<boolean | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,7 +125,6 @@ export default function AuthenticatedLayout() {
               return;
             }
             setBoardGroupId(parseInt(res.data.value, 10));
-            console.log("Board group id loaded:", res.data);
           }
         })
         .catch((err) => console.error("Could not fetch board group ID", err));
@@ -136,7 +146,6 @@ export default function AuthenticatedLayout() {
               return;
             }
             setCandidateBoardGroupId(parseInt(res.data.value, 10));
-            console.log("Candidate Board Group ID loaded:", res.data);
           }
         })
         .catch((err) =>
@@ -163,6 +172,62 @@ export default function AuthenticatedLayout() {
         );
     }
 
+    if (paymentStatus === null) {
+      getPaymentsMemberByFromUserIdStatus({
+        path: {
+          fromUserId: tokenParsed.UserId,
+        },
+      })
+        .then((res) => {
+          if (res.data) {
+            setPaymentStatus(
+              res.data.hasEverPaidMembership &&
+                res.data.hasPaidMembershipBeforeExpirationTime,
+            );
+          }
+        })
+        .catch((err) =>
+          console.error(
+            "Could not fetch payment status for authenticated user",
+            err,
+          ),
+        );
+
+      if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
+        console.warn(
+          "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
+        );
+
+        // Patch member to force refresh the payment status in keycloak.
+        patchMembersById({
+          path: { id: tokenParsed.UserId },
+          body: [] as any,
+        });
+      }
+    }
+
+    if (!paymentUrl && paymentStatus === false) {
+      console.log("User has not paid for membership, loading payment url...");
+
+      postPaymentsMembership({
+        body: { memberId: tokenParsed?.UserId ?? "" },
+      })
+        .then((res) => {
+          if (res.data?.checkoutUrl) {
+            setPaymentUrl(res.data.checkoutUrl);
+          } else {
+            throw new Error(
+              "No checkout URL received, cannot redirect to payment page.",
+            );
+          }
+        })
+        .catch((err) => {
+          console.error("Error checking membership payment status:", err);
+        });
+
+      return;
+    }
+
     const resInterceptor = client.instance.interceptors.response.use(
       async (response) => {
         return response;
@@ -171,7 +236,6 @@ export default function AuthenticatedLayout() {
         if (error.response) {
           if (error.response.status === 401) {
             console.warn("Unauthorized, redirecting...");
-            //window.location.href = `/logout`;
           } else if (error.response.status === 403) {
             console.warn(
               "Forbidden - user does not have access to this resource.",
@@ -197,17 +261,74 @@ export default function AuthenticatedLayout() {
     setBoardGroupId,
     setCandidateBoardGroupId,
     setMember,
+    paymentUrl,
+    paymentStatus,
   ]);
 
   if (!tokenParsed) return null;
 
-  if (tokenParsed.access_level === "not_paid") {
+  if (paymentStatus === false) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <h1 className="text-2xl font-bold mb-4">
           {i18n.t("membership_payment_required")}
         </h1>
         <p className="mb-6">{i18n.t("membership_payment_description")}</p>
+        {paymentUrl && (
+          <>
+            <Button
+              onClick={async () => {
+                window.location.href = paymentUrl;
+              }}
+            >
+              {i18n.t("pay")}
+            </Button>
+            <p className="text-red-500 text-sm font-bold ">
+              {i18n.t("delete_account_instead_of_paying")}
+            </p>
+            <Button
+              variant="danger"
+              onClick={async () => {
+                if (!window.confirm(i18n.t("delete_account_confirmation"))) {
+                  return;
+                }
+
+                try {
+                  const response = await deleteMembersById({
+                    path: { id: tokenParsed.UserId },
+                  });
+
+                  if (response.error || response.status >= 400) {
+                    throw new Error(
+                      `Failed to delete account: ${response.error}`,
+                    );
+                  }
+
+                  toast.success(i18n.t("account_deleted_successfully"));
+                  authService.logout(`${window.location.origin}/login`);
+                } catch (err) {
+                  console.error("Error deleting account:", err);
+                  toast.error(i18n.t("delete_account_error"));
+                }
+              }}
+            >
+              Delete Account
+            </Button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold mb-4">
+          {i18n.t("payment_not_processed")}
+        </h1>
+        <p className="mb-6">
+          {i18n.t("membership_payment_not_processed_description")}
+        </p>
       </div>
     );
   }

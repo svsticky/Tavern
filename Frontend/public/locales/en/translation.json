@@ -220,7 +220,7 @@
   "members": "Members",
   "members_description": "We have a diverse group of about 2000 members, including bachelor and master students from various study programs. Our members are active in organizing activities, participating in committees and enjoying the social aspect of our association.",
   "membership_gl_account": "Membership gl account",
-  "membership_payment_description": "The payment is still processing. Please come back later or contact the board if you have any questions.",
+  "membership_payment_description": "The membership isn't paid or is still processing.",
   "membership_payment_required": "Membership payment required for access to this page.",
   "membership_price": "Membership price",
   "membership_vat_code": "Membership vat code",
@@ -430,5 +430,10 @@
   "enrollment_waiting_list": "You are on the waiting list.",
   "active_members": "Active members",
   "financial_email_sender": "Financial email sender",
-  "activity_update_email_sender": "Activity update email sender"
+  "activity_update_email_sender": "Activity update email sender",
+  "membership_payment_expiration_time": "Membership duration (years, leave empty for no expiration)",
+  "should_pay_membership": "Should pay membership",
+  "payment_not_processed": "Payment not processed",
+  "payment_not_processed_description": "Your payment has not been processed yet. Please come back later or contact the board if you have any questions.",
+  "delete_account_confirmation": "Are you sure you want to delete your account? This action cannot be undone and will also delete all data for statistics of the association."
 }

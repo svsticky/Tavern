@@ -122,7 +122,7 @@ public class PaymentSyncService(
                         // If it's a membership payment, we also want to check if we should remove the member associated with it. 
                         if(payment is MembershipPayment mp && mp.Member != null)
                         {
-                            if (!paymentValidationService.HasPaidMembershipPayment(mp.Member.Id))
+                            if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id))
                             {
                                 db.Members.Remove(mp.Member);
                             }

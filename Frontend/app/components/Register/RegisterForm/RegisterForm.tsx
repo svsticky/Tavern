@@ -14,6 +14,7 @@ import {
   handleRegisterSubmit,
   handleStudyToggle,
   loadMailingLists,
+  loadMastersMustPay,
   loadStudies,
 } from "./RegisterForm.handlers";
 
@@ -32,6 +33,7 @@ export default function RegisterForm({ className }: { className?: string }) {
   const [loading, setLoading] = useState(false);
   const [studies, setStudies] = useState<Study[]>([]);
   const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
+  const [mastersMustPay, setMastersMustPay] = useState<boolean | null>(null);
 
   const navigate = useNavigate();
 
@@ -54,6 +56,7 @@ export default function RegisterForm({ className }: { className?: string }) {
   useEffect(() => {
     setLoading(true);
     loadStudies(setStudies);
+    loadMastersMustPay(setMastersMustPay);
     loadMailingLists(setMailingLists);
     setLoading(false);
   }, []);
@@ -90,6 +93,10 @@ export default function RegisterForm({ className }: { className?: string }) {
 
   const [subscriptions, setSubscriptions] = useState<number>(0);
 
+  if (!loading && mastersMustPay === null) {
+    return t("error_loading_page");
+  }
+
   return (
     <Tile
       className={cn("shadow-xl border border-gray-200 bg-white", className)}
@@ -105,6 +112,7 @@ export default function RegisterForm({ className }: { className?: string }) {
             subscriptions,
             studies,
             navigate,
+            mastersMustPay,
           })
         }
       >
