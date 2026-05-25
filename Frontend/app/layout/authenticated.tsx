@@ -16,6 +16,7 @@ import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * The core layout wrapper for all authenticated routes in the application.
@@ -48,7 +49,7 @@ export default function AuthenticatedLayout() {
     const loadToken = async () => {
       if (!authService.isAuthenticated()) {
         console.error("User not authenticated");
-        navigate("/login", { replace: true });
+        authService.login(window.location.href);
         return;
       }
 
@@ -153,7 +154,7 @@ export default function AuthenticatedLayout() {
         );
     }
 
-    if (member == null) {
+    if (member === null) {
       getMembersById({
         path: {
           id: tokenParsed.UserId,
@@ -184,6 +185,18 @@ export default function AuthenticatedLayout() {
               res.data.hasEverPaidMembership &&
                 res.data.hasPaidMembershipBeforeExpirationTime,
             );
+            
+            if (res.data.hasEverPaidMembership && res.data.hasPaidMembershipBeforeExpirationTime && tokenParsed.access_level === "not_paid") {
+              console.warn(
+                "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
+              );
+
+              // Patch member to force refresh the payment status in keycloak.
+              patchMembersById({
+                path: { id: tokenParsed.UserId },
+                body: [] as any,
+              });
+            }
           }
         })
         .catch((err) =>
@@ -192,18 +205,6 @@ export default function AuthenticatedLayout() {
             err,
           ),
         );
-
-      if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
-        console.warn(
-          "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
-        );
-
-        // Patch member to force refresh the payment status in keycloak.
-        patchMembersById({
-          path: { id: tokenParsed.UserId },
-          body: [] as any,
-        });
-      }
     }
 
     if (!paymentUrl && paymentStatus === false) {
@@ -236,6 +237,7 @@ export default function AuthenticatedLayout() {
         if (error.response) {
           if (error.response.status === 401) {
             console.warn("Unauthorized, redirecting...");
+            window.location.href = "/logout"
           } else if (error.response.status === 403) {
             console.warn(
               "Forbidden - user does not have access to this resource.",
@@ -267,74 +269,9 @@ export default function AuthenticatedLayout() {
 
   if (!tokenParsed) return null;
 
-  if (paymentStatus === false) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold mb-4">
-          {i18n.t("membership_payment_required")}
-        </h1>
-        <p className="mb-6">{i18n.t("membership_payment_description")}</p>
-        {paymentUrl && (
-          <>
-            <Button
-              onClick={async () => {
-                window.location.href = paymentUrl;
-              }}
-            >
-              {i18n.t("pay")}
-            </Button>
-            <p className="text-red-500 text-sm font-bold ">
-              {i18n.t("delete_account_instead_of_paying")}
-            </p>
-            <Button
-              variant="danger"
-              onClick={async () => {
-                if (!window.confirm(i18n.t("delete_account_confirmation"))) {
-                  return;
-                }
-
-                try {
-                  const response = await deleteMembersById({
-                    path: { id: tokenParsed.UserId },
-                  });
-
-                  if (response.error || response.status >= 400) {
-                    throw new Error(
-                      `Failed to delete account: ${response.error}`,
-                    );
-                  }
-
-                  toast.success(i18n.t("account_deleted_successfully"));
-                  authService.logout(`${window.location.origin}/login`);
-                } catch (err) {
-                  console.error("Error deleting account:", err);
-                  toast.error(i18n.t("delete_account_error"));
-                }
-              }}
-            >
-              Delete Account
-            </Button>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <h1 className="text-2xl font-bold mb-4">
-          {i18n.t("payment_not_processed")}
-        </h1>
-        <p className="mb-6">
-          {i18n.t("membership_payment_not_processed_description")}
-        </p>
-      </div>
-    );
-  }
-
   if (!authService.isAuthenticated()) {
-    return <Navigate to="/login" replace />;
+    authService.login(window.location.href);
+    return null;
   }
 
   return <Outlet />;

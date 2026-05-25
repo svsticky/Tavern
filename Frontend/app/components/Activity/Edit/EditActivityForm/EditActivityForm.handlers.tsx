@@ -11,6 +11,7 @@ import {
 } from "~/api";
 import { audienceMap } from "~/types/AudienceMap";
 import { getAssociationYear } from "~/util/date.util";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Truncates an ISO date string to a format compatible with HTML `datetime-local` inputs.
@@ -45,11 +46,13 @@ export const loadGroups = async (
     const groupsRes = await getGroups({
       query: { IncludeInactive: false, MembershipYear: getAssociationYear() },
     });
-    if (groupsRes.error) throw new Error("Failed to load groups");
+    if (groupsRes.error) {
+      throw groupsRes.error ?? new Error("Failed to load groups");
+    }
     if (groupsRes.data) setGroups(groupsRes.data);
   } catch (error) {
     console.error("Error loading data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }
@@ -247,12 +250,15 @@ export const handleActivitySubmit = async ({
           path: { id: Number(id) },
           ...payload,
         });
-        if (response.error) throw new Error("Failed to update activity");
+        if (response.error) {
+          throw response.error ?? new Error("Failed to update activity");
+        }
         navigate(`${redirectPathBase}${id}`);
       } else {
         const response = await postActivities(payload);
-        if (response.error || !response.data?.id)
-          throw new Error("Failed to create activity");
+        if (response.error || !response.data?.id) {
+          throw response.error ?? new Error("Failed to create activity");
+        }
         navigate(`${redirectPathBase}${response.data?.id}`);
       }
     } catch (error) {
@@ -266,6 +272,10 @@ export const handleActivitySubmit = async ({
   toast.promise(submitProcess(), {
     loading: isEdit ? t("saving") : t("creating"),
     success: isEdit ? t("activity_updated") : t("activity_created"),
-    error: isEdit ? t("activity_update_failed") : t("activity_creation_failed"),
+    error: (error) =>
+      appendErrorMessage(
+        isEdit ? t("activity_update_failed") : t("activity_creation_failed"),
+        error,
+      ),
   });
 };

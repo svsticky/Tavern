@@ -35,6 +35,9 @@ namespace Backend.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<long>("PaymentId")
                         .HasColumnType("bigint");
 
@@ -200,6 +203,9 @@ namespace Backend.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("RetryCount")
                         .HasColumnType("integer");
 
@@ -322,6 +328,9 @@ namespace Backend.Migrations
                     b.Property<long>("MailSubscription")
                         .HasColumnType("bigint");
 
+                    b.Property<DateTimeOffset>("NextAttemptAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("RetryCount")
                         .HasColumnType("integer");
 
@@ -438,8 +447,9 @@ namespace Backend.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("character varying(40)");
 
-                    b.Property<long>("StudentNumber")
-                        .HasColumnType("bigint");
+                    b.Property<string>("StudentNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("Suspended")
                         .HasColumnType("boolean");

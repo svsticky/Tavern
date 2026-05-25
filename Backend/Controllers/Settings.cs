@@ -76,11 +76,22 @@ public class Settings : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [AllowAnonymous]
     public async Task<ActionResult<Setting>> GetSetting(string id, CancellationToken ct)
     {
         try
         {
-            var result = await _settingsRepository.GetSetting(id, GetUserId(), ct);
+            Guid? userId;
+            try
+            {
+                userId = GetUserId();
+            }
+            catch
+            {
+                userId = null;
+            }
+
+            var result = await _settingsRepository.GetSetting(id, userId, ct);
             return result != null ? Ok(result) : NotFound();
         }
         catch (UnauthorizedAccessException)

@@ -8,6 +8,7 @@ import {
   postAnnouncements,
   putAnnouncementsById,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the loadAnnouncementData handler.
@@ -94,10 +95,14 @@ export const handleAnnouncementSubmit = async ({
           path: { id: Number(id) },
           body,
         });
-        if (response.error) throw new Error("Failed to update announcement");
+        if (response.error) {
+          throw response.error ?? new Error("Failed to update announcement");
+        }
       } else {
         const response = await postAnnouncements({ body });
-        if (response.error) throw new Error("Failed to create announcement");
+        if (response.error) {
+          throw response.error ?? new Error("Failed to create announcement");
+        }
       }
       navigate("/announcements");
     } catch (error) {
@@ -111,7 +116,11 @@ export const handleAnnouncementSubmit = async ({
   toast.promise(submitProcess(), {
     loading: isEdit ? t("updating") : t("creating"),
     success: isEdit ? t("update_successful") : t("creation_successful"),
-    error: isEdit ? t("update_failed") : t("creation_failed"),
+    error: (error) =>
+      appendErrorMessage(
+        isEdit ? t("update_failed") : t("creation_failed"),
+        error,
+      ),
   });
 };
 
@@ -135,7 +144,9 @@ export const handleDeleteAnnouncement = async (
       const response = await deleteAnnouncementsById({
         path: { id: Number(id) },
       });
-      if (response.error) throw new Error("Failed to delete announcement");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to delete announcement");
+      }
       navigate("/announcements");
     } catch (error) {
       console.error(error);
@@ -148,6 +159,6 @@ export const handleDeleteAnnouncement = async (
   toast.promise(deleteProcess(), {
     loading: t("deleting"),
     success: t("deletion_successful"),
-    error: t("deletion_failed"),
+    error: (error) => appendErrorMessage(t("deletion_failed"), error),
   });
 };

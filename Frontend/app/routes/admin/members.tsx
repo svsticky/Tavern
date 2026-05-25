@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { Mail, Phone } from "lucide-react";
+import { Mail, Phone, PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
@@ -13,6 +13,7 @@ import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
+import { appendErrorMessage } from "~/util/error.util";
 
 /** The number of members to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 20;
@@ -66,8 +67,9 @@ export default function Members() {
           },
         });
 
-        if (response.error || !response.data)
-          throw new Error("Failed to fetch members");
+        if (response.error || !response.data) {
+          throw response.error ?? new Error("Failed to fetch members");
+        }
 
         setMembers((prev) =>
           isInitial ? response.data! : [...prev, ...response.data!],
@@ -78,7 +80,7 @@ export default function Members() {
         }
       } catch (error) {
         console.error("Error fetching members:", error);
-        toast.error(t("loading_failed"));
+        toast.error(appendErrorMessage(t("loading_failed"), error));
       } finally {
         setLoading(false);
       }
@@ -173,7 +175,15 @@ export default function Members() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <PageHeader title={t("members")} backTo="/" />
+      <PageHeader title={t("members")} backTo="/" action={
+        <Button
+          variant="secondary"
+          onClick={() => navigate("/admin/members/create-begunstiger")}
+          className="items-center px-3 py-1"
+        >
+          <PlusIcon className="w-5 h-5" />
+        </Button>}
+      />
 
       <BorderedTile>
         <div className="flex flex-col sm:flex-row items-end w-full gap-4">

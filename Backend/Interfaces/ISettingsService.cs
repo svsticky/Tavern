@@ -23,7 +23,7 @@ public interface ISettingsRepository
     /// <param name="UserId">The ID of the requesting user.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The setting when found; otherwise <c>null</c>.</returns>
-    Task<Setting?> GetSetting(string name, Guid UserId, CancellationToken ct);
+    Task<Setting?> GetSetting(string name, Guid? UserId, CancellationToken ct);
 
     /// <summary>
     /// Creates a new setting.

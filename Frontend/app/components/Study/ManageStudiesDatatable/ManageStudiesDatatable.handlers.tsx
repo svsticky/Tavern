@@ -2,6 +2,7 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import { getStudies, type Study } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Fetches the list of studies from the API and updates the provided state.
@@ -20,13 +21,14 @@ export const fetchStudies = async (
       setLoading(true);
       const response = await getStudies();
 
-      if (response.error || !response.data)
-        throw new Error("Failed to fetch studies");
+      if (response.error || !response.data) {
+        throw response.error ?? new Error("Failed to fetch studies");
+      }
 
       setStudies(response.data);
     } catch (error) {
       console.error("Error fetching studies:", error);
-      toast.error(t("error_fetching_studies"));
+      toast.error(appendErrorMessage(t("error_fetching_studies"), error));
     } finally {
       setLoading(false);
     }

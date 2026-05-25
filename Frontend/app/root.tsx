@@ -7,6 +7,7 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 import "./i18n";
 import type { Route } from "./+types/root";
@@ -16,6 +17,7 @@ import "./app.css";
 import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
 import { getEnv } from "./util/config.utils";
+import { t } from "i18next";
 
 client.setConfig({
   baseURL: getEnv("ApiUrl") ?? "http://localhost:8080",
@@ -60,6 +62,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const primaryLight = getEnv("BOARD_PRIMARY_LIGHT");
@@ -88,6 +91,23 @@ export default function App() {
       return () => i18n.off("initialized", handleInitialized);
     }
   }, []);
+
+  useEffect(() => {
+    const formatTitle = (path: string) => {
+      const pathParts = path.replace(/^\/+|\/+$/g, '').split('/');
+      const lastPart = pathParts[pathParts.length - 1] || 'dashboard';
+      
+      const translationKey = lastPart.replace(/-/g, '_');
+      
+      const translated = t(translationKey);
+
+      const capitalizedTitle = translated.charAt(0).toUpperCase() + translated.slice(1);
+      
+      return `Koala | ${capitalizedTitle}`;
+    };
+
+    document.title = formatTitle(location.pathname);
+  }, [location.pathname, i18n.language]);
 
   if (!i18nReady) return null;
 

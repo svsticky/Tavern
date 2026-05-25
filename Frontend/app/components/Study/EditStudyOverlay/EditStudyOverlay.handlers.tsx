@@ -8,6 +8,7 @@ import {
   type Study,
   type StudyType,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Data structure for the study creation and edition form.
@@ -79,10 +80,12 @@ export const handleStudySubmit = async ({
             },
           });
 
-      if (response.error)
-        throw new Error(
-          study ? "Failed to update study" : "Failed to create study",
-        );
+      if (response.error) {
+        throw response.error ??
+          new Error(
+            study ? "Failed to update study" : "Failed to create study",
+          );
+      }
 
       onComplete({
         title: formData.title,
@@ -101,7 +104,7 @@ export const handleStudySubmit = async ({
   toast.promise(editStudyProcess(), {
     loading: t("creating_study"),
     success: t("study_created_successfully"),
-    error: t("failed_to_create_study"),
+    error: (error) => appendErrorMessage(t("failed_to_create_study"), error),
   });
 };
 
@@ -117,7 +120,7 @@ export const handleStudyDelete = async ({
   onComplete,
 }: DeleteArgs) => {
   if (!study) {
-    toast.error(t("no_study_to_delete"));
+    toast.error(appendErrorMessage(t("no_study_to_delete")));
     return;
   }
 
@@ -125,7 +128,9 @@ export const handleStudyDelete = async ({
     setLoading(true);
     try {
       const response = await deleteStudiesById({ path: { id: study.id! } });
-      if (response.error) throw new Error("Failed to delete study");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to delete study");
+      }
       onComplete();
     } catch (error) {
       console.error("Error deleting study:", error);
@@ -138,6 +143,6 @@ export const handleStudyDelete = async ({
   toast.promise(deleteStudyProcess(), {
     loading: t("deleting_study"),
     success: t("study_deleted_successfully"),
-    error: t("failed_to_delete_study"),
+    error: (error) => appendErrorMessage(t("failed_to_delete_study"), error),
   });
 };

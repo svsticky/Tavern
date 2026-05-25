@@ -8,6 +8,7 @@ import {
     type Mailinglist, 
     type PostMailinglistDto
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 type HandleSubmitArgs = {
     e: React.FormEvent;
@@ -29,7 +30,9 @@ export const handleMailingListSubmit = async ({
                 body: formData as PostMailinglistDto 
             });
 
-            if (response.error) throw new Error();
+            if (response.error) {
+                throw response.error;
+            }
 
             const updatedList: Mailinglist = {
                 ...formData,
@@ -43,7 +46,9 @@ export const handleMailingListSubmit = async ({
                 body: formData as PostMailinglistDto 
             });
 
-            if (response.error || !response.data) throw new Error();
+            if (response.error || !response.data) {
+                throw response.error ?? new Error("Failed to create mailing list");
+            }
 
             const data = response.data as any;
             const newList: Mailinglist = {
@@ -58,7 +63,7 @@ export const handleMailingListSubmit = async ({
             onComplete(newList);
         }
     } catch (error) {
-        toast.error(t("error_saving_mailing_list"));
+        toast.error(appendErrorMessage(t("error_saving_mailing_list"), error));
     } finally {
         setLoading(false);
     }
@@ -75,12 +80,14 @@ export const handleMailingListDelete = async ({ mailingList, setLoading, onCompl
     try {
         const response = await deleteMailinglistsById({ path: { id: mailingList.id! } });
         
-        if (response.error) throw new Error();
+        if (response.error) {
+            throw response.error;
+        }
 
         toast.success(t("mailing_list_deleted"));
         onComplete(undefined);
     } catch (error) {
-        toast.error(t("error_deleting_mailing_list"));
+        toast.error(appendErrorMessage(t("error_deleting_mailing_list"), error));
     } finally {
         setLoading(false);
     }

@@ -21,6 +21,11 @@ public class MailSubscriptionOutboxTask
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
+    /// The timestamp indicating when this task is eligible for its next processing attempt.
+    /// </summary>
+    public DateTimeOffset NextAttemptAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
     /// The number of times this outbox task has been retried. This is used to track how many times the task has been attempted, which can be useful for implementing retry logic or for monitoring the success of task processing.
     /// </summary>
     public int RetryCount { get; set; } = 0;

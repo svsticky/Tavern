@@ -15,6 +15,7 @@ import {
   handleStudyToggle,
   loadMailingLists,
   loadMastersMustPay,
+  loadPrice,
   loadStudies,
 } from "./RegisterForm.handlers";
 
@@ -30,10 +31,12 @@ import {
  * @param {string} [props.className] - Optional CSS classes for the outer Tile container.
  */
 export default function RegisterForm({ className }: { className?: string }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [studies, setStudies] = useState<Study[]>([]);
   const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
   const [mastersMustPay, setMastersMustPay] = useState<boolean | null>(null);
+  const [price, setPrice] = useState<number | null>(null);
+  const [membershipPaymentExpirationTime, setMembershipPaymentExpirationTime] = useState<number | null>(null);
 
   const navigate = useNavigate();
 
@@ -54,11 +57,16 @@ export default function RegisterForm({ className }: { className?: string }) {
   const [selectedStudies, setSelectedStudies] = useState<number[]>([]);
 
   useEffect(() => {
-    setLoading(true);
-    loadStudies(setStudies);
-    loadMastersMustPay(setMastersMustPay);
-    loadMailingLists(setMailingLists);
-    setLoading(false);
+    const loadData = async () =>
+    {
+      setLoading(true);
+      await loadStudies(setStudies);
+      await loadMastersMustPay(setMastersMustPay);
+      await loadPrice(setPrice, setMembershipPaymentExpirationTime);
+      await loadMailingLists(setMailingLists);
+      setLoading(false);
+    }
+    loadData();
   }, []);
 
   const isFormValid = useMemo(() => {
@@ -279,6 +287,10 @@ export default function RegisterForm({ className }: { className?: string }) {
             </div>
           )}
         </FormSection>
+
+        <p className="text-gray-500">
+          {price != null && `${t("membershipcosts").replace("<price>", `€${price?.toFixed(2)}`)}${membershipPaymentExpirationTime != null ? (membershipPaymentExpirationTime == 1 ? t('for_1_years') : t('for_x_years').replace("<years>", membershipPaymentExpirationTime.toString())) : ""}${mastersMustPay === false ? t("membership_free_for_masters") : "."}`}
+        </p>
 
         <Button
           type="submit"

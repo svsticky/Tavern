@@ -45,7 +45,6 @@ export default function EditMemberPage() {
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const _fileInputRef = useRef<HTMLInputElement>(null);
   const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
     null,
   );

@@ -7,6 +7,7 @@ import {
   type MemberResponseDto,
   postEnrollments,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Triggers a download of the activity's enrollment list as a CSV file.
@@ -25,7 +26,7 @@ export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
       });
 
       if (response.error || !response.data) {
-        throw new Error("Failed to download enrollments");
+        throw response.error ?? new Error("Failed to download enrollments");
       }
 
       const blob = new Blob([response.data as any], { type: "text/csv" });
@@ -48,7 +49,7 @@ export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
   toast.promise(handleDownloadAction(), {
     loading: t("downloading"),
     success: t("download_success"),
-    error: t("download_failed"),
+    error: (error) => appendErrorMessage(t("download_failed"), error),
   });
 };
 
@@ -110,7 +111,7 @@ export const handleEnrollParticipant = async ({
   toast.promise(enrollProcess(), {
     loading: t("enrolling"),
     success: t("enrollment_successful"),
-    error: t("enrollment_failed"),
+    error: (error) => appendErrorMessage(t("enrollment_failed"), error),
   });
 };
 

@@ -673,7 +673,7 @@ export type Member = {
     /**
      * The student number of the member.
      */
-    studentNumber?: number;
+    studentNumber: string;
     /**
      * The first name of the member.
      */
@@ -784,7 +784,7 @@ export type MemberResponseDto = {
     /**
      * The student number of the member.
      */
-    studentNumber?: number | null;
+    studentNumber?: string | null;
     /**
      * The first name of the member.
      */
@@ -879,7 +879,7 @@ export type MemberUpdateDto = {
     /**
      * The student number of the member.
      */
-    studentNumber: number;
+    studentNumber: string;
     /**
      * The first name of the member.
      */
@@ -1159,7 +1159,7 @@ export type PostMemberDto = {
     /**
      * The student number of the member.
      */
-    studentNumber: number;
+    studentNumber: string;
     /**
      * The first name of the member.
      */
@@ -1209,6 +1209,10 @@ export type PostMemberDto = {
      * Studies where the member is enrolled.
      */
     studyEnrollments?: Array<PostStudyEnrollmentDto> | null;
+    /**
+     * Indicates whether the member is a "Begunstiger".
+     */
+    begunstiger?: boolean | null;
 };
 
 /**

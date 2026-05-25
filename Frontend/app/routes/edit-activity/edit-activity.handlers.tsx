@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import { type ActivityResponseDto, getActivitiesById } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the loadEditActivityData handler.
@@ -43,7 +44,7 @@ export const loadEditActivityData = async ({
     }
   } catch (error) {
     console.error("Error loading data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }

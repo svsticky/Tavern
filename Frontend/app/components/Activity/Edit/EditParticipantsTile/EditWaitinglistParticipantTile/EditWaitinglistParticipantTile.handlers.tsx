@@ -5,6 +5,7 @@ import {
   type EnrollmentResponseDto,
   patchEnrollmentsByActivityIdByMemberId,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 type WaitingListActionArgs = {
   activityId: number;
@@ -37,7 +38,9 @@ export const handleWaitinglistUnenroll = ({
         },
       });
 
-      if (response.error) throw new Error("Failed to unenroll");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to unenroll");
+      }
 
       onUnenroll();
     } catch (error) {
@@ -51,7 +54,8 @@ export const handleWaitinglistUnenroll = ({
   toast.promise(handleUnenrollAction(), {
     loading: t("unenrolling_participant"),
     success: t("participant_unenrolled"),
-    error: t("failed_to_unenroll_participant"),
+    error: (error) =>
+      appendErrorMessage(t("failed_to_unenroll_participant"), error),
   });
 };
 
@@ -80,7 +84,9 @@ export const handleMoveFromWaitinglist = ({
         body: [{ op: "replace", path: "/isOnWaitingList", value: false }],
       });
 
-      if (response.error) throw new Error("Failed to move to participants");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to move to participants");
+      }
 
       onUnenroll();
     } catch (error) {
@@ -94,6 +100,7 @@ export const handleMoveFromWaitinglist = ({
   toast.promise(handleMoveToParticipantsAction(), {
     loading: t("moving_participant_to_participants"),
     success: t("participant_moved_to_participants"),
-    error: t("failed_to_move_participant_to_participants"),
+    error: (error) =>
+      appendErrorMessage(t("failed_to_move_participant_to_participants"), error),
   });
 };

@@ -180,6 +180,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 {
                     Id = Guid.NewGuid(),
                     PhoneNumber = "0600000000",
+                    StudentNumber = "BackupMember",
                     Street = "Street",
                     HouseNumber = "1",
                     PostalCode = "1234AB",

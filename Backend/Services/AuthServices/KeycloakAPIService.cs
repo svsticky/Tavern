@@ -34,7 +34,8 @@ public class KeycloakAPIService(
 
         if (member == null)
         {
-            throw new Exception($"Member with id {keycloakId} not found.");
+            // Member is already deleted
+            return;
         }
 
         var client = httpClientFactory.CreateClient("KeycloakAdmin");

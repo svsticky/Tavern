@@ -8,6 +8,7 @@ import {
   type Role,
   type RoleAlias,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Fetches all existing roles/aliases from the API and updates the local state.
@@ -24,12 +25,14 @@ export const fetchRoles = async (
   try {
     const res = await getRoles();
 
-    if (res.error || !res.data) throw new Error("Failed to fetch roles");
+    if (res.error || !res.data) {
+      throw res.error ?? new Error("Failed to fetch roles");
+    }
 
     setRoles(res.data);
   } catch (error) {
     console.error("Search error:", error);
-    toast.error(t("failed_to_load_roles"));
+    toast.error(appendErrorMessage(t("failed_to_load_roles"), error));
   } finally {
     setLoadingRoles(false);
   }
@@ -84,8 +87,9 @@ export const handleCreateRoleSubmit = ({
           },
         });
 
-        if (response.error || !response.data)
-          throw new Error("Failed to create role");
+        if (response.error || !response.data) {
+          throw response.error ?? new Error("Failed to create role");
+        }
 
         onRoleCreated({ id: (response.data as any).id, name });
       } else if (selectedType === "RoleAlias") {
@@ -96,8 +100,9 @@ export const handleCreateRoleSubmit = ({
           },
         });
 
-        if (response.error || !response.data)
-          throw new Error("Failed to create role alias");
+        if (response.error || !response.data) {
+          throw response.error ?? new Error("Failed to create role alias");
+        }
 
         onRoleAliasCreated({
           id: (response.data as any).id,
@@ -116,6 +121,6 @@ export const handleCreateRoleSubmit = ({
   toast.promise(postRole(), {
     loading: t("creating_role"),
     success: t("role_created"),
-    error: t("creating_role_failed"),
+    error: (error) => appendErrorMessage(t("creating_role_failed"), error),
   });
 };

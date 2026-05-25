@@ -2,6 +2,7 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import { type GroupType, postGroups } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 type CreateGroupFormData = {
   name: string;
@@ -77,7 +78,7 @@ export const handleCreateGroupSubmit = ({
     try {
       setLoading(true);
       if (!formData.name || !formData.groupPicture) {
-        toast.error(t("please_fill_all_fields"));
+        toast.error(appendErrorMessage(t("please_fill_all_fields")));
         return;
       }
 
@@ -90,7 +91,7 @@ export const handleCreateGroupSubmit = ({
       });
 
       if (response.error) {
-        throw new Error("Failed to create group");
+        throw response.error ?? new Error("Failed to create group");
       }
 
       onSuccess();
@@ -106,6 +107,6 @@ export const handleCreateGroupSubmit = ({
   toast.promise(createProcess(), {
     loading: t("creating_group"),
     success: t("group_created_successfully"),
-    error: t("failed_to_create_group"),
+    error: (error) => appendErrorMessage(t("failed_to_create_group"), error),
   });
 };

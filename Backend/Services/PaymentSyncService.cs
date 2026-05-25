@@ -41,6 +41,7 @@ public class PaymentSyncService(
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var paymentService = scope.ServiceProvider.GetRequiredService<AbstractPaymentService>();
         var paymentValidationService = scope.ServiceProvider.GetRequiredService<IPaymentValidationService>();
+        var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var pendingMembershipPayments = await db.MembershipPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingEnrollmentPayments = await db.EnrollmentPayments.Where(p => p.PaidAt == null).ToListAsync();
@@ -89,7 +90,8 @@ public class PaymentSyncService(
                             {
                                 AuthSystemUserId = fullPayment.Member.AuthSystemUserId.Value,
                                 TaskType = AuthTaskType.Sync,
-                                CreatedAt = DateTime.UtcNow
+                                CreatedAt = DateTimeOffset.UtcNow,
+                                NextAttemptAt = DateTimeOffset.UtcNow
                             });
                         }
                         payment.PaidAt = paymentResponse.PaidAt;
@@ -125,6 +127,7 @@ public class PaymentSyncService(
                             if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id))
                             {
                                 db.Members.Remove(mp.Member);
+                                await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, mp.Member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."));
                             }
                         }
                         await db.SaveChangesAsync();

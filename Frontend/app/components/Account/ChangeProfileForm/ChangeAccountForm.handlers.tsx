@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { type MemberResponseDto, patchMembersById } from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
 import i18n from "~/i18n";
+import { appendErrorMessage } from "~/util/error.util";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 
 /**
@@ -94,7 +95,9 @@ export const handleSaveAccount = async (
           },
         ],
       });
-      if (response.error) throw new Error("Failed to save account changes");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to save account changes");
+      }
 
       i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
 
@@ -118,6 +121,6 @@ export const handleSaveAccount = async (
   toast.promise(saveProcess(), {
     loading: t("saving"),
     success: t("save_successful"),
-    error: t("save_failed"),
+    error: (error) => appendErrorMessage(t("save_failed"), error),
   });
 };

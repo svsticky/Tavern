@@ -11,6 +11,7 @@ import {
   type Member,
   postPaymentsActivity,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the internal setUnpaidPaymentState utility.
@@ -228,7 +229,9 @@ export const handleMarkAsPaid = ({
         },
       });
 
-      if (response.error) throw new Error("Failed to mark as paid");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to mark as paid");
+      }
 
       await refreshUnpaid();
     } catch (error) {
@@ -242,7 +245,7 @@ export const handleMarkAsPaid = ({
   toast.promise(process(), {
     loading: t("marking_as_paid"),
     success: t("marked_as_paid"),
-    error: t("mark_as_paid_failed"),
+    error: (error) => appendErrorMessage(t("mark_as_paid_failed"), error),
   });
 };
 
@@ -271,7 +274,7 @@ export const handlePaymentsExport = (
       });
 
       if (response.error || !response.data) {
-        throw new Error("Failed to export payments");
+        throw response.error ?? new Error("Failed to export payments");
       }
 
       const blob = new Blob([response.data as any], { type: "text/csv" });
@@ -299,7 +302,7 @@ export const handlePaymentsExport = (
   toast.promise(exportAction(), {
     loading: t("exporting"),
     success: t("export_success"),
-    error: t("export_failed"),
+    error: (error) => appendErrorMessage(t("export_failed"), error),
   });
 };
 
@@ -366,7 +369,7 @@ export const loadFinancesData = async ({
     }
   } catch (error) {
     console.error("Error while fetching data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }

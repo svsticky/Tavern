@@ -9,56 +9,60 @@ export default [
   layout("layout/auth-service.tsx", [
     layout("layout/authenticated.tsx", [
       layout("layout/navbar.tsx", [
-        index("routes/home/home.tsx"),
-        route("announcements", "routes/announcements/announcements.tsx"),
-        route("activities", "routes/activities/activities.tsx"),
-        route("activities/create", "routes/edit-activity/edit-activity.tsx", {
-          id: "create-activity",
-        }),
-        route("activities/edit/:id", "routes/edit-activity/edit-activity.tsx", {
-          id: "edit-activity",
-        }),
-        route("activities/:id", "routes/activity/activity.tsx", {
-          id: "activity-details",
-        }),
-        route("account", "routes/account/account.tsx"),
-        route("external-links", "routes/external-links.tsx"),
-        route(
-          "announcements/create",
-          "routes/edit-announcement/edit-announcement.tsx",
-          { id: "create-announcement" },
-        ),
-        route(
-          "announcements/edit/:id",
-          "routes/edit-announcement/edit-announcement.tsx",
-          { id: "edit-announcement" },
-        ),
-
-        layout("layout/admin.tsx", [
-          route("admin/finances", "routes/admin/finances/finances.tsx"),
-          route("admin/activities", "routes/admin/activities/activities.tsx"),
-          route("admin/activities/:id", "routes/activity/activity.tsx", {
-            id: "activity-details-admin",
+        layout("layout/paywall.tsx", [
+          index("routes/home/home.tsx"),
+          route("announcements", "routes/announcements/announcements.tsx"),
+          route("activities", "routes/activities/activities.tsx"),
+          route("activities/create", "routes/edit-activity/edit-activity.tsx", {
+            id: "create-activity",
           }),
+          route("activities/edit/:id", "routes/edit-activity/edit-activity.tsx", {
+            id: "edit-activity",
+          }),
+          route("activities/:id", "routes/activity/activity.tsx", {
+            id: "activity-details",
+          }),
+          route("account", "routes/account/account.tsx"),
+          route("external-links", "routes/external-links.tsx"),
           route(
-            "admin/activities/create",
-            "routes/edit-activity/edit-activity.tsx",
-            { id: "create-activity-admin" },
+            "announcements/create",
+            "routes/edit-announcement/edit-announcement.tsx",
+            { id: "create-announcement" },
           ),
           route(
-            "admin/activities/edit/:id",
-            "routes/edit-activity/edit-activity.tsx",
-            { id: "edit-activity-admin" },
+            "announcements/edit/:id",
+            "routes/edit-announcement/edit-announcement.tsx",
+            { id: "edit-announcement" },
           ),
-          route("admin/members", "routes/admin/members.tsx"),
-          route(
-            "admin/members/:id",
-            "routes/admin/edit-member/edit-member.tsx",
-          ),
-          route("admin/groups", "routes/admin/groups.tsx"),
-          route("admin/groups/:id", "routes/admin/edit-group/edit-group.tsx"),
-          route("admin/settings", "routes/admin/settings/settings.tsx"),
+
+          layout("layout/admin.tsx", [
+            route("admin/finances", "routes/admin/finances/finances.tsx"),
+            route("admin/activities", "routes/admin/activities/activities.tsx"),
+            route("admin/activities/:id", "routes/activity/activity.tsx", {
+              id: "activity-details-admin",
+            }),
+            route(
+              "admin/activities/create",
+              "routes/edit-activity/edit-activity.tsx",
+              { id: "create-activity-admin" },
+            ),
+            route(
+              "admin/activities/edit/:id",
+              "routes/edit-activity/edit-activity.tsx",
+              { id: "edit-activity-admin" },
+            ),
+            route("admin/members", "routes/admin/members.tsx"),
+            route("admin/members/create-begunstiger", "routes/admin/create-begunstiger/create-begunstiger.tsx"),
+            route(
+              "admin/members/:id",
+              "routes/admin/edit-member/edit-member.tsx",
+            ),
+            route("admin/groups", "routes/admin/groups.tsx"),
+            route("admin/groups/:id", "routes/admin/edit-group/edit-group.tsx"),
+            route("admin/settings", "routes/admin/settings/settings.tsx"),
+          ]),
         ]),
+        route("/update-study-progress", "routes/update-studies.tsx"),
       ]),
     ]),
 

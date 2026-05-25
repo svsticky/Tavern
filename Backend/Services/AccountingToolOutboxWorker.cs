@@ -26,7 +26,8 @@ public class AccountingToolOutboxWorker(
         {
             TaskType = taskType,
             PaymentId = paymentId,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow,
             RetryCount = 0
         };
 
@@ -69,11 +70,12 @@ public class AccountingToolOutboxWorker(
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         
         var task = await db.AccountingToolOutboxTasks
-            .Where(t => t.CreatedAt <= DateTime.UtcNow)
             .OrderBy(t => t.CreatedAt)
+            .ThenBy(t => t.Id)
             .FirstOrDefaultAsync(ct);
 
         if (task == null) return false;
+        if (task.NextAttemptAt > DateTimeOffset.UtcNow) return false;
         logger.LogInformation("Processing accounting outbox task {TaskType} for payment {PaymentId}. Retry {RetryCount}.",
             task.TaskType, task.PaymentId, task.RetryCount);
 
@@ -121,8 +123,8 @@ public class AccountingToolOutboxWorker(
         task.RetryCount++;
         // Exponential backoff with a max delay of 1 hour
         double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);
-        task.CreatedAt = DateTime.UtcNow.AddMinutes(extraMinutes);
+        task.NextAttemptAt = DateTimeOffset.UtcNow.AddMinutes(extraMinutes);
         logger.LogWarning("Rescheduled accounting task {TaskType} for payment {PaymentId} at {NextRunUtc}.",
-            task.TaskType, task.PaymentId, task.CreatedAt);
+            task.TaskType, task.PaymentId, task.NextAttemptAt);
     }
 }

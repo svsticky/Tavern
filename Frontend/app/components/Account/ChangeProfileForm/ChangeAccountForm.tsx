@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { getMailinglists } from "~/api";
+import { deleteMembersById, getMailinglists } from "~/api";
 import type { Mailinglist, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
@@ -12,6 +12,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
+import { appendErrorMessage } from "~/util/error.util";
 import {
   handleChangeEmail,
   handleChangePassword,
@@ -100,13 +101,14 @@ export default function ChangeAccountForm({
       try {
         const response = await getMailinglists();
 
-        if (response.error || !response.data)
-          throw new Error("Failed to fetch mailing lists");
+        if (response.error || !response.data) {
+          throw response.error ?? new Error("Failed to fetch mailing lists");
+        }
 
         setMailinglists(response.data);
       } catch (error) {
         console.error("Error fetching mailing lists:", error);
-        toast.error(t("fetch_mailinglists_failed"));
+        toast.error(appendErrorMessage(t("fetch_mailinglists_failed"), error));
       } finally {
         setLoadingMailingLists(false);
       }
@@ -276,6 +278,35 @@ export default function ChangeAccountForm({
         className="w-full"
       >
         {saving ? t("saving") : t("save")}
+      </Button>
+        <Button
+          variant="danger"
+          className="w-full"
+          type="button"
+          onClick={async () => {
+            if (!window.confirm(t("delete_account_confirmation"))) {
+              return;
+            }
+
+            try {
+              if(!member.id) throw new Error("Failed to fetch member id")
+              const response = await deleteMembersById({
+                path: { id: member.id },
+              });
+
+              if (response.error || response.status >= 400) {
+                throw response.error ?? new Error("Failed to delete account");
+              }
+
+              toast.success(t("account_deleted_successfully"));
+              authService.logout(`${window.location.origin}/login`);
+            } catch (err) {
+              console.error("Error deleting account:", err);
+              toast.error(appendErrorMessage(t("delete_account_error"), err));
+            }
+          }}
+        >
+          {t("delete_account")}
       </Button>
     </Form>
   );

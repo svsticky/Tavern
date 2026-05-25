@@ -26,7 +26,8 @@ public class AuthOutboxWorker(
         {
             TaskType = taskType,
             AuthSystemUserId = authSystemUserId,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow,
             RetryCount = 0
         };
 
@@ -59,11 +60,12 @@ public class AuthOutboxWorker(
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         
         var task = await db.AuthOutboxTasks
-            .Where(t => t.CreatedAt <= DateTime.UtcNow)
             .OrderBy(t => t.CreatedAt)
+            .ThenBy(t => t.Id)
             .FirstOrDefaultAsync(ct);
 
         if (task == null) return false;
+        if (task.NextAttemptAt > DateTimeOffset.UtcNow) return false;
         logger.LogInformation("Processing auth outbox task {TaskType} for {AuthSystemUserId}. Retry {RetryCount}.",
             task.TaskType, task.AuthSystemUserId, task.RetryCount);
 
@@ -137,10 +139,10 @@ public class AuthOutboxWorker(
 
         task.RetryCount++;
         
-        // Exponential backoff with a max delay of 1 hour
-        double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);
-        task.CreatedAt = DateTime.UtcNow.AddMinutes(extraMinutes);
+        // Exponential backoff with a max delay of 1 minute
+        double extraSeconds = Math.Min(Math.Pow(2, task.RetryCount), 60);
+        task.NextAttemptAt = DateTimeOffset.UtcNow.AddSeconds(extraSeconds);
         logger.LogWarning("Rescheduled Auth task {TaskType} for {AuthSystemUserId} at {NextRunUtc}.",
-            task.TaskType, task.AuthSystemUserId, task.CreatedAt);
+            task.TaskType, task.AuthSystemUserId, task.NextAttemptAt);
     }
 }

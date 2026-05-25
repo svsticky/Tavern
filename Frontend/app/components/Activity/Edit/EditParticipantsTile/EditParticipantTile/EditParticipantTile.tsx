@@ -5,6 +5,7 @@ import type { EnrollmentResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
+import { appendErrorMessage } from "~/util/error.util";
 import {
   handleParticipantUnenroll,
   savePriceToServer,
@@ -76,7 +77,7 @@ export default function EditParticipantTile({
       {
         loading: t("updating_price"),
         success: t("price_updated"),
-        error: t("failed_to_update_price"),
+        error: (error) => appendErrorMessage(t("failed_to_update_price"), error),
       },
     );
   };

@@ -4,6 +4,7 @@ import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivitiesById } from "~/api";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the loadActivityData handler.
@@ -37,7 +38,7 @@ export const loadActivityData = async ({
     setActivity(activitiesResponse.data);
   } catch (error) {
     console.error("Error while loading data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }

@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { getMembers, type MemberResponseDto } from "~/api";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * A modal overlay component for searching and selecting members from the API.
@@ -39,12 +40,14 @@ export default function SearchMemberOverlay({
       try {
         const res = await getMembers({ query: { Search: query } });
 
-        if (res.error || !res.data) throw new Error("Search failed");
+        if (res.error || !res.data) {
+          throw res.error ?? new Error("Search failed");
+        }
 
         setResults(res.data);
       } catch (error) {
         console.error("Search error:", error);
-        toast.error(t("search_failed"));
+        toast.error(appendErrorMessage(t("search_failed"), error));
       } finally {
         setSearching(false);
       }

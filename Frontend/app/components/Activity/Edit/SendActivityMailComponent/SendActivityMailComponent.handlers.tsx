@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import { postMailsActivity } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Handles the logic for sending a broadcast email to activity participants.
@@ -47,7 +48,7 @@ export const handleSendMail = async ({
   clearForm: () => void;
 }) => {
   if (!content || content === "<p><br></p>") {
-    toast.error(t("content_required"));
+    toast.error(appendErrorMessage(t("content_required")));
     return;
   }
 
@@ -63,7 +64,9 @@ export const handleSendMail = async ({
         },
       });
 
-      if (response.error) throw new Error("Failed to send mail");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to send mail");
+      }
 
       clearForm();
     } finally {
@@ -74,6 +77,6 @@ export const handleSendMail = async ({
   toast.promise(sendMailAction(), {
     loading: t("sending_mail"),
     success: t("mail_sent_successfully"),
-    error: t("sending_mail_failed"),
+    error: (error) => appendErrorMessage(t("sending_mail_failed"), error),
   });
 };

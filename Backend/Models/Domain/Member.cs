@@ -45,7 +45,7 @@ public class Member
     /// <summary>
     /// The student number of the member.
     /// </summary>
-    public uint StudentNumber { get; set; }
+    public required string StudentNumber { get; set; }
 
     /// <summary>
     /// The first name of the member.

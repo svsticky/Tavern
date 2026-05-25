@@ -15,6 +15,7 @@ import {
   postGroupsByIdGroupPicture,
   type RoleAlias,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Interface representing the editable fields of a group.
@@ -92,7 +93,7 @@ export const loadGroupData = async ({
     setGroupPictureSrc(url);
   } catch (err) {
     console.log("Failed to load group data:", err);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), err));
   } finally {
     setLoading(false);
   }
@@ -135,7 +136,7 @@ export const loadGroupMemberships = async (
     setEnrollments(groupMembershipsResponse.data);
   } catch (err) {
     console.log("Failed to load group data:", err);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), err));
   } finally {
     setLoadingMemberships(false);
   }
@@ -170,7 +171,9 @@ export const handleSaveGroup = async (
         body: patchDoc as any,
       });
 
-      if (response.error) throw new Error("Failed to save group data");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to save group data");
+      }
     } catch (err) {
       console.error("Failed to save group data:", err);
       throw err;
@@ -183,7 +186,7 @@ export const handleSaveGroup = async (
     .promise(saveProcess(), {
       loading: t("saving"),
       success: t("save_success"),
-      error: t("save_error"),
+      error: (error) => appendErrorMessage(t("save_error"), error),
     })
     .finally(() => setSaving(false));
 };
@@ -213,7 +216,9 @@ export const handleGroupProfilePictureUpload = async (
         body: { image: file },
       });
 
-      if (response.error) throw new Error("Failed to upload group picture");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to upload group picture");
+      }
 
       window.location.reload();
     } catch (err) {
@@ -227,7 +232,7 @@ export const handleGroupProfilePictureUpload = async (
   toast.promise(saveProcess(), {
     loading: t("uploading"),
     success: t("upload_success"),
-    error: t("upload_error"),
+    error: (error) => appendErrorMessage(t("upload_error"), error),
   });
 };
 
@@ -251,7 +256,9 @@ export const handleDeleteGroupEnrollment = async (
       setLoading(true);
       const response = await deleteGroupmembershipsById({ path: { id } });
 
-      if (response.error) throw new Error("Failed to delete enrollment");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to delete enrollment");
+      }
 
       setEnrollments((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
@@ -265,7 +272,7 @@ export const handleDeleteGroupEnrollment = async (
   toast.promise(deleteProcess(), {
     loading: t("deleting"),
     success: t("delete_success"),
-    error: t("delete_error"),
+    error: (error) => appendErrorMessage(t("delete_error"), error),
   });
 };
 
@@ -302,7 +309,9 @@ export const handleAddGroupEnrollment = async (
         },
       });
 
-      if (res.error || !res.data) throw new Error("Failed to add enrollment");
+      if (res.error || !res.data) {
+        throw res.error ?? new Error("Failed to add enrollment");
+      }
 
       setEnrollments((prev) => [
         ...prev,
@@ -328,7 +337,7 @@ export const handleAddGroupEnrollment = async (
   toast.promise(executeProcess(), {
     loading: t("adding"),
     success: t("add_success"),
-    error: t("add_error"),
+    error: (error) => appendErrorMessage(t("add_error"), error),
   });
 };
 
@@ -359,7 +368,9 @@ export const handleUpdateGroupRole = async (
         ] as any,
       });
 
-      if (response.error) throw new Error("Failed to update role");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to update role");
+      }
 
       setEnrollments((prev) =>
         prev.map((e) =>
@@ -379,7 +390,7 @@ export const handleUpdateGroupRole = async (
   toast.promise(saveProcess(), {
     loading: t("updating_role"),
     success: t("role_updated"),
-    error: t("role_update_failed"),
+    error: (error) => appendErrorMessage(t("role_update_failed"), error),
   });
 };
 

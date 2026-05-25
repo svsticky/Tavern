@@ -87,7 +87,6 @@ namespace Backend.Repositories
         /// <inheritdoc />
         public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
             logger.LogInformation("Patching study enrollment {EnrollmentId} by user {UserId}.", id, userId);
 
             if(patchDoc == null)
@@ -100,9 +99,12 @@ namespace Backend.Repositories
                 || op.path.Equals("/study", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cannot modify Id, MemberId or StudyId fields.");
             
-            var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
-
+            var enrollment = await db.StudyEnrollments.Include(e => e.Study).FirstOrDefaultAsync(e => e.Id == id, ct);
+            
             ArgumentNullException.ThrowIfNull(enrollment, nameof(enrollment));
+
+            if(enrollment.MemberId != enrollment.MemberId || DateTime.UtcNow < enrollment.EnrollmentDate.AddYears((int)enrollment.Study.NominalDurationYears))
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             using var transaction = await db.Database.BeginTransactionAsync(ct);
 
