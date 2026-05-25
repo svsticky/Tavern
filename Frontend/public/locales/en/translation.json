@@ -431,7 +431,7 @@
   "active_members": "Active members",
   "financial_email_sender": "Financial email sender",
   "activity_update_email_sender": "Activity update email sender",
-  "membership_payment_expiration_time_years": "Membership duration (years, leave empty for no expiration)",
+  "membership_payment_expiration_time": "Membership duration (years, leave empty for no expiration)",
   "should_pay_membership": "Should pay membership",
   "payment_not_processed": "Payment not processed",
   "payment_not_processed_description": "Your payment has not been processed yet. Please come back later or contact the board if you have any questions.",

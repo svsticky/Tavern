@@ -70,7 +70,7 @@ export default function SettingsPage() {
   }, []);
 
   const hasEmptyFields = Object.entries(settings)
-    .filter(([key]) => key !== "MembershipPaymentExpirationTimeYears")
+    .filter(([key]) => key !== "MembershipPaymentExpirationTime")
     .some(([_key, value]) => !value.trim());
 
   const groupOptions = getGroupOptions(availableGroups);
@@ -163,13 +163,13 @@ export default function SettingsPage() {
               }
             />
             <Input
-              label={t("membership_payment_expiration_time_years")}
+              label={t("membership_payment_expiration_time")}
               type="number"
               step="1"
-              value={settings.MembershipPaymentExpirationTimeYears || ""}
+              value={settings.MembershipPaymentExpirationTime || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "MembershipPaymentExpirationTimeYears",
+                  "MembershipPaymentExpirationTime",
                   e.target.value.trim(),
                   setSettings,
                 )
@@ -202,7 +202,7 @@ export default function SettingsPage() {
                     }
                   />
                   <Checkbox
-                    label={t("erelid")}
+                    label={t("ere_lid")}
                     checked={settings.ErelidShouldPayMembership !== "0"}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       handleSettingsChange(
