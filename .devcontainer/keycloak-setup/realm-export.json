@@ -1705,6 +1705,7 @@
   "emailTheme": "main-theme",
   "eventsEnabled": false,
   "eventsListeners": [
+    "email-update-listener",
     "jboss-logging"
   ],
   "enabledEventTypes": [],

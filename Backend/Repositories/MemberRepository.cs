@@ -265,7 +265,7 @@ namespace Backend.Repositories
         /// <inheritdoc />
         public async Task RefreshEmail(Guid id, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FindAsync(id, cancellationToken);
+            var member = await db.Members.FirstOrDefaultAsync((member) => member.AuthSystemUserId == id);
             if (member == null)                
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
