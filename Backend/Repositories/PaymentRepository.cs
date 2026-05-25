@@ -237,7 +237,7 @@ namespace Backend.Repositories
         }
 
         /// <inheritdoc />
-        public async Task<object> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
+        public async Task<PaymentStatusResponse> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
         {
             if(fromUserId != userId)
             {

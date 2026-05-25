@@ -79,7 +79,7 @@ namespace Backend.Interfaces
         /// <param name="userId">The ID of the member to inspect.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The member payment status payload.</returns>
-        Task<object> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct);
+        Task<PaymentStatusResponse> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct);
 
         /// <summary>
         /// Exports payments in a date range to CSV.
