@@ -1,6 +1,5 @@
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import { Navigate, Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
 import {
@@ -11,12 +10,10 @@ import {
   patchMembersById,
   postPaymentsMembership,
 } from "~/api/sdk.gen";
-import Button from "~/components/UI/Button";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * The core layout wrapper for all authenticated routes in the application.
@@ -263,6 +260,8 @@ export default function AuthenticatedLayout() {
     setBoardGroupId,
     setCandidateBoardGroupId,
     setMember,
+    paymentUrl,
+    paymentStatus,
     paymentUrl,
     paymentStatus,
   ]);

@@ -81,6 +81,7 @@ public class PaymentValidationService(
         if (isMaster) return true;
 
         return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
+        return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
     }
 
     /// <inheritdoc />

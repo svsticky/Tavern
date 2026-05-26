@@ -105,6 +105,10 @@ export default function RegisterForm({ className }: { className?: string }) {
     return t("error_loading_page");
   }
 
+  if (!loading && mastersMustPay === null) {
+    return t("error_loading_page");
+  }
+
   return (
     <Tile
       className={cn("shadow-xl border border-gray-200 bg-white", className)}
