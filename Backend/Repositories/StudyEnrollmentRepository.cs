@@ -118,10 +118,10 @@ namespace Backend.Repositories
                 {
                     switch(enrollment.Status)
                     {
-                        case StudyStatus.DroppedOut:
                         case StudyStatus.Enrolled:
                             enrollment.CompletionDate = null;
                             break;
+                        case StudyStatus.DroppedOut:
                         case StudyStatus.Completed:
                             enrollment.CompletionDate = DateTime.UtcNow;
                             break;
@@ -160,7 +160,14 @@ namespace Backend.Repositories
                 Member = member,
                 Study = study,
                 EnrollmentDate = dto.EnrollmentDate,
-                Status = dto.Status
+                Status = dto.Status,
+                CompletionDate = dto.Status switch
+                {
+                    StudyStatus.Enrolled => null,
+                    StudyStatus.DroppedOut => DateTime.UtcNow,
+                    StudyStatus.Completed => DateTime.UtcNow,
+                    _ => throw new ArgumentException("Invalid study status")
+                }
             };
         }
     }

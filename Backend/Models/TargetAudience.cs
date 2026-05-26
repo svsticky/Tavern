@@ -65,7 +65,7 @@ public static class TargetAudienceHelper
     public static bool IsMemberInTargetAudience(Member member, TargetAudience targetAudience)
     {
         if (targetAudience.HasFlag(TargetAudience.FirstYears) && member.StudyEnrollments.Any(se => 
-            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
+            se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Bachelor 
             && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-1)))
         {
@@ -73,7 +73,7 @@ public static class TargetAudienceHelper
         }
 
         if (targetAudience.HasFlag(TargetAudience.SecondYears) && member.StudyEnrollments.Any(se =>
-            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
+            se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Bachelor
             && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-2) 
             && se.EnrollmentDate < DateTimeOffset.UtcNow.AddYears(-1)))
@@ -82,7 +82,7 @@ public static class TargetAudienceHelper
         }
 
         if (targetAudience.HasFlag(TargetAudience.ThirdYearsAndAbove) && member.StudyEnrollments.Any(se => 
-            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
+            se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Bachelor
             && se.EnrollmentDate < DateTimeOffset.UtcNow.AddYears(-2)))
         {
@@ -90,7 +90,7 @@ public static class TargetAudienceHelper
         }
 
         if (targetAudience.HasFlag(TargetAudience.Masters) && member.StudyEnrollments.Any(se => 
-            (se.CompletionDate == null || se.CompletionDate > DateTimeOffset.UtcNow)
+            se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Master))
         {
             return true;

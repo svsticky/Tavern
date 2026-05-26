@@ -124,8 +124,7 @@ export default function ActivityDetailsTile({
     !member?.suspended &&
     member?.studyEnrollments?.some(
       (se) =>
-        se.completionDate == null ||
-        new Date(se.completionDate) > new Date(Date.now()),
+        se.status === "Enrolled" ,
     );
 
   const inTargetAudience = isMemberInTargetAudience(

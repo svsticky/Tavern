@@ -214,7 +214,7 @@ public abstract class AbstractMailService
             return;
         }
 
-        var membersToMail = _db.Members.Include(m => m.StudyEnrollments).ThenInclude(se => se.Study).Where(m => m.StudyEnrollments.Any(se => se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now)).ToList();
+        var membersToMail = _db.Members.Include(m => m.StudyEnrollments).ThenInclude(se => se.Study).Where(m => m.StudyEnrollments.Any(se => se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now && se.Status != StudyStatus.Completed)).ToList();
 
         foreach (var member in membersToMail)
         {

@@ -65,8 +65,8 @@ public static class MemberQueryExtensions
         if(dto.Inactive.HasValue)
         {
             query = dto.Inactive.Value 
-                ? query.Where(m => m.StudyEnrollments.All(se => se.CompletionDate != null && se.CompletionDate < now)) 
-                : query.Where(m => m.StudyEnrollments.Any(se => se.CompletionDate == null || se.CompletionDate >= now));
+                ? query.Where(m => m.StudyEnrollments.All(se => se.Status == StudyStatus.Completed || se.Status == StudyStatus.DroppedOut)) 
+                : query.Where(m => m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled));
         }
 
         if(dto.StudyType.HasValue)

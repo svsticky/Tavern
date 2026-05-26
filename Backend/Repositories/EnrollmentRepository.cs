@@ -309,6 +309,7 @@ public class EnrollmentRepository : IEnrollmentRepository
     {
         var next = await _db.Enrollments
             .Include(e => e.Member)
+                .ThenInclude(se => se.StudyEnrollments)
             .Include(e => e.Activity)
             .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
             .OrderBy(e => e.RegisteredOn)
