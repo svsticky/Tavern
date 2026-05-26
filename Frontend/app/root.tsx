@@ -95,12 +95,20 @@ export default function App() {
   useEffect(() => {
     const formatTitle = (path: string) => {
       const pathParts = path.replace(/^\/+|\/+$/g, '').split('/');
-      const lastPart = pathParts[pathParts.length - 1] || 'dashboard';
+      
+      let lastPart = pathParts[pathParts.length - 1];
+
+      const isGuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(lastPart);
+      const isNumber = /^\d+$/.test(lastPart);
+
+      if ((isNumber || isGuid) && pathParts.length > 1) {
+        lastPart = pathParts[pathParts.length - 2];
+      }
+
+      lastPart = lastPart || 'dashboard';
       
       const translationKey = lastPart.replace(/-/g, '_');
-      
       const translated = t(translationKey);
-
       const capitalizedTitle = translated.charAt(0).toUpperCase() + translated.slice(1);
       
       return `Koala | ${capitalizedTitle}`;
