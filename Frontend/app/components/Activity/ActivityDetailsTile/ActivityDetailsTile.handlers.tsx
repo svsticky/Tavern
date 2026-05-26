@@ -10,6 +10,7 @@ import {
 } from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
 import { formatDate } from "~/util/date.util";
+import { appendErrorMessage } from "~/util/error.util";
 import {
   formatForGoogleCalendar,
   formatForWhatsApp,
@@ -89,7 +90,9 @@ export const handleEnrollment = async (
         },
       });
 
-      if (response.error) throw new Error("Enrollment failed");
+      if (response.error) {
+        throw response.error ?? new Error("Enrollment failed");
+      }
 
       if (response.data) {
         const submittedAnswers = Object.entries(answers).map(
@@ -151,7 +154,7 @@ export const handleEnrollment = async (
 
       return "";
     },
-    error: t("enrollment_failed"),
+    error: (error) => appendErrorMessage(t("enrollment_failed"), error),
   });
 };
 
@@ -205,7 +208,7 @@ export const handleUpdateEnrollment = async (
       });
 
       if (response.error) {
-        throw new Error("Update failed");
+        throw response.error ?? new Error("Update failed");
       }
 
       const existingEnrollment = activity.enrollments.find(
@@ -248,7 +251,7 @@ export const handleUpdateEnrollment = async (
   toast.promise(updateProcess(), {
     loading: t("saving"),
     success: t("answers_updated"),
-    error: t("update_failed"),
+    error: (error) => appendErrorMessage(t("update_failed"), error),
   });
 };
 
@@ -286,7 +289,7 @@ export const handleUnenrollment = async (
       });
 
       if (response.error) {
-        throw new Error("Unenrollment failed");
+        throw response.error ?? new Error("Unenrollment failed");
       }
 
       activity.enrollments = activity.enrollments.filter(
@@ -304,7 +307,7 @@ export const handleUnenrollment = async (
   toast.promise(unenrollmentProcess(), {
     loading: t("signing_out"),
     success: t("unenrollment_successful"),
-    error: t("unenrollment_failed"),
+    error: (error) => appendErrorMessage(t("unenrollment_failed"), error),
   });
 };
 
@@ -330,6 +333,6 @@ export const handleCopyForWhatsapp = async (
   toast.promise(navigator.clipboard.writeText(text), {
     loading: t("copying"),
     success: t("copy_successful"),
-    error: t("copy_failed"),
+    error: (error) => appendErrorMessage(t("copy_failed"), error),
   });
 };

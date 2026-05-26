@@ -2,6 +2,7 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import { getStudies, type Study, type StudyType } from "~/api";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Fetches the list of available studies from the API.
@@ -22,13 +23,13 @@ export const loadStudies = async (
     const response = await getStudies();
 
     if (response.error || !response.data) {
-      throw new Error("Failed to load studies");
+      throw response.error ?? new Error("Failed to load studies");
     }
 
     setStudies(response.data);
   } catch (error) {
     console.error("Failed to load studies", error);
-    toast.error(t("failed_to_load_studies"));
+    toast.error(appendErrorMessage(t("failed_to_load_studies"), error));
   } finally {
     setLoading(false);
   }

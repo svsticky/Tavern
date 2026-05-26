@@ -26,7 +26,8 @@ public class MailSubscriptionOutboxWorker(
         {
             Email = email,
             MailSubscription = mailSubscriptions,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow,
             RetryCount = 0
         };
 
@@ -74,11 +75,12 @@ public class MailSubscriptionOutboxWorker(
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         
         var task = await db.MailSubscriptionOutboxTasks
-            .Where(t => t.CreatedAt <= DateTime.UtcNow)
             .OrderBy(t => t.CreatedAt)
+            .ThenBy(t => t.Id)
             .FirstOrDefaultAsync(ct);
 
         if (task == null) return false;
+        if (task.NextAttemptAt > DateTimeOffset.UtcNow) return false;
         logger.LogInformation("Processing mail subscription outbox task for email {Email}. Retry {RetryCount}.", task.Email, task.RetryCount);
 
         var mailService = scope.ServiceProvider.GetRequiredService<IMailSubscriptionService>();
@@ -123,7 +125,7 @@ public class MailSubscriptionOutboxWorker(
         task.RetryCount++;
         // Exponential backoff with a max delay of 1 hour
         double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);
-        task.CreatedAt = DateTime.UtcNow.AddMinutes(extraMinutes);
-        logger.LogWarning("Rescheduled mail subscription task for email {Email} at {NextRunUtc}.", task.Email, task.CreatedAt);
+        task.NextAttemptAt = DateTimeOffset.UtcNow.AddMinutes(extraMinutes);
+        logger.LogWarning("Rescheduled mail subscription task for email {Email} at {NextRunUtc}.", task.Email, task.NextAttemptAt);
     }
 }

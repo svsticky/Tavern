@@ -592,6 +592,14 @@ export type GroupResponseDto = {
     active: boolean;
     type: GroupType;
     /**
+     * The default GL account for the group, used for financial transactions.
+     */
+    glAccountId?: string | null;
+    /**
+     * The default cost center for the group, used for financial transactions.
+     */
+    costUnitId?: string | null;
+    /**
      * The path where the picture for the group is stored, if any.
      */
     groupPicturePath?: string | null;
@@ -673,7 +681,7 @@ export type Member = {
     /**
      * The student number of the member.
      */
-    studentNumber?: number;
+    studentNumber: string;
     /**
      * The first name of the member.
      */
@@ -784,7 +792,7 @@ export type MemberResponseDto = {
     /**
      * The student number of the member.
      */
-    studentNumber?: number | null;
+    studentNumber?: string | null;
     /**
      * The first name of the member.
      */
@@ -879,7 +887,7 @@ export type MemberUpdateDto = {
     /**
      * The student number of the member.
      */
-    studentNumber: number;
+    studentNumber: string;
     /**
      * The first name of the member.
      */
@@ -1159,7 +1167,7 @@ export type PostMemberDto = {
     /**
      * The student number of the member.
      */
-    studentNumber: number;
+    studentNumber: string;
     /**
      * The first name of the member.
      */
@@ -1209,6 +1217,10 @@ export type PostMemberDto = {
      * Studies where the member is enrolled.
      */
     studyEnrollments?: Array<PostStudyEnrollmentDto> | null;
+    /**
+     * Indicates whether the member is a "Begunstiger".
+     */
+    begunstiger?: boolean | null;
 };
 
 /**

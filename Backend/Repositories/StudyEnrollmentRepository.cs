@@ -85,9 +85,8 @@ namespace Backend.Repositories
         }
 
         /// <inheritdoc />
-        public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
+        public async Task PatchStudyEnrollment(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
             logger.LogInformation("Patching study enrollment {EnrollmentId} by user {UserId}.", id, userId);
 
             if(patchDoc == null)
@@ -100,9 +99,12 @@ namespace Backend.Repositories
                 || op.path.Equals("/study", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cannot modify Id, MemberId or StudyId fields.");
             
-            var enrollment = await db.StudyEnrollments.FindAsync(id, ct);
-
+            var enrollment = await db.StudyEnrollments.Include(e => e.Study).FirstOrDefaultAsync(e => e.Id == id, ct);
+            
             ArgumentNullException.ThrowIfNull(enrollment, nameof(enrollment));
+
+            if(userId != enrollment.MemberId || DateTime.UtcNow < enrollment.EnrollmentDate.AddYears((int)enrollment.Study.NominalDurationYears))
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             using var transaction = await db.Database.BeginTransactionAsync(ct);
 
@@ -116,10 +118,10 @@ namespace Backend.Repositories
                 {
                     switch(enrollment.Status)
                     {
-                        case StudyStatus.DroppedOut:
                         case StudyStatus.Enrolled:
                             enrollment.CompletionDate = null;
                             break;
+                        case StudyStatus.DroppedOut:
                         case StudyStatus.Completed:
                             enrollment.CompletionDate = DateTime.UtcNow;
                             break;
@@ -158,7 +160,14 @@ namespace Backend.Repositories
                 Member = member,
                 Study = study,
                 EnrollmentDate = dto.EnrollmentDate,
-                Status = dto.Status
+                Status = dto.Status,
+                CompletionDate = dto.Status switch
+                {
+                    StudyStatus.Enrolled => null,
+                    StudyStatus.DroppedOut => DateTime.UtcNow,
+                    StudyStatus.Completed => DateTime.UtcNow,
+                    _ => throw new ArgumentException("Invalid study status")
+                }
             };
         }
     }

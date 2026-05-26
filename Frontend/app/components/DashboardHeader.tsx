@@ -18,6 +18,7 @@ import {
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
+import { appendErrorMessage } from "~/util/error.util";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
 
@@ -129,7 +130,7 @@ export default function DashboardHeader({
         console.error("Error while loading outstanding payments:", error);
         setOutstandingPayments(0);
 
-        toast.error(t("dashboard_data_load_error"));
+        toast.error(appendErrorMessage(t("dashboard_data_load_error"), error));
       } finally {
         setLoading(false);
       }
@@ -174,7 +175,8 @@ export default function DashboardHeader({
     toast.promise(payAction(), {
       loading: t("paying"),
       success: t("redirecting_to_payment"),
-      error: t("payment_initiation_failed"),
+      error: (error) =>
+        appendErrorMessage(t("payment_initiation_failed"), error),
     });
   };
 

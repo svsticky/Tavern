@@ -2,6 +2,7 @@ import { t } from "i18next";
 import { toast } from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type GetAnnouncementResponseDto, getAnnouncements } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the loadAnnouncements handler.
@@ -37,7 +38,7 @@ export const loadAnnouncements = async ({
     );
   } catch (error) {
     console.error("Error while loading data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }

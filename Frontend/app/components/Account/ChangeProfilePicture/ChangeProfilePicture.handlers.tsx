@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import { postProfilepictureByIdProfilePicture } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Handles the profile picture upload process.
@@ -20,7 +21,9 @@ export const handleProfilePictureUpload = async (
         path: { id: userId },
         body: { image: file },
       });
-      if (response.error) throw new Error("Failed to upload profile picture");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to upload profile picture");
+      }
       window.location.reload();
     } catch (err) {
       console.error("Failed to upload profile picture:", err);
@@ -31,6 +34,6 @@ export const handleProfilePictureUpload = async (
   toast.promise(saveProcess(userId), {
     loading: t("uploading_profile_picture"),
     success: t("upload_successful"),
-    error: t("upload_failed"),
+    error: (error) => appendErrorMessage(t("upload_failed"), error),
   });
 };

@@ -8,6 +8,7 @@ import {
   getAnnouncements,
   getGroupmemberships,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the loadDashboardData handler.
@@ -78,7 +79,7 @@ export const loadDashboardData = async ({
     setGroupMemberships(committeesResponse.data);
   } catch (error) {
     console.error("Error while loading data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }

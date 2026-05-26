@@ -6,6 +6,7 @@ import {
   type EnrollmentResponseDto,
   patchEnrollmentsByActivityIdByMemberId,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Handles the administrative removal of a participant from an activity.
@@ -39,7 +40,9 @@ export const handleParticipantUnenroll = ({
         },
       });
 
-      if (response.error) throw new Error("Failed to unenroll");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to unenroll");
+      }
 
       onUnenroll();
     } catch (error) {
@@ -53,7 +56,8 @@ export const handleParticipantUnenroll = ({
   toast.promise(handleUnenrollAction(), {
     loading: t("unenrolling_participant"),
     success: t("participant_unenrolled"),
-    error: t("failed_to_unenroll_participant"),
+    error: (error) =>
+      appendErrorMessage(t("failed_to_unenroll_participant"), error),
   });
 };
 
@@ -96,7 +100,9 @@ export const savePriceToServer = async ({
       ],
     });
 
-    if (response.error) throw new Error("Update failed");
+    if (response.error) {
+      throw response.error ?? new Error("Update failed");
+    }
 
     enrollment.price = targetPrice;
   } catch (error) {
@@ -139,7 +145,7 @@ export const handlePriceChange = ({
     toast.promise(saveAction(roundedPrice), {
       loading: t("updating_price"),
       success: t("price_updated"),
-      error: t("failed_to_update_price"),
+      error: (error) => appendErrorMessage(t("failed_to_update_price"), error),
     });
   }, 600);
 

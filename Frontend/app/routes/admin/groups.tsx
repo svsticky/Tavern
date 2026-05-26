@@ -12,6 +12,7 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * An administrative management page for viewing, filtering, and creating association groups.
@@ -46,14 +47,15 @@ export default function Groups() {
         setLoading(true);
         const response = await getGroups();
 
-        if (response.error || !response.data)
-          throw new Error("Failed to fetch groups");
+        if (response.error || !response.data) {
+          throw response.error ?? new Error("Failed to fetch groups");
+        }
 
         setGroups(response.data);
         setFilteredGroups(response.data);
       } catch (error) {
         console.error("Error fetching groups:", error);
-        toast.error(t("loading_failed"));
+        toast.error(appendErrorMessage(t("loading_failed"), error));
       } finally {
         setLoading(false);
       }

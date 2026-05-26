@@ -23,6 +23,7 @@ import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
 import { getAssociationYear } from "~/util/date.util";
 import {
+  type EditGroupFormData,
   handleAddGroupEnrollment,
   handleDeleteGroupEnrollment,
   handleGroupProfilePictureUpload,
@@ -68,9 +69,11 @@ export default function EditGroupPage() {
   const [loadingMemberships, setLoadingMemberships] = useState(false);
   const [loadingChangeRole, setLoadingChangeRole] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<EditGroupFormData>({
     Name: "",
     Type: "",
+    GLAccountId: "",
+    CostUnitId: "",
     Active: false,
   });
 
@@ -232,6 +235,20 @@ export default function EditGroupPage() {
                 { value: "WorkingGroup", label: t("working_group") },
                 { value: "Dispute", label: t("dispute") },
               ]}
+            />
+            <Input
+              label={t("gl_account_id")}
+              value={formData.GLAccountId}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, GLAccountId: e.target.value })
+              }
+            />
+            <Input
+              label={t("cost_unit_id")}
+              value={formData.CostUnitId}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, CostUnitId: e.target.value })
+              }
             />
             <Input
               label={t("active")}

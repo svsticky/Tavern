@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivities } from "~/api";
 import { getEnv } from "~/util/config.utils";
+import { appendErrorMessage } from "~/util/error.util";
 import { generateA3Pdf } from "~/util/pdf.util";
 
 /**
@@ -38,7 +39,7 @@ export const loadActivities = async ({
     setActivities(activitiesResponse.data as ActivityResponseDto[]);
   } catch (error) {
     console.error("Error while loading data:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }
@@ -136,8 +137,8 @@ export const copyWeekOverview = async (
 
     await navigator.clipboard.writeText(message);
     toast.success(t("copied_to_clipboard"));
-  } catch {
-    toast.error(t("copy_failed"));
+  } catch (error) {
+    toast.error(appendErrorMessage(t("copy_failed"), error));
   }
 };
 
@@ -150,7 +151,7 @@ export const downloadPosters = async (
     .map((a) => `${getEnv("ApiUrl")}/api/activities/${a.id}/poster`);
 
   if (posterUrls.length === 0) {
-    toast.error(t("no_posters_found"));
+    toast.error(appendErrorMessage(t("no_posters_found")));
     return;
   }
 
@@ -161,7 +162,7 @@ export const downloadPosters = async (
     toast.success(t("pdf_downloaded"), { id: toastId });
   } catch (error) {
     console.error(error);
-    toast.error(t("pdf_failed"), { id: toastId });
+    toast.error(appendErrorMessage(t("pdf_failed"), error), { id: toastId });
   }
 };
 

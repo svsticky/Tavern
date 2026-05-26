@@ -140,35 +140,37 @@ export default function Finances() {
             </p>
           </BorderedTile>
 
-          <BorderedTile title={t("overpaid")} className="flex-1">
-            {overpaidBalances && overpaidBalances.length > 0 ? (
-              <div className="flex flex-col gap-2">
-                {overpaidBalances.map((balance, index) => (
-                  <>
-                    <div
-                      key={index}
-                      className="p-3 bg-green-100 rounded-lg flex items-center justify-between"
-                    >
-                      <span className="text-sm text-slate-700">
-                        {balance.enrollment.member?.firstName}{" "}
-                        {balance.enrollment.member?.lastName}
-                      </span>
-                      <span className="font-bold text-green-600">{`€${Math.abs(balance.balance).toFixed(2)}`}</span>
-                      <span className="text-xs text-green-500">
-                        {balance.enrollment.activity?.name}
-                      </span>
-                    </div>
-                    <Button variant="primary" className="self-end">
-                      {t("processed")}
-                    </Button>
-                  </>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-slate-500">
-                {t("no_overpaid_balances")}
-              </p>
-            )}
+          <BorderedTile
+            title={t("overpaid")}
+            subtitle={
+              overpaidBalances && overpaidBalances.length === 0
+                ? t("no_overpaid_balances")
+                : ""
+            }
+            className="flex-1"
+          >
+            <div className="flex flex-col gap-2">
+              {overpaidBalances?.map((balance, index) => (
+                <>
+                  <div
+                    key={index}
+                    className="p-3 bg-green-100 rounded-lg flex items-center justify-between"
+                  >
+                    <span className="text-sm text-slate-700">
+                      {balance.enrollment.member?.firstName}{" "}
+                      {balance.enrollment.member?.lastName}
+                    </span>
+                    <span className="font-bold text-green-600">{`€${Math.abs(balance.balance).toFixed(2)}`}</span>
+                    <span className="text-xs text-green-500">
+                      {balance.enrollment.activity?.name}
+                    </span>
+                  </div>
+                  <Button variant="primary" className="self-end">
+                    {t("processed")}
+                  </Button>
+                </>
+              ))}
+            </div>
           </BorderedTile>
         </div>
 

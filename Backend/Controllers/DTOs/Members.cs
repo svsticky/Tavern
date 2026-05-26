@@ -10,7 +10,7 @@ namespace Backend.Controllers.DTOs;
 public class PostMemberDTO
 {
     /// <inheritdoc cref="Member.StudentNumber"/>
-    public required uint StudentNumber { get; set; }
+    public required string StudentNumber { get; set; }
 
     /// <inheritdoc cref="Member.FirstName"/>
     [StringLength(60)]
@@ -70,6 +70,9 @@ public class PostMemberDTO
     /// Studies where the member is enrolled.
     /// </summary>
     public List<PostStudyEnrollmentDTO>? StudyEnrollments { get; set; }
+
+    /// <inheritdoc cref="Member.Begunstiger"/>
+    public bool? Begunstiger { get; set; }
 }
 
 /// <summary>
@@ -81,7 +84,7 @@ public class MemberResponseDTO
     public Guid? Id { get; set; }
 
     /// <inheritdoc cref="Member.StudentNumber"/>
-    public uint? StudentNumber { get; set; }
+    public string? StudentNumber { get; set; }
 
     /// <inheritdoc cref="Member.FirstName"/>
     public string? FirstName { get; set; }
@@ -161,7 +164,7 @@ public class MemberResponseDTO
 public class MemberUpdateDTO
 {
     /// <inheritdoc cref="Member.StudentNumber"/>
-    public required uint StudentNumber { get; set; }
+    public required string StudentNumber { get; set; }
 
     /// <inheritdoc cref="Member.FirstName"/>
     [StringLength(60)]

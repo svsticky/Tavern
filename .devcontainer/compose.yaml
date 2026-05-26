@@ -61,19 +61,29 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.1
     container_name: tavern-keycloak
-    command: start-dev --import-realm
+    command: start-dev --import-realm --features=preview
+    env_file:
+      - ./devcontainer.env
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_IMPORT_OVERWRITE: "true"
+      webhookUrl: "http://devcontainer:8080/members/webhook/refresh-email"
+      webhookSecret: kdfsjf*DFf9A
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/postgres
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
     volumes:
       - ./keycloak-setup:/opt/keycloak/data/import
       - ./keycloak-themes:/opt/keycloak/themes
+      - ./keycloak-plugins:/opt/keycloak/providers
     ports:
       - "8082:8080"
     networks:
       - tavern-net
-
+    depends_on:
+      - db
 volumes:
   postgres-data:
 

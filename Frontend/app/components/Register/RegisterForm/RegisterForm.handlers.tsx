@@ -13,6 +13,7 @@ import {
   type Study,
 } from "~/api";
 import i18n from "~/i18n";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Data structure representing the registration form fields for a new member.
@@ -41,16 +42,22 @@ export const loadStudies = async (setStudies: (studies: Study[]) => void) => {
   try {
     const response = await getStudies();
 
-    if (response.error || !response.data)
-      throw new Error("Failed to fetch studies");
+    if (response.error || !response.data) {
+      throw response.error ?? new Error("Failed to fetch studies");
+    }
 
     setStudies(response.data);
   } catch (error) {
     console.error("Failed to fetch studies", error);
-    toast.error(t("failed_to_load_studies"));
+    toast.error(appendErrorMessage(t("failed_to_load_studies"), error));
   }
 };
 
+/**
+ * Fetches if master students should pay or not
+ * @param {function} setMastersMustPay - State setter function for the mastersMustPay property.
+ * @returns {Promise<void>}
+ */
 export const loadMastersMustPay = async (
   setMastersMustPay: (value: boolean) => void,
 ) => {
@@ -58,10 +65,48 @@ export const loadMastersMustPay = async (
     const response = await getSettingsById({
       path: { id: "MastersShouldPayMembership" },
     });
+    if (response.error || !response.data)
+      throw (
+        response.error ?? new Error("Failed to fetch masters must pay setting")
+      );
     setMastersMustPay(response.data?.value === "1");
   } catch (error) {
     console.error("Failed to fetch masters must pay setting", error);
-    toast.error(t("failed_to_load_settings"));
+    toast.error(appendErrorMessage(t("failed_to_load_settings"), error));
+  }
+};
+
+/**
+ * Fetches the price of a membership.
+ * @param {function} setPrice - State setter function for the price property.
+ * @param {function} setMembershipPaymentExpirationTime - State setter function for the membershipPaymentExpirationTime property.
+ * @returns {Promise<void>}
+ */
+export const loadPrice = async (
+  setPrice: (value: number) => void,
+  setMembershipPaymentExpirationTime: (value: number) => void,
+) => {
+  try {
+    const priceResponse = await getSettingsById({
+      path: { id: "MembershipPrice" },
+    });
+    const membershipPaymentExpirationTimeResponse = await getSettingsById({
+      path: { id: "MembershipPaymentExpirationTime" },
+    });
+    if (
+      priceResponse.data?.value === undefined ||
+      membershipPaymentExpirationTimeResponse.data?.value === undefined
+    )
+      throw new Error("Failed to load data.");
+    if (membershipPaymentExpirationTimeResponse.data.value.trim() !== "") {
+      setMembershipPaymentExpirationTime(
+        Number.parseInt(membershipPaymentExpirationTimeResponse.data.value, 10),
+      );
+    }
+    setPrice(Number.parseFloat(priceResponse.data.value));
+  } catch (error) {
+    console.error("Failed to fetch masters must pay setting", error);
+    toast.error(appendErrorMessage(t("failed_to_load_settings"), error));
   }
 };
 
@@ -76,13 +121,14 @@ export const loadMailingLists = async (
   try {
     const response = await getMailinglists();
 
-    if (response.error || !response.data)
-      throw new Error("Failed to fetch mailing lists");
+    if (response.error || !response.data) {
+      throw response.error ?? new Error("Failed to fetch mailing lists");
+    }
 
     setMailingLists(response.data);
   } catch (error) {
     console.error("Failed to fetch mailing lists", error);
-    toast.error(t("fetch_mailinglists_failed"));
+    toast.error(appendErrorMessage(t("fetch_mailinglists_failed"), error));
   }
 };
 
@@ -166,7 +212,7 @@ export const handleRegisterSubmit = async ({
         houseNumber: formData.houseNumber,
         postalCode: formData.postalCode,
         city: formData.city,
-        studentNumber: parseInt(formData.studentNumber, 10),
+        studentNumber: formData.studentNumber,
         parentPhoneNumber: formData.parentPhone || null,
         preferredLanguage: isDutch ? "NL" : "EN",
         mailSubscriptions: subscriptions,
@@ -181,7 +227,7 @@ export const handleRegisterSubmit = async ({
 
       if (response.status === 201 && response.data) {
         if (
-          !mastersMustPay ||
+          mastersMustPay ||
           !studies.some(
             (s) => selectedStudies.includes(s.id!) && s.type === "Master",
           )
@@ -199,16 +245,18 @@ export const handleRegisterSubmit = async ({
           ) {
             window.location.href = paymentResponse.data.checkoutUrl;
           } else {
-            throw new Error("Payment initiation failed");
+            throw (
+              paymentResponse.error ?? new Error("Payment initiation failed")
+            );
           }
         } else {
           navigate("/confirm-mail");
         }
       } else {
-        throw new Error("Registration failed");
+        throw response.error ?? new Error("Registration failed");
       }
     } catch (error) {
-      console.error("Registratie mislukt", error);
+      console.error("Registration failed", error);
       throw error;
     } finally {
       setLoading(false);
@@ -218,6 +266,6 @@ export const handleRegisterSubmit = async ({
   toast.promise(registerProcess(), {
     loading: t("registering"),
     success: t("registration_successful"),
-    error: t("registration_failed"),
+    error: (error) => appendErrorMessage(t("registration_failed"), error),
   });
 };

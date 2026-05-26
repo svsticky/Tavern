@@ -377,6 +377,13 @@ if(!isGeneratingDocs)
             recurringJobOptions
         );
 
+        recurringJobManager.AddOrUpdate<AbstractMailService>(
+            "annual-board-rotation",
+            service => service.SendStudyStatusUpdateMails(),
+            "0 9 1 9 *", // 1 September
+            recurringJobOptions
+        );
+
         recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
             "annual-board-rotation",
             service => service.PromoteCandidateBoardToBoardAsync(),

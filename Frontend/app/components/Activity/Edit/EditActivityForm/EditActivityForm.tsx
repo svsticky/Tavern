@@ -280,12 +280,17 @@ export default function EditActivityForm({
                   defaultValue={activity?.vatRate ?? ""}
                 />
                 <Input
-                  label={t("gl_account_id")}
+                  label={`${t("gl_account_id")} (${t("leave_empty_for_group_default")})`}
                   name="GLAccountId"
                   defaultValue={activity?.glAccountId ?? ""}
                 />
                 <Input
-                  label={t("cost_center_id")}
+                  label={`${t("cost_unit_id")} (${t("leave_empty_for_group_default")})`}
+                  name="CostUnitId"
+                  defaultValue={activity?.costUnitId ?? ""}
+                />
+                <Input
+                  label={`${t("cost_center_id")} (${t("leave_empty_for_group_default")})`}
                   name="CostCenterId"
                   defaultValue={activity?.costCenterId ?? ""}
                 />

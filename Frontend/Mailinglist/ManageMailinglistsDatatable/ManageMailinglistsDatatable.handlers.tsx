@@ -2,6 +2,7 @@ import type React from "react";
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import { getMailinglists, type Mailinglist } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 export const fetchMailingLists = async (
   setLoading: (loading: boolean) => void,
@@ -10,10 +11,12 @@ export const fetchMailingLists = async (
   try {
     setLoading(true);
     const response = await getMailinglists();
-    if (response.error || !response.data) throw new Error();
+    if (response.error || !response.data) {
+      throw response.error ?? new Error("Failed to fetch mailing lists");
+    }
     setMailingLists(response.data);
   } catch (error) {
-    toast.error(t("error_fetching_mailing_lists"));
+    toast.error(appendErrorMessage(t("error_fetching_mailing_lists"), error));
   } finally {
     setLoading(false);
   }

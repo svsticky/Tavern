@@ -67,9 +67,25 @@ namespace Backend.Repositories
         }
 
         /// <inheritdoc />
-        public async Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken)
+        public async Task<Member> CreateMember(PostMemberDTO dto, Guid? userId, CancellationToken cancellationToken)
         {
             logger.LogInformation("Creating member with email {Email}.", dto.Email);
+
+            // Check if begunstiger, and if so: make sure it's done by a board member, otherwise check if at least 1 study enrollment
+            if (dto.Begunstiger.HasValue && dto.Begunstiger.Value)
+            {
+                if(userId == null)
+                    throw new UnauthorizedAccessException();
+                permissionService.EnsureBoardOrCandidateBoardMember(userId.Value);
+            }
+            else
+            {
+                if(dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0)
+                    throw new ArgumentException("Member must be enrolled to atleast one study.");
+                
+                if(dto.StudentNumber.Trim() == "" || !int.TryParse(dto.StudentNumber, out var _))
+                    throw new ArgumentException("Student number must be a number.");
+            }
 
             // Check if date of birth is in the past
             if(dto.DateOfBirth >= DateTimeOffset.UtcNow)
@@ -142,10 +158,12 @@ namespace Backend.Repositories
 
             try
             {
-                db.Members.Remove(member);
-                await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath ?? "");
+                await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."));
 
+                db.Members.Remove(member);
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
+                
+                await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath ?? "");
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -265,7 +283,7 @@ namespace Backend.Repositories
         /// <inheritdoc />
         public async Task RefreshEmail(Guid id, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FindAsync(id, cancellationToken);
+            var member = await db.Members.FirstOrDefaultAsync((member) => member.AuthSystemUserId == id);
             if (member == null)                
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
@@ -273,7 +291,7 @@ namespace Backend.Repositories
             try
             {
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
-                await authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id);
+                await authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
                 var newMail = await authService.GetEmail(member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
                 mailSubscriptionOutboxWorker.EnqueueTask(newMail, member.MailSubscriptions, db);
                 await db.SaveChangesAsync(cancellationToken);
@@ -289,9 +307,27 @@ namespace Backend.Repositories
 
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
         {
-            var existingMember = await db.Members.FirstOrDefaultAsync(m => m.Email == email, ct);
+            var existingMember = await db.Members
+                .Include(m => m.StudyEnrollments)
+                .ThenInclude(se => se.Study)
+                .FirstOrDefaultAsync(m => m.Email == email, ct);
             if (existingMember == null)
                 return;
+
+            if(existingMember.Begunstiger)
+                throw new InvalidOperationException("Existing member with same email address found.");
+
+            if((await db.Settings.FindAsync("MastersShouldPayMembership"))?.Value != "1" &&  existingMember.StudyEnrollments.Any(se => se.Study.Type == StudyType.Master))
+                throw new InvalidOperationException("Existing member with same email address found.");
+
+            if((await db.Settings.FindAsync("GratieShouldPayMembership"))?.Value != "1" && existingMember.Gratie)
+                throw new InvalidOperationException("Existing member with same email address found.");
+            
+            if((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1" && existingMember.EreLid)
+                throw new InvalidOperationException("Existing member with same email address found.");
+                
+            if((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
+                throw new InvalidOperationException("Existing member with same email address found.");
 
             var existingPayment = await db.MembershipPayments
                 .Where(p => p.MemberId == existingMember.Id)
@@ -304,7 +340,7 @@ namespace Backend.Repositories
                 // Make sure there is no paid membership with the same email, if there is, we don't want to delete the member
                 if (paymentResponse.Status == PaymentStatus.Paid)
                 {
-                    throw new InvalidOperationException("Existing member with same email address that has paid membership found.");
+                    throw new InvalidOperationException("Existing member with same email address found.");
                 }
 
                 // If there is a pending payment, we cancel it to prevent the member from paying for a membership they won't get
@@ -319,7 +355,7 @@ namespace Backend.Repositories
             db.Members.Remove(existingMember);
             await authOutboxWorker.EnqueueTask(
                 AuthTaskType.Delete,
-                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status.")
+                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet.")
             );
         }
 
@@ -341,7 +377,8 @@ namespace Backend.Repositories
                 MailSubscriptions = dto.MailSubscriptions,
                 PreferredLanguage = dto.PreferredLanguage,
                 RegisteredOn = DateTimeOffset.UtcNow,
-                StudyEnrollments = new List<StudyEnrollment>()
+                StudyEnrollments = new List<StudyEnrollment>(),
+                Begunstiger = dto.Begunstiger != null ? dto.Begunstiger.Value : false
             };
         }
 

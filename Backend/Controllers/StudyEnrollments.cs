@@ -174,7 +174,7 @@ public class StudyEnrollmentsController : ControllerBase
     {
         try
         {
-            await _studyEnrollmentRepository.PatchStudy(id, patchDoc, GetUserId(), ct);
+            await _studyEnrollmentRepository.PatchStudyEnrollment(id, patchDoc, GetUserId(), ct);
             return NoContent();
         }
         catch (UnauthorizedAccessException)

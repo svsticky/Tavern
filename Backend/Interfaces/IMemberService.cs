@@ -31,9 +31,10 @@ namespace Backend.Interfaces
         /// Creates a new member.
         /// </summary>
         /// <param name="dto">The member payload.</param>
+        /// <param name="userId">The ID of the requesting user.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         /// <returns>The created member entity.</returns>
-        Task<Member> CreateMember(PostMemberDTO dto, CancellationToken cancellationToken);
+        Task<Member> CreateMember(PostMemberDTO dto, Guid? userId, CancellationToken cancellationToken);
 
         /// <summary>
         /// Deletes a member by user ID.

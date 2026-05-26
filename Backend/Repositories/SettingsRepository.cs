@@ -13,7 +13,7 @@ public class SettingsRepository : ISettingsRepository
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly ILogger<SettingsRepository> _logger;
-    private readonly string[] _openSettings = new string[] { "boardgroupid", "candidateboardgroupid" };
+    private readonly string[] _openSettings = new [] { "boardgroupid", "candidateboardgroupid", "membershipprice", "mastersshouldpaymembership", "membershippaymentexpirationtime" };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SettingsRepository"/> class with the specified dependencies. The constructor takes in a database context for data access, a permission service for enforcing authorization, and a logger for logging operations. It also initializes an array of open setting names that can be accessed without board membership. This setup allows the service to manage application settings while ensuring that only authorized users can create, update, or delete settings, while still allowing certain settings to be accessed by all users.
@@ -37,11 +37,12 @@ public class SettingsRepository : ISettingsRepository
     }
 
     /// <inheritdoc />
-    public Task<Setting?> GetSetting(string name, Guid UserId, CancellationToken ct)
+    public Task<Setting?> GetSetting(string name, Guid? UserId, CancellationToken ct)
     {
-        if(!_openSettings.Contains(name.ToLower()))
+        if(!_openSettings.Contains(name, StringComparer.InvariantCultureIgnoreCase))
         {
-            _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
+            if(UserId == null) throw new UnauthorizedAccessException();
+            _permissionService.EnsureBoardOrCandidateBoardMember(UserId.Value);
         }
 
         return Task.FromResult(_db.Settings.Find(name));

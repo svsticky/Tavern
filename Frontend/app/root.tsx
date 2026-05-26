@@ -7,12 +7,14 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 import "./i18n";
 import type { Route } from "./+types/root";
 import { client } from "./api/client.gen";
 import i18n from "./i18n";
 import "./app.css";
+import { t } from "i18next";
 import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
 import { getEnv } from "./util/config.utils";
@@ -60,6 +62,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const primaryLight = getEnv("BOARD_PRIMARY_LIGHT");
@@ -88,6 +91,36 @@ export default function App() {
       return () => i18n.off("initialized", handleInitialized);
     }
   }, []);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: i18n.language is needed as dependency to update the title on language change.
+  useEffect(() => {
+    const formatTitle = (path: string) => {
+      const pathParts = path.replace(/^\/+|\/+$/g, "").split("/");
+
+      let lastPart = pathParts[pathParts.length - 1];
+
+      const isGuid =
+        /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+          lastPart,
+        );
+      const isNumber = /^\d+$/.test(lastPart);
+
+      if ((isNumber || isGuid) && pathParts.length > 1) {
+        lastPart = pathParts[pathParts.length - 2];
+      }
+
+      lastPart = lastPart || "dashboard";
+
+      const translationKey = lastPart.replace(/-/g, "_");
+      const translated = t(translationKey);
+      const capitalizedTitle =
+        translated.charAt(0).toUpperCase() + translated.slice(1);
+
+      return `Koala | ${capitalizedTitle}`;
+    };
+
+    document.title = formatTitle(location.pathname);
+  }, [location.pathname, i18n.language]);
 
   if (!i18nReady) return null;
 

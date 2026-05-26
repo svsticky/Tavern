@@ -108,7 +108,17 @@ namespace Backend.Controllers
         {
             try
             {
-                var member = await memberRepository.CreateMember(dto, cancellationToken);
+                Guid? userId;
+                try
+                {
+                    userId = GetUserId();
+                }
+                catch
+                {
+                    userId = null;
+                }
+                
+                var member = await memberRepository.CreateMember(dto, userId, cancellationToken);
                 return CreatedAtAction(nameof(GetMember), new { id = member.Id }, member);
             }
             catch (Exception ex)

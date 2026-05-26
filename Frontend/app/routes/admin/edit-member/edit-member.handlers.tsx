@@ -14,6 +14,7 @@ import {
   type StudyEnrollmentResponseDto,
   type StudyStatus,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Interface representing the comprehensive form state for editing a member.
@@ -83,8 +84,9 @@ export const loadMemberData = async ({
 
   try {
     const memberResponse = await getMembersById({ path: { id: memberId } });
-    if (memberResponse.error || !memberResponse.data)
-      throw new Error("Failed to load member data");
+    if (memberResponse.error || !memberResponse.data) {
+      throw memberResponse.error ?? new Error("Failed to load member data");
+    }
     setFormData({
       firstName: memberResponse.data.firstName || "",
       lastName: memberResponse.data.lastName || "",
@@ -113,13 +115,20 @@ export const loadMemberData = async ({
     const studyEnrollmentsResponse = await getStudyenrollments({
       query: { MemberId: memberId },
     });
-    if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data)
-      throw new Error("Failed to load study enrollments");
+    if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data) {
+      throw (
+        studyEnrollmentsResponse.error ??
+        new Error("Failed to load study enrollments")
+      );
+    }
     setEnrollments(studyEnrollmentsResponse.data);
 
     const studiesResponse = await getStudies();
-    if (studiesResponse.error || !studiesResponse.data)
-      throw new Error("Failed to load available studies");
+    if (studiesResponse.error || !studiesResponse.data) {
+      throw (
+        studiesResponse.error ?? new Error("Failed to load available studies")
+      );
+    }
     setAvailableStudies(studiesResponse.data);
 
     const profilePictureResponse = await getMembersByIdProfilePicture({
@@ -135,7 +144,7 @@ export const loadMemberData = async ({
     setProfilePictureSrc(url);
   } catch (err) {
     console.log("Failed to load member data:", err);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), err));
   } finally {
     setLoading(false);
   }
@@ -174,7 +183,9 @@ export const handleSaveMember = async (
         body: patchDoc as any,
       });
 
-      if (response.error) throw new Error("Failed to save member data");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to save member data");
+      }
     } catch (err) {
       console.error("Failed to save member data:", err);
       throw err;
@@ -187,7 +198,7 @@ export const handleSaveMember = async (
     .promise(saveProcess(), {
       loading: t("saving"),
       success: t("save_success"),
-      error: t("save_error"),
+      error: (error) => appendErrorMessage(t("save_error"), error),
     })
     .finally(() => setSaving(false));
 };
@@ -212,7 +223,9 @@ export const handleDeleteEnrollment = async (
       setLoading(true);
       const response = await deleteStudyenrollmentsById({ path: { id } });
 
-      if (response.error) throw new Error("Failed to delete enrollment");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to delete enrollment");
+      }
 
       setEnrollments((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
@@ -226,7 +239,7 @@ export const handleDeleteEnrollment = async (
   toast.promise(deleteProcess(), {
     loading: t("deleting"),
     success: t("delete_success"),
-    error: t("delete_error"),
+    error: (error) => appendErrorMessage(t("delete_error"), error),
   });
 };
 
@@ -259,7 +272,9 @@ export const handleAddEnrollment = async (
         },
       });
 
-      if (res.error || !res.data) throw new Error("Failed to add enrollment");
+      if (res.error || !res.data) {
+        throw res.error ?? new Error("Failed to add enrollment");
+      }
 
       setEnrollments((prev) => [...prev, res.data]);
     } catch (err) {
@@ -273,7 +288,7 @@ export const handleAddEnrollment = async (
   toast.promise(executeProcess(), {
     loading: t("adding"),
     success: t("add_success"),
-    error: t("add_error"),
+    error: (error) => appendErrorMessage(t("add_error"), error),
   });
 };
 
@@ -302,7 +317,9 @@ export const handleUpdateEnrollmentStatus = async (
         body: [{ op: "replace", path: "/status", value: newStatus }] as any,
       });
 
-      if (response.error) throw new Error("Failed to update status");
+      if (response.error) {
+        throw response.error ?? new Error("Failed to update status");
+      }
 
       setEnrollments((prev) =>
         prev.map((e) =>
@@ -320,6 +337,6 @@ export const handleUpdateEnrollmentStatus = async (
   toast.promise(saveProcess(), {
     loading: t("updating_status"),
     success: t("status_updated"),
-    error: t("status_update_failed"),
+    error: (error) => appendErrorMessage(t("status_update_failed"), error),
   });
 };

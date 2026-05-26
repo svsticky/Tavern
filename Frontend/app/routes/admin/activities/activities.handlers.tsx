@@ -2,6 +2,7 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivities } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Fetches all activities for a specific year for administrative purposes.
@@ -30,13 +31,14 @@ export const loadAdminActivities = async (
       },
     });
 
-    if (response.error || !response.data)
-      throw new Error("Failed to load activities");
+    if (response.error || !response.data) {
+      throw response.error ?? new Error("Failed to load activities");
+    }
 
     setActivities(response.data);
   } catch (error) {
     console.error("Error fetching activities:", error);
-    toast.error(t("loading_failed"));
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
   }

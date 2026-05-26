@@ -51,6 +51,6 @@ namespace Backend.Interfaces
         /// <param name="patchDoc">The patch document to apply.</param>
         /// <param name="userId">The ID of the user updating the study enrollment.</param>
         /// <param name="ct">The cancellation token.</param>
-        Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct);
+        Task PatchStudyEnrollment(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct);
     }
 }

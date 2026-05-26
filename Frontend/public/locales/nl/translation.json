@@ -222,6 +222,7 @@
   "members_description": "We hebben een divers groep van ongeveer 2000 leden, inclusief bachelor- en masterstudenten uit verschillende studieprogramma's. Onze leden zijn actief in het organiseren van activiteiten, het deelnemen aan commissies en het genieten van het sociale aspect van onze vereniging.",
   "membership_gl_account": "Grootboekrekening lidmaatschap",
   "membership_payment_description": "De betaling is nog niet betaald of nog in verwerking.",
+  "membership_payment_description": "De betaling is nog niet betaald of nog in verwerking.",
   "membership_payment_required": "Lidmaatschap vereist voor toegang tot deze pagina.",
   "membership_price": "Lidmaatschapsprijs",
   "membership_vat_code": "BTW-code lidmaatschap",
@@ -435,5 +436,17 @@
   "should_pay_membership": "Moeten lidmaatschap betalen",
   "payment_not_processed": "Betaling nog niet verwerkt",
   "payment_not_processed_description": "Je betaling is nog niet verwerkt. Kom later terug of neem contact op met het bestuur als je vragen hebt.",
-  "delete_account_confirmation": "Weet je zeker dat je je account wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt en verwijdert ook alle gegevens voor statistieken van de vereniging."
+  "delete_account_confirmation": "Weet je zeker dat je je account wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt en verwijdert ook alle gegevens voor statistieken van de vereniging.",
+  "delete_account": "Verwijder account",
+  "account_deleted_successfully": "Account successvol verwijderd",
+  "delete_account_error": "Account verwijderen mislukt",
+  "membershipcosts": "Lidmaatschap kost <price>",
+  "membership_free_for_masters": " en is gratis voor masterstudenten.",
+  "for_x_years": " voor <years> jaar",
+  "for_1_year": " voor 1 jaar",
+  "error_loading_page": "Fout bij het laden van de pagina",
+  "create_begunstiger": "Begunstiger aanmaken",
+  "update_study_progress": "Update studie voortgang",
+  "leave_empty_for_group_default": "Laat leeg voor de standaard instellingen van de groep",
+  "main_board_email": "Hoofdemail bestuur"
 }

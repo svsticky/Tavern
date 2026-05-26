@@ -53,6 +53,12 @@ public class GroupResponseDTO
     /// <inheritdoc cref="Group.Type"/>
     public required GroupType Type { get; set; }
 
+    /// <inheritdoc cref="Group.DefaultGLAccount"/>
+    public string? GLAccountId { get; set; }
+
+    /// <inheritdoc cref="Group.DefaultCostCenter"/>
+    public string? CostUnitId { get; set; }
+
     /// <inheritdoc cref="Group.GroupPicturePath"/>
     public string? GroupPicturePath { get; set; }
 }

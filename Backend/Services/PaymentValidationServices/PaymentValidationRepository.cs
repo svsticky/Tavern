@@ -28,7 +28,7 @@ public class PaymentValidationService(
 
         if (member.Begunstiger) return true;
 
-        if (db.Settings.Find("MastersShouldPayMembership")?.Value != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && (e.CompletionDate == null || e.CompletionDate > DateTime.UtcNow)))
+        if (db.Settings.Find("MastersShouldPayMembership")?.Value != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && (e.Status == StudyStatus.Enrolled)))
         {
             return true;
         }

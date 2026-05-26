@@ -12,6 +12,7 @@ import {
   type Role,
   type Setting,
 } from "~/api";
+import { appendErrorMessage } from "~/util/error.util";
 
 /**
  * Arguments for the loadSettingsPageData handler.
@@ -62,7 +63,7 @@ export const loadSettingsPageData = async ({
     setAvailableRoles(rolesRes.data);
   } catch (error) {
     console.error("Error loading settings page data:", error);
-    toast.error(t("failed_to_load_settings"));
+    toast.error(appendErrorMessage(t("failed_to_load_settings"), error));
   } finally {
     setLoading(false);
   }
@@ -113,7 +114,7 @@ export const handleAddRoleMapping = ({
   const settingName = `ROLEMAILMAP_${selectedRoleId}`;
 
   if (settings[settingName] !== undefined) {
-    toast.error(t("role_already_added"));
+    toast.error(appendErrorMessage(t("role_already_added")));
     return;
   }
 
@@ -232,7 +233,7 @@ export const handleSaveSettings = async ({
   toast.promise(saveProcess(), {
     loading: t("saving"),
     success: t("save_success"),
-    error: t("save_error"),
+    error: (error) => appendErrorMessage(t("save_error"), error),
   });
 };
 

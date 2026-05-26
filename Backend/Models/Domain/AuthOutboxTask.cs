@@ -55,6 +55,11 @@ public class AuthOutboxTask
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     /// <summary>
+    /// The timestamp indicating when this task is eligible for its next processing attempt.
+    /// </summary>
+    public DateTimeOffset NextAttemptAt { get; set; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
     /// The number of times this outbox task has been retried.
     /// </summary>
     public int RetryCount { get; set; } = 0;

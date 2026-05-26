@@ -221,6 +221,7 @@
   "members_description": "We have a diverse group of about 2000 members, including bachelor and master students from various study programs. Our members are active in organizing activities, participating in committees and enjoying the social aspect of our association.",
   "membership_gl_account": "Membership gl account",
   "membership_payment_description": "The membership isn't paid or is still processing.",
+  "membership_payment_description": "The membership isn't paid or is still processing.",
   "membership_payment_required": "Membership payment required for access to this page.",
   "membership_price": "Membership price",
   "membership_vat_code": "Membership vat code",
@@ -435,5 +436,17 @@
   "should_pay_membership": "Should pay membership",
   "payment_not_processed": "Payment not processed",
   "payment_not_processed_description": "Your payment has not been processed yet. Please come back later or contact the board if you have any questions.",
-  "delete_account_confirmation": "Are you sure you want to delete your account? This action cannot be undone and will also delete all data for statistics of the association."
+  "delete_account_confirmation": "Are you sure you want to delete your account? This action cannot be undone and will also delete all data for statistics of the association.",
+  "delete_account": "Delete Account",
+  "account_deleted_successfully": "Account deleted successfully",
+  "delete_account_error": "Error while deleting account",
+  "membershipcosts": "A membership costs <price>",
+  "membership_free_for_masters": " and is free for masters.",
+  "for_x_years": " for <years> years",
+  "for_1_year": " for 1 year",
+  "error_loading_page": "Error while loading page",
+  "create_begunstiger": "Create begunstiger",
+  "update_study_progress": "Update study progress",
+  "leave_empty_for_group_default": "Leave empty for group default",
+  "main_board_email": "Main board email"
 }

@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
@@ -45,7 +45,6 @@ export default function EditMemberPage() {
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const _fileInputRef = useRef<HTMLInputElement>(null);
   const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
     null,
   );

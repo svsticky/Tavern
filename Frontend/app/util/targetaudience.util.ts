@@ -39,8 +39,7 @@ export const isMemberInTargetAudience = (
       activeEnrollments.some(
         (se) =>
           se.studyType === "Bachelor" &&
-          (se.completionDate == null ||
-            new Date(se.completionDate) > new Date(Date.now())) &&
+          se.status === "Enrolled" &&
           new Date(se.enrollmentDate) >= yearsAgo(1),
       )
     )
@@ -53,8 +52,7 @@ export const isMemberInTargetAudience = (
       activeEnrollments.some(
         (se) =>
           se.studyType === "Bachelor" &&
-          (se.completionDate == null ||
-            new Date(se.completionDate) > new Date(Date.now())) &&
+          se.status === "Enrolled" &&
           new Date(se.enrollmentDate) >= yearsAgo(2) &&
           new Date(se.enrollmentDate) < yearsAgo(1),
       )
@@ -68,8 +66,7 @@ export const isMemberInTargetAudience = (
       activeEnrollments.some(
         (se) =>
           se.studyType === "Bachelor" &&
-          (se.completionDate == null ||
-            new Date(se.completionDate) > new Date(Date.now())) &&
+          se.status === "Enrolled" &&
           new Date(se.enrollmentDate) < yearsAgo(2),
       )
     )
@@ -80,10 +77,7 @@ export const isMemberInTargetAudience = (
   if (audienceMask & AudienceFlags.Masters) {
     if (
       activeEnrollments.some(
-        (se) =>
-          se.studyType === "Master" &&
-          (se.completionDate == null ||
-            new Date(se.completionDate) > new Date(Date.now())),
+        (se) => se.studyType === "Master" && se.status === "Enrolled",
       )
     )
       return true;
