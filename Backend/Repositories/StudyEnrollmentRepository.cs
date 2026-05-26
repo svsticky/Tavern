@@ -85,7 +85,7 @@ namespace Backend.Repositories
         }
 
         /// <inheritdoc />
-        public async Task PatchStudy(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
+        public async Task PatchStudyEnrollment(uint id, JsonPatchDocument<StudyEnrollment> patchDoc, Guid userId, CancellationToken ct)
         {
             logger.LogInformation("Patching study enrollment {EnrollmentId} by user {UserId}.", id, userId);
 
@@ -103,7 +103,7 @@ namespace Backend.Repositories
             
             ArgumentNullException.ThrowIfNull(enrollment, nameof(enrollment));
 
-            if(enrollment.MemberId != enrollment.MemberId || DateTime.UtcNow < enrollment.EnrollmentDate.AddYears((int)enrollment.Study.NominalDurationYears))
+            if(userId != enrollment.MemberId || DateTime.UtcNow < enrollment.EnrollmentDate.AddYears((int)enrollment.Study.NominalDurationYears))
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             using var transaction = await db.Database.BeginTransactionAsync(ct);

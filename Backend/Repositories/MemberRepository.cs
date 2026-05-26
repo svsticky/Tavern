@@ -323,10 +323,10 @@ namespace Backend.Repositories
             if((await db.Settings.FindAsync("GratieShouldPayMembership"))?.Value != "1" && existingMember.Gratie)
                 throw new InvalidOperationException("Existing member with same email address found.");
             
-            if((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1")
+            if((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1" && existingMember.EreLid)
                 throw new InvalidOperationException("Existing member with same email address found.");
                 
-            if((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1")
+            if((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
                 throw new InvalidOperationException("Existing member with same email address found.");
 
             var existingPayment = await db.MembershipPayments

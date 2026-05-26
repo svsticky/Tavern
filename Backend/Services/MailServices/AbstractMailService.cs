@@ -229,8 +229,8 @@ public abstract class AbstractMailService
 
             string htmlContent = language switch
             {
-                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens heb je nog studies die niet op voltooid staan. Kijk op <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-status'>Koala</a> en update je studie status als dit nodig is. <br><br>Met vriendelijke groet,<br>Het bestuur",
-                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you still have studies that are not completed. Please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-status'>Koala</a> and update your study status if necessary. <br><br>Best regards,<br>The board",
+                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens heb je nog studies die niet op voltooid staan. Kijk op <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a> en update je studie status als dit nodig is. <br><br>Met vriendelijke groet,<br>Het bestuur",
+                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you still have studies that are not completed. Please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a> and update your study status if necessary. <br><br>Best regards,<br>The board",
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 
