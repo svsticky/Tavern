@@ -191,8 +191,46 @@ public abstract class AbstractMailService
 
             string htmlContent = language switch
             {
-                Language.NL => $"Beste {member.FirstName},<br><br>Je hebt nog openstaande betalingen voor de volgende activiteiten:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Gelieve deze zo snel mogelijk te voldoen op https://koala.svsticky.nl.<br><br>Met vriendelijke groet,<br>Het bestuur",
-                Language.EN => $"Dear {member.FirstName},<br><br>You have outstanding payments for the following activities:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Please settle these as soon as possible at https://koala.svsticky.nl.<br><br>Best regards,<br>The board",
+                Language.NL => $"Beste {member.FirstName},<br><br>Je hebt nog openstaande betalingen voor de volgende activiteiten:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Gelieve deze zo snel mogelijk te voldoen op <a href='{Environment.GetEnvironmentVariable("HostUrl")}'>Koala</a>.<br><br>Met vriendelijke groet,<br>Het bestuur",
+                Language.EN => $"Dear {member.FirstName},<br><br>You have outstanding payments for the following activities:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Please settle these as soon as possible at <a href='{Environment.GetEnvironmentVariable("HostUrl")}'>Koala</a>.<br><br>Best regards,<br>The board",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
+        }
+    }
+    
+    /// <summary>
+    /// Sends study status update emails to members whose study enrollments are approaching their nominal duration, prompting them to update their study status on the platform. The method retrieves the sender's email address from the settings and identifies members with study enrollments that are nearing their nominal duration based on the current date. For each member identified, an email is composed in their preferred language, encouraging them to visit the platform and update their study status if necessary. This proactive communication helps ensure that members keep their study information up-to-date, which can be important for various administrative and organizational purposes within the system.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when an unsupported language is encountered.</exception>
+    public async Task SendStudyStatusUpdateMails()
+    {
+        var sender = _db.Settings.Where(s => s.Name == "MainBoardMail").Select(s => s.Value).FirstOrDefault();
+        if(string.IsNullOrEmpty(sender))
+        {
+            _logger.LogWarning("MainBoardMail setting is not configured. Skipping study status update mails.");
+            return;
+        }
+
+        var membersToMail = _db.Members.Include(m => m.StudyEnrollments).ThenInclude(se => se.Study).Where(m => m.StudyEnrollments.Any(se => se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now)).ToList();
+
+        foreach (var member in membersToMail)
+        {
+            var language = member.PreferredLanguage;
+
+            string subject = language switch
+            {
+                Language.NL => "Update your study status",
+                Language.EN => "Update your study status",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+
+            string htmlContent = language switch
+            {
+                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens heb je nog studies die niet op voltooid staan. Kijk op <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-status'>Koala</a> en update je studie status als dit nodig is. <br><br>Met vriendelijke groet,<br>Het bestuur",
+                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you still have studies that are not completed. Please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-status'>Koala</a> and update your study status if necessary. <br><br>Best regards,<br>The board",
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 

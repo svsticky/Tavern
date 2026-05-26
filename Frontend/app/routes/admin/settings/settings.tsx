@@ -314,6 +314,17 @@ export default function SettingsPage() {
               }
             />
             <Input
+              label={t("main_board_email")}
+              value={settings.MainBoardMail || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MainBoardMail",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
               label={t("activity_update_email_sender")}
               value={settings.ActivityUpdateEmailSender || ""}
               onChange={(e) =>

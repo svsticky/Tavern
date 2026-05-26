@@ -446,5 +446,6 @@
   "error_loading_page": "Fout bij het laden van de pagina",
   "create_begunstiger": "Begunstiger aanmaken",
   "update_study_progress": "Update studie voortgang",
-  "leave_empty_for_group_default": "Laat leeg voor de standaard instellingen van de groep"
+  "leave_empty_for_group_default": "Laat leeg voor de standaard instellingen van de groep",
+  "main_board_email": "Hoofdemail bestuur"
 }

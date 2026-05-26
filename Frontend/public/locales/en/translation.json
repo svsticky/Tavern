@@ -446,5 +446,6 @@
   "error_loading_page": "Error while loading page",
   "create_begunstiger": "Create begunstiger",
   "update_study_progress": "Update study progress",
-  "leave_empty_for_group_default": "Leave empty for group default"
+  "leave_empty_for_group_default": "Leave empty for group default",
+  "main_board_email": "Main board email"
 }
