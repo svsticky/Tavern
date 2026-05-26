@@ -445,5 +445,6 @@
   "for_1_year": " for 1 year",
   "error_loading_page": "Error while loading page",
   "create_begunstiger": "Create begunstiger",
-  "update_study_progress": "Update study progress"
+  "update_study_progress": "Update study progress",
+  "leave_empty_for_group_default": "Leave empty for group default"
 }

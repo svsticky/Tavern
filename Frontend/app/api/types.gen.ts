@@ -592,6 +592,14 @@ export type GroupResponseDto = {
     active: boolean;
     type: GroupType;
     /**
+     * The default GL account for the group, used for financial transactions.
+     */
+    glAccountId?: string | null;
+    /**
+     * The default cost center for the group, used for financial transactions.
+     */
+    costUnitId?: string | null;
+    /**
      * The path where the picture for the group is stored, if any.
      */
     groupPicturePath?: string | null;

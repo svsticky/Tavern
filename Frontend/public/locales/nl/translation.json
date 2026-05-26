@@ -445,5 +445,6 @@
   "for_1_year": " voor 1 jaar",
   "error_loading_page": "Fout bij het laden van de pagina",
   "create_begunstiger": "Begunstiger aanmaken",
-  "update_study_progress": "Update studie voortgang"
+  "update_study_progress": "Update studie voortgang",
+  "leave_empty_for_group_default": "Laat leeg voor de standaard instellingen van de groep"
 }

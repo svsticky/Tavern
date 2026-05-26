@@ -20,9 +20,11 @@ import { appendErrorMessage } from "~/util/error.util";
 /**
  * Interface representing the editable fields of a group.
  */
-type EditGroupFormData = {
+export type EditGroupFormData = {
   Name: string;
   Type: string;
+  GLAccountId: string;
+  CostUnitId: string;
   Active: boolean;
 };
 
@@ -69,6 +71,8 @@ export const loadGroupData = async ({
       Name: groupResponse.data.name,
       Type: groupResponse.data.type,
       Active: groupResponse.data.active,
+      GLAccountId: groupResponse.data.glAccountId ?? "",
+      CostUnitId: groupResponse.data.costUnitId ?? "",
     });
 
     const roleAliasesResponse = await getRolealiases();
