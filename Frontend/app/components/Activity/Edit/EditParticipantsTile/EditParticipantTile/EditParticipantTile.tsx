@@ -77,7 +77,8 @@ export default function EditParticipantTile({
       {
         loading: t("updating_price"),
         success: t("price_updated"),
-        error: (error) => appendErrorMessage(t("failed_to_update_price"), error),
+        error: (error) =>
+          appendErrorMessage(t("failed_to_update_price"), error),
       },
     );
   };

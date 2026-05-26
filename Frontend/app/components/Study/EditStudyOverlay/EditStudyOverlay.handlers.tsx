@@ -81,10 +81,10 @@ export const handleStudySubmit = async ({
           });
 
       if (response.error) {
-        throw response.error ??
-          new Error(
-            study ? "Failed to update study" : "Failed to create study",
-          );
+        throw (
+          response.error ??
+          new Error(study ? "Failed to update study" : "Failed to create study")
+        );
       }
 
       onComplete({

@@ -3,8 +3,8 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivitiesById } from "~/api";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { appendErrorMessage } from "~/util/error.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * Arguments for the loadActivityData handler.

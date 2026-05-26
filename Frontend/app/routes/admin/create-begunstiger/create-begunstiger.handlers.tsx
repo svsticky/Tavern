@@ -3,7 +3,6 @@ import type React from "react";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type Language, type PostMemberDto, postMembers } from "~/api";
-import i18n from "~/i18n";
 import { appendErrorMessage } from "~/util/error.util";
 
 /**

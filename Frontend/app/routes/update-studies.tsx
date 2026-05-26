@@ -84,15 +84,15 @@ export default function UpdateStudies() {
 
         deadline.setFullYear(
           deadline.getFullYear() +
-            studies.filter((s) => s.id == item.studyId)[0]
+            studies.filter((s) => s.id === item.studyId)[0]
               .nominalDurationYears!,
         );
 
         if (
-          item.status != "Enrolled" ||
+          item.status !== "Enrolled" ||
           new Date(item.enrollmentDate) > deadline
         )
-          return item.status == "Completed"
+          return item.status === "Completed"
             ? t("status_completed")
             : t("status_dropped_out");
 

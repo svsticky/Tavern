@@ -36,7 +36,8 @@ export default function RegisterForm({ className }: { className?: string }) {
   const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
   const [mastersMustPay, setMastersMustPay] = useState<boolean | null>(null);
   const [price, setPrice] = useState<number | null>(null);
-  const [membershipPaymentExpirationTime, setMembershipPaymentExpirationTime] = useState<number | null>(null);
+  const [membershipPaymentExpirationTime, setMembershipPaymentExpirationTime] =
+    useState<number | null>(null);
 
   const navigate = useNavigate();
 
@@ -57,15 +58,14 @@ export default function RegisterForm({ className }: { className?: string }) {
   const [selectedStudies, setSelectedStudies] = useState<number[]>([]);
 
   useEffect(() => {
-    const loadData = async () =>
-    {
+    const loadData = async () => {
       setLoading(true);
       await loadStudies(setStudies);
       await loadMastersMustPay(setMastersMustPay);
       await loadPrice(setPrice, setMembershipPaymentExpirationTime);
       await loadMailingLists(setMailingLists);
       setLoading(false);
-    }
+    };
     loadData();
   }, []);
 
@@ -293,7 +293,8 @@ export default function RegisterForm({ className }: { className?: string }) {
         </FormSection>
 
         <p className="text-gray-500">
-          {price != null && `${t("membershipcosts").replace("<price>", `€${price?.toFixed(2)}`)}${membershipPaymentExpirationTime != null ? (membershipPaymentExpirationTime == 1 ? t('for_1_years') : t('for_x_years').replace("<years>", membershipPaymentExpirationTime.toString())) : ""}${mastersMustPay === false ? t("membership_free_for_masters") : "."}`}
+          {price != null &&
+            `${t("membershipcosts").replace("<price>", `€${price?.toFixed(2)}`)}${membershipPaymentExpirationTime != null ? (membershipPaymentExpirationTime === 1 ? t("for_1_year") : t("for_x_years").replace("<years>", membershipPaymentExpirationTime.toString())) : ""}${mastersMustPay === false ? t("membership_free_for_masters") : "."}`}
         </p>
 
         <Button

@@ -65,6 +65,10 @@ export const loadMastersMustPay = async (
     const response = await getSettingsById({
       path: { id: "MastersShouldPayMembership" },
     });
+    if (response.error || !response.data)
+      throw (
+        response.error ?? new Error("Failed to fetch masters must pay setting")
+      );
     setMastersMustPay(response.data?.value === "1");
   } catch (error) {
     console.error("Failed to fetch masters must pay setting", error);
@@ -80,7 +84,7 @@ export const loadMastersMustPay = async (
  */
 export const loadPrice = async (
   setPrice: (value: number) => void,
-  setMembershipPaymentExpirationTime: (value: number) => void
+  setMembershipPaymentExpirationTime: (value: number) => void,
 ) => {
   try {
     const priceResponse = await getSettingsById({
@@ -89,10 +93,15 @@ export const loadPrice = async (
     const membershipPaymentExpirationTimeResponse = await getSettingsById({
       path: { id: "MembershipPaymentExpirationTime" },
     });
-    if(priceResponse.data?.value === undefined || 
-      membershipPaymentExpirationTimeResponse.data?.value === undefined) throw new Error("Failed to load data.");
-    if(membershipPaymentExpirationTimeResponse.data.value.trim() != ""){
-      setMembershipPaymentExpirationTime(Number.parseInt(membershipPaymentExpirationTimeResponse.data.value))
+    if (
+      priceResponse.data?.value === undefined ||
+      membershipPaymentExpirationTimeResponse.data?.value === undefined
+    )
+      throw new Error("Failed to load data.");
+    if (membershipPaymentExpirationTimeResponse.data.value.trim() !== "") {
+      setMembershipPaymentExpirationTime(
+        Number.parseInt(membershipPaymentExpirationTimeResponse.data.value, 10),
+      );
     }
     setPrice(Number.parseFloat(priceResponse.data.value));
   } catch (error) {
@@ -211,7 +220,7 @@ export const handleRegisterSubmit = async ({
           studyId: id,
           memberId: "00000000-0000-0000-0000-000000000000",
           enrollmentDate: new Date().toISOString(),
-        }))
+        })),
       };
 
       const response = await postMembers({ body: payload });
@@ -236,7 +245,9 @@ export const handleRegisterSubmit = async ({
           ) {
             window.location.href = paymentResponse.data.checkoutUrl;
           } else {
-            throw paymentResponse.error ?? new Error("Payment initiation failed");
+            throw (
+              paymentResponse.error ?? new Error("Payment initiation failed")
+            );
           }
         } else {
           navigate("/confirm-mail");

@@ -8,7 +8,6 @@ import {
   getGroups,
   patchActivitiesById,
   postActivities,
-  putActivitiesById,
 } from "~/api";
 import { audienceMap } from "~/types/AudienceMap";
 import { getAssociationYear } from "~/util/date.util";
@@ -252,40 +251,146 @@ export const handleActivitySubmit = async ({
       if (isEdit) {
         const patchOperations: any[] = [
           { op: "replace", path: "/Name", value: fd.get("Name") as string },
-          { op: "replace", path: "/Location", value: fd.get("Location") as string },
-          { op: "replace", path: "/DutchDescription", value: fd.get("DutchDescription") as string },
-          { op: "replace", path: "/EnglishDescription", value: fd.get("EnglishDescription") as string },
-          { op: "replace", path: "/Price", value: Number(fd.get("Price")) || 0 },
-          { op: "replace", path: "/ParticipantLimit", value: fd.get("ParticipantLimit") ? Number(fd.get("ParticipantLimit")) : null },
-          { op: "replace", path: "/OrganizerId", value: fd.get("OrganizerId") ? Number(fd.get("OrganizerId")) : null },
-          { op: "replace", path: "/DateTimeStart", value: new Date(fd.get("DateTimeStart") as string).toISOString() },
-          { op: "replace", path: "/DateTimeEnd", value: new Date(fd.get("DateTimeEnd") as string).toISOString() },
-          { op: "replace", path: "/EnrollmentDeadline", value: fd.get("EnrollmentDeadline") ? new Date(fd.get("EnrollmentDeadline") as string).toISOString() : null },
-          { op: "replace", path: "/UnenrollmentDeadline", value: fd.get("UnenrollmentDeadline") ? new Date(fd.get("UnenrollmentDeadline") as string).toISOString() : null },
-          { op: "replace", path: "/EnrollOpenDate", value: fd.get("EnrollOpenDate") ? new Date(fd.get("EnrollOpenDate") as string).toISOString() : null },
-          { op: "replace", path: "/AreParticipantsVisible", value: fd.get("AreParticipantsVisible") === "on" },
-          { op: "replace", path: "/IsAdultOnly", value: fd.get("IsAdultOnly") === "on" },
-          { op: "replace", path: "/IsWeeklyDrinks", value: fd.get("IsWeeklyDrinks") === "on" },
-          { op: "replace", path: "/AllowedAudience", value: audienceMap[audienceFlags] },
-          { op: "replace", path: "/SpecificationQuestionsJson", value: JSON.stringify(questions) },
+          {
+            op: "replace",
+            path: "/Location",
+            value: fd.get("Location") as string,
+          },
+          {
+            op: "replace",
+            path: "/DutchDescription",
+            value: fd.get("DutchDescription") as string,
+          },
+          {
+            op: "replace",
+            path: "/EnglishDescription",
+            value: fd.get("EnglishDescription") as string,
+          },
+          {
+            op: "replace",
+            path: "/Price",
+            value: Number(fd.get("Price")) || 0,
+          },
+          {
+            op: "replace",
+            path: "/ParticipantLimit",
+            value: fd.get("ParticipantLimit")
+              ? Number(fd.get("ParticipantLimit"))
+              : null,
+          },
+          {
+            op: "replace",
+            path: "/OrganizerId",
+            value: fd.get("OrganizerId") ? Number(fd.get("OrganizerId")) : null,
+          },
+          {
+            op: "replace",
+            path: "/DateTimeStart",
+            value: new Date(fd.get("DateTimeStart") as string).toISOString(),
+          },
+          {
+            op: "replace",
+            path: "/DateTimeEnd",
+            value: new Date(fd.get("DateTimeEnd") as string).toISOString(),
+          },
+          {
+            op: "replace",
+            path: "/EnrollmentDeadline",
+            value: fd.get("EnrollmentDeadline")
+              ? new Date(fd.get("EnrollmentDeadline") as string).toISOString()
+              : null,
+          },
+          {
+            op: "replace",
+            path: "/UnenrollmentDeadline",
+            value: fd.get("UnenrollmentDeadline")
+              ? new Date(fd.get("UnenrollmentDeadline") as string).toISOString()
+              : null,
+          },
+          {
+            op: "replace",
+            path: "/EnrollOpenDate",
+            value: fd.get("EnrollOpenDate")
+              ? new Date(fd.get("EnrollOpenDate") as string).toISOString()
+              : null,
+          },
+          {
+            op: "replace",
+            path: "/AreParticipantsVisible",
+            value: fd.get("AreParticipantsVisible") === "on",
+          },
+          {
+            op: "replace",
+            path: "/IsAdultOnly",
+            value: fd.get("IsAdultOnly") === "on",
+          },
+          {
+            op: "replace",
+            path: "/IsWeeklyDrinks",
+            value: fd.get("IsWeeklyDrinks") === "on",
+          },
+          {
+            op: "replace",
+            path: "/AllowedAudience",
+            value: audienceMap[audienceFlags],
+          },
+          {
+            op: "replace",
+            path: "/SpecificationQuestionsJson",
+            value: JSON.stringify(questions),
+          },
         ];
 
         if (isBoard) {
           patchOperations.push(
-            { op: "replace", path: "/ShowInKoala", value: fd.get("ShowInKoala") === "on" },
-            { op: "replace", path: "/ShowOnWebsite", value: fd.get("ShowOnWebsite") === "on" },
-            { op: "replace", path: "/IsEnrollable", value: fd.get("IsEnrollable") === "on" },
-            { op: "replace", path: "/VatRate", value: fd.get("VatRate") ? Number(fd.get("VatRate")) : null },
-            { op: "replace", path: "/GLAccountId", value: (fd.get("GLAccountId") as string) || null },
-            { op: "replace", path: "/CostUnitId", value: (fd.get("CostUnitId") as string) || null },
-            { op: "replace", path: "/CostCenterId", value: (fd.get("CostCenterId") as string) || null },
-            { op: "replace", path: "/PaymentDeadline", value: fd.get("PaymentDeadline") ? new Date(fd.get("PaymentDeadline") as string).toISOString() : null }
+            {
+              op: "replace",
+              path: "/ShowInKoala",
+              value: fd.get("ShowInKoala") === "on",
+            },
+            {
+              op: "replace",
+              path: "/ShowOnWebsite",
+              value: fd.get("ShowOnWebsite") === "on",
+            },
+            {
+              op: "replace",
+              path: "/IsEnrollable",
+              value: fd.get("IsEnrollable") === "on",
+            },
+            {
+              op: "replace",
+              path: "/VatRate",
+              value: fd.get("VatRate") ? Number(fd.get("VatRate")) : null,
+            },
+            {
+              op: "replace",
+              path: "/GLAccountId",
+              value: (fd.get("GLAccountId") as string) || null,
+            },
+            {
+              op: "replace",
+              path: "/CostUnitId",
+              value: (fd.get("CostUnitId") as string) || null,
+            },
+            {
+              op: "replace",
+              path: "/CostCenterId",
+              value: (fd.get("CostCenterId") as string) || null,
+            },
+            {
+              op: "replace",
+              path: "/PaymentDeadline",
+              value: fd.get("PaymentDeadline")
+                ? new Date(fd.get("PaymentDeadline") as string).toISOString()
+                : null,
+            },
           );
         }
 
         const response = await patchActivitiesById({
           path: { id: Number(id) },
-          body: patchOperations, 
+          body: patchOperations,
         });
         if (response.error) {
           throw response.error ?? new Error("Failed to update activity");

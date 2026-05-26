@@ -175,7 +175,8 @@ export default function DashboardHeader({
     toast.promise(payAction(), {
       loading: t("paying"),
       success: t("redirecting_to_payment"),
-      error: (error) => appendErrorMessage(t("payment_initiation_failed"), error),
+      error: (error) =>
+        appendErrorMessage(t("payment_initiation_failed"), error),
     });
   };
 

@@ -23,6 +23,7 @@ import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
 import { getAssociationYear } from "~/util/date.util";
 import {
+  type EditGroupFormData,
   handleAddGroupEnrollment,
   handleDeleteGroupEnrollment,
   handleGroupProfilePictureUpload,
@@ -31,7 +32,6 @@ import {
   handleUpdateGroupRole,
   loadGroupData,
   loadGroupMemberships,
-  type EditGroupFormData,
 } from "./edit-group.handlers";
 
 /**

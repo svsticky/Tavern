@@ -175,14 +175,18 @@ export default function Members() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <PageHeader title={t("members")} backTo="/" action={
-        <Button
-          variant="secondary"
-          onClick={() => navigate("/admin/members/create-begunstiger")}
-          className="items-center px-3 py-1"
-        >
-          <PlusIcon className="w-5 h-5" />
-        </Button>}
+      <PageHeader
+        title={t("members")}
+        backTo="/"
+        action={
+          <Button
+            variant="secondary"
+            onClick={() => navigate("/admin/members/create-begunstiger")}
+            className="items-center px-3 py-1"
+          >
+            <PlusIcon className="w-5 h-5" />
+          </Button>
+        }
       />
 
       <BorderedTile>

@@ -279,34 +279,34 @@ export default function ChangeAccountForm({
       >
         {saving ? t("saving") : t("save")}
       </Button>
-        <Button
-          variant="danger"
-          className="w-full"
-          type="button"
-          onClick={async () => {
-            if (!window.confirm(t("delete_account_confirmation"))) {
-              return;
+      <Button
+        variant="danger"
+        className="w-full"
+        type="button"
+        onClick={async () => {
+          if (!window.confirm(t("delete_account_confirmation"))) {
+            return;
+          }
+
+          try {
+            if (!member.id) throw new Error("Failed to fetch member id");
+            const response = await deleteMembersById({
+              path: { id: member.id },
+            });
+
+            if (response.error || response.status >= 400) {
+              throw response.error ?? new Error("Failed to delete account");
             }
 
-            try {
-              if(!member.id) throw new Error("Failed to fetch member id")
-              const response = await deleteMembersById({
-                path: { id: member.id },
-              });
-
-              if (response.error || response.status >= 400) {
-                throw response.error ?? new Error("Failed to delete account");
-              }
-
-              toast.success(t("account_deleted_successfully"));
-              authService.logout(`${window.location.origin}/login`);
-            } catch (err) {
-              console.error("Error deleting account:", err);
-              toast.error(appendErrorMessage(t("delete_account_error"), err));
-            }
-          }}
-        >
-          {t("delete_account")}
+            toast.success(t("account_deleted_successfully"));
+            authService.logout(`${window.location.origin}/login`);
+          } catch (err) {
+            console.error("Error deleting account:", err);
+            toast.error(appendErrorMessage(t("delete_account_error"), err));
+          }
+        }}
+      >
+        {t("delete_account")}
       </Button>
     </Form>
   );

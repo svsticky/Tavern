@@ -101,6 +101,9 @@ export const handleMoveFromWaitinglist = ({
     loading: t("moving_participant_to_participants"),
     success: t("participant_moved_to_participants"),
     error: (error) =>
-      appendErrorMessage(t("failed_to_move_participant_to_participants"), error),
+      appendErrorMessage(
+        t("failed_to_move_participant_to_participants"),
+        error,
+      ),
   });
 };

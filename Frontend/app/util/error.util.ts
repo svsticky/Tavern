@@ -4,7 +4,9 @@ const getValidationErrorMessage = (errors: unknown): string | undefined => {
   if (!errors || typeof errors !== "object") return undefined;
   for (const [key, value] of Object.entries(errors as ErrorDetails)) {
     if (Array.isArray(value)) {
-      const message = value.find((entry) => typeof entry === "string" && entry.trim());
+      const message = value.find(
+        (entry) => typeof entry === "string" && entry.trim(),
+      );
       if (message) return key ? `${key}: ${message}` : message;
       continue;
     }

@@ -125,7 +125,9 @@ export const loadMemberData = async ({
 
     const studiesResponse = await getStudies();
     if (studiesResponse.error || !studiesResponse.data) {
-      throw studiesResponse.error ?? new Error("Failed to load available studies");
+      throw (
+        studiesResponse.error ?? new Error("Failed to load available studies")
+      );
     }
     setAvailableStudies(studiesResponse.data);
 

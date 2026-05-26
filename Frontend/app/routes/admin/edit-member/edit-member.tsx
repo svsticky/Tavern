@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";

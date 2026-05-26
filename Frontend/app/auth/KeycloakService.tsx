@@ -48,7 +48,7 @@ export class KeycloakAuthService implements IAuthService {
 
   public async login(redirectUri?: string): Promise<void> {
     await this.keycloak.login({
-      redirectUri: redirectUri
+      redirectUri: redirectUri,
     });
   }
 

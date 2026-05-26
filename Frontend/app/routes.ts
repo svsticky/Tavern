@@ -16,9 +16,13 @@ export default [
           route("activities/create", "routes/edit-activity/edit-activity.tsx", {
             id: "create-activity",
           }),
-          route("activities/edit/:id", "routes/edit-activity/edit-activity.tsx", {
-            id: "edit-activity",
-          }),
+          route(
+            "activities/edit/:id",
+            "routes/edit-activity/edit-activity.tsx",
+            {
+              id: "edit-activity",
+            },
+          ),
           route("activities/:id", "routes/activity/activity.tsx", {
             id: "activity-details",
           }),
@@ -52,7 +56,10 @@ export default [
               { id: "edit-activity-admin" },
             ),
             route("admin/members", "routes/admin/members.tsx"),
-            route("admin/members/create-begunstiger", "routes/admin/create-begunstiger/create-begunstiger.tsx"),
+            route(
+              "admin/members/create-begunstiger",
+              "routes/admin/create-begunstiger/create-begunstiger.tsx",
+            ),
             route(
               "admin/members/:id",
               "routes/admin/edit-member/edit-member.tsx",
@@ -62,7 +69,7 @@ export default [
             route("admin/settings", "routes/admin/settings/settings.tsx"),
           ]),
         ]),
-        route("/update-study-progress", "routes/update-studies.tsx"),
+        route("update-study-progress", "routes/update-studies.tsx"),
       ]),
     ]),
 

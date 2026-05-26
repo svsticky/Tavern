@@ -1,15 +1,8 @@
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
-import { Navigate, Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate } from "react-router";
 import { client } from "~/api/client.gen";
-import {
-  deleteMembersById,
-  getMembersById,
-  getPaymentsMemberByFromUserIdStatus,
-  getSettingsById,
-  patchMembersById,
-  postPaymentsMembership,
-} from "~/api/sdk.gen";
+import { getMembersById, getSettingsById } from "~/api/sdk.gen";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
@@ -33,10 +26,9 @@ export default function AuthenticatedLayout() {
   const authService = useAuth();
   const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [paymentStatus, setPaymentStatus] = useState<boolean | null>(null);
   const navigate = useNavigate();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: navigate needed because token has to be refreshed when navigated
   useEffect(() => {
     if (!authService.isReady()) return;
 
@@ -170,62 +162,6 @@ export default function AuthenticatedLayout() {
         );
     }
 
-    if (paymentStatus === null) {
-      getPaymentsMemberByFromUserIdStatus({
-        path: {
-          fromUserId: tokenParsed.UserId,
-        },
-      })
-        .then((res) => {
-          if (res.data) {
-            setPaymentStatus(
-              res.data.hasEverPaidMembership &&
-                res.data.hasPaidMembershipBeforeExpirationTime,
-            );
-            
-            if (res.data.hasEverPaidMembership && res.data.hasPaidMembershipBeforeExpirationTime && tokenParsed.access_level === "not_paid") {
-              console.warn(
-                "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
-              );
-
-              // Patch member to force refresh the payment status in keycloak.
-              patchMembersById({
-                path: { id: tokenParsed.UserId },
-                body: [] as any,
-              });
-            }
-          }
-        })
-        .catch((err) =>
-          console.error(
-            "Could not fetch payment status for authenticated user",
-            err,
-          ),
-        );
-    }
-
-    if (!paymentUrl && paymentStatus === false) {
-      console.log("User has not paid for membership, loading payment url...");
-
-      postPaymentsMembership({
-        body: { memberId: tokenParsed?.UserId ?? "" },
-      })
-        .then((res) => {
-          if (res.data?.checkoutUrl) {
-            setPaymentUrl(res.data.checkoutUrl);
-          } else {
-            throw new Error(
-              "No checkout URL received, cannot redirect to payment page.",
-            );
-          }
-        })
-        .catch((err) => {
-          console.error("Error checking membership payment status:", err);
-        });
-
-      return;
-    }
-
     const resInterceptor = client.instance.interceptors.response.use(
       async (response) => {
         return response;
@@ -234,7 +170,7 @@ export default function AuthenticatedLayout() {
         if (error.response) {
           if (error.response.status === 401) {
             console.warn("Unauthorized, redirecting...");
-            window.location.href = "/logout"
+            window.location.href = "/logout";
           } else if (error.response.status === 403) {
             console.warn(
               "Forbidden - user does not have access to this resource.",
@@ -260,10 +196,6 @@ export default function AuthenticatedLayout() {
     setBoardGroupId,
     setCandidateBoardGroupId,
     setMember,
-    paymentUrl,
-    paymentStatus,
-    paymentUrl,
-    paymentStatus,
   ]);
 
   if (!tokenParsed) return null;

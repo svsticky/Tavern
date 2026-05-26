@@ -140,7 +140,15 @@ export default function Finances() {
             </p>
           </BorderedTile>
 
-          <BorderedTile title={t("overpaid")} subtitle={overpaidBalances && overpaidBalances.length > 0 ? t("no_overpaid_balances") : ""} className="flex-1">
+          <BorderedTile
+            title={t("overpaid")}
+            subtitle={
+              overpaidBalances && overpaidBalances.length === 0
+                ? t("no_overpaid_balances")
+                : ""
+            }
+            className="flex-1"
+          >
             <div className="flex flex-col gap-2">
               {overpaidBalances?.map((balance, index) => (
                 <>
