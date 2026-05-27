@@ -23,6 +23,7 @@ namespace Backend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     PaymentId = table.Column<long>(type: "bigint", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    NextAttemptAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RetryCount = table.Column<int>(type: "integer", nullable: false),
                     TaskType = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -40,6 +41,7 @@ namespace Backend.Migrations
                     AuthSystemUserId = table.Column<Guid>(type: "uuid", nullable: false),
                     TaskType = table.Column<int>(type: "integer", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    NextAttemptAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RetryCount = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -89,6 +91,7 @@ namespace Backend.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Email = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    NextAttemptAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     RetryCount = table.Column<int>(type: "integer", nullable: false),
                     MailSubscription = table.Column<long>(type: "bigint", nullable: false)
                 },
@@ -103,7 +106,7 @@ namespace Backend.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     AuthSystemUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    StudentNumber = table.Column<long>(type: "bigint", nullable: false),
+                    StudentNumber = table.Column<string>(type: "text", nullable: false),
                     FirstName = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     LastName = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     Email = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
