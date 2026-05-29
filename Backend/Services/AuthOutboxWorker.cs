@@ -17,7 +17,7 @@ public class AuthOutboxWorker(
     /// </summary>
     /// <param name="taskType">The task type to enqueue.</param>
     /// <param name="authSystemUserId">The target auth user ID.</param>
-    public async Task EnqueueTask(AuthTaskType taskType, Guid authSystemUserId)
+    public virtual async Task EnqueueTask(AuthTaskType taskType, Guid authSystemUserId)
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();

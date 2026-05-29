@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape, urlSearchParamsBodySerializer } from './client';
 import { client } from './client.gen';
-import type { DeleteActivitiesByIdData, DeleteActivitiesByIdErrors, DeleteActivitiesByIdResponses, DeleteAnnouncementsByIdData, DeleteAnnouncementsByIdErrors, DeleteAnnouncementsByIdResponses, DeleteEnrollmentsByActivityIdByMemberIdData, DeleteEnrollmentsByActivityIdByMemberIdErrors, DeleteEnrollmentsByActivityIdByMemberIdResponses, DeleteGroupmembershipsByIdData, DeleteGroupmembershipsByIdErrors, DeleteGroupmembershipsByIdResponses, DeleteGroupsByIdData, DeleteGroupsByIdErrors, DeleteGroupsByIdResponses, DeleteMailinglistsByIdData, DeleteMailinglistsByIdErrors, DeleteMailinglistsByIdResponses, DeleteMembersByIdData, DeleteMembersByIdErrors, DeleteMembersByIdProfilePictureData, DeleteMembersByIdProfilePictureErrors, DeleteMembersByIdProfilePictureResponses, DeleteMembersByIdResponses, DeleteRolealiasesByIdData, DeleteRolealiasesByIdErrors, DeleteRolealiasesByIdResponses, DeleteRolesByIdData, DeleteRolesByIdErrors, DeleteRolesByIdResponses, DeleteSettingsByIdData, DeleteSettingsByIdErrors, DeleteSettingsByIdResponses, DeleteStudiesByIdData, DeleteStudiesByIdErrors, DeleteStudiesByIdResponses, DeleteStudyenrollmentsByIdData, DeleteStudyenrollmentsByIdErrors, DeleteStudyenrollmentsByIdResponses, GetActivitiesByIdData, GetActivitiesByIdEnrollmentsExportData, GetActivitiesByIdEnrollmentsExportErrors, GetActivitiesByIdEnrollmentsExportResponses, GetActivitiesByIdErrors, GetActivitiesByIdPosterData, GetActivitiesByIdPosterDownloadData, GetActivitiesByIdPosterDownloadErrors, GetActivitiesByIdPosterDownloadResponses, GetActivitiesByIdPosterErrors, GetActivitiesByIdPosterResponses, GetActivitiesByIdResponses, GetActivitiesData, GetActivitiesErrors, GetActivitiesResponses, GetAnnouncementsByIdData, GetAnnouncementsByIdErrors, GetAnnouncementsByIdResponses, GetAnnouncementsData, GetAnnouncementsErrors, GetAnnouncementsResponses, GetEnrollmentsByActivityIdByMemberIdData, GetEnrollmentsByActivityIdByMemberIdErrors, GetEnrollmentsByActivityIdByMemberIdResponses, GetEnrollmentsData, GetEnrollmentsErrors, GetEnrollmentsResponses, GetGroupmembershipsByIdData, GetGroupmembershipsByIdErrors, GetGroupmembershipsByIdResponses, GetGroupmembershipsData, GetGroupmembershipsErrors, GetGroupmembershipsResponses, GetGroupsByIdData, GetGroupsByIdErrors, GetGroupsByIdGroupPictureData, GetGroupsByIdGroupPictureErrors, GetGroupsByIdGroupPictureResponses, GetGroupsByIdResponses, GetGroupsData, GetGroupsErrors, GetGroupsResponses, GetMailinglistsByIdData, GetMailinglistsByIdErrors, GetMailinglistsByIdResponses, GetMailinglistsData, GetMailinglistsErrors, GetMailinglistsResponses, GetMembersByIdData, GetMembersByIdErrors, GetMembersByIdProfilePictureData, GetMembersByIdProfilePictureErrors, GetMembersByIdProfilePictureResponses, GetMembersByIdResponses, GetMembersData, GetMembersErrors, GetMembersResponses, GetPaymentsEnrollmentByIdData, GetPaymentsEnrollmentByIdErrors, GetPaymentsEnrollmentByIdResponses, GetPaymentsEnrollmentData, GetPaymentsEnrollmentErrors, GetPaymentsEnrollmentResponses, GetPaymentsExportData, GetPaymentsExportErrors, GetPaymentsExportResponses, GetPaymentsMemberByFromUserIdStatusData, GetPaymentsMemberByFromUserIdStatusErrors, GetPaymentsMemberByFromUserIdStatusResponses, GetPaymentsMembershipByIdData, GetPaymentsMembershipByIdErrors, GetPaymentsMembershipByIdResponses, GetPaymentsMembershipData, GetPaymentsMembershipErrors, GetPaymentsMembershipResponses, GetPaymentsOverpaidData, GetPaymentsOverpaidErrors, GetPaymentsOverpaidResponses, GetPaymentsUnpaidData, GetPaymentsUnpaidErrors, GetPaymentsUnpaidResponses, GetProfilepictureViewByPathData, GetProfilepictureViewByPathErrors, GetProfilepictureViewByPathResponses, GetRolealiasesByIdData, GetRolealiasesByIdErrors, GetRolealiasesByIdResponses, GetRolealiasesData, GetRolealiasesErrors, GetRolealiasesResponses, GetRolesByIdData, GetRolesByIdErrors, GetRolesByIdResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetSettingsByIdData, GetSettingsByIdErrors, GetSettingsByIdResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, GetStudiesByIdData, GetStudiesByIdErrors, GetStudiesByIdResponses, GetStudiesData, GetStudiesErrors, GetStudiesResponses, GetStudyenrollmentsByIdData, GetStudyenrollmentsByIdErrors, GetStudyenrollmentsByIdResponses, GetStudyenrollmentsData, GetStudyenrollmentsErrors, GetStudyenrollmentsResponses, PatchActivitiesByIdData, PatchActivitiesByIdErrors, PatchActivitiesByIdResponses, PatchAnnouncementsByIdData, PatchAnnouncementsByIdErrors, PatchAnnouncementsByIdResponses, PatchEnrollmentsByActivityIdByMemberIdData, PatchEnrollmentsByActivityIdByMemberIdErrors, PatchEnrollmentsByActivityIdByMemberIdResponses, PatchGroupmembershipsByIdData, PatchGroupmembershipsByIdErrors, PatchGroupmembershipsByIdResponses, PatchGroupsByIdData, PatchGroupsByIdErrors, PatchGroupsByIdResponses, PatchMailinglistsByIdData, PatchMailinglistsByIdErrors, PatchMailinglistsByIdResponses, PatchMembersByIdData, PatchMembersByIdErrors, PatchMembersByIdResponses, PatchRolealiasesByIdData, PatchRolealiasesByIdErrors, PatchRolealiasesByIdResponses, PatchRolesByIdData, PatchRolesByIdErrors, PatchRolesByIdResponses, PatchSettingsByIdData, PatchSettingsByIdErrors, PatchSettingsByIdResponses, PatchSpecificationanswersByAnswerIdData, PatchSpecificationanswersByAnswerIdErrors, PatchSpecificationanswersByAnswerIdResponses, PatchStudiesByIdData, PatchStudiesByIdErrors, PatchStudiesByIdResponses, PatchStudyenrollmentsByIdData, PatchStudyenrollmentsByIdErrors, PatchStudyenrollmentsByIdResponses, PostActivitiesByIdPosterData, PostActivitiesByIdPosterErrors, PostActivitiesByIdPosterResponses, PostActivitiesData, PostActivitiesErrors, PostActivitiesResponses, PostAnnouncementsData, PostAnnouncementsErrors, PostAnnouncementsResponses, PostEnrollmentsData, PostEnrollmentsErrors, PostEnrollmentsResponses, PostGroupmembershipsData, PostGroupmembershipsErrors, PostGroupmembershipsResponses, PostGroupsByIdGroupPictureData, PostGroupsByIdGroupPictureErrors, PostGroupsByIdGroupPictureResponses, PostGroupsData, PostGroupsErrors, PostGroupsResponses, PostMailinglistsData, PostMailinglistsErrors, PostMailinglistsResponses, PostMailsActivityData, PostMailsActivityErrors, PostMailsActivityResponses, PostMailsNormalData, PostMailsNormalErrors, PostMailsNormalResponses, PostMembersData, PostMembersErrors, PostMembersResponses, PostMembersWebhookRefreshEmailData, PostMembersWebhookRefreshEmailErrors, PostMembersWebhookRefreshEmailResponses, PostPaymentsActivityData, PostPaymentsActivityErrors, PostPaymentsActivityResponses, PostPaymentsMembershipData, PostPaymentsMembershipErrors, PostPaymentsMembershipResponses, PostPaymentsWebhookData, PostPaymentsWebhookErrors, PostPaymentsWebhookResponses, PostProfilepictureByIdProfilePictureData, PostProfilepictureByIdProfilePictureErrors, PostProfilepictureByIdProfilePictureResponses, PostRolealiasesData, PostRolealiasesErrors, PostRolealiasesResponses, PostRolesData, PostRolesErrors, PostRolesResponses, PostSettingsData, PostSettingsErrors, PostSettingsResponses, PostStudiesData, PostStudiesErrors, PostStudiesResponses, PostStudyenrollmentsData, PostStudyenrollmentsErrors, PostStudyenrollmentsResponses, PutActivitiesByIdData, PutActivitiesByIdErrors, PutActivitiesByIdResponses, PutAnnouncementsByIdData, PutAnnouncementsByIdErrors, PutAnnouncementsByIdResponses, PutEnrollmentsByActivityIdByMemberIdData, PutEnrollmentsByActivityIdByMemberIdErrors, PutEnrollmentsByActivityIdByMemberIdResponses, PutGroupmembershipsByIdData, PutGroupmembershipsByIdErrors, PutGroupmembershipsByIdResponses, PutGroupsByIdData, PutGroupsByIdErrors, PutGroupsByIdResponses, PutMailinglistsByIdData, PutMailinglistsByIdErrors, PutMailinglistsByIdResponses, PutMembersByIdData, PutMembersByIdErrors, PutMembersByIdResponses, PutRolealiasesByIdData, PutRolealiasesByIdErrors, PutRolealiasesByIdResponses, PutRolesByIdData, PutRolesByIdErrors, PutRolesByIdResponses, PutSettingsByIdData, PutSettingsByIdErrors, PutSettingsByIdResponses, PutStudiesByIdData, PutStudiesByIdErrors, PutStudiesByIdResponses } from './types.gen';
+import type { DeleteActivitiesByIdData, DeleteActivitiesByIdErrors, DeleteActivitiesByIdResponses, DeleteAnnouncementsByIdData, DeleteAnnouncementsByIdErrors, DeleteAnnouncementsByIdResponses, DeleteEnrollmentsByActivityIdByMemberIdData, DeleteEnrollmentsByActivityIdByMemberIdErrors, DeleteEnrollmentsByActivityIdByMemberIdResponses, DeleteExternallinksByIdData, DeleteExternallinksByIdErrors, DeleteExternallinksByIdResponses, DeleteGroupmembershipsByIdData, DeleteGroupmembershipsByIdErrors, DeleteGroupmembershipsByIdResponses, DeleteGroupsByIdData, DeleteGroupsByIdErrors, DeleteGroupsByIdResponses, DeleteMailinglistsByIdData, DeleteMailinglistsByIdErrors, DeleteMailinglistsByIdResponses, DeleteMembersByIdData, DeleteMembersByIdErrors, DeleteMembersByIdProfilePictureData, DeleteMembersByIdProfilePictureErrors, DeleteMembersByIdProfilePictureResponses, DeleteMembersByIdResponses, DeleteRegisterreasonsByIdData, DeleteRegisterreasonsByIdErrors, DeleteRegisterreasonsByIdResponses, DeleteRegisterslidesByIdData, DeleteRegisterslidesByIdErrors, DeleteRegisterslidesByIdResponses, DeleteRolealiasesByIdData, DeleteRolealiasesByIdErrors, DeleteRolealiasesByIdResponses, DeleteRolesByIdData, DeleteRolesByIdErrors, DeleteRolesByIdResponses, DeleteSettingsByIdData, DeleteSettingsByIdErrors, DeleteSettingsByIdResponses, DeleteStudiesByIdData, DeleteStudiesByIdErrors, DeleteStudiesByIdResponses, DeleteStudyenrollmentsByIdData, DeleteStudyenrollmentsByIdErrors, DeleteStudyenrollmentsByIdResponses, GetActivitiesByIdData, GetActivitiesByIdEnrollmentsExportData, GetActivitiesByIdEnrollmentsExportErrors, GetActivitiesByIdEnrollmentsExportResponses, GetActivitiesByIdErrors, GetActivitiesByIdPosterData, GetActivitiesByIdPosterDownloadData, GetActivitiesByIdPosterDownloadErrors, GetActivitiesByIdPosterDownloadResponses, GetActivitiesByIdPosterErrors, GetActivitiesByIdPosterResponses, GetActivitiesByIdResponses, GetActivitiesData, GetActivitiesErrors, GetActivitiesResponses, GetAnnouncementsByIdData, GetAnnouncementsByIdErrors, GetAnnouncementsByIdResponses, GetAnnouncementsData, GetAnnouncementsErrors, GetAnnouncementsResponses, GetEnrollmentsByActivityIdByMemberIdData, GetEnrollmentsByActivityIdByMemberIdErrors, GetEnrollmentsByActivityIdByMemberIdResponses, GetEnrollmentsData, GetEnrollmentsErrors, GetEnrollmentsResponses, GetExternallinksByIdData, GetExternallinksByIdErrors, GetExternallinksByIdIconData, GetExternallinksByIdIconErrors, GetExternallinksByIdIconResponses, GetExternallinksByIdResponses, GetExternallinksData, GetExternallinksErrors, GetExternallinksResponses, GetGroupmembershipsByIdData, GetGroupmembershipsByIdErrors, GetGroupmembershipsByIdResponses, GetGroupmembershipsData, GetGroupmembershipsErrors, GetGroupmembershipsResponses, GetGroupsByIdData, GetGroupsByIdErrors, GetGroupsByIdGroupPictureData, GetGroupsByIdGroupPictureErrors, GetGroupsByIdGroupPictureResponses, GetGroupsByIdResponses, GetGroupsData, GetGroupsErrors, GetGroupsResponses, GetMailinglistsByIdData, GetMailinglistsByIdErrors, GetMailinglistsByIdResponses, GetMailinglistsData, GetMailinglistsErrors, GetMailinglistsResponses, GetMembersByIdData, GetMembersByIdErrors, GetMembersByIdProfilePictureData, GetMembersByIdProfilePictureErrors, GetMembersByIdProfilePictureResponses, GetMembersByIdResponses, GetMembersData, GetMembersErrors, GetMembersResponses, GetPaymentsEnrollmentByIdData, GetPaymentsEnrollmentByIdErrors, GetPaymentsEnrollmentByIdResponses, GetPaymentsEnrollmentData, GetPaymentsEnrollmentErrors, GetPaymentsEnrollmentResponses, GetPaymentsExportData, GetPaymentsExportErrors, GetPaymentsExportResponses, GetPaymentsMemberByFromUserIdStatusData, GetPaymentsMemberByFromUserIdStatusErrors, GetPaymentsMemberByFromUserIdStatusResponses, GetPaymentsMembershipByIdData, GetPaymentsMembershipByIdErrors, GetPaymentsMembershipByIdResponses, GetPaymentsMembershipData, GetPaymentsMembershipErrors, GetPaymentsMembershipResponses, GetPaymentsOverpaidData, GetPaymentsOverpaidErrors, GetPaymentsOverpaidResponses, GetPaymentsUnpaidData, GetPaymentsUnpaidErrors, GetPaymentsUnpaidResponses, GetProfilepictureViewByPathData, GetProfilepictureViewByPathErrors, GetProfilepictureViewByPathResponses, GetRegisterreasonsByIdData, GetRegisterreasonsByIdErrors, GetRegisterreasonsByIdIconData, GetRegisterreasonsByIdIconErrors, GetRegisterreasonsByIdIconResponses, GetRegisterreasonsByIdResponses, GetRegisterreasonsData, GetRegisterreasonsErrors, GetRegisterreasonsResponses, GetRegisterslidesByIdData, GetRegisterslidesByIdErrors, GetRegisterslidesByIdImageData, GetRegisterslidesByIdImageErrors, GetRegisterslidesByIdImageResponses, GetRegisterslidesByIdResponses, GetRegisterslidesData, GetRegisterslidesErrors, GetRegisterslidesResponses, GetRolealiasesByIdData, GetRolealiasesByIdErrors, GetRolealiasesByIdResponses, GetRolealiasesData, GetRolealiasesErrors, GetRolealiasesResponses, GetRolesByIdData, GetRolesByIdErrors, GetRolesByIdResponses, GetRolesData, GetRolesErrors, GetRolesResponses, GetSettingsByIdData, GetSettingsByIdErrors, GetSettingsByIdResponses, GetSettingsData, GetSettingsErrors, GetSettingsResponses, GetStudiesByIdData, GetStudiesByIdErrors, GetStudiesByIdResponses, GetStudiesData, GetStudiesErrors, GetStudiesResponses, GetStudyenrollmentsByIdData, GetStudyenrollmentsByIdErrors, GetStudyenrollmentsByIdResponses, GetStudyenrollmentsData, GetStudyenrollmentsErrors, GetStudyenrollmentsResponses, PatchActivitiesByIdData, PatchActivitiesByIdErrors, PatchActivitiesByIdResponses, PatchAnnouncementsByIdData, PatchAnnouncementsByIdErrors, PatchAnnouncementsByIdResponses, PatchEnrollmentsByActivityIdByMemberIdData, PatchEnrollmentsByActivityIdByMemberIdErrors, PatchEnrollmentsByActivityIdByMemberIdResponses, PatchGroupmembershipsByIdData, PatchGroupmembershipsByIdErrors, PatchGroupmembershipsByIdResponses, PatchGroupsByIdData, PatchGroupsByIdErrors, PatchGroupsByIdResponses, PatchMailinglistsByIdData, PatchMailinglistsByIdErrors, PatchMailinglistsByIdResponses, PatchMembersByIdData, PatchMembersByIdErrors, PatchMembersByIdResponses, PatchRolealiasesByIdData, PatchRolealiasesByIdErrors, PatchRolealiasesByIdResponses, PatchRolesByIdData, PatchRolesByIdErrors, PatchRolesByIdResponses, PatchSettingsByIdData, PatchSettingsByIdErrors, PatchSettingsByIdResponses, PatchSpecificationanswersByAnswerIdData, PatchSpecificationanswersByAnswerIdErrors, PatchSpecificationanswersByAnswerIdResponses, PatchStudiesByIdData, PatchStudiesByIdErrors, PatchStudiesByIdResponses, PatchStudyenrollmentsByIdData, PatchStudyenrollmentsByIdErrors, PatchStudyenrollmentsByIdResponses, PostActivitiesByIdPosterData, PostActivitiesByIdPosterErrors, PostActivitiesByIdPosterResponses, PostActivitiesData, PostActivitiesErrors, PostActivitiesResponses, PostAnnouncementsData, PostAnnouncementsErrors, PostAnnouncementsResponses, PostEnrollmentsData, PostEnrollmentsErrors, PostEnrollmentsResponses, PostExternallinksByIdIconData, PostExternallinksByIdIconErrors, PostExternallinksByIdIconResponses, PostExternallinksData, PostExternallinksErrors, PostExternallinksResponses, PostGroupmembershipsData, PostGroupmembershipsErrors, PostGroupmembershipsResponses, PostGroupsByIdGroupPictureData, PostGroupsByIdGroupPictureErrors, PostGroupsByIdGroupPictureResponses, PostGroupsData, PostGroupsErrors, PostGroupsResponses, PostMailinglistsData, PostMailinglistsErrors, PostMailinglistsResponses, PostMailsActivityData, PostMailsActivityErrors, PostMailsActivityResponses, PostMailsNormalData, PostMailsNormalErrors, PostMailsNormalResponses, PostMembersData, PostMembersErrors, PostMembersResponses, PostMembersWebhookRefreshEmailData, PostMembersWebhookRefreshEmailErrors, PostMembersWebhookRefreshEmailResponses, PostPaymentsActivityData, PostPaymentsActivityErrors, PostPaymentsActivityResponses, PostPaymentsMembershipData, PostPaymentsMembershipErrors, PostPaymentsMembershipResponses, PostPaymentsWebhookData, PostPaymentsWebhookErrors, PostPaymentsWebhookResponses, PostProfilepictureByIdProfilePictureData, PostProfilepictureByIdProfilePictureErrors, PostProfilepictureByIdProfilePictureResponses, PostRegisterreasonsByIdIconData, PostRegisterreasonsByIdIconErrors, PostRegisterreasonsByIdIconResponses, PostRegisterreasonsData, PostRegisterreasonsErrors, PostRegisterreasonsResponses, PostRegisterslidesByIdImageData, PostRegisterslidesByIdImageErrors, PostRegisterslidesByIdImageResponses, PostRegisterslidesData, PostRegisterslidesErrors, PostRegisterslidesResponses, PostRolealiasesData, PostRolealiasesErrors, PostRolealiasesResponses, PostRolesData, PostRolesErrors, PostRolesResponses, PostSettingsData, PostSettingsErrors, PostSettingsResponses, PostStudiesData, PostStudiesErrors, PostStudiesResponses, PostStudyenrollmentsData, PostStudyenrollmentsErrors, PostStudyenrollmentsResponses, PutActivitiesByIdData, PutActivitiesByIdErrors, PutActivitiesByIdResponses, PutAnnouncementsByIdData, PutAnnouncementsByIdErrors, PutAnnouncementsByIdResponses, PutEnrollmentsByActivityIdByMemberIdData, PutEnrollmentsByActivityIdByMemberIdErrors, PutEnrollmentsByActivityIdByMemberIdResponses, PutExternallinksByIdData, PutExternallinksByIdErrors, PutExternallinksByIdResponses, PutGroupmembershipsByIdData, PutGroupmembershipsByIdErrors, PutGroupmembershipsByIdResponses, PutGroupsByIdData, PutGroupsByIdErrors, PutGroupsByIdResponses, PutMailinglistsByIdData, PutMailinglistsByIdErrors, PutMailinglistsByIdResponses, PutMembersByIdData, PutMembersByIdErrors, PutMembersByIdResponses, PutRegisterreasonsByIdData, PutRegisterreasonsByIdErrors, PutRegisterreasonsByIdResponses, PutRegisterslidesByIdData, PutRegisterslidesByIdErrors, PutRegisterslidesByIdResponses, PutRolealiasesByIdData, PutRolealiasesByIdErrors, PutRolealiasesByIdResponses, PutRolesByIdData, PutRolesByIdErrors, PutRolesByIdResponses, PutSettingsByIdData, PutSettingsByIdErrors, PutSettingsByIdResponses, PutStudiesByIdData, PutStudiesByIdErrors, PutStudiesByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -267,6 +267,87 @@ export const putEnrollmentsByActivityIdByMemberId = <ThrowOnError extends boolea
     ...options,
     headers: {
         'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieves all external links in display order.
+ */
+export const getExternallinks = <ThrowOnError extends boolean = false>(options?: Options<GetExternallinksData, ThrowOnError>) => (options?.client ?? client).get<GetExternallinksResponses, GetExternallinksErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks',
+    ...options
+});
+
+/**
+ * Creates a new external link.
+ */
+export const postExternallinks = <ThrowOnError extends boolean = false>(options?: Options<PostExternallinksData, ThrowOnError>) => (options?.client ?? client).post<PostExternallinksResponses, PostExternallinksErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+/**
+ * Deletes an external link.
+ */
+export const deleteExternallinksById = <ThrowOnError extends boolean = false>(options: Options<DeleteExternallinksByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteExternallinksByIdResponses, DeleteExternallinksByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks/{id}',
+    ...options
+});
+
+/**
+ * Retrieves a specific external link by its ID.
+ */
+export const getExternallinksById = <ThrowOnError extends boolean = false>(options: Options<GetExternallinksByIdData, ThrowOnError>) => (options.client ?? client).get<GetExternallinksByIdResponses, GetExternallinksByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks/{id}',
+    ...options
+});
+
+/**
+ * Updates an existing external link.
+ */
+export const putExternallinksById = <ThrowOnError extends boolean = false>(options: Options<PutExternallinksByIdData, ThrowOnError>) => (options.client ?? client).put<PutExternallinksByIdResponses, PutExternallinksByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieves the icon file for an external link.
+ */
+export const getExternallinksByIdIcon = <ThrowOnError extends boolean = false>(options: Options<GetExternallinksByIdIconData, ThrowOnError>) => (options.client ?? client).get<GetExternallinksByIdIconResponses, GetExternallinksByIdIconErrors, ThrowOnError>({
+    responseType: 'blob',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks/{id}/icon',
+    ...options
+});
+
+/**
+ * Uploads or clears the icon for an external link.
+ */
+export const postExternallinksByIdIcon = <ThrowOnError extends boolean = false>(options: Options<PostExternallinksByIdIconData, ThrowOnError>) => (options.client ?? client).post<PostExternallinksByIdIconResponses, PostExternallinksByIdIconErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/externallinks/{id}/icon',
+    ...options,
+    headers: {
+        'Content-Type': null,
         ...options.headers
     }
 });
@@ -771,6 +852,169 @@ export const postProfilepictureByIdProfilePicture = <ThrowOnError extends boolea
     responseType: 'json',
     security: [{ scheme: 'bearer', type: 'http' }],
     url: '/profilepicture/{id}/profile-picture',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieves all register reasons in display order.
+ */
+export const getRegisterreasons = <ThrowOnError extends boolean = false>(options?: Options<GetRegisterreasonsData, ThrowOnError>) => (options?.client ?? client).get<GetRegisterreasonsResponses, GetRegisterreasonsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons',
+    ...options
+});
+
+/**
+ * Creates a new register reason.
+ */
+export const postRegisterreasons = <ThrowOnError extends boolean = false>(options?: Options<PostRegisterreasonsData, ThrowOnError>) => (options?.client ?? client).post<PostRegisterreasonsResponses, PostRegisterreasonsErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers
+    }
+});
+
+/**
+ * Deletes a register reason.
+ */
+export const deleteRegisterreasonsById = <ThrowOnError extends boolean = false>(options: Options<DeleteRegisterreasonsByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteRegisterreasonsByIdResponses, DeleteRegisterreasonsByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons/{id}',
+    ...options
+});
+
+/**
+ * Retrieves a specific register reason by its ID.
+ */
+export const getRegisterreasonsById = <ThrowOnError extends boolean = false>(options: Options<GetRegisterreasonsByIdData, ThrowOnError>) => (options.client ?? client).get<GetRegisterreasonsByIdResponses, GetRegisterreasonsByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons/{id}',
+    ...options
+});
+
+/**
+ * Updates an existing register reason.
+ */
+export const putRegisterreasonsById = <ThrowOnError extends boolean = false>(options: Options<PutRegisterreasonsByIdData, ThrowOnError>) => (options.client ?? client).put<PutRegisterreasonsByIdResponses, PutRegisterreasonsByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieves the icon file for a register reason.
+ */
+export const getRegisterreasonsByIdIcon = <ThrowOnError extends boolean = false>(options: Options<GetRegisterreasonsByIdIconData, ThrowOnError>) => (options.client ?? client).get<GetRegisterreasonsByIdIconResponses, GetRegisterreasonsByIdIconErrors, ThrowOnError>({
+    responseType: 'blob',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons/{id}/icon',
+    ...options
+});
+
+/**
+ * Uploads or clears the icon for a register reason.
+ */
+export const postRegisterreasonsByIdIcon = <ThrowOnError extends boolean = false>(options: Options<PostRegisterreasonsByIdIconData, ThrowOnError>) => (options.client ?? client).post<PostRegisterreasonsByIdIconResponses, PostRegisterreasonsByIdIconErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerreasons/{id}/icon',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieves all register slides in display order.
+ */
+export const getRegisterslides = <ThrowOnError extends boolean = false>(options?: Options<GetRegisterslidesData, ThrowOnError>) => (options?.client ?? client).get<GetRegisterslidesResponses, GetRegisterslidesErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides',
+    ...options
+});
+
+/**
+ * Creates a new register slide with an uploaded image.
+ */
+export const postRegisterslides = <ThrowOnError extends boolean = false>(options?: Options<PostRegisterslidesData, ThrowOnError>) => (options?.client ?? client).post<PostRegisterslidesResponses, PostRegisterslidesErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options?.headers
+    }
+});
+
+/**
+ * Deletes a register slide.
+ */
+export const deleteRegisterslidesById = <ThrowOnError extends boolean = false>(options: Options<DeleteRegisterslidesByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteRegisterslidesByIdResponses, DeleteRegisterslidesByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides/{id}',
+    ...options
+});
+
+/**
+ * Retrieves a specific register slide by ID.
+ */
+export const getRegisterslidesById = <ThrowOnError extends boolean = false>(options: Options<GetRegisterslidesByIdData, ThrowOnError>) => (options.client ?? client).get<GetRegisterslidesByIdResponses, GetRegisterslidesByIdErrors, ThrowOnError>({
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides/{id}',
+    ...options
+});
+
+/**
+ * Updates an existing register slide.
+ */
+export const putRegisterslidesById = <ThrowOnError extends boolean = false>(options: Options<PutRegisterslidesByIdData, ThrowOnError>) => (options.client ?? client).put<PutRegisterslidesByIdResponses, PutRegisterslidesByIdErrors, ThrowOnError>({
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Retrieves the image file for a register slide.
+ */
+export const getRegisterslidesByIdImage = <ThrowOnError extends boolean = false>(options: Options<GetRegisterslidesByIdImageData, ThrowOnError>) => (options.client ?? client).get<GetRegisterslidesByIdImageResponses, GetRegisterslidesByIdImageErrors, ThrowOnError>({
+    responseType: 'blob',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides/{id}/image',
+    ...options
+});
+
+/**
+ * Uploads or clears the image for a register slide.
+ */
+export const postRegisterslidesByIdImage = <ThrowOnError extends boolean = false>(options: Options<PostRegisterslidesByIdImageData, ThrowOnError>) => (options.client ?? client).post<PostRegisterslidesByIdImageResponses, PostRegisterslidesByIdImageErrors, ThrowOnError>({
+    ...formDataBodySerializer,
+    responseType: 'json',
+    security: [{ scheme: 'bearer', type: 'http' }],
+    url: '/registerslides/{id}/image',
     ...options,
     headers: {
         'Content-Type': null,

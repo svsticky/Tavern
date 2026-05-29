@@ -38,7 +38,7 @@ public class MailinglistRepository : IMailinglistRepository
     /// <inheritdoc />
     public async Task<Mailinglist?> GetMailinglist(int id, CancellationToken ct)
     {
-        return await _db.Mailinglists.FindAsync(new [] { id }, ct);
+        return await _db.Mailinglists.FindAsync(new object[] { id }, ct);
     }
 
     /// <inheritdoc />

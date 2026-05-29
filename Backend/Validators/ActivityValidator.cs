@@ -20,7 +20,6 @@ public static class ActivityValidator
     public static void ValidateRequest<TQuestion>(BaseActivityDTO<TQuestion> dto, Guid userId, IPermissionService permissionService)
     {
         ValidateTimeRange(dto.DateTimeStart, dto.DateTimeEnd);
-        ValidateParticipantLimit(dto.ParticipantLimit);
         ValidatePosterIfProvided(dto.Poster);
 
         // Only board members can create activities that are shown in Koala/website or have enrollment/payment options, to prevent abuse of these features
@@ -105,16 +104,7 @@ public static class ActivityValidator
             throw new ArgumentException("Activity cannot end before it starts.");
     }
 
-    /// <summary>
-    /// Validates that the participant limit for an activity is not negative. If the participant limit is negative, this method throws an ArgumentException indicating that the participant limit cannot be negative. This validation ensures that the participant limit specified for an activity is logical and prevents the creation of activities with invalid participant limits within the system.
-    /// </summary>
-    /// <param name="participantLimit">The participant limit for the activity.</param>
-    /// <exception cref="ArgumentException">Thrown when the participant limit is negative.</exception>
-    private static void ValidateParticipantLimit(uint? participantLimit)
-    {
-        if (participantLimit < 0)
-            throw new ArgumentException("Participant limit cannot be negative.");
-    }
+
 
     /// <summary>
     /// Validates the poster file provided for an activity, ensuring that if a poster file is provided, it has an acceptable format. This method checks if the poster file is not null, and if so, it calls the ExtensionValidator.ValidatePosterExtension method to validate the file's extension. This validation helps to ensure that only valid poster files are accepted for activities within the system, maintaining data integrity and security.

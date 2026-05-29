@@ -24,7 +24,6 @@ import type { TokenParsed } from "~/types/TokenParsed";
  */
 export default function AuthenticatedLayout() {
   const authService = useAuth();
-  const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const navigate = useNavigate();
 
@@ -42,11 +41,8 @@ export default function AuthenticatedLayout() {
         return;
       }
 
-      const token = await authService.getToken();
       const tokenParsed = await authService.getTokenParsed();
       if (cancelled) return;
-
-      setToken(token);
 
       if (!tokenParsed) {
         retryTimer = window.setTimeout(() => {
@@ -77,24 +73,64 @@ export default function AuthenticatedLayout() {
     setMember,
   } = useApp();
 
+  // Register Axios interceptors dynamically using the auth service
   useEffect(() => {
     if (!client.instance || !tokenParsed) return;
 
     const reqInterceptor = client.instance.interceptors.request.use(
       async (config) => {
-        if (token) {
-          Cookies.set("access_token", token, {
-            path: "/",
-            secure: true,
-            sameSite: "none",
-            domain: `.${window.location.hostname}`,
-          });
+        try {
+          const freshToken = await authService.getToken();
+          if (freshToken) {
+            Cookies.set("access_token", freshToken, {
+              path: "/",
+              secure: true,
+              sameSite: "none",
+              domain: `.${window.location.hostname}`,
+            });
 
-          config.headers.Authorization = `Bearer ${token}`;
+            config.headers.Authorization = `Bearer ${freshToken}`;
+          }
+        } catch (error) {
+          console.error(
+            "Failed to get fresh token in request interceptor",
+            error,
+          );
         }
         return config;
       },
     );
+
+    const resInterceptor = client.instance.interceptors.response.use(
+      async (response) => {
+        return response;
+      },
+      (error) => {
+        if (error.response) {
+          if (error.response.status === 401) {
+            console.warn("Unauthorized, redirecting...");
+            window.location.href = "/logout";
+          } else if (error.response.status === 403) {
+            console.warn(
+              "Forbidden - user does not have access to this resource.",
+            );
+            window.location.href = `/`;
+          }
+        }
+
+        return Promise.reject(error);
+      },
+    );
+
+    return () => {
+      client.instance.interceptors.request.eject(reqInterceptor);
+      client.instance.interceptors.response.eject(resInterceptor);
+    };
+  }, [authService, tokenParsed]);
+
+  // Synchronize locale and fetch board settings and member data
+  useEffect(() => {
+    if (!tokenParsed) return;
 
     const preferredLocale = member?.preferredLanguage?.toLowerCase();
     const userLocale = preferredLocale || tokenParsed.locale?.toLowerCase();
@@ -161,34 +197,7 @@ export default function AuthenticatedLayout() {
           ),
         );
     }
-
-    const resInterceptor = client.instance.interceptors.response.use(
-      async (response) => {
-        return response;
-      },
-      (error) => {
-        if (error.response) {
-          if (error.response.status === 401) {
-            console.warn("Unauthorized, redirecting...");
-            window.location.href = "/logout";
-          } else if (error.response.status === 403) {
-            console.warn(
-              "Forbidden - user does not have access to this resource.",
-            );
-            window.location.href = `/`;
-          }
-        }
-
-        return Promise.reject(error);
-      },
-    );
-
-    return () => {
-      client.instance.interceptors.request.eject(reqInterceptor);
-      client.instance.interceptors.response.eject(resInterceptor);
-    };
   }, [
-    token,
     tokenParsed,
     boardGroupId,
     candidateBoardGroupId,

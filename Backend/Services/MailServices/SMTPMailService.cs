@@ -3,12 +3,14 @@ using Backend.Interfaces;
 using Backend.Models;
 using MailKit.Net.Smtp;
 using MimeKit;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Backend.Services.MailServices;
 
 /// <summary>
 /// Sends emails through an SMTP server.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class SMTPMailService(
     PostgresDbContext db,
     IPaymentValidationService paymentValidationService,

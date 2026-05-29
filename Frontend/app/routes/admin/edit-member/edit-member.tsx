@@ -173,7 +173,6 @@ export default function EditMemberPage() {
             />
             <Input
               label={t("student_number")}
-              type="number"
               value={formData.studentNumber.toString()}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({

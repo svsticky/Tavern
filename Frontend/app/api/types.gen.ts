@@ -396,6 +396,74 @@ export type ErrorResponseDto = {
 };
 
 /**
+ * Represents the response DTO for an external link.
+ */
+export type ExternalLinkResponseDto = {
+    /**
+     * The unique identifier of an ExternalLink, assigned incrementally.
+     */
+    id: number;
+    /**
+     * The Dutch title for the external link.
+     */
+    titleDutch: string;
+    /**
+     * The English title for the external link.
+     */
+    titleEnglish: string;
+    /**
+     * The Dutch description for the external link.
+     */
+    descriptionDutch: string;
+    /**
+     * The English description for the external link.
+     */
+    descriptionEnglish: string;
+    /**
+     * The destination URL of the link.
+     */
+    url: string;
+    /**
+     * The order in which this link should be displayed.
+     */
+    sortOrder: number;
+    /**
+     * The storage path of the icon associated with this link.
+     */
+    iconPath?: string | null;
+};
+
+/**
+ * Defines the DTO for updating an external link.
+ */
+export type ExternalLinkUpdateDto = {
+    /**
+     * The Dutch title for the external link.
+     */
+    titleDutch: string;
+    /**
+     * The English title for the external link.
+     */
+    titleEnglish: string;
+    /**
+     * The Dutch description for the external link.
+     */
+    descriptionDutch: string;
+    /**
+     * The English description for the external link.
+     */
+    descriptionEnglish: string;
+    /**
+     * The destination URL of the link.
+     */
+    url: string;
+    /**
+     * The order in which this link should be displayed.
+     */
+    sortOrder: number;
+};
+
+/**
  * Represents the response DTO for an announcement, containing all relevant information about the announcement, including its properties and information about the creator. The GetAnnouncementResponseDTO is used to transfer comprehensive announcement data from the server to the client when retrieving announcement information, allowing for a complete representation of the announcement's details, creator information, and creation timestamp in the response payload.
  */
 export type GetAnnouncementResponseDto = {
@@ -1107,6 +1175,36 @@ export type PostEnrollmentDto = {
 };
 
 /**
+ * Defines the DTO for creating an external link.
+ */
+export type PostExternalLinkDto = {
+    /**
+     * The Dutch title for the external link.
+     */
+    titleDutch: string;
+    /**
+     * The English title for the external link.
+     */
+    titleEnglish: string;
+    /**
+     * The Dutch description for the external link.
+     */
+    descriptionDutch: string;
+    /**
+     * The English description for the external link.
+     */
+    descriptionEnglish: string;
+    /**
+     * The destination URL of the link.
+     */
+    url: string;
+    /**
+     * The order in which this link should be displayed.
+     */
+    sortOrder?: number | null;
+};
+
+/**
  * Defines the DTO for posting a group membership, containing the necessary information for creating a new group membership, including member ID, group ID, membership year, and an optional role alias ID. The PostGroupMembershipDTO is used to transfer data from the client to the server when creating a new group membership, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostGroupMembershipDto = {
@@ -1244,6 +1342,32 @@ export type PostPaymentResponse = {
 };
 
 /**
+ * Defines the DTO for creating a register reason, containing localized text and ordering.
+ */
+export type PostRegisterReasonDto = {
+    /**
+     * The Dutch title for the registration reason.
+     */
+    titleDutch: string;
+    /**
+     * The English title for the registration reason.
+     */
+    titleEnglish: string;
+    /**
+     * The Dutch description for the registration reason.
+     */
+    descriptionDutch: string;
+    /**
+     * The English description for the registration reason.
+     */
+    descriptionEnglish: string;
+    /**
+     * The order in which this reason should be displayed.
+     */
+    sortOrder?: number | null;
+};
+
+/**
  * Defines the DTO for posting a role alias, containing the necessary information for creating a new role alias, including its name and the associated parent role ID. The PostRoleAliasDTO is used to transfer data from the client to the server when creating a new role alias, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostRoleAliasDto = {
@@ -1328,6 +1452,94 @@ export type ProblemDetails = {
  * The type of a specification question, determining the content and format of the answers provided for this question. The QuestionType enum defines the possible types of specification questions, including String, Boolean, Number, Date, DateTime, and MultipleChoice. Each type corresponds to a specific format for the answers that can be provided for that question, allowing for better organization and management of different types of questions and their associated answers within the system.
  */
 export type QuestionType = 'String' | 'Boolean' | 'Number' | 'Date' | 'DateTime' | 'MultipleChoice';
+
+/**
+ * Represents the response DTO for a register reason.
+ */
+export type RegisterReasonResponseDto = {
+    /**
+     * The unique identifier of a RegisterReason, assigned incrementally.
+     */
+    id: number;
+    /**
+     * The Dutch title for the registration reason.
+     */
+    titleDutch: string;
+    /**
+     * The English title for the registration reason.
+     */
+    titleEnglish: string;
+    /**
+     * The Dutch description for the registration reason.
+     */
+    descriptionDutch: string;
+    /**
+     * The English description for the registration reason.
+     */
+    descriptionEnglish: string;
+    /**
+     * The order in which this reason should be displayed.
+     */
+    sortOrder: number;
+    /**
+     * The storage path of the icon associated with this reason.
+     */
+    iconPath?: string | null;
+};
+
+/**
+ * Defines the DTO for updating a register reason.
+ */
+export type RegisterReasonUpdateDto = {
+    /**
+     * The Dutch title for the registration reason.
+     */
+    titleDutch: string;
+    /**
+     * The English title for the registration reason.
+     */
+    titleEnglish: string;
+    /**
+     * The Dutch description for the registration reason.
+     */
+    descriptionDutch: string;
+    /**
+     * The English description for the registration reason.
+     */
+    descriptionEnglish: string;
+    /**
+     * The order in which this reason should be displayed.
+     */
+    sortOrder: number;
+};
+
+/**
+ * Represents the response DTO for a register slide.
+ */
+export type RegisterSlideResponseDto = {
+    /**
+     * The unique identifier of a register slide, assigned incrementally.
+     */
+    id: number;
+    /**
+     * The order in which this slide should be displayed.
+     */
+    sortOrder: number;
+    /**
+     * The storage path of the slide image.
+     */
+    imagePath?: string | null;
+};
+
+/**
+ * Defines the DTO for updating a register slide.
+ */
+export type RegisterSlideUpdateDto = {
+    /**
+     * The order in which this slide should be displayed.
+     */
+    sortOrder: number;
+};
 
 /**
  * A role for a member in a committee. E.g.: "Chair" or "Treasurer".
@@ -2675,6 +2887,225 @@ export type PutEnrollmentsByActivityIdByMemberIdResponses = {
 };
 
 export type PutEnrollmentsByActivityIdByMemberIdResponse = PutEnrollmentsByActivityIdByMemberIdResponses[keyof PutEnrollmentsByActivityIdByMemberIdResponses];
+
+export type GetExternallinksData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/externallinks';
+};
+
+export type GetExternallinksErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+};
+
+export type GetExternallinksError = GetExternallinksErrors[keyof GetExternallinksErrors];
+
+export type GetExternallinksResponses = {
+    /**
+     * OK
+     */
+    200: Array<ExternalLinkResponseDto>;
+};
+
+export type GetExternallinksResponse = GetExternallinksResponses[keyof GetExternallinksResponses];
+
+export type PostExternallinksData = {
+    body?: PostExternalLinkDto;
+    path?: never;
+    query?: never;
+    url: '/externallinks';
+};
+
+export type PostExternallinksErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostExternallinksError = PostExternallinksErrors[keyof PostExternallinksErrors];
+
+export type PostExternallinksResponses = {
+    /**
+     * Created
+     */
+    201: ExternalLinkResponseDto;
+};
+
+export type PostExternallinksResponse = PostExternallinksResponses[keyof PostExternallinksResponses];
+
+export type DeleteExternallinksByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/externallinks/{id}';
+};
+
+export type DeleteExternallinksByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteExternallinksByIdError = DeleteExternallinksByIdErrors[keyof DeleteExternallinksByIdErrors];
+
+export type DeleteExternallinksByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteExternallinksByIdResponse = DeleteExternallinksByIdResponses[keyof DeleteExternallinksByIdResponses];
+
+export type GetExternallinksByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/externallinks/{id}';
+};
+
+export type GetExternallinksByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetExternallinksByIdError = GetExternallinksByIdErrors[keyof GetExternallinksByIdErrors];
+
+export type GetExternallinksByIdResponses = {
+    /**
+     * OK
+     */
+    200: ExternalLinkResponseDto;
+};
+
+export type GetExternallinksByIdResponse = GetExternallinksByIdResponses[keyof GetExternallinksByIdResponses];
+
+export type PutExternallinksByIdData = {
+    body?: ExternalLinkUpdateDto;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/externallinks/{id}';
+};
+
+export type PutExternallinksByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PutExternallinksByIdError = PutExternallinksByIdErrors[keyof PutExternallinksByIdErrors];
+
+export type PutExternallinksByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutExternallinksByIdResponse = PutExternallinksByIdResponses[keyof PutExternallinksByIdResponses];
+
+export type GetExternallinksByIdIconData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/externallinks/{id}/icon';
+};
+
+export type GetExternallinksByIdIconErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetExternallinksByIdIconError = GetExternallinksByIdIconErrors[keyof GetExternallinksByIdIconErrors];
+
+export type GetExternallinksByIdIconResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type GetExternallinksByIdIconResponse = GetExternallinksByIdIconResponses[keyof GetExternallinksByIdIconResponses];
+
+export type PostExternallinksByIdIconData = {
+    body?: {
+        icon?: Blob | File;
+    };
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/externallinks/{id}/icon';
+};
+
+export type PostExternallinksByIdIconErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostExternallinksByIdIconError = PostExternallinksByIdIconErrors[keyof PostExternallinksByIdIconErrors];
+
+export type PostExternallinksByIdIconResponses = {
+    /**
+     * OK
+     */
+    200: UploadPictureResponse;
+};
+
+export type PostExternallinksByIdIconResponse = PostExternallinksByIdIconResponses[keyof PostExternallinksByIdIconResponses];
 
 export type GetGroupmembershipsData = {
     body?: never;
@@ -4276,6 +4707,456 @@ export type PostProfilepictureByIdProfilePictureResponses = {
 };
 
 export type PostProfilepictureByIdProfilePictureResponse = PostProfilepictureByIdProfilePictureResponses[keyof PostProfilepictureByIdProfilePictureResponses];
+
+export type GetRegisterreasonsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/registerreasons';
+};
+
+export type GetRegisterreasonsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+};
+
+export type GetRegisterreasonsError = GetRegisterreasonsErrors[keyof GetRegisterreasonsErrors];
+
+export type GetRegisterreasonsResponses = {
+    /**
+     * OK
+     */
+    200: Array<RegisterReasonResponseDto>;
+};
+
+export type GetRegisterreasonsResponse = GetRegisterreasonsResponses[keyof GetRegisterreasonsResponses];
+
+export type PostRegisterreasonsData = {
+    body?: PostRegisterReasonDto;
+    path?: never;
+    query?: never;
+    url: '/registerreasons';
+};
+
+export type PostRegisterreasonsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostRegisterreasonsError = PostRegisterreasonsErrors[keyof PostRegisterreasonsErrors];
+
+export type PostRegisterreasonsResponses = {
+    /**
+     * Created
+     */
+    201: RegisterReasonResponseDto;
+};
+
+export type PostRegisterreasonsResponse = PostRegisterreasonsResponses[keyof PostRegisterreasonsResponses];
+
+export type DeleteRegisterreasonsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerreasons/{id}';
+};
+
+export type DeleteRegisterreasonsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteRegisterreasonsByIdError = DeleteRegisterreasonsByIdErrors[keyof DeleteRegisterreasonsByIdErrors];
+
+export type DeleteRegisterreasonsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteRegisterreasonsByIdResponse = DeleteRegisterreasonsByIdResponses[keyof DeleteRegisterreasonsByIdResponses];
+
+export type GetRegisterreasonsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerreasons/{id}';
+};
+
+export type GetRegisterreasonsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRegisterreasonsByIdError = GetRegisterreasonsByIdErrors[keyof GetRegisterreasonsByIdErrors];
+
+export type GetRegisterreasonsByIdResponses = {
+    /**
+     * OK
+     */
+    200: RegisterReasonResponseDto;
+};
+
+export type GetRegisterreasonsByIdResponse = GetRegisterreasonsByIdResponses[keyof GetRegisterreasonsByIdResponses];
+
+export type PutRegisterreasonsByIdData = {
+    body?: RegisterReasonUpdateDto;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerreasons/{id}';
+};
+
+export type PutRegisterreasonsByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PutRegisterreasonsByIdError = PutRegisterreasonsByIdErrors[keyof PutRegisterreasonsByIdErrors];
+
+export type PutRegisterreasonsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutRegisterreasonsByIdResponse = PutRegisterreasonsByIdResponses[keyof PutRegisterreasonsByIdResponses];
+
+export type GetRegisterreasonsByIdIconData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerreasons/{id}/icon';
+};
+
+export type GetRegisterreasonsByIdIconErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRegisterreasonsByIdIconError = GetRegisterreasonsByIdIconErrors[keyof GetRegisterreasonsByIdIconErrors];
+
+export type GetRegisterreasonsByIdIconResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type GetRegisterreasonsByIdIconResponse = GetRegisterreasonsByIdIconResponses[keyof GetRegisterreasonsByIdIconResponses];
+
+export type PostRegisterreasonsByIdIconData = {
+    body?: {
+        icon?: Blob | File;
+    };
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerreasons/{id}/icon';
+};
+
+export type PostRegisterreasonsByIdIconErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostRegisterreasonsByIdIconError = PostRegisterreasonsByIdIconErrors[keyof PostRegisterreasonsByIdIconErrors];
+
+export type PostRegisterreasonsByIdIconResponses = {
+    /**
+     * OK
+     */
+    200: UploadPictureResponse;
+};
+
+export type PostRegisterreasonsByIdIconResponse = PostRegisterreasonsByIdIconResponses[keyof PostRegisterreasonsByIdIconResponses];
+
+export type GetRegisterslidesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/registerslides';
+};
+
+export type GetRegisterslidesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+};
+
+export type GetRegisterslidesError = GetRegisterslidesErrors[keyof GetRegisterslidesErrors];
+
+export type GetRegisterslidesResponses = {
+    /**
+     * OK
+     */
+    200: Array<RegisterSlideResponseDto>;
+};
+
+export type GetRegisterslidesResponse = GetRegisterslidesResponses[keyof GetRegisterslidesResponses];
+
+export type PostRegisterslidesData = {
+    /**
+     * Defines the DTO for creating a register slide.
+     */
+    body?: {
+        /**
+         * The image to upload for the slide.
+         */
+        Image: Blob | File;
+        /**
+         * The order in which this slide should be displayed.
+         */
+        SortOrder?: number;
+    };
+    path?: never;
+    query?: never;
+    url: '/registerslides';
+};
+
+export type PostRegisterslidesErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostRegisterslidesError = PostRegisterslidesErrors[keyof PostRegisterslidesErrors];
+
+export type PostRegisterslidesResponses = {
+    /**
+     * Created
+     */
+    201: RegisterSlideResponseDto;
+};
+
+export type PostRegisterslidesResponse = PostRegisterslidesResponses[keyof PostRegisterslidesResponses];
+
+export type DeleteRegisterslidesByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerslides/{id}';
+};
+
+export type DeleteRegisterslidesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteRegisterslidesByIdError = DeleteRegisterslidesByIdErrors[keyof DeleteRegisterslidesByIdErrors];
+
+export type DeleteRegisterslidesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteRegisterslidesByIdResponse = DeleteRegisterslidesByIdResponses[keyof DeleteRegisterslidesByIdResponses];
+
+export type GetRegisterslidesByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerslides/{id}';
+};
+
+export type GetRegisterslidesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRegisterslidesByIdError = GetRegisterslidesByIdErrors[keyof GetRegisterslidesByIdErrors];
+
+export type GetRegisterslidesByIdResponses = {
+    /**
+     * OK
+     */
+    200: RegisterSlideResponseDto;
+};
+
+export type GetRegisterslidesByIdResponse = GetRegisterslidesByIdResponses[keyof GetRegisterslidesByIdResponses];
+
+export type PutRegisterslidesByIdData = {
+    body?: RegisterSlideUpdateDto;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerslides/{id}';
+};
+
+export type PutRegisterslidesByIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PutRegisterslidesByIdError = PutRegisterslidesByIdErrors[keyof PutRegisterslidesByIdErrors];
+
+export type PutRegisterslidesByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutRegisterslidesByIdResponse = PutRegisterslidesByIdResponses[keyof PutRegisterslidesByIdResponses];
+
+export type GetRegisterslidesByIdImageData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerslides/{id}/image';
+};
+
+export type GetRegisterslidesByIdImageErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRegisterslidesByIdImageError = GetRegisterslidesByIdImageErrors[keyof GetRegisterslidesByIdImageErrors];
+
+export type GetRegisterslidesByIdImageResponses = {
+    /**
+     * OK
+     */
+    200: Blob | File;
+};
+
+export type GetRegisterslidesByIdImageResponse = GetRegisterslidesByIdImageResponses[keyof GetRegisterslidesByIdImageResponses];
+
+export type PostRegisterslidesByIdImageData = {
+    body?: {
+        image?: Blob | File;
+    };
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registerslides/{id}/image';
+};
+
+export type PostRegisterslidesByIdImageErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostRegisterslidesByIdImageError = PostRegisterslidesByIdImageErrors[keyof PostRegisterslidesByIdImageErrors];
+
+export type PostRegisterslidesByIdImageResponses = {
+    /**
+     * OK
+     */
+    200: UploadPictureResponse;
+};
+
+export type PostRegisterslidesByIdImageResponse = PostRegisterslidesByIdImageResponses[keyof PostRegisterslidesByIdImageResponses];
 
 export type GetRolealiasesData = {
     body?: never;

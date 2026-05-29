@@ -130,7 +130,7 @@ public abstract class AbstractMailService
     /// </summary>
     /// <param name="promotedEnrollment">The enrollment that has been promoted from the waiting list to enrolled status.</param>
     /// <returns>A task representing the asynchronous operation of sending the enrollment promotion email.</returns>
-    public async Task SendEnrollmentPromotionEmail(Enrollment promotedEnrollment)
+    public virtual async Task SendEnrollmentPromotionEmail(Enrollment promotedEnrollment)
     {
         var sender = _db.Settings.Where(s => s.Name == "ActivityUpdateEmailSender").Select(s => s.Value).FirstOrDefault();
         if(string.IsNullOrEmpty(sender))
@@ -214,7 +214,17 @@ public abstract class AbstractMailService
             return;
         }
 
-        var membersToMail = _db.Members.Include(m => m.StudyEnrollments).ThenInclude(se => se.Study).Where(m => m.StudyEnrollments.Any(se => se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now && se.Status != StudyStatus.Completed)).ToList();
+        var potentialMembers = _db.Members
+            .Include(m => m.StudyEnrollments)
+            .ThenInclude(se => se.Study)
+            .Where(m => m.StudyEnrollments.Any(se => se.Status != StudyStatus.Completed))
+            .ToList();
+
+        var membersToMail = potentialMembers
+            .Where(m => m.StudyEnrollments.Any(se => 
+                se.Status != StudyStatus.Completed &&
+                se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now))
+            .ToList();
 
         foreach (var member in membersToMail)
         {
@@ -302,8 +312,14 @@ public abstract class AbstractMailService
     protected string StripHtml(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
-        text = Regex.Replace(text, @"<(?:br\/?|\/p)>", "\r\n", RegexOptions.IgnoreCase);
+        
+        // Replace breaks, closing paragraphs, opening paragraphs, and closing headers with a newline
+        text = Regex.Replace(text, @"<(?:br\/?|\/p|<p>|\/h[1-6])>", "\r\n", RegexOptions.IgnoreCase);
+        
+        // Strip out all remaining HTML tags
         text = Regex.Replace(text, @"<[^>]*>", string.Empty);
+        
+        // Clean up excessive spacing
         text = Regex.Replace(text, @" +", " ");
         return Regex.Replace(text, @"[\r\n]{2,}", "\r\n").Trim();
     }

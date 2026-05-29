@@ -15,6 +15,8 @@ export const isInGroupWithName = (
 ): boolean => {
   const year = getAssociationYear();
 
+  if (!tokenParsed.group_memberships) return false;
+
   return tokenParsed.group_memberships.some((g: string) => {
     const [gYear, gGroup, gRole] = g.split(":");
 
@@ -42,6 +44,8 @@ export const isInGroupWithId = (
   role?: string,
 ): boolean => {
   const year = getAssociationYear();
+
+  if (!tokenParsed.group_memberships) return false;
 
   return tokenParsed.group_memberships.some((g: string) => {
     const [gYear, gGroup, gRole] = g.split(":");

@@ -64,7 +64,7 @@ public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<Abstr
     /// <param name="id">The unique identifier of the payment transaction.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     /// <exception cref="Exception">Thrown when the payment is not found.</exception>
-    public async Task HandleWebhookAsync(string id)
+    public virtual async Task HandleWebhookAsync(string id)
     {
         logger.LogInformation("Handling payment service webhook for payment id {Id}.", id);
         GetPaymentResponse result = await GetPaymentAsync(id);

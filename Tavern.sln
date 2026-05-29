@@ -1,20 +1,51 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend", "Backend/Backend.csproj", "{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend", "Backend\Backend.csproj", "{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}"
 EndProject
+<<<<<<< HEAD
+=======
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Backend.Tests", "Backend.Tests\Backend.Tests.csproj", "{4B785E75-4C61-4D38-B864-512497FBFABC}"
+EndProject
+>>>>>>> db7a98c (Feat: Add backend tests, update readme and add architecture documentation)
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Debug|x64.Build.0 = Debug|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Debug|x86.Build.0 = Debug|Any CPU
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{81B12030-2CDD-4AF2-A8FC-D8B3AD63299B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{81B12030-2CDD-4AF2-A8FC-D8B3AD63299B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{81B12030-2CDD-4AF2-A8FC-D8B3AD63299B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{81B12030-2CDD-4AF2-A8FC-D8B3AD63299B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x64.ActiveCfg = Release|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x64.Build.0 = Release|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x86.ActiveCfg = Release|Any CPU
+		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x86.Build.0 = Release|Any CPU
+<<<<<<< HEAD
+=======
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x64.Build.0 = Debug|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x86.Build.0 = Debug|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x64.ActiveCfg = Release|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x64.Build.0 = Release|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x86.ActiveCfg = Release|Any CPU
+		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x86.Build.0 = Release|Any CPU
+>>>>>>> db7a98c (Feat: Add backend tests, update readme and add architecture documentation)
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

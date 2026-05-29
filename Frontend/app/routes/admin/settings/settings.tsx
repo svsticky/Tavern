@@ -1,9 +1,12 @@
-import ManageMailingListsDatatable from "Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
+import ManageMailingListsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import { t } from "i18next";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { GroupResponseDto, Role } from "~/api";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
+import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
+import ManageRegisterSlidesDatatable from "~/components/Register/ManageRegisterSlidesDatatable/ManageRegisterSlidesDatatable";
+import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
@@ -92,6 +95,21 @@ export default function SettingsPage() {
         <div>
           <FormHeader title={t("mail_subscriptions")} />
           <ManageMailingListsDatatable />
+        </div>
+
+        <div>
+          <FormHeader title={t("registration_reasons")} />
+          <ManageRegisterReasonsDatatable />
+        </div>
+
+        <div>
+          <FormHeader title={t("registration_slideshow")} />
+          <ManageRegisterSlidesDatatable />
+        </div>
+
+        <div>
+          <FormHeader title={t("external_links")} />
+          <ManageExternalLinksDatatable />
         </div>
 
         <Form>

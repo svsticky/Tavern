@@ -1,7 +1,7 @@
 import { defineConfig } from '@hey-api/openapi-ts';
 
 export default defineConfig({
-  input: `${import.meta.env.ApiUrl}/swagger/v1/swagger.json`,
+  input: 'http://localhost:8080/swagger/v1/swagger.json',
   output: {
     format: 'biome',
     lint: 'biome',

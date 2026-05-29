@@ -1,0 +1,105 @@
+---
+title: Backend Architecture
+description: Detailed architectural breakdown of the ASP.NET Core 8 Web API backend and pluggable providers.
+---
+
+Tavern's backend is implemented using **ASP.NET Core 8.0 Web API** and adheres to structured software design patterns ensuring separation of concerns, transactional safety, and eventual consistency.
+
+---
+
+## Architectural Layout (N-Tier Pattern)
+
+The codebase is organized into layers separating HTTP transport logic, data management, and business logic helper services:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                      Controllers                       │
+│    HTTP Request Handling, JSON serialization/routing    │
+└──────────────────────────┬─────────────────────────────┘
+                           │ (Direct Repository Call)
+┌──────────────────────────▼─────────────────────────────┐
+│                     Repositories                       │
+│     EF Core operations, data queries, transactions      │
+│     (Injects and uses Services for validation/auth)     │
+└──────────────────────────┬──────────────┬──────────────┘
+                           │              │
+ ┌─────────────────────────▼──┐        ┌──▼────────────────────────┐
+ │   PostgreSQL (Database)    │        │  Services (Helper logic)  │
+ └────────────────────────────┘        └───────────────────────────┘
+```
+
+1. **Controllers:** Manage REST API endpoints, validate incoming request models, serialize responses, and translate domain errors to appropriate HTTP Status Codes (e.g., `200 OK`, `400 BadRequest`, `403 Forbidden`, `404 NotFound`). They communicate directly with repositories to command and query data.
+2. **Repositories:** Interface directly with Entity Framework Core (`PostgresDbContext`) to query and modify database entities. They contain the primary orchestration of the data transactions and inject business helper services to perform checks before committing changes.
+3. **Services:** House business logic helpers. For example, `PaymentValidationService` verifies membership and activity payment records, and `PermissionService` checks group memberships. These services are injected into repositories or outbox workers rather than controllers.
+
+---
+
+## Pluggable Integration Services (Strategy Pattern)
+
+To avoid hard coupling to specific third-party SaaS APIs, Tavern encapsulates external interactions behind interfaces. The concrete implementations are instantiated dynamically at startup based on the environment variables defined in `ServiceExtensions.cs`:
+
+| Interface | Purpose | Concrete Implementations | Configuration Variables |
+| :--- | :--- | :--- | :--- |
+| **`IAuthService`** | User profile creation, realm sync, authentication | `KeycloakAPIService` | `AUTH_SYSTEM=keycloak` |
+| **`IStorageService`** | Object photo upload and storage management | `S3StorageService` | `S3_SERVICE_URL`, `AWS_ACCESS_KEY_ID` |
+| **`AbstractPaymentService`** | Generating checkout intents, webhook parsing | `MollieService` | `PAYMENT_PROVIDER=mollie` |
+| **`AbstractMailService`** | Dispatching system emails and invoices | `MailgunService`<br/>`SMTPMailService` | `MAIL_SERVICE=MAILGUN`<br/>`MAIL_SERVICE=SMTP` |
+| **`IAccountingToolService`** | Syncing payments to bookkeeping ledgers | `ExactService` | `ACCOUNTING_SERVICE=EXACT` |
+| **`IMailSubscriptionService`** | Managing user newsletter subscription states | `MailChimpSubscriptionService` | `MAIL_SUBSCRIPTION_SERVICE=MAILCHIMP` |
+
+By structuring integrations this way, developers can easily write a new class (e.g. `Auth0APIService` or `StripePaymentService`) implementing the respective interface and register it inside `ServiceExtensions.cs` without having to change the core database models or controller routes.
+
+---
+
+## Background Processing (Hangfire)
+
+To avoid blocking HTTP threads during long-running tasks, Tavern uses **Hangfire** for scheduling and executing background jobs:
+* **Storage:** Job states and execution history are stored in dedicated schema tables inside the PostgreSQL database.
+* **Concurrency:** Runs on isolated worker pools, ensuring API responsiveness is never degraded by background operations.
+* **Tasks Managed:** Processing outbox queues, updating user email records from Keycloak, executing nightly payment syncs, and broadcasting transactional notifications.
+
+---
+
+## Transactional Outbox Pattern
+
+To achieve reliable integration with third-party APIs without sacrificing database transactional safety, Tavern implements the **Transactional Outbox Pattern**:
+
+```mermaid
+sequenceDiagram
+    participant API as Controller / Service
+    participant DB as Postgres Database
+    participant HB as Hangfire Background Job
+    participant Ext as Pluggable Provider (e.g. Keycloak)
+
+    API->>DB: 1. Save Entity Changes (e.g. Create Member)
+    API->>DB: 2. Write Outbox Task (Atomic Transaction)
+    DB-->>API: Transaction Committed Successfully
+    API-->>API: Finish HTTP request (Fast Response)
+    
+    loop Polling Loop
+        HB->>DB: 3. Fetch Pending Outbox Tasks
+        HB->>Ext: 4. Dispatch API Request (Via Interface)
+        Ext-->>HB: Response OK
+        HB->>DB: 5. Mark Outbox Task as Complete
+    end
+```
+
+### Why we use this pattern:
+If the API attempted to write directly to database tables AND call third-party HTTP endpoints within a single request, a network failure would leave the system in an inconsistent state (e.g., database updated, but Keycloak synchronization failed).
+By writing a record of the sync request into the database in the *same* transaction as the primary entity changes, we guarantee eventually consistent operations.
+
+### Outbox Tasks & Workers:
+* **`AuthOutboxTask` / `AuthOutboxWorker`:** Synchronizes user registrations and updates with the configured `IAuthService`.
+* **`MailSubscriptionOutboxTask` / `MailSubscriptionOutboxWorker`:** Syncs user newsletter choices with the configured `IMailSubscriptionService`.
+* **`AccountingToolOutboxTask` / `AccountingToolOutboxWorker`:** Exports payment and sales records to the configured `IAccountingToolService`.
+
+---
+
+## Payment Lifecycle & Webhook Synchronization
+
+Tavern integrates with payment providers via `AbstractPaymentService`:
+
+1. **Initiation:** The member requests an activity enrollment or membership purchase. The API generates a payment intent URL via the active provider and returns it.
+2. **Webhook Endpoint:** When the member completes payment, the provider invokes our webhook endpoint (`PaymentsController.HandleWebhookAsync`).
+3. **Event Processing:** The webhook validates the event signature and runs `AbstractPaymentService.ProcessPaidPayments` to record the paid amount and activate the registration.
+4. **Resiliency Sync:** In case a webhook fails or is dropped, the `PaymentSyncService` runs a recurring Hangfire loop checking for uncompleted payment intents and synchronizing their statuses directly from the provider's status API.

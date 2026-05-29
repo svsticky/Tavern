@@ -83,7 +83,7 @@ export default function ActivitiesPage() {
 
   if (!tokenParsed) return null;
 
-  const isInGroup = tokenParsed.group_memberships.length > 0;
+  const isInGroup = (tokenParsed.group_memberships || []).length > 0;
 
   return (
     <>
