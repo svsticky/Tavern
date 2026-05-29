@@ -22,12 +22,12 @@ export function generateIndexFiles(
 
     // Create links for the index
     const folderLinks = folders
-        .map((f) => `- [${f}](./${path.basename(baseDir)}/${f})`)
+        .map((f) => `- [${f}](./${f})`)
         .join("\n");
     const fileLinks = files
         .map(
             (f) =>
-                `- [${f.replace("mdx", "")}](./${path.basename(baseDir)}/${f.replace(".mdx", "")})`,
+                `- [${f.replace(".mdx", "")}](./${f.replace(".mdx", "")})`,
         )
         .join("\n");
     const links =

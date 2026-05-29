@@ -43,6 +43,10 @@ public static class MemberProjections
                     .ToList()
                 : null,
             Suspended = isBoard || userId == m.Id ? m.Suspended : (bool?)null,
+            Gratie = isBoard || userId == m.Id ? m.Gratie : (bool?)null,
+            LidVanVerdienste = isBoard || userId == m.Id ? m.LidVanVerdienste : (bool?)null,
+            EreLid = isBoard || userId == m.Id ? m.EreLid : (bool?)null,
+            Begunstiger = isBoard || userId == m.Id ? m.Begunstiger : (bool?)null,
             GroupMemberships = isBoard || userId == m.Id
                 ? m.GroupMemberships
                     .AsQueryable()

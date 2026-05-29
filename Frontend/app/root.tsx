@@ -18,10 +18,47 @@ import { t } from "i18next";
 import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
 import { getEnv } from "./util/config.utils";
+import Cookies from "js-cookie";
+import { getActiveAuthService } from "./layout/auth-service";
 
 client.setConfig({
   baseURL: getEnv("ApiUrl") ?? "http://localhost:8080",
+  auth: async () => {
+    const authService = getActiveAuthService();
+    if (authService && authService.isReady() && authService.isAuthenticated()) {
+      const token = await authService.getToken();
+      if (token) {
+        Cookies.set("access_token", token, {
+          path: "/",
+          secure: true,
+          sameSite: "none",
+          domain: `.${window.location.hostname}`,
+        });
+        return token;
+      }
+    }
+    return undefined;
+  },
 });
+
+client.instance.interceptors.response.use(
+  async (response) => response,
+  (error) => {
+    if (error.response) {
+      if (error.response.status === 401) {
+        console.warn("Unauthorized, redirecting...");
+        window.location.href = "/logout";
+      } else if (error.response.status === 403) {
+        console.warn(
+          "Forbidden - user does not have access to this resource.",
+        );
+        window.location.href = "/";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -83,12 +120,24 @@ export default function App() {
       );
 
     setIsClient(true);
-    if (i18n.isInitialized) {
-      setI18nReady(true);
-    } else {
-      const handleInitialized = () => setI18nReady(true);
-      i18n.on("initialized", handleInitialized);
-      return () => i18n.off("initialized", handleInitialized);
+    const checkI18n = () => {
+      if (i18n.isInitialized && i18n.hasLoadedNamespace("translation")) {
+        setI18nReady(true);
+        return true;
+      }
+      return false;
+    };
+
+    if (!checkI18n()) {
+      const handleEvent = () => {
+        checkI18n();
+      };
+      i18n.on("initialized", handleEvent);
+      i18n.on("loaded", handleEvent);
+      return () => {
+        i18n.off("initialized", handleEvent);
+        i18n.off("loaded", handleEvent);
+      };
     }
   }, []);
 

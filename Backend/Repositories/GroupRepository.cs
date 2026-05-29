@@ -6,6 +6,8 @@ using Backend.Projections;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
+using System.IO;
 
 namespace Backend.Repositories;
 
@@ -18,6 +20,7 @@ public class GroupRepository : IGroupRepository
     private readonly IPermissionService _permissionService;
     private readonly IFileCompressService _fileCompressService;
     private readonly IStorageService _storageService;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILogger<GroupRepository> _logger;
 
     /// <summary>
@@ -27,13 +30,21 @@ public class GroupRepository : IGroupRepository
     /// <param name="permissionService">The permission service.</param>
     /// <param name="fileCompressService">The file compression service.</param>
     /// <param name="storageService">The storage service.</param>
+    /// <param name="memoryCache">The memory cache service.</param>
     /// <param name="logger">The logger.</param>
-    public GroupRepository(PostgresDbContext db, IPermissionService permissionService, IFileCompressService fileCompressService, IStorageService storageService, ILogger<GroupRepository> logger)
+    public GroupRepository(
+        PostgresDbContext db,
+        IPermissionService permissionService,
+        IFileCompressService fileCompressService,
+        IStorageService storageService,
+        IMemoryCache memoryCache,
+        ILogger<GroupRepository> logger)
     {
         _db = db;
         _permissionService = permissionService;
         _fileCompressService = fileCompressService;
         _storageService = storageService;
+        _memoryCache = memoryCache;
         _logger = logger;
     }
 
@@ -104,13 +115,29 @@ public class GroupRepository : IGroupRepository
     /// <inheritdoc />
     public async Task<FileResultDto?> GetGroupPictureFile(string path)
     {
+        string cacheKey = $"group-pic-{path}";
+        if (_memoryCache.TryGetValue(cacheKey, out (byte[] bytes, string contentType) cached))
+        {
+            return new FileResultDto
+            {
+                Stream = new MemoryStream(cached.bytes),
+                ContentType = cached.contentType
+            };
+        }
+
         var file = await _storageService.GetFileAsync("group-pictures", path);
 
         if (file == null) return null;
 
+        using var memoryStream = new MemoryStream();
+        await file.Stream.CopyToAsync(memoryStream);
+        byte[] bytes = memoryStream.ToArray();
+
+        _memoryCache.Set(cacheKey, (bytes, file.ContentType), TimeSpan.FromHours(1));
+
         return new FileResultDto
         {
-            Stream = file.Stream,
+            Stream = new MemoryStream(bytes),
             ContentType = file.ContentType
         };
     }
@@ -124,7 +151,10 @@ public class GroupRepository : IGroupRepository
         var group = await GetGroupOrThrow(id, cancellationToken);
 
         if (group.GroupPicturePath != null)
+        {
             await _storageService.DeleteFileAsync("group-pictures", group.GroupPicturePath);
+            _memoryCache.Remove($"group-pic-{group.GroupPicturePath}");
+        }
 
         _db.Groups.Remove(group);
         await _db.SaveChangesAsync(cancellationToken);
@@ -205,6 +235,7 @@ public class GroupRepository : IGroupRepository
             if (!string.IsNullOrEmpty(oldPath))
             {
                 await _storageService.DeleteFileAsync("group-pictures", oldPath);
+                _memoryCache.Remove($"group-pic-{oldPath}");
             }
 
             return group.GroupPicturePath;
@@ -220,7 +251,7 @@ public class GroupRepository : IGroupRepository
     /// <inheritdoc />
     public async Task<uint> GetBoardGroupId(CancellationToken cancellationToken)
     {
-        var setting = await _db.Settings.FindAsync(new [] { "BoardGroupId" }, cancellationToken);
+        var setting = await _db.Settings.FindAsync(new object[] { "BoardGroupId" }, cancellationToken);
         if (setting == null || !uint.TryParse(setting.Value, out uint boardGroupId))
             throw new KeyNotFoundException("BoardGroupId setting is missing or invalid.");
 
@@ -230,7 +261,7 @@ public class GroupRepository : IGroupRepository
     /// <inheritdoc />
     public async Task<uint> GetCandidateBoardGroupId(CancellationToken cancellationToken)
     {
-        var setting = await _db.Settings.FindAsync(new[] { "CandidateBoardGroupId" }, cancellationToken);
+        var setting = await _db.Settings.FindAsync(new object[] { "CandidateBoardGroupId" }, cancellationToken);
         if (setting == null || !uint.TryParse(setting.Value, out uint candidateBoardGroupId))
             throw new KeyNotFoundException("CandidateBoardGroupId setting is missing or invalid.");
 

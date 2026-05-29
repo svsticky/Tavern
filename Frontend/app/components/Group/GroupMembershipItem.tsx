@@ -18,7 +18,7 @@ export default function GroupMembershipItem({
   fallbackUrl: string;
 }) {
   const [imageUrl, setImageUrl] = useState(
-    `${getEnv("ApiUrl")}/api/groups/${groupMembership.groupId}/group-picture`,
+    `${getEnv("ApiUrl")}/groups/${groupMembership.groupId}/group-picture`,
   );
 
   return (

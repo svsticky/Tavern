@@ -1,0 +1,48 @@
+---
+title: System Architecture
+description: Overview of the core system architecture, decoupled components, and provider-based abstraction model in Tavern.
+---
+
+Tavern is built on a modern decoupled architecture that separates user interface interactions from business rule processing and transactional tasks.
+
+A key architectural design principle in Tavern is the **Dependency Inversion Principle**. Core services do not depend directly on concrete third-party services (such as Keycloak, Mollie, or MailChimp). Instead, they interact via abstract interfaces. Concrete provider implementations (Adapters) are dynamically registered at startup based on environment variables.
+
+```mermaid
+graph TD
+    Client["Client Browser (React Router v7 SPA)"]
+    Backend["Backend API (.NET 8.0)"]
+    DB[("PostgreSQL 17 Database")]
+    Hangfire["Hangfire (Job Processing)"]
+
+    subgraph Abstractions & Pluggable Providers
+        IAuth["IAuthService"] -->|Default| Keycloak["Keycloak (OIDC)"]
+        IPay["AbstractPaymentService"] -->|Default| Mollie["Mollie API"]
+        IStore["IStorageService"] -->|Default| S3["AWS S3 / LocalStack"]
+        IMail["AbstractMailService"] -->|Default| Mailgun["Mailgun / SMTP"]
+        IAcct["IAccountingToolService"] -->|Default| Exact["Exact Online"]
+        IMailSub["IMailSubscriptionService"] -->|Default| MailChimp["MailChimp"]
+    end
+
+    Client -->|1. Authenticate| IAuth
+    Client -->|2. Send JWT Token| Backend
+    Backend -->|3. Query/Persist| DB
+    Backend -->|4. Store Files| IStore
+    Backend -->|5. Outbox Queue| Hangfire
+    Backend -->|6. Process Payments| IPay
+    
+    Hangfire -->|7. Dispatch Jobs| IAcct
+    Hangfire -->|8. Sync Webhooks| DB
+    Hangfire -->|9. Send Notifications| IMail
+    Hangfire -->|10. Sync Subscriptions| IMailSub
+```
+
+### Core Architecture Components
+
+Select one of the following architectural breakdowns to learn more:
+
+* **[Backend Architecture](./Architecture/Backend)**
+  Detailed layout of the ASP.NET Core Web API layers, transactional outbox pattern, and pluggable integration interfaces.
+* **[Frontend Architecture](./Architecture/Frontend)**
+  Visual design system, state tracking, and integration with authentication providers on the client.
+* **[Devcontainer Architecture](./Architecture/Devcontainer)**
+  Orchestration of Docker container environments (PostgreSQL, Keycloak, LocalStack, Ngrok) facilitating fully simulated local development.

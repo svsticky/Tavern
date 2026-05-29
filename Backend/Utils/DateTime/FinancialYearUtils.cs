@@ -13,12 +13,22 @@ public static class FinancialYearUtils
     /// <returns>The current financial year.</returns>
     public static uint GetCurrentFinancialYear()
     {
+        return GetCurrentFinancialYear(System.DateTime.UtcNow);
+    }
+
+    /// <summary>
+    /// Determines the financial year based on a provided UTC date and time in the Netherlands.
+    /// </summary>
+    /// <param name="utcNow">The UTC date and time to calculate the financial year for.</param>
+    /// <returns>The calculated financial year.</returns>
+    public static uint GetCurrentFinancialYear(System.DateTime utcNow)
+    {
         string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
             ? "W. Europe Standard Time" 
             : "Europe/Amsterdam";
         
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(System.DateTime.UtcNow, tz);
+        System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
         return nowInNetherlands.Month >= 8 
             ? (uint)nowInNetherlands.Year + 1 

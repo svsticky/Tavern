@@ -2,6 +2,8 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
+using Microsoft.Extensions.Caching.Memory;
+using System.IO;
 
 namespace Backend.Repositories
 {
@@ -13,6 +15,7 @@ namespace Backend.Repositories
         IStorageService storageService,
         IPermissionService permissionService,
         IFileCompressService fileCompressor,
+        IMemoryCache memoryCache,
         ILogger<ProfilePictureRepository> logger
     ) : IProfilePictureRepository
     {
@@ -20,11 +23,22 @@ namespace Backend.Repositories
         public async Task<(Stream Stream, string ContentType)?> GetProfilePictureByPath(string path)
         {
             var decodedPath = Uri.UnescapeDataString(path);
+            string cacheKey = $"prof-pic-{decodedPath}";
+            if (memoryCache.TryGetValue(cacheKey, out (byte[] bytes, string contentType) cached))
+            {
+                return (new MemoryStream(cached.bytes), cached.contentType);
+            }
 
             var file = await storageService.GetFileAsync("profile-pictures", decodedPath);
             if (file == null) return null;
 
-            return (file.Stream, file.ContentType);
+            using var memoryStream = new MemoryStream();
+            await file.Stream.CopyToAsync(memoryStream);
+            byte[] bytes = memoryStream.ToArray();
+
+            memoryCache.Set(cacheKey, (bytes, file.ContentType), TimeSpan.FromHours(1));
+
+            return (new MemoryStream(bytes), file.ContentType);
         }
 
         /// <inheritdoc />
@@ -100,6 +114,7 @@ namespace Backend.Repositories
             if (!string.IsNullOrEmpty(oldPath))
             {
                 await storageService.DeleteFileAsync("profile-pictures", oldPath);
+                memoryCache.Remove($"prof-pic-{oldPath}");
             }
         }
     }

@@ -8,6 +8,7 @@ using Backend.QueryExtensions;
 using Backend.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Backend.Services.PaymentServices;
 
 namespace Backend.Repositories
@@ -24,6 +25,7 @@ namespace Backend.Repositories
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
         IAuthService authService,
+        IMemoryCache memoryCache,
         ILogger<MemberRepository> logger
     ) : IMemberRepository
     {
@@ -163,7 +165,11 @@ namespace Backend.Repositories
                 db.Members.Remove(member);
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
                 
-                await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath ?? "");
+                if (!string.IsNullOrEmpty(member.ProfilePicturePath))
+                {
+                    await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath);
+                    memoryCache.Remove($"prof-pic-{member.ProfilePicturePath}");
+                }
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -277,6 +283,7 @@ namespace Backend.Repositories
             await db.SaveChangesAsync(cancellationToken);
 
             await storageService.DeleteFileAsync("profile-pictures", oldPath);
+            memoryCache.Remove($"prof-pic-{oldPath}");
             logger.LogInformation("Deleted profile picture for member {MemberId}.", id);
         }
 

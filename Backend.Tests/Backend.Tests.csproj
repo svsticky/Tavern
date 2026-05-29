@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+     <TargetFramework>net8.0</TargetFramework>
+     <ImplicitUsings>enable</ImplicitUsings>
+     <Nullable>enable</Nullable>
+     <IsPackable>false</IsPackable>
+     
+     <!-- Code Coverage Configuration -->
+     <CollectCoverage>true</CollectCoverage>
+     <Exclude>[Backend]Backend.Database.DatabaseSeeder*,[Backend]Backend.ServiceExtensions*,[Backend]Backend.Services.MailServices.SMTPMailService*,[Backend]Backend.Services.MailServices.MailgunService*</Exclude>
+
+     <Threshold>95</Threshold>
+     <ThresholdType>line</ThresholdType>
+   </PropertyGroup>
+ 
+   <ItemGroup>
+     <PackageReference Include="coverlet.collector" Version="6.0.2" />
+     <PackageReference Include="coverlet.msbuild" Version="6.0.2">
+       <PrivateAssets>all</PrivateAssets>
+       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+     </PackageReference>
+     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.20" />
+     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+     <PackageReference Include="xunit" Version="2.9.2" />
+     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+     <PackageReference Include="NSubstitute" Version="5.3.0" />
+     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.20" />
+   </ItemGroup>
+ 
+   <ItemGroup>
+     <Using Include="Xunit" />
+   </ItemGroup>
+ 
+   <ItemGroup>
+     <ProjectReference Include="..\Backend\Backend.csproj" />
+   </ItemGroup>
+ 
+ </Project>

@@ -47,13 +47,31 @@ export function formatDate(date: Date, format: DateFormatType): string {
  * @returns The current association year.
  */
 export const getAssociationYear = (): number => {
-  const nlDateString = new Date().toLocaleString("en-US", {
-    timeZone: "Europe/Amsterdam",
-  });
-  const now = new Date(nlDateString);
+  try {
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Amsterdam",
+      year: "numeric",
+      month: "numeric",
+    });
+    const parts = formatter.formatToParts(new Date());
+    const yearPart = parts.find((p) => p.type === "year")?.value;
+    const monthPart = parts.find((p) => p.type === "month")?.value;
 
+    if (yearPart && monthPart) {
+      const year = parseInt(yearPart, 10);
+      const month = parseInt(monthPart, 10) - 1; // Convert 1-indexed to 0-indexed
+      return month >= 7 ? year + 1 : year;
+    }
+  } catch (error) {
+    console.error(
+      "Failed to format date with Europe/Amsterdam timezone",
+      error,
+    );
+  }
+
+  // Fallback to local time if formatting fails
+  const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
-
   return month >= 7 ? year + 1 : year;
 };

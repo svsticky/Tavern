@@ -1,7 +1,16 @@
 import React from "react";
 import { Outlet } from "react-router";
+import type { IAuthService } from "~/auth/IAuthService";
 import { KeycloakAuthService } from "~/auth/KeycloakService";
 import { getEnv } from "~/util/config.utils";
+
+let activeAuthService: IAuthService | null = null;
+
+/**
+ * Returns the currently active authentication service instance.
+ */
+export const getActiveAuthService = (): IAuthService | null =>
+  activeAuthService;
 
 /**
  * Layout component responsible for providing authentication context to the app.
@@ -14,10 +23,12 @@ export default function AuthServiceLayout() {
     .toLowerCase();
 
   const authService = React.useMemo(() => {
+    let service: IAuthService | null = null;
     if (authServiceVar === "keycloak") {
-      return new KeycloakAuthService();
+      service = new KeycloakAuthService();
     }
-    return null;
+    activeAuthService = service;
+    return service;
   }, [authServiceVar]);
 
   if (!authService) {

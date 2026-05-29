@@ -10,6 +10,8 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using Backend.Utils.DateTime;
+using Microsoft.Extensions.Caching.Memory;
+using System.IO;
 
 namespace Backend.Repositories;
 
@@ -24,6 +26,7 @@ public class ActivityRepository : IActivityRepository
     private readonly IPermissionService _permissionService;
     private readonly IEnrollmentRepository _enrollmentRepository;
     private readonly AbstractMailService _mailService;
+    private readonly IMemoryCache _memoryCache;
     private readonly ILogger<ActivityRepository> _logger;
 
     private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
@@ -38,6 +41,7 @@ public class ActivityRepository : IActivityRepository
     /// <param name="permissionService">The permission service.</param>
     /// <param name="enrollmentRepository">The enrollment repository.</param>
     /// <param name="mailService">The mail service.</param>
+    /// <param name="memoryCache">The memory cache service.</param>
     /// <param name="logger">The logger.</param>
     public ActivityRepository(
         PostgresDbContext db,
@@ -46,6 +50,7 @@ public class ActivityRepository : IActivityRepository
         IPermissionService permissionService,
         IEnrollmentRepository enrollmentRepository,
         AbstractMailService mailService,
+        IMemoryCache memoryCache,
         ILogger<ActivityRepository> logger)
     {
         _db = db;
@@ -54,6 +59,7 @@ public class ActivityRepository : IActivityRepository
         _permissionService = permissionService;
         _enrollmentRepository = enrollmentRepository;
         _mailService = mailService;
+        _memoryCache = memoryCache;
         _logger = logger;
     }
 
@@ -186,7 +192,10 @@ public class ActivityRepository : IActivityRepository
             throw new KeyNotFoundException();
 
         if (activity.PosterPath != null)
+        {
             await _storageService.DeleteFileAsync("posters", activity.PosterPath);
+            _memoryCache.Remove($"poster-{activity.PosterPath}");
+        }
 
         _db.Activities.Remove(activity);
         await _db.SaveChangesAsync();
@@ -199,7 +208,7 @@ public class ActivityRepository : IActivityRepository
         if (patchDoc == null)
             throw new ArgumentException();
 
-        var activity = await _db.Activities.FindAsync(new [] { id }, ct);
+        var activity = await _db.Activities.FindAsync(new object[] { id }, ct);
         if (activity == null)
             throw new KeyNotFoundException();
 
@@ -317,7 +326,10 @@ public class ActivityRepository : IActivityRepository
             await transaction.CommitAsync();
 
             if (!string.IsNullOrEmpty(oldPath))
+            {
                 await _storageService.DeleteFileAsync("posters", oldPath);
+                _memoryCache.Remove($"poster-{oldPath}");
+            }
         }
         catch (Exception ex)
         {
@@ -406,7 +418,10 @@ public class ActivityRepository : IActivityRepository
 
             // Delete old poster if a new one was uploaded and the activity had an existing poster
             if (existingPosterPath != null && dto.Poster != null)
+            {
                 await _storageService.DeleteFileAsync("posters", existingPosterPath);
+                _memoryCache.Remove($"poster-{existingPosterPath}");
+            }
         }
         catch (Exception ex)
         {
@@ -432,15 +447,31 @@ public class ActivityRepository : IActivityRepository
         if (!activity.ShowInKoala && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
+        string cacheKey = $"poster-{activity.PosterPath}";
+        if (_memoryCache.TryGetValue(cacheKey, out (byte[] bytes, string contentType) cached))
+        {
+            return (
+                new MemoryStream(cached.bytes),
+                cached.contentType,
+                download ? activity.PosterFileName ?? "poster" : null
+            );
+        }
+
         // Get poster file from storage
         var file = await _storageService.GetFileAsync("posters", activity.PosterPath);
 
         if (file == null)
             return null;
 
+        using var memoryStream = new MemoryStream();
+        await file.Stream.CopyToAsync(memoryStream);
+        byte[] bytes = memoryStream.ToArray();
+
+        _memoryCache.Set(cacheKey, (bytes, file.ContentType), TimeSpan.FromHours(1));
+
         // If download is true, the file will be returned with a filename to trigger download in the frontend, otherwise it will be displayed in the browser if supported
         return (
-            file.Stream,
+            new MemoryStream(bytes),
             file.ContentType,
             download ? activity.PosterFileName ?? "poster" : null
         );

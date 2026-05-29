@@ -3,6 +3,7 @@ using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Backend.Database;
 
@@ -10,6 +11,7 @@ namespace Backend.Database;
 /// The DatabaseSeeder class is responsible for seeding the database with initial data and ensuring that certain essential settings and groups exist when the application starts. It implements the IHostedService interface, allowing it to run as a background service during the application's startup process. The seeder checks for the existence of specific settings and groups, creating them if they do not already exist, and also ensures that a backup board account is created if there are no existing board members. This helps to ensure that the application has the necessary configuration and data in place for proper functionality from the moment it is launched.
 /// </summary>
 /// <param name="scopeFactory">The factory for creating service scopes.</param>
+[ExcludeFromCodeCoverage]
 public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 {
     /// <summary>
@@ -72,6 +74,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();
 
         await EnsureBoardAccountExists(db, authOutboxWorker, createNewBoardService);
+
+        await EnsureRegisterReasonsSeeded(db);
+        await EnsureExternalLinksSeeded(db);
     }
 
     /// <summary>
@@ -228,6 +233,179 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         {
             await transaction.RollbackAsync();
         }
+    }
+
+    private static async Task EnsureRegisterReasonsSeeded(PostgresDbContext db)
+    {
+        if (await db.RegisterReasons.AnyAsync())
+        {
+            return;
+        }
+
+        db.RegisterReasons.AddRange(
+            new RegisterReason
+            {
+                TitleDutch = "Boekenkortingen",
+                TitleEnglish = "Book discounts",
+                DescriptionDutch = "Als lid van Sticky kun je korting krijgen op studieboeken.",
+                DescriptionEnglish = "As a member of the study association, you can get discounts on study books.",
+                SortOrder = 1
+            },
+            new RegisterReason
+            {
+                TitleDutch = "Goedkope activiteiten",
+                TitleEnglish = "Cheap activities",
+                DescriptionDutch = "Onze vereniging organiseert veel activiteiten van gratis borrels en leuke feestjes tot educatieve workshops en lezingen.",
+                DescriptionEnglish = "Our association organizes many activities from free drinks and fun parties to educational workshops and lectures.",
+                SortOrder = 2
+            },
+            new RegisterReason
+            {
+                TitleDutch = "Netwerken",
+                TitleEnglish = "Networking",
+                DescriptionDutch = "Door mee te doen met onze vereniging, ontmoet je veel medestudenten en breid je netwerk uit.",
+                DescriptionEnglish = "By joining our association, you will meet many fellow students and expand your network.",
+                SortOrder = 3
+            },
+            new RegisterReason
+            {
+                TitleDutch = "Introductie week",
+                TitleEnglish = "Introduction week",
+                DescriptionDutch = "Onze vereniging organiseert een bachelor introductie week aan het begin van het academische jaar. Dit is een geweldig idee om de vereniging te leren kennen en andere studenten te ontmoeten.",
+                DescriptionEnglish = "Our association organizes an bachelor introduction week at the beginning of the academic year. This is a great way to get to know the association and meet other students.",
+                SortOrder = 4
+            },
+            new RegisterReason
+            {
+                TitleDutch = "Arbeidsmarktoriëntatie",
+                TitleEnglish = "Labor market orientation",
+                DescriptionDutch = "Onze vereniging biedt arbeidsmarktoriëntatie aan om studenten te helpen zich voor te bereiden op hun toekomstige carrière.",
+                DescriptionEnglish = "Our association offers labor market orientation sessions to help students prepare for their future careers.",
+                SortOrder = 5
+            },
+            new RegisterReason
+            {
+                TitleDutch = "Leden",
+                TitleEnglish = "Members",
+                DescriptionDutch = "We hebben een divers groep van ongeveer 2000 leden, inclusief bachelor- en masterstudenten uit verschillende studieprogramma's. Onze leden zijn actief in het organiseren van activiteiten, het deelnemen aan commissies en het genieten van het sociale aspect van onze vereniging.",
+                DescriptionEnglish = "We have a diverse group of about 2000 members, including bachelor and master students from various study programs. Our members are active in organizing activities, participating in committees and enjoying the social aspect of our association.",
+                SortOrder = 6
+            }
+        );
+
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task EnsureExternalLinksSeeded(PostgresDbContext db)
+    {
+        if (await db.ExternalLinks.AnyAsync())
+        {
+            return;
+        }
+
+        db.ExternalLinks.AddRange(
+            new ExternalLink
+            {
+                TitleDutch = "Mongoose",
+                TitleEnglish = "Mongoose",
+                DescriptionDutch = "Onze mini supermarkt.",
+                DescriptionEnglish = "Our mini supermarket.",
+                Url = "https://mongoose.svsticky.nl",
+                SortOrder = 1
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Foto's",
+                TitleEnglish = "Photos",
+                DescriptionDutch = "Bekijk onze foto's.",
+                DescriptionEnglish = "View our photos.",
+                Url = "https://fotos.svsticky.nl",
+                SortOrder = 2
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Bestanden",
+                TitleEnglish = "Files",
+                DescriptionDutch = "Bekijk onze bestanden.",
+                DescriptionEnglish = "View our files.",
+                Url = "https://files.svsticky.nl",
+                SortOrder = 3
+            },
+            new ExternalLink
+            {
+                TitleDutch = "DigiDecs",
+                TitleEnglish = "DigiDecs",
+                DescriptionDutch = "Declareer je onkosten snel en eenvoudig via DigiDecs.",
+                DescriptionEnglish = "Submit your expense claims quickly and easily via DigiDecs.",
+                Url = "https://digidecs.svsticky.nl",
+                SortOrder = 4
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Boeken",
+                TitleEnglish = "Books",
+                DescriptionDutch = "Haal boeken met korting.",
+                DescriptionEnglish = "Get books with discount.",
+                Url = "https://svsticky.nl/boeken",
+                SortOrder = 5
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Vacatures",
+                TitleEnglish = "Jobs",
+                DescriptionDutch = "Bekijk de vacatures binnen onze vereniging.",
+                DescriptionEnglish = "View vacancies within our association.",
+                Url = "https://svsticky.nl/cariere/vacatures",
+                SortOrder = 6
+            },
+            new ExternalLink
+            {
+                TitleDutch = "GitHub",
+                TitleEnglish = "GitHub",
+                DescriptionDutch = "Bekijk onze code op GitHub.",
+                DescriptionEnglish = "View our code on GitHub.",
+                Url = "https://github.com/svsticky",
+                SortOrder = 7
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Discord",
+                TitleEnglish = "Discord",
+                DescriptionDutch = "Word lid van onze Discord server.",
+                DescriptionEnglish = "Join our Discord server.",
+                Url = "https://svsticky.nl/discord",
+                SortOrder = 8
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Stickypedia",
+                TitleEnglish = "Stickypedia",
+                DescriptionDutch = "Onze eigen wiki vol met informatie over de vereniging.",
+                DescriptionEnglish = "Our own wiki full of association information.",
+                Url = "https://wiki.svsticky.nl",
+                SortOrder = 9
+            },
+            new ExternalLink
+            {
+                TitleDutch = "VoelJeVeilig",
+                TitleEnglish = "VoelJeVeilig",
+                DescriptionDutch = "Meld ongewenst gedrag anoniem via VoelJeVeilig.",
+                DescriptionEnglish = "Report inappropriate behavior anonymously via VoelJeVeilig.",
+                Url = "https://voeljeveilig.svsticky.nl",
+                SortOrder = 10
+            },
+            new ExternalLink
+            {
+                TitleDutch = "Commissiestrijd",
+                TitleEnglish = "Commissiestrijd",
+                DescriptionDutch = "Bekijk de voortgang van de commissiestrijd.",
+                DescriptionEnglish = "View the progress of the committee battle.",
+                Url = "https://commissiestrijd.svsticky.nl",
+                SortOrder = 11
+            }
+        );
+
+        await db.SaveChangesAsync();
     }
 
     /// <summary>

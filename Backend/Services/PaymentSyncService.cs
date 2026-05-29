@@ -22,17 +22,32 @@ public class PaymentSyncService(
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         // Wait a bit before starting the sync to ensure the application has fully started and all services are available. 
-        await Task.Delay(5000);
+        try
+        {
+            await Task.Delay(5000, stoppingToken);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
         logger.LogInformation("Payment sync worker started.");
 
-        await StartSyncPaymentsLoop();
+        await StartSyncPaymentsLoop(stoppingToken);
     }
 
-    private async Task StartSyncPaymentsLoop()
+    private async Task StartSyncPaymentsLoop(CancellationToken stoppingToken)
     {
+        if (stoppingToken.IsCancellationRequested) return;
         await SyncPayments();
 
-        await Task.Delay(600000).ContinueWith(_ => StartSyncPaymentsLoop());; // Wait for 10 minutes before checking again. This creates a loop where we check every 10 minutes for any updates on pending payments.
+        try
+        {
+            await Task.Delay(600000, stoppingToken).ContinueWith(_ => StartSyncPaymentsLoop(stoppingToken), stoppingToken);
+        }
+        catch (TaskCanceledException)
+        {
+            // Stop loop
+        }
     }
 
     private async Task SyncPayments()

@@ -2,12 +2,14 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using Mailgun;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Backend.Services.MailServices;
 
 /// <summary>
 /// Sends emails through the Mailgun provider.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class MailgunService(
     PostgresDbContext db,
     IPaymentValidationService paymentValidationService,

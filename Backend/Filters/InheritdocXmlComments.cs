@@ -59,7 +59,7 @@ internal sealed class InheritdocXmlComments
         if (type.IsGenericType && !type.IsGenericTypeDefinition)
             type = type.GetGenericTypeDefinition();
 
-        return type.FullName == null ? null : $"T:{type.FullName}";
+        return type.FullName == null ? null : $"T:{type.FullName.Replace('+', '.')}";
     }
 
     public static string? GetMemberName(PropertyInfo property)
@@ -73,7 +73,7 @@ internal sealed class InheritdocXmlComments
 
         return declaringType.FullName == null
             ? null
-            : $"P:{declaringType.FullName}.{property.Name}";
+            : $"P:{declaringType.FullName.Replace('+', '.')}.{property.Name}";
     }
 
     private static string Normalize(string value)
