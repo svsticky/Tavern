@@ -14,13 +14,13 @@ The codebase is organized into layers separating HTTP transport logic, data mana
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      Controllers                       │
-│    HTTP Request Handling, JSON serialization/routing    │
+│    HTTP Request Handling, JSON serialization/routing   │
 └──────────────────────────┬─────────────────────────────┘
                            │ (Direct Repository Call)
 ┌──────────────────────────▼─────────────────────────────┐
 │                     Repositories                       │
-│     EF Core operations, data queries, transactions      │
-│     (Injects and uses Services for validation/auth)     │
+│     EF Core operations, data queries, transactions     │
+│     (Injects and uses Services for validation/auth)    │
 └──────────────────────────┬──────────────┬──────────────┘
                            │              │
  ┌─────────────────────────▼──┐        ┌──▼────────────────────────┐
@@ -31,6 +31,25 @@ The codebase is organized into layers separating HTTP transport logic, data mana
 1. **Controllers:** Manage REST API endpoints, validate incoming request models, serialize responses, and translate domain errors to appropriate HTTP Status Codes (e.g., `200 OK`, `400 BadRequest`, `403 Forbidden`, `404 NotFound`). They communicate directly with repositories to command and query data.
 2. **Repositories:** Interface directly with Entity Framework Core (`PostgresDbContext`) to query and modify database entities. They contain the primary orchestration of the data transactions and inject business helper services to perform checks before committing changes.
 3. **Services:** House business logic helpers. For example, `PaymentValidationService` verifies membership and activity payment records, and `PermissionService` checks group memberships. These services are injected into repositories or outbox workers rather than controllers.
+
+---
+
+## Codebase & Folder Organization
+
+The `Backend` project directory contains the following folders and components:
+
+* **`Controllers/`**: Houses the API controllers that define REST endpoints. They handle incoming HTTP requests, serialize/deserialize JSON, and coordinate requests to the repository layer.
+* **`Database/`**: Contains the Entity Framework Core database context (`PostgresDbContext.cs`) and database seeding configurations (`DatabaseSeeder.cs`).
+* **`Filters/`**: Custom action, schema, and API document filters for ASP.NET Core (such as custom Swagger/OpenAPI documentation schema mapping).
+* **`Interfaces/`**: Holds the interfaces and contracts for repositories and services, maintaining the Dependency Inversion Principle.
+* **`Migrations/`**: Automatically generated EF Core database schema migration files.
+* **`Models/`**: Defines the database entities, DTOs (Data Transfer Objects), and core domain enumerations.
+* **`Projections/`**: Query projection classes used to project database queries directly into client-friendly models, optimizing payload size.
+* **`QueryExtensions/`**: Houses reusable LINQ query extensions to filter and load database query streams cleanly.
+* **`Repositories/`**: Contains the implementations of the data access layer, executing database operations via Entity Framework Core.
+* **`Services/`**: Implements domain services, third-party SaaS integrations (Mollie, Mailchimp, Keycloak), outbox task workers, and Hangfire background jobs.
+* **`Utils/`**: Reusable helper functions and general utilities (e.g., date-time helpers).
+* **`Validators/`**: Contains model validation classes (leveraging FluentValidation) to validate incoming HTTP payloads before any business actions occur.
 
 ---
 

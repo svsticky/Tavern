@@ -62,12 +62,68 @@ Copy the sample environment file to create your active configurations:
 ```bash
 cp sample.env .env
 ```
-*(You can open `.env` to customize payment keys, local ports, or test secrets if needed.)*
+The environment variables in the `.env` file must be filled in. Below is a description of the configuration variables, highlighting those that are only required for production (as they are overridden by `.devcontainer/devcontainer.env` in local development):
+
+#### Overwritten in Development (Only needed in Production)
+These variables are pre-configured or overridden for the devcontainer environment, but must be configured for a production deployment:
+* **Ports & Core Routing:**
+  * `FrontendPort`, `BackendPort`, `DocsPort`: Ports used to map and expose services.
+  * `HostUrl`, `ApiUrl`: Base URLs routing requests between the frontend and backend.
+* **Database Connection:**
+  * `PostgresqlConnectionString`: Connection string for the PostgreSQL database (overridden to point to the local `db` service inside the devcontainer).
+* **Identity Provider (Keycloak):**
+  * `AUTH_SYSTEM`, `KeycloakUrl`, `KeycloakRealm`, `KeycloakClientId`, `KeycloakBackendClientId`, `KeycloakClientSecret`, `AUTH_WEBHOOK_SECRET`: Keycloak client details and webhook secrets (pre-configured for local dev).
+
+#### Required to be Filled In (Production & Local Integration Testing)
+Configure these variables in your `.env` to enable specific features locally or in production:
+* **Payments & Accounting:**
+  * `PAYMENT_PROVIDER`: Payment provider choice (e.g., `MOLLIE`).
+  * `MollieApiKey`: API key required for Mollie payment gateway integration.
+  * `ACCOUNTING_SERVICE`, `EXACT_ACCESS_TOKEN`, `EXACT_DIVISION`: Credentials for external accounting sync (e.g., Exact Online). This variables are optional and only needed if you use an accounting service.
+* **Theme & UI Customization:**
+  * `LOGO_URL`, `BOARD_PRIMARY_LIGHT`, `BOARD_PRIMARY`, `BOARD_PRIMARY_DARK`: Branding configuration variables injected into the Vite frontend.
+* **Object Storage (S3 / LocalStack):**
+  * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_SERVICE_URL`: Credentials and endpoints for AWS S3 object storage (defaults are configured to run with LocalStack locally).
+* **Mail Services (optional for development, needed if you want mailing to work):**
+  * `MAIL_SERVICE`: Selector for the mail service (`SMTP` or `MAILGUN`).
+  * `SMTP_HOST`, `SMTP_PORT`, `SMTP_STARTTLS`, `SMTP_USER`, `SMTP_PASS` / `MAILGUN_TOKEN`, `MAILGUN_PUBLIC_KEY`, `MAILGUN_API_BASE_URL`: Server and API configurations for sending system emails.
+* **External Integrations:**
+  * `MAIL_SUBSCRIPTION_SERVICE`, `MAILCHIMP_LIST_KEY`, `MAILCHIMP_API_KEY`: Credentials for newsletter subscription sync (e.g., Mailchimp). These are optional and only needed if you want to work it with a mail subscription service.
+  * `NGROK_AUTHTOKEN`, `NGROK_URL`: Auth token and public tunnel URL used by Ngrok for local webhook testing. These are optional, but can be usefull for letting mollie call the webhook after a payment.
+
 
 ### 3. Launch the Devcontainer
 * Open the project directory in VS Code or JetBrains Rider.
 * When prompted, select **"Reopen in Container"** (or press `Ctrl+Shift+P` -> type `Dev Containers: Reopen in Container`).
 * Docker Compose will automatically spin up all services (`db`, `localstack`, `keycloak`, and `ngrok`).
+
+### 4. Start the Application
+Once the devcontainer is running, follow these steps to start the application and configure the default local user:
+
+#### Step A: Run the Backend
+Start the ASP.NET Core backend. This will automatically apply database migrations and create the default `BACKUP_ACCOUNT` user in Keycloak:
+```bash
+dotnet run --project Backend
+```
+
+#### Step B: Configure the Local Keycloak User
+As keycloak in the devcontainer isn't connected to a mailing service, you can't verify the email and set a password. To log in with the newly created user, you need to set their password and verify their email address in Keycloak:
+1. Open the local Keycloak Admin console at [http://localhost:8082](http://localhost:8082).
+2. Log in with the admin credentials:
+   - **Username**: `admin`
+   - **Password**: `admin`
+3. Navigate to **Users** in the sidebar, search for the user matching your configured `BACKUP_ACCOUNT_EMAIL`, and click on their username.
+4. Go to the **Credentials** tab, click **Reset password**, enter your desired password, and toggle **Temporary** to **Off**.
+5. Go to the **Details** tab, toggle **Email Verified** to **On**, and save the changes.
+
+#### Step C: Run the Frontend
+With the backend running and the local user configured, open a new terminal in the container and start the React dev server:
+```bash
+cd Frontend
+npm run dev
+```
+
+Once the dev server starts, everything is fully running and you can access the application at [http://localhost:5173](http://localhost:5173).
 
 ---
 
