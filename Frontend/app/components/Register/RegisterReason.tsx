@@ -1,4 +1,4 @@
-import { UsersRound, type LucideIcon } from "lucide-react";
+import { type LucideIcon, UsersRound } from "lucide-react";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../Tiles/Tile";
 

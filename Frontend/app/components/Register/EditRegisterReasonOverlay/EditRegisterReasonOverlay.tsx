@@ -1,10 +1,13 @@
-import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RegisterReasonResponseDto } from "~/api";
 import Button from "../../UI/Button";
 import Form from "../../UI/Form/Form";
 import Input from "../../UI/Input";
-import { handleReasonSubmit, handleReasonDelete } from "./EditRegisterReasonOverlay.handlers";
+import {
+  handleReasonDelete,
+  handleReasonSubmit,
+} from "./EditRegisterReasonOverlay.handlers";
 
 /**
  * An overlay component used for creating or editing registration reason information.
@@ -82,7 +85,9 @@ export default function EditRegisterReasonOverlay({
       />
 
       <div className="w-full flex flex-col gap-1">
-        <label className="text-sm font-semibold text-slate-800">{t("icon")}</label>
+        <label className="text-sm font-semibold text-slate-800">
+          {t("icon")}
+        </label>
         <input
           type="file"
           accept="image/*"
@@ -115,7 +120,9 @@ export default function EditRegisterReasonOverlay({
         {reason && (
           <Button
             variant="danger"
-            onClick={() => handleReasonDelete({ reason, setLoading, onComplete })}
+            onClick={() =>
+              handleReasonDelete({ reason, setLoading, onComplete })
+            }
             type="button"
             disabled={loading}
           >

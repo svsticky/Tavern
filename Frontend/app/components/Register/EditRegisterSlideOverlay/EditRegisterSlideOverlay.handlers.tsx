@@ -10,13 +10,8 @@ import {
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
-type EditSlideFormData = {
-  sortOrder: number;
-};
-
 type SubmitArgs = {
   e: React.FormEvent;
-  formData: EditSlideFormData;
   slideFile: File | null;
   slide?: RegisterSlideResponseDto;
   setLoading: (loading: boolean) => void;
@@ -25,7 +20,6 @@ type SubmitArgs = {
 
 export const handleSlideSubmit = async ({
   e,
-  formData,
   slideFile,
   slide,
   setLoading,
@@ -41,9 +35,6 @@ export const handleSlideSubmit = async ({
       if (slide) {
         const response = await putRegisterslidesById({
           path: { id: slide.id },
-          body: {
-            sortOrder: formData.sortOrder,
-          },
         });
         if (response.error) {
           throw response.error ?? new Error("Failed to update slide");
@@ -69,7 +60,9 @@ export const handleSlideSubmit = async ({
           body: { image: slideFile },
         });
         if (uploadResponse.error) {
-          throw uploadResponse.error ?? new Error("Failed to upload slide image");
+          throw (
+            uploadResponse.error ?? new Error("Failed to upload slide image")
+          );
         }
       }
 
@@ -85,7 +78,11 @@ export const handleSlideSubmit = async ({
   toast.promise(editSlideProcess(), {
     loading: slide ? t("saving") : t("creating_slide"),
     success: slide ? t("saved") : t("slide_created_successfully"),
-    error: (error) => appendErrorMessage(slide ? t("failed_to_save") : t("failed_to_create_slide"), error),
+    error: (error) =>
+      appendErrorMessage(
+        slide ? t("failed_to_save") : t("failed_to_create_slide"),
+        error,
+      ),
   });
 };
 

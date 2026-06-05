@@ -15,17 +15,17 @@ import { client } from "./api/client.gen";
 import i18n from "./i18n";
 import "./app.css";
 import { t } from "i18next";
+import Cookies from "js-cookie";
 import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
-import { getEnv } from "./util/config.utils";
-import Cookies from "js-cookie";
 import { getActiveAuthService } from "./layout/auth-service";
+import { getEnv } from "./util/config.utils";
 
 client.setConfig({
   baseURL: getEnv("ApiUrl") ?? "http://localhost:8080",
   auth: async () => {
     const authService = getActiveAuthService();
-    if (authService && authService.isReady() && authService.isAuthenticated()) {
+    if (authService?.isReady() && authService.isAuthenticated()) {
       const token = await authService.getToken();
       if (token) {
         Cookies.set("access_token", token, {
@@ -49,16 +49,13 @@ client.instance.interceptors.response.use(
         console.warn("Unauthorized, redirecting...");
         window.location.href = "/logout";
       } else if (error.response.status === 403) {
-        console.warn(
-          "Forbidden - user does not have access to this resource.",
-        );
+        console.warn("Forbidden - user does not have access to this resource.");
         window.location.href = "/";
       }
     }
     return Promise.reject(error);
   },
 );
-
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -1,12 +1,12 @@
-import ManageMailingListsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import { t } from "i18next";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { GroupResponseDto, Role } from "~/api";
-import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
+import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
+import ManageMailingListsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
 import ManageRegisterSlidesDatatable from "~/components/Register/ManageRegisterSlidesDatatable/ManageRegisterSlidesDatatable";
-import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
+import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
@@ -72,13 +72,14 @@ export default function SettingsPage() {
     });
   }, []);
 
-  const requiredFieldMissing = !settings.BoardGroupId 
-    ||!settings.CandidateBoardGroupId 
-    || !settings.PaymentServiceFee 
-    || !settings.MembershipPrice 
-    || !settings.FinancialEmailSender 
-    || !settings.MainBoardMail 
-    || !settings.ActivityUpdateEmailSender;
+  const requiredFieldMissing =
+    !settings.BoardGroupId ||
+    !settings.CandidateBoardGroupId ||
+    !settings.PaymentServiceFee ||
+    !settings.MembershipPrice ||
+    !settings.FinancialEmailSender ||
+    !settings.MainBoardMail ||
+    !settings.ActivityUpdateEmailSender;
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);

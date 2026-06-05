@@ -1,11 +1,11 @@
-import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
 import { GripVertical } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import type { RegisterSlideResponseDto } from "~/api";
 import { getRegisterslides, putRegisterslidesById } from "~/api";
-import { cn } from "~/util/tailwind.util";
 import { getEnv } from "~/util/config.utils";
+import { cn } from "~/util/tailwind.util";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
 import Modal from "../../UI/Modal/Modal";
@@ -23,10 +23,12 @@ export default function ManageRegisterSlidesDatatable() {
   const [slides, setSlides] = useState<RegisterSlideResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedSlide, setEditedSlide] = useState<RegisterSlideResponseDto | undefined>(undefined);
+  const [editedSlide, setEditedSlide] = useState<
+    RegisterSlideResponseDto | undefined
+  >(undefined);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  const fetchSlides = async () => {
+  const fetchSlides = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getRegisterslides();
@@ -40,11 +42,11 @@ export default function ManageRegisterSlidesDatatable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSlides();
-  }, []);
+  }, [fetchSlides]);
 
   const handleSlideComplete = () => {
     setIsEditModalOpen(false);
@@ -116,7 +118,9 @@ export default function ManageRegisterSlidesDatatable() {
         {loading ? (
           <div className="text-center text-slate-500 py-6">{t("loading")}</div>
         ) : slides.length === 0 ? (
-          <div className="text-center text-slate-500 py-6">{t("no_slides")}</div>
+          <div className="text-center text-slate-500 py-6">
+            {t("no_slides")}
+          </div>
         ) : (
           slides.map((item, index) => (
             <div
@@ -130,7 +134,7 @@ export default function ManageRegisterSlidesDatatable() {
                 "flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-xl transition-all duration-200 select-none",
                 draggedIndex === index
                   ? "opacity-40 border-dashed border-(--board-primary) bg-[color-mix(in_srgb,var(--board-primary),white_95%)] scale-[0.98]"
-                  : "hover:border-(--board-primary) hover:shadow-sm"
+                  : "hover:border-(--board-primary) hover:shadow-sm",
               )}
             >
               <div className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-1">

@@ -51,7 +51,7 @@ export const handleReasonSubmit = async ({
           throw response.error ?? new Error("Failed to update reason");
         }
       } else {
-        const { sortOrder, ...postData } = formData;
+        const { ...postData } = formData;
         const response = await postRegisterreasons({
           body: postData,
         });
@@ -83,7 +83,11 @@ export const handleReasonSubmit = async ({
   toast.promise(editReasonProcess(), {
     loading: reason ? t("saving") : t("creating_reason"),
     success: reason ? t("saved") : t("reason_created_successfully"),
-    error: (error) => appendErrorMessage(reason ? t("failed_to_save") : t("failed_to_create_reason"), error),
+    error: (error) =>
+      appendErrorMessage(
+        reason ? t("failed_to_save") : t("failed_to_create_reason"),
+        error,
+      ),
   });
 };
 

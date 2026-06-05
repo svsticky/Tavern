@@ -1,10 +1,13 @@
-import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { ExternalLinkResponseDto } from "~/api";
 import Button from "../../UI/Button";
 import Form from "../../UI/Form/Form";
 import Input from "../../UI/Input";
-import { handleLinkSubmit, handleLinkDelete } from "./EditExternalLinkOverlay.handlers";
+import {
+  handleLinkDelete,
+  handleLinkSubmit,
+} from "./EditExternalLinkOverlay.handlers";
 
 /**
  * An overlay component used for creating or editing external link information.
@@ -92,7 +95,9 @@ export default function EditExternalLinkOverlay({
       />
 
       <div className="w-full flex flex-col gap-1">
-        <label className="text-sm font-semibold text-slate-800">{t("icon")}</label>
+        <label className="text-sm font-semibold text-slate-800">
+          {t("icon")}
+        </label>
         <input
           type="file"
           accept="image/*"
