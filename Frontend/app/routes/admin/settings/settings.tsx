@@ -42,7 +42,7 @@ import {
  * State Management Features:
  * - **Change Tracking**: Uses `newSettings` and `deletedSettings` sets to identify which records
  *   require POST, PATCH, or DELETE operations upon saving.
- * - **Validation**: Prevents saving if required fields are empty via `hasEmptyFields`.
+ * - **Validation**: Prevents saving if required fields are empty via `requiredFieldMissing`.
  *
  * @page
  * @component
@@ -72,9 +72,13 @@ export default function SettingsPage() {
     });
   }, []);
 
-  const hasEmptyFields = Object.entries(settings)
-    .filter(([key]) => key !== "MembershipPaymentExpirationTime")
-    .some(([_key, value]) => !value.trim());
+  const requiredFieldMissing = !settings.BoardGroupId 
+    ||!settings.CandidateBoardGroupId 
+    || !settings.PaymentServiceFee 
+    || !settings.MembershipPrice 
+    || !settings.FinancialEmailSender 
+    || !settings.MainBoardMail 
+    || !settings.ActivityUpdateEmailSender;
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
@@ -125,6 +129,7 @@ export default function SettingsPage() {
                 )
               }
               options={groupOptions}
+              required
             />
             <Select
               label={t("candidate_board_group")}
@@ -137,6 +142,7 @@ export default function SettingsPage() {
                 )
               }
               options={groupOptions}
+              required
             />
           </FormSection>
 
@@ -153,6 +159,7 @@ export default function SettingsPage() {
                   setSettings,
                 )
               }
+              required
             />
             <Input
               label={t("payment_service_fee_vat_code")}
@@ -179,6 +186,7 @@ export default function SettingsPage() {
                   setSettings,
                 )
               }
+              required
             />
             <Input
               label={t("membership_payment_expiration_time")}
@@ -330,6 +338,7 @@ export default function SettingsPage() {
                   setSettings,
                 )
               }
+              required
             />
             <Input
               label={t("main_board_email")}
@@ -341,6 +350,7 @@ export default function SettingsPage() {
                   setSettings,
                 )
               }
+              required
             />
             <Input
               label={t("activity_update_email_sender")}
@@ -352,6 +362,7 @@ export default function SettingsPage() {
                   setSettings,
                 )
               }
+              required
             />
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
@@ -408,6 +419,7 @@ export default function SettingsPage() {
                               )
                             }
                             className="w-full"
+                            required
                           />
                         </div>
 
@@ -451,7 +463,7 @@ export default function SettingsPage() {
                   },
                 })
               }
-              disabled={saving || hasEmptyFields}
+              disabled={saving || requiredFieldMissing}
               className="w-full h-12 text-lg"
             >
               {saving ? t("saving") : t("save_all_settings")}
