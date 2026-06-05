@@ -1,12 +1,12 @@
-import type React from "react";
 import { t } from "i18next";
+import type React from "react";
 import toast from "react-hot-toast";
 import { getMailinglists, type Mailinglist } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
 export const fetchMailingLists = async (
   setLoading: (loading: boolean) => void,
-  setMailingLists: React.Dispatch<React.SetStateAction<Mailinglist[]>>
+  setMailingLists: React.Dispatch<React.SetStateAction<Mailinglist[]>>,
 ) => {
   try {
     setLoading(true);
@@ -30,22 +30,20 @@ type HandleMailingListEditedArgs = {
   setEditedList: (list: Mailinglist | undefined) => void;
 };
 
-export const handleMailingListEdited = ({ 
-  list, 
-  editedList, 
-  setMailingLists, 
-  setIsEditModalOpen, 
-  setEditedList 
+export const handleMailingListEdited = ({
+  list,
+  editedList,
+  setMailingLists,
+  setIsEditModalOpen,
+  setEditedList,
 }: HandleMailingListEditedArgs) => {
   if (!list) {
     if (editedList) {
       setMailingLists((prev) => prev.filter((l) => l.id !== editedList.id));
     }
-  } 
-  else if (editedList) {
+  } else if (editedList) {
     setMailingLists((prev) => prev.map((l) => (l.id === list.id ? list : l)));
-  } 
-  else {
+  } else {
     setMailingLists((prev) => [...prev, list]);
   }
 

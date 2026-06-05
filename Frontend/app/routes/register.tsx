@@ -55,19 +55,23 @@ export default function Register() {
 
         if (slidesData.length > 0) {
           slidesData.forEach((s) => {
-            imagesToPreload.push(`${getEnv("ApiUrl")}/registerslides/${s.id}/image`);
+            imagesToPreload.push(
+              `${getEnv("ApiUrl")}/registerslides/${s.id}/image`,
+            );
           });
         } else {
           imagesToPreload.push(
             "/register_slide_photos/photo1.png",
             "/register_slide_photos/photo2.png",
-            "/register_slide_photos/photo3.png"
+            "/register_slide_photos/photo3.png",
           );
         }
 
         reasonsData.forEach((r) => {
           if (r.iconPath) {
-            imagesToPreload.push(`${getEnv("ApiUrl")}/registerreasons/${r.id}/icon`);
+            imagesToPreload.push(
+              `${getEnv("ApiUrl")}/registerreasons/${r.id}/icon`,
+            );
           }
         });
 
@@ -79,8 +83,8 @@ export default function Register() {
                 img.src = src;
                 img.onload = () => resolve(true);
                 img.onerror = () => resolve(true);
-              })
-          )
+              }),
+          ),
         );
 
         setReasons(reasonsData);
@@ -138,7 +142,10 @@ export default function Register() {
         {loading ? (
           <div className="w-full max-w-7xl aspect-[16/9] md:aspect-[21/9] bg-slate-200/50 rounded-3xl animate-pulse" />
         ) : (
-          <PhotoSlideshow images={slideshowImages} className="w-full max-w-7xl" />
+          <PhotoSlideshow
+            images={slideshowImages}
+            className="w-full max-w-7xl"
+          />
         )}
 
         <section id="reasons" className="w-full max-w-7xl">

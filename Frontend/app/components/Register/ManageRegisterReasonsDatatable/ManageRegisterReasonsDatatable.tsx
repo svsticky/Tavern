@@ -1,11 +1,18 @@
-import { useTranslation } from "react-i18next";
-import { useEffect, useState } from "react";
+import {
+  Book,
+  BriefcaseBusiness,
+  GripVertical,
+  HeartHandshake,
+  PartyPopper,
+  UsersRound,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { GripVertical, UsersRound, Book, PartyPopper, HeartHandshake, BriefcaseBusiness } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RegisterReasonResponseDto } from "~/api";
 import { getRegisterreasons, putRegisterreasonsById } from "~/api";
-import { cn } from "~/util/tailwind.util";
 import { getEnv } from "~/util/config.utils";
+import { cn } from "~/util/tailwind.util";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
 import Modal from "../../UI/Modal/Modal";
@@ -30,14 +37,16 @@ export default function ManageRegisterReasonsDatatable() {
     BriefcaseBusiness,
     UsersRound,
   ];
-  
+
   const [reasons, setReasons] = useState<RegisterReasonResponseDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editedReason, setEditedReason] = useState<RegisterReasonResponseDto | undefined>(undefined);
+  const [editedReason, setEditedReason] = useState<
+    RegisterReasonResponseDto | undefined
+  >(undefined);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  const fetchReasons = async () => {
+  const fetchReasons = useCallback(async () => {
     setLoading(true);
     try {
       const res = await getRegisterreasons();
@@ -51,11 +60,11 @@ export default function ManageRegisterReasonsDatatable() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchReasons();
-  }, []);
+  }, [fetchReasons]);
 
   const handleReasonComplete = () => {
     setIsEditModalOpen(false);
@@ -80,7 +89,7 @@ export default function ManageRegisterReasonsDatatable() {
 
   const handleDragEnd = async () => {
     setDraggedIndex(null);
-    
+
     // Build update requests
     const updates = reasons.map((reason, index) => {
       const newSortOrder = index + 1;
@@ -131,7 +140,9 @@ export default function ManageRegisterReasonsDatatable() {
         {loading ? (
           <div className="text-center text-slate-500 py-6">{t("loading")}</div>
         ) : reasons.length === 0 ? (
-          <div className="text-center text-slate-500 py-6">{t("no_reasons")}</div>
+          <div className="text-center text-slate-500 py-6">
+            {t("no_reasons")}
+          </div>
         ) : (
           reasons.map((item, index) => (
             <div
@@ -145,7 +156,7 @@ export default function ManageRegisterReasonsDatatable() {
                 "flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-xl transition-all duration-200 select-none",
                 draggedIndex === index
                   ? "opacity-40 border-dashed border-(--board-primary) bg-[color-mix(in_srgb,var(--board-primary),white_95%)] scale-[0.98]"
-                  : "hover:border-(--board-primary) hover:shadow-sm"
+                  : "hover:border-(--board-primary) hover:shadow-sm",
               )}
             >
               <div className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-1">
@@ -159,10 +170,14 @@ export default function ManageRegisterReasonsDatatable() {
                   alt=""
                   loading="lazy"
                 />
-              ) : (() => {
-                const DefaultIcon = defaultIcons[index] || UsersRound;
-                return <DefaultIcon className="w-8 h-8 text-(--board-primary) flex-shrink-0" />;
-              })()}
+              ) : (
+                (() => {
+                  const DefaultIcon = defaultIcons[index] || UsersRound;
+                  return (
+                    <DefaultIcon className="w-8 h-8 text-(--board-primary) flex-shrink-0" />
+                  );
+                })()
+              )}
 
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-slate-800 truncate">

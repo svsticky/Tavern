@@ -1,9 +1,12 @@
-import { useTranslation } from "react-i18next";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { RegisterSlideResponseDto } from "~/api";
 import Button from "../../UI/Button";
 import Form from "../../UI/Form/Form";
-import { handleSlideSubmit, handleSlideDelete } from "./EditRegisterSlideOverlay.handlers";
+import {
+  handleSlideDelete,
+  handleSlideSubmit,
+} from "./EditRegisterSlideOverlay.handlers";
 
 /**
  * An overlay component used for creating or editing registration page slideshow slides.
@@ -18,9 +21,6 @@ export default function EditRegisterSlideOverlay({
   slide?: RegisterSlideResponseDto;
 }) {
   const { t } = useTranslation();
-  const [formData, setFormData] = useState({
-    sortOrder: slide ? slide.sortOrder : 0,
-  });
   const [slideFile, setSlideFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +28,6 @@ export default function EditRegisterSlideOverlay({
     e.preventDefault();
     handleSlideSubmit({
       e,
-      formData,
       slideFile,
       slide,
       setLoading,
@@ -39,7 +38,9 @@ export default function EditRegisterSlideOverlay({
   return (
     <Form onSubmit={handleSubmit}>
       <div className="w-full flex flex-col gap-1">
-        <label className="text-sm font-semibold text-slate-800">{t("slide_image")}</label>
+        <label className="text-sm font-semibold text-slate-800">
+          {t("slide_image")}
+        </label>
         <input
           type="file"
           accept="image/*"

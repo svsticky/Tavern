@@ -3,10 +3,10 @@ import type React from "react";
 import toast from "react-hot-toast";
 import {
   deleteExternallinksById,
+  type ExternalLinkResponseDto,
   postExternallinks,
   postExternallinksByIdIcon,
   putExternallinksById,
-  type ExternalLinkResponseDto,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
@@ -90,7 +90,11 @@ export const handleLinkSubmit = async ({
   toast.promise(editLinkProcess(), {
     loading: link ? t("saving") : t("creating_external_link"),
     success: link ? t("saved") : t("external_link_created_successfully"),
-    error: (error) => appendErrorMessage(link ? t("failed_to_save") : t("failed_to_create_external_link"), error),
+    error: (error) =>
+      appendErrorMessage(
+        link ? t("failed_to_save") : t("failed_to_create_external_link"),
+        error,
+      ),
   });
 };
 
@@ -126,6 +130,7 @@ export const handleLinkDelete = async ({
   toast.promise(deleteLinkProcess(), {
     loading: t("deleting_external_link"),
     success: t("external_link_deleted_successfully"),
-    error: (error) => appendErrorMessage(t("failed_to_delete_external_link"), error),
+    error: (error) =>
+      appendErrorMessage(t("failed_to_delete_external_link"), error),
   });
 };

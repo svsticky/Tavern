@@ -1,9 +1,9 @@
+import * as Icons from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import * as Icons from "lucide-react";
+import { type ExternalLinkResponseDto, getExternallinks } from "~/api";
 import ExternalLinkTile from "~/components/ExternalLinkTile";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
-import { getExternallinks, type ExternalLinkResponseDto } from "~/api";
 import { getEnv } from "~/util/config.utils";
 
 /**
@@ -29,7 +29,9 @@ export default function ExternalLinksPage() {
         const res = await getExternallinks();
         if (res.data) {
           // Sort by sortOrder ascending
-          const sorted = [...res.data].sort((a, b) => a.sortOrder - b.sortOrder);
+          const sorted = [...res.data].sort(
+            (a, b) => a.sortOrder - b.sortOrder,
+          );
           setLinks(sorted);
         }
       } catch (e) {
@@ -43,16 +45,16 @@ export default function ExternalLinksPage() {
 
   const defaultIcons = [
     Icons.LayoutDashboard, // Mongoose
-    Icons.Camera,          // Photos
-    Icons.FileText,        // Files
-    Icons.Calculator,      // Digidecs
-    Icons.BookOpen,        // Books
-    Icons.Briefcase,       // Jobs
-    Icons.Github,          // Github
-    Icons.MessageSquare,   // Discord
-    Icons.Book,            // Stickypedia
-    Icons.ShieldAlert,     // Voeljeveilig
-    Icons.Trophy,          // Commissiestrijd
+    Icons.Camera, // Photos
+    Icons.FileText, // Files
+    Icons.Calculator, // Digidecs
+    Icons.BookOpen, // Books
+    Icons.Briefcase, // Jobs
+    Icons.Github, // Github
+    Icons.MessageSquare, // Discord
+    Icons.Book, // Stickypedia
+    Icons.ShieldAlert, // Voeljeveilig
+    Icons.Trophy, // Commissiestrijd
   ];
 
   const defaultColors = [
@@ -76,12 +78,17 @@ export default function ExternalLinksPage() {
       {loading ? (
         <div className="text-center text-slate-500 py-12">{t("loading")}</div>
       ) : links.length === 0 ? (
-        <div className="text-center text-slate-500 py-12">{t("no_external_links")}</div>
+        <div className="text-center text-slate-500 py-12">
+          {t("no_external_links")}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {links.map((link, index) => {
-            const colors = defaultColors[index % defaultColors.length] || { bg: "bg-slate-100", text: "text-slate-600" };
-            
+            const colors = defaultColors[index % defaultColors.length] || {
+              bg: "bg-slate-100",
+              text: "text-slate-600",
+            };
+
             const icon = link.iconPath ? (
               <img
                 src={`${getEnv("ApiUrl")}/externallinks/${link.id}/icon`}
@@ -89,16 +96,21 @@ export default function ExternalLinksPage() {
                 className="w-6 h-6 object-contain"
                 loading="lazy"
               />
-            ) : (() => {
-              const FallbackIcon = defaultIcons[index % defaultIcons.length] || Icons.Link;
-              return <FallbackIcon size={24} />;
-            })();
+            ) : (
+              (() => {
+                const FallbackIcon =
+                  defaultIcons[index % defaultIcons.length] || Icons.Link;
+                return <FallbackIcon size={24} />;
+              })()
+            );
 
             return (
               <ExternalLinkTile
                 key={link.id}
                 title={isDutch ? link.titleDutch : link.titleEnglish}
-                description={isDutch ? link.descriptionDutch : link.descriptionEnglish}
+                description={
+                  isDutch ? link.descriptionDutch : link.descriptionEnglish
+                }
                 url={link.url}
                 iconBgColor={colors.bg}
                 iconColor={colors.text}
