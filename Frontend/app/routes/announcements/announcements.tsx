@@ -36,8 +36,6 @@ export default function AnnouncementsPage() {
 
   const [loading, setLoading] = useState(true);
 
-  const [isBoard, setIsBoard] = useState(false);
-
   const [announcements, setAnnouncements] = useState<
     GetAnnouncementResponseDto[]
   >([]);
@@ -45,23 +43,27 @@ export default function AnnouncementsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let cancelled = false;
     const loadToken = async () => {
-      const tokenParsed = await authService.getTokenParsed();
-      setTokenParsed(tokenParsed);
-      if (!tokenParsed) {
-        console.error("User not authenticated");
-        return;
+      const token = await authService.getTokenParsed();
+      if (!cancelled) {
+        setTokenParsed(token);
+        if (!token) {
+          console.error("User not authenticated");
+        }
       }
-      setIsBoard(
-        isBoardOrCandidateBoard(
-          tokenParsed,
-          boardGroupId,
-          candidateBoardGroupId,
-        ),
-      );
     };
     loadToken();
-  }, [authService, boardGroupId, candidateBoardGroupId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const isBoard = isBoardOrCandidateBoard(
+    tokenParsed,
+    boardGroupId,
+    candidateBoardGroupId,
+  );
 
   useEffect(() => {
     if (tokenParsed) {

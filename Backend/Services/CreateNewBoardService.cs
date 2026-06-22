@@ -23,7 +23,7 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
         var boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))?.Value ?? "1");
         var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))?.Value ?? "2");
         
-        var currentYear = FinancialYearUtils.GetCurrentFinancialYear();
+        var currentYear = YearUtils.GetCurrentBoardYear();
         var lastYear = currentYear - 1;
 
         bool alreadyRotated = await db.GroupMemberships.AnyAsync(gm => 

@@ -261,7 +261,7 @@ public abstract class AbstractMailService
         int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
 
         Role? role = await _db.GroupMemberships
-            .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear())
+            .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
             .Select(gm => gm.RoleAlias != null ? gm.RoleAlias.Role : null)
             .FirstOrDefaultAsync(ct);
 

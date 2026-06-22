@@ -7,6 +7,7 @@ import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { setGlobalFinancialYearStartDate, setGlobalBoardChangeDate } from "~/util/date.util";
 
 /**
  * The core layout wrapper for all authenticated routes in the application.
@@ -69,6 +70,10 @@ export default function AuthenticatedLayout() {
     setBoardGroupId,
     candidateBoardGroupId,
     setCandidateBoardGroupId,
+    financialYearStartDate,
+    setFinancialYearStartDate,
+    boardChangeDate,
+    setBoardChangeDate,
     member,
     setMember,
   } = useApp();
@@ -176,6 +181,40 @@ export default function AuthenticatedLayout() {
         })
         .catch((err) =>
           console.error("Could not fetch candidate board group ID", err),
+        );
+    }
+
+    if (financialYearStartDate === null) {
+      getSettingsById({
+        path: {
+          id: "FinancialYearStartDate",
+        },
+      })
+        .then((res) => {
+          if (res.data && res.data.value) {
+            setFinancialYearStartDate(res.data.value);
+            setGlobalFinancialYearStartDate(res.data.value);
+          }
+        })
+        .catch((err) =>
+          console.error("Could not fetch financial year start date", err),
+        );
+    }
+
+    if (boardChangeDate === null) {
+      getSettingsById({
+        path: {
+          id: "BoardChangeDate",
+        },
+      })
+        .then((res) => {
+          if (res.data && res.data.value) {
+            setBoardChangeDate(res.data.value);
+            setGlobalBoardChangeDate(res.data.value);
+          }
+        })
+        .catch((err) =>
+          console.error("Could not fetch board change date", err),
         );
     }
 

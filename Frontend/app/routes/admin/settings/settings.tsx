@@ -79,7 +79,9 @@ export default function SettingsPage() {
     !settings.MembershipPrice ||
     !settings.FinancialEmailSender ||
     !settings.MainBoardMail ||
-    !settings.ActivityUpdateEmailSender;
+    !settings.ActivityUpdateEmailSender ||
+    !settings.FinancialYearStartDate ||
+    !settings.BoardChangeDate;
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
@@ -267,6 +269,32 @@ export default function SettingsPage() {
                   setSettings,
                 )
               }
+            />
+            <Input
+              label={t("financial_year_start_date")}
+              placeholder="MM-DD"
+              value={settings.FinancialYearStartDate || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "FinancialYearStartDate",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
+            />
+            <Input
+              label={t("board_change_date")}
+              placeholder="MM-DD"
+              value={settings.BoardChangeDate || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BoardChangeDate",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
             />
           </FormSection>
 

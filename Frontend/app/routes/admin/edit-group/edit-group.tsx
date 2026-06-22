@@ -21,7 +21,8 @@ import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
-import { getAssociationYear } from "~/util/date.util";
+import { useApp } from "~/context/AppContext";
+import { getFinancialYear, isWithinThreeMonthsBeforeBoardChange } from "~/util/date.util";
 import {
   type EditGroupFormData,
   handleAddGroupEnrollment,
@@ -77,11 +78,15 @@ export default function EditGroupPage() {
     Active: false,
   });
 
-  const [selectedYear, setSelectedYear] = useState(getAssociationYear());
+  const { boardChangeDate } = useApp();
+  const [selectedYear, setSelectedYear] = useState(getFinancialYear());
+
+  const showNextYear = isWithinThreeMonthsBeforeBoardChange(boardChangeDate);
+  const maxYear = showNextYear ? getFinancialYear() + 1 : getFinancialYear();
 
   const yearsSince2007 = Array.from(
-    { length: getAssociationYear() - 2007 + 1 },
-    (_, i) => getAssociationYear() - i,
+    { length: maxYear - 2007 + 1 },
+    (_, i) => maxYear - i,
   );
 
   const enrollmentColumns: Column<GroupMembershipResponseDto>[] = [
@@ -122,6 +127,7 @@ export default function EditGroupPage() {
           <div className="w-fit min-w-[120px]">
             <Select
               label={null}
+              value={selectedYear}
               options={yearsSince2007.map((year) => ({
                 value: year,
                 label: `${year - 1}-${year}`,

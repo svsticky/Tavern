@@ -431,6 +431,8 @@
   "enrollment_waiting_list": "You are on the waiting list.",
   "active_members": "Active members",
   "financial_email_sender": "Financial email sender",
+  "financial_year_start_date": "Financial year start date (MM-DD)",
+  "board_change_date": "Board change date (MM-DD)",
   "activity_update_email_sender": "Activity update email sender",
   "membership_payment_expiration_time": "Membership duration (years, leave empty for no expiration)",
   "should_pay_membership": "Should pay membership",

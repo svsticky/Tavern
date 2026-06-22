@@ -8,9 +8,10 @@ import {
   getGroups,
   patchActivitiesById,
   postActivities,
+  postActivitiesByIdPoster,
 } from "~/api";
-import { audienceMap } from "~/types/AudienceMap";
-import { getAssociationYear } from "~/util/date.util";
+import { getAudienceString } from "~/types/AudienceMap";
+import { getFinancialYear } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 
 /**
@@ -44,7 +45,7 @@ export const loadGroups = async (
 ) => {
   try {
     const groupsRes = await getGroups({
-      query: { IncludeInactive: false, MembershipYear: getAssociationYear() },
+      query: { IncludeInactive: false, MembershipYear: getFinancialYear() },
     });
     if (groupsRes.error) {
       throw groupsRes.error ?? new Error("Failed to load groups");
@@ -213,7 +214,7 @@ export const handleActivitySubmit = async ({
       IsAdultOnly: fd.get("IsAdultOnly") === "on",
       IsWeeklyDrinks: fd.get("IsWeeklyDrinks") === "on",
 
-      AllowedAudience: audienceMap[audienceFlags],
+      AllowedAudience: getAudienceString(audienceFlags),
 
       VatRate: isBoard
         ? fd.get("VatRate")
@@ -332,7 +333,7 @@ export const handleActivitySubmit = async ({
           {
             op: "replace",
             path: "/AllowedAudience",
-            value: audienceMap[audienceFlags],
+            value: getAudienceString(audienceFlags),
           },
           {
             op: "replace",
@@ -395,6 +396,20 @@ export const handleActivitySubmit = async ({
         if (response.error) {
           throw response.error ?? new Error("Failed to update activity");
         }
+
+        const posterFile = fd.get("Poster") as File;
+        if (posterFile && posterFile.size > 0) {
+          const posterResponse = await postActivitiesByIdPoster({
+            path: { id: Number(id) },
+            body: {
+              poster: posterFile,
+            },
+          });
+          if (posterResponse.error) {
+            throw posterResponse.error ?? new Error("Failed to upload poster");
+          }
+        }
+
         navigate(`${redirectPathBase}${id}`);
       } else {
         const response = await postActivities(payload);
