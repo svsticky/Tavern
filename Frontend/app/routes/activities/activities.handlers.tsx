@@ -148,7 +148,7 @@ export const downloadPosters = async (
 ) => {
   const posterUrls = activities
     .filter((a) => a.showInKoala && a.posterPath)
-    .map((a) => `${getEnv("ApiUrl")}/api/activities/${a.id}/poster`);
+    .map((a) => `${getEnv("ApiUrl")}/activities/${a.id}/poster`);
 
   if (posterUrls.length === 0) {
     toast.error(appendErrorMessage(t("no_posters_found")));

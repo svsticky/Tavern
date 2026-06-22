@@ -69,6 +69,12 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "LidVanVerdiensteShouldPayMembership", "0");
 
+        string financialYearStartDateSetting = await EnsureSettingExists(db, "FinancialYearStartDate", "08-01");
+        YearUtils.FinancialYearStartDate = financialYearStartDateSetting;
+
+        string boardChangeDateSetting = await EnsureSettingExists(db, "BoardChangeDate", "08-01");
+        YearUtils.BoardChangeDate = boardChangeDateSetting;
+
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();
@@ -164,11 +170,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
-            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear());
+            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == YearUtils.GetCurrentBoardYear());
             if (!hasBoardMembers)
             {
                 var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value);
-                var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear() - 1).ToListAsync();
+                var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == YearUtils.GetCurrentBoardYear() - 1).ToListAsync();
                 
                 if(candidateBoardMembershipsLastYear.Any())
                 {
@@ -204,7 +210,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     GroupId = boardGroupId,
                     MemberId = backupMember.Id,
                     RoleAliasId = null,
-                    MembershipYear = FinancialYearUtils.GetCurrentFinancialYear()
+                    MembershipYear = YearUtils.GetCurrentBoardYear()
                 });
 
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id);

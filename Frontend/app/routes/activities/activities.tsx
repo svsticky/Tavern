@@ -44,30 +44,31 @@ export default function ActivitiesPage() {
   const { boardGroupId, candidateBoardGroupId } = useApp();
   const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-  const [isBoard, setIsBoard] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const loadToken = async () => {
-      const token = await authService.getToken();
-      const tokenParsed = await authService.getTokenParsed();
-      setToken(token);
-      setTokenParsed(tokenParsed);
-
-      if (!tokenParsed) {
-        console.error("User not authenticated");
-        return;
+      const tokenVal = await authService.getToken();
+      const tokenParsedVal = await authService.getTokenParsed();
+      if (!cancelled) {
+        setToken(tokenVal);
+        setTokenParsed(tokenParsedVal);
+        if (!tokenParsedVal) {
+          console.error("User not authenticated");
+        }
       }
-
-      setIsBoard(
-        isBoardOrCandidateBoard(
-          tokenParsed,
-          boardGroupId,
-          candidateBoardGroupId,
-        ),
-      );
     };
     loadToken();
-  }, [authService, boardGroupId, candidateBoardGroupId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const isBoard = isBoardOrCandidateBoard(
+    tokenParsed,
+    boardGroupId,
+    candidateBoardGroupId,
+  );
 
   const navigate = useNavigate();
 

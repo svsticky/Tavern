@@ -226,6 +226,17 @@ public class KeycloakAPIService(
 
     private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
     {
+        var boardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
+        var candidateBoardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value;
+        uint boardGroupId = string.IsNullOrEmpty(boardGroupIdStr) ? 0 : uint.Parse(boardGroupIdStr);
+        uint candidateBoardGroupId = string.IsNullOrEmpty(candidateBoardGroupIdStr) ? 0 : uint.Parse(candidateBoardGroupIdStr);
+        uint currentBoardYear = Utils.DateTime.YearUtils.GetCurrentBoardYear();
+
+        bool isAdmin = db.GroupMemberships.Any(gm => 
+            gm.MemberId == member.Id && 
+            gm.MembershipYear == currentBoardYear && 
+            (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId));
+
         return new
         {
             username = member.Email,
@@ -239,7 +250,11 @@ public class KeycloakAPIService(
                 { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id) ? "full" : "not_paid" } },
                 { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
-                { "locale", new List<string> { member.PreferredLanguage.ToString() } }
+                { "locale", new List<string> { member.PreferredLanguage.ToString() } },
+                { "email", new List<string> { currentEmail } },
+                { "is_admin", new List<string> { isAdmin.ToString().ToLower() } },
+                { "full_name", new List<string> { $"{member.FirstName} {member.LastName}" } },
+                { "birthday", new List<string> { member.DateOfBirth.ToString("yyyy-MM-dd") } }
             }
         };
     }

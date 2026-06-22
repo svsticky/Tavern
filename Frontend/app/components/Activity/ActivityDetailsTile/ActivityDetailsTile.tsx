@@ -92,7 +92,7 @@ export default function ActivityDetailsTile({
     "loading" | "loaded" | "error"
   >("loading");
 
-  const posterUrl = `${getEnv("ApiUrl")}/api/activities/${activity.id}/poster`;
+  const posterUrl = `${getEnv("ApiUrl")}/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 
   const startDate = new Date(activity.dateTimeStart);
@@ -119,10 +119,6 @@ export default function ActivityDetailsTile({
     hour: "2-digit",
     minute: "2-digit",
   });
-
-  const ableToEnroll =
-    !member?.suspended &&
-    member?.studyEnrollments?.some((se) => se.status === "Enrolled");
 
   const inTargetAudience = isMemberInTargetAudience(
     member,
@@ -310,7 +306,7 @@ export default function ActivityDetailsTile({
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-          {ableToEnroll &&
+          {activity.isEnrollable &&
             (isEnrolled ? (
               <div className="flex flex-col gap-3">
                 {activity.specificationQuestions.length > 0 && (

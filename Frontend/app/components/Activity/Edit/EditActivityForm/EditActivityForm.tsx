@@ -17,6 +17,7 @@ import Input from "../../../UI/Input";
 import Select from "../../../UI/Select";
 import TextArea from "../../../UI/TextArea";
 import EditQuestionTile from "../EditQuestionTile";
+import { parseAudience } from "~/types/AudienceMap";
 import {
   addQuestion,
   formatDateOnly,
@@ -69,6 +70,7 @@ export default function EditActivityForm({
   const { pathname } = window.location;
 
   const isEdit = !!id;
+  const audienceMask = parseAudience(activity?.allowedAudience);
 
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -194,7 +196,7 @@ export default function EditActivityForm({
                   name="AudienceBit"
                   value="1"
                   defaultChecked={
-                    isEdit ? !!(activity?.allowedAudience ?? 0 & 1) : true
+                    isEdit ? !!(audienceMask & 1) : true
                   }
                 />
                 <Checkbox
@@ -202,7 +204,7 @@ export default function EditActivityForm({
                   name="AudienceBit"
                   value="2"
                   defaultChecked={
-                    isEdit ? !!(activity?.allowedAudience ?? 0 & 2) : true
+                    isEdit ? !!(audienceMask & 2) : true
                   }
                 />
                 <Checkbox
@@ -210,7 +212,7 @@ export default function EditActivityForm({
                   name="AudienceBit"
                   value="4"
                   defaultChecked={
-                    isEdit ? !!(activity?.allowedAudience ?? 0 & 4) : true
+                    isEdit ? !!(audienceMask & 4) : true
                   }
                 />
                 <Checkbox
@@ -218,7 +220,7 @@ export default function EditActivityForm({
                   name="AudienceBit"
                   value="8"
                   defaultChecked={
-                    isEdit ? !!(activity?.allowedAudience ?? 0 & 8) : true
+                    isEdit ? !!(audienceMask & 8) : true
                   }
                 />
                 <Checkbox
@@ -226,7 +228,7 @@ export default function EditActivityForm({
                   name="AudienceBit"
                   value="16"
                   defaultChecked={
-                    isEdit ? !!(activity?.allowedAudience ?? 0 & 16) : true
+                    isEdit ? !!(audienceMask & 16) : true
                   }
                 />
                 <Checkbox
@@ -234,7 +236,7 @@ export default function EditActivityForm({
                   name="AudienceBit"
                   value="32"
                   defaultChecked={
-                    isEdit ? !!(activity?.allowedAudience ?? 0 & 32) : true
+                    isEdit ? !!(audienceMask & 32) : true
                   }
                 />
               </div>

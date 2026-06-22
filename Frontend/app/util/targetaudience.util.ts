@@ -1,6 +1,6 @@
 import type { MemberResponseDto } from "~/api";
-import { AudienceFlags } from "~/types/AudienceMap";
-import { getAssociationYear } from "./date.util";
+import { AudienceFlags, parseAudience } from "~/types/AudienceMap";
+import { getFinancialYear } from "./date.util";
 
 /**
  * Determines if a member is in a specific target audience.
@@ -14,10 +14,7 @@ export const isMemberInTargetAudience = (
 ): boolean => {
   if (!member || !member.studyEnrollments) return false;
 
-  const audienceMask =
-    typeof targetAudience === "number"
-      ? targetAudience
-      : AudienceFlags[targetAudience as keyof typeof AudienceFlags] || 0;
+  const audienceMask = parseAudience(targetAudience);
 
   if (audienceMask === 0) return false;
   if (audienceMask === AudienceFlags.All) return true;
@@ -92,7 +89,7 @@ export const isMemberInTargetAudience = (
   if (audienceMask & AudienceFlags.ActiveMembers) {
     if (
       member.groupMemberships?.some(
-        (gm) => gm.membershipYear === getAssociationYear(),
+        (gm) => gm.membershipYear === getFinancialYear(),
       )
     )
       return true;

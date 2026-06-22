@@ -412,6 +412,36 @@ public class ActivityRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchActivity_WithSpecificationQuestionsJson_AppliesPatchAndSyncsQuestions()
+    {
+        var activity = CreateActivity("A1");
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.Price, 20m);
+
+        var jsonQuestions = "[{\"questionDutch\": \"Vraag 1\", \"questionEnglish\": \"Question 1\", \"type\": \"String\", \"isMandatory\": true, \"isPublic\": true, \"options\": []}]";
+        patchDoc.Operations.Add(new Operation<Activity>("replace", "/SpecificationQuestionsJson", null, jsonQuestions));
+
+        await _repository.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities
+            .Include(a => a.SpecificationQuestions)
+            .FirstOrDefaultAsync(a => a.Id == activity.Id);
+
+        Assert.Equal(20m, saved?.Price);
+        Assert.Single(saved?.SpecificationQuestions ?? new List<SpecificationQuestion>());
+        var question = saved!.SpecificationQuestions.First();
+        Assert.Equal("Vraag 1", question.QuestionDutch);
+        Assert.Equal("Question 1", question.QuestionEnglish);
+        Assert.True(question.IsMandatory);
+    }
+
+    [Fact]
     public async Task UploadPoster_SavesNewPosterAndDeletesOld()
     {
         var activity = CreateActivity("A1");

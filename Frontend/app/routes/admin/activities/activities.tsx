@@ -9,7 +9,7 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
-import { formatDate, getAssociationYear } from "~/util/date.util";
+import { formatDate, getFinancialYear } from "~/util/date.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
 /**
@@ -30,7 +30,7 @@ export default function Activities() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
-  const currentYear = getAssociationYear();
+  const currentYear = getFinancialYear();
   const [year, setYear] = useState(currentYear);
   const [activities, setActivities] = useState<ActivityResponseDto[] | null>(
     null,

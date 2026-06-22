@@ -74,7 +74,7 @@ public class ActivityRepository : IActivityRepository
 
         // Get userGroupIds to filter activities that are only visible for the organizers of the groups
         var userGroupIds = await _db.GroupMemberships
-            .Where(gm => gm.MemberId == userId && gm.MembershipYear == FinancialYearUtils.GetCurrentFinancialYear())
+            .Where(gm => gm.MemberId == userId && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
             .Select(gm => gm.GroupId)
             .ToListAsync();
 
@@ -221,6 +221,18 @@ public class ActivityRepository : IActivityRepository
                 || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
+        // Intercept and handle SpecificationQuestionsJson operations from the patch document
+        var specQuestionsOp = patchDoc.Operations.FirstOrDefault(op => 
+            op.path.Equals("/SpecificationQuestionsJson", StringComparison.OrdinalIgnoreCase));
+
+        List<UpdateSpecificationQuestionDTO>? questionsToSync = null;
+        if (specQuestionsOp != null)
+        {
+            var jsonString = specQuestionsOp.value?.ToString();
+            questionsToSync = ActivityValidator.ParseUpdateQuestions(jsonString);
+            patchDoc.Operations.Remove(specQuestionsOp);
+        }
+
         using var transaction = await _db.Database.BeginTransactionAsync(ct);
 
         try
@@ -239,6 +251,11 @@ public class ActivityRepository : IActivityRepository
             }
 
             StateValidator.Validate(activity);
+
+            if (questionsToSync != null)
+            {
+                await SyncSpecificationQuestions(activity, questionsToSync);
+            }
 
             IEnumerable<Enrollment> promotedEnrollments;
 

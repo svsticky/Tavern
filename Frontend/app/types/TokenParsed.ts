@@ -8,4 +8,8 @@ export type TokenParsed = {
   given_name: string;
   family_name: string;
   name: string;
+  email?: string;
+  is_admin?: boolean;
+  full_name?: string;
+  birthday?: string;
 };

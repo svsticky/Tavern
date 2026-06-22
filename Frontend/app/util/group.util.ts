@@ -1,19 +1,21 @@
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getAssociationYear } from "./date.util";
+import { getFinancialYear, getBoardYear } from "./date.util";
 
 /**
  * Checks if the current user is in a specific group with an optional role.
  * @param tokenParsed The parsed token.
  * @param group The name of the group to check.
  * @param role The optional role within the group.
+ * @param year The optional year of the membership.
  * @returns True if the user is in the specified group, false otherwise.
  */
 export const isInGroupWithName = (
   tokenParsed: TokenParsed,
   group: string,
   role?: string,
+  year?: number,
 ): boolean => {
-  const year = getAssociationYear();
+  const targetYear = year !== undefined ? year : getFinancialYear();
 
   if (!tokenParsed.group_memberships) return false;
 
@@ -24,7 +26,7 @@ export const isInGroupWithName = (
     const gRoleName = gRole.split(";")[1];
 
     return (
-      Number(gYear) === year &&
+      Number(gYear) === targetYear &&
       gGroupName === group &&
       (role ? gRoleName === role : true)
     );
@@ -36,14 +38,16 @@ export const isInGroupWithName = (
  * @param tokenParsed The parsed token.
  * @param group The ID of the group to check.
  * @param role The optional role within the group.
+ * @param year The optional year of the membership.
  * @returns True if the user is in the specified group, false otherwise.
  */
 export const isInGroupWithId = (
   tokenParsed: TokenParsed,
   group: number,
   role?: string,
+  year?: number,
 ): boolean => {
-  const year = getAssociationYear();
+  const targetYear = year !== undefined ? year : getFinancialYear();
 
   if (!tokenParsed.group_memberships) return false;
 
@@ -54,7 +58,7 @@ export const isInGroupWithId = (
     const gRoleId = gRole.split(";")[0];
 
     return (
-      Number(gYear) === year &&
+      Number(gYear) === targetYear &&
       Number(gGroupId) === group &&
       (role ? gRoleId === role : true)
     );
@@ -72,7 +76,7 @@ export const isBoard = (
 ): boolean => {
   if (!boardGroupId) return false;
 
-  return isInGroupWithId(tokenParsed, boardGroupId);
+  return isInGroupWithId(tokenParsed, boardGroupId, undefined, getBoardYear());
 };
 
 /**
@@ -85,10 +89,11 @@ export const isBoardOrCandidateBoard = (
   boardGroupId: number | null,
   candidateBoardGroupId: number | null,
 ): boolean => {
-  if (!tokenParsed || !boardGroupId || !candidateBoardGroupId) return false;
+  if (!tokenParsed) return false;
 
-  return (
-    isInGroupWithId(tokenParsed, boardGroupId) ||
-    isInGroupWithId(tokenParsed, candidateBoardGroupId)
-  );
+  const boardYear = getBoardYear();
+  const inBoard = boardGroupId ? isInGroupWithId(tokenParsed, boardGroupId, undefined, boardYear) : false;
+  const inCandidate = candidateBoardGroupId ? isInGroupWithId(tokenParsed, candidateBoardGroupId, undefined, boardYear) : false;
+
+  return inBoard || inCandidate;
 };

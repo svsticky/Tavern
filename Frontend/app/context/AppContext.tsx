@@ -21,6 +21,10 @@ interface AppContextType {
   setBoardGroupId: (id: number) => void;
   candidateBoardGroupId: number | null;
   setCandidateBoardGroupId: (id: number) => void;
+  financialYearStartDate: string | null;
+  setFinancialYearStartDate: (date: string) => void;
+  boardChangeDate: string | null;
+  setBoardChangeDate: (date: string) => void;
   member: MemberResponseDto | null;
   setMember: React.Dispatch<React.SetStateAction<MemberResponseDto | null>>;
 }
@@ -47,6 +51,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [candidateBoardGroupId, setCandidateBoardGroupId] = useState<
     number | null
   >(null);
+  const [financialYearStartDate, setFinancialYearStartDate] = useState<string | null>(null);
+  const [boardChangeDate, setBoardChangeDate] = useState<string | null>(null);
   const [member, setMember] = useState<MemberResponseDto | null>(null);
 
   return (
@@ -56,6 +62,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setBoardGroupId,
         candidateBoardGroupId,
         setCandidateBoardGroupId,
+        financialYearStartDate,
+        setFinancialYearStartDate,
+        boardChangeDate,
+        setBoardChangeDate,
         member,
         setMember,
       }}

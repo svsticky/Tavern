@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
 import type { ActivityResponseDto } from "~/api";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import { getEnv } from "~/util/config.utils";
@@ -53,29 +54,37 @@ export default function ActivityTile({
   const { t } = useTranslation();
   const authService = useAuth();
   const { boardGroupId, candidateBoardGroupId } = useApp();
-  const [canEdit, setCanEdit] = useState(false);
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
   useEffect(() => {
+    let cancelled = false;
     const loadToken = async () => {
       const token = await authService.getTokenParsed();
-      setCanEdit(
-        !!(
-          isBoardOrCandidateBoard(token, boardGroupId, candidateBoardGroupId) ||
-          (!activity.showInKoala &&
-            !activity.showOnWebsite &&
-            activity.organizerId &&
-            new Date(activity.dateTimeStart) > new Date(Date.now()))
-        ),
-      );
+      if (!cancelled) {
+        setTokenParsed(token);
+      }
     };
     loadToken();
-  }, [authService, boardGroupId, candidateBoardGroupId, activity]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const canEdit =
+    !!tokenParsed &&
+    (isBoardOrCandidateBoard(tokenParsed, boardGroupId, candidateBoardGroupId) ||
+      (!activity.showInKoala &&
+        !activity.showOnWebsite &&
+        activity.organizerId &&
+        new Date(activity.dateTimeStart) > new Date(Date.now())));
+
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(
     "loading",
   );
 
-  const posterUrl = `${getEnv("ApiUrl")}/api/activities/${activity.id}/poster`;
+  const posterUrl = `${getEnv("ApiUrl")}/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
 
   const startDate = new Date(activity.dateTimeStart);

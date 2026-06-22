@@ -137,7 +137,7 @@ public class MailsControllerTests : IDisposable
         var group = new Group { Id = 1, Name = "Board", Type = GroupType.Committee, Active = true };
         _db.Groups.Add(group);
 
-        var currentYear = FinancialYearUtils.GetCurrentFinancialYear();
+        var currentYear = YearUtils.GetCurrentFinancialYear();
         var membership = new GroupMembership
         {
             MemberId = _userId,

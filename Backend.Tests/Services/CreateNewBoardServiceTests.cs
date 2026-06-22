@@ -57,7 +57,7 @@ public class CreateNewBoardServiceTests : IDisposable
     {
         // Arrange
         var boardGroupId = 10u;
-        var currentYear = FinancialYearUtils.GetCurrentFinancialYear();
+        var currentYear = YearUtils.GetCurrentBoardYear();
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
         
@@ -86,7 +86,7 @@ public class CreateNewBoardServiceTests : IDisposable
         // Arrange
         var boardGroupId = 10u;
         var candidateBoardGroupId = 20u;
-        var currentYear = FinancialYearUtils.GetCurrentFinancialYear();
+        var currentYear = YearUtils.GetCurrentBoardYear();
         var lastYear = currentYear - 1;
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
@@ -146,7 +146,7 @@ public class CreateNewBoardServiceTests : IDisposable
         // Arrange
         var boardGroupId = 10u;
         var candidateBoardGroupId = 20u;
-        var currentYear = FinancialYearUtils.GetCurrentFinancialYear();
+        var currentYear = YearUtils.GetCurrentBoardYear();
         var lastYear = currentYear - 1;
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });

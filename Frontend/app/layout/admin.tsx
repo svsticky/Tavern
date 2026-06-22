@@ -4,7 +4,7 @@ import { Outlet, useNavigate } from "react-router";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isInGroupWithId } from "~/util/group.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * A security-first layout wrapper for administrative and board-level routes.
@@ -47,8 +47,7 @@ export default function AdminLayout() {
       return;
     }
     if (
-      !isInGroupWithId(tokenParsed, boardGroupId) &&
-      !isInGroupWithId(tokenParsed, candidateBoardGroupId)
+      !isBoardOrCandidateBoard(tokenParsed, boardGroupId, candidateBoardGroupId)
     ) {
       navigate("/");
       return;

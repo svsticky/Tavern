@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.JsonPatch;
+using Hangfire;
 
 namespace Backend.Repositories;
 
@@ -13,19 +14,22 @@ public class SettingsRepository : ISettingsRepository
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionService;
     private readonly ILogger<SettingsRepository> _logger;
-    private readonly string[] _openSettings = new [] { "boardgroupid", "candidateboardgroupid", "membershipprice", "mastersshouldpaymembership", "membershippaymentexpirationtime" };
+    private readonly IRecurringJobManager _recurringJobManager;
+    private readonly string[] _openSettings = new [] { "boardgroupid", "candidateboardgroupid", "membershipprice", "mastersshouldpaymembership", "membershippaymentexpirationtime", "financialyearstartdate", "boardchangedate" };
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SettingsRepository"/> class with the specified dependencies. The constructor takes in a database context for data access, a permission service for enforcing authorization, and a logger for logging operations. It also initializes an array of open setting names that can be accessed without board membership. This setup allows the service to manage application settings while ensuring that only authorized users can create, update, or delete settings, while still allowing certain settings to be accessed by all users.
+    /// Initializes a new instance of the <see cref="SettingsRepository"/> class with the specified dependencies.
     /// </summary>
     /// <param name="db">The database context used for data access.</param>
     /// <param name="permissionService">The permission service used to enforce authorization.</param>
     /// <param name="logger">The logger used for logging operations.</param>
-    public SettingsRepository(PostgresDbContext db, IPermissionService permissionService, ILogger<SettingsRepository> logger)
+    /// <param name="recurringJobManager">The Hangfire recurring job manager.</param>
+    public SettingsRepository(PostgresDbContext db, IPermissionService permissionService, ILogger<SettingsRepository> logger, IRecurringJobManager recurringJobManager)
     {
         _db = db;
         _permissionService = permissionService;
         _logger = logger;
+        _recurringJobManager = recurringJobManager;
     }
 
     /// <inheritdoc />
@@ -63,6 +67,16 @@ public class SettingsRepository : ISettingsRepository
         _db.Settings.Add(setting);
         await _db.SaveChangesAsync(ct);
 
+        if (name.Equals("FinancialYearStartDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = value;
+        }
+        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.BoardChangeDate = value;
+            UpdateBoardRotationJob(value);
+        }
+
         return setting;
     }
 
@@ -75,6 +89,16 @@ public class SettingsRepository : ISettingsRepository
 
         setting.Value = value;
         await _db.SaveChangesAsync(ct);
+
+        if (name.Equals("FinancialYearStartDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = value;
+        }
+        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.BoardChangeDate = value;
+            UpdateBoardRotationJob(value);
+        }
     }
 
     /// <inheritdoc />
@@ -86,6 +110,16 @@ public class SettingsRepository : ISettingsRepository
 
         _db.Settings.Remove(setting);
         await _db.SaveChangesAsync(ct);
+
+        if (name.Equals("FinancialYearStartDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = "08-01";
+        }
+        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.BoardChangeDate = "08-01";
+            UpdateBoardRotationJob("08-01");
+        }
     }
 
     /// <inheritdoc />
@@ -104,6 +138,43 @@ public class SettingsRepository : ISettingsRepository
         patchDoc.ApplyTo(setting);
 
         await _db.SaveChangesAsync(ct);
+
+        if (name.Equals("FinancialYearStartDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = setting.Value;
+        }
+        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        {
+            Backend.Utils.DateTime.YearUtils.BoardChangeDate = setting.Value;
+            UpdateBoardRotationJob(setting.Value);
+        }
+    }
+
+    private void UpdateBoardRotationJob(string boardChangeDate)
+    {
+        int targetMonth = 8;
+        int targetDay = 1;
+        var parts = boardChangeDate.Split('-');
+        if (parts.Length == 2 && 
+            int.TryParse(parts[0], out int m) && 
+            int.TryParse(parts[1], out int d))
+        {
+            targetMonth = m;
+            targetDay = d;
+        }
+
+        var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+        var recurringJobOptions = new RecurringJobOptions
+        {
+            TimeZone = amsterdamTimeZone
+        };
+
+        _recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
+            "annual-board-rotation",
+            service => service.PromoteCandidateBoardToBoardAsync(),
+            $"0 0 {targetDay} {targetMonth} *",
+            recurringJobOptions
+        );
     }
 
     private async Task<Setting> GetSettingOrThrow(string name, CancellationToken ct)

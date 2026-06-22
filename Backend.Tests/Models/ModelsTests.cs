@@ -134,7 +134,7 @@ public class ModelsTests
             new GroupMembership
             {
                 GroupId = 1u,
-                MembershipYear = FinancialYearUtils.GetCurrentFinancialYear()
+                MembershipYear = YearUtils.GetCurrentFinancialYear()
             }
         };
 

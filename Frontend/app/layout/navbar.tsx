@@ -33,31 +33,36 @@ export default function NavBarLayout() {
   const authService = useAuth();
   const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-  const [isBoard, setIsBoard] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const loadToken = async () => {
-      const tokenParsed = await authService.getTokenParsed();
-      setTokenParsed(tokenParsed);
-      if (!tokenParsed) {
-        console.error("User not authenticated");
-        return;
+      const token = await authService.getTokenParsed();
+      if (!cancelled) {
+        setTokenParsed(token);
+        if (!token) {
+          console.error("User not authenticated");
+        }
       }
-      setIsBoard(
-        isBoardOrCandidateBoard(
-          tokenParsed,
-          boardGroupId,
-          candidateBoardGroupId,
-        ),
-      );
     };
     loadToken();
-  }, [authService, boardGroupId, candidateBoardGroupId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const isBoard = isBoardOrCandidateBoard(
+    tokenParsed,
+    boardGroupId,
+    candidateBoardGroupId,
+  );
 
   const [imgSrc, setImgSrc] = useState<string>("/profile-picture.svg");
 
   useEffect(() => {
     let url: string | null = null;
+    let cancelled = false;
+
     async function loadData() {
       if (!authService.isAuthenticated() || !tokenParsed) return;
 
@@ -68,6 +73,8 @@ export default function NavBarLayout() {
           },
           responseType: "blob",
         });
+
+        if (cancelled) return;
 
         if (
           profilePictureResponse.data instanceof Blob &&
@@ -88,6 +95,7 @@ export default function NavBarLayout() {
     loadData();
 
     return () => {
+      cancelled = true;
       if (url) URL.revokeObjectURL(url);
     };
   }, [authService, tokenParsed]);

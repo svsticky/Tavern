@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Repositories;
+using Hangfire;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public class SettingsRepositoryTests : IDisposable
     private readonly PostgresDbContext _db;
     private readonly IPermissionService _permissionServiceMock;
     private readonly ILogger<SettingsRepository> _loggerMock;
+    private readonly IRecurringJobManager _recurringJobManagerMock;
     private readonly SettingsRepository _repository;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -31,7 +33,8 @@ public class SettingsRepositoryTests : IDisposable
 
         _permissionServiceMock = Substitute.For<IPermissionService>();
         _loggerMock = Substitute.For<ILogger<SettingsRepository>>();
-        _repository = new SettingsRepository(_db, _permissionServiceMock, _loggerMock);
+        _recurringJobManagerMock = Substitute.For<IRecurringJobManager>();
+        _repository = new SettingsRepository(_db, _permissionServiceMock, _loggerMock, _recurringJobManagerMock);
     }
 
     public void Dispose()
