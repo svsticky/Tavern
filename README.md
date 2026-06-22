@@ -81,7 +81,7 @@ Configure these variables in your `.env` to enable specific features locally or 
   * `MollieApiKey`: API key required for Mollie payment gateway integration.
   * `ACCOUNTING_SERVICE`, `EXACT_ACCESS_TOKEN`, `EXACT_DIVISION`: Credentials for external accounting sync (e.g., Exact Online). This variables are optional and only needed if you use an accounting service.
 * **Theme & UI Customization:**
-  * `LOGO_URL`, `BOARD_PRIMARY_LIGHT`, `BOARD_PRIMARY`, `BOARD_PRIMARY_DARK`: Branding configuration variables injected into the Vite frontend.
+  * `LOGO_URL`: Branding logo URL injected into the Vite frontend. Board colors are managed in the admin settings and stored in the database.
 * **Object Storage (S3 / LocalStack):**
   * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_SERVICE_URL`: Credentials and endpoints for AWS S3 object storage (defaults are configured to run with LocalStack locally).
 * **Mail Services (optional for development, needed if you want mailing to work):**

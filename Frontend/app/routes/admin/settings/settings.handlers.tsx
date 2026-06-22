@@ -13,6 +13,23 @@ import {
   type Setting,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
+import { BOARD_THEME_SETTINGS_UPDATED_EVENT } from "~/util/theme-settings";
+
+const BOARD_COLOR_SETTINGS = new Set([
+  "BoardPrimaryLight",
+  "BoardPrimary",
+  "BoardPrimaryDark",
+]);
+
+const normalizeColorValue = (value: string) => {
+  const trimmed = value.trim();
+
+  if (/^#[0-9a-fA-F]{8}$/.test(trimmed)) {
+    return `#${trimmed.slice(1, 7)}`;
+  }
+
+  return trimmed;
+};
 
 /**
  * Arguments for the loadSettingsPageData handler.
@@ -53,7 +70,10 @@ export const loadSettingsPageData = async ({
 
     const settingsObj = settingsRes.data.reduce(
       (acc: Record<string, string>, s: Setting) => {
-        if (s.name) acc[s.name] = s.value || "";
+        if (s.name)
+          acc[s.name] = BOARD_COLOR_SETTINGS.has(s.name)
+            ? normalizeColorValue(s.value || "")
+            : s.value || "";
         return acc;
       },
       {},
@@ -222,6 +242,7 @@ export const handleSaveSettings = async ({
       if (hasError) throw new Error("Failed to save settings");
 
       clearTracking();
+      window.dispatchEvent(new Event(BOARD_THEME_SETTINGS_UPDATED_EVENT));
     } catch (error) {
       console.error("Error saving settings:", error);
       throw error;

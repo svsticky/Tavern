@@ -15,6 +15,7 @@ import type {
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { getActivityEnrollmentStatus } from "~/util/activity.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -138,6 +139,8 @@ export default function ActivityDetailsTile({
   useEffect(() => {
     setAnswers(toAnswerMap(currentEnrollment?.specificationAnswers));
   }, [currentEnrollment?.specificationAnswers]);
+
+  const { canEnroll, canUnenroll } = getActivityEnrollmentStatus(activity);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -306,53 +309,53 @@ export default function ActivityDetailsTile({
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-          {activity.isEnrollable &&
-            (isEnrolled ? (
-              <div className="flex flex-col gap-3">
-                {activity.specificationQuestions.length > 0 && (
+          {isEnrolled
+            ? canUnenroll && (
+                <div className="flex flex-col gap-3">
+                  {activity.specificationQuestions.length > 0 && (
+                    <Button
+                      variant="primary"
+                      className="w-full sm:w-auto"
+                      onClick={() =>
+                        handleUpdateEnrollment(
+                          authService,
+                          activity,
+                          setActivity,
+                          answers,
+                          setSubmitting,
+                        )
+                      }
+                      disabled={submitting}
+                    >
+                      {submitting ? t("saving") : t("update_answers")}
+                    </Button>
+                  )}
+
                   <Button
-                    variant="primary"
+                    variant="danger"
                     className="w-full sm:w-auto"
                     onClick={() =>
-                      handleUpdateEnrollment(
+                      handleUnenrollment(
                         authService,
                         activity,
                         setActivity,
-                        answers,
                         setSubmitting,
                       )
                     }
-                    disabled={submitting}
+                    disabled={
+                      submitting ||
+                      (activity.unenrollmentDeadline
+                        ? new Date(Date.now()) >
+                          new Date(activity.unenrollmentDeadline)
+                        : false)
+                    }
                   >
-                    {submitting ? t("saving") : t("update_answers")}
+                    {t("sign_out")}
+                    {submitting && "..."}
                   </Button>
-                )}
-
-                <Button
-                  variant="danger"
-                  className="w-full sm:w-auto"
-                  onClick={() =>
-                    handleUnenrollment(
-                      authService,
-                      activity,
-                      setActivity,
-                      setSubmitting,
-                    )
-                  }
-                  disabled={
-                    submitting ||
-                    (activity.unenrollmentDeadline
-                      ? new Date(Date.now()) >
-                        new Date(activity.unenrollmentDeadline)
-                      : false)
-                  }
-                >
-                  {t("sign_out")}
-                  {submitting && "..."}
-                </Button>
-              </div>
-            ) : (
-              activity.isEnrollable && (
+                </div>
+              )
+            : canEnroll && (
                 <Button
                   variant="primary"
                   className="w-full sm:w-auto"
@@ -375,9 +378,7 @@ export default function ActivityDetailsTile({
                     : t("sign_in")}
                   {submitting && "..."}
                 </Button>
-              )
-            ))}
-
+              )}
           <Button
             variant="secondary"
             className="w-full sm:w-auto"

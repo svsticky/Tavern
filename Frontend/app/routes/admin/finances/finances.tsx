@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import type {
   Activity,
   ActivityResponseDto,
@@ -20,7 +21,6 @@ import {
   loadFinancesData,
   refreshUnpaidPayments,
 } from "./finances.handlers";
-import { useNavigate } from "react-router";
 
 /**
  * The administrative Finances dashboard for the association.
@@ -61,7 +61,7 @@ export default function Finances() {
   >(null);
   const [exportStartDate, setExportStartDate] = useState<string>("");
   const [exportEndDate, setExportEndDate] = useState<string>("");
-  
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -181,35 +181,37 @@ export default function Finances() {
           title={t("expired_activities")}
           subtitle={t("expired_activities_subtitle")}
         >
-        {expiredActivities.map((activity) => (
-          <Tile
-            className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
-            key={activity.id}
-          >
-            <div className="flex flex-col gap-1">
-              <span className="text-slate-700 font-medium">{activity.name}</span>
-              <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
-                <span>
-                  {formatDate(new Date(activity.dateTimeEnd), "fullDateTime")}
-                </span>
-                <span className="hidden md:inline">•</span>
-                <span>
-                  {activity.enrollments.length} {t("participants")}
-                </span>
-                <span className="hidden md:inline">•</span>
-                <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
-              </div>
-            </div>
-            
-            <Button 
-              variant="primary" 
-              className="w-full md:w-auto" 
-              onClick={() => navigate(`/activities/${activity.id}`)}
+          {expiredActivities.map((activity) => (
+            <Tile
+              className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
+              key={activity.id}
             >
-              {t("go_to_activity")}
-            </Button>
-          </Tile>
-        ))}
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-700 font-medium">
+                  {activity.name}
+                </span>
+                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
+                  <span>
+                    {formatDate(new Date(activity.dateTimeEnd), "fullDateTime")}
+                  </span>
+                  <span className="hidden md:inline">•</span>
+                  <span>
+                    {activity.enrollments.length} {t("participants")}
+                  </span>
+                  <span className="hidden md:inline">•</span>
+                  <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                className="w-full md:w-auto"
+                onClick={() => navigate(`/activities/${activity.id}`)}
+              >
+                {t("go_to_activity")}
+              </Button>
+            </Tile>
+          ))}
         </BorderedTile>
 
         <BorderedTile

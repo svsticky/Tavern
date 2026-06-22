@@ -4,14 +4,14 @@ import {
   MapPin,
   PencilIcon,
   UsersRound,
-} from "lucide-react"; // PencilIcon toegevoegd
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router"; // useNavigate toegevoegd
+import { Link, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -72,7 +72,11 @@ export default function ActivityTile({
 
   const canEdit =
     !!tokenParsed &&
-    (isBoardOrCandidateBoard(tokenParsed, boardGroupId, candidateBoardGroupId) ||
+    (isBoardOrCandidateBoard(
+      tokenParsed,
+      boardGroupId,
+      candidateBoardGroupId,
+    ) ||
       (!activity.showInKoala &&
         !activity.showOnWebsite &&
         activity.organizerId &&

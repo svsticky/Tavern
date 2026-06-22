@@ -9,6 +9,7 @@ using Backend.QueryExtensions;
 using Backend.Services.MailServices;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Backend.Repositories;
 
@@ -119,7 +120,7 @@ public class EnrollmentRepository : IEnrollmentRepository
 
             if (!isBoardMember)
             {
-                await EnsureActivityEnrollmentsCanBeChanged(activity, isBoardMember, cancellationToken);
+                await EnsureActivityEnrollmentsOpen(activity, isBoardMember, cancellationToken);
             }
 
             var enrollment = BuildEnrollment(dto, activity, shouldBeOnWaitingList, dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>());
@@ -171,10 +172,7 @@ public class EnrollmentRepository : IEnrollmentRepository
             // Determine if activity enrollments can be changed 
             bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(enrolledUser);
 
-            if (!isBoardMember)
-            {
-                await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);
-            }
+            EnsureActivityUnenrollmentOpen(enrollment.Activity, isBoardMember);
 
             // If the enrollment is not on the waiting list, we need to promote the next in line after deletion
             bool wasOnWaitingList = enrollment.IsOnWaitingList;
@@ -235,7 +233,7 @@ public class EnrollmentRepository : IEnrollmentRepository
 
             if (!isBoard)
             {
-                await EnsureActivityEnrollmentsCanBeChanged(activity, isBoard, cancellationToken);
+                await EnsureActivityEnrollmentsOpen(activity, isBoard, cancellationToken);
                 
                 if(userId != enrollment.MemberId)
                     throw new UnauthorizedAccessException("Members can only update their own enrollments.");
@@ -291,7 +289,7 @@ public class EnrollmentRepository : IEnrollmentRepository
 
         if(!isBoardMember)
         {
-            await EnsureActivityEnrollmentsCanBeChanged(enrollment.Activity, isBoardMember, cancellationToken);
+            await EnsureActivityEnrollmentsOpen(enrollment.Activity, isBoardMember, cancellationToken);
             
             if(userId != enrollment.MemberId)
                 throw new UnauthorizedAccessException("Members can only update their own enrollments.");
@@ -333,7 +331,7 @@ public class EnrollmentRepository : IEnrollmentRepository
         return (await PromoteFromWaitingList(activityId, 1, ct)).FirstOrDefault();
     }
 
-    private async Task EnsureActivityEnrollmentsCanBeChanged(Activity activity, bool isBoardMember, CancellationToken cancellationToken)
+    private async Task EnsureActivityEnrollmentsOpen(Activity activity, bool isBoardMember, CancellationToken cancellationToken)
     {
         if (!activity.ShowInKoala)
         {
@@ -357,6 +355,28 @@ public class EnrollmentRepository : IEnrollmentRepository
         var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
         if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
             throw new UnauthorizedAccessException("Enrollment deadline has passed.");
+    }
+
+    private void EnsureActivityUnenrollmentOpen(Activity activity, bool isBoardMember)
+    {
+        if (isBoardMember) return;
+
+        if (activity.IsEnrollable == false)
+        {
+            throw new UnauthorizedAccessException("Activity is not open for enrollment.");
+        }
+
+        if (activity.UnenrollmentDeadline == null)
+        {
+            if (activity.DateTimeStart < DateTime.UtcNow)
+            {
+                throw new UnauthorizedAccessException("Activity has already started.");
+            }
+        }
+        else if (activity.UnenrollmentDeadline < DateTime.UtcNow)
+        {
+            throw new UnauthorizedAccessException("Unenrollment deadline has passed.");
+        }
     }
 
     private async Task<Activity> GetActivityWithQuestionsAndEnrollmentsOrThrow(uint activityId, CancellationToken cancellationToken)

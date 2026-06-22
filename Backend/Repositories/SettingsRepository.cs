@@ -15,7 +15,19 @@ public class SettingsRepository : ISettingsRepository
     private readonly IPermissionService _permissionService;
     private readonly ILogger<SettingsRepository> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
-    private readonly string[] _openSettings = new [] { "boardgroupid", "candidateboardgroupid", "membershipprice", "mastersshouldpaymembership", "membershippaymentexpirationtime", "financialyearstartdate", "boardchangedate" };
+    private readonly string[] _openSettings = new []
+    {
+        "boardgroupid",
+        "candidateboardgroupid",
+        "membershipprice",
+        "mastersshouldpaymembership",
+        "membershippaymentexpirationtime",
+        "financialyearstartdate",
+        "boardchangedate",
+        "boardprimarylight",
+        "boardprimary",
+        "boardprimarydark"
+    };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SettingsRepository"/> class with the specified dependencies.
