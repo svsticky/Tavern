@@ -292,7 +292,7 @@ export default function ActivityDetailsTile({
           />
         </div>
 
-        {activity.isEnrollable && (
+        {isEnrolled && (
           <AnswerQuestionsTile
             questions={activity.specificationQuestions}
             answers={answers}
@@ -300,9 +300,7 @@ export default function ActivityDetailsTile({
               setAnswers((prev) => ({ ...prev, [id]: value }))
             }
             disabled={
-              submitting || activity.enrollmentDeadline
-                ? new Date(Date.now()) > new Date(activity.enrollmentDeadline!)
-                : false
+              submitting || canEnroll
             }
           />
         )}
