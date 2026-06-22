@@ -1,3 +1,4 @@
+import type { AxiosError, AxiosResponse } from "axios";
 import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import {
@@ -20,6 +21,10 @@ import FaviconHandler from "./components/FavIconHandler";
 import { AppProvider } from "./context/AppContext";
 import { getActiveAuthService } from "./layout/auth-service";
 import { getEnv } from "./util/config.utils";
+import {
+  BOARD_THEME_SETTINGS_UPDATED_EVENT,
+  loadBoardThemeSettings,
+} from "./util/theme-settings";
 
 client.setConfig({
   baseURL: getEnv("ApiUrl") ?? "http://localhost:8080",
@@ -42,8 +47,8 @@ client.setConfig({
 });
 
 client.instance.interceptors.response.use(
-  async (response) => response,
-  (error) => {
+  async (response: AxiosResponse) => response,
+  (error: AxiosError) => {
     if (error.response) {
       if (error.response.status === 401) {
         console.warn("Unauthorized, redirecting...");
@@ -95,26 +100,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
+  const [themeReady, setThemeReady] = useState(false);
+  const [themeError, setThemeError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
-    const primaryLight = getEnv("BOARD_PRIMARY_LIGHT");
-    const primary = getEnv("BOARD_PRIMARY");
-    const primaryDark = getEnv("BOARD_PRIMARY_DARK");
+    const syncBoardTheme = async () => {
+      const loadedSettingCount = await loadBoardThemeSettings();
 
-    if (primaryLight)
-      document.documentElement.style.setProperty(
-        "--board-primary-light",
-        primaryLight,
-      );
-    if (primary)
-      document.documentElement.style.setProperty("--board-primary", primary);
-    if (primaryDark)
-      document.documentElement.style.setProperty(
-        "--board-primary-dark",
-        primaryDark,
-      );
+      if (loadedSettingCount === 0) {
+        setThemeError(
+          "Could not load the board colors. Please check that the backend is running.",
+        );
+      } else {
+        setThemeError(null);
+      }
+
+      setThemeReady(true);
+    };
+
+    const handleThemeRefresh = () => {
+      void syncBoardTheme();
+    };
+
+    void syncBoardTheme();
+    window.addEventListener(
+      BOARD_THEME_SETTINGS_UPDATED_EVENT,
+      handleThemeRefresh,
+    );
 
     setIsClient(true);
     const checkI18n = () => {
@@ -134,8 +148,18 @@ export default function App() {
       return () => {
         i18n.off("initialized", handleEvent);
         i18n.off("loaded", handleEvent);
+        window.removeEventListener(
+          BOARD_THEME_SETTINGS_UPDATED_EVENT,
+          handleThemeRefresh,
+        );
       };
     }
+    return () => {
+      window.removeEventListener(
+        BOARD_THEME_SETTINGS_UPDATED_EVENT,
+        handleThemeRefresh,
+      );
+    };
   }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: i18n.language is needed as dependency to update the title on language change.
@@ -168,7 +192,20 @@ export default function App() {
     document.title = formatTitle(location.pathname);
   }, [location.pathname, i18n.language]);
 
-  if (!i18nReady) return null;
+  if (themeError) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-4">
+        <div className="max-w-xl rounded-md border border-red-200 bg-red-50 p-4 text-red-800">
+          <h1 className="font-semibold">Error</h1>
+          <p>{themeError}</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!i18nReady || !themeReady) {
+    return t("loading");
+  }
 
   return (
     <AppProvider>

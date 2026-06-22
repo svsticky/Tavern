@@ -6,6 +6,7 @@ import type {
   GetSpecificationQuestionResponseDto,
   GroupResponseDto,
 } from "~/api";
+import { parseAudience } from "~/types/AudienceMap";
 import BorderedTile from "../../../Tiles/BorderedTile";
 import { NoContentTile } from "../../../Tiles/NoContentTile";
 import Button from "../../../UI/Button";
@@ -17,7 +18,6 @@ import Input from "../../../UI/Input";
 import Select from "../../../UI/Select";
 import TextArea from "../../../UI/TextArea";
 import EditQuestionTile from "../EditQuestionTile";
-import { parseAudience } from "~/types/AudienceMap";
 import {
   addQuestion,
   formatDateOnly,
@@ -195,49 +195,37 @@ export default function EditActivityForm({
                   label={t("year_1")}
                   name="AudienceBit"
                   value="1"
-                  defaultChecked={
-                    isEdit ? !!(audienceMask & 1) : true
-                  }
+                  defaultChecked={isEdit ? !!(audienceMask & 1) : true}
                 />
                 <Checkbox
                   label={t("year_2")}
                   name="AudienceBit"
                   value="2"
-                  defaultChecked={
-                    isEdit ? !!(audienceMask & 2) : true
-                  }
+                  defaultChecked={isEdit ? !!(audienceMask & 2) : true}
                 />
                 <Checkbox
                   label={t("year_3_plus")}
                   name="AudienceBit"
                   value="4"
-                  defaultChecked={
-                    isEdit ? !!(audienceMask & 4) : true
-                  }
+                  defaultChecked={isEdit ? !!(audienceMask & 4) : true}
                 />
                 <Checkbox
                   label={t("masters")}
                   name="AudienceBit"
                   value="8"
-                  defaultChecked={
-                    isEdit ? !!(audienceMask & 8) : true
-                  }
+                  defaultChecked={isEdit ? !!(audienceMask & 8) : true}
                 />
                 <Checkbox
                   label={t("gratie")}
                   name="AudienceBit"
                   value="16"
-                  defaultChecked={
-                    isEdit ? !!(audienceMask & 16) : true
-                  }
+                  defaultChecked={isEdit ? !!(audienceMask & 16) : true}
                 />
                 <Checkbox
                   label={t("active_members")}
                   name="AudienceBit"
                   value="32"
-                  defaultChecked={
-                    isEdit ? !!(audienceMask & 32) : true
-                  }
+                  defaultChecked={isEdit ? !!(audienceMask & 32) : true}
                 />
               </div>
             </div>

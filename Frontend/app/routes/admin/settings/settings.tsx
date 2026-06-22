@@ -149,6 +149,48 @@ export default function SettingsPage() {
             />
           </FormSection>
 
+          <FormSection title={t("branding")} columns={3}>
+            <Input
+              label={t("board_primary_light")}
+              type="color"
+              value={settings.BoardPrimaryLight || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BoardPrimaryLight",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+              className="h-12 cursor-pointer p-1"
+            />
+            <Input
+              label={t("board_primary")}
+              type="color"
+              value={settings.BoardPrimary || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BoardPrimary",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+              className="h-12 cursor-pointer p-1"
+            />
+            <Input
+              label={t("board_primary_dark")}
+              type="color"
+              value={settings.BoardPrimaryDark || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BoardPrimaryDark",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+              className="h-12 cursor-pointer p-1"
+            />
+          </FormSection>
+
           <FormSection title={t("finances")} columns={2}>
             <Input
               label={t("payment_service_fee")}

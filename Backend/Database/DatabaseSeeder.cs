@@ -14,6 +14,10 @@ namespace Backend.Database;
 [ExcludeFromCodeCoverage]
 public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 {
+    private const string BoardPrimaryLightDefault = "#f98f55";
+    private const string BoardPrimaryDefault = "#fa6b20";
+    private const string BoardPrimaryDarkDefault = "#ca5617";
+
     /// <summary>
     /// Starts the database seeding process. This method is called when the application starts and is responsible for ensuring that essential settings and groups are present in the database. It creates a new service scope to access the database context and performs checks to create default settings and groups if they do not already exist. Additionally, it ensures that a backup board account is created if there are no existing board members, providing a fallback option for administrative access. The seeding process helps to establish a baseline configuration for the application, allowing it to function correctly from the outset.
     /// </summary>
@@ -60,6 +64,10 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         await EnsureSettingExists(db, "ActivityUpdateEmailSender", "");
 
         await EnsureSettingExists(db, "MembershipPaymentExpirationTime", ""); // If empty, no expiration time will be set on payments, and they will not automatically expire.
+
+        await EnsureSettingExists(db, "BoardPrimaryLight", BoardPrimaryLightDefault);
+        await EnsureSettingExists(db, "BoardPrimary", BoardPrimaryDefault);
+        await EnsureSettingExists(db, "BoardPrimaryDark", BoardPrimaryDarkDefault);
         
         await EnsureSettingExists(db, "MastersShouldPayMembership", "0");
 

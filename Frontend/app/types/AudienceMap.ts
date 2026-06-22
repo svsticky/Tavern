@@ -27,7 +27,9 @@ export const AudienceFlags = {
 /**
  * Converts a TargetAudience value (string, number, list) into a numeric bitmask.
  */
-export const parseAudience = (audience?: TargetAudience | number | null): number => {
+export const parseAudience = (
+  audience?: TargetAudience | number | null,
+): number => {
   if (audience === undefined || audience === null) return 0;
   if (typeof audience === "number") return audience;
 
@@ -53,11 +55,11 @@ export const getAudienceString = (mask: number): TargetAudience => {
   const activeFlags: string[] = [];
   if (mask & AudienceFlags.FirstYears) activeFlags.push("FirstYears");
   if (mask & AudienceFlags.SecondYears) activeFlags.push("SecondYears");
-  if (mask & AudienceFlags.ThirdYearsAndAbove) activeFlags.push("ThirdYearsAndAbove");
+  if (mask & AudienceFlags.ThirdYearsAndAbove)
+    activeFlags.push("ThirdYearsAndAbove");
   if (mask & AudienceFlags.Masters) activeFlags.push("Masters");
   if (mask & AudienceFlags.Gratie) activeFlags.push("Gratie");
   if (mask & AudienceFlags.ActiveMembers) activeFlags.push("ActiveMembers");
 
   return activeFlags.join(", ") as TargetAudience;
 };
-

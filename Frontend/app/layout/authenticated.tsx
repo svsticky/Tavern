@@ -7,7 +7,10 @@ import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { setGlobalFinancialYearStartDate, setGlobalBoardChangeDate } from "~/util/date.util";
+import {
+  setGlobalBoardChangeDate,
+  setGlobalFinancialYearStartDate,
+} from "~/util/date.util";
 
 /**
  * The core layout wrapper for all authenticated routes in the application.
@@ -191,7 +194,7 @@ export default function AuthenticatedLayout() {
         },
       })
         .then((res) => {
-          if (res.data && res.data.value) {
+          if (res.data?.value) {
             setFinancialYearStartDate(res.data.value);
             setGlobalFinancialYearStartDate(res.data.value);
           }
@@ -208,7 +211,7 @@ export default function AuthenticatedLayout() {
         },
       })
         .then((res) => {
-          if (res.data && res.data.value) {
+          if (res.data?.value) {
             setBoardChangeDate(res.data.value);
             setGlobalBoardChangeDate(res.data.value);
           }
@@ -240,9 +243,13 @@ export default function AuthenticatedLayout() {
     tokenParsed,
     boardGroupId,
     candidateBoardGroupId,
+    financialYearStartDate,
     member,
+    boardChangeDate,
     setBoardGroupId,
     setCandidateBoardGroupId,
+    setFinancialYearStartDate,
+    setBoardChangeDate,
     setMember,
   ]);
 

@@ -1,5 +1,5 @@
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getFinancialYear, getBoardYear } from "./date.util";
+import { getBoardYear, getFinancialYear } from "./date.util";
 
 /**
  * Checks if the current user is in a specific group with an optional role.
@@ -92,8 +92,12 @@ export const isBoardOrCandidateBoard = (
   if (!tokenParsed) return false;
 
   const boardYear = getBoardYear();
-  const inBoard = boardGroupId ? isInGroupWithId(tokenParsed, boardGroupId, undefined, boardYear) : false;
-  const inCandidate = candidateBoardGroupId ? isInGroupWithId(tokenParsed, candidateBoardGroupId, undefined, boardYear) : false;
+  const inBoard = boardGroupId
+    ? isInGroupWithId(tokenParsed, boardGroupId, undefined, boardYear)
+    : false;
+  const inCandidate = candidateBoardGroupId
+    ? isInGroupWithId(tokenParsed, candidateBoardGroupId, undefined, boardYear)
+    : false;
 
   return inBoard || inCandidate;
 };

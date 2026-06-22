@@ -51,7 +51,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [candidateBoardGroupId, setCandidateBoardGroupId] = useState<
     number | null
   >(null);
-  const [financialYearStartDate, setFinancialYearStartDate] = useState<string | null>(null);
+  const [financialYearStartDate, setFinancialYearStartDate] = useState<
+    string | null
+  >(null);
   const [boardChangeDate, setBoardChangeDate] = useState<string | null>(null);
   const [member, setMember] = useState<MemberResponseDto | null>(null);
 

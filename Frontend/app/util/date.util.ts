@@ -87,7 +87,7 @@ export const getBoardYear = (boardChangeDate?: string | null): number => {
   if (parts.length === 2) {
     const m = parseInt(parts[0], 10);
     const d = parseInt(parts[1], 10);
-    if (!isNaN(m) && !isNaN(d)) {
+    if (!Number.isNaN(m) && !Number.isNaN(d)) {
       targetMonth = m;
       targetDay = d;
     }
@@ -110,7 +110,8 @@ export const getBoardYear = (boardChangeDate?: string | null): number => {
       const month = parseInt(monthPart, 10); // 1-indexed
       const day = parseInt(dayPart, 10);
 
-      const isAfterOrEqual = month > targetMonth || (month === targetMonth && day >= targetDay);
+      const isAfterOrEqual =
+        month > targetMonth || (month === targetMonth && day >= targetDay);
       return isAfterOrEqual ? year + 1 : year;
     }
   } catch (error) {
@@ -125,7 +126,8 @@ export const getBoardYear = (boardChangeDate?: string | null): number => {
   const year = now.getFullYear();
   const month = now.getMonth() + 1; // 1-indexed
   const day = now.getDate();
-  const isAfterOrEqual = month > targetMonth || (month === targetMonth && day >= targetDay);
+  const isAfterOrEqual =
+    month > targetMonth || (month === targetMonth && day >= targetDay);
   return isAfterOrEqual ? year + 1 : year;
 };
 
@@ -133,15 +135,18 @@ export const getBoardYear = (boardChangeDate?: string | null): number => {
  * Determines the current financial year based on the current month and day.
  * @returns The current financial year.
  */
-export const getFinancialYear = (financialYearStartDate?: string | null): number => {
-  const startDate = financialYearStartDate || globalFinancialYearStartDate || "08-01";
+export const getFinancialYear = (
+  financialYearStartDate?: string | null,
+): number => {
+  const startDate =
+    financialYearStartDate || globalFinancialYearStartDate || "08-01";
   let targetMonth = 8;
   let targetDay = 1;
   const parts = startDate.split("-");
   if (parts.length === 2) {
     const m = parseInt(parts[0], 10);
     const d = parseInt(parts[1], 10);
-    if (!isNaN(m) && !isNaN(d)) {
+    if (!Number.isNaN(m) && !Number.isNaN(d)) {
       targetMonth = m;
       targetDay = d;
     }
@@ -164,7 +169,8 @@ export const getFinancialYear = (financialYearStartDate?: string | null): number
       const month = parseInt(monthPart, 10); // 1-indexed
       const day = parseInt(dayPart, 10);
 
-      const isAfterOrEqual = month > targetMonth || (month === targetMonth && day >= targetDay);
+      const isAfterOrEqual =
+        month > targetMonth || (month === targetMonth && day >= targetDay);
       return isAfterOrEqual ? year + 1 : year;
     }
   } catch (error) {
@@ -179,8 +185,15 @@ export const getFinancialYear = (financialYearStartDate?: string | null): number
   const year = now.getFullYear();
   const month = now.getMonth() + 1; // 1-indexed
   const day = now.getDate();
-  const isAfterOrEqual = month > targetMonth || (month === targetMonth && day >= targetDay);
-  return month <= 6 ? isAfterOrEqual ? year : year - 1 : isAfterOrEqual ? year + 1 : year;
+  const isAfterOrEqual =
+    month > targetMonth || (month === targetMonth && day >= targetDay);
+  return month <= 6
+    ? isAfterOrEqual
+      ? year
+      : year - 1
+    : isAfterOrEqual
+      ? year + 1
+      : year;
 };
 
 /**
@@ -198,7 +211,7 @@ export const isWithinThreeMonthsBeforeBoardChange = (
   if (parts.length === 2) {
     const m = parseInt(parts[0], 10);
     const d = parseInt(parts[1], 10);
-    if (!isNaN(m) && !isNaN(d)) {
+    if (!Number.isNaN(m) && !Number.isNaN(d)) {
       targetMonth = m;
       targetDay = d;
     }
@@ -244,4 +257,3 @@ export const isWithinThreeMonthsBeforeBoardChange = (
 
   return nowNL >= startWindow && nowNL < boardChangeNL;
 };
-
