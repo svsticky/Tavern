@@ -1,4 +1,4 @@
-name: Build and Publish Images
+name: Build, Publish and deploy Images
 
 on:
   push:
@@ -14,6 +14,7 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
     permissions:
       contents: read
       packages: write
@@ -79,3 +80,10 @@ jobs:
             ${{ github.ref == 'refs/heads/main' && format('{0}:latest', env.IMAGE_DOCS) || '' }}
             ${{ github.ref == 'refs/heads/development' && format('{0}:dev', env.IMAGE_DOCS) || '' }}
             ${{ github.event_name == 'release' && format('{0}:{1}', env.IMAGE_DOCS, github.event.release.tag_name) || '' }}
+            
+      # --- Trigger AAS deploy ---
+      - name: Trigger AAS deploy
+        uses: distributhor/workflow-webhook@v2.0.2
+        env:
+          webhook_url: ${{ secrets.AAS_TAVERN_WEBHOOK_URL || secrets.WEBHOOK_URL || vars.AAS_TAVERN_WEBHOOK_URL || vars.WEBHOOK_URL }}
+          webhook_secret: ${{ secrets.AAS_TAVERN_WEBHOOK_SECRET || secrets.WEBHOOK_SECRET || vars.AAS_TAVERN_WEBHOOK_SECRET || vars.WEBHOOK_SECRET }}
