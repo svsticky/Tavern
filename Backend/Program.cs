@@ -93,9 +93,9 @@ app.MapControllers();
 
 if (!isGeneratingDocs)
 {
+    await app.MigrateDatabaseAsync();
     app.UseHangfireDashboard();
     app.ConfigureHangfireJobs();
-    await app.MigrateDatabaseAsync();
 }
 
 app.Run();
