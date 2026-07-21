@@ -570,6 +570,7 @@ public class EnrollmentRepositoryTests : IDisposable
     {
         var member = CreateMember("1234567");
         var activity = CreateActivity("Deadline Passed");
+        activity.DateTimeStart = DateTime.UtcNow.AddDays(-1);
         activity.DateTimeEnd = DateTime.UtcNow.AddDays(-1);
 
         _db.Members.Add(member);

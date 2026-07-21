@@ -58,6 +58,12 @@ if (!isGeneratingDocs)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials());
+
+        options.AddPolicy("PublicCorsPolicy", policy =>
+            policy.SetIsOriginAllowed(origin => true)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials());
     });
 }
 

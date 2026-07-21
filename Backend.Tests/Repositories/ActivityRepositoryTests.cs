@@ -253,7 +253,7 @@ public class ActivityRepositoryTests : IDisposable
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
 
-        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(false);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
@@ -1023,6 +1023,44 @@ public class ActivityRepositoryTests : IDisposable
         var result = await _repository.GetPoster(_userId, activity.Id, false);
 
         Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetPoster_GuestUserFutureShowOnWebsite_Succeeds()
+    {
+        var activity = CreateActivity("A1");
+        activity.PosterPath = "path.webp";
+        activity.ShowOnWebsite = true;
+        activity.DateTimeEnd = DateTime.UtcNow.AddDays(5);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var cachedBytes = new byte[] { 4, 5, 6 };
+        object? cachedVal = (cachedBytes, "image/webp");
+        _memoryCache.TryGetValue("poster-path.webp", out Arg.Any<object?>())
+            .Returns(x => {
+                x[1] = cachedVal;
+                return true;
+            });
+
+        var result = await _repository.GetPoster(null, activity.Id, false);
+
+        Assert.NotNull(result);
+        _permissionService.DidNotReceiveWithAnyArgs().EnsureBoardOrCandidateBoardMember(Arg.Any<Guid>());
+    }
+
+    [Fact]
+    public async Task GetPoster_GuestUserNotShownOnWebsite_ThrowsUnauthorizedAccessException()
+    {
+        var activity = CreateActivity("A1");
+        activity.PosterPath = "path.webp";
+        activity.ShowOnWebsite = false;
+        activity.DateTimeEnd = DateTime.UtcNow.AddDays(5);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _repository.GetPoster(null, activity.Id, false));
     }
 
     [Fact]

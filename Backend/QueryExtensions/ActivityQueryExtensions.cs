@@ -15,18 +15,27 @@ public static class ActivityQueryExtensions
     /// <param name="dto">The data transfer object containing the filtering criteria.</param>
     /// <param name="isBoard">Indicates whether the requester is a board member.</param>
     /// <param name="userGroupIds">The IDs of the groups to which the user belongs.</param>
+    /// <param name="isLoggedIn">Indicates whether the user is logged in.</param>
     /// <returns>The filtered queryable collection of Activity entities.</returns>
     public static IQueryable<Activity> Filter(
         this IQueryable<Activity> query, 
         GetActivitiesDTO dto, 
         bool isBoard, 
-        IEnumerable<uint> userGroupIds)
+        IEnumerable<uint> userGroupIds,
+        bool isLoggedIn)
     {
         var now = DateTimeOffset.UtcNow;
 
+        if (!isLoggedIn)
+        {
+            query = query.Where(a => a.ShowOnWebsite && a.DateTimeEnd >= now);
+
+            return query;
+        }
+        
         query = query.Where(a => isBoard 
-                                 || a.ShowInKoala 
-                                 || (a.OrganizerId != null && userGroupIds.Contains(a.OrganizerId.Value) && !a.ShowOnWebsite && !a.ShowInKoala && !a.EnrollOpenDate.HasValue));
+                                || a.ShowInKoala 
+                                || (a.OrganizerId != null && userGroupIds.Contains(a.OrganizerId.Value) && !a.ShowOnWebsite && !a.ShowInKoala && !a.EnrollOpenDate.HasValue));
 
         if (!dto.IncludePast)
             query = query.Where(a => a.DateTimeEnd >= now);

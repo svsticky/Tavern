@@ -64,19 +64,21 @@ public class ActivityRepository : IActivityRepository
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto)
+    public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid? userId, GetActivitiesDTO dto)
     {
-        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool isBoard = userId.HasValue && _permissionService.IsBoardOrCandidateBoardMember(userId.Value);
 
         // Only board members can see past activities or activities that are not shown in Koala/website
-        if (dto.IncludePast && !isBoard)
-            throw new UnauthorizedAccessException();
+        if (dto.IncludePast)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
 
         // Get userGroupIds to filter activities that are only visible for the organizers of the groups
-        var userGroupIds = await _db.GroupMemberships
-            .Where(gm => gm.MemberId == userId && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
-            .Select(gm => gm.GroupId)
-            .ToListAsync();
+        var userGroupIds = userId.HasValue
+            ? await _db.GroupMemberships
+                .Where(gm => gm.MemberId == userId.Value && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
+                .Select(gm => gm.GroupId)
+                .ToListAsync()
+            : new List<uint>();
 
         // Filter activities based on the provided criteria and the user's permissions
         var activities = await _db.Activities
@@ -88,10 +90,10 @@ public class ActivityRepository : IActivityRepository
                     .ThenInclude(sa => sa.Question)
                         .ThenInclude(q => q.Activity)
             .AsNoTracking()
-            .Filter(dto, isBoard, userGroupIds)
+            .Filter(dto, isBoard, userGroupIds, userId.HasValue)
             .ToListAsync();
 
-        return activities.Select(a => ActivityProjections.ToDto(userId, isBoard).Compile()(a));
+        return activities.Select(a => ActivityProjections.ToDto(userId ?? Guid.Empty, isBoard).Compile()(a));
     }
 
     /// <inheritdoc />
@@ -107,6 +109,7 @@ public class ActivityRepository : IActivityRepository
                 .ThenInclude(e => e.SpecificationAnswers)
                     .ThenInclude(sa => sa.Question)
                         .ThenInclude(q => q.Activity)
+            .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)
@@ -122,7 +125,7 @@ public class ActivityRepository : IActivityRepository
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !isBoard)
             throw new UnauthorizedAccessException();
 
-        if (!activity.ShowInKoala && isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
+        if (!activity.ShowInKoala && !isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
             throw new UnauthorizedAccessException();
 
         return ActivityProjections.ToDto(userId, isBoard).Compile()(activity);
@@ -215,11 +218,17 @@ public class ActivityRepository : IActivityRepository
         if(patchDoc.Operations.Any(op => _restrictedForEveryonePaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
             throw new UnauthorizedAccessException("You are not allowed to modify the id or poster properties of the activity.");
 
-        if (activity.ShowInKoala 
-                || activity.ShowOnWebsite
-                || activity.EnrollOpenDate != null
-                || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool isOrganizer = activity.OrganizerId.HasValue && _permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value);
+
+        if (!isBoard)
+        {
+            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
+                throw new UnauthorizedAccessException("Only board members can edit past activities.");
+
+            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
+                throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
+        }
 
         // Intercept and handle SpecificationQuestionsJson operations from the patch document
         var specQuestionsOp = patchDoc.Operations.FirstOrDefault(op => 
@@ -242,7 +251,10 @@ public class ActivityRepository : IActivityRepository
             decimal oldPrice = activity.Price;
             var oldAudience = activity.AllowedAudience;
 
-            patchDoc.ApplyTo(activity);
+            patchDoc.ApplyTo(activity, err =>
+            {
+                throw new ArgumentException(err.ErrorMessage);
+            });
 
 
             if (activity.IsEnrollable)
@@ -367,8 +379,17 @@ public class ActivityRepository : IActivityRepository
         if (activity == null)
             throw new KeyNotFoundException();
 
-        if(activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null)
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool isOrganizer = activity.OrganizerId.HasValue && _permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value);
+
+        if (!isBoard)
+        {
+            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
+                throw new UnauthorizedAccessException("Only board members can edit past activities.");
+
+            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer)
+                throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
+        }
 
         ActivityValidator.ValidateRequest(dto, userId, _permissionService);
 
@@ -449,21 +470,32 @@ public class ActivityRepository : IActivityRepository
     }
 
     /// <inheritdoc />
-    public async Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid userId, uint id, bool download)
+    public async Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid? userId, uint id, bool download)
     {
         var activity = await _db.Activities.FindAsync(id);
 
         if (activity == null || string.IsNullOrEmpty(activity.PosterPath))
             return null;
 
-        // Only board members can see posters of past activities
-        if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        bool isPast = activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow;
 
-        // Only board members or members of the organizer group can see posters of activities that are not shown in Koala, even if the activity is in the future
-        if (!activity.ShowInKoala && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        // Only board members or candidate board members can access posters of past activities
+        if(isPast)
+            _permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
 
+        // If not authenticated, you can only see posters of activities that are shown on the website
+        if(!userId.HasValue && !activity.ShowOnWebsite)
+            throw new UnauthorizedAccessException("Authentication required.");
+
+        // If authenticated, you can only see posters of activities that are shown in Koala or if you are a board member or a member of the organizer group
+        if(userId.HasValue)
+        {
+            // Only board members or members of the organizer group can see posters of activities that are not shown in Koala
+            if (!activity.ShowInKoala && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId.Value, activity.OrganizerId.Value)))
+                _permissionService.EnsureBoardOrCandidateBoardMember(userId.Value);
+        }
+
+        // Get poster from cache if available, otherwise fetch from storage and cache it for future requests
         string cacheKey = $"poster-{activity.PosterPath}";
         if (_memoryCache.TryGetValue(cacheKey, out (byte[] bytes, string contentType) cached))
         {

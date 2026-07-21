@@ -4,6 +4,7 @@ using Backend.Models.Domain;
 using Backend.Controllers.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Backend.Interfaces;
+using Microsoft.AspNetCore.Cors;
 
 namespace Backend.Controllers
 {
@@ -32,6 +33,8 @@ namespace Backend.Controllers
         /// <param name="dto">The data transfer object containing the query parameters.</param>
         /// <returns>A list of activities matching the criteria.</returns>
         [HttpGet]
+        [AllowAnonymous]
+        [EnableCors("PublicCorsPolicy")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(IEnumerable<ActivityResponseDTO>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -40,7 +43,9 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await activitiesRepository.GetActivities(GetUserId(), dto);
+                Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+
+                var result = await activitiesRepository.GetActivities(userId, dto);
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -263,6 +268,8 @@ namespace Backend.Controllers
         /// <param name="id">The unique identifier of the activity for which to retrieve the poster.</param>
         /// <returns>The poster image file.</returns>
         [HttpGet("{id}/poster")]
+        [AllowAnonymous]
+        [EnableCors("PublicCorsPolicy")]
         [Produces("image/webp", "image/jpeg", "image/png", "image/gif")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -272,7 +279,9 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await activitiesRepository.GetPoster(GetUserId(), id, download: false);
+                Guid? guid = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+
+                var result = await activitiesRepository.GetPoster(guid, id, download: false);
 
                 if (result == null)
                     return NotFound();
@@ -296,6 +305,8 @@ namespace Backend.Controllers
         /// <param name="id">The unique identifier of the activity for which to download the poster.</param>
         /// <returns>The poster image file.</returns>
         [HttpGet("{id}/poster/download")]
+        [AllowAnonymous]
+        [EnableCors("PublicCorsPolicy")]
         [Produces("image/webp", "image/jpeg", "image/png", "image/gif")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -305,7 +316,9 @@ namespace Backend.Controllers
         {
             try
             {
-                var result = await activitiesRepository.GetPoster(GetUserId(), id, download: true);
+                Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+
+                var result = await activitiesRepository.GetPoster(userId, id, download: true);
 
                 if (result == null)
                     return NotFound();

@@ -15,7 +15,7 @@ public interface IActivityRepository
     /// <param name="userId">The ID of the user requesting the activities.</param>
     /// <param name="dto">The data transfer object containing the filtering criteria.</param>
     /// <returns>The list of activities matching the specified criteria.</returns>
-    Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid userId, GetActivitiesDTO dto);
+    Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid? userId, GetActivitiesDTO dto);
 
     /// <summary>
     /// Retrieves a specific activity by its ID. This method takes the user's ID and the activity's ID as parameters and returns an ActivityResponseDTO object that represents the details of the requested activity. The retrieval process should ensure that the user has appropriate access rights to view the activity details, and it should handle potential errors or exceptions that may arise during the data access while maintaining data integrity and security within the system.
@@ -76,7 +76,7 @@ public interface IActivityRepository
     /// <param name="id">The ID of the activity for which to retrieve the poster.</param>
     /// <param name="download">A boolean indicating whether to download the poster.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid userId, uint id, bool download);
+    Task<(Stream Stream, string ContentType, string? FileName)?> GetPoster(Guid? userId, uint id, bool download);
 
     /// <summary>
     /// Generates a CSV file containing the enrollment details for a specific activity based on the provided activity ID. This method takes the user's ID, the activity's ID, and a cancellation token as parameters, and it returns a tuple containing the byte array of the generated CSV file and its file name. The generation process should ensure that the user has appropriate permissions to access the enrollment details, validate that the activity exists, and handle potential errors or exceptions that may arise during the data access while maintaining data integrity and security within the system. The method should also ensure that the generated CSV file is correctly formatted to include relevant enrollment information such as participant names, contact details, and any other pertinent data associated with the enrollments for the specified activity.
