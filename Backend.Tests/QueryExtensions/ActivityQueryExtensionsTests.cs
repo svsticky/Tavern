@@ -54,7 +54,7 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { IncludePast = true };
 
-        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }).ToList();
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
 
         Assert.Equal(3, result.Count);
     }
@@ -65,11 +65,11 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { IncludePast = true };
 
-        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { 1 }).ToList();
+        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { 1 }, isLoggedIn: true).ToList();
 
-        // 1 & 2 are ShowInKoala=true. 3 is hidden and organizer group is 2 (user is in 1), so it's hidden.
-        Assert.Equal(2, result.Count);
-        Assert.DoesNotContain(result, a => a.Id == 3);
+        // 1 is past (so hidden). 2 is visible (ShowInKoala=true). 3 is hidden (wrong group).
+        Assert.Single(result);
+        Assert.Equal(2u, result[0].Id);
     }
 
     [Fact]
@@ -78,10 +78,12 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { IncludePast = true };
 
-        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { 2 }).ToList();
+        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { 2 }, isLoggedIn: true).ToList();
 
-        // 1 & 2 are shown. 3 is shown because user is in group 2.
-        Assert.Equal(3, result.Count);
+        // 2 & 3 are shown. 1 is past (so hidden).
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, a => a.Id == 2);
+        Assert.Contains(result, a => a.Id == 3);
     }
 
     [Fact]
@@ -90,7 +92,7 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { IncludePast = false, IncludeFuture = true };
 
-        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }).ToList();
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
 
         Assert.Equal(2, result.Count);
         Assert.DoesNotContain(result, a => a.Id == 1); // Past activity is filtered out
@@ -102,7 +104,7 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { IncludePast = true, IncludeFuture = false };
 
-        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }).ToList();
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
 
         Assert.Single(result);
         Assert.Equal(1u, result[0].Id); // Only past activity is kept
@@ -115,7 +117,7 @@ public class ActivityQueryExtensionsTests
         var currentYear = (uint)DateTimeOffset.UtcNow.Year;
         var dto = new GetActivitiesDTO { IncludePast = true, Year = currentYear };
 
-        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }).ToList();
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
 
         Assert.Equal(3, result.Count); // All are in the current year
     }
@@ -126,9 +128,24 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { OpenForPayment = true };
 
-        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }).ToList();
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
 
         Assert.Single(result);
         Assert.Equal(2u, result[0].Id); // Future Activity is open for payment
+    }
+
+    [Fact]
+    public void Filter_AsGuest_OnlyShowsFutureAndShowOnWebsite()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO();
+
+        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { }, isLoggedIn: false).ToList();
+
+        // 1 is past (so hidden).
+        // 2 is future and ShowOnWebsite=true (so visible).
+        // 3 is future but ShowOnWebsite=false (so hidden).
+        Assert.Single(result);
+        Assert.Equal(2u, result[0].Id);
     }
 }
