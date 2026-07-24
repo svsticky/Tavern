@@ -1,3 +1,4 @@
+import { cn } from "~/util/tailwind.util";
 import RequiredAsterisk from "./RequiredAstrix";
 
 /**
@@ -51,7 +52,11 @@ export default function Select({
       )}
       <select
         {...props}
-        className="border p-2.5 rounded-lg focus:ring-2 outline-none transition-all bg-white hover:cursor-pointer"
+        className={cn(
+          "h-7 px-2 py-auto rounded-md border border-gray-200 focus:ring-2 outline-none transition-all hover:cursor-pointer",
+          props.disabled &&
+            "bg-gray-100 cursor-not-allowed text-gray-500",
+        )}
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>

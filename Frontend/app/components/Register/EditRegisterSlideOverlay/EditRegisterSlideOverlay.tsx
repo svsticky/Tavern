@@ -7,6 +7,7 @@ import {
   handleSlideDelete,
   handleSlideSubmit,
 } from "./EditRegisterSlideOverlay.handlers";
+import { cn } from "~/util/tailwind.util";
 
 /**
  * An overlay component used for creating or editing registration page slideshow slides.
@@ -44,7 +45,7 @@ export default function EditRegisterSlideOverlay({
         <input
           type="file"
           accept="image/*"
-          className="w-full p-2 border border-dashed rounded-lg mt-1"
+          className={cn("w-full p-2 py-auto border border-dashed border-gray-300 rounded-md mt-1")}
           onChange={(e) => setSlideFile(e.target.files?.[0] || null)}
           required={!slide}
         />

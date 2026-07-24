@@ -1,3 +1,4 @@
+import { cn } from "~/util/tailwind.util";
 import RequiredAsterisk from "./RequiredAstrix";
 
 /**
@@ -22,7 +23,11 @@ export default function TextArea({ label, ...props }: any) {
       </div>
       <textarea
         {...props}
-        className="border p-2 rounded-lg focus:ring-2 outline-none transition-all"
+        className={cn(
+          "p-2 rounded-md border border-gray-200 focus:ring-2 outline-none transition-all",
+          props.disabled &&
+            "bg-gray-100 cursor-not-allowed text-gray-500",
+        )}
       />
     </label>
   );

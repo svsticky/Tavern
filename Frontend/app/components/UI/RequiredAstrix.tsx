@@ -1,3 +1,4 @@
 export default function RequiredAsterisk({ required }: { required: boolean }) {
-  return required ? <span className="text-red-500 ml-1">*</span> : null;
+  if (!required) return null;
+  return <span className="text-red-500 ml-0.5 text-sm inline-block">*</span>;
 }

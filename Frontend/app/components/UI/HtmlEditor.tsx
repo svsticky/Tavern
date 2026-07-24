@@ -75,7 +75,7 @@ export default function HtmlEditor({
         <label className="text-sm font-medium text-gray-700">{label}</label>
       )}
 
-      <div className="quill-wrapper bg-white border rounded-md overflow-hidden shadow-sm">
+      <div className="quill-wrapper border border-gray-200 rounded-md overflow-hidden">
         <QuillEditor
           theme="snow"
           value={value}

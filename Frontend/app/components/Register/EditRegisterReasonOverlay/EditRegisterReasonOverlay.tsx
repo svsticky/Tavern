@@ -8,6 +8,7 @@ import {
   handleReasonDelete,
   handleReasonSubmit,
 } from "./EditRegisterReasonOverlay.handlers";
+import { cn } from "~/util/tailwind.util";
 
 /**
  * An overlay component used for creating or editing registration reason information.
@@ -91,7 +92,7 @@ export default function EditRegisterReasonOverlay({
         <input
           type="file"
           accept="image/*"
-          className="w-full p-2 border border-dashed rounded-lg mt-1"
+          className={cn("w-full p-2 py-auto border border-dashed border-gray-300 rounded-md mt-1")}
           onChange={(e) => setIconFile(e.target.files?.[0] || null)}
         />
         {reason && (
