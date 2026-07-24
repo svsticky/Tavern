@@ -8,6 +8,7 @@ import {
   handleLinkDelete,
   handleLinkSubmit,
 } from "./EditExternalLinkOverlay.handlers";
+import { cn } from "~/util/tailwind.util";
 
 /**
  * An overlay component used for creating or editing external link information.
@@ -101,7 +102,7 @@ export default function EditExternalLinkOverlay({
         <input
           type="file"
           accept="image/*"
-          className="w-full p-2 border border-dashed rounded-lg mt-1"
+          className={cn("w-full p-2 py-auto bg-gray-100 border border-dashed rounded-md mt-1")}
           onChange={(e) => setIconFile(e.target.files?.[0] || null)}
         />
         {link && (

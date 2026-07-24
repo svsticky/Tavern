@@ -28,6 +28,7 @@ import {
   removeQuestion,
   updateQuestion,
 } from "./EditActivityForm.handlers";
+import { cn } from "~/util/tailwind.util";
 
 /**
  * A comprehensive form component used to either create a new association activity
@@ -335,10 +336,10 @@ export default function EditActivityForm({
                 name="Poster"
                 type="file"
                 accept="image/png, image/jpeg, image/gif, image/webp"
-                className="w-full p-2 border border-dashed rounded-lg mt-4"
+                className={cn("w-full px-2 py-auto h-6 border border-dashed border-gray-300 rounded-md mt-4")}
               />
               {isEdit && (
-                <p className="text-xs text-gray-400 mt-2 italic">
+                <p className="text-xs text-gray-400 mt-1 italic">
                   {t("leave_empty_to_keep_current")}
                 </p>
               )}

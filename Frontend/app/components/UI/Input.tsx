@@ -40,9 +40,9 @@ export default function Input({
       <input
         {...props}
         className={cn(
-          "transition-all outline-none w-full border p-2 rounded-lg focus:ring-2",
+          "transition-all outline-none w-full h-7 px-2 py-auto rounded-md border border-gray-200 focus:ring-2",
           props.disabled &&
-            "bg-gray-100 cursor-not-allowed border-gray-300 text-gray-500",
+            "bg-gray-100 cursor-not-allowed text-gray-500",
           className,
         )}
       />

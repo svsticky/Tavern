@@ -111,7 +111,7 @@ export default function RegisterForm({ className }: { className?: string }) {
 
   return (
     <Tile
-      className={cn("shadow-xl border border-gray-200 bg-white", className)}
+      className={cn("border border-gray-200 bg-white", className)}
     >
       <Form
         onSubmit={(e) =>

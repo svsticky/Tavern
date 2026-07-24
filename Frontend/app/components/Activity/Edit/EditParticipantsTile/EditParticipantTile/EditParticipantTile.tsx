@@ -99,7 +99,7 @@ export default function EditParticipantTile({
               step="0.01"
               value={priceInput}
               placeholder="0.00"
-              className="h-8 text-sm text-right px-2 w-full"
+              className="h-8 bg-white text-sm text-right px-2 w-full"
               onChange={(e) => setPriceInput(e.target.value)}
               onBlur={() => {
                 void savePrice();
