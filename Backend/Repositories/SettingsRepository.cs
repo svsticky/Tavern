@@ -26,7 +26,8 @@ public class SettingsRepository : ISettingsRepository
         "boardchangedate",
         "boardprimarylight",
         "boardprimary",
-        "boardprimarydark"
+        "boardprimarydark",
+        "studystartdates"
     };
 
     /// <summary>

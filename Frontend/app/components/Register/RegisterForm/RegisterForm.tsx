@@ -9,6 +9,7 @@ import Checkbox from "../../UI/Checkbox";
 import Form from "../../UI/Form/Form";
 import { FormSection } from "../../UI/Form/FormSection";
 import Input from "../../UI/Input";
+import Select from "../../UI/Select";
 import {
   handleRegisterInputChange,
   handleRegisterSubmit,
@@ -17,6 +18,7 @@ import {
   loadMastersMustPay,
   loadPrice,
   loadStudies,
+  loadStudyStartDates,
 } from "./RegisterForm.handlers";
 
 /**
@@ -38,6 +40,8 @@ export default function RegisterForm({ className }: { className?: string }) {
   const [price, setPrice] = useState<number | null>(null);
   const [membershipPaymentExpirationTime, setMembershipPaymentExpirationTime] =
     useState<number | null>(null);
+  const [startDatesRaw, setStartDatesRaw] = useState<string>("09-01,02-01");
+  const [selectedStartDate, setSelectedStartDate] = useState<string>("");
 
   const navigate = useNavigate();
 
@@ -64,10 +68,77 @@ export default function RegisterForm({ className }: { className?: string }) {
       await loadMastersMustPay(setMastersMustPay);
       await loadPrice(setPrice, setMembershipPaymentExpirationTime);
       await loadMailingLists(setMailingLists);
+      await loadStudyStartDates(setStartDatesRaw);
       setLoading(false);
     };
     loadData();
   }, []);
+
+  const startDateOptions = useMemo(() => {
+    const configured = startDatesRaw
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.includes("-"));
+
+    if (configured.length === 0) return [];
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const yearsBack = 6;
+    const generatedDates: Date[] = [];
+
+    configured.forEach((md) => {
+      const [monthStr, dayStr] = md.split("-");
+      const month = Number.parseInt(monthStr, 10) - 1;
+      const day = Number.parseInt(dayStr, 10);
+
+      for (let y = currentYear - yearsBack; y <= currentYear + 1; y++) {
+        const d = new Date(Date.UTC(y, month, day));
+        if (!Number.isNaN(d.getTime())) {
+          generatedDates.push(d);
+        }
+      }
+    });
+
+    generatedDates.sort((a, b) => a.getTime() - b.getTime());
+
+    // Filter past dates (<= now) + the next single future date
+    const pastDates = generatedDates.filter((d) => d <= now);
+    const nextFutureDate = generatedDates.find((d) => d > now);
+
+    const validDates = [...pastDates];
+    if (nextFutureDate) {
+      validDates.push(nextFutureDate);
+    }
+
+    return validDates.map((d) => {
+      const isoDate = d.toISOString().split("T")[0];
+      return {
+        value: isoDate,
+        label: isoDate,
+      };
+    });
+  }, [startDatesRaw]);
+
+  useEffect(() => {
+    if (startDateOptions.length > 0 && !selectedStartDate) {
+      const nowTime = new Date().getTime();
+      let closestOption = startDateOptions[0];
+      let minDiff = Math.abs(
+        new Date(startDateOptions[0].value).getTime() - nowTime,
+      );
+
+      startDateOptions.forEach((opt) => {
+        const diff = Math.abs(new Date(opt.value).getTime() - nowTime);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestOption = opt;
+        }
+      });
+
+      setSelectedStartDate(String(closestOption.value));
+    }
+  }, [startDateOptions, selectedStartDate]);
 
   const isFormValid = useMemo(() => {
     const birthDateValue = new Date(formData.birthDate);
@@ -95,9 +166,10 @@ export default function RegisterForm({ className }: { className?: string }) {
     });
 
     const hasAtLeastOneStudy = selectedStudies.length > 0;
+    const hasStartDate = selectedStartDate.trim() !== "";
 
-    return allFieldsFilled && hasAtLeastOneStudy;
-  }, [formData, selectedStudies]);
+    return allFieldsFilled && hasAtLeastOneStudy && hasStartDate;
+  }, [formData, selectedStudies, selectedStartDate]);
 
   const [subscriptions, setSubscriptions] = useState<number>(0);
 
@@ -121,6 +193,7 @@ export default function RegisterForm({ className }: { className?: string }) {
             setLoading,
             formData,
             selectedStudies,
+            selectedStartDate,
             subscriptions,
             studies,
             navigate,
@@ -267,6 +340,16 @@ export default function RegisterForm({ className }: { className?: string }) {
               </div>
             )}
           </div>
+          {startDateOptions.length > 0 && (
+            <Select
+              label={t("study_start_date")}
+              value={selectedStartDate}
+              onChange={(e) => setSelectedStartDate(e.target.value)}
+              options={startDateOptions}
+              disabled={loading}
+              required
+            />
+          )}
         </FormSection>
 
         <FormSection title={t("mail_subscriptions")}>

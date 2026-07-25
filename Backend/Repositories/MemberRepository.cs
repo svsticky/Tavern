@@ -87,6 +87,9 @@ namespace Backend.Repositories
                 
                 if(dto.StudentNumber.Trim() == "" || !int.TryParse(dto.StudentNumber, out var _))
                     throw new ArgumentException("Student number must be a number.");
+
+                var studyStartDatesSetting = (await db.Settings.FindAsync(new object[] { "StudyStartDates" }, cancellationToken))?.Value ?? "09-01,02-01";
+                Validators.StudyEnrollmentValidator.ValidateEnrollmentDates(dto.StudyEnrollments, studyStartDatesSetting);
             }
 
             // Check if date of birth is in the past
