@@ -51,8 +51,34 @@ public class PaymentValidationService(
         string? paymentExpirationTime = db.Settings.FirstOrDefault(s => s.Name == "MembershipPaymentExpirationTime")?.Value;
         if(paymentExpirationTime != null && int.TryParse(paymentExpirationTime, out int expirationYears))
         {
-            DateTime expirationThreshold = DateTime.UtcNow.AddYears(-expirationYears);
-            return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= expirationThreshold);
+            var studyEnrollment = member.StudyEnrollments
+                .OrderBy(e => e.EnrollmentDate)
+                .FirstOrDefault();
+
+            if (studyEnrollment == null)
+            {
+                // If member has no study enrollment, fallback to rolling expiration window (or simple PaidAt threshold)
+                DateTime expirationThreshold = DateTime.UtcNow.AddYears(-expirationYears);
+                return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= expirationThreshold);
+            }
+
+            // If member has a study enrollment:
+            // Calculate next recurrence date of study start date on or after DateTime.UtcNow.
+            // A grace period of 2 months is added to allow paying near the end of the membership cycle for the upcoming period.
+            var now = DateTime.UtcNow;
+            var startDate = studyEnrollment.EnrollmentDate.DateTime;
+            
+            // Build candidate date in current calendar year
+            var nextOccurrence = new DateTime(now.Year, startDate.Month, startDate.Day, startDate.Hour, startDate.Minute, startDate.Second, DateTimeKind.Utc);
+            if (now >= nextOccurrence)
+            {
+                nextOccurrence = nextOccurrence.AddYears(1);
+            }
+
+            // Expiration threshold is expirationYears prior to the next recurrence date
+            DateTime expirationThresholdDate = nextOccurrence.AddYears(-expirationYears).AddMonths(-2); // Add 2 months grace period to allow paying near the end of the membership cycle for the upcoming period.
+
+            return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= expirationThresholdDate);
         }
         else
         {

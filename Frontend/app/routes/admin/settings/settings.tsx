@@ -338,6 +338,19 @@ export default function SettingsPage() {
               }
               required
             />
+            <Input
+              label={t("study_start_dates")}
+              placeholder="MM-DD, MM-DD"
+              value={settings.StudyStartDates || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "StudyStartDates",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
+            />
           </FormSection>
 
           <FormSection title={t("accounting")} columns={2}>

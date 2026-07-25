@@ -83,6 +83,8 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         string boardChangeDateSetting = await EnsureSettingExists(db, "BoardChangeDate", "08-01");
         YearUtils.BoardChangeDate = boardChangeDateSetting;
 
+        await EnsureSettingExists(db, "StudyStartDates", "09-01,02-01");
+
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();

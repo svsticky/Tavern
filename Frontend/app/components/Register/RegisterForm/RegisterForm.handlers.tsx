@@ -160,6 +160,26 @@ export const handleStudyToggle = (
 };
 
 /**
+ * Fetches configured study start dates from settings.
+ * @param {function} setStartDates - State setter function for start dates string.
+ * @returns {Promise<void>}
+ */
+export const loadStudyStartDates = async (
+  setStartDates: (dates: string) => void,
+) => {
+  try {
+    const response = await getSettingsById({
+      path: { id: "StudyStartDates" },
+    });
+    if (response.data?.value) {
+      setStartDates(response.data.value);
+    }
+  } catch (error) {
+    console.error("Failed to fetch study start dates", error);
+  }
+};
+
+/**
  * Arguments for the handleRegisterSubmit function.
  * @typedef {Object} RegisterSubmitArgs
  */
@@ -169,6 +189,7 @@ type RegisterSubmitArgs = {
   setLoading: (loading: boolean) => void;
   formData: RegisterFormData;
   selectedStudies: number[];
+  selectedStartDate: string;
   subscriptions: number;
   studies: Study[];
   navigate: NavigateFunction;
@@ -188,6 +209,7 @@ export const handleRegisterSubmit = async ({
   setLoading,
   formData,
   selectedStudies,
+  selectedStartDate,
   subscriptions,
   studies,
   navigate,
@@ -202,6 +224,10 @@ export const handleRegisterSubmit = async ({
 
   const registerProcess = async () => {
     try {
+      const enrollmentDateIso = selectedStartDate
+        ? new Date(selectedStartDate).toISOString()
+        : new Date().toISOString();
+
       const payload: PostMemberDto = {
         firstName: formData.firstname,
         lastName: formData.lastname,
@@ -219,7 +245,7 @@ export const handleRegisterSubmit = async ({
         studyEnrollments: selectedStudies.map((id) => ({
           studyId: id,
           memberId: "00000000-0000-0000-0000-000000000000",
-          enrollmentDate: new Date().toISOString(),
+          enrollmentDate: enrollmentDateIso,
         })),
       };
 
