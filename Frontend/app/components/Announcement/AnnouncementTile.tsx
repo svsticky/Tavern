@@ -1,4 +1,4 @@
-import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
@@ -12,32 +12,6 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../Tiles/Tile";
 
-/**
- * A detailed tile component for displaying an individual association announcement.
- *
- * Features:
- * - **Markdown Support**: Renders the announcement body text using a specialized
- *   `Markdown` component with tailored typography styles.
- * - **Administrative Controls**: Automatically displays a floating edit button if the
- *   authenticated user is a member of the Board or Candidate Board.
- * - **Metadata Display**: Shows the creation date and the name of the announcer
- *   with accompanying icons for better scannability.
- * - **Responsive Design**: Uses a flexible header layout that ensures the title
- *   and date/controls do not overlap on smaller screens.
- *
- * @component
- * @param {Object} props - The component props.
- * @param {GetAnnouncementResponseDto} props.announcement - The announcement data object including title, content, and metadata.
- * @param {string} [props.className] - Optional CSS classes to override or extend the root container styling.
- *
- * @example
- * ```tsx
- * <AnnouncementTile
- *   announcement={announcementData}
- *   className="shadow-lg"
- * />
- * ```
- */
 export default function AnnouncementTile({
   announcement,
   className,
@@ -45,6 +19,8 @@ export default function AnnouncementTile({
   announcement: GetAnnouncementResponseDto;
   className?: string;
 }) {
+  const { t, i18n } = useTranslation();
+  const isDutch = i18n.language.startsWith("nl");
   const authService = useAuth();
   const { boardGroupId, candidateBoardGroupId } = useApp();
   const navigate = useNavigate();
@@ -70,12 +46,15 @@ export default function AnnouncementTile({
     candidateBoardGroupId,
   );
 
+  const title = isDutch ? announcement.titleDutch : announcement.titleEnglish;
+  const content = isDutch ? announcement.contentDutch : announcement.contentEnglish;
+
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>
       {/* Header: Title (Links) | Date & Edit (Rechts) */}
       <div className="flex w-full justify-between items-start mb-4 gap-4">
         <h3 className="font-bold text-lg leading-tight">
-          {announcement.title}
+          {title}
         </h3>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -98,7 +77,7 @@ export default function AnnouncementTile({
 
       {/* Announcement content */}
       <div className="prose prose-sm max-w-none mb-4">
-        <Markdown>{announcement.content}</Markdown>
+        <Markdown>{content}</Markdown>
       </div>
 
       {/* Divider */}

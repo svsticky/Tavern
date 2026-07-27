@@ -34,7 +34,7 @@ public class ExtensionValidatorTests
 
         var exception = Assert.Throws<ArgumentException>(() => ExtensionValidator.ValidatePosterExtension(file));
         
-        Assert.Equal("Invalid poster extension.", exception.Message);
+        Assert.Equal("Invalid file extension.", exception.Message);
     }
 
     [Theory]

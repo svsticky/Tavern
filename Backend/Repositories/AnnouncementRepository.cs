@@ -120,8 +120,10 @@ public class AnnouncementRepository : IAnnouncementRepository
     {
         return new Announcement
         {
-            Title = dto.Title,
-            Content = dto.Content,
+            TitleDutch = dto.TitleDutch,
+            TitleEnglish = dto.TitleEnglish,
+            ContentDutch = dto.ContentDutch,
+            ContentEnglish = dto.ContentEnglish,
             CreatedById = userId,
             CreatedAt = DateTime.UtcNow
         };
@@ -129,8 +131,10 @@ public class AnnouncementRepository : IAnnouncementRepository
 
     private static void ApplyUpdate(Announcement announcement, UpdateAnnouncementDTO dto)
     {
-        announcement.Title = dto.Title;
-        announcement.Content = dto.Content;
+        announcement.TitleDutch = dto.TitleDutch;
+        announcement.TitleEnglish = dto.TitleEnglish;
+        announcement.ContentDutch = dto.ContentDutch;
+        announcement.ContentEnglish = dto.ContentEnglish;
     }
 
     private async Task<Announcement> GetAnnouncementOrThrow(uint id, CancellationToken ct)

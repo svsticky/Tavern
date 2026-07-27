@@ -16,20 +16,15 @@ import { appendErrorMessage } from "~/util/error.util";
 type LoadAnnouncementArgs = {
   isEdit: boolean;
   id: string | undefined;
-  setInitialData: (value: { Title: string; Content: string }) => void;
+  setInitialData: (value: {
+    TitleDutch: string;
+    TitleEnglish: string;
+    ContentDutch: string;
+    ContentEnglish: string;
+  }) => void;
   setLoading: (value: boolean) => void;
 };
 
-/**
- * Fetches existing announcement data from the API to hydrate the edit form.
- *
- * @async
- * @param {LoadAnnouncementArgs} args - Configuration object containing:
- * @param {boolean} args.isEdit - Whether the handler should perform a fetch for existing data.
- * @param {string | undefined} args.id - The ID of the announcement to retrieve.
- * @param {Function} args.setInitialData - Function to update the local form state with fetched data.
- * @param {Function} args.setLoading - Function to update the loading indicator state.
- */
 export const loadAnnouncementData = async ({
   isEdit,
   id,
@@ -41,15 +36,17 @@ export const loadAnnouncementData = async ({
   await getAnnouncementsById({ path: { id: Number(id) } })
     .then((res) => {
       if (res.data) {
-        setInitialData({ Title: res.data.title, Content: res.data.content });
+        setInitialData({
+          TitleDutch: res.data.titleDutch,
+          TitleEnglish: res.data.titleEnglish,
+          ContentDutch: res.data.contentDutch,
+          ContentEnglish: res.data.contentEnglish,
+        });
       }
     })
     .finally(() => setLoading(false));
 };
 
-/**
- * Arguments for the handleAnnouncementSubmit handler.
- */
 type SubmitAnnouncementArgs = {
   e: React.FormEvent<HTMLFormElement>;
   isEdit: boolean;
@@ -58,20 +55,6 @@ type SubmitAnnouncementArgs = {
   navigate: NavigateFunction;
 };
 
-/**
- * Processes the announcement form submission for both creating and updating records.
- *
- * Extracts data from the form event, determines the correct API method (POST vs PUT),
- * and provides visual feedback using toast promises.
- *
- * @async
- * @param {SubmitAnnouncementArgs} args - Configuration object containing:
- * @param {React.FormEvent<HTMLFormElement>} args.e - The form submission event.
- * @param {boolean} args.isEdit - Determines whether to call the create or update endpoint.
- * @param {string | undefined} args.id - The ID of the announcement to update.
- * @param {Function} args.setSaving - Function to update the saving state.
- * @param {NavigateFunction} args.navigate - Function to redirect the user upon success.
- */
 export const handleAnnouncementSubmit = async ({
   e,
   isEdit,
@@ -82,8 +65,10 @@ export const handleAnnouncementSubmit = async ({
   e.preventDefault();
   const fd = new FormData(e.currentTarget);
   const body = {
-    title: fd.get("Title") as string,
-    content: fd.get("Content") as string,
+    titleDutch: fd.get("TitleDutch") as string,
+    titleEnglish: fd.get("TitleEnglish") as string,
+    contentDutch: fd.get("ContentDutch") as string,
+    contentEnglish: fd.get("ContentEnglish") as string,
   };
 
   setSaving(true);

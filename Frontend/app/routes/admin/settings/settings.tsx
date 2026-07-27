@@ -6,6 +6,7 @@ import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinks
 import ManageMailingListsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
 import ManageRegisterSlidesDatatable from "~/components/Register/ManageRegisterSlidesDatatable/ManageRegisterSlidesDatatable";
+import ManageRegistrationDocumentsDatatable from "~/components/Register/ManageRegistrationDocumentsDatatable/ManageRegistrationDocumentsDatatable";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Tile from "~/components/Tiles/Tile";
@@ -102,6 +103,11 @@ export default function SettingsPage() {
         <div>
           <FormHeader title={t("mail_subscriptions")} />
           <ManageMailingListsDatatable />
+        </div>
+
+        <div>
+          <FormHeader title={t("registration_documents")} />
+          <ManageRegistrationDocumentsDatatable />
         </div>
 
         <div>

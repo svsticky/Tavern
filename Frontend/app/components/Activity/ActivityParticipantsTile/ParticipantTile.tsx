@@ -28,7 +28,7 @@ export default function ParticipantTile({
 }: {
   enrollment: EnrollmentResponseDto;
 }) {
-  const imageUrl = `${getEnv("ApiUrl")}/api/profilepicture/view/${enrollment.member.profilePicturePath}`;
+  const imageUrl = `${getEnv("ApiUrl")}/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 
   const [imgError, setImgError] = useState(false);

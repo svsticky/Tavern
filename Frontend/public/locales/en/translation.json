@@ -225,7 +225,6 @@
   "members_description": "We have a diverse group of about 2000 members, including bachelor and master students from various study programs. Our members are active in organizing activities, participating in committees and enjoying the social aspect of our association.",
   "membership_gl_account": "Membership gl account",
   "membership_payment_description": "The membership isn't paid or is still processing.",
-  "membership_payment_description": "The membership isn't paid or is still processing.",
   "membership_payment_required": "Membership payment required for access to this page.",
   "membership_price": "Membership price",
   "membership_vat_code": "Membership vat code",
@@ -463,6 +462,17 @@
   "edit_reason": "Edit Reason",
   "add_slide": "Add Slide",
   "edit_slide": "Edit Slide",
+  "registration_documents": "Registration Documents & Terms",
+  "add_document": "Add Document",
+  "edit_document": "Edit Document",
+  "no_documents": "No registration documents configured",
+  "creating_document": "Creating document...",
+  "document_created_successfully": "Document created successfully",
+  "failed_to_create_document": "Failed to create document",
+  "deleting_document": "Deleting document...",
+  "document_deleted_successfully": "Document deleted successfully",
+  "failed_to_delete_document": "Failed to delete document",
+  "terms_and_conditions": "Terms and Conditions",
   "title_nl": "Title (Dutch)",
   "title_en": "Title (English)",
   "description_nl": "Description (Dutch)",
@@ -497,5 +507,6 @@
   "failed_to_create_external_link": "Failed to create external link",
   "deleting_external_link": "Deleting external link...",
   "external_link_deleted_successfully": "External link deleted successfully",
-  "failed_to_delete_external_link": "Failed to delete external link"
+  "failed_to_delete_external_link": "Failed to delete external link",
+  "agree_to_documents": "I agree to the following documents:"
 }

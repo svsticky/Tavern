@@ -20,8 +20,10 @@ public static class AnnouncementProjections
         return a => new GetAnnouncementResponseDTO
         {
             Id = a.Id,
-            Title = a.Title,
-            Content = a.Content,
+            TitleDutch = a.TitleDutch,
+            TitleEnglish = a.TitleEnglish,
+            ContentDutch = a.ContentDutch,
+            ContentEnglish = a.ContentEnglish,
             CreatedById = isBoard || a.CreatedById == userId ? a.CreatedById : null,
             CreatedAt = a.CreatedAt,
             CreatedByName = a.CreatedBy != null

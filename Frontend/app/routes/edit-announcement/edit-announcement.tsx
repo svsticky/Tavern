@@ -39,7 +39,12 @@ export default function AnnouncementFormPage() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [initialData, setInitialData] = useState({ Title: "", Content: "" });
+  const [initialData, setInitialData] = useState({
+    TitleDutch: "",
+    TitleEnglish: "",
+    ContentDutch: "",
+    ContentEnglish: "",
+  });
 
   useEffect(() => {
     loadAnnouncementData({ isEdit, id, setInitialData, setLoading });
@@ -59,17 +64,30 @@ export default function AnnouncementFormPage() {
           handleAnnouncementSubmit({ e, isEdit, id, setSaving, navigate })
         }
       >
-        <FormSection title={t("announcement_details")} columns={1}>
+        <FormSection title={t("announcement_details")} columns={2}>
           <Input
-            label={t("title")}
-            name="Title"
-            defaultValue={initialData.Title}
+            label={t("title_nl")}
+            name="TitleDutch"
+            defaultValue={initialData.TitleDutch}
+            required
+          />
+          <Input
+            label={t("title_en")}
+            name="TitleEnglish"
+            defaultValue={initialData.TitleEnglish}
             required
           />
           <TextArea
-            label={t("content")}
-            name="Content"
-            defaultValue={initialData.Content}
+            label={t("description_nl")}
+            name="ContentDutch"
+            defaultValue={initialData.ContentDutch}
+            rows={12}
+            required
+          />
+          <TextArea
+            label={t("description_en")}
+            name="ContentEnglish"
+            defaultValue={initialData.ContentEnglish}
             rows={12}
             required
           />

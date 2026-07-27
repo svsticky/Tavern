@@ -13,18 +13,32 @@ public class Announcement
     public uint Id { get; set; }
 
     /// <summary>
-    /// The title of the announcement.
+    /// The Dutch title of the announcement.
     /// </summary>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
-    public string Title { get; set; } = null!;
+    public string TitleDutch { get; set; } = null!;
 
     /// <summary>
-    /// The content of the announcement.
+    /// The English title of the announcement.
+    /// </summary>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
+    public string TitleEnglish { get; set; } = null!;
+
+    /// <summary>
+    /// The Dutch content of the announcement.
     /// </summary>
     [StringLength(1000)]
     [Required(AllowEmptyStrings = false)]
-    public string Content { get; set; } = null!;
+    public string ContentDutch { get; set; } = null!;
+
+    /// <summary>
+    /// The English content of the announcement.
+    /// </summary>
+    [StringLength(1000)]
+    [Required(AllowEmptyStrings = false)]
+    public string ContentEnglish { get; set; } = null!;
 
     /// <summary>
     /// The date and time when the announcement was created.

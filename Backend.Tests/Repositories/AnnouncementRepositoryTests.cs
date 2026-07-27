@@ -74,8 +74,10 @@ public class AnnouncementRepositoryTests : IDisposable
             _db.Announcements.Add(new Announcement
             {
                 Id = i,
-                Title = $"Ann {i}",
-                Content = $"Content {i}",
+                TitleDutch = $"Ann NL {i}",
+                TitleEnglish = $"Ann EN {i}",
+                ContentDutch = $"Inhoud {i}",
+                ContentEnglish = $"Content {i}",
                 CreatedById = creator.Id,
                 CreatedAt = DateTimeOffset.UtcNow.AddMinutes(i)
             });
@@ -88,8 +90,8 @@ public class AnnouncementRepositoryTests : IDisposable
         // Assert
         Assert.Equal(20, result.Count);
         // The most recently created announcement (i=25) should be first
-        Assert.Equal("Ann 25", result[0].Title);
-        Assert.Equal("Ann 6", result[19].Title); // index 19 corresponds to the 20th item, which is i=6
+        Assert.Equal("Ann NL 25", result[0].TitleDutch);
+        Assert.Equal("Ann NL 6", result[19].TitleDutch); // index 19 corresponds to the 20th item, which is i=6
     }
 
     [Fact]
@@ -113,8 +115,10 @@ public class AnnouncementRepositoryTests : IDisposable
 
         var ann = new Announcement
         {
-            Title = "Topic",
-            Content = "Body",
+            TitleDutch = "Topic NL",
+            TitleEnglish = "Topic EN",
+            ContentDutch = "Body NL",
+            ContentEnglish = "Body EN",
             CreatedById = creator.Id,
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -126,8 +130,8 @@ public class AnnouncementRepositoryTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal("Topic", result.Title);
-        Assert.Equal("Body", result.Content);
+        Assert.Equal("Topic NL", result.TitleDutch);
+        Assert.Equal("Body NL", result.ContentDutch);
     }
 
     [Fact]
@@ -144,7 +148,7 @@ public class AnnouncementRepositoryTests : IDisposable
     public async Task CreateAnnouncement_UserNotBoard_ThrowsUnauthorized()
     {
         // Arrange
-        var dto = new PostAnnouncementDTO { Title = "T", Content = "C" };
+        var dto = new PostAnnouncementDTO { TitleDutch = "T NL", TitleEnglish = "T EN", ContentDutch = "C NL", ContentEnglish = "C EN" };
         _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 
@@ -157,7 +161,7 @@ public class AnnouncementRepositoryTests : IDisposable
     public async Task CreateAnnouncement_ValidData_CreatesAnnouncement()
     {
         // Arrange
-        var dto = new PostAnnouncementDTO { Title = "Special Title", Content = "Special Content" };
+        var dto = new PostAnnouncementDTO { TitleDutch = "Special Title NL", TitleEnglish = "Special Title EN", ContentDutch = "Special Content NL", ContentEnglish = "Special Content EN" };
 
         // Act
         var result = await _repository.CreateAnnouncement(_userId, dto, CancellationToken.None);
@@ -165,11 +169,11 @@ public class AnnouncementRepositoryTests : IDisposable
         // Assert
         _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
         Assert.True(result.Id > 0);
-        Assert.Equal("Special Title", result.Title);
+        Assert.Equal("Special Title NL", result.TitleDutch);
 
         var saved = await _db.Announcements.FindAsync(result.Id);
         Assert.NotNull(saved);
-        Assert.Equal("Special Title", saved.Title);
+        Assert.Equal("Special Title NL", saved.TitleDutch);
         Assert.Equal(_userId, saved.CreatedById);
     }
 
@@ -187,8 +191,10 @@ public class AnnouncementRepositoryTests : IDisposable
         // Arrange
         var ann = new Announcement
         {
-            Title = "Title",
-            Content = "Body",
+            TitleDutch = "Title NL",
+            TitleEnglish = "Title EN",
+            ContentDutch = "Body NL",
+            ContentEnglish = "Body EN",
             CreatedById = Guid.NewGuid(),
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -235,8 +241,10 @@ public class AnnouncementRepositoryTests : IDisposable
         // Arrange
         var ann = new Announcement
         {
-            Title = "Old Title",
-            Content = "Body",
+            TitleDutch = "Old Title NL",
+            TitleEnglish = "Old Title EN",
+            ContentDutch = "Body NL",
+            ContentEnglish = "Body EN",
             CreatedById = Guid.NewGuid(),
             CreatedAt = DateTimeOffset.UtcNow
         };
@@ -244,7 +252,7 @@ public class AnnouncementRepositoryTests : IDisposable
         await _db.SaveChangesAsync();
 
         var patchDoc = new JsonPatchDocument<Announcement>();
-        patchDoc.Replace(a => a.Title, "New Title");
+        patchDoc.Replace(a => a.TitleDutch, "New Title NL");
 
         // Act
         await _repository.PatchAnnouncement(ann.Id, patchDoc, _userId, CancellationToken.None);
@@ -253,7 +261,7 @@ public class AnnouncementRepositoryTests : IDisposable
         _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
         var updated = await _db.Announcements.FindAsync(ann.Id);
         Assert.NotNull(updated);
-        Assert.Equal("New Title", updated.Title);
+        Assert.Equal("New Title NL", updated.TitleDutch);
     }
 
     [Fact]
@@ -262,15 +270,17 @@ public class AnnouncementRepositoryTests : IDisposable
         // Arrange
         var ann = new Announcement
         {
-            Title = "Old Title",
-            Content = "Old Content",
+            TitleDutch = "Old Title NL",
+            TitleEnglish = "Old Title EN",
+            ContentDutch = "Old Content NL",
+            ContentEnglish = "Old Content EN",
             CreatedById = Guid.NewGuid(),
             CreatedAt = DateTimeOffset.UtcNow
         };
         _db.Announcements.Add(ann);
         await _db.SaveChangesAsync();
 
-        var dto = new UpdateAnnouncementDTO { Title = "New Title", Content = "New Content" };
+        var dto = new UpdateAnnouncementDTO { TitleDutch = "New Title NL", TitleEnglish = "New Title EN", ContentDutch = "New Content NL", ContentEnglish = "New Content EN" };
 
         // Act
         await _repository.UpdateAnnouncement(ann.Id, dto, _userId, CancellationToken.None);
@@ -279,7 +289,7 @@ public class AnnouncementRepositoryTests : IDisposable
         _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
         var updated = await _db.Announcements.FindAsync(ann.Id);
         Assert.NotNull(updated);
-        Assert.Equal("New Title", updated.Title);
-        Assert.Equal("New Content", updated.Content);
+        Assert.Equal("New Title NL", updated.TitleDutch);
+        Assert.Equal("New Content NL", updated.ContentDutch);
     }
 }

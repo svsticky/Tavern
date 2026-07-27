@@ -16,8 +16,10 @@ public class AnnouncementProjectionsTests
         var announcement = new Announcement
         {
             Id = 1,
-            Title = "Welcome",
-            Content = "Hello World",
+            TitleDutch = "Welkom",
+            TitleEnglish = "Welcome",
+            ContentDutch = "Hallo Wereld",
+            ContentEnglish = "Hello World",
             CreatedById = creatorId,
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = new Member
@@ -40,8 +42,10 @@ public class AnnouncementProjectionsTests
 
         // Assert
         Assert.Equal(1u, dto.Id);
-        Assert.Equal("Welcome", dto.Title);
-        Assert.Equal("Hello World", dto.Content);
+        Assert.Equal("Welkom", dto.TitleDutch);
+        Assert.Equal("Welcome", dto.TitleEnglish);
+        Assert.Equal("Hallo Wereld", dto.ContentDutch);
+        Assert.Equal("Hello World", dto.ContentEnglish);
         Assert.Equal(creatorId, dto.CreatedById);
         Assert.Equal("Jane Doe", dto.CreatedByName);
     }
@@ -54,8 +58,10 @@ public class AnnouncementProjectionsTests
         var announcement = new Announcement
         {
             Id = 2,
-            Title = "Welcome",
-            Content = "Hello World",
+            TitleDutch = "Welkom",
+            TitleEnglish = "Welcome",
+            ContentDutch = "Hallo Wereld",
+            ContentEnglish = "Hello World",
             CreatedById = userId,
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = null!
@@ -79,8 +85,10 @@ public class AnnouncementProjectionsTests
         var announcement = new Announcement
         {
             Id = 3,
-            Title = "Welcome",
-            Content = "Hello World",
+            TitleDutch = "Welkom",
+            TitleEnglish = "Welcome",
+            ContentDutch = "Hallo Wereld",
+            ContentEnglish = "Hello World",
             CreatedById = creatorId,
             CreatedAt = DateTimeOffset.UtcNow,
             CreatedBy = null!

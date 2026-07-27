@@ -260,13 +260,21 @@ export type Announcement = {
      */
     id?: number;
     /**
-     * The title of the announcement.
+     * The Dutch title of the announcement.
      */
-    title: string;
+    titleDutch: string;
     /**
-     * The content of the announcement.
+     * The English title of the announcement.
      */
-    content: string;
+    titleEnglish: string;
+    /**
+     * The Dutch content of the announcement.
+     */
+    contentDutch: string;
+    /**
+     * The English content of the announcement.
+     */
+    contentEnglish: string;
     /**
      * The date and time when the announcement was created.
      */
@@ -472,13 +480,21 @@ export type GetAnnouncementResponseDto = {
      */
     id: number;
     /**
-     * The title of the announcement.
+     * The Dutch title of the announcement.
      */
-    title: string;
+    titleDutch: string;
     /**
-     * The content of the announcement.
+     * The English title of the announcement.
      */
-    content: string;
+    titleEnglish: string;
+    /**
+     * The Dutch content of the announcement.
+     */
+    contentDutch: string;
+    /**
+     * The English content of the announcement.
+     */
+    contentEnglish: string;
     /**
      * The name of the user who created the announcement, providing information about the creator of the announcement for display purposes in the client application. This field allows for better identification and attribution of announcements to their respective creators, enhancing the user experience by providing context about the source of the announcement in the system.
      */
@@ -1147,13 +1163,21 @@ export type PostActivityPaymentDto = {
  */
 export type PostAnnouncementDto = {
     /**
-     * The title of the announcement.
+     * The Dutch title of the announcement.
      */
-    title: string;
+    titleDutch: string;
     /**
-     * The content of the announcement.
+     * The English title of the announcement.
      */
-    content: string;
+    titleEnglish: string;
+    /**
+     * The Dutch content of the announcement.
+     */
+    contentDutch: string;
+    /**
+     * The English content of the announcement.
+     */
+    contentEnglish: string;
 };
 
 /**
@@ -1818,13 +1842,21 @@ export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYears
  */
 export type UpdateAnnouncementDto = {
     /**
-     * The title of the announcement.
+     * The Dutch title of the announcement.
      */
-    title: string;
+    titleDutch: string;
     /**
-     * The content of the announcement.
+     * The English title of the announcement.
      */
-    content: string;
+    titleEnglish: string;
+    /**
+     * The Dutch content of the announcement.
+     */
+    contentDutch: string;
+    /**
+     * The English content of the announcement.
+     */
+    contentEnglish: string;
 };
 
 /**

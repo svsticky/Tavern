@@ -92,6 +92,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         await EnsureBoardAccountExists(db, authOutboxWorker, createNewBoardService);
 
         await EnsureRegisterReasonsSeeded(db);
+        await EnsureRegistrationDocumentsSeeded(db);
         await EnsureExternalLinksSeeded(db);
     }
 
@@ -306,6 +307,26 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 DescriptionDutch = "We hebben een divers groep van ongeveer 2000 leden, inclusief bachelor- en masterstudenten uit verschillende studieprogramma's. Onze leden zijn actief in het organiseren van activiteiten, het deelnemen aan commissies en het genieten van het sociale aspect van onze vereniging.",
                 DescriptionEnglish = "We have a diverse group of about 2000 members, including bachelor and master students from various study programs. Our members are active in organizing activities, participating in committees and enjoying the social aspect of our association.",
                 SortOrder = 6
+            }
+        );
+
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task EnsureRegistrationDocumentsSeeded(PostgresDbContext db)
+    {
+        if (await db.RegistrationDocuments.AnyAsync())
+        {
+            return;
+        }
+
+        db.RegistrationDocuments.AddRange(
+            new RegistrationDocument
+            {
+                NameDutch = "Privacyverklaring",
+                NameEnglish = "Privacy Statement",
+                Url = "https://public.svsticky.nl/privacystatement.pdf",
+                SortOrder = 1
             }
         );
 
