@@ -2,3 +2,5 @@
 
 export type * from './types.gen';
 export * from './sdk.gen';
+export * from './registrationDocuments.sdk';
+export * from './registrationDocuments.types';

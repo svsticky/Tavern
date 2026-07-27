@@ -7,15 +7,25 @@ namespace Backend.Controllers.DTOs;
 /// </summary>
 public class PostAnnouncementDTO
 {
-    /// <inheritdoc cref="Models.Domain.Announcement.Title"/>>
+    /// <inheritdoc cref="Models.Domain.Announcement.TitleDutch"/>>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
-    public required string Title { get; set; }
+    public required string TitleDutch { get; set; }
 
-    /// <inheritdoc cref="Models.Domain.Announcement.Content"/>>
+    /// <inheritdoc cref="Models.Domain.Announcement.TitleEnglish"/>>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
+    public required string TitleEnglish { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Announcement.ContentDutch"/>>
     [StringLength(1000)]
     [Required(AllowEmptyStrings = false)]
-    public required string Content { get; set; }
+    public required string ContentDutch { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Announcement.ContentEnglish"/>>
+    [StringLength(1000)]
+    [Required(AllowEmptyStrings = false)]
+    public required string ContentEnglish { get; set; }
 }
 
 /// <summary>
@@ -23,15 +33,25 @@ public class PostAnnouncementDTO
 /// </summary>
 public class UpdateAnnouncementDTO
 {
-    /// <inheritdoc cref="Models.Domain.Announcement.Title"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.TitleDutch"/>
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
-    public required string Title { get; set; }
+    public required string TitleDutch { get; set; }
 
-    /// <inheritdoc cref="Models.Domain.Announcement.Content"/>
+    /// <inheritdoc cref="Models.Domain.Announcement.TitleEnglish"/>
+    [StringLength(100)]
+    [Required(AllowEmptyStrings = false)]
+    public required string TitleEnglish { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Announcement.ContentDutch"/>
     [StringLength(1000)]
     [Required(AllowEmptyStrings = false)]
-    public required string Content { get; set; }
+    public required string ContentDutch { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Announcement.ContentEnglish"/>
+    [StringLength(1000)]
+    [Required(AllowEmptyStrings = false)]
+    public required string ContentEnglish { get; set; }
 }
 
 /// <summary>
@@ -42,11 +62,17 @@ public class GetAnnouncementResponseDTO
     /// <inheritdoc cref="Models.Domain.Announcement.Id"/>
     public required uint Id { get; set; }
 
-    /// <inheritdoc cref="Models.Domain.Announcement.Title"/>
-    public required string Title { get; set; }
+    /// <inheritdoc cref="Models.Domain.Announcement.TitleDutch"/>
+    public required string TitleDutch { get; set; }
 
-    /// <inheritdoc cref="Models.Domain.Announcement.Content"/>
-    public required string Content { get; set; }
+    /// <inheritdoc cref="Models.Domain.Announcement.TitleEnglish"/>
+    public required string TitleEnglish { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Announcement.ContentDutch"/>
+    public required string ContentDutch { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Announcement.ContentEnglish"/>
+    public required string ContentEnglish { get; set; }
 
     /// <summary>
     /// The name of the user who created the announcement, providing information about the creator of the announcement for display purposes in the client application. This field allows for better identification and attribution of announcements to their respective creators, enhancing the user experience by providing context about the source of the announcement in the system.

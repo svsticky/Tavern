@@ -1,7 +1,7 @@
-import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import type { Mailinglist, Study } from "~/api";
+import type { Mailinglist, RegistrationDocumentResponseDto, Study } from "~/api";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import Button from "../../UI/Button";
@@ -17,25 +17,19 @@ import {
   loadMailingLists,
   loadMastersMustPay,
   loadPrice,
+  loadRegistrationDocuments,
   loadStudies,
   loadStudyStartDates,
 } from "./RegisterForm.handlers";
 
-/**
- * The primary registration form component for new members.
- *
- * This component manages the state for personal details, study selection, and mailing
- * list subscriptions. It includes complex client-side validation, such as checking
- * the user's age to determine if parent contact information is required.
- *
- * @component
- * @param {Object} props - Component properties.
- * @param {string} [props.className] - Optional CSS classes for the outer Tile container.
- */
 export default function RegisterForm({ className }: { className?: string }) {
+  const { t, i18n } = useTranslation();
+  const isDutch = i18n.language.startsWith("nl");
   const [loading, setLoading] = useState(true);
   const [studies, setStudies] = useState<Study[]>([]);
   const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
+  const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>([]);
+  const [agreedDocumentIds, setAgreedDocumentIds] = useState<number[]>([]);
   const [mastersMustPay, setMastersMustPay] = useState<boolean | null>(null);
   const [price, setPrice] = useState<number | null>(null);
   const [membershipPaymentExpirationTime, setMembershipPaymentExpirationTime] =
@@ -68,6 +62,7 @@ export default function RegisterForm({ className }: { className?: string }) {
       await loadMastersMustPay(setMastersMustPay);
       await loadPrice(setPrice, setMembershipPaymentExpirationTime);
       await loadMailingLists(setMailingLists);
+      await loadRegistrationDocuments(setDocuments);
       await loadStudyStartDates(setStartDatesRaw);
       setLoading(false);
     };
@@ -168,8 +163,12 @@ export default function RegisterForm({ className }: { className?: string }) {
     const hasAtLeastOneStudy = selectedStudies.length > 0;
     const hasStartDate = selectedStartDate.trim() !== "";
 
-    return allFieldsFilled && hasAtLeastOneStudy && hasStartDate;
-  }, [formData, selectedStudies, selectedStartDate]);
+    const allDocumentsAgreed =
+      documents.length === 0 ||
+      documents.every((doc) => agreedDocumentIds.includes(doc.id));
+
+    return allFieldsFilled && hasAtLeastOneStudy && hasStartDate && allDocumentsAgreed;
+  }, [formData, selectedStudies, selectedStartDate, documents, agreedDocumentIds]);
 
   const [subscriptions, setSubscriptions] = useState<number>(0);
 
@@ -352,12 +351,13 @@ export default function RegisterForm({ className }: { className?: string }) {
           )}
         </FormSection>
 
-        <FormSection title={t("mail_subscriptions")}>
-          {loading ? (
-            t("loading")
-          ) : (
-            <div className="space-y-2">
-              {mailingLists.map((list) => (
+        {mailingLists.length > 0 && (
+          <FormSection title={t("mail_subscriptions")}>
+            {loading ? (
+              t("loading")
+            ) : (
+              <div className="space-y-2">
+                {mailingLists.map((list) => (
                 <Checkbox
                   key={list.id}
                   label={list.name}
@@ -374,6 +374,50 @@ export default function RegisterForm({ className }: { className?: string }) {
             </div>
           )}
         </FormSection>
+        )}
+
+        {documents.length > 0 && (
+          <FormSection title={t("terms_and_conditions")}>
+            <div className="space-y-3">
+              <span className="text-sm font-medium text-gray-700 block">
+                {t("agree_to_documents")}
+              </span>
+              <div className="flex flex-wrap gap-2 text-sm">
+                {documents.map((doc, idx) => {
+                  const isChecked = agreedDocumentIds.includes(doc.id);
+                  const name = isDutch ? doc.nameDutch : doc.nameEnglish;
+                  return (
+                    <div key={doc.id} className="flex items-center gap-2">
+                      <Checkbox
+                        label=""
+                        checked={isChecked}
+                        disabled={loading}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          if (e.target.checked) {
+                            setAgreedDocumentIds((prev) => [...prev, doc.id]);
+                          } else {
+                            setAgreedDocumentIds((prev) =>
+                              prev.filter((id) => id !== doc.id),
+                            );
+                          }
+                        }}
+                      />
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline font-medium"
+                      >
+                        {name}
+                      </a>
+                      {idx < documents.length - 1 && <span className="text-gray-400">,</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </FormSection>
+        )}
 
         <p className="text-gray-500">
           {price != null &&

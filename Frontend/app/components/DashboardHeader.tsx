@@ -248,7 +248,7 @@ export default function DashboardHeader({
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
               {
-                nextActivity.enrollments.filter((e) => !e.isOnWaitingList)
+                nextActivity.participantLimit ?? 0 - nextActivity.enrollments.filter((e) => !e.isOnWaitingList)
                   .length
               }{" "}
               {nextActivity.participantLimit

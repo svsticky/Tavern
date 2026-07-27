@@ -45,7 +45,7 @@ public class AnnouncementsControllerTests
         // Arrange
         var list = new List<GetAnnouncementResponseDTO>
         {
-            new GetAnnouncementResponseDTO { Id = 1, Title = "Info", Content = "Info Content", CreatedByName = "John Doe", CreatedAt = DateTimeOffset.UtcNow }
+            new GetAnnouncementResponseDTO { Id = 1, TitleDutch = "Info NL", TitleEnglish = "Info EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN", CreatedByName = "John Doe", CreatedAt = DateTimeOffset.UtcNow }
         };
         _repositoryMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Returns(list);
 
@@ -90,7 +90,7 @@ public class AnnouncementsControllerTests
     public async Task GetAnnouncement_Found_ReturnsOk()
     {
         // Arrange
-        var ann = new GetAnnouncementResponseDTO { Id = 2, Title = "Test", Content = "Test Content", CreatedByName = "John Doe", CreatedAt = DateTimeOffset.UtcNow };
+        var ann = new GetAnnouncementResponseDTO { Id = 2, TitleDutch = "Test NL", TitleEnglish = "Test EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN", CreatedByName = "John Doe", CreatedAt = DateTimeOffset.UtcNow };
         _repositoryMock.GetAnnouncement(2, _userId, Arg.Any<CancellationToken>()).Returns(ann);
 
         // Act
@@ -99,7 +99,7 @@ public class AnnouncementsControllerTests
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returned = Assert.IsType<GetAnnouncementResponseDTO>(okResult.Value);
-        Assert.Equal("Test", returned.Title);
+        Assert.Equal("Test NL", returned.TitleDutch);
     }
 
     [Fact]
@@ -147,8 +147,8 @@ public class AnnouncementsControllerTests
     public async Task PostAnnouncement_Success_ReturnsCreated()
     {
         // Arrange
-        var dto = new PostAnnouncementDTO { Title = "Post", Content = "Content" };
-        var created = new Announcement { Id = 10, Title = "Post", Content = "Content", CreatedAt = DateTimeOffset.UtcNow, CreatedById = _userId };
+        var dto = new PostAnnouncementDTO { TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN" };
+        var created = new Announcement { Id = 10, TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN", CreatedAt = DateTimeOffset.UtcNow, CreatedById = _userId };
         _repositoryMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
@@ -165,7 +165,7 @@ public class AnnouncementsControllerTests
     public async Task PostAnnouncement_Unauthorized_ReturnsForbid()
     {
         // Arrange
-        var dto = new PostAnnouncementDTO { Title = "Post", Content = "Content" };
+        var dto = new PostAnnouncementDTO { TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN" };
         _repositoryMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act
@@ -179,7 +179,7 @@ public class AnnouncementsControllerTests
     public async Task PostAnnouncement_Exception_ReturnsBadRequest()
     {
         // Arrange
-        var dto = new PostAnnouncementDTO { Title = "Post", Content = "Content" };
+        var dto = new PostAnnouncementDTO { TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN" };
         _repositoryMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act
@@ -329,7 +329,7 @@ public class AnnouncementsControllerTests
     public async Task PutAnnouncement_Success_ReturnsNoContent()
     {
         // Arrange
-        var dto = new UpdateAnnouncementDTO { Title = "Updated", Content = "Updated Content" };
+        var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
 
         // Act
         var result = await _controller.PutAnnouncement(1, dto, CancellationToken.None);
@@ -343,7 +343,7 @@ public class AnnouncementsControllerTests
     public async Task PutAnnouncement_NotFound_ReturnsNotFound()
     {
         // Arrange
-        var dto = new UpdateAnnouncementDTO { Title = "Updated", Content = "Updated Content" };
+        var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
         _repositoryMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
         // Act
@@ -357,7 +357,7 @@ public class AnnouncementsControllerTests
     public async Task PutAnnouncement_Unauthorized_ReturnsForbid()
     {
         // Arrange
-        var dto = new UpdateAnnouncementDTO { Title = "Updated", Content = "Updated Content" };
+        var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
         _repositoryMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act
@@ -371,7 +371,7 @@ public class AnnouncementsControllerTests
     public async Task PutAnnouncement_Exception_ReturnsBadRequest()
     {
         // Arrange
-        var dto = new UpdateAnnouncementDTO { Title = "Updated", Content = "Updated Content" };
+        var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
         _repositoryMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act

@@ -289,6 +289,7 @@ internal static class ServiceExtensions
         services.AddScoped<ISettingsRepository, SettingsRepository>();
         services.AddScoped<IMailinglistRepository, MailinglistRepository>();
         services.AddScoped<IRegisterReasonRepository, RegisterReasonRepository>();
+        services.AddScoped<IRegistrationDocumentRepository, RegistrationDocumentRepository>();
         services.AddScoped<IRegisterSlideRepository, RegisterSlideRepository>();
         services.AddScoped<IExternalLinkRepository, ExternalLinkRepository>();
         

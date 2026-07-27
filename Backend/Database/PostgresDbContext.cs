@@ -51,6 +51,9 @@ public class PostgresDbContext : DbContext
     public DbSet<MailSubscriptionOutboxTask> MailSubscriptionOutboxTasks { get; set; }
     /// <summary>Reference to the MailSubscriptionDefinitions relational table. </summary>
     public DbSet<Mailinglist> Mailinglists { get; set; }
+    /// <summary>Reference to the RegistrationDocuments relational table. </summary>
+    public DbSet<RegistrationDocument> RegistrationDocuments { get; set; }
+
     /// <summary>Reference to the RegisterReasons relational table. </summary>
     public DbSet<RegisterReason> RegisterReasons { get; set; }
     /// <summary>Reference to the RegisterSlides relational table. </summary>

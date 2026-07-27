@@ -4,12 +4,14 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
   getMailinglists,
+  getRegistrationdocuments,
   getSettingsById,
   getStudies,
   type Mailinglist,
   type PostMemberDto,
   postMembers,
   postPaymentsMembership,
+  type RegistrationDocumentResponseDto,
   type Study,
 } from "~/api";
 import i18n from "~/i18n";
@@ -129,6 +131,25 @@ export const loadMailingLists = async (
   } catch (error) {
     console.error("Failed to fetch mailing lists", error);
     toast.error(appendErrorMessage(t("fetch_mailinglists_failed"), error));
+  }
+};
+
+/**
+ * Fetches available registration documents from the API and updates local state.
+ * @param {function} setDocuments - State setter function for the registration documents array.
+ * @returns {Promise<void>}
+ */
+export const loadRegistrationDocuments = async (
+  setDocuments: (docs: RegistrationDocumentResponseDto[]) => void,
+) => {
+  try {
+    const response = await getRegistrationdocuments();
+    if (response.data) {
+      const sorted = [...response.data].sort((a, b) => a.sortOrder - b.sortOrder);
+      setDocuments(sorted);
+    }
+  } catch (error) {
+    console.error("Failed to fetch registration documents", error);
   }
 };
 

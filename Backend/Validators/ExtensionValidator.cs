@@ -21,7 +21,7 @@ public static class ExtensionValidator
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
 
         if (!_allowedPosterExtensions.Contains(extension) || !_allowedPosterMimeTypes.Contains(file.ContentType))
-            throw new ArgumentException("Invalid poster extension.");
+            throw new ArgumentException("Invalid file extension.");
     }
 
     /// <summary>
