@@ -22,6 +22,7 @@ export type CreateBegunstigerFormData = {
   city: string;
   studentNumber: string;
   language: Language;
+  isBegunstiger: boolean;
 };
 
 /**
@@ -33,8 +34,9 @@ export const handleCreateBegunstigerInputChange = (
   e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   setFormData: React.Dispatch<React.SetStateAction<CreateBegunstigerFormData>>,
 ) => {
-  const { name, value } = e.target;
-  setFormData((prev) => ({ ...prev, [name]: value }));
+  const { name, value, type } = e.target;
+  const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
+  setFormData((prev) => ({ ...prev, [name]: val }));
 };
 
 /**
@@ -50,7 +52,7 @@ type CreateSubmitArgs = {
 };
 
 /**
- * Orchestrates the begunstiger registration process, including API submission,
+ * Orchestrates the member registration process, including API submission,
  * toast notifications, and conditional redirection to payment or confirmation.
  *
  * @param {CreateSubmitArgs} args - Configuration and state objects required for submission.
@@ -70,6 +72,11 @@ export const handleCreateSubmit = async ({
 
   const registerProcess = async () => {
     try {
+      const studentNum = formData.studentNumber.trim();
+      const finalStudentNumber = formData.isBegunstiger
+        ? studentNum.startsWith("F_") ? studentNum : `F_${studentNum}`
+        : studentNum;
+
       const payload: PostMemberDto = {
         firstName: formData.firstname,
         lastName: formData.lastname,
@@ -80,12 +87,12 @@ export const handleCreateSubmit = async ({
         houseNumber: formData.houseNumber,
         postalCode: formData.postalCode,
         city: formData.city,
-        studentNumber: `BG_${formData.studentNumber.trim()}`,
+        studentNumber: finalStudentNumber,
         parentPhoneNumber: formData.parentPhone || null,
         preferredLanguage: formData.language,
         mailSubscriptions: 0,
         studyEnrollments: [],
-        begunstiger: true,
+        begunstiger: formData.isBegunstiger,
       };
 
       const response = await postMembers({ body: payload });

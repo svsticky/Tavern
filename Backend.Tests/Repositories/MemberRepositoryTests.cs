@@ -306,7 +306,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -338,7 +338,7 @@ public class MemberRepositoryTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteMember_ValidRequest_RemovesFromDbAndStorage()
+    public async Task DeleteMember_ValidRequest_AnonymizesAndSoftDeletesMember()
     {
         // Arrange
         var memberId = Guid.NewGuid();
@@ -354,8 +354,18 @@ public class MemberRepositoryTests : IDisposable
 
         // Assert
         _db.ChangeTracker.Clear();
-        var deleted = await _db.Members.FindAsync(memberId);
-        Assert.Null(deleted);
+        var deletedQueried = await _db.Members.FindAsync(memberId);
+        Assert.Null(deletedQueried);
+
+        var anonymized = await _db.Members.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == memberId);
+        Assert.NotNull(anonymized);
+        Assert.True(anonymized.IsDeleted);
+        Assert.Equal("Deleted", anonymized.FirstName);
+        Assert.Equal("Member", anonymized.LastName);
+        Assert.Equal($"deleted-{memberId}@deleted.local", anonymized.Email);
+        Assert.Equal($"DELETED-{memberId}", anonymized.StudentNumber);
+        Assert.Null(anonymized.ProfilePicturePath);
+
         await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value);
         await _storageService.Received(1).DeleteFileAsync("profile-pictures", "pic.webp");
         _memoryCache.Received(1).Remove("prof-pic-pic.webp");
@@ -512,7 +522,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -587,7 +597,7 @@ public class MemberRepositoryTests : IDisposable
         _db.Members.Add(existing);
         await _db.SaveChangesAsync();
 
-        var se = new StudyEnrollment { MemberId = existing.Id, StudyId = study.Id, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled };
+        var se = new StudyEnrollment { MemberId = existing.Id, StudyId = study.Id, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled };
         _db.StudyEnrollments.Add(se);
         await _db.SaveChangesAsync();
 
@@ -606,7 +616,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 10, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 10, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -643,7 +653,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 11, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 11, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -680,7 +690,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 12, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 12, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -717,7 +727,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 13, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 13, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -765,7 +775,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 14, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 14, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 
@@ -813,7 +823,7 @@ public class MemberRepositoryTests : IDisposable
             PreferredLanguage = Language.NL,
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
-                new PostStudyEnrollmentDTO { StudyId = 15, MemberId = Guid.Empty, EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
+                new PostStudyEnrollmentDTO { StudyId = 15, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
             }
         };
 

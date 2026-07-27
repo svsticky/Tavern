@@ -2,6 +2,7 @@ import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
 import {
+  deleteMembersById,
   deleteStudyenrollmentsById,
   getMembersById,
   getMembersByIdProfilePicture,
@@ -22,7 +23,7 @@ import { appendErrorMessage } from "~/util/error.util";
 type EditMemberFormData = {
   firstName: string;
   lastName: string;
-  studentNumber: number;
+  studentNumber: string;
   phoneNumber: string;
   street: string;
   houseNumber: string;
@@ -90,7 +91,7 @@ export const loadMemberData = async ({
     setFormData({
       firstName: memberResponse.data.firstName || "",
       lastName: memberResponse.data.lastName || "",
-      studentNumber: Number(memberResponse.data.studentNumber) || 0,
+      studentNumber: memberResponse.data.studentNumber || "",
       phoneNumber: memberResponse.data.phoneNumber || "",
       street: memberResponse.data.street || "",
       houseNumber: memberResponse.data.houseNumber || "",
@@ -204,6 +205,46 @@ export const handleSaveMember = async (
 };
 
 /**
+ * Deletes and anonymizes a member account.
+ *
+ * @async
+ * @param {string | undefined} memberId - The ID of the member to delete.
+ * @param {Function} setLoading - State setter to track loading state.
+ * @param {Function} onSuccess - Callback invoked on successful deletion.
+ */
+export const handleDeleteMember = async (
+  memberId: string | undefined,
+  setLoading: (loading: boolean) => void,
+  onSuccess: () => void,
+) => {
+  if (!memberId) return;
+
+  const deleteProcess = async () => {
+    try {
+      setLoading(true);
+      const response = await deleteMembersById({ path: { id: memberId } });
+
+      if (response.error) {
+        throw response.error ?? new Error("Failed to delete member");
+      }
+
+      onSuccess();
+    } catch (err) {
+      console.error("Failed to delete member:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  toast.promise(deleteProcess(), {
+    loading: t("deleting"),
+    success: t("delete_success"),
+    error: (error) => appendErrorMessage(t("delete_error"), error),
+  });
+};
+
+/**
  * Removes a specific study enrollment record from the member's profile.
  *
  * @async
@@ -259,6 +300,7 @@ export const handleAddEnrollment = async (
   setEnrollments: React.Dispatch<
     React.SetStateAction<StudyEnrollmentResponseDto[]>
   >,
+  startDate?: string,
 ) => {
   if (!memberId || !selectedStudyId) return;
   const executeProcess = async () => {
@@ -268,7 +310,7 @@ export const handleAddEnrollment = async (
         body: {
           memberId,
           studyId: selectedStudyId,
-          enrollmentDate: new Date().toISOString(),
+          enrollmentDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
         },
       });
 

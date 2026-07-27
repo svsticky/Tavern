@@ -115,5 +115,18 @@ public class PostgresDbContext : DbContext
             .HasIndex(p => p.MemberId)
             .IsUnique()
             .HasFilter("\"MemberId\" IS NOT NULL");
+
+        modelBuilder.Entity<Member>(entity =>
+        {
+            entity.HasQueryFilter(m => !m.IsDeleted);
+
+            entity.HasIndex(m => m.Email)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
+
+            entity.HasIndex(m => m.StudentNumber)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
+        });
     }
 }

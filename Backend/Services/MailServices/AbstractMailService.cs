@@ -217,30 +217,56 @@ public abstract class AbstractMailService
         var potentialMembers = _db.Members
             .Include(m => m.StudyEnrollments)
             .ThenInclude(se => se.Study)
-            .Where(m => m.StudyEnrollments.Any(se => se.Status != StudyStatus.Completed))
+            .Where(m => !m.IsDeleted)
             .ToList();
 
-        var membersToMail = potentialMembers
-            .Where(m => m.StudyEnrollments.Any(se => 
-                se.Status != StudyStatus.Completed &&
-                se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now))
+        var membersWithoutActiveStudy = potentialMembers
+            .Where(m => !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled))
             .ToList();
 
-        foreach (var member in membersToMail)
+        foreach (var member in membersWithoutActiveStudy)
         {
             var language = member.PreferredLanguage;
 
             string subject = language switch
             {
-                Language.NL => "Update your study status",
-                Language.EN => "Update your study status",
+                Language.NL => "Controleer lidmaatschap en studievoortgang",
+                Language.EN => "Check membership and study progress",
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 
             string htmlContent = language switch
             {
-                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens heb je nog studies die niet op voltooid staan. Kijk op <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a> en update je studie status als dit nodig is. <br><br>Met vriendelijke groet,<br>Het bestuur",
-                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you still have studies that are not completed. Please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a> and update your study status if necessary. <br><br>Best regards,<br>The board",
+                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens sta je momenteel niet ingeschreven voor een studie bij onze vereniging. Als deze informatie niet meer klopt of als je je studie wilt bijwerken, kun je dit aanpassen via <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. Ben je niet langer studerend of actief lid, dan vind je daar eventueel ook de optie om je account op te heffen.<br><br>Met vriendelijke groet,<br>Het bestuur",
+                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you are currently not enrolled in a study with our association. If this information is no longer correct or if you would like to update your study details, please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. If you are no longer studying or an active member, you will also find the option to delete your account there.<br><br>Best regards,<br>The board",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+            
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
+        }
+
+        var membersWithOutstandingStudies = potentialMembers
+            .Where(m =>
+                m.StudyEnrollments.Any(se => 
+                    se.Status != StudyStatus.Completed &&
+                    se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now))
+            .ToList();
+
+        foreach (var member in membersWithOutstandingStudies)
+        {
+            var language = member.PreferredLanguage;
+
+            string subject = language switch
+            {
+                Language.NL => "Controleer lidmaatschap en studievoortgang",
+                Language.EN => "Check membership and study progress",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+
+            string htmlContent = language switch
+            {
+                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens loop je mogelijk tegen het einde van je nominale studietijd aan of is je studiestatus nog niet bijgewerkt. Mocht je studie inmiddels afgerond zijn of veranderd zijn, dan verzoeken we je dit bij te werken via <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. Als je niet meer actief bent, kun je daar desgewenst ook je account verwijderen.<br><br>Met vriendelijke groet,<br>Het bestuur",
+                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you may be approaching the end of your nominal study duration or your study status has not yet been updated. If your study status has changed or has been completed, please update it on <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. If you are no longer active, you may also choose to delete your account there.<br><br>Best regards,<br>The board",
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 

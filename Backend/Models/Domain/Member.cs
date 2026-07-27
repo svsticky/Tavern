@@ -45,6 +45,7 @@ public class Member
     /// <summary>
     /// The student number of the member.
     /// </summary>
+    [Required(AllowEmptyStrings = false)]
     public required string StudentNumber { get; set; }
 
     /// <summary>
@@ -65,7 +66,7 @@ public class Member
     /// The email address of the member.
     /// </summary>
     [StringLength(100)]
-    [EmailAddress]
+    [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
@@ -175,6 +176,11 @@ public class Member
     /// Indicates whether the member is suspended.
     /// </summary>
     public bool Suspended { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member account is soft-deleted and anonymized.
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
 
     /// <summary>
     /// The announcements created by this member.

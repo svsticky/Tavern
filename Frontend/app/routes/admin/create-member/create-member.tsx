@@ -43,6 +43,7 @@ export default function CreateBegunstigerPage() {
     city: "",
     studentNumber: "",
     language: "NL" as Language,
+    isBegunstiger: false,
   });
 
   const languageOptions = [
@@ -69,6 +70,7 @@ export default function CreateBegunstigerPage() {
     }
 
     const allFieldsFilled = Object.entries(formData).every(([key, value]) => {
+      if (typeof value === "boolean") return true;
       if (key === "parentPhone" && isAdult) {
         return true;
       }
@@ -80,7 +82,7 @@ export default function CreateBegunstigerPage() {
 
   return (
     <>
-      <PageHeader title={t("create_begunstiger")} backTo="/admin/members" />
+      <PageHeader title={t("create_member")} backTo="/admin/members" />
       <Form
         onSubmit={(e) =>
           handleCreateSubmit({
@@ -93,6 +95,16 @@ export default function CreateBegunstigerPage() {
         }
       >
         <FormSection title={t("personal_information")}>
+          <Input
+            label={t("begunstiger")}
+            name="isBegunstiger"
+            type="checkbox"
+            checked={formData.isBegunstiger}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleCreateBegunstigerInputChange(e, setFormData)
+            }
+            disabled={loading}
+          />
           <Input
             label={t("first_name")}
             name="firstname"
@@ -162,7 +174,7 @@ export default function CreateBegunstigerPage() {
               <RequiredAsterisk required />
             </span>
             <div className="flex gap-2">
-              <p className="my-auto text-m">BG_</p>
+              {formData.isBegunstiger && <p className="my-auto text-m">F_</p>}
               <Input
                 name="studentNumber"
                 value={formData.studentNumber}

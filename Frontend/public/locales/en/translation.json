@@ -452,7 +452,7 @@
   "for_x_years": " for <years> years",
   "for_1_year": " for 1 year",
   "error_loading_page": "Error while loading page",
-  "create_begunstiger": "Create begunstiger",
+  "create_member": "Create member",
   "update_study_progress": "Update study progress",
   "leave_empty_for_group_default": "Leave empty for group default",
   "main_board_email": "Main board email",
@@ -508,5 +508,8 @@
   "deleting_external_link": "Deleting external link...",
   "external_link_deleted_successfully": "External link deleted successfully",
   "failed_to_delete_external_link": "Failed to delete external link",
-  "agree_to_documents": "I agree to the following documents:"
+  "agree_to_documents": "I agree to the following documents:",
+  "are_you_sure_delete_member": "Are you sure you want to delete this account? This action cannot be undone.",
+  "delete_account_description": "If you are no longer studying or active, you can delete your account.",
+  "are_you_sure_delete_own_account": "Are you sure you want to delete your account? All your data will be permanently removed."
 }

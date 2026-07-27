@@ -52,7 +52,9 @@ namespace Backend.Repositories
         /// <inheritdoc />
         public async Task<StudyEnrollmentResponseDTO> CreateStudyEnrollment(PostStudyEnrollmentDTO dto, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            if (dto.MemberId != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            
             logger.LogInformation("Creating study enrollment for member {MemberId} study {StudyId} by user {UserId}.", dto.MemberId, dto.StudyId, userId);
 
             var member = await GetMemberOrThrow(dto.MemberId, ct);
