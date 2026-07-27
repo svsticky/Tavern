@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 import BorderedTile from "~/components/Tiles/BorderedTile";
@@ -13,11 +13,13 @@ import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
+import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
 import {
   handleAddEnrollment,
   handleDeleteEnrollment,
+  handleDeleteMember,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
   loadMemberData,
@@ -42,9 +44,11 @@ import {
  * @component
  */
 export default function EditMemberPage() {
+  const navigate = useNavigate();
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
     null,
   );
@@ -58,7 +62,7 @@ export default function EditMemberPage() {
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    studentNumber: 0,
+    studentNumber: "",
     phoneNumber: "",
     street: "",
     houseNumber: "",
@@ -173,13 +177,14 @@ export default function EditMemberPage() {
             />
             <Input
               label={t("student_number")}
-              value={formData.studentNumber.toString()}
+              value={formData.studentNumber}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({
                   ...formData,
-                  studentNumber: parseInt(e.target.value, 10),
+                  studentNumber: e.target.value,
                 })
               }
+              required
             />
             <Input
               label={t("date_of_birth")}
@@ -311,12 +316,57 @@ export default function EditMemberPage() {
             />
           </section>
 
-          <Button
-            onClick={() => handleSaveMember(memberId, formData, setSaving)}
-            disabled={saving}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button
+              onClick={() => handleSaveMember(memberId, formData, setSaving)}
+              disabled={saving}
+              className="flex-1"
+            >
+              {saving ? t("saving") : t("save")}
+            </Button>
+
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="bg-red-600 hover:bg-red-700 text-white border-transparent"
+            >
+              {t("delete")}
+            </Button>
+          </div>
+
+          <Modal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            title={t("delete")}
           >
-            {saving ? t("saving") : t("save")}
-          </Button>
+            <div className="flex flex-col gap-4">
+              <p className="text-slate-700">
+                {t("are_you_sure_delete_member")}
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  disabled={loading}
+                >
+                  {t("cancel")}
+                </Button>
+                <Button
+                  variant="primary"
+                  className="bg-red-600 hover:bg-red-700 text-white border-transparent"
+                  onClick={() =>
+                    handleDeleteMember(memberId, setLoading, () =>
+                      navigate("/admin/members"),
+                    )
+                  }
+                  disabled={loading}
+                >
+                  {loading ? t("deleting") : t("delete")}
+                </Button>
+              </div>
+            </div>
+          </Modal>
 
           <section>
             <FormHeader title={t("study_enrollments")} />

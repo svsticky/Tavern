@@ -242,6 +242,27 @@ public class StudyEnrollmentRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateStudyEnrollment_OwnUserNotBoard_DoesNotRequireBoardPermission()
+    {
+        // Arrange
+        var (member, study) = SetUpDependencies();
+        var dto = new PostStudyEnrollmentDTO
+        {
+            MemberId = member.Id,
+            StudyId = study.Id,
+            EnrollmentDate = DateTimeOffset.UtcNow,
+            Status = StudyStatus.Enrolled
+        };
+
+        // Act
+        var result = await _repository.CreateStudyEnrollment(dto, member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.Id > 0);
+        _permissionService.DidNotReceiveWithAnyArgs().EnsureBoardOrCandidateBoardMember(default);
+    }
+
+    [Fact]
     public async Task DeleteStudyEnrollment_NotFound_ThrowsException()
     {
         // Act & Assert

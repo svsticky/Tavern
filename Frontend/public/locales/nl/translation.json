@@ -452,7 +452,7 @@
   "for_x_years": " voor <years> jaar",
   "for_1_year": " voor 1 jaar",
   "error_loading_page": "Fout bij het laden van de pagina",
-  "create_begunstiger": "Begunstiger aanmaken",
+  "create_member": "Lid aanmaken",
   "update_study_progress": "Update studie voortgang",
   "leave_empty_for_group_default": "Laat leeg voor de standaard instellingen van de groep",
   "main_board_email": "Hoofdemail bestuur",
@@ -508,5 +508,8 @@
   "deleting_external_link": "Externe link verwijderen...",
   "external_link_deleted_successfully": "Externe link succesvol verwijderd",
   "failed_to_delete_external_link": "Externe link verwijderen mislukt",
-  "agree_to_documents": "Ik ga akkoord met de volgende documenten:"
+  "agree_to_documents": "Ik ga akkoord met de volgende documenten:",
+  "are_you_sure_delete_member": "Weet je zeker dat je dit lid wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
+  "delete_account_description": "Als je niet langer studeert of actief bent, kun je je account verwijderen.",
+  "are_you_sure_delete_own_account": "Weet je zeker dat je je account wilt verwijderen? Alle data zal permanent worden verwijderd."
 }

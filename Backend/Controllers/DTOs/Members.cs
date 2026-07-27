@@ -24,7 +24,7 @@ public class PostMemberDTO
 
     /// <inheritdoc cref="Member.Email"/>
     [StringLength(100)]
-    [EmailAddress]
+    [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 
@@ -178,7 +178,7 @@ public class MemberUpdateDTO
 
     /// <inheritdoc cref="Member.Email"/>
     [StringLength(100)]
-    [EmailAddress]
+    [RegularExpression(@"^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$", ErrorMessage = "Invalid email format.")]
     [Required(AllowEmptyStrings = false)]
     public required string Email { get; set; }
 

@@ -308,7 +308,7 @@ public class MailServicesTests : IDisposable
         Assert.Equal("board@example.com", mailService.LastFrom.Mail);
         Assert.Equal("bob@example.com", mailService.LastTo?[0].Mail);
         Assert.Equal("example.com", mailService.LastTo?[0].Mail.Split('@')[1]);
-        Assert.Equal("Update your study status", mailService.LastSubject);
+        Assert.Equal("Voortgang studiestatus bijwerken", mailService.LastSubject);
         Assert.Contains("Beste Bob", mailService.LastHtmlContent);
     }
 

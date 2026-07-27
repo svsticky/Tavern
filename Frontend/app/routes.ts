@@ -57,8 +57,8 @@ export default [
             ),
             route("admin/members", "routes/admin/members.tsx"),
             route(
-              "admin/members/create-begunstiger",
-              "routes/admin/create-begunstiger/create-begunstiger.tsx",
+              "admin/members/create-member",
+              "routes/admin/create-member/create-member.tsx",
             ),
             route(
               "admin/members/:id",

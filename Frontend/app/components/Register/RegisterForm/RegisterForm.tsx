@@ -167,7 +167,17 @@ export default function RegisterForm({ className }: { className?: string }) {
       documents.length === 0 ||
       documents.every((doc) => agreedDocumentIds.includes(doc.id));
 
-    return allFieldsFilled && hasAtLeastOneStudy && hasStartDate && allDocumentsAgreed;
+    const KEYCLOAK_EMAIL_REGEX =
+      /^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~.-]+@[a-zA-Z0-9-]+(\.[a-zA-Z0-9-]+)+$/;
+    const isEmailValid = KEYCLOAK_EMAIL_REGEX.test(formData.email.trim());
+
+    return (
+      allFieldsFilled &&
+      isEmailValid &&
+      hasAtLeastOneStudy &&
+      hasStartDate &&
+      allDocumentsAgreed
+    );
   }, [formData, selectedStudies, selectedStartDate, documents, agreedDocumentIds]);
 
   const [subscriptions, setSubscriptions] = useState<number>(0);

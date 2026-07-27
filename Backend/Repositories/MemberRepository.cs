@@ -165,14 +165,42 @@ namespace Backend.Repositories
             {
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."));
 
-                db.Members.Remove(member);
                 mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
-                
+
+                // Anonymize member PII while retaining foreign keys and financial history
+                var oldEmail = member.Email;
+                member.FirstName = "Deleted";
+                member.LastName = "Member";
+                member.Email = $"deleted-{member.Id}@deleted.local";
+                member.StudentNumber = $"DELETED-{member.Id}";
+                member.PhoneNumber = "0000000000";
+                member.ParentPhoneNumber = null;
+                member.Street = "Deleted";
+                member.HouseNumber = "0";
+                member.PostalCode = "0000AA";
+                member.City = "Deleted";
+                member.Notes = null;
+                member.MailSubscriptions = 0;
+                member.Gratie = false;
+                member.LidVanVerdienste = false;
+                member.EreLid = false;
+                member.Begunstiger = false;
+                member.Suspended = false;
+                member.IsDeleted = true;
+
                 if (!string.IsNullOrEmpty(member.ProfilePicturePath))
                 {
                     await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath);
                     memoryCache.Remove($"prof-pic-{member.ProfilePicturePath}");
+                    member.ProfilePicturePath = null;
+                    member.ProfilePictureFileName = null;
                 }
+
+                // Remove study enrollments that are still in progress
+                var activeStudyEnrollments = await db.StudyEnrollments
+                    .Where(se => se.MemberId == id && se.Status == StudyStatus.Enrolled)
+                    .ToListAsync(cancellationToken);
+                db.StudyEnrollments.RemoveRange(activeStudyEnrollments);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
