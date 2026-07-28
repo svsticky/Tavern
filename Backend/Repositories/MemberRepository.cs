@@ -149,11 +149,11 @@ namespace Backend.Repositories
             logger.LogInformation("Deleting member {MemberId}. Requested by {UserId}.", id, userId);
             var member = await db.Members.FindAsync(id, cancellationToken);
 
-            if (id != userId)
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
-
             if (member == null) 
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
+
+            if (id != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             // Member must pay all activities before they can be deleted
             if (!paymentValidationService.MemberHasPaidAllActivities(member))

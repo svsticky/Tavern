@@ -119,6 +119,37 @@ public class CreateNewBoardServiceTests : IDisposable
             MembershipYear = lastYear
         });
 
+        // Add members with Gratie and Begunstiger flags
+        var gratieMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            Gratie = true,
+            FirstName = "Gratie",
+            LastName = "User",
+            Email = "g@test.local",
+            StudentNumber = "s100",
+            PhoneNumber = "0600000000",
+            Street = "Street",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "City"
+        };
+        var begunstigerMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            Begunstiger = true,
+            FirstName = "Begunstiger",
+            LastName = "User",
+            Email = "b@test.local",
+            StudentNumber = "s101",
+            PhoneNumber = "0600000000",
+            Street = "Street",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "City"
+        };
+        _db.Members.AddRange(gratieMember, begunstigerMember);
+
         await _db.SaveChangesAsync();
 
         // Act
@@ -133,6 +164,12 @@ public class CreateNewBoardServiceTests : IDisposable
         Assert.Equal(2, newBoardMembers.Count);
         Assert.Contains(newBoardMembers, m => m.MemberId == candidate1 && m.RoleAliasId == 101u);
         Assert.Contains(newBoardMembers, m => m.MemberId == candidate2 && m.RoleAliasId == null);
+
+        // Verify Gratie and Begunstiger flags were reset to false
+        var updatedGratie = await _db.Members.FindAsync(gratieMember.Id);
+        var updatedBegunstiger = await _db.Members.FindAsync(begunstigerMember.Id);
+        Assert.False(updatedGratie!.Gratie);
+        Assert.False(updatedBegunstiger!.Begunstiger);
 
         // Verify sync tasks were enqueued for all candidates and old board members
         await _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate1);

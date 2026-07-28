@@ -13,7 +13,7 @@ import { cn } from "~/util/tailwind.util";
 import {
   handleCreateBegunstigerInputChange,
   handleCreateSubmit,
-} from "./create-begunstiger.handlers";
+} from "./create-member-handlers";
 
 /**
  * The page for creating a begunstiger.
