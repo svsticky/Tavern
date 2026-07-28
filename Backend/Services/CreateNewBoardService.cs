@@ -61,6 +61,17 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.MemberId);
             }
 
+            // Reset Gratie and Begunstiger status for all active members upon board rotation
+            var specialMembers = await db.Members
+                .Where(m => m.Gratie || m.Begunstiger)
+                .ToListAsync();
+
+            foreach (var m in specialMembers)
+            {
+                m.Gratie = false;
+                m.Begunstiger = false;
+            }
+
             await db.SaveChangesAsync();
             await transaction.CommitAsync();
         }
