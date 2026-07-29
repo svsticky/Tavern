@@ -17,14 +17,14 @@ namespace Backend.Tests.Controllers;
 
 public class ExternalLinksControllerTests
 {
-    private readonly IExternalLinkRepository _repositoryMock;
+    private readonly IExternalLinkService _serviceMock;
     private readonly ExternalLinksController _controller;
     private readonly Guid _userId;
 
     public ExternalLinksControllerTests()
     {
-        _repositoryMock = Substitute.For<IExternalLinkRepository>();
-        _controller = new ExternalLinksController(_repositoryMock);
+        _serviceMock = Substitute.For<IExternalLinkService>();
+        _controller = new ExternalLinksController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -55,7 +55,7 @@ public class ExternalLinksControllerTests
                 SortOrder = 1
             }
         };
-        _repositoryMock.GetExternalLinks(Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLinks(Arg.Any<CancellationToken>())
             .Returns(list);
 
         // Act
@@ -68,19 +68,14 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task GetExternalLinks_Error_ReturnsBadRequest()
+    public async Task GetExternalLinks_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetExternalLinks(Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLinks(Arg.Any<CancellationToken>())
             .Throws(new Exception("Database error"));
 
-        // Act
-        var result = await _controller.GetExternalLinks(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Database error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetExternalLinks(CancellationToken.None));
     }
 
     [Fact]
@@ -97,7 +92,7 @@ public class ExternalLinksControllerTests
             Url = "https://yahoo.com",
             SortOrder = 2
         };
-        _repositoryMock.GetExternalLink(5, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(5, Arg.Any<CancellationToken>())
             .Returns(link);
 
         // Act
@@ -113,7 +108,7 @@ public class ExternalLinksControllerTests
     public async Task GetExternalLink_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetExternalLink(99, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(99, Arg.Any<CancellationToken>())
             .Returns((ExternalLinkResponseDTO?)null);
 
         // Act
@@ -124,19 +119,14 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task GetExternalLink_Error_ReturnsBadRequest()
+    public async Task GetExternalLink_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetExternalLink(5, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(5, Arg.Any<CancellationToken>())
             .Throws(new Exception("Error retrieving"));
 
-        // Act
-        var result = await _controller.GetExternalLink(5, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error retrieving", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetExternalLink(5, CancellationToken.None));
     }
 
     [Fact]
@@ -162,7 +152,7 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 3
         };
-        _repositoryMock.CreateExternalLink(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateExternalLink(dto, _userId, Arg.Any<CancellationToken>())
             .Returns(created);
 
         // Act
@@ -176,7 +166,7 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task PostExternalLink_Forbidden_ReturnsForbid()
+    public async Task PostExternalLink_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostExternalLinkDTO
@@ -188,18 +178,15 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 3
         };
-        _repositoryMock.CreateExternalLink(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateExternalLink(dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostExternalLink(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostExternalLink(dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PostExternalLink_Error_ReturnsBadRequest()
+    public async Task PostExternalLink_Error_ThrowsException()
     {
         // Arrange
         var dto = new PostExternalLinkDTO
@@ -211,17 +198,12 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 3
         };
-        _repositoryMock.CreateExternalLink(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateExternalLink(dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Fail"));
 
-        // Act
-        var result = await _controller.PostExternalLink(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Fail", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostExternalLink(dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task PutExternalLink_Success_ReturnsNoContent()
@@ -236,7 +218,7 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 4
         };
-        _repositoryMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         // Act
@@ -247,7 +229,7 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task PutExternalLink_NotFound_ReturnsNotFound()
+    public async Task PutExternalLink_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new ExternalLinkUpdateDTO
@@ -259,18 +241,15 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 4
         };
-        _repositoryMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutExternalLink(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutExternalLink(1, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutExternalLink_Forbidden_ReturnsForbid()
+    public async Task PutExternalLink_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new ExternalLinkUpdateDTO
@@ -282,18 +261,15 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 4
         };
-        _repositoryMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutExternalLink(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutExternalLink(1, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutExternalLink_Error_ReturnsBadRequest()
+    public async Task PutExternalLink_Error_ThrowsException()
     {
         // Arrange
         var dto = new ExternalLinkUpdateDTO
@@ -305,23 +281,18 @@ public class ExternalLinksControllerTests
             Url = "https://bing.com",
             SortOrder = 4
         };
-        _repositoryMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateExternalLink(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Put error"));
 
-        // Act
-        var result = await _controller.PutExternalLink(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Put error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutExternalLink(1, dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task DeleteExternalLink_Success_ReturnsNoContent()
     {
         // Arrange
-        _repositoryMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         // Act
@@ -332,47 +303,36 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task DeleteExternalLink_NotFound_ReturnsNotFound()
+    public async Task DeleteExternalLink_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteExternalLink(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteExternalLink(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteExternalLink_Forbidden_ReturnsForbid()
+    public async Task DeleteExternalLink_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteExternalLink(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteExternalLink(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteExternalLink_Error_ReturnsBadRequest()
+    public async Task DeleteExternalLink_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteExternalLink(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Delete error"));
 
-        // Act
-        var result = await _controller.DeleteExternalLink(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Delete error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteExternalLink(1, CancellationToken.None));
     }
 
     [Fact]
@@ -380,7 +340,7 @@ public class ExternalLinksControllerTests
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadExternalLinkIcon(1, _userId, fileMock)
+        _serviceMock.UploadExternalLinkIcon(1, _userId, fileMock)
             .Returns(Task.FromResult<string?>("icons/icon.png"));
 
         // Act
@@ -393,42 +353,34 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task UploadIcon_Forbidden_ReturnsForbid()
+    public async Task UploadIcon_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadExternalLinkIcon(1, _userId, fileMock)
+        _serviceMock.UploadExternalLinkIcon(1, _userId, fileMock)
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.UploadIcon(1, fileMock);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UploadIcon(1, fileMock));
     }
 
     [Fact]
-    public async Task UploadIcon_Error_ReturnsBadRequest()
+    public async Task UploadIcon_Error_ThrowsException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadExternalLinkIcon(1, _userId, fileMock)
+        _serviceMock.UploadExternalLinkIcon(1, _userId, fileMock)
             .Throws(new Exception("Upload error"));
 
-        // Act
-        var result = await _controller.UploadIcon(1, fileMock);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Upload error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.UploadIcon(1, fileMock));
     }
 
     [Fact]
     public async Task GetIcon_NotFoundLinkOrIconPath_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetExternalLink(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(1, Arg.Any<CancellationToken>())
             .Returns((ExternalLinkResponseDTO?)null);
 
         // Act
@@ -454,9 +406,9 @@ public class ExternalLinksControllerTests
             SortOrder = 1,
             IconPath = "icons/path.png"
         };
-        _repositoryMock.GetExternalLink(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(1, Arg.Any<CancellationToken>())
             .Returns(link);
-        _repositoryMock.GetExternalLinkIconFile("icons/path.png")
+        _serviceMock.GetExternalLinkIconFile("icons/path.png")
             .Returns(Task.FromResult<FileResultDto?>(null));
 
         // Act
@@ -485,9 +437,9 @@ public class ExternalLinksControllerTests
         var fileStream = new MemoryStream(new byte[] { 1, 2, 3 });
         var fileResult = new FileResultDto { Stream = fileStream, ContentType = "image/png" };
 
-        _repositoryMock.GetExternalLink(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(1, Arg.Any<CancellationToken>())
             .Returns(link);
-        _repositoryMock.GetExternalLinkIconFile("icons/path.png")
+        _serviceMock.GetExternalLinkIconFile("icons/path.png")
             .Returns(fileResult);
 
         // Act
@@ -500,18 +452,13 @@ public class ExternalLinksControllerTests
     }
 
     [Fact]
-    public async Task GetIcon_Error_ReturnsBadRequest()
+    public async Task GetIcon_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetExternalLink(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetExternalLink(1, Arg.Any<CancellationToken>())
             .Throws(new Exception("Read error"));
 
-        // Act
-        var result = await _controller.GetIcon(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Read error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetIcon(1, CancellationToken.None));
     }
 }

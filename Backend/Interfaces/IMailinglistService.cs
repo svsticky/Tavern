@@ -7,7 +7,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Interface for managing mailing lists. The IMailinglistService defines the contract for operations related to mailing lists, including retrieving all mailing lists, fetching a specific mailing list by ID, creating a new mailing list, updating an existing mailing list, deleting a mailing list, and partially updating a mailing list using a JSON Patch document. This interface abstracts the underlying implementation of the mailing list management logic, allowing for separation of concerns and enabling different implementations to be used without affecting the consumers of the service. It also includes authorization checks to ensure that only authorized users can perform certain operations on the mailing lists.
 /// </summary>
-public interface IMailinglistRepository
+public interface IMailinglistService
 {
     /// <summary>
     /// Retrieves a list of all mailing lists. This method returns an enumerable collection of Mailinglist entities, allowing consumers to access the complete set of mailing lists available in the system. The method accepts a CancellationToken to support cancellation of the operation if needed. This functionality is essential for displaying available mailing lists to users and enabling them to manage their email communication preferences effectively.

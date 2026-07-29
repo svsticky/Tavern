@@ -8,24 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing academic studies and curricula within the system. The StudiesController provides a centralized interface for defining, retrieving, and updating study programs, which are essential for categorizing members and academic activities. This controller supports the full range of CRUD operations, allowing authorized administrators to manage the academic catalog while providing public access for browsing available studies. By coordinating with the IStudyRepository, the controller ensures that study data is kept consistent and secure, enforcing authorization rules to prevent unauthorized modification of the educational framework while facilitating ease of access for the general user base.
+/// Controller for managing academic studies and curricula within the system. The StudiesController provides a centralized interface for defining, retrieving, and updating study programs, which are essential for categorizing members and academic activities. This controller supports the full range of CRUD operations, allowing authorized administrators to manage the academic catalog while providing public access for browsing available studies. By coordinating with the IStudyService, the controller ensures that study data is kept consistent and secure, enforcing authorization rules to prevent unauthorized modification of the educational framework while facilitating ease of access for the general user base.
 /// </summary>
+/// <param name="studyService">The study service responsible for academic data logic and persistence.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class StudiesController : ControllerBase
+public class StudiesController(IStudyService studyService) : ControllerBase
 {
-    private readonly IStudyRepository _studyRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the StudiesController with the required study management service.
-    /// </summary>
-    /// <param name="_studyRepository">The study repository responsible for academic data logic and persistence.</param>
-    public StudiesController(IStudyRepository _studyRepository)
-    {
-        this._studyRepository = _studyRepository;
-    }
-
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
     /// </summary>
@@ -46,16 +36,10 @@ public class StudiesController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(IEnumerable<Study>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<Study>>> GetStudies(CancellationToken ct)
     {
-        try
-        {
-            return Ok(await _studyRepository.GetStudies(ct));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(await studyService.GetStudies(ct));
     }
 
     // GET: studies/{id}
@@ -70,17 +54,11 @@ public class StudiesController : ControllerBase
     [ProducesResponseType(typeof(Study), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Study>> GetStudy(uint id, CancellationToken ct)
     {
-        try
-        {
-            var study = await _studyRepository.GetStudy(id, ct);
-            return study != null ? Ok(study) : NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var study = await studyService.GetStudy(id, ct);
+        return study != null ? Ok(study) : NotFound();
     }
 
     // POST: studies
@@ -96,26 +74,16 @@ public class StudiesController : ControllerBase
     [ProducesResponseType(typeof(Study), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Study>> PostStudy(PostStudyDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await _studyRepository.CreateStudy(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetStudy), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await studyService.CreateStudy(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetStudy), new { id = result.Id }, result);
     }
 
     // DELETE: studies/{id}
     /// <summary>
-    /// Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The repository layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
+    /// Permanently removes a specific study from the system by its identifier. The DeleteStudy endpoint facilitates the removal of obsolete academic programs, ensuring that the operation is only executed by users with sufficient administrative permissions. The service layer handles the cleanup of associated data and ensures system integrity is maintained after the deletion. Upon success, a 204 No Content status is returned.
     /// </summary>
     /// <param name="id">The unique identifier of the study to be deleted.</param>
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
@@ -127,25 +95,11 @@ public class StudiesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteStudy(uint id, CancellationToken ct)
     {
-        try
-        {
-            await _studyRepository.DeleteStudy(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await studyService.DeleteStudy(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // PATCH: studies/{id}
@@ -163,21 +117,11 @@ public class StudiesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchStudy(uint id, JsonPatchDocument<Study> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            await _studyRepository.PatchStudy(id, patchDoc, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await studyService.PatchStudy(id, patchDoc, GetUserId(), ct);
+        return NoContent();
     }
 
     // PUT: studies/{id}
@@ -195,20 +139,10 @@ public class StudiesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutStudy(uint id, StudyUpdateDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await _studyRepository.UpdateStudy(id, dto, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await studyService.UpdateStudy(id, dto, GetUserId(), ct);
+        return NoContent();
     }
 }

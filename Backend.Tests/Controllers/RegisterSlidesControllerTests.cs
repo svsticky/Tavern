@@ -17,14 +17,14 @@ namespace Backend.Tests.Controllers;
 
 public class RegisterSlidesControllerTests
 {
-    private readonly IRegisterSlideRepository _repositoryMock;
+    private readonly IRegisterSlideService _serviceMock;
     private readonly RegisterSlidesController _controller;
     private readonly Guid _userId;
 
     public RegisterSlidesControllerTests()
     {
-        _repositoryMock = Substitute.For<IRegisterSlideRepository>();
-        _controller = new RegisterSlidesController(_repositoryMock);
+        _serviceMock = Substitute.For<IRegisterSlideService>();
+        _controller = new RegisterSlidesController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -51,7 +51,7 @@ public class RegisterSlidesControllerTests
                 ImagePath = "slides/1.png"
             }
         };
-        _repositoryMock.GetRegisterSlides(Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlides(Arg.Any<CancellationToken>())
             .Returns(list);
 
         // Act
@@ -64,19 +64,14 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task GetRegisterSlides_Error_ReturnsBadRequest()
+    public async Task GetRegisterSlides_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRegisterSlides(Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlides(Arg.Any<CancellationToken>())
             .Throws(new Exception("Database error"));
 
-        // Act
-        var result = await _controller.GetRegisterSlides(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Database error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRegisterSlides(CancellationToken.None));
     }
 
     [Fact]
@@ -89,7 +84,7 @@ public class RegisterSlidesControllerTests
             SortOrder = 2,
             ImagePath = "slides/2.png"
         };
-        _repositoryMock.GetRegisterSlide(5, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(5, Arg.Any<CancellationToken>())
             .Returns(slide);
 
         // Act
@@ -105,7 +100,7 @@ public class RegisterSlidesControllerTests
     public async Task GetRegisterSlide_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetRegisterSlide(99, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(99, Arg.Any<CancellationToken>())
             .Returns((RegisterSlideResponseDTO?)null);
 
         // Act
@@ -116,19 +111,14 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task GetRegisterSlide_Error_ReturnsBadRequest()
+    public async Task GetRegisterSlide_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRegisterSlide(5, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(5, Arg.Any<CancellationToken>())
             .Throws(new Exception("Error retrieving"));
 
-        // Act
-        var result = await _controller.GetRegisterSlide(5, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error retrieving", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRegisterSlide(5, CancellationToken.None));
     }
 
     [Fact]
@@ -147,7 +137,7 @@ public class RegisterSlidesControllerTests
             SortOrder = 1,
             ImagePath = "slides/10.png"
         };
-        _repositoryMock.CreateRegisterSlide(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateRegisterSlide(dto, _userId, Arg.Any<CancellationToken>())
             .Returns(created);
 
         // Act
@@ -161,7 +151,7 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task PostRegisterSlide_Forbidden_ReturnsForbid()
+    public async Task PostRegisterSlide_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
@@ -170,18 +160,15 @@ public class RegisterSlidesControllerTests
             Image = fileMock,
             SortOrder = 1
         };
-        _repositoryMock.CreateRegisterSlide(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateRegisterSlide(dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostRegisterSlide(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegisterSlide(dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PostRegisterSlide_Error_ReturnsBadRequest()
+    public async Task PostRegisterSlide_Error_ThrowsException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
@@ -190,17 +177,12 @@ public class RegisterSlidesControllerTests
             Image = fileMock,
             SortOrder = 1
         };
-        _repositoryMock.CreateRegisterSlide(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateRegisterSlide(dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Fail"));
 
-        // Act
-        var result = await _controller.PostRegisterSlide(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Fail", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostRegisterSlide(dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task PutRegisterSlide_Success_ReturnsNoContent()
@@ -210,7 +192,7 @@ public class RegisterSlidesControllerTests
         {
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         // Act
@@ -221,66 +203,55 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task PutRegisterSlide_NotFound_ReturnsNotFound()
+    public async Task PutRegisterSlide_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new RegisterSlideUpdateDTO
         {
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutRegisterSlide(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutRegisterSlide(1, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutRegisterSlide_Forbidden_ReturnsForbid()
+    public async Task PutRegisterSlide_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new RegisterSlideUpdateDTO
         {
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutRegisterSlide(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRegisterSlide(1, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutRegisterSlide_Error_ReturnsBadRequest()
+    public async Task PutRegisterSlide_Error_ThrowsException()
     {
         // Arrange
         var dto = new RegisterSlideUpdateDTO
         {
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterSlide(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Put error"));
 
-        // Act
-        var result = await _controller.PutRegisterSlide(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Put error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutRegisterSlide(1, dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task DeleteRegisterSlide_Success_ReturnsNoContent()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         // Act
@@ -291,47 +262,36 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task DeleteRegisterSlide_NotFound_ReturnsNotFound()
+    public async Task DeleteRegisterSlide_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteRegisterSlide(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteRegisterSlide(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegisterSlide_Forbidden_ReturnsForbid()
+    public async Task DeleteRegisterSlide_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteRegisterSlide(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteRegisterSlide(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegisterSlide_Error_ReturnsBadRequest()
+    public async Task DeleteRegisterSlide_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterSlide(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Delete error"));
 
-        // Act
-        var result = await _controller.DeleteRegisterSlide(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Delete error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteRegisterSlide(1, CancellationToken.None));
     }
 
     [Fact]
@@ -339,7 +299,7 @@ public class RegisterSlidesControllerTests
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadRegisterSlideImage(1, _userId, fileMock)
+        _serviceMock.UploadRegisterSlideImage(1, _userId, fileMock)
             .Returns(Task.FromResult<string?>("slides/slide.png"));
 
         // Act
@@ -352,42 +312,34 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task UploadImage_Forbidden_ReturnsForbid()
+    public async Task UploadImage_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadRegisterSlideImage(1, _userId, fileMock)
+        _serviceMock.UploadRegisterSlideImage(1, _userId, fileMock)
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.UploadImage(1, fileMock);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UploadImage(1, fileMock));
     }
 
     [Fact]
-    public async Task UploadImage_Error_ReturnsBadRequest()
+    public async Task UploadImage_Error_ThrowsException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadRegisterSlideImage(1, _userId, fileMock)
+        _serviceMock.UploadRegisterSlideImage(1, _userId, fileMock)
             .Throws(new Exception("Upload error"));
 
-        // Act
-        var result = await _controller.UploadImage(1, fileMock);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Upload error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.UploadImage(1, fileMock));
     }
 
     [Fact]
     public async Task GetImage_NotFoundLinkOrImagePath_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
             .Returns((RegisterSlideResponseDTO?)null);
 
         // Act
@@ -408,9 +360,9 @@ public class RegisterSlidesControllerTests
             SortOrder = 1,
             ImagePath = "slides/path.png"
         };
-        _repositoryMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
             .Returns(slide);
-        _repositoryMock.GetRegisterSlideImageFile("slides/path.png")
+        _serviceMock.GetRegisterSlideImageFile("slides/path.png")
             .Returns(Task.FromResult<FileResultDto?>(null));
 
         // Act
@@ -434,9 +386,9 @@ public class RegisterSlidesControllerTests
         var fileStream = new MemoryStream(new byte[] { 1, 2, 3 });
         var fileResult = new FileResultDto { Stream = fileStream, ContentType = "image/png" };
 
-        _repositoryMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
             .Returns(slide);
-        _repositoryMock.GetRegisterSlideImageFile("slides/path.png")
+        _serviceMock.GetRegisterSlideImageFile("slides/path.png")
             .Returns(fileResult);
 
         // Act
@@ -449,18 +401,13 @@ public class RegisterSlidesControllerTests
     }
 
     [Fact]
-    public async Task GetImage_Error_ReturnsBadRequest()
+    public async Task GetImage_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterSlide(1, Arg.Any<CancellationToken>())
             .Throws(new Exception("Read error"));
 
-        // Act
-        var result = await _controller.GetImage(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Read error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetImage(1, CancellationToken.None));
     }
 }

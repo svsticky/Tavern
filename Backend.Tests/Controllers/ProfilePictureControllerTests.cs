@@ -15,14 +15,14 @@ namespace Backend.Tests.Controllers;
 
 public class ProfilePictureControllerTests
 {
-    private readonly IProfilePictureRepository _repositoryMock;
+    private readonly IProfilePictureService _serviceMock;
     private readonly ProfilePictureController _controller;
     private readonly Guid _userId;
 
     public ProfilePictureControllerTests()
     {
-        _repositoryMock = Substitute.For<IProfilePictureRepository>();
-        _controller = new ProfilePictureController(_repositoryMock);
+        _serviceMock = Substitute.For<IProfilePictureService>();
+        _controller = new ProfilePictureController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -43,7 +43,7 @@ public class ProfilePictureControllerTests
         var path = "uploads/avatar.png";
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
         var contentType = "image/png";
-        _repositoryMock.GetProfilePictureByPath(path)
+        _serviceMock.GetProfilePictureByPath(path)
             .Returns(Task.FromResult<(Stream Stream, string ContentType)?>((stream, contentType)));
 
         // Act
@@ -60,7 +60,7 @@ public class ProfilePictureControllerTests
     {
         // Arrange
         var path = "missing.png";
-        _repositoryMock.GetProfilePictureByPath(path)
+        _serviceMock.GetProfilePictureByPath(path)
             .Returns(Task.FromResult<(Stream Stream, string ContentType)?>(null));
 
         // Act
@@ -71,20 +71,15 @@ public class ProfilePictureControllerTests
     }
 
     [Fact]
-    public async Task GetProfilePictureByPath_Error_ReturnsBadRequest()
+    public async Task GetProfilePictureByPath_Error_ThrowsException()
     {
         // Arrange
         var path = "error.png";
-        _repositoryMock.GetProfilePictureByPath(path)
+        _serviceMock.GetProfilePictureByPath(path)
             .Throws(new Exception("Read error"));
 
-        // Act
-        var result = await _controller.GetProfilePictureByPath(path);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Read error", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetProfilePictureByPath(path));
     }
 
     [Fact]
@@ -95,7 +90,7 @@ public class ProfilePictureControllerTests
         var mockFile = Substitute.For<IFormFile>();
         var generatedPath = "uploads/new_avatar.webp";
 
-        _repositoryMock.UploadProfilePicture(targetMemberId, _userId, mockFile)
+        _serviceMock.UploadProfilePicture(targetMemberId, _userId, mockFile)
             .Returns(Task.FromResult<string?>(generatedPath));
 
         // Act
@@ -108,38 +103,30 @@ public class ProfilePictureControllerTests
     }
 
     [Fact]
-    public async Task UploadProfilePicture_Forbidden_ReturnsForbid()
+    public async Task UploadProfilePicture_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var targetMemberId = Guid.NewGuid();
         var mockFile = Substitute.For<IFormFile>();
 
-        _repositoryMock.UploadProfilePicture(targetMemberId, _userId, mockFile)
+        _serviceMock.UploadProfilePicture(targetMemberId, _userId, mockFile)
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.UploadProfilePicture(targetMemberId, mockFile);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UploadProfilePicture(targetMemberId, mockFile));
     }
 
     [Fact]
-    public async Task UploadProfilePicture_Error_ReturnsBadRequestMessage()
+    public async Task UploadProfilePicture_Error_ThrowsExceptionMessage()
     {
         // Arrange
         var targetMemberId = Guid.NewGuid();
         var mockFile = Substitute.For<IFormFile>();
 
-        _repositoryMock.UploadProfilePicture(targetMemberId, _userId, mockFile)
+        _serviceMock.UploadProfilePicture(targetMemberId, _userId, mockFile)
             .Throws(new Exception("Upload failed"));
 
-        // Act
-        var result = await _controller.UploadProfilePicture(targetMemberId, mockFile);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var message = Assert.IsType<string>(badRequestResult.Value);
-        Assert.Equal("Upload failed", message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.UploadProfilePicture(targetMemberId, mockFile));
     }
 }

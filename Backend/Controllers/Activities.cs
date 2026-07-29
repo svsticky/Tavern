@@ -9,13 +9,13 @@ using Microsoft.AspNetCore.Cors;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing activities within the system. The ActivitiesController provides endpoints for creating, retrieving, updating, and deleting activities, as well as handling related operations such as uploading posters and exporting enrollments. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify activity data while providing appropriate error handling for various scenarios. The ActivitiesController interacts with the IActivityRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing activities effectively within the application.
+    /// Controller for managing activities within the system. The ActivitiesController provides endpoints for creating, retrieving, updating, and deleting activities, as well as handling related operations such as uploading posters and exporting enrollments. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify activity data while providing appropriate error handling for various scenarios. The ActivitiesController interacts with the IActivityService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing activities effectively within the application.
     /// </summary>
-    /// <param name="activitiesRepository">The activity repository for managing activity operations.</param>
+    /// <param name="activitiesService">The activity service for managing activity operations.</param>
     [ApiController]
     [Route("[controller]")]
     [Authorize]
-    public class ActivitiesController(IActivityRepository activitiesRepository) : ControllerBase
+    public class ActivitiesController(IActivityService activitiesService) : ControllerBase
     {
         /// <summary>
         /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
@@ -39,23 +39,12 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(IEnumerable<ActivityResponseDTO>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<ActivityResponseDTO>>> GetActivities([FromQuery] GetActivitiesDTO dto)
         {
-            try
-            {
-                Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
-
-                var result = await activitiesRepository.GetActivities(userId, dto);
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            var result = await activitiesService.GetActivities(userId, dto);
+            return Ok(result);
         }
 
         // GET: activities/5
@@ -70,25 +59,14 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<ActivityResponseDTO>> GetActivity(uint id)
         {
-            try
-            {
-                var activity = await activitiesRepository.GetActivity(GetUserId(), id);
+            var activity = await activitiesService.GetActivity(GetUserId(), id);
+            if (activity == null)
+                return NotFound();
 
-                if (activity == null)
-                    return NotFound();
-
-                return Ok(activity);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            return Ok(activity);
         }
 
         // POST: activities
@@ -103,22 +81,11 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(Activity), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Activity>> PostActivity([FromForm] PostActivityDTO dto)
         {
-            try
-            {
-                var activity = await activitiesRepository.CreateActivity(GetUserId(), dto);
-
-                return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            var activity = await activitiesService.CreateActivity(GetUserId(), dto);
+            return CreatedAtAction(nameof(GetActivity), new { id = activity.Id }, activity);
         }
 
         // DELETE: activities/5
@@ -134,25 +101,11 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> DeleteActivity(uint id)
         {
-            try
-            {
-                await activitiesRepository.DeleteActivity(GetUserId(), id);
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            await activitiesService.DeleteActivity(GetUserId(), id);
+            return NoContent();
         }
 
         // PATCH: activities/5
@@ -170,25 +123,11 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> PatchActivity(uint id, [FromBody] JsonPatchDocument<Activity> patchDoc, CancellationToken ct)
         {
-            try
-            {
-                await activitiesRepository.PatchActivity(GetUserId(), id, patchDoc, ct);
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            await activitiesService.PatchActivity(GetUserId(), id, patchDoc, ct);
+            return NoContent();
         }
 
         // POST: activities/5/poster
@@ -205,25 +144,11 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> UploadPoster(uint id, IFormFile? poster)
         {
-            try
-            {
-                await activitiesRepository.UploadPoster(GetUserId(), id, poster);
-                return Ok();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            await activitiesService.UploadPoster(GetUserId(), id, poster);
+            return Ok();
         }
 
         // PUT: activities/5
@@ -240,25 +165,11 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> PutActivity(uint id, [FromForm] PutActivityDTO dto)
         {
-            try
-            {
-                await activitiesRepository.UpdateActivity(GetUserId(), id, dto);
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            await activitiesService.UpdateActivity(GetUserId(), id, dto);
+            return NoContent();
         }
 
         // GET: activities/5/poster
@@ -275,27 +186,16 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> GetPoster(uint id)
         {
-            try
-            {
-                Guid? guid = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            Guid? guid = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            var result = await activitiesService.GetPoster(guid, id, download: false);
 
-                var result = await activitiesRepository.GetPoster(guid, id, download: false);
+            if (result == null)
+                return NotFound();
 
-                if (result == null)
-                    return NotFound();
-
-                return File(result.Value.Stream, result.Value.ContentType);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            return File(result.Value.Stream, result.Value.ContentType);
         }
 
         // GET: activities/5/poster/download
@@ -312,27 +212,16 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> DownloadPoster(uint id)
         {
-            try
-            {
-                Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            var result = await activitiesService.GetPoster(userId, id, download: true);
 
-                var result = await activitiesRepository.GetPoster(userId, id, download: true);
+            if (result == null)
+                return NotFound();
 
-                if (result == null)
-                    return NotFound();
-
-                return File(result.Value.Stream, result.Value.ContentType, result.Value.FileName);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            return File(result.Value.Stream, result.Value.ContentType, result.Value.FileName);
         }
 
         /// <summary>
@@ -347,26 +236,11 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> ExportEnrollments(uint id, CancellationToken ct)
         {
-            try
-            {
-                var result = await activitiesRepository.GetEnrollmentsCsv(GetUserId(), id, ct);
-
-                return File(result.Content, "text/csv", result.FileName);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            var result = await activitiesService.GetEnrollmentsCsv(GetUserId(), id, ct);
+            return File(result.Content, "text/csv", result.FileName);
         }
     }
 }

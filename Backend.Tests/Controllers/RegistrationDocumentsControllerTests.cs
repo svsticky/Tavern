@@ -16,14 +16,14 @@ namespace Backend.Tests.Controllers;
 
 public class RegistrationDocumentsControllerTests
 {
-    private readonly IRegistrationDocumentRepository _repositoryMock;
+    private readonly IRegistrationDocumentService _serviceMock;
     private readonly RegistrationDocumentsController _controller;
     private readonly Guid _userId;
 
     public RegistrationDocumentsControllerTests()
     {
-        _repositoryMock = Substitute.For<IRegistrationDocumentRepository>();
-        _controller = new RegistrationDocumentsController(_repositoryMock);
+        _serviceMock = Substitute.For<IRegistrationDocumentService>();
+        _controller = new RegistrationDocumentsController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -51,7 +51,7 @@ public class RegistrationDocumentsControllerTests
                 SortOrder = 1
             }
         };
-        _repositoryMock.GetRegistrationDocuments(Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetRegistrationDocuments(Arg.Any<CancellationToken>()).Returns(list);
 
         var result = await _controller.GetRegistrationDocuments(CancellationToken.None);
 
@@ -71,7 +71,7 @@ public class RegistrationDocumentsControllerTests
             Url = "https://example.com",
             SortOrder = 1
         };
-        _repositoryMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Returns(doc);
+        _serviceMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Returns(doc);
 
         var result = await _controller.GetRegistrationDocument(1, CancellationToken.None);
 
@@ -83,7 +83,7 @@ public class RegistrationDocumentsControllerTests
     [Fact]
     public async Task GetRegistrationDocument_NotFound_ReturnsNotFound()
     {
-        _repositoryMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Returns((RegistrationDocumentResponseDTO?)null);
+        _serviceMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Returns((RegistrationDocumentResponseDTO?)null);
 
         var result = await _controller.GetRegistrationDocument(1, CancellationToken.None);
 
@@ -108,7 +108,7 @@ public class RegistrationDocumentsControllerTests
             Url = "https://example.com",
             SortOrder = 1
         };
-        _repositoryMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         var result = await _controller.PostRegistrationDocument(dto, CancellationToken.None);
 
@@ -130,7 +130,7 @@ public class RegistrationDocumentsControllerTests
         var result = await _controller.PutRegistrationDocument(1, dto, CancellationToken.None);
 
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -139,116 +139,92 @@ public class RegistrationDocumentsControllerTests
         var result = await _controller.DeleteRegistrationDocument(1, CancellationToken.None);
 
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task GetRegistrationDocuments_Exception_ReturnsBadRequest()
+    public async Task GetRegistrationDocuments_Exception_ThrowsException()
     {
-        _repositoryMock.GetRegistrationDocuments(Arg.Any<CancellationToken>()).Throws(new Exception("Database error"));
+        _serviceMock.GetRegistrationDocuments(Arg.Any<CancellationToken>()).Throws(new Exception("Database error"));
 
-        var result = await _controller.GetRegistrationDocuments(CancellationToken.None);
-
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var err = Assert.IsType<ErrorResponseDto>(badRequest.Value);
-        Assert.Equal("Database error", err.Message);
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRegistrationDocuments(CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetRegistrationDocument_Exception_ReturnsBadRequest()
+    public async Task GetRegistrationDocument_Exception_ThrowsException()
     {
-        _repositoryMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        var result = await _controller.GetRegistrationDocument(1, CancellationToken.None);
-
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var err = Assert.IsType<ErrorResponseDto>(badRequest.Value);
-        Assert.Equal("Error", err.Message);
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRegistrationDocument(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostRegistrationDocument_Unauthorized_ReturnsForbid()
+    public async Task PostRegistrationDocument_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
-        _repositoryMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        var result = await _controller.PostRegistrationDocument(dto, CancellationToken.None);
-
-        Assert.IsType<ForbidResult>(result.Result);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegistrationDocument(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostRegistrationDocument_GenericException_ReturnsBadRequest()
+    public async Task PostRegistrationDocument_GenericException_ThrowsException()
     {
         var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
-        _repositoryMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Fail"));
+        _serviceMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Fail"));
 
-        var result = await _controller.PostRegistrationDocument(dto, CancellationToken.None);
-
-        Assert.IsType<BadRequestObjectResult>(result.Result);
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostRegistrationDocument(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutRegistrationDocument_NotFound_ReturnsNotFound()
+    public async Task PutRegistrationDocument_NotFound_ThrowsKeyNotFoundException()
     {
         var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
-        _repositoryMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        var result = await _controller.PutRegistrationDocument(1, dto, CancellationToken.None);
-
-        Assert.IsType<NotFoundResult>(result);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutRegistrationDocument(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutRegistrationDocument_Unauthorized_ReturnsForbid()
+    public async Task PutRegistrationDocument_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
-        _repositoryMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        var result = await _controller.PutRegistrationDocument(1, dto, CancellationToken.None);
-
-        Assert.IsType<ForbidResult>(result);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRegistrationDocument(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutRegistrationDocument_GenericException_ReturnsBadRequest()
+    public async Task PutRegistrationDocument_GenericException_ThrowsException()
     {
         var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
-        _repositoryMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        var result = await _controller.PutRegistrationDocument(1, dto, CancellationToken.None);
-
-        Assert.IsType<BadRequestObjectResult>(result);
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutRegistrationDocument(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegistrationDocument_NotFound_ReturnsNotFound()
+    public async Task DeleteRegistrationDocument_NotFound_ThrowsKeyNotFoundException()
     {
-        _repositoryMock.DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        var result = await _controller.DeleteRegistrationDocument(1, CancellationToken.None);
-
-        Assert.IsType<NotFoundResult>(result);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteRegistrationDocument(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegistrationDocument_Unauthorized_ReturnsForbid()
+    public async Task DeleteRegistrationDocument_Unauthorized_ThrowsUnauthorizedAccessException()
     {
-        _repositoryMock.DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        var result = await _controller.DeleteRegistrationDocument(1, CancellationToken.None);
-
-        Assert.IsType<ForbidResult>(result);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteRegistrationDocument(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegistrationDocument_GenericException_ReturnsBadRequest()
+    public async Task DeleteRegistrationDocument_GenericException_ThrowsException()
     {
-        _repositoryMock.DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteRegistrationDocument(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        var result = await _controller.DeleteRegistrationDocument(1, CancellationToken.None);
-
-        Assert.IsType<BadRequestObjectResult>(result);
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteRegistrationDocument(1, CancellationToken.None));
     }
 
     [Fact]
@@ -260,8 +236,6 @@ public class RegistrationDocumentsControllerTests
         };
 
         var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
-        var result = await _controller.PostRegistrationDocument(dto, CancellationToken.None);
-
-        Assert.IsType<ForbidResult>(result.Result);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegistrationDocument(dto, CancellationToken.None));
     }
 }

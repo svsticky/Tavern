@@ -20,14 +20,14 @@ namespace Backend.Tests.Controllers;
 
 public class ActivitiesControllerTests
 {
-    private readonly IActivityRepository _repositoryMock;
+    private readonly IActivityService _serviceMock;
     private readonly ActivitiesController _controller;
     private readonly Guid _userId;
 
     public ActivitiesControllerTests()
     {
-        _repositoryMock = Substitute.For<IActivityRepository>();
-        _controller = new ActivitiesController(_repositoryMock);
+        _serviceMock = Substitute.For<IActivityService>();
+        _controller = new ActivitiesController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -69,7 +69,7 @@ public class ActivitiesControllerTests
                 AllowedAudience = TargetAudience.All
             }
         };
-        _repositoryMock.GetActivities(_userId, dto).Returns(list);
+        _serviceMock.GetActivities(_userId, dto).Returns(list);
 
         // Act
         var result = await _controller.GetActivities(dto);
@@ -81,33 +81,25 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
-    public async Task GetActivities_Unauthorized_ReturnsForbid()
+    public async Task GetActivities_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new GetActivitiesDTO();
-        _repositoryMock.GetActivities(_userId, dto).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetActivities(_userId, dto).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetActivities(dto);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetActivities(dto));
     }
 
     [Fact]
-    public async Task GetActivities_Exception_ReturnsBadRequest()
+    public async Task GetActivities_Exception_ThrowsException()
     {
         // Arrange
         var dto = new GetActivitiesDTO();
-        _repositoryMock.GetActivities(_userId, dto).Throws(new Exception("Error"));
+        _serviceMock.GetActivities(_userId, dto).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetActivities(dto);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetActivities(dto));
     }
 
     [Fact]
@@ -134,7 +126,7 @@ public class ActivitiesControllerTests
             SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
             AllowedAudience = TargetAudience.All
         };
-        _repositoryMock.GetActivity(_userId, 2).Returns(response);
+        _serviceMock.GetActivity(_userId, 2).Returns(response);
 
         // Act
         var result = await _controller.GetActivity(2);
@@ -148,7 +140,7 @@ public class ActivitiesControllerTests
     public async Task GetActivity_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetActivity(_userId, 3).Returns((ActivityResponseDTO?)null);
+        _serviceMock.GetActivity(_userId, 3).Returns((ActivityResponseDTO?)null);
 
         // Act
         var result = await _controller.GetActivity(3);
@@ -158,31 +150,23 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
-    public async Task GetActivity_Unauthorized_ReturnsForbid()
+    public async Task GetActivity_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetActivity(_userId, 3).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetActivity(_userId, 3).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetActivity(3);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetActivity(3));
     }
 
     [Fact]
-    public async Task GetActivity_Exception_ReturnsBadRequest()
+    public async Task GetActivity_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetActivity(_userId, 3).Throws(new Exception("Error"));
+        _serviceMock.GetActivity(_userId, 3).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetActivity(3);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetActivity(3));
     }
 
     [Fact]
@@ -212,7 +196,7 @@ public class ActivitiesControllerTests
             EnglishDescription = "Lunch",
             PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7)
         };
-        _repositoryMock.CreateActivity(_userId, dto).Returns(created);
+        _serviceMock.CreateActivity(_userId, dto).Returns(created);
 
         // Act
         var result = await _controller.PostActivity(dto);
@@ -225,7 +209,7 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
-    public async Task PostActivity_Unauthorized_ReturnsForbid()
+    public async Task PostActivity_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostActivityDTO
@@ -243,17 +227,14 @@ public class ActivitiesControllerTests
             IsAdultOnly = false,
             IsWeeklyDrinks = false
         };
-        _repositoryMock.CreateActivity(_userId, dto).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateActivity(_userId, dto).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostActivity(dto);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostActivity(dto));
+}
 
     [Fact]
-    public async Task PostActivity_Exception_ReturnsBadRequest()
+    public async Task PostActivity_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostActivityDTO
@@ -271,16 +252,11 @@ public class ActivitiesControllerTests
             IsAdultOnly = false,
             IsWeeklyDrinks = false
         };
-        _repositoryMock.CreateActivity(_userId, dto).Throws(new Exception("Error"));
+        _serviceMock.CreateActivity(_userId, dto).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostActivity(dto);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostActivity(dto));
+}
 
     [Fact]
     public async Task DeleteActivity_Success_ReturnsNoContent()
@@ -290,48 +266,37 @@ public class ActivitiesControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteActivity(_userId, 1);
+        await _serviceMock.Received(1).DeleteActivity(_userId, 1);
     }
 
     [Fact]
-    public async Task DeleteActivity_Unauthorized_ReturnsForbid()
+    public async Task DeleteActivity_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteActivity(_userId, 1).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteActivity(_userId, 1).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteActivity(1);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteActivity(1));
     }
 
     [Fact]
-    public async Task DeleteActivity_NotFound_ReturnsNotFound()
+    public async Task DeleteActivity_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteActivity(_userId, 1).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteActivity(_userId, 1).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteActivity(1);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteActivity(1));
     }
 
     [Fact]
-    public async Task DeleteActivity_Exception_ReturnsBadRequest()
+    public async Task DeleteActivity_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteActivity(_userId, 1).Throws(new Exception("Error"));
+        _serviceMock.DeleteActivity(_userId, 1).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteActivity(1);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteActivity(1));
     }
 
     [Fact]
@@ -345,51 +310,40 @@ public class ActivitiesControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchActivity_Unauthorized_ReturnsForbid()
+    public async Task PatchActivity_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Activity>();
-        _repositoryMock.PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchActivity(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchActivity(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchActivity_NotFound_ReturnsNotFound()
+    public async Task PatchActivity_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Activity>();
-        _repositoryMock.PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PatchActivity(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchActivity(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchActivity_Exception_ReturnsBadRequest()
+    public async Task PatchActivity_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Activity>();
-        _repositoryMock.PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchActivity(_userId, 1, patchDoc, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchActivity(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchActivity(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -403,51 +357,40 @@ public class ActivitiesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        await _repositoryMock.Received(1).UploadPoster(_userId, 1, fileMock);
+        await _serviceMock.Received(1).UploadPoster(_userId, 1, fileMock);
     }
 
     [Fact]
-    public async Task UploadPoster_Unauthorized_ReturnsForbid()
+    public async Task UploadPoster_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadPoster(_userId, 1, fileMock).Throws(new UnauthorizedAccessException());
+        _serviceMock.UploadPoster(_userId, 1, fileMock).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.UploadPoster(1, fileMock);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UploadPoster(1, fileMock));
     }
 
     [Fact]
-    public async Task UploadPoster_NotFound_ReturnsNotFound()
+    public async Task UploadPoster_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadPoster(_userId, 1, fileMock).Throws(new KeyNotFoundException());
+        _serviceMock.UploadPoster(_userId, 1, fileMock).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.UploadPoster(1, fileMock);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.UploadPoster(1, fileMock));
     }
 
     [Fact]
-    public async Task UploadPoster_Exception_ReturnsBadRequest()
+    public async Task UploadPoster_Exception_ThrowsException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadPoster(_userId, 1, fileMock).Throws(new Exception("Error"));
+        _serviceMock.UploadPoster(_userId, 1, fileMock).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.UploadPoster(1, fileMock);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.UploadPoster(1, fileMock));
     }
 
     [Fact]
@@ -475,11 +418,11 @@ public class ActivitiesControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateActivity(_userId, 1, dto);
+        await _serviceMock.Received(1).UpdateActivity(_userId, 1, dto);
     }
 
     [Fact]
-    public async Task PutActivity_Unauthorized_ReturnsForbid()
+    public async Task PutActivity_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PutActivityDTO
@@ -497,17 +440,14 @@ public class ActivitiesControllerTests
             IsAdultOnly = false,
             IsWeeklyDrinks = false
         };
-        _repositoryMock.UpdateActivity(_userId, 1, dto).Throws(new UnauthorizedAccessException());
+        _serviceMock.UpdateActivity(_userId, 1, dto).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutActivity(1, dto);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutActivity(1, dto));
+}
 
     [Fact]
-    public async Task PutActivity_NotFound_ReturnsNotFound()
+    public async Task PutActivity_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new PutActivityDTO
@@ -525,17 +465,14 @@ public class ActivitiesControllerTests
             IsAdultOnly = false,
             IsWeeklyDrinks = false
         };
-        _repositoryMock.UpdateActivity(_userId, 1, dto).Throws(new KeyNotFoundException());
+        _serviceMock.UpdateActivity(_userId, 1, dto).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutActivity(1, dto);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutActivity(1, dto));
+}
 
     [Fact]
-    public async Task PutActivity_Exception_ReturnsBadRequest()
+    public async Task PutActivity_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PutActivityDTO
@@ -553,23 +490,18 @@ public class ActivitiesControllerTests
             IsAdultOnly = false,
             IsWeeklyDrinks = false
         };
-        _repositoryMock.UpdateActivity(_userId, 1, dto).Throws(new Exception("Error"));
+        _serviceMock.UpdateActivity(_userId, 1, dto).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutActivity(1, dto);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutActivity(1, dto));
+}
 
     [Fact]
     public async Task GetPoster_Found_ReturnsFile()
     {
         // Arrange
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _repositoryMock.GetPoster(_userId, 1, download: false)
+        _serviceMock.GetPoster(_userId, 1, download: false)
             .Returns(Task.FromResult<(Stream Stream, string ContentType, string? FileName)?>((stream, "image/webp", "poster.webp")));
 
         // Act
@@ -585,7 +517,7 @@ public class ActivitiesControllerTests
     public async Task GetPoster_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetPoster(_userId, 1, download: false)
+        _serviceMock.GetPoster(_userId, 1, download: false)
             .Returns(Task.FromResult<(Stream Stream, string ContentType, string? FileName)?>(null));
 
         // Act
@@ -596,31 +528,23 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
-    public async Task GetPoster_Unauthorized_ReturnsForbid()
+    public async Task GetPoster_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetPoster(_userId, 1, download: false).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetPoster(_userId, 1, download: false).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetPoster(1);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetPoster(1));
     }
 
     [Fact]
-    public async Task GetPoster_Exception_ReturnsBadRequest()
+    public async Task GetPoster_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetPoster(_userId, 1, download: false).Throws(new Exception("Error"));
+        _serviceMock.GetPoster(_userId, 1, download: false).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetPoster(1);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetPoster(1));
     }
 
     [Fact]
@@ -628,7 +552,7 @@ public class ActivitiesControllerTests
     {
         // Arrange
         var stream = new MemoryStream(new byte[] { 4, 5 });
-        _repositoryMock.GetPoster(_userId, 1, download: true)
+        _serviceMock.GetPoster(_userId, 1, download: true)
             .Returns(Task.FromResult<(Stream Stream, string ContentType, string? FileName)?>((stream, "image/png", "file.png")));
 
         // Act
@@ -645,7 +569,7 @@ public class ActivitiesControllerTests
     public async Task DownloadPoster_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetPoster(_userId, 1, download: true)
+        _serviceMock.GetPoster(_userId, 1, download: true)
             .Returns(Task.FromResult<(Stream Stream, string ContentType, string? FileName)?>(null));
 
         // Act
@@ -656,31 +580,23 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
-    public async Task DownloadPoster_Unauthorized_ReturnsForbid()
+    public async Task DownloadPoster_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetPoster(_userId, 1, download: true).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetPoster(_userId, 1, download: true).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DownloadPoster(1);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DownloadPoster(1));
     }
 
     [Fact]
-    public async Task DownloadPoster_Exception_ReturnsBadRequest()
+    public async Task DownloadPoster_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetPoster(_userId, 1, download: true).Throws(new Exception("Error"));
+        _serviceMock.GetPoster(_userId, 1, download: true).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DownloadPoster(1);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DownloadPoster(1));
     }
 
     [Fact]
@@ -688,7 +604,7 @@ public class ActivitiesControllerTests
     {
         // Arrange
         var csvContent = new byte[] { 1, 2, 3 };
-        _repositoryMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Returns((csvContent, "enrollments.csv"));
+        _serviceMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Returns((csvContent, "enrollments.csv"));
 
         // Act
         var result = await _controller.ExportEnrollments(1, CancellationToken.None);
@@ -701,43 +617,32 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
-    public async Task ExportEnrollments_Unauthorized_ReturnsForbid()
+    public async Task ExportEnrollments_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.ExportEnrollments(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.ExportEnrollments(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task ExportEnrollments_NotFound_ReturnsNotFound()
+    public async Task ExportEnrollments_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.ExportEnrollments(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.ExportEnrollments(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task ExportEnrollments_Exception_ReturnsBadRequest()
+    public async Task ExportEnrollments_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetEnrollmentsCsv(_userId, 1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.ExportEnrollments(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.ExportEnrollments(1, CancellationToken.None));
     }
 }

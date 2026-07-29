@@ -9,24 +9,14 @@ namespace Backend.Controllers
     /// <summary>
     /// Controller for managing financial transactions and payment records within the system. The PaymentsController serves as a centralized hub for processing membership fees, activity enrollments, and maintaining payment balances. It integrates with external payment providers through secure webhooks and provides administrative tools for auditing, such as exporting transaction data to CSV. This controller ensures that all financial operations are strictly authorized, allowing users to view their own payment history while granting administrative access for oversight and reporting, ultimately ensuring a transparent and manageable financial ecosystem for the organization.
     /// </summary>
+    /// <param name="paymentService">The service handling payment processing and ledger operations.</param>
     [Route("[controller]")]
     [ApiController]
-    public class PaymentsController : ControllerBase
+    public class PaymentsController(IPaymentService paymentService) : ControllerBase
     {
-        private readonly IPaymentRepository _paymentRepository;
-
-        /// <summary>
-        /// Initializes a new instance of the PaymentsController with the required payment and permission services.
-        /// </summary>
-        /// <param name="paymentRepository">The repository handling payment processing and ledger operations.</param>
-        public PaymentsController(IPaymentRepository paymentRepository)
-        {
-            _paymentRepository = paymentRepository;
-        }
-
         // GET: payments/membership
         /// <summary>
-        /// Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentRepository, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
+        /// Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentService, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
         /// </summary>
         /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
         /// <returns>A collection of membership payment records.</returns>
@@ -35,22 +25,12 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(IEnumerable<MembershipPayment>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<MembershipPayment>>> GetMembershipPayments(CancellationToken ct)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentRepository.GetMembershipPayments(userId, ct);
-                return Ok(result);
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.GetMembershipPayments(userId, ct);
+            return Ok(result);
         }
 
         // GET: payments/membership/5
@@ -66,22 +46,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<MembershipPayment>> GetMembershipPayment(uint id, CancellationToken ct)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentRepository.GetMembershipPayment(id, userId, ct);
-                return result != null ? Ok(result) : NotFound();
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.GetMembershipPayment(id, userId, ct);
+            return result != null ? Ok(result) : NotFound();
         }
 
         // GET: payments/enrollment
@@ -95,22 +65,12 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(IEnumerable<EnrollmentPayment>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<EnrollmentPayment>>> GetEnrollmentPayments(CancellationToken ct)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentRepository.GetEnrollmentPayments(userId, ct);
-                return Ok(result);
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.GetEnrollmentPayments(userId, ct);
+            return Ok(result);
         }
 
         // GET: payments/enrollment/5
@@ -126,22 +86,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<EnrollmentPayment>> GetEnrollmentPayment(uint id, CancellationToken ct)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentRepository.GetEnrollmentPayment(id, userId, ct);
-                return result != null ? Ok(result) : NotFound();
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.GetEnrollmentPayment(id, userId, ct);
+            return result != null ? Ok(result) : NotFound();
         }
 
         // POST: payments/membership
@@ -156,24 +106,18 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PostPaymentResponse>> PostMembershipPayment(
             PostMembershipPaymentDTO dto
         )
         {
-            try
-            {
-                var result = await _paymentRepository.CreateMembershipPayment(dto);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var result = await paymentService.CreateMembershipPayment(dto);
+            return Ok(result);
         }
 
         // POST: payments/activity
         /// <summary>
-        /// Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the repository layer to reserve the spot and handle the transaction initiation.
+        /// Initiates a payment for a specific activity enrollment. The PostActivityPayment endpoint facilitates the financial registration for events by creating a payment request based on the provided DTO. It ensures that the authenticated user is the one making the request and coordinates with the service layer to reserve the spot and handle the transaction initiation.
         /// </summary>
         /// <param name="dto">The data transfer object containing activity-specific payment details.</param>
         /// <returns>A response containing the payment status and instructions for completion.</returns>
@@ -183,24 +127,14 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PostPaymentResponse>> PostActivityPayment(
             PostActivityPaymentDTO dto
         )
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentRepository.CreateActivityPayment(dto, userId);
-                return Ok(result);
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.CreateActivityPayment(dto, userId);
+            return Ok(result);
         }
 
         // POST: payments/webhook
@@ -214,20 +148,14 @@ namespace Backend.Controllers
         [Consumes("application/x-www-form-urlencoded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> PaymentWebhook(
             [FromForm] string id,
             [FromServices] AbstractPaymentService webhookService
         )
         {
-            try
-            {
-                await webhookService.HandleWebhookAsync(id);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            await webhookService.HandleWebhookAsync(id);
+            return Ok();
         }
 
         // GET: payments/unpaid
@@ -242,26 +170,16 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public ActionResult<IEnumerable<EnrollmentBalance>> GetUnpaid(bool allUsers = false)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = _paymentRepository.GetUnpaid(userId, allUsers);
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = paymentService.GetUnpaid(userId, allUsers);
 
-                if(result == null)
-                    return NotFound();
+            if(result == null)
+                return NotFound();
 
-                return Ok(result);
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            return Ok(result);
         }
 
         // GET: payments/overpaid
@@ -275,26 +193,16 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public ActionResult<IEnumerable<EnrollmentBalance>> GetOverpaid()
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = _paymentRepository.GetOverpaid(userId);
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = paymentService.GetOverpaid(userId);
 
-                if(result == null)
-                    return NotFound();
+            if(result == null)
+                return NotFound();
 
-                return Ok(result);
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            return Ok(result);
         }
 
         // GET: payments/member/{userId}/status
@@ -310,30 +218,16 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<PaymentStatusResponse>> GetMemberPaymentStatus(Guid fromUserId, CancellationToken ct)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var result = await _paymentRepository.GetMemberPaymentStatus(fromUserId, userId, ct);
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.GetMemberPaymentStatus(fromUserId, userId, ct);
 
-                if(result == null)
-                    return NotFound();
-
-                return Ok(result);
-            }
-            catch(KeyNotFoundException)
-            {
+            if(result == null)
                 return NotFound();
-            }
-            catch(UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+
+            return Ok(result);
         }
 
         // GET: payments/export?startDate=2024-01-01&endDate=2024-12-31
@@ -349,18 +243,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
-        {            
-            try
-            {
-                var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-                var (content, fileName) = await _paymentRepository.ExportPaymentsToCsv(startDate, endDate, userId, ct);
-                return File(content, "text/csv", fileName);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+        {
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var (content, fileName) = await paymentService.ExportPaymentsToCsv(startDate, endDate, userId, ct);
+            return File(content, "text/csv", fileName);
         }
     }
 }

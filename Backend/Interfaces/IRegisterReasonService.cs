@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing register reasons and their icons.
 /// </summary>
-public interface IRegisterReasonRepository
+public interface IRegisterReasonService
 {
     /// <summary>
     /// Retrieves all register reasons.

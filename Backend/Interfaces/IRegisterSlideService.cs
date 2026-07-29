@@ -5,7 +5,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing register slides.
 /// </summary>
-public interface IRegisterSlideRepository
+public interface IRegisterSlideService
 {
     /// <summary>
     /// Retrieves all register slides.

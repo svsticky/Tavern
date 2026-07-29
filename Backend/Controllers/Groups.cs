@@ -8,24 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing organizational groups within the system. The GroupsController provides a comprehensive set of endpoints for handling the lifecycle of groups, including creation, retrieval, full and partial updates, and deletion. It also manages group-specific assets such as group profile pictures. This controller is designed to enforce strict ownership and authorization rules, ensuring that only authorized users can modify group data. By interacting with the IGroupRepository, the controller maintains a clean separation between the API layer and the business logic required to manage group structures and their associated metadata effectively.
+/// Controller for managing organizational groups within the system. The GroupsController provides a comprehensive set of endpoints for handling the lifecycle of groups, including creation, retrieval, full and partial updates, and deletion. It also manages group-specific assets such as group profile pictures. This controller is designed to enforce strict ownership and authorization rules, ensuring that only authorized users can modify group data. By interacting with the IGroupService, the controller maintains a clean separation between the API layer and the business logic required to manage group structures and their associated metadata effectively.
 /// </summary>
+/// <param name="groupService">The group service used for managing group-related data operations.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class GroupsController : ControllerBase
+public class GroupsController(IGroupService groupService) : ControllerBase
 {
-    private readonly IGroupRepository _groupRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the GroupsController with the required group management repository.
-    /// </summary>
-    /// <param name="groupRepository">The group repository used for managing group-related data operations.</param>
-    public GroupsController(IGroupRepository groupRepository)
-    {
-        _groupRepository = groupRepository;
-    }
-
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
     /// </summary>
@@ -47,25 +37,14 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<GroupResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<GroupResponseDTO>>> GetGroups(
         [FromQuery] GetGroupDTO dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            var result = await _groupRepository.GetGroups(userId, dto, cancellationToken);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        var result = await groupService.GetGroups(userId, dto, cancellationToken);
+        return Ok(result);
     }
 
     // GET: groups/5
@@ -81,25 +60,15 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var result = await _groupRepository.GetGroup(id, cancellationToken);
+        var result = await groupService.GetGroup(id, cancellationToken);
 
-            if (result == null)
-                return NotFound();
+        if (result == null)
+            return NotFound();
 
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(result);
     }
 
     // POST: groups
@@ -115,30 +84,19 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(typeof(Group), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Group>> PostGroup(
         [FromForm] PostGroupDTO groupDto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
+        var userId = GetUserId();
+        var created = await groupService.CreateGroup(groupDto, userId, cancellationToken);
 
-            var created = await _groupRepository.CreateGroup(groupDto, userId, cancellationToken);
-
-            return CreatedAtAction(
-                nameof(GetGroup),
-                new { id = created.Id },
-                created
-            );
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return CreatedAtAction(
+            nameof(GetGroup),
+            new { id = created.Id },
+            created
+        );
     }
 
     // POST: groups/{id}/group-picture
@@ -154,22 +112,11 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(typeof(UploadPictureResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UploadPictureResponse>> UploadGroupPicture(uint id, IFormFile? image)
     {
-        try
-        {
-            var path = await _groupRepository.UploadGroupPicture(id, GetUserId(), image);
-
-            return Ok(new UploadPictureResponse { Path = path });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var path = await groupService.UploadGroupPicture(id, GetUserId(), image);
+        return Ok(new UploadPictureResponse { Path = path });
     }
 
     // GET: groups/5/group-picture
@@ -185,29 +132,18 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Stream>> GetGroupPicture(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var group = await _groupRepository.GetGroup(id, cancellationToken);
-            if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
-                return NotFound("Group or group picture not found.");
+        var group = await groupService.GetGroup(id, cancellationToken);
+        if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
+            return NotFound("Group or group picture not found.");
 
-            var file = await _groupRepository.GetGroupPictureFile(group.GroupPicturePath);
-            if (file == null)
-                return NotFound("File is no longer present on the server.");
+        var file = await groupService.GetGroupPictureFile(group.GroupPicturePath);
+        if (file == null)
+            return NotFound("File is no longer present on the server.");
 
-            return File(file.Stream, file.ContentType);
-        }
-        catch (UnauthorizedAccessException)
-        {            
-            return Forbid();
-        }
-        catch (Exception ex)         
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
-        
+        return File(file.Stream, file.ContentType);
     }
 
     // DELETE: groups/5
@@ -224,28 +160,12 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteGroup(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            await _groupRepository.DeleteGroup(id, userId, cancellationToken);
-
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await groupService.DeleteGroup(id, userId, cancellationToken);
+        return NoContent();
     }
 
     // POST: groups/promote-board
@@ -259,22 +179,12 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PromoteBoard([FromServices] ICreateNewBoardService createNewBoardService)
     {
-        try
-        {
-            var userId = GetUserId();
-            await createNewBoardService.PromoteCandidateBoardToBoardAsync(userId);
-            return Ok();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await createNewBoardService.PromoteCandidateBoardToBoardAsync(userId);
+        return Ok();
     }
 
     // PATCH: groups/5
@@ -292,31 +202,15 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchGroup(
         uint id,
         [FromBody] JsonPatchDocument<Group> patchDoc,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            await _groupRepository.PatchGroup(id, userId, patchDoc, cancellationToken);
-
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await groupService.PatchGroup(id, userId, patchDoc, cancellationToken);
+        return NoContent();
     }
 
     // PUT: groups/5
@@ -334,30 +228,14 @@ public class GroupsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutGroup(
         uint id,
         GroupUpdateDTO groupDto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            await _groupRepository.UpdateGroup(id, userId, groupDto, cancellationToken);
-
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await groupService.UpdateGroup(id, userId, groupDto, cancellationToken);
+        return NoContent();
     }
 }

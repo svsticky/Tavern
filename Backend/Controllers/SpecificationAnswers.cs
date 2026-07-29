@@ -8,13 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing specification answers within the system. The SpecificationAnswers controller provides endpoints for handling user-submitted responses to specific requirements or questions defined within the system's specification models. This controller is primarily focused on enabling flexible updates to existing answers, ensuring that data integrity and business rules are maintained during the modification process. By leveraging the ISpecificationAnswerRepository, the controller facilitates a secure way for users to provide or adjust information while enforcing strict authorization policies to ensure that only the rightful owners or authorized personnel can modify sensitive specification data.
+/// Controller for managing specification answers within the system. The SpecificationAnswers controller provides endpoints for handling user-submitted responses to specific requirements or questions defined within the system's specification models. This controller is primarily focused on enabling flexible updates to existing answers, ensuring that data integrity and business rules are maintained during the modification process. By leveraging the ISpecificationAnswerService, the controller facilitates a secure way for users to provide or adjust information while enforcing strict authorization policies to ensure that only the rightful owners or authorized personnel can modify sensitive specification data.
 /// </summary>
-/// <param name="specificationAnswerRepository">The specification answer repository responsible for processing answer logic and persistence.</param>
+/// <param name="specificationAnswerService">The specification answer service responsible for processing answer logic and persistence.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class SpecificationAnswers(ISpecificationAnswerRepository specificationAnswerRepository) : ControllerBase
+public class SpecificationAnswers(ISpecificationAnswerService specificationAnswerService) : ControllerBase
 {
     // PATCH: specificationanswers/5
     /// <summary>
@@ -31,21 +31,11 @@ public class SpecificationAnswers(ISpecificationAnswerRepository specificationAn
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchSpecificationAnswer(uint answerId, [FromBody] JsonPatchDocument<SpecificationAnswer> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-            await specificationAnswerRepository.PatchSpecificationAnswersAsync(userId, answerId, patchDoc, userId);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+        await specificationAnswerService.PatchSpecificationAnswersAsync(userId, answerId, patchDoc, userId);
+        return NoContent();
     }
 }

@@ -6,7 +6,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines the contract for creating payments and querying payment status data.
     /// </summary>
-    public interface IPaymentRepository
+    public interface IPaymentService
     {
         /// <summary>
         /// Retrieves membership payments visible to the requesting user.

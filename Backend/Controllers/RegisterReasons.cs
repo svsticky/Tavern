@@ -8,10 +8,11 @@ namespace Backend.Controllers;
 /// <summary>
 /// Controller for managing register reasons and their icons.
 /// </summary>
+/// <param name="registerReasonService">The register reason service used for managing register reasons and icons.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class RegisterReasonsController(IRegisterReasonRepository registerReasonRepository) : ControllerBase
+public class RegisterReasonsController(IRegisterReasonService registerReasonService) : ControllerBase
 {
     private Guid GetUserId()
     {
@@ -27,16 +28,10 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [Produces("application/json")]
     [ProducesResponseType(typeof(IEnumerable<RegisterReasonResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<RegisterReasonResponseDTO>>> GetRegisterReasons(CancellationToken ct)
     {
-        try
-        {
-            return Ok(await registerReasonRepository.GetRegisterReasons(ct));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(await registerReasonService.GetRegisterReasons(ct));
     }
 
     // GET: registerreasons/{id}
@@ -49,17 +44,11 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [ProducesResponseType(typeof(RegisterReasonResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RegisterReasonResponseDTO>> GetRegisterReason(int id, CancellationToken ct)
     {
-        try
-        {
-            var result = await registerReasonRepository.GetRegisterReason(id, ct);
-            return result != null ? Ok(result) : NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await registerReasonService.GetRegisterReason(id, ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
     // POST: registerreasons
@@ -72,21 +61,11 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [ProducesResponseType(typeof(RegisterReasonResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RegisterReasonResponseDTO>> PostRegisterReason(PostRegisterReasonDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await registerReasonRepository.CreateRegisterReason(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetRegisterReason), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await registerReasonService.CreateRegisterReason(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetRegisterReason), new { id = result.Id }, result);
     }
 
     // PUT: registerreasons/{id}
@@ -100,25 +79,11 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutRegisterReason(int id, RegisterReasonUpdateDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await registerReasonRepository.UpdateRegisterReason(id, dto, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await registerReasonService.UpdateRegisterReason(id, dto, GetUserId(), ct);
+        return NoContent();
     }
 
     // DELETE: registerreasons/{id}
@@ -132,25 +97,11 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteRegisterReason(int id, CancellationToken ct)
     {
-        try
-        {
-            await registerReasonRepository.DeleteRegisterReason(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await registerReasonService.DeleteRegisterReason(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // POST: registerreasons/{id}/icon
@@ -163,21 +114,11 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [ProducesResponseType(typeof(UploadPictureResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UploadPictureResponse>> UploadIcon(int id, IFormFile? icon)
     {
-        try
-        {
-            var path = await registerReasonRepository.UploadRegisterReasonIcon(id, GetUserId(), icon);
-            return Ok(new UploadPictureResponse { Path = path });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var path = await registerReasonService.UploadRegisterReasonIcon(id, GetUserId(), icon);
+        return Ok(new UploadPictureResponse { Path = path });
     }
 
     // GET: registerreasons/{id}/icon
@@ -191,27 +132,21 @@ public class RegisterReasonsController(IRegisterReasonRepository registerReasonR
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ResponseCache(Duration = 300, Location = ResponseCacheLocation.Any)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Stream>> GetIcon(int id, CancellationToken ct)
     {
-        try
+        var reason = await registerReasonService.GetRegisterReason(id, ct);
+        if (reason == null || string.IsNullOrEmpty(reason.IconPath))
         {
-            var reason = await registerReasonRepository.GetRegisterReason(id, ct);
-            if (reason == null || string.IsNullOrEmpty(reason.IconPath))
-            {
-                return NotFound("Register reason or icon not found.");
-            }
-
-            var file = await registerReasonRepository.GetRegisterReasonIconFile(reason.IconPath);
-            if (file == null)
-            {
-                return NotFound("File is no longer present on the server.");
-            }
-
-            return File(file.Stream, file.ContentType);
+            return NotFound("Register reason or icon not found.");
         }
-        catch (Exception ex)
+
+        var file = await registerReasonService.GetRegisterReasonIconFile(reason.IconPath);
+        if (file == null)
         {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
+            return NotFound("File is no longer present on the server.");
         }
+
+        return File(file.Stream, file.ContentType);
     }
 }

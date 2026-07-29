@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines operations for updating member specification answers.
 /// </summary>
-public interface ISpecificationAnswerRepository
+public interface ISpecificationAnswerService
 {
     /// <summary>
     /// Applies a JSON Patch document to a specification answer.

@@ -1,5 +1,5 @@
 using Backend.Database;
-using Backend.Repositories;
+using Backend.Services.Domain;
 using Backend.Services;
 using Backend.Services.AccountingToolServices;
 using Backend.Services.AuthServices;
@@ -269,29 +269,29 @@ internal static class ServiceExtensions
         return services;
     }
 
-    internal static IServiceCollection AddRepositories(this IServiceCollection services)
+    internal static IServiceCollection AddServices(this IServiceCollection services)
     {
-        services.AddScoped<IActivityRepository, ActivityRepository>();
-        services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
-        services.AddScoped<IEnrollmentRepository, EnrollmentRepository>();
-        services.AddScoped<IGroupMembershipRepository, GroupMembershipRepository>();
-        services.AddScoped<IGroupRepository, GroupRepository>();
-        services.AddScoped<IMemberRepository, MemberRepository>();
-        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IActivityService, ActivityService>();
+        services.AddScoped<IAnnouncementService, AnnouncementService>();
+        services.AddScoped<IEnrollmentService, EnrollmentService>();
+        services.AddScoped<IGroupMembershipService, GroupMembershipService>();
+        services.AddScoped<IGroupService, GroupService>();
+        services.AddScoped<IMemberService, MemberService>();
+        services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IPaymentWebhookService, PaymentWebhookService>();
         services.AddScoped<IPermissionService, PermissionService>();
-        services.AddScoped<IProfilePictureRepository, ProfilePictureRepository>();
-        services.AddScoped<IRoleAliasRepository, RoleAliasRepository>();
-        services.AddScoped<IRoleRepository, RoleRepository>();
-        services.AddScoped<IStudyEnrollmentRepository, StudyEnrollmentRepository>();
-        services.AddScoped<IStudyRepository, StudyRepository>();
-        services.AddScoped<ISpecificationAnswerRepository, SpecificationAnswerRepository>();
-        services.AddScoped<ISettingsRepository, SettingsRepository>();
-        services.AddScoped<IMailinglistRepository, MailinglistRepository>();
-        services.AddScoped<IRegisterReasonRepository, RegisterReasonRepository>();
-        services.AddScoped<IRegistrationDocumentRepository, RegistrationDocumentRepository>();
-        services.AddScoped<IRegisterSlideRepository, RegisterSlideRepository>();
-        services.AddScoped<IExternalLinkRepository, ExternalLinkRepository>();
+        services.AddScoped<IProfilePictureService, ProfilePictureService>();
+        services.AddScoped<IRoleAliasService, RoleAliasService>();
+        services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IStudyEnrollmentService, StudyEnrollmentService>();
+        services.AddScoped<IStudyService, StudyService>();
+        services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
+        services.AddScoped<ISettingsService, SettingsService>();
+        services.AddScoped<IMailinglistService, MailinglistService>();
+        services.AddScoped<IRegisterReasonService, RegisterReasonService>();
+        services.AddScoped<IRegistrationDocumentService, RegistrationDocumentService>();
+        services.AddScoped<IRegisterSlideService, RegisterSlideService>();
+        services.AddScoped<IExternalLinkService, ExternalLinkService>();
         
         return services;
     }

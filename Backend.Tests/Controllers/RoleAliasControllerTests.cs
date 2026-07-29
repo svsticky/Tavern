@@ -18,14 +18,14 @@ namespace Backend.Tests.Controllers;
 
 public class RoleAliasControllerTests
 {
-    private readonly IRoleAliasRepository _repositoryMock;
+    private readonly IRoleAliasService _serviceMock;
     private readonly RoleAliasesController _controller;
     private readonly Guid _userId;
 
     public RoleAliasControllerTests()
     {
-        _repositoryMock = Substitute.For<IRoleAliasRepository>();
-        _controller = new RoleAliasesController(_repositoryMock);
+        _serviceMock = Substitute.For<IRoleAliasService>();
+        _controller = new RoleAliasesController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -44,7 +44,7 @@ public class RoleAliasControllerTests
     {
         // Arrange
         var list = new List<RoleAlias> { new RoleAlias { Id = 1, Name = "Admin", RoleId = 1 } };
-        _repositoryMock.GetRoleAliases(Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetRoleAliases(Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetRoleAliases(CancellationToken.None);
@@ -56,18 +56,13 @@ public class RoleAliasControllerTests
     }
 
     [Fact]
-    public async Task GetRoleAliases_Exception_ReturnsBadRequest()
+    public async Task GetRoleAliases_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRoleAliases(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetRoleAliases(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetRoleAliases(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRoleAliases(CancellationToken.None));
     }
 
     [Fact]
@@ -75,7 +70,7 @@ public class RoleAliasControllerTests
     {
         // Arrange
         var alias = new RoleAlias { Id = 2, Name = "User", RoleId = 1 };
-        _repositoryMock.GetRoleAlias(2, Arg.Any<CancellationToken>()).Returns(alias);
+        _serviceMock.GetRoleAlias(2, Arg.Any<CancellationToken>()).Returns(alias);
 
         // Act
         var result = await _controller.GetRoleAlias(2, CancellationToken.None);
@@ -90,7 +85,7 @@ public class RoleAliasControllerTests
     public async Task GetRoleAlias_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetRoleAlias(3, Arg.Any<CancellationToken>()).Returns((RoleAlias?)null);
+        _serviceMock.GetRoleAlias(3, Arg.Any<CancellationToken>()).Returns((RoleAlias?)null);
 
         // Act
         var result = await _controller.GetRoleAlias(3, CancellationToken.None);
@@ -100,18 +95,13 @@ public class RoleAliasControllerTests
     }
 
     [Fact]
-    public async Task GetRoleAlias_Exception_ReturnsBadRequest()
+    public async Task GetRoleAlias_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRoleAlias(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetRoleAlias(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetRoleAlias(3, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRoleAlias(3, CancellationToken.None));
     }
 
     [Fact]
@@ -120,7 +110,7 @@ public class RoleAliasControllerTests
         // Arrange
         var dto = new PostRoleAliasDTO { Name = "NewRole", RoleId = 1 };
         var created = new RoleAlias { Id = 10, Name = "NewRole", RoleId = 1 };
-        _repositoryMock.CreateRoleAlias(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateRoleAlias(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostRoleAlias(dto, CancellationToken.None);
@@ -133,33 +123,25 @@ public class RoleAliasControllerTests
     }
 
     [Fact]
-    public async Task PostRoleAlias_Unauthorized_ReturnsForbid()
+    public async Task PostRoleAlias_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostRoleAliasDTO { Name = "NewRole", RoleId = 1 };
-        _repositoryMock.CreateRoleAlias(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateRoleAlias(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostRoleAlias(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRoleAlias(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostRoleAlias_Exception_ReturnsBadRequest()
+    public async Task PostRoleAlias_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostRoleAliasDTO { Name = "NewRole", RoleId = 1 };
-        _repositoryMock.CreateRoleAlias(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.CreateRoleAlias(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostRoleAlias(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostRoleAlias(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -170,48 +152,37 @@ public class RoleAliasControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteRoleAlias_NotFound_ReturnsNotFound()
+    public async Task DeleteRoleAlias_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteRoleAlias(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteRoleAlias(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRoleAlias_Unauthorized_ReturnsForbid()
+    public async Task DeleteRoleAlias_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteRoleAlias(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteRoleAlias(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRoleAlias_Exception_ReturnsBadRequest()
+    public async Task DeleteRoleAlias_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteRoleAlias(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteRoleAlias(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteRoleAlias(1, CancellationToken.None));
     }
 
     [Fact]
@@ -225,37 +196,29 @@ public class RoleAliasControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchRoleAlias(1, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchRoleAlias(1, patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchRoleAlias_Unauthorized_ReturnsForbid()
+    public async Task PatchRoleAlias_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<RoleAlias>();
-        _repositoryMock.PatchRoleAlias(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.PatchRoleAlias(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchRoleAlias(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchRoleAlias(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchRoleAlias_Exception_ReturnsBadRequest()
+    public async Task PatchRoleAlias_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<RoleAlias>();
-        _repositoryMock.PatchRoleAlias(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchRoleAlias(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchRoleAlias(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchRoleAlias(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -269,36 +232,28 @@ public class RoleAliasControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateRoleAlias(1, dto, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).UpdateRoleAlias(1, dto, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutRoleAlias_Unauthorized_ReturnsForbid()
+    public async Task PutRoleAlias_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new RoleAliasUpdateDTO { Name = "Updated", RoleId = 1 };
-        _repositoryMock.UpdateRoleAlias(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.UpdateRoleAlias(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutRoleAlias(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRoleAlias(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutRoleAlias_Exception_ReturnsBadRequest()
+    public async Task PutRoleAlias_Exception_ThrowsException()
     {
         // Arrange
         var dto = new RoleAliasUpdateDTO { Name = "Updated", RoleId = 1 };
-        _repositoryMock.UpdateRoleAlias(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.UpdateRoleAlias(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutRoleAlias(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutRoleAlias(1, dto, CancellationToken.None));
     }
 }

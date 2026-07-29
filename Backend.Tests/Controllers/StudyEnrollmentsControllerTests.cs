@@ -18,14 +18,14 @@ namespace Backend.Tests.Controllers;
 
 public class StudyEnrollmentsControllerTests
 {
-    private readonly IStudyEnrollmentRepository _repositoryMock;
+    private readonly IStudyEnrollmentService _serviceMock;
     private readonly StudyEnrollmentsController _controller;
     private readonly Guid _userId;
 
     public StudyEnrollmentsControllerTests()
     {
-        _repositoryMock = Substitute.For<IStudyEnrollmentRepository>();
-        _controller = new StudyEnrollmentsController(_repositoryMock);
+        _serviceMock = Substitute.For<IStudyEnrollmentService>();
+        _controller = new StudyEnrollmentsController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -48,7 +48,7 @@ public class StudyEnrollmentsControllerTests
         {
             new StudyEnrollmentResponseDTO { Id = 1, StudyTitle = "Computer Science", EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled }
         };
-        _repositoryMock.GetStudyEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetStudyEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetStudyEnrollments(dto, CancellationToken.None);
@@ -60,33 +60,25 @@ public class StudyEnrollmentsControllerTests
     }
 
     [Fact]
-    public async Task GetStudyEnrollments_Unauthorized_ReturnsForbid()
+    public async Task GetStudyEnrollments_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new GetStudyEnrollmentsDTO();
-        _repositoryMock.GetStudyEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetStudyEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetStudyEnrollments(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetStudyEnrollments(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetStudyEnrollments_Exception_ReturnsBadRequest()
+    public async Task GetStudyEnrollments_Exception_ThrowsException()
     {
         // Arrange
         var dto = new GetStudyEnrollmentsDTO();
-        _repositoryMock.GetStudyEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetStudyEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetStudyEnrollments(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetStudyEnrollments(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -94,7 +86,7 @@ public class StudyEnrollmentsControllerTests
     {
         // Arrange
         var response = new StudyEnrollmentResponseDTO { Id = 2, StudyTitle = "Mathematics", EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled };
-        _repositoryMock.GetStudyEnrollment(2, _userId, Arg.Any<CancellationToken>()).Returns(response);
+        _serviceMock.GetStudyEnrollment(2, _userId, Arg.Any<CancellationToken>()).Returns(response);
 
         // Act
         var result = await _controller.GetStudyEnrollment(2, CancellationToken.None);
@@ -109,7 +101,7 @@ public class StudyEnrollmentsControllerTests
     public async Task GetStudyEnrollment_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetStudyEnrollment(3, _userId, Arg.Any<CancellationToken>()).Returns((StudyEnrollmentResponseDTO?)null);
+        _serviceMock.GetStudyEnrollment(3, _userId, Arg.Any<CancellationToken>()).Returns((StudyEnrollmentResponseDTO?)null);
 
         // Act
         var result = await _controller.GetStudyEnrollment(3, CancellationToken.None);
@@ -119,31 +111,23 @@ public class StudyEnrollmentsControllerTests
     }
 
     [Fact]
-    public async Task GetStudyEnrollment_Unauthorized_ReturnsForbid()
+    public async Task GetStudyEnrollment_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetStudyEnrollment(3, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetStudyEnrollment(3, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetStudyEnrollment(3, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetStudyEnrollment(3, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetStudyEnrollment_Exception_ReturnsBadRequest()
+    public async Task GetStudyEnrollment_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetStudyEnrollment(3, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetStudyEnrollment(3, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetStudyEnrollment(3, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetStudyEnrollment(3, CancellationToken.None));
     }
 
     [Fact]
@@ -152,7 +136,7 @@ public class StudyEnrollmentsControllerTests
         // Arrange
         var dto = new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.NewGuid(), EnrollmentDate = DateTimeOffset.UtcNow };
         var created = new StudyEnrollmentResponseDTO { Id = 10, StudyTitle = "Physics", EnrollmentDate = DateTimeOffset.UtcNow, Status = StudyStatus.Enrolled };
-        _repositoryMock.CreateStudyEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateStudyEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostStudyEnrollment(dto, CancellationToken.None);
@@ -165,33 +149,25 @@ public class StudyEnrollmentsControllerTests
     }
 
     [Fact]
-    public async Task PostStudyEnrollment_Unauthorized_ReturnsForbid()
+    public async Task PostStudyEnrollment_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.NewGuid(), EnrollmentDate = DateTimeOffset.UtcNow };
-        _repositoryMock.CreateStudyEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateStudyEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostStudyEnrollment(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostStudyEnrollment(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostStudyEnrollment_Exception_ReturnsBadRequest()
+    public async Task PostStudyEnrollment_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.NewGuid(), EnrollmentDate = DateTimeOffset.UtcNow };
-        _repositoryMock.CreateStudyEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.CreateStudyEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostStudyEnrollment(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostStudyEnrollment(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -202,35 +178,27 @@ public class StudyEnrollmentsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteStudyEnrollment(1, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteStudyEnrollment(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteStudyEnrollment_Unauthorized_ReturnsForbid()
+    public async Task DeleteStudyEnrollment_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteStudyEnrollment(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteStudyEnrollment(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteStudyEnrollment(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteStudyEnrollment(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteStudyEnrollment_Exception_ReturnsBadRequest()
+    public async Task DeleteStudyEnrollment_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteStudyEnrollment(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteStudyEnrollment(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteStudyEnrollment(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteStudyEnrollment(1, CancellationToken.None));
     }
 
     [Fact]
@@ -244,36 +212,28 @@ public class StudyEnrollmentsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchStudyEnrollment(1, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchStudyEnrollment(1, patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchStudy_Unauthorized_ReturnsForbid()
+    public async Task PatchStudy_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<StudyEnrollment>();
-        _repositoryMock.PatchStudyEnrollment(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.PatchStudyEnrollment(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchStudy(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchStudy(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchStudy_Exception_ReturnsBadRequest()
+    public async Task PatchStudy_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<StudyEnrollment>();
-        _repositoryMock.PatchStudyEnrollment(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchStudyEnrollment(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchStudy(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchStudy(1, patchDoc, CancellationToken.None));
     }
 }

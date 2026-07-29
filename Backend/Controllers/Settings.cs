@@ -8,24 +8,14 @@ using Backend.Controllers.DTOs;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing global application settings and system-wide configurations. The Settings controller provides a suite of administrative endpoints for viewing, defining, and modifying key-value pairs that govern the behavior of the application. This centralized configuration management allows authorized administrators to adjust system parameters—such as feature toggles, business rules, or integration endpoints—without requiring code changes. The controller ensures strict authorization for all operations, utilizing the ISettingsRepository to handle the underlying persistence and validation logic while maintaining a secure and audit-ready configuration layer.
+/// Controller for managing global application settings and system-wide configurations. The Settings controller provides a suite of administrative endpoints for viewing, defining, and modifying key-value pairs that govern the behavior of the application. This centralized configuration management allows authorized administrators to adjust system parameters—such as feature toggles, business rules, or integration endpoints—without requiring code changes. The controller ensures strict authorization for all operations, utilizing the ISettingsService to handle the underlying persistence and validation logic while maintaining a secure and audit-ready configuration layer.
 /// </summary>
+/// <param name="settingsService">The settings service responsible for managing configuration data.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class Settings : ControllerBase
+public class Settings(ISettingsService settingsService) : ControllerBase
 {
-    private readonly ISettingsRepository _settingsRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the Settings controller with the required configuration management service.
-    /// </summary>
-    /// <param name="settingsRepository">The settings repository responsible for managing configuration data.</param>
-    public Settings(ISettingsRepository settingsRepository)
-    {
-        _settingsRepository = settingsRepository;
-    }
-
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
     /// </summary>
@@ -46,21 +36,11 @@ public class Settings : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<Setting>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<Setting>>> GetSettings(CancellationToken ct)
     {
-        try
-        {
-            var result = await _settingsRepository.GetSettings(GetUserId(), ct);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await settingsService.GetSettings(GetUserId(), ct);
+        return Ok(result);
     }
 
     // GET: settings/{id}
@@ -71,37 +51,27 @@ public class Settings : ControllerBase
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>The requested setting object if found; otherwise, a 404 Not Found status.</returns>
     [HttpGet("{id}")]
+    [AllowAnonymous]
     [Produces("application/json")]
     [ProducesResponseType(typeof(Setting), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [AllowAnonymous]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Setting>> GetSetting(string id, CancellationToken ct)
     {
+        Guid? userId;
         try
         {
-            Guid? userId;
-            try
-            {
-                userId = GetUserId();
-            }
-            catch
-            {
-                userId = null;
-            }
+            userId = GetUserId();
+        }
+        catch
+        {
+            userId = null;
+        }
 
-            var result = await _settingsRepository.GetSetting(id, userId, ct);
-            return result != null ? Ok(result) : NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await settingsService.GetSetting(id, userId, ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
     // POST: settings
@@ -118,21 +88,11 @@ public class Settings : ControllerBase
     [ProducesResponseType(typeof(Setting), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Setting>> PostSetting([FromQuery] string id, [FromQuery] string value, CancellationToken ct)
     {
-        try
-        {
-            var result = await _settingsRepository.CreateSetting(id, value, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetSetting), new { id = result.Name }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await settingsService.CreateSetting(id, value, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetSetting), new { id = result.Name }, result);
     }
 
     // DELETE: settings/{id}
@@ -149,25 +109,11 @@ public class Settings : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteSetting(string id, CancellationToken ct)
     {
-        try
-        {
-            await _settingsRepository.DeleteSetting(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch(KeyNotFoundException )
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await settingsService.DeleteSetting(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // PATCH: settings/{id}
@@ -185,21 +131,11 @@ public class Settings : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchSetting(string id, JsonPatchDocument<Setting> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            await _settingsRepository.PatchSetting(id, patchDoc, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await settingsService.PatchSetting(id, patchDoc, GetUserId(), ct);
+        return NoContent();
     }
 
     // PUT: settings/{id}
@@ -217,20 +153,10 @@ public class Settings : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutSetting(string id, string value, CancellationToken ct)
     {
-        try
-        {
-            await _settingsRepository.UpdateSetting(id, value, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await settingsService.UpdateSetting(id, value, GetUserId(), ct);
+        return NoContent();
     }
 }

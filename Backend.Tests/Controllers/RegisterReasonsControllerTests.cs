@@ -17,14 +17,14 @@ namespace Backend.Tests.Controllers;
 
 public class RegisterReasonsControllerTests
 {
-    private readonly IRegisterReasonRepository _repositoryMock;
+    private readonly IRegisterReasonService _serviceMock;
     private readonly RegisterReasonsController _controller;
     private readonly Guid _userId;
 
     public RegisterReasonsControllerTests()
     {
-        _repositoryMock = Substitute.For<IRegisterReasonRepository>();
-        _controller = new RegisterReasonsController(_repositoryMock);
+        _serviceMock = Substitute.For<IRegisterReasonService>();
+        _controller = new RegisterReasonsController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -54,7 +54,7 @@ public class RegisterReasonsControllerTests
                 SortOrder = 1
             }
         };
-        _repositoryMock.GetRegisterReasons(Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReasons(Arg.Any<CancellationToken>())
             .Returns(list);
 
         // Act
@@ -67,19 +67,14 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task GetRegisterReasons_Error_ReturnsBadRequest()
+    public async Task GetRegisterReasons_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRegisterReasons(Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReasons(Arg.Any<CancellationToken>())
             .Throws(new Exception("Database error"));
 
-        // Act
-        var result = await _controller.GetRegisterReasons(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Database error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRegisterReasons(CancellationToken.None));
     }
 
     [Fact]
@@ -95,7 +90,7 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc 5",
             SortOrder = 5
         };
-        _repositoryMock.GetRegisterReason(5, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(5, Arg.Any<CancellationToken>())
             .Returns(reason);
 
         // Act
@@ -111,7 +106,7 @@ public class RegisterReasonsControllerTests
     public async Task GetRegisterReason_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetRegisterReason(99, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(99, Arg.Any<CancellationToken>())
             .Returns((RegisterReasonResponseDTO?)null);
 
         // Act
@@ -122,19 +117,14 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task GetRegisterReason_Error_ReturnsBadRequest()
+    public async Task GetRegisterReason_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRegisterReason(5, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(5, Arg.Any<CancellationToken>())
             .Throws(new Exception("Error retrieving"));
 
-        // Act
-        var result = await _controller.GetRegisterReason(5, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error retrieving", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRegisterReason(5, CancellationToken.None));
     }
 
     [Fact]
@@ -158,7 +148,7 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 1
         };
-        _repositoryMock.CreateRegisterReason(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateRegisterReason(dto, _userId, Arg.Any<CancellationToken>())
             .Returns(created);
 
         // Act
@@ -172,7 +162,7 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task PostRegisterReason_Forbidden_ReturnsForbid()
+    public async Task PostRegisterReason_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostRegisterReasonDTO
@@ -183,18 +173,15 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 1
         };
-        _repositoryMock.CreateRegisterReason(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateRegisterReason(dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostRegisterReason(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegisterReason(dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PostRegisterReason_Error_ReturnsBadRequest()
+    public async Task PostRegisterReason_Error_ThrowsException()
     {
         // Arrange
         var dto = new PostRegisterReasonDTO
@@ -205,17 +192,12 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 1
         };
-        _repositoryMock.CreateRegisterReason(dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.CreateRegisterReason(dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Fail"));
 
-        // Act
-        var result = await _controller.PostRegisterReason(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Fail", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostRegisterReason(dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task PutRegisterReason_Success_ReturnsNoContent()
@@ -229,7 +211,7 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         // Act
@@ -240,7 +222,7 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task PutRegisterReason_NotFound_ReturnsNotFound()
+    public async Task PutRegisterReason_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new RegisterReasonUpdateDTO
@@ -251,18 +233,15 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutRegisterReason(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutRegisterReason(1, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutRegisterReason_Forbidden_ReturnsForbid()
+    public async Task PutRegisterReason_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new RegisterReasonUpdateDTO
@@ -273,18 +252,15 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutRegisterReason(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRegisterReason(1, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutRegisterReason_Error_ReturnsBadRequest()
+    public async Task PutRegisterReason_Error_ThrowsException()
     {
         // Arrange
         var dto = new RegisterReasonUpdateDTO
@@ -295,23 +271,18 @@ public class RegisterReasonsControllerTests
             DescriptionEnglish = "EN Desc",
             SortOrder = 2
         };
-        _repositoryMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.UpdateRegisterReason(1, dto, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Put error"));
 
-        // Act
-        var result = await _controller.PutRegisterReason(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Put error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutRegisterReason(1, dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task DeleteRegisterReason_Success_ReturnsNoContent()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         // Act
@@ -322,47 +293,36 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task DeleteRegisterReason_NotFound_ReturnsNotFound()
+    public async Task DeleteRegisterReason_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteRegisterReason(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteRegisterReason(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegisterReason_Forbidden_ReturnsForbid()
+    public async Task DeleteRegisterReason_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteRegisterReason(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteRegisterReason(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRegisterReason_Error_ReturnsBadRequest()
+    public async Task DeleteRegisterReason_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
+        _serviceMock.DeleteRegisterReason(1, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Delete error"));
 
-        // Act
-        var result = await _controller.DeleteRegisterReason(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Delete error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteRegisterReason(1, CancellationToken.None));
     }
 
     [Fact]
@@ -370,7 +330,7 @@ public class RegisterReasonsControllerTests
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadRegisterReasonIcon(1, _userId, fileMock)
+        _serviceMock.UploadRegisterReasonIcon(1, _userId, fileMock)
             .Returns(Task.FromResult<string?>("icons/icon.png"));
 
         // Act
@@ -383,42 +343,34 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task UploadIcon_Forbidden_ReturnsForbid()
+    public async Task UploadIcon_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadRegisterReasonIcon(1, _userId, fileMock)
+        _serviceMock.UploadRegisterReasonIcon(1, _userId, fileMock)
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.UploadIcon(1, fileMock);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UploadIcon(1, fileMock));
     }
 
     [Fact]
-    public async Task UploadIcon_Error_ReturnsBadRequest()
+    public async Task UploadIcon_Error_ThrowsException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadRegisterReasonIcon(1, _userId, fileMock)
+        _serviceMock.UploadRegisterReasonIcon(1, _userId, fileMock)
             .Throws(new Exception("Upload error"));
 
-        // Act
-        var result = await _controller.UploadIcon(1, fileMock);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Upload error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.UploadIcon(1, fileMock));
     }
 
     [Fact]
     public async Task GetIcon_NotFoundLinkOrIconPath_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
             .Returns((RegisterReasonResponseDTO?)null);
 
         // Act
@@ -443,9 +395,9 @@ public class RegisterReasonsControllerTests
             SortOrder = 1,
             IconPath = "icons/path.png"
         };
-        _repositoryMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
             .Returns(reason);
-        _repositoryMock.GetRegisterReasonIconFile("icons/path.png")
+        _serviceMock.GetRegisterReasonIconFile("icons/path.png")
             .Returns(Task.FromResult<FileResultDto?>(null));
 
         // Act
@@ -473,9 +425,9 @@ public class RegisterReasonsControllerTests
         var fileStream = new MemoryStream(new byte[] { 1, 2, 3 });
         var fileResult = new FileResultDto { Stream = fileStream, ContentType = "image/png" };
 
-        _repositoryMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
             .Returns(reason);
-        _repositoryMock.GetRegisterReasonIconFile("icons/path.png")
+        _serviceMock.GetRegisterReasonIconFile("icons/path.png")
             .Returns(fileResult);
 
         // Act
@@ -488,18 +440,13 @@ public class RegisterReasonsControllerTests
     }
 
     [Fact]
-    public async Task GetIcon_Error_ReturnsBadRequest()
+    public async Task GetIcon_Error_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
+        _serviceMock.GetRegisterReason(1, Arg.Any<CancellationToken>())
             .Throws(new Exception("Read error"));
 
-        // Act
-        var result = await _controller.GetIcon(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Read error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetIcon(1, CancellationToken.None));
     }
 }
