@@ -513,5 +513,10 @@
   "delete_account_description": "If you are no longer studying or active, you can delete your account.",
   "are_you_sure_delete_own_account": "Are you sure you want to delete your account? All your data will be permanently removed.",
   "board_rotation_title": "Board Rotation",
-  "board_rotation_desc": "Perform the board rotation. This promotes the candidate board to the board and resets Grace and Benefactor statuses of all members."
+  "board_rotation_desc": "Perform the board rotation. This promotes the candidate board to the board and resets Grace and Benefactor statuses of all members.",
+  "are_you_sure_promote_board": "Are you sure you want to perform the board rotation? Candidate board members will be promoted to the board and Grace/Benefactor statuses will be reset.",
+  "promote_board_success": "Board rotation completed successfully.",
+  "promote_board_error": "Error occurred while performing board rotation",
+  "run_board_rotation": "Run Board Rotation",
+  "board_rotation": "Board Rotation"
 }

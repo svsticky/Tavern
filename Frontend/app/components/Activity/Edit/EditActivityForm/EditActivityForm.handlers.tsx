@@ -14,23 +14,7 @@ import { getAudienceString } from "~/types/AudienceMap";
 import { getFinancialYear } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 
-/**
- * Truncates an ISO date string to a format compatible with HTML `datetime-local` inputs.
- *
- * @param isoString - The ISO date string (e.g., from the API).
- * @returns A string in the format "YYYY-MM-DDTHH:mm".
- */
-export const formatForInput = (isoString?: string) =>
-  isoString ? isoString.substring(0, 16) : "";
-
-/**
- * Truncates an ISO date string to a date-only format compatible with HTML `date` inputs.
- *
- * @param isoString - The ISO date string.
- * @returns A string in the format "YYYY-MM-DD".
- */
-export const formatDateOnly = (isoString?: string) =>
-  isoString ? isoString.substring(0, 10) : "";
+export { formatForInput, formatDateOnly } from "~/util/date.util";
 
 /**
  * Fetches active association groups for the current membership year from the API.

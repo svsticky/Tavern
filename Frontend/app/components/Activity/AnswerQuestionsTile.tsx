@@ -2,7 +2,7 @@ import { t } from "i18next";
 import { useEffect, useState } from "react";
 import type { GetSpecificationQuestionResponseDto } from "~/api";
 import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { formatForInput } from "~/util/date.util";
 import Tile from "../Tiles/Tile";
 import Input from "../UI/Input";
 import Select from "../UI/Select";
@@ -125,7 +125,7 @@ export default function AnswerQuestionsTile({
           <Input
             type="datetime-local"
             className="input"
-            value={value}
+            value={formatForInput(value)}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               onChange(id, e.target.value)
             }

@@ -97,8 +97,7 @@ export default function SettingsPage() {
     if (
       !confirm(
         t(
-          "are_you_sure_promote_board",
-          "Weet je zeker dat je de bestuurswissel wilt uitvoeren? Kandidaat-bestuursleden worden bevorderd naar het bestuur en Gratie/Begunstiger statussen worden teruggezet.",
+          "are_you_sure_promote_board"
         ),
       )
     ) {
@@ -108,13 +107,13 @@ export default function SettingsPage() {
       setIsPromotingBoard(true);
       await postGroupsPromoteBoard({ throwOnError: true });
       toast.success(
-        t("promote_board_success", "Bestuurswissel succesvol uitgevoerd."),
+        t("promote_board_success"),
       );
     } catch (err) {
       console.error("Failed to promote board:", err);
       toast.error(
         appendErrorMessage(
-          t("promote_board_error", "Fout bij uitvoeren bestuurswissel"),
+          t("promote_board_error"),
           err,
         ),
       );
@@ -131,7 +130,7 @@ export default function SettingsPage() {
 
       <div className="space-y-4">
         <div>
-          <FormHeader title={t("board_rotation", "Bestuurswissel")} />
+          <FormHeader title={t("board_rotation")} />
           <Tile className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6">
             <div>
               <h4 className="font-semibold text-slate-800">
@@ -146,11 +145,11 @@ export default function SettingsPage() {
               variant="primary"
               onClick={handlePromoteBoard}
               disabled={isPromotingBoard}
-              className="bg-amber-600 hover:bg-amber-700 text-white border-none whitespace-nowrap shrink-0"
+              className="whitespace-nowrap shrink-0"
             >
               {isPromotingBoard
-                ? t("processing", "Bezig...")
-                : t("run_board_rotation", "Bestuurswissel Uitvoeren")}
+                ? t("loading")
+                : t("run_board_rotation")}
             </Button>
           </Tile>
         </div>
