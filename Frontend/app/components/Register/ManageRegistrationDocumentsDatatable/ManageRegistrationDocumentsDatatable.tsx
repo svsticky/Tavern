@@ -3,10 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type { RegistrationDocumentResponseDto } from "~/api";
-import {
-  getRegistrationdocuments,
-  putRegistrationdocumentsById,
-} from "~/api";
+import { getRegistrationdocuments, putRegistrationdocumentsById } from "~/api";
 import { cn } from "~/util/tailwind.util";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
@@ -24,7 +21,9 @@ export default function ManageRegistrationDocumentsDatatable() {
   const { t, i18n } = useTranslation();
   const isDutch = i18n.language.startsWith("nl");
 
-  const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>([]);
+  const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>(
+    [],
+  );
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editedDocument, setEditedDocument] = useState<

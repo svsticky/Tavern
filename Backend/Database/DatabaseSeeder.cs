@@ -80,8 +80,8 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         string financialYearStartDateSetting = await EnsureSettingExists(db, "FinancialYearStartDate", "08-01");
         YearUtils.FinancialYearStartDate = financialYearStartDateSetting;
 
-        string boardChangeDateSetting = await EnsureSettingExists(db, "BoardChangeDate", "08-01");
-        YearUtils.BoardChangeDate = boardChangeDateSetting;
+        string committeeCreationDateSetting = await EnsureSettingExists(db, "CommitteeCreationDate", "08-01");
+        YearUtils.CommitteeCreationDate = committeeCreationDateSetting;
 
         await EnsureSettingExists(db, "StudyStartDates", "09-01,02-01");
 
@@ -181,11 +181,12 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
-            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == YearUtils.GetCurrentBoardYear());
+            uint maxBoardYear = await db.GroupMemberships.Where(gm => gm.GroupId == boardGroupId).MaxAsync(gm => (uint?)gm.MembershipYear) ?? YearUtils.GetYearForDate(DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == maxBoardYear);
             if (!hasBoardMembers)
             {
                 var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value);
-                var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == YearUtils.GetCurrentBoardYear() - 1).ToListAsync();
+                var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == maxBoardYear - 1).ToListAsync();
                 
                 if(candidateBoardMembershipsLastYear.Any())
                 {
@@ -221,7 +222,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     GroupId = boardGroupId,
                     MemberId = backupMember.Id,
                     RoleAliasId = null,
-                    MembershipYear = YearUtils.GetCurrentBoardYear()
+                    MembershipYear = maxBoardYear
                 });
 
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id);

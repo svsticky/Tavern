@@ -8,7 +8,7 @@ import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
 import {
-  setGlobalBoardChangeDate,
+  setGlobalCommitteeCreationDate,
   setGlobalFinancialYearStartDate,
 } from "~/util/date.util";
 
@@ -75,8 +75,8 @@ export default function AuthenticatedLayout() {
     setCandidateBoardGroupId,
     financialYearStartDate,
     setFinancialYearStartDate,
-    boardChangeDate,
-    setBoardChangeDate,
+    committeeCreationDate,
+    setCommitteeCreationDate,
     member,
     setMember,
   } = useApp();
@@ -204,20 +204,20 @@ export default function AuthenticatedLayout() {
         );
     }
 
-    if (boardChangeDate === null) {
+    if (committeeCreationDate === null) {
       getSettingsById({
         path: {
-          id: "BoardChangeDate",
+          id: "CommitteeCreationDate",
         },
       })
         .then((res) => {
           if (res.data?.value) {
-            setBoardChangeDate(res.data.value);
-            setGlobalBoardChangeDate(res.data.value);
+            setCommitteeCreationDate(res.data.value);
+            setGlobalCommitteeCreationDate(res.data.value);
           }
         })
         .catch((err) =>
-          console.error("Could not fetch board change date", err),
+          console.error("Could not fetch committee creation date", err),
         );
     }
 
@@ -245,11 +245,11 @@ export default function AuthenticatedLayout() {
     candidateBoardGroupId,
     financialYearStartDate,
     member,
-    boardChangeDate,
+    committeeCreationDate,
     setBoardGroupId,
     setCandidateBoardGroupId,
     setFinancialYearStartDate,
-    setBoardChangeDate,
+    setCommitteeCreationDate,
     setMember,
   ]);
 

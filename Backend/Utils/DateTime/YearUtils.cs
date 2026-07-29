@@ -1,3 +1,4 @@
+using Backend.Database;
 using System.Runtime.InteropServices;
 
 namespace Backend.Utils.DateTime;
@@ -72,25 +73,14 @@ public static class YearUtils
     }
 
     /// <summary>
-    /// Gets or sets the start date for the board change. Format is "MM-DD".
+    /// Gets or sets the start date for committee creation. Format is "MM-DD".
     /// </summary>
-    public static string BoardChangeDate { get; set; } = "08-01";
+    public static string CommitteeCreationDate { get; set; } = "08-01";
 
     /// <summary>
-    /// Determines the current board year based on the current date and time in the Netherlands.
+    /// Calculates the associated operational year for a given date based on a specified start date ("MM-DD").
     /// </summary>
-    /// <returns>The current board year.</returns>
-    public static uint GetCurrentBoardYear()
-    {
-        return GetCurrentBoardYear(System.DateTime.UtcNow);
-    }
-
-    /// <summary>
-    /// Determines the board year based on a provided UTC date and time in the Netherlands.
-    /// </summary>
-    /// <param name="utcNow">The UTC date and time to calculate the board year for.</param>
-    /// <returns>The calculated board year.</returns>
-    public static uint GetCurrentBoardYear(System.DateTime utcNow)
+    public static uint GetYearForDate(System.DateTime utcNow, string startDateStr)
     {
         string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
             ? "W. Europe Standard Time" 
@@ -101,9 +91,9 @@ public static class YearUtils
 
         int targetMonth = 8;
         int targetDay = 1;
-        if (!string.IsNullOrEmpty(BoardChangeDate))
+        if (!string.IsNullOrEmpty(startDateStr))
         {
-            var parts = BoardChangeDate.Split('-');
+            var parts = startDateStr.Split('-');
             if (parts.Length == 2 && 
                 int.TryParse(parts[0], out int m) && 
                 int.TryParse(parts[1], out int d))
@@ -127,8 +117,30 @@ public static class YearUtils
             isAfterOrEqual = false;
         }
 
-        return isAfterOrEqual 
+        return targetMonth <= 6 ? isAfterOrEqual 
+            ? (uint)nowInNetherlands.Year 
+            : (uint)nowInNetherlands.Year - 1
+            : isAfterOrEqual 
             ? (uint)nowInNetherlands.Year + 1 
             : (uint)nowInNetherlands.Year;
+    }
+
+    /// <summary>
+    /// Gets the current board year as the maximum membership year in the board group.
+    /// </summary>
+    public static uint GetBoardYear(PostgresDbContext db)
+    {
+        uint boardGroupId = uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1");
+        return db.GroupMemberships
+            .Where(gm => gm.GroupId == boardGroupId)
+            .Max(gm => (uint?)gm.MembershipYear) ?? GetYearForDate(System.DateTime.UtcNow, CommitteeCreationDate);
+    }
+
+    /// <summary>
+    /// Gets the current committee year as the maximum membership year in the committee group.
+    /// </summary>
+    public static uint GetCommitteeYear()
+    {
+        return GetYearForDate(System.DateTime.UtcNow, CommitteeCreationDate);
     }
 }

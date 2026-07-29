@@ -1,6 +1,6 @@
 import type { MemberResponseDto } from "~/api";
 import { AudienceFlags, parseAudience } from "~/types/AudienceMap";
-import { getFinancialYear } from "./date.util";
+import { getCommitteeYear } from "./date.util";
 
 /**
  * Determines if a member is in a specific target audience.
@@ -89,7 +89,7 @@ export const isMemberInTargetAudience = (
   if (audienceMask & AudienceFlags.ActiveMembers) {
     if (
       member.groupMemberships?.some(
-        (gm) => gm.membershipYear === getFinancialYear(),
+        (gm) => gm.membershipYear === getCommitteeYear(),
       )
     )
       return true;

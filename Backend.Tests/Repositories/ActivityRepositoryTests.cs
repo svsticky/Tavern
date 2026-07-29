@@ -174,6 +174,7 @@ public class ActivityRepositoryTests : IDisposable
     public async Task GetActivities_NonBoardIncludesPast_ThrowsUnauthorizedAccessException()
     {
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId)).Do(_ => throw new UnauthorizedAccessException());
 
         var dto = new GetActivitiesDTO { IncludePast = true };
 

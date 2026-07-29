@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
@@ -53,7 +52,6 @@ export default function ActivityTile({
 }) {
   const { t } = useTranslation();
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   useEffect(() => {
@@ -72,11 +70,7 @@ export default function ActivityTile({
 
   const canEdit =
     !!tokenParsed &&
-    (isBoardOrCandidateBoard(
-      tokenParsed,
-      boardGroupId,
-      candidateBoardGroupId,
-    ) ||
+    (isBoardOrCandidateBoard(tokenParsed) ||
       (!activity.showInKoala &&
         !activity.showOnWebsite &&
         activity.organizerId &&

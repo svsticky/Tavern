@@ -59,11 +59,9 @@ export const loadActivityData = async ({
 export const canEditActivity = (
   activity: ActivityResponseDto,
   tokenParsed: TokenParsed,
-  boardGroupId: number | null,
-  candidateBoardGroupId: number | null,
 ) => {
   return (
-    isBoardOrCandidateBoard(tokenParsed, boardGroupId, candidateBoardGroupId) ||
+    isBoardOrCandidateBoard(tokenParsed) ||
     Boolean(
       !activity.showInKoala &&
         !activity.showOnWebsite &&

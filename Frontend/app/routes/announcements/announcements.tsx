@@ -7,7 +7,6 @@ import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -31,7 +30,6 @@ import {
  */
 export default function AnnouncementsPage() {
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -59,11 +57,7 @@ export default function AnnouncementsPage() {
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(
-    tokenParsed,
-    boardGroupId,
-    candidateBoardGroupId,
-  );
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   useEffect(() => {
     if (tokenParsed) {

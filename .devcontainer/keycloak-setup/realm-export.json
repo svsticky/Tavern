@@ -827,6 +827,23 @@
             "claim.name": "locale",
             "jsonType.label": "String"
           }
+        },
+        {
+          "id": "e2a6d819-33ab-4c28-98e1-9533f81e4b90",
+          "name": "is_admin",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "is_admin",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "is_admin",
+            "jsonType.label": "boolean"
+          }
         }
       ],
       "defaultClientScopes": [
@@ -1005,6 +1022,23 @@
             "access.token.claim": "true",
             "claim.name": "student_number",
             "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "7b82f094-1a3b-4892-951c-b26a8d79201f",
+          "name": "is_admin",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "is_admin",
+            "id.token.claim": "true",
+            "lightweight.claim": "false",
+            "access.token.claim": "true",
+            "claim.name": "is_admin",
+            "jsonType.label": "boolean"
           }
         }
       ],
@@ -1579,6 +1613,22 @@
             "access.token.claim": "true",
             "claim.name": "zoneinfo",
             "jsonType.label": "String"
+          }
+        },
+        {
+          "id": "a98461f0-4572-4b2a-89a1-591bfa9809c1",
+          "name": "is_admin",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "user.attribute": "is_admin",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "is_admin",
+            "jsonType.label": "boolean"
           }
         }
       ]

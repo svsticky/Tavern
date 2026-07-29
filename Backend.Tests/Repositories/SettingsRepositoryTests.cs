@@ -228,4 +228,56 @@ public class SettingsRepositoryTests : IDisposable
         
         Assert.Equal("Cannot modify Name field.", exception.Message);
     }
+
+    [Fact]
+    public async Task CreateUpdateDeletePatchSetting_SideEffects_FinancialYearAndCommitteeDates()
+    {
+        try
+        {
+            // Create FinancialYearStartDate
+            await _repository.CreateSetting("FinancialYearStartDate", "09-01", _userId, CancellationToken.None);
+            Assert.Equal("09-01", Backend.Utils.DateTime.YearUtils.FinancialYearStartDate);
+
+            // Create CommitteeCreationDate
+            await _repository.CreateSetting("CommitteeCreationDate", "09-15", _userId, CancellationToken.None);
+            Assert.Equal("09-15", Backend.Utils.DateTime.YearUtils.CommitteeCreationDate);
+
+            // Update FinancialYearStartDate
+            await _repository.UpdateSetting("FinancialYearStartDate", "10-01", _userId, CancellationToken.None);
+            Assert.Equal("10-01", Backend.Utils.DateTime.YearUtils.FinancialYearStartDate);
+
+            // Update CommitteeCreationDate
+            await _repository.UpdateSetting("CommitteeCreationDate", "10-15", _userId, CancellationToken.None);
+            Assert.Equal("10-15", Backend.Utils.DateTime.YearUtils.CommitteeCreationDate);
+
+            // Patch FinancialYearStartDate
+            var patchFy = new JsonPatchDocument<Setting>(new List<Operation<Setting>>
+            {
+                new Operation<Setting>("replace", "/value", null, "11-01")
+            }, new DefaultContractResolver());
+            await _repository.PatchSetting("FinancialYearStartDate", patchFy, _userId, CancellationToken.None);
+            Assert.Equal("11-01", Backend.Utils.DateTime.YearUtils.FinancialYearStartDate);
+
+            // Patch CommitteeCreationDate
+            var patchCc = new JsonPatchDocument<Setting>(new List<Operation<Setting>>
+            {
+                new Operation<Setting>("replace", "/value", null, "11-15")
+            }, new DefaultContractResolver());
+            await _repository.PatchSetting("CommitteeCreationDate", patchCc, _userId, CancellationToken.None);
+            Assert.Equal("11-15", Backend.Utils.DateTime.YearUtils.CommitteeCreationDate);
+
+            // Delete FinancialYearStartDate resets to "08-01"
+            await _repository.DeleteSetting("FinancialYearStartDate", _userId, CancellationToken.None);
+            Assert.Equal("08-01", Backend.Utils.DateTime.YearUtils.FinancialYearStartDate);
+
+            // Delete CommitteeCreationDate resets to "08-01"
+            await _repository.DeleteSetting("CommitteeCreationDate", _userId, CancellationToken.None);
+            Assert.Equal("08-01", Backend.Utils.DateTime.YearUtils.CommitteeCreationDate);
+        }
+        finally
+        {
+            Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = "08-01";
+            Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = "08-01";
+        }
+    }
 }

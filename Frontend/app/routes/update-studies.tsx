@@ -1,5 +1,7 @@
 import { t } from "i18next";
+import { AlertTriangle, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import toast from "react-hot-toast";
 import {
   deleteMembersById,
   getStudies,
@@ -8,6 +10,7 @@ import {
   type StudyEnrollmentResponseDto,
   type StudyStatus,
 } from "~/api";
+import { loadStudyStartDates } from "~/components/Register/RegisterForm/RegisterForm.handlers";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import DataTableTile, { type Column } from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
@@ -15,11 +18,11 @@ import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
 import { useAuth } from "~/context/AuthContext";
-import toast from "react-hot-toast";
 import { appendErrorMessage } from "~/util/error.util";
-import { AlertTriangle, Trash2 } from "lucide-react";
-import { handleAddEnrollment, handleUpdateEnrollmentStatus } from "./admin/edit-member/edit-member.handlers";
-import { loadStudyStartDates } from "~/components/Register/RegisterForm/RegisterForm.handlers";
+import {
+  handleAddEnrollment,
+  handleUpdateEnrollmentStatus,
+} from "./admin/edit-member/edit-member.handlers";
 
 /**
  * Page to update your study. You can only update studies where you have been enrolled
@@ -129,7 +132,7 @@ export default function UpdateStudies() {
 
   useEffect(() => {
     if (startDateOptions.length > 0 && !selectedStartDate) {
-      const nowTime = new Date().getTime();
+      const nowTime = Date.now();
       let closestOption = startDateOptions[0];
       let minDiff = Math.abs(
         new Date(startDateOptions[0].value).getTime() - nowTime,
@@ -350,7 +353,11 @@ export default function UpdateStudies() {
               disabled={loading}
             >
               <Trash2 className="w-4 h-4" />
-              <span>{loading ? t("deleting", "Verwijderen...") : t("delete", "Definitief Verwijderen")}</span>
+              <span>
+                {loading
+                  ? t("deleting", "Verwijderen...")
+                  : t("delete", "Definitief Verwijderen")}
+              </span>
             </Button>
           </div>
         </div>

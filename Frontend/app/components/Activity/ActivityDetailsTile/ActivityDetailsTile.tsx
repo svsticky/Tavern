@@ -73,7 +73,7 @@ export default function ActivityDetailsTile({
   >;
 }) {
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId, member } = useApp();
+  const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   useEffect(() => {
@@ -130,11 +130,7 @@ export default function ActivityDetailsTile({
     : undefined;
   const isEnrolled = !!currentEnrollment;
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const isBoard = isBoardOrCandidateBoard(
-    tokenParsed,
-    boardGroupId,
-    candidateBoardGroupId,
-  );
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   useEffect(() => {
     setAnswers(toAnswerMap(currentEnrollment?.specificationAnswers));
@@ -299,9 +295,7 @@ export default function ActivityDetailsTile({
             onChange={(id, value) =>
               setAnswers((prev) => ({ ...prev, [id]: value }))
             }
-            disabled={
-              submitting || canEnroll
-            }
+            disabled={submitting || canEnroll}
           />
         )}
 

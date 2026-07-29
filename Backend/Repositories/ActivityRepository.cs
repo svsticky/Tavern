@@ -72,10 +72,10 @@ public class ActivityRepository : IActivityRepository
         if (dto.IncludePast)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
 
-        // Get userGroupIds to filter activities that are only visible for the organizers of the groups
+        var currentCommitteeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
         var userGroupIds = userId.HasValue
             ? await _db.GroupMemberships
-                .Where(gm => gm.MemberId == userId.Value && gm.MembershipYear == YearUtils.GetCurrentFinancialYear())
+                .Where(gm => gm.MemberId == userId.Value && gm.MembershipYear == currentCommitteeYear)
                 .Select(gm => gm.GroupId)
                 .ToListAsync()
             : new List<uint>();
@@ -109,7 +109,6 @@ public class ActivityRepository : IActivityRepository
                 .ThenInclude(e => e.SpecificationAnswers)
                     .ThenInclude(sa => sa.Question)
                         .ThenInclude(q => q.Activity)
-            .AsNoTracking()
             .FirstOrDefaultAsync(a => a.Id == id);
 
         if (activity == null)

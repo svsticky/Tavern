@@ -8,10 +8,11 @@
      
      <!-- Code Coverage Configuration -->
      <CollectCoverage>true</CollectCoverage>
-     <Exclude>[Backend]Backend.Database.DatabaseSeeder*,[Backend]Backend.ServiceExtensions*,[Backend]Backend.Services.MailServices.SMTPMailService*,[Backend]Backend.Services.MailServices.MailgunService*</Exclude>
 
      <Threshold>95</Threshold>
      <ThresholdType>line</ThresholdType>
+
+      <RunSettingsFilePath>$(MSBuildThisFileDirectory)..\.runsettings</RunSettingsFilePath>
    </PropertyGroup>
  
    <ItemGroup>

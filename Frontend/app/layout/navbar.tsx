@@ -9,7 +9,6 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router";
 import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -31,7 +30,6 @@ export default function NavBarLayout() {
   const navigate = useNavigate();
 
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   useEffect(() => {
@@ -51,11 +49,7 @@ export default function NavBarLayout() {
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(
-    tokenParsed,
-    boardGroupId,
-    candidateBoardGroupId,
-  );
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   const [imgSrc, setImgSrc] = useState<string>("/profile-picture.svg");
 

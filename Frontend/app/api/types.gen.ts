@@ -852,6 +852,10 @@ export type Member = {
      */
     suspended?: boolean;
     /**
+     * Indicates whether the member account is soft-deleted and anonymized.
+     */
+    isDeleted?: boolean;
+    /**
      * The announcements created by this member.
      */
     announcements?: Array<Announcement>;
@@ -1392,6 +1396,28 @@ export type PostRegisterReasonDto = {
 };
 
 /**
+ * Defines the DTO for creating a registration document.
+ */
+export type PostRegistrationDocumentDto = {
+    /**
+     * The Dutch name/title of the document.
+     */
+    nameDutch: string;
+    /**
+     * The English name/title of the document.
+     */
+    nameEnglish: string;
+    /**
+     * The destination URL for the document.
+     */
+    url: string;
+    /**
+     * The order in which this document should be displayed.
+     */
+    sortOrder?: number;
+};
+
+/**
  * Defines the DTO for posting a role alias, containing the necessary information for creating a new role alias, including its name and the associated parent role ID. The PostRoleAliasDTO is used to transfer data from the client to the server when creating a new role alias, ensuring that all required information is provided and validated appropriately for the creation process.
  */
 export type PostRoleAliasDto = {
@@ -1563,6 +1589,54 @@ export type RegisterSlideUpdateDto = {
      * The order in which this slide should be displayed.
      */
     sortOrder: number;
+};
+
+/**
+ * Represents the response DTO for a registration document.
+ */
+export type RegistrationDocumentResponseDto = {
+    /**
+     * The unique identifier of a RegistrationDocument, assigned incrementally.
+     */
+    id: number;
+    /**
+     * The Dutch name/title of the document.
+     */
+    nameDutch: string;
+    /**
+     * The English name/title of the document.
+     */
+    nameEnglish: string;
+    /**
+     * The destination URL for the document.
+     */
+    url: string;
+    /**
+     * The order in which this document should be displayed.
+     */
+    sortOrder: number;
+};
+
+/**
+ * Defines the DTO for updating a registration document.
+ */
+export type RegistrationDocumentUpdateDto = {
+    /**
+     * The Dutch name/title of the document.
+     */
+    nameDutch: string;
+    /**
+     * The English name/title of the document.
+     */
+    nameEnglish: string;
+    /**
+     * The destination URL for the document.
+     */
+    url: string;
+    /**
+     * The order in which this document should be displayed.
+     */
+    sortOrder?: number;
 };
 
 /**
@@ -3671,6 +3745,33 @@ export type PostGroupsByIdGroupPictureResponses = {
 
 export type PostGroupsByIdGroupPictureResponse = PostGroupsByIdGroupPictureResponses[keyof PostGroupsByIdGroupPictureResponses];
 
+export type PostGroupsPromoteBoardData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/groups/promote-board';
+};
+
+export type PostGroupsPromoteBoardErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostGroupsPromoteBoardError = PostGroupsPromoteBoardErrors[keyof PostGroupsPromoteBoardErrors];
+
+export type PostGroupsPromoteBoardResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
 export type GetMailinglistsData = {
     body?: never;
     path?: never;
@@ -5189,6 +5290,136 @@ export type PostRegisterslidesByIdImageResponses = {
 };
 
 export type PostRegisterslidesByIdImageResponse = PostRegisterslidesByIdImageResponses[keyof PostRegisterslidesByIdImageResponses];
+
+export type GetRegistrationdocumentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/registrationdocuments';
+};
+
+export type GetRegistrationdocumentsResponses = {
+    /**
+     * OK
+     */
+    200: Array<RegistrationDocumentResponseDto>;
+};
+
+export type GetRegistrationdocumentsResponse = GetRegistrationdocumentsResponses[keyof GetRegistrationdocumentsResponses];
+
+export type PostRegistrationdocumentsData = {
+    body?: PostRegistrationDocumentDto;
+    path?: never;
+    query?: never;
+    url: '/registrationdocuments';
+};
+
+export type PostRegistrationdocumentsErrors = {
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+};
+
+export type PostRegistrationdocumentsError = PostRegistrationdocumentsErrors[keyof PostRegistrationdocumentsErrors];
+
+export type PostRegistrationdocumentsResponses = {
+    /**
+     * Created
+     */
+    201: RegistrationDocumentResponseDto;
+};
+
+export type PostRegistrationdocumentsResponse = PostRegistrationdocumentsResponses[keyof PostRegistrationdocumentsResponses];
+
+export type DeleteRegistrationdocumentsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registrationdocuments/{id}';
+};
+
+export type DeleteRegistrationdocumentsByIdErrors = {
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type DeleteRegistrationdocumentsByIdError = DeleteRegistrationdocumentsByIdErrors[keyof DeleteRegistrationdocumentsByIdErrors];
+
+export type DeleteRegistrationdocumentsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type DeleteRegistrationdocumentsByIdResponse = DeleteRegistrationdocumentsByIdResponses[keyof DeleteRegistrationdocumentsByIdResponses];
+
+export type GetRegistrationdocumentsByIdData = {
+    body?: never;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registrationdocuments/{id}';
+};
+
+export type GetRegistrationdocumentsByIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type GetRegistrationdocumentsByIdError = GetRegistrationdocumentsByIdErrors[keyof GetRegistrationdocumentsByIdErrors];
+
+export type GetRegistrationdocumentsByIdResponses = {
+    /**
+     * OK
+     */
+    200: RegistrationDocumentResponseDto;
+};
+
+export type GetRegistrationdocumentsByIdResponse = GetRegistrationdocumentsByIdResponses[keyof GetRegistrationdocumentsByIdResponses];
+
+export type PutRegistrationdocumentsByIdData = {
+    body?: RegistrationDocumentUpdateDto;
+    path: {
+        id: number;
+    };
+    query?: never;
+    url: '/registrationdocuments/{id}';
+};
+
+export type PutRegistrationdocumentsByIdErrors = {
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+};
+
+export type PutRegistrationdocumentsByIdError = PutRegistrationdocumentsByIdErrors[keyof PutRegistrationdocumentsByIdErrors];
+
+export type PutRegistrationdocumentsByIdResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutRegistrationdocumentsByIdResponse = PutRegistrationdocumentsByIdResponses[keyof PutRegistrationdocumentsByIdResponses];
 
 export type GetRolealiasesData = {
     body?: never;

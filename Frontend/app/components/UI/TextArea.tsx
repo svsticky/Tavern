@@ -25,8 +25,7 @@ export default function TextArea({ label, ...props }: any) {
         {...props}
         className={cn(
           "p-2 rounded-md border border-gray-200 focus:ring-2 outline-none transition-all",
-          props.disabled &&
-            "bg-gray-100 cursor-not-allowed text-gray-500",
+          props.disabled && "bg-gray-100 cursor-not-allowed text-gray-500",
         )}
       />
     </label>

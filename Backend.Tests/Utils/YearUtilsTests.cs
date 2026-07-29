@@ -62,27 +62,72 @@ public class FinancialYearUtilsTests
     }
 
     [Fact]
-    public void GetCurrentBoardYear_CustomSettingStartDate_ReturnsCorrectYear()
+    public void GetYearForDate_CustomSettingStartDate_ReturnsCorrectYear()
     {
         // Set setting to "09-15" (September 15th)
-        YearUtils.BoardChangeDate = "09-15";
+        YearUtils.CommitteeCreationDate = "09-15";
 
         try
         {
             // September 14, 2026 -> should return 2026
             var beforeSept15 = new DateTime(2026, 9, 14, 12, 0, 0, DateTimeKind.Utc);
-            var yearBefore = YearUtils.GetCurrentBoardYear(beforeSept15);
+            var yearBefore = YearUtils.GetYearForDate(beforeSept15, "09-15");
             Assert.Equal(2026u, yearBefore);
 
             // September 15, 2026 -> should return 2027
             var onSept15 = new DateTime(2026, 9, 15, 12, 0, 0, DateTimeKind.Utc);
-            var yearOn = YearUtils.GetCurrentBoardYear(onSept15);
+            var yearOn = YearUtils.GetYearForDate(onSept15, "09-15");
             Assert.Equal(2027u, yearOn);
         }
         finally
         {
             // Reset to default
-            YearUtils.BoardChangeDate = "08-01";
+            YearUtils.CommitteeCreationDate = "08-01";
         }
     }
+
+    [Fact]
+    public void GetCurrentFinancialYear_TargetMonthLessThanOrEqualTo6_ReturnsCorrectYear()
+    {
+        YearUtils.FinancialYearStartDate = "03-01";
+        try
+        {
+            var beforeMarch1 = new DateTime(2026, 2, 28, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(2025u, YearUtils.GetCurrentFinancialYear(beforeMarch1));
+
+            var onMarch1 = new DateTime(2026, 3, 1, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(2026u, YearUtils.GetCurrentFinancialYear(onMarch1));
+        }
+        finally
+        {
+            YearUtils.FinancialYearStartDate = "08-01";
+        }
+    }
+
+    [Fact]
+    public void GetCurrentFinancialYear_InvalidOrNullStartDate_FallsBackToAugust1()
+    {
+        YearUtils.FinancialYearStartDate = "invalid-date";
+        try
+        {
+            var July31 = new DateTime(2026, 7, 31, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(2026u, YearUtils.GetCurrentFinancialYear(July31));
+
+            var Aug1 = new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(2027u, YearUtils.GetCurrentFinancialYear(Aug1));
+        }
+        finally
+        {
+            YearUtils.FinancialYearStartDate = "08-01";
+        }
+    }
+
+    [Fact]
+    public void GetCommitteeYear_ReturnsValidYear()
+    {
+        var committeeYear = YearUtils.GetCommitteeYear();
+        var currentYear = (uint)DateTime.UtcNow.Year;
+        Assert.True(committeeYear == currentYear || committeeYear == currentYear + 1);
+    }
 }
+

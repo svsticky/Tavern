@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ExternalLinkResponseDto } from "~/api";
+import { cn } from "~/util/tailwind.util";
 import Button from "../../UI/Button";
 import Form from "../../UI/Form/Form";
 import Input from "../../UI/Input";
@@ -8,7 +9,6 @@ import {
   handleLinkDelete,
   handleLinkSubmit,
 } from "./EditExternalLinkOverlay.handlers";
-import { cn } from "~/util/tailwind.util";
 
 /**
  * An overlay component used for creating or editing external link information.
@@ -102,7 +102,9 @@ export default function EditExternalLinkOverlay({
         <input
           type="file"
           accept="image/*"
-          className={cn("w-full p-2 py-auto bg-gray-100 border border-dashed rounded-md mt-1")}
+          className={cn(
+            "w-full p-2 py-auto bg-gray-100 border border-dashed rounded-md mt-1",
+          )}
           onChange={(e) => setIconFile(e.target.files?.[0] || null)}
         />
         {link && (

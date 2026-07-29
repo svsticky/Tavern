@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { RegisterReasonResponseDto } from "~/api";
+import { cn } from "~/util/tailwind.util";
 import Button from "../../UI/Button";
 import Form from "../../UI/Form/Form";
 import Input from "../../UI/Input";
@@ -8,7 +9,6 @@ import {
   handleReasonDelete,
   handleReasonSubmit,
 } from "./EditRegisterReasonOverlay.handlers";
-import { cn } from "~/util/tailwind.util";
 
 /**
  * An overlay component used for creating or editing registration reason information.
@@ -92,7 +92,9 @@ export default function EditRegisterReasonOverlay({
         <input
           type="file"
           accept="image/*"
-          className={cn("w-full p-2 py-auto border border-dashed border-gray-300 rounded-md mt-1")}
+          className={cn(
+            "w-full p-2 py-auto border border-dashed border-gray-300 rounded-md mt-1",
+          )}
           onChange={(e) => setIconFile(e.target.files?.[0] || null)}
         />
         {reason && (

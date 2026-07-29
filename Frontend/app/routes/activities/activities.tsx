@@ -7,7 +7,6 @@ import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -41,7 +40,6 @@ import {
  */
 export default function ActivitiesPage() {
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [token, setToken] = useState<string | null>(null);
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
@@ -64,11 +62,7 @@ export default function ActivitiesPage() {
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(
-    tokenParsed,
-    boardGroupId,
-    candidateBoardGroupId,
-  );
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   const navigate = useNavigate();
 

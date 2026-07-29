@@ -84,10 +84,9 @@ public class SettingsRepository : ISettingsRepository
         {
             Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = value;
         }
-        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        else if (name.Equals("CommitteeCreationDate", StringComparison.OrdinalIgnoreCase))
         {
-            Backend.Utils.DateTime.YearUtils.BoardChangeDate = value;
-            UpdateBoardRotationJob(value);
+            Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = value;
         }
 
         return setting;
@@ -107,10 +106,9 @@ public class SettingsRepository : ISettingsRepository
         {
             Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = value;
         }
-        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        else if (name.Equals("CommitteeCreationDate", StringComparison.OrdinalIgnoreCase))
         {
-            Backend.Utils.DateTime.YearUtils.BoardChangeDate = value;
-            UpdateBoardRotationJob(value);
+            Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = value;
         }
     }
 
@@ -128,10 +126,9 @@ public class SettingsRepository : ISettingsRepository
         {
             Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = "08-01";
         }
-        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        else if (name.Equals("CommitteeCreationDate", StringComparison.OrdinalIgnoreCase))
         {
-            Backend.Utils.DateTime.YearUtils.BoardChangeDate = "08-01";
-            UpdateBoardRotationJob("08-01");
+            Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = "08-01";
         }
     }
 
@@ -156,38 +153,10 @@ public class SettingsRepository : ISettingsRepository
         {
             Backend.Utils.DateTime.YearUtils.FinancialYearStartDate = setting.Value;
         }
-        else if (name.Equals("BoardChangeDate", StringComparison.OrdinalIgnoreCase))
+        else if (name.Equals("CommitteeCreationDate", StringComparison.OrdinalIgnoreCase))
         {
-            Backend.Utils.DateTime.YearUtils.BoardChangeDate = setting.Value;
-            UpdateBoardRotationJob(setting.Value);
+            Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = setting.Value;
         }
-    }
-
-    private void UpdateBoardRotationJob(string boardChangeDate)
-    {
-        int targetMonth = 8;
-        int targetDay = 1;
-        var parts = boardChangeDate.Split('-');
-        if (parts.Length == 2 && 
-            int.TryParse(parts[0], out int m) && 
-            int.TryParse(parts[1], out int d))
-        {
-            targetMonth = m;
-            targetDay = d;
-        }
-
-        var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
-        var recurringJobOptions = new RecurringJobOptions
-        {
-            TimeZone = amsterdamTimeZone
-        };
-
-        _recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
-            "annual-board-rotation",
-            service => service.PromoteCandidateBoardToBoardAsync(),
-            $"0 0 {targetDay} {targetMonth} *",
-            recurringJobOptions
-        );
     }
 
     private async Task<Setting> GetSettingOrThrow(string name, CancellationToken ct)

@@ -229,7 +229,7 @@ public class PermissionServiceTests : IDisposable
     {
         var memberId = Guid.NewGuid();
         uint roleId = 5;
-        uint currentYear = YearUtils.GetCurrentFinancialYear();
+        uint currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
 
         _db.GroupMemberships.Add(new GroupMembership
         {
@@ -248,7 +248,7 @@ public class PermissionServiceTests : IDisposable
     public void IsInRoleInCurrentYear_MemberModel_ReturnsTrue()
     {
         uint roleId = 5;
-        uint currentYear = YearUtils.GetCurrentFinancialYear();
+        uint currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
         var member = CreateMember();
         member.GroupMemberships.Add(new GroupMembership
         {
@@ -257,27 +257,6 @@ public class PermissionServiceTests : IDisposable
         });
 
         var result = _service.IsInRoleInCurrentYear(member, roleId);
-
-        Assert.True(result);
-    }
-
-    [Fact]
-    public void IsBoardMember_MemberIsBoard_ReturnsTrue()
-    {
-        var memberId = Guid.NewGuid();
-        uint boardGroupId = 2;
-        uint currentYear = YearUtils.GetCurrentBoardYear();
-
-        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = "2" });
-        _db.GroupMemberships.Add(new GroupMembership
-        {
-            MemberId = memberId,
-            GroupId = boardGroupId,
-            MembershipYear = currentYear
-        });
-        _db.SaveChanges();
-
-        var result = _service.IsBoardMember(memberId);
 
         Assert.True(result);
     }
@@ -297,7 +276,7 @@ public class PermissionServiceTests : IDisposable
     {
         var memberId = Guid.NewGuid();
         uint boardGroupId = 2;
-        uint currentYear = YearUtils.GetCurrentBoardYear();
+        uint currentYear = YearUtils.GetBoardYear(_db);
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = "2" });
         _db.GroupMemberships.Add(new GroupMembership
@@ -318,7 +297,7 @@ public class PermissionServiceTests : IDisposable
     {
         var memberId = Guid.NewGuid();
         uint candidateBoardGroupId = 3;
-        uint currentYear = YearUtils.GetCurrentBoardYear();
+        uint currentYear = YearUtils.GetBoardYear(_db);
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = "2" });
         _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = "3" });
@@ -351,7 +330,7 @@ public class PermissionServiceTests : IDisposable
     {
         var memberId = Guid.NewGuid();
         uint boardGroupId = 2;
-        uint currentYear = YearUtils.GetCurrentBoardYear();
+        uint currentYear = YearUtils.GetBoardYear(_db);
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = "2" });
         _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = "3" });

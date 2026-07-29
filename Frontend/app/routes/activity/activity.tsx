@@ -7,7 +7,6 @@ import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/Activ
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import type { Route } from "./+types/activity";
@@ -38,7 +37,6 @@ import {
  */
 export default function ActivityPage({ params }: Route.LoaderArgs) {
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [canEdit, setCanEdit] = useState(false);
   const navigate = useNavigate();
@@ -76,15 +74,8 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
       return;
     }
 
-    setCanEdit(
-      canEditActivity(
-        activity,
-        tokenParsed,
-        boardGroupId,
-        candidateBoardGroupId,
-      ),
-    );
-  }, [activity, tokenParsed, boardGroupId, candidateBoardGroupId]);
+    setCanEdit(canEditActivity(activity, tokenParsed));
+  }, [activity, tokenParsed]);
 
   if (loading || !tokenParsed) return t("loading");
 

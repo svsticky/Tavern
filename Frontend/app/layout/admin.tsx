@@ -46,9 +46,7 @@ export default function AdminLayout() {
     ) {
       return;
     }
-    if (
-      !isBoardOrCandidateBoard(tokenParsed, boardGroupId, candidateBoardGroupId)
-    ) {
+    if (!isBoardOrCandidateBoard(tokenParsed)) {
       navigate("/");
       return;
     }
