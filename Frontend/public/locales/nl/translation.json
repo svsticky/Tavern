@@ -513,5 +513,10 @@
   "delete_account_description": "Als je niet langer studeert of actief bent, kun je je account verwijderen.",
   "are_you_sure_delete_own_account": "Weet je zeker dat je je account wilt verwijderen? Alle data zal permanent worden verwijderd.",
   "board_rotation_title": "Bestuurswissel",
-  "board_rotation_desc": "Voer de bestuurswissel uit. Dit bevordert het kandidaat-bestuur naar het bestuur en zet Gratie- en Begunstiger-statussen van alle leden terug."
+  "board_rotation_desc": "Voer de bestuurswissel uit. Dit bevordert het kandidaat-bestuur naar het bestuur en zet Gratie- en Begunstiger-statussen van alle leden terug.",
+  "are_you_sure_promote_board": "Weet je zeker dat je de bestuurswissel wilt uitvoeren? Kandidaat-bestuursleden worden bevorderd naar het bestuur en Gratie/Begunstiger statussen worden teruggezet.",
+  "promote_board_success": "Bestuurswissel succesvol uitgevoerd.",
+  "promote_board_error": "Fout bij uitvoeren bestuurswissel",
+  "run_board_rotation": "Bestuurswissel Uitvoeren",
+  "board_rotation": "Bestuurswissel"
 }

@@ -247,13 +247,9 @@ export default function DashboardHeader({
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {nextActivity.participantLimit ??
-                0 -
-                  nextActivity.enrollments.filter((e) => !e.isOnWaitingList)
-                    .length}{" "}
               {nextActivity.participantLimit
-                ? `${t("of_the")} ${nextActivity.participantLimit} ${t("available")}.`
-                : `${t("enrollments").toLocaleLowerCase()}.`}
+                ? `${nextActivity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("of_the")} ${nextActivity.participantLimit} ${t("participants")}`
+                : `${nextActivity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
             </div>
             <Button
               variant="secondary"

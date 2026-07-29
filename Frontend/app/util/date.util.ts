@@ -42,6 +42,46 @@ export function formatDate(date: Date, format: DateFormatType): string {
   }
 }
 
+/**
+ * Formats an ISO date string to a local format compatible with HTML `datetime-local` inputs (YYYY-MM-DDTHH:mm).
+ *
+ * @param isoString - The ISO date string (e.g. from the API in UTC).
+ * @returns A string in the local time format "YYYY-MM-DDTHH:mm".
+ */
+export function formatForInput(isoString?: string): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const pad = (num: number) => String(num).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+/**
+ * Formats an ISO date string to a local date-only format compatible with HTML `date` inputs (YYYY-MM-DD).
+ *
+ * @param isoString - The ISO date string (e.g. from the API in UTC).
+ * @returns A string in the local date format "YYYY-MM-DD".
+ */
+export function formatDateOnly(isoString?: string): string {
+  if (!isoString) return "";
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const pad = (num: number) => String(num).padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+
+  return `${year}-${month}-${day}`;
+}
+
 let globalFinancialYearStartDate: string | null = null;
 let globalCommitteeCreationDate: string | null = null;
 
