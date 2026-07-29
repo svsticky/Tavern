@@ -2,7 +2,7 @@ import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import type {
   GroupMembershipResponseDto,
   MemberResponseDto,
@@ -22,10 +22,7 @@ import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
 import { useApp } from "~/context/AppContext";
-import {
-  getFinancialYear,
-  isWithinThreeMonthsBeforeBoardChange,
-} from "~/util/date.util";
+import { getCommitteeYear } from "~/util/date.util";
 import {
   type EditGroupFormData,
   handleAddGroupEnrollment,
@@ -81,11 +78,16 @@ export default function EditGroupPage() {
     Active: false,
   });
 
-  const { boardChangeDate } = useApp();
-  const [selectedYear, setSelectedYear] = useState(getFinancialYear());
+  const navigate = useNavigate();
+  const { committeeCreationDate, boardGroupId } = useApp();
 
-  const showNextYear = isWithinThreeMonthsBeforeBoardChange(boardChangeDate);
-  const maxYear = showNextYear ? getFinancialYear() + 1 : getFinancialYear();
+  const maxYear = getCommitteeYear(committeeCreationDate);
+
+  const [selectedYear, setSelectedYear] = useState(
+    getCommitteeYear(committeeCreationDate),
+  );
+
+  const isBoardGroup = boardGroupId === id;
 
   const yearsSince2007 = Array.from(
     { length: maxYear - 2007 + 1 },
@@ -143,7 +145,13 @@ export default function EditGroupPage() {
           <Button
             variant="secondary"
             className="h-[38px] px-3 flex items-center justify-center"
-            onClick={() => setAddEnrollmentModalIsOpen(true)}
+            onClick={
+              isBoardGroup &&
+              enrollments.length === 0 &&
+              selectedYear === maxYear
+                ? () => navigate("/admin/settings")
+                : () => setAddEnrollmentModalIsOpen(true)
+            }
             type="button"
           >
             <PlusIcon className="w-4 h-4" />

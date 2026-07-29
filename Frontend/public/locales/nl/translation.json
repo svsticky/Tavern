@@ -511,5 +511,7 @@
   "agree_to_documents": "Ik ga akkoord met de volgende documenten:",
   "are_you_sure_delete_member": "Weet je zeker dat je dit lid wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.",
   "delete_account_description": "Als je niet langer studeert of actief bent, kun je je account verwijderen.",
-  "are_you_sure_delete_own_account": "Weet je zeker dat je je account wilt verwijderen? Alle data zal permanent worden verwijderd."
+  "are_you_sure_delete_own_account": "Weet je zeker dat je je account wilt verwijderen? Alle data zal permanent worden verwijderd.",
+  "board_rotation_title": "Bestuurswissel",
+  "board_rotation_desc": "Voer de bestuurswissel uit. Dit bevordert het kandidaat-bestuur naar het bestuur en zet Gratie- en Begunstiger-statussen van alle leden terug."
 }

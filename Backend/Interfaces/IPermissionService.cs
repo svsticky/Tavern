@@ -80,6 +80,16 @@ public interface IPermissionService
     bool IsInRole(Member member, uint roleId, uint year, uint? groupId = null);
     
     /// <summary>
+    /// Checks whether a member is in the board group in the current board year.
+    /// </summary>
+    bool IsBoardMember(Guid memberId);
+
+    /// <summary>
+    /// Ensures the user is a board member and throws when not authorized.
+    /// </summary>
+    void EnsureBoardMember(Guid userId);
+
+    /// <summary>
     /// Checks whether a member is in the board or candidate board.
     /// </summary>
     /// <param name="memberId">The member user ID.</param>

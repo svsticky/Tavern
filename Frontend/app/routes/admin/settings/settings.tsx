@@ -1,7 +1,9 @@
 import { t } from "i18next";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import type { GroupResponseDto, Role } from "~/api";
+import { postGroupsPromoteBoard } from "~/api/sdk.gen";
 import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
 import ManageMailingListsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
@@ -18,6 +20,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
+import { appendErrorMessage } from "~/util/error.util";
 import {
   getCurrentRoleMappings,
   getGroupOptions,
@@ -73,6 +76,8 @@ export default function SettingsPage() {
     });
   }, []);
 
+  const [isPromotingBoard, setIsPromotingBoard] = useState(false);
+
   const requiredFieldMissing =
     !settings.BoardGroupId ||
     !settings.CandidateBoardGroupId ||
@@ -82,11 +87,41 @@ export default function SettingsPage() {
     !settings.MainBoardMail ||
     !settings.ActivityUpdateEmailSender ||
     !settings.FinancialYearStartDate ||
-    !settings.BoardChangeDate;
+    !settings.CommitteeCreationDate;
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
   const currentRoleMappings = getCurrentRoleMappings(settings);
+
+  const handlePromoteBoard = async () => {
+    if (
+      !confirm(
+        t(
+          "are_you_sure_promote_board",
+          "Weet je zeker dat je de bestuurswissel wilt uitvoeren? Kandidaat-bestuursleden worden bevorderd naar het bestuur en Gratie/Begunstiger statussen worden teruggezet.",
+        ),
+      )
+    ) {
+      return;
+    }
+    try {
+      setIsPromotingBoard(true);
+      await postGroupsPromoteBoard({ throwOnError: true });
+      toast.success(
+        t("promote_board_success", "Bestuurswissel succesvol uitgevoerd."),
+      );
+    } catch (err) {
+      console.error("Failed to promote board:", err);
+      toast.error(
+        appendErrorMessage(
+          t("promote_board_error", "Fout bij uitvoeren bestuurswissel"),
+          err,
+        ),
+      );
+    } finally {
+      setIsPromotingBoard(false);
+    }
+  };
 
   if (loading) return t("loading");
 
@@ -95,6 +130,31 @@ export default function SettingsPage() {
       <PageHeader title={t("system_settings")} />
 
       <div className="space-y-4">
+        <div>
+          <FormHeader title={t("board_rotation", "Bestuurswissel")} />
+          <Tile className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6">
+            <div>
+              <h4 className="font-semibold text-slate-800">
+                {t("board_rotation_title")}
+              </h4>
+              <p className="text-sm text-slate-500 max-w-xl">
+                {t("board_rotation_desc")}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="primary"
+              onClick={handlePromoteBoard}
+              disabled={isPromotingBoard}
+              className="bg-amber-600 hover:bg-amber-700 text-white border-none whitespace-nowrap shrink-0"
+            >
+              {isPromotingBoard
+                ? t("processing", "Bezig...")
+                : t("run_board_rotation", "Bestuurswissel Uitvoeren")}
+            </Button>
+          </Tile>
+        </div>
+
         <div>
           <FormHeader title={t("studies")} />
           <ManageStudiesDatatable />
@@ -332,12 +392,12 @@ export default function SettingsPage() {
               required
             />
             <Input
-              label={t("board_change_date")}
+              label={t("committee_creation_date", "Insteldatum Commissies")}
               placeholder="MM-DD"
-              value={settings.BoardChangeDate || ""}
+              value={settings.CommitteeCreationDate || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "BoardChangeDate",
+                  "CommitteeCreationDate",
                   e.target.value.trim(),
                   setSettings,
                 )

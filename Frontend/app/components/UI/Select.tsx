@@ -54,8 +54,7 @@ export default function Select({
         {...props}
         className={cn(
           "h-7 px-2 py-auto rounded-md border border-gray-200 focus:ring-2 outline-none transition-all hover:cursor-pointer",
-          props.disabled &&
-            "bg-gray-100 cursor-not-allowed text-gray-500",
+          props.disabled && "bg-gray-100 cursor-not-allowed text-gray-500",
         )}
       >
         {options.map((opt) => (

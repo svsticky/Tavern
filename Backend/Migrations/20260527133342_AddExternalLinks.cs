@@ -7,7 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    [ExcludeFromCodeCoverage]
     public partial class AddExternalLinks : Migration
     {
         /// <inheritdoc />

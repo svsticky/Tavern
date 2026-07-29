@@ -104,4 +104,42 @@ public class RegistrationDocumentRepositoryTests : IDisposable
         var deleted = await _db.RegistrationDocuments.FindAsync(1);
         Assert.Null(deleted);
     }
+
+    [Fact]
+    public async Task GetRegistrationDocument_Found_ReturnsDto()
+    {
+        var doc = new RegistrationDocument { Id = 5, NameDutch = "NL", NameEnglish = "EN", Url = "http://doc.nl", SortOrder = 1 };
+        _db.RegistrationDocuments.Add(doc);
+        await _db.SaveChangesAsync();
+
+        var result = await _repository.GetRegistrationDocument(5, CancellationToken.None);
+
+        Assert.NotNull(result);
+        Assert.Equal(5, result.Id);
+        Assert.Equal("NL", result.NameDutch);
+    }
+
+    [Fact]
+    public async Task GetRegistrationDocument_NotFound_ReturnsNull()
+    {
+        var result = await _repository.GetRegistrationDocument(999, CancellationToken.None);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task UpdateRegistrationDocument_NotFound_ThrowsKeyNotFoundException()
+    {
+        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "New", NameEnglish = "New", Url = "http://new", SortOrder = 2 };
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _repository.UpdateRegistrationDocument(999, dto, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DeleteRegistrationDocument_NotFound_ThrowsKeyNotFoundException()
+    {
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _repository.DeleteRegistrationDocument(999, _userId, CancellationToken.None));
+    }
 }

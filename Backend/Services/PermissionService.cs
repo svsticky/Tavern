@@ -15,11 +15,11 @@ public class PermissionService(
     #region Group Checks
     /// <inheritdoc />
     public bool IsInGroupInCurrentYear(Guid memberId, uint groupId) 
-        => IsInGroup(memberId, groupId, YearUtils.GetCurrentFinancialYear());
+        => IsInGroup(memberId, groupId, YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate));
 
     /// <inheritdoc />
     public bool IsInGroupInCurrentYear(Member member, uint groupId) 
-        => IsInGroup(member, groupId, YearUtils.GetCurrentFinancialYear());
+        => IsInGroup(member, groupId, YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate));
 
     /// <inheritdoc />
     public bool IsInGroup(Guid memberId, uint groupId, uint year)
@@ -42,11 +42,11 @@ public class PermissionService(
     #region Role Checks
     /// <inheritdoc />
     public bool IsInRoleInCurrentYear(Guid memberId, uint roleId, uint? groupId = null)
-        => IsInRole(memberId, roleId, YearUtils.GetCurrentFinancialYear(), groupId);
+        => IsInRole(memberId, roleId, YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate), groupId);
 
     /// <inheritdoc />
     public bool IsInRoleInCurrentYear(Member member, uint roleId, uint? groupId = null)
-        => IsInRole(member, roleId, YearUtils.GetCurrentFinancialYear(), groupId);
+        => IsInRole(member, roleId, YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate), groupId);
 
     /// <inheritdoc />
     public bool IsInRole(Guid memberId, uint roleId, uint year, uint? groupId = null)
@@ -85,7 +85,7 @@ public class PermissionService(
     /// <returns><c>true</c> when the member is in the board group; otherwise <c>false</c>.</returns>
     public bool IsBoardMember(Guid memberId)
     {
-        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0"), YearUtils.GetCurrentBoardYear());
+        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0"), YearUtils.GetBoardYear(db));
     }
 
     /// <summary>
@@ -104,15 +104,15 @@ public class PermissionService(
     /// <inheritdoc />
     public bool IsBoardOrCandidateBoardMember(Guid memberId)
     {
-        var boardYear = YearUtils.GetCurrentBoardYear();
-        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0"), boardYear) || 
-               IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "0"), boardYear);
+        var boardYear = YearUtils.GetBoardYear(db);
+        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1"), boardYear) || 
+               IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "1"), boardYear);
     }
 
     /// <inheritdoc />
     public void EnsureBoardOrCandidateBoardMember(Guid userId)
     {
-        if (!IsBoardOrCandidateBoardMember(userId)!)
+        if (!IsBoardOrCandidateBoardMember(userId))
         {
             logger.LogWarning("Unauthorized board-or-candidate access for user {UserId}.", userId);
             throw new UnauthorizedAccessException();

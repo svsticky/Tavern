@@ -145,7 +145,9 @@ export const loadRegistrationDocuments = async (
   try {
     const response = await getRegistrationdocuments();
     if (response.data) {
-      const sorted = [...response.data].sort((a, b) => a.sortOrder - b.sortOrder);
+      const sorted = [...response.data].sort(
+        (a, b) => a.sortOrder - b.sortOrder,
+      );
       setDocuments(sorted);
     }
   } catch (error) {

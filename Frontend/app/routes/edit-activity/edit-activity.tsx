@@ -5,7 +5,6 @@ import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -41,7 +40,6 @@ export default function ActivityFormPage() {
   const { pathname } = useLocation();
 
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -65,11 +63,7 @@ export default function ActivityFormPage() {
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(
-    tokenParsed,
-    boardGroupId,
-    candidateBoardGroupId,
-  );
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   useEffect(() => {
     if (!tokenParsed) return;

@@ -3,6 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Utils.DateTime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -230,7 +231,7 @@ public class KeycloakAPIService(
         var candidateBoardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value;
         uint boardGroupId = string.IsNullOrEmpty(boardGroupIdStr) ? 0 : uint.Parse(boardGroupIdStr);
         uint candidateBoardGroupId = string.IsNullOrEmpty(candidateBoardGroupIdStr) ? 0 : uint.Parse(candidateBoardGroupIdStr);
-        uint currentBoardYear = Utils.DateTime.YearUtils.GetCurrentBoardYear();
+        uint currentBoardYear = YearUtils.GetBoardYear(db);
 
         bool isAdmin = db.GroupMemberships.Any(gm => 
             gm.MemberId == member.Id && 

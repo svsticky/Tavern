@@ -1,4 +1,5 @@
 using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Utils.DateTime;
@@ -40,8 +41,11 @@ public class CreateNewBoardServiceTests : IDisposable
         var loggerMock = Substitute.For<ILogger<AuthOutboxWorker>>();
         _authOutboxWorkerMock = Substitute.For<AuthOutboxWorker>(serviceProviderMock, loggerMock);
 
+        var permissionServiceMock = Substitute.For<IPermissionService>();
+
         serviceProviderMock.GetService(typeof(PostgresDbContext)).Returns(_db);
         serviceProviderMock.GetService(typeof(AuthOutboxWorker)).Returns(_authOutboxWorkerMock);
+        serviceProviderMock.GetService(typeof(IPermissionService)).Returns(permissionServiceMock);
 
         _service = new CreateNewBoardService(_serviceScopeFactoryMock);
     }
@@ -53,20 +57,36 @@ public class CreateNewBoardServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task PromoteCandidateBoardToBoardAsync_WhenAlreadyRotated_DoesNothing()
+    public async Task PromoteCandidateBoardToBoardAsync_WhenMaxBoardYearSet_PromotesCandidatesForMaxBoardYearToTargetYear()
     {
         // Arrange
         var boardGroupId = 10u;
-        var currentYear = YearUtils.GetCurrentBoardYear();
+        var candidateBoardGroupId = 20u;
+        var committeeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
         
-        // Add a membership in the current year to trigger alreadyRotated
+        // maxBoardYear will be committeeYear + 1. targetYear becomes committeeYear + 2.
+        var candidateId = Guid.NewGuid();
         _db.GroupMemberships.Add(new GroupMembership
         {
             GroupId = boardGroupId,
             MemberId = Guid.NewGuid(),
-            MembershipYear = currentYear
+            MembershipYear = committeeYear
+        });
+        _db.GroupMemberships.Add(new GroupMembership
+        {
+            GroupId = boardGroupId,
+            MemberId = Guid.NewGuid(),
+            MembershipYear = committeeYear + 1
+        });
+        // Candidate board member for year (committeeYear + 1)
+        _db.GroupMemberships.Add(new GroupMembership
+        {
+            GroupId = candidateBoardGroupId,
+            MemberId = candidateId,
+            MembershipYear = committeeYear + 1
         });
         await _db.SaveChangesAsync();
 
@@ -74,10 +94,10 @@ public class CreateNewBoardServiceTests : IDisposable
         await _service.PromoteCandidateBoardToBoardAsync();
 
         // Assert
-        // Verify no candidates were processed or added
+        // Verify candidate was promoted to targetYear (committeeYear + 2)
         var totalMemberships = await _db.GroupMemberships.CountAsync();
-        Assert.Equal(1, totalMemberships);
-        await _authOutboxWorkerMock.DidNotReceiveWithAnyArgs().EnqueueTask(default, default);
+        Assert.Equal(4, totalMemberships);
+        await _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidateId);
     }
 
     [Fact]
@@ -86,7 +106,7 @@ public class CreateNewBoardServiceTests : IDisposable
         // Arrange
         var boardGroupId = 10u;
         var candidateBoardGroupId = 20u;
-        var currentYear = YearUtils.GetCurrentBoardYear();
+        var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
         var lastYear = currentYear - 1;
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
@@ -183,7 +203,7 @@ public class CreateNewBoardServiceTests : IDisposable
         // Arrange
         var boardGroupId = 10u;
         var candidateBoardGroupId = 20u;
-        var currentYear = YearUtils.GetCurrentBoardYear();
+        var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
         var lastYear = currentYear - 1;
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });

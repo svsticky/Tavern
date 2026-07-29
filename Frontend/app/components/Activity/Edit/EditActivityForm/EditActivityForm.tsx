@@ -7,6 +7,7 @@ import type {
   GroupResponseDto,
 } from "~/api";
 import { parseAudience } from "~/types/AudienceMap";
+import { cn } from "~/util/tailwind.util";
 import BorderedTile from "../../../Tiles/BorderedTile";
 import { NoContentTile } from "../../../Tiles/NoContentTile";
 import Button from "../../../UI/Button";
@@ -28,7 +29,6 @@ import {
   removeQuestion,
   updateQuestion,
 } from "./EditActivityForm.handlers";
-import { cn } from "~/util/tailwind.util";
 
 /**
  * A comprehensive form component used to either create a new association activity
@@ -336,7 +336,9 @@ export default function EditActivityForm({
                 name="Poster"
                 type="file"
                 accept="image/png, image/jpeg, image/gif, image/webp"
-                className={cn("w-full px-2 py-auto h-6 border border-dashed border-gray-300 rounded-md mt-4")}
+                className={cn(
+                  "w-full px-2 py-auto h-6 border border-dashed border-gray-300 rounded-md mt-4",
+                )}
               />
               {isEdit && (
                 <p className="text-xs text-gray-400 mt-1 italic">

@@ -326,19 +326,6 @@ internal static class ServiceExtensions
             TimeZone = amsterdamTimeZone
         };
 
-        var boardChangeDateSetting = db.Settings.FirstOrDefault(s => s.Name == "BoardChangeDate")?.Value ?? "08-01";
-        int targetMonth = 8;
-        int targetDay = 1;
-        var parts = boardChangeDateSetting.Split('-');
-        if (parts.Length == 2 && 
-            int.TryParse(parts[0], out int m) && 
-            int.TryParse(parts[1], out int d))
-        {
-            targetMonth = m;
-            targetDay = d;
-        }
-        string boardRotationCron = $"0 0 {targetDay} {targetMonth} *";
-        
         recurringJobManager.AddOrUpdate<AbstractMailService>(
             "outstanding-payments-mail", 
             service => service.SendOutstandingPaymentMails(), 
@@ -353,12 +340,6 @@ internal static class ServiceExtensions
             recurringJobOptions
         );
 
-        recurringJobManager.AddOrUpdate<ICreateNewBoardService>(
-            "annual-board-rotation",
-            service => service.PromoteCandidateBoardToBoardAsync(),
-            boardRotationCron,
-            recurringJobOptions
-        );
 
         return app;
     }

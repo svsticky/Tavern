@@ -310,7 +310,9 @@ export const handleAddEnrollment = async (
         body: {
           memberId,
           studyId: selectedStudyId,
-          enrollmentDate: startDate ? new Date(startDate).toISOString() : new Date().toISOString(),
+          enrollmentDate: startDate
+            ? new Date(startDate).toISOString()
+            : new Date().toISOString(),
         },
       });
 

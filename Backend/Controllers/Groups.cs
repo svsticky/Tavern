@@ -248,6 +248,35 @@ public class GroupsController : ControllerBase
         }
     }
 
+    // POST: groups/promote-board
+    /// <summary>
+    /// Promotes candidate board members to board members and resets member special statuses during board rotation.
+    /// </summary>
+    /// <param name="createNewBoardService">Service handling board rotation.</param>
+    /// <returns>A 200 OK status on success.</returns>
+    [HttpPost("promote-board")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> PromoteBoard([FromServices] ICreateNewBoardService createNewBoardService)
+    {
+        try
+        {
+            var userId = GetUserId();
+            await createNewBoardService.PromoteCandidateBoardToBoardAsync(userId);
+            return Ok();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ErrorResponseDto { Message = ex.Message });
+        }
+    }
+
     // PATCH: groups/5
     /// <summary>
     /// Performs a partial update on an existing group's properties using a JSON Patch document. The PatchGroup endpoint allows clients to modify specific fields of a group without providing the entire resource representation. This is particularly useful for making small adjustments to group metadata while minimizing data transfer. The endpoint validates the patch operations against the group domain model and ensures that the user is authorized to perform these specific modifications before applying changes to the database.

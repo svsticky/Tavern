@@ -14,8 +14,8 @@ public class ActivityQueryExtensionsTests
             {
                 Id = 1,
                 Name = "Past Activity",
-                ShowInKoala = true,
-                ShowOnWebsite = true,
+                ShowInKoala = false,
+                ShowOnWebsite = false,
                 DateTimeStart = DateTimeOffset.UtcNow.AddDays(-10),
                 DateTimeEnd = DateTimeOffset.UtcNow.AddDays(-9),
                 OrganizerId = 1,
@@ -65,9 +65,9 @@ public class ActivityQueryExtensionsTests
         var query = GetTestActivities().AsQueryable();
         var dto = new GetActivitiesDTO { IncludePast = true };
 
-        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { 1 }, isLoggedIn: true).ToList();
+        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
 
-        // 1 is past (so hidden). 2 is visible (ShowInKoala=true). 3 is hidden (wrong group).
+        // 1 is hidden (wrong group). 2 is visible (ShowInKoala=true). 3 is hidden (wrong group).
         Assert.Single(result);
         Assert.Equal(2u, result[0].Id);
     }

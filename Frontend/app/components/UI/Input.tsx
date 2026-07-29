@@ -41,8 +41,7 @@ export default function Input({
         {...props}
         className={cn(
           "transition-all outline-none w-full h-7 px-2 py-auto rounded-md border border-gray-200 focus:ring-2",
-          props.disabled &&
-            "bg-gray-100 cursor-not-allowed text-gray-500",
+          props.disabled && "bg-gray-100 cursor-not-allowed text-gray-500",
           className,
         )}
       />

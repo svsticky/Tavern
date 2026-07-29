@@ -1,10 +1,9 @@
-import { useTranslation } from "react-i18next";
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import type { GetAnnouncementResponseDto } from "~/api";
 import Markdown from "~/components/UI/Markdown";
-import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
@@ -22,7 +21,6 @@ export default function AnnouncementTile({
   const { t, i18n } = useTranslation();
   const isDutch = i18n.language.startsWith("nl");
   const authService = useAuth();
-  const { boardGroupId, candidateBoardGroupId } = useApp();
   const navigate = useNavigate();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
@@ -40,22 +38,18 @@ export default function AnnouncementTile({
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(
-    tokenParsed,
-    boardGroupId,
-    candidateBoardGroupId,
-  );
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   const title = isDutch ? announcement.titleDutch : announcement.titleEnglish;
-  const content = isDutch ? announcement.contentDutch : announcement.contentEnglish;
+  const content = isDutch
+    ? announcement.contentDutch
+    : announcement.contentEnglish;
 
   return (
     <Tile className={cn("border border-gray-200 p-6", className)}>
       {/* Header: Title (Links) | Date & Edit (Rechts) */}
       <div className="flex w-full justify-between items-start mb-4 gap-4">
-        <h3 className="font-bold text-lg leading-tight">
-          {title}
-        </h3>
+        <h3 className="font-bold text-lg leading-tight">{title}</h3>
 
         <div className="flex items-center gap-3 shrink-0">
           <p className="flex items-center gap-1 text-sm text-gray-500 font-medium whitespace-nowrap">

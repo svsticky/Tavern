@@ -14,26 +14,42 @@ namespace Backend.Services;
 public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : ICreateNewBoardService
 {
     /// <inheritdoc />
-    public async Task PromoteCandidateBoardToBoardAsync()
+    public async Task PromoteCandidateBoardToBoardAsync(Guid? userId = null)
     {
         using var scope = serviceScopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
+        var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+
+        if (userId.HasValue)
+        {
+            permissionService.EnsureBoardMember(userId.Value);
+        }
 
         var boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))?.Value ?? "1");
         var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))?.Value ?? "2");
         
-        var currentYear = YearUtils.GetCurrentBoardYear();
-        var lastYear = currentYear - 1;
+        var maxBoardYear = await db.GroupMemberships
+            .Where(gm => gm.GroupId == boardGroupId)
+            .MaxAsync(gm => (uint?)gm.MembershipYear);
+        
+        // Target year is the year for the upcoming/current committee creation date
+        var committeeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+        var targetYear = maxBoardYear.HasValue && maxBoardYear.Value >= committeeYear 
+            ? maxBoardYear.Value + 1 
+            : committeeYear;
 
-        bool alreadyRotated = await db.GroupMemberships.AnyAsync(gm => 
-            gm.GroupId == boardGroupId && gm.MembershipYear == currentYear);
-
-        if (alreadyRotated) return;
+        var currentYear = targetYear;
+        var lastYear = maxBoardYear ?? (currentYear - 1);
 
         var candidates = await db.GroupMemberships
             .Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == lastYear)
             .ToListAsync();
+
+        if (!candidates.Any())
+        {
+            throw new InvalidOperationException($"No candidate board members found for year {lastYear}. Cannot promote to board for year {currentYear}.");
+        }
 
         var oldBoardMembers = await db.GroupMemberships
             .Where(gm => gm.GroupId == boardGroupId && gm.MembershipYear == lastYear)

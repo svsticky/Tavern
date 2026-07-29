@@ -1,5 +1,5 @@
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getBoardYear, getFinancialYear } from "./date.util";
+import { getCommitteeYear } from "./date.util";
 
 /**
  * Checks if the current user is in a specific group with an optional role.
@@ -15,7 +15,7 @@ export const isInGroupWithName = (
   role?: string,
   year?: number,
 ): boolean => {
-  const targetYear = year !== undefined ? year : getFinancialYear();
+  const targetYear = year !== undefined ? year : getCommitteeYear();
 
   if (!tokenParsed.group_memberships) return false;
 
@@ -47,7 +47,7 @@ export const isInGroupWithId = (
   role?: string,
   year?: number,
 ): boolean => {
-  const targetYear = year !== undefined ? year : getFinancialYear();
+  const targetYear = year !== undefined ? year : getCommitteeYear();
 
   if (!tokenParsed.group_memberships) return false;
 
@@ -66,38 +66,14 @@ export const isInGroupWithId = (
 };
 
 /**
- * Checks if the current user is a board member.
- * @param tokenParsed The parsed token.
- * @returns True if the user is a board member, false otherwise.
- */
-export const isBoard = (
-  tokenParsed: TokenParsed,
-  boardGroupId: number | null,
-): boolean => {
-  if (!boardGroupId) return false;
-
-  return isInGroupWithId(tokenParsed, boardGroupId, undefined, getBoardYear());
-};
-
-/**
  * Checks if the current user is a board member or candidate board member.
  * @param tokenParsed The parsed token.
  * @returns True if the user is a board member or candidate board member, false otherwise.
  */
 export const isBoardOrCandidateBoard = (
   tokenParsed: TokenParsed | null,
-  boardGroupId: number | null,
-  candidateBoardGroupId: number | null,
 ): boolean => {
   if (!tokenParsed) return false;
 
-  const boardYear = getBoardYear();
-  const inBoard = boardGroupId
-    ? isInGroupWithId(tokenParsed, boardGroupId, undefined, boardYear)
-    : false;
-  const inCandidate = candidateBoardGroupId
-    ? isInGroupWithId(tokenParsed, candidateBoardGroupId, undefined, boardYear)
-    : false;
-
-  return inBoard || inCandidate;
+  return tokenParsed.is_admin ?? false;
 };

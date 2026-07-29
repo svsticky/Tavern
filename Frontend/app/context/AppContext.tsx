@@ -23,8 +23,8 @@ interface AppContextType {
   setCandidateBoardGroupId: (id: number) => void;
   financialYearStartDate: string | null;
   setFinancialYearStartDate: (date: string) => void;
-  boardChangeDate: string | null;
-  setBoardChangeDate: (date: string) => void;
+  committeeCreationDate: string | null;
+  setCommitteeCreationDate: (date: string) => void;
   member: MemberResponseDto | null;
   setMember: React.Dispatch<React.SetStateAction<MemberResponseDto | null>>;
 }
@@ -54,7 +54,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [financialYearStartDate, setFinancialYearStartDate] = useState<
     string | null
   >(null);
-  const [boardChangeDate, setBoardChangeDate] = useState<string | null>(null);
+  const [committeeCreationDate, setCommitteeCreationDate] = useState<
+    string | null
+  >(null);
   const [member, setMember] = useState<MemberResponseDto | null>(null);
 
   return (
@@ -66,8 +68,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         setCandidateBoardGroupId,
         financialYearStartDate,
         setFinancialYearStartDate,
-        boardChangeDate,
-        setBoardChangeDate,
+        committeeCreationDate,
+        setCommitteeCreationDate,
         member,
         setMember,
       }}

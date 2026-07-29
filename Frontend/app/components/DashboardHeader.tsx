@@ -247,10 +247,10 @@ export default function DashboardHeader({
             </div>
             <div className="flex items-center gap-2">
               <UsersRound />{" "}
-              {
-                nextActivity.participantLimit ?? 0 - nextActivity.enrollments.filter((e) => !e.isOnWaitingList)
-                  .length
-              }{" "}
+              {nextActivity.participantLimit ??
+                0 -
+                  nextActivity.enrollments.filter((e) => !e.isOnWaitingList)
+                    .length}{" "}
               {nextActivity.participantLimit
                 ? `${t("of_the")} ${nextActivity.participantLimit} ${t("available")}.`
                 : `${t("enrollments").toLocaleLowerCase()}.`}

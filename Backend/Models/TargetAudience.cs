@@ -101,7 +101,7 @@ public static class TargetAudienceHelper
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.ActiveMembers) && member.GroupMemberships?.Any(gm => gm.MembershipYear == YearUtils.GetCurrentFinancialYear()) == true)
+        if (targetAudience.HasFlag(TargetAudience.ActiveMembers) && member.GroupMemberships?.Any(gm => gm.MembershipYear == YearUtils.GetYearForDate(DateTime.UtcNow, YearUtils.CommitteeCreationDate)) == true)
         {
             return true;
         }

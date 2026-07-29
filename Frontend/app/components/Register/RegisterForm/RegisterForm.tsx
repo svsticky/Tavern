@@ -1,7 +1,11 @@
-import { useTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import type { Mailinglist, RegistrationDocumentResponseDto, Study } from "~/api";
+import type {
+  Mailinglist,
+  RegistrationDocumentResponseDto,
+  Study,
+} from "~/api";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import Button from "../../UI/Button";
@@ -28,7 +32,9 @@ export default function RegisterForm({ className }: { className?: string }) {
   const [loading, setLoading] = useState(true);
   const [studies, setStudies] = useState<Study[]>([]);
   const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
-  const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>([]);
+  const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>(
+    [],
+  );
   const [agreedDocumentIds, setAgreedDocumentIds] = useState<number[]>([]);
   const [mastersMustPay, setMastersMustPay] = useState<boolean | null>(null);
   const [price, setPrice] = useState<number | null>(null);
@@ -117,7 +123,7 @@ export default function RegisterForm({ className }: { className?: string }) {
 
   useEffect(() => {
     if (startDateOptions.length > 0 && !selectedStartDate) {
-      const nowTime = new Date().getTime();
+      const nowTime = Date.now();
       let closestOption = startDateOptions[0];
       let minDiff = Math.abs(
         new Date(startDateOptions[0].value).getTime() - nowTime,
@@ -178,7 +184,13 @@ export default function RegisterForm({ className }: { className?: string }) {
       hasStartDate &&
       allDocumentsAgreed
     );
-  }, [formData, selectedStudies, selectedStartDate, documents, agreedDocumentIds]);
+  }, [
+    formData,
+    selectedStudies,
+    selectedStartDate,
+    documents,
+    agreedDocumentIds,
+  ]);
 
   const [subscriptions, setSubscriptions] = useState<number>(0);
 
@@ -191,9 +203,7 @@ export default function RegisterForm({ className }: { className?: string }) {
   }
 
   return (
-    <Tile
-      className={cn("border border-gray-200 bg-white", className)}
-    >
+    <Tile className={cn("border border-gray-200 bg-white", className)}>
       <Form
         onSubmit={(e) =>
           handleRegisterSubmit({
@@ -368,22 +378,22 @@ export default function RegisterForm({ className }: { className?: string }) {
             ) : (
               <div className="space-y-2">
                 {mailingLists.map((list) => (
-                <Checkbox
-                  key={list.id}
-                  label={list.name}
-                  disabled={loading}
-                  checked={(subscriptions & list.bitValue!) !== 0}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const newValue = e.target.checked
-                      ? subscriptions | list.bitValue!
-                      : subscriptions & ~list.bitValue!;
-                    setSubscriptions(newValue);
-                  }}
-                />
-              ))}
-            </div>
-          )}
-        </FormSection>
+                  <Checkbox
+                    key={list.id}
+                    label={list.name}
+                    disabled={loading}
+                    checked={(subscriptions & list.bitValue!) !== 0}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const newValue = e.target.checked
+                        ? subscriptions | list.bitValue!
+                        : subscriptions & ~list.bitValue!;
+                      setSubscriptions(newValue);
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </FormSection>
         )}
 
         {documents.length > 0 && (
@@ -420,7 +430,9 @@ export default function RegisterForm({ className }: { className?: string }) {
                       >
                         {name}
                       </a>
-                      {idx < documents.length - 1 && <span className="text-gray-400">,</span>}
+                      {idx < documents.length - 1 && (
+                        <span className="text-gray-400">,</span>
+                      )}
                     </div>
                   );
                 })}

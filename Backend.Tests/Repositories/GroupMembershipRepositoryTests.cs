@@ -336,4 +336,67 @@ public class GroupMembershipRepositoryTests : IDisposable
         Assert.Equal(r2.Id, updated.RoleAliasId);
         await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value);
     }
+
+    [Fact]
+    public async Task CreateGroupMembership_GroupNotFound_ThrowsArgumentException()
+    {
+        var m = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(m);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostGroupMembershipDTO { MemberId = m.Id, GroupId = 999, MembershipYear = 2024 };
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _repository.CreateGroupMembership(dto, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreateGroupMembership_RoleAliasNotFound_ThrowsArgumentException()
+    {
+        var m = CreateTestMember(Guid.NewGuid());
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostGroupMembershipDTO { MemberId = m.Id, GroupId = g.Id, MembershipYear = 2024, RoleAliasId = 999 };
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _repository.CreateGroupMembership(dto, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task UpdateGroupMembership_NotFound_ThrowsKeyNotFoundException()
+    {
+        var dto = new GroupMembershipUpdateDTO { RoleAliasId = null };
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _repository.UpdateGroupMembership(999, _userId, dto, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PatchGroupMembership_NotFound_ThrowsKeyNotFoundException()
+    {
+        var patchDoc = new JsonPatchDocument<GroupMembership>();
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _repository.PatchGroupMembership(999, _userId, patchDoc, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task UpdateGroupMembership_InvalidRoleAlias_ThrowsArgumentException()
+    {
+        var m = CreateTestMember(Guid.NewGuid());
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+        var gm = new GroupMembership { Id = 10, Member = m, Group = g, MembershipYear = 2024 };
+        _db.GroupMemberships.Add(gm);
+        await _db.SaveChangesAsync();
+
+        var dto = new GroupMembershipUpdateDTO { RoleAliasId = 999 };
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _repository.UpdateGroupMembership(10, _userId, dto, CancellationToken.None));
+    }
 }

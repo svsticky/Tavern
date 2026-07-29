@@ -35,7 +35,8 @@ export const handleCreateBegunstigerInputChange = (
   setFormData: React.Dispatch<React.SetStateAction<CreateBegunstigerFormData>>,
 ) => {
   const { name, value, type } = e.target;
-  const val = type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
+  const val =
+    type === "checkbox" ? (e.target as HTMLInputElement).checked : value;
   setFormData((prev) => ({ ...prev, [name]: val }));
 };
 
@@ -74,7 +75,9 @@ export const handleCreateSubmit = async ({
     try {
       const studentNum = formData.studentNumber.trim();
       const finalStudentNumber = formData.isBegunstiger
-        ? studentNum.startsWith("F_") ? studentNum : `F_${studentNum}`
+        ? studentNum.startsWith("F_")
+          ? studentNum
+          : `F_${studentNum}`
         : studentNum;
 
       const payload: PostMemberDto = {
