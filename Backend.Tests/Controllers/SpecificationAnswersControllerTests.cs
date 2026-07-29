@@ -18,14 +18,14 @@ namespace Backend.Tests.Controllers;
 
 public class SpecificationAnswersControllerTests
 {
-    private readonly ISpecificationAnswerRepository _repositoryMock;
+    private readonly ISpecificationAnswerService _serviceMock;
     private readonly SpecificationAnswers _controller;
     private readonly Guid _userId;
 
     public SpecificationAnswersControllerTests()
     {
-        _repositoryMock = Substitute.For<ISpecificationAnswerRepository>();
-        _controller = new SpecificationAnswers(_repositoryMock);
+        _serviceMock = Substitute.For<ISpecificationAnswerService>();
+        _controller = new SpecificationAnswers(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -46,7 +46,7 @@ public class SpecificationAnswersControllerTests
         uint answerId = 123;
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
 
-        _repositoryMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
+        _serviceMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
             .Returns(Task.CompletedTask);
 
         // Act
@@ -54,42 +54,34 @@ public class SpecificationAnswersControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId);
+        await _serviceMock.Received(1).PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId);
     }
 
     [Fact]
-    public async Task PatchSpecificationAnswer_Forbidden_ReturnsForbid()
+    public async Task PatchSpecificationAnswer_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         uint answerId = 123;
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
 
-        _repositoryMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
+        _serviceMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchSpecificationAnswer(answerId, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchSpecificationAnswer(answerId, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchSpecificationAnswer_Error_ReturnsBadRequest()
+    public async Task PatchSpecificationAnswer_Error_ThrowsException()
     {
         // Arrange
         uint answerId = 123;
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
 
-        _repositoryMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
+        _serviceMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
             .Throws(new Exception("Invalid patch operation"));
 
-        // Act
-        var result = await _controller.PatchSpecificationAnswer(answerId, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Invalid patch operation", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchSpecificationAnswer(answerId, patchDoc, CancellationToken.None));
     }
 }

@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing external links and their icons.
 /// </summary>
-public interface IExternalLinkRepository
+public interface IExternalLinkService
 {
     /// <summary>
     /// Retrieves all external links.

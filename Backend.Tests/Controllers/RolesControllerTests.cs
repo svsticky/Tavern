@@ -18,14 +18,14 @@ namespace Backend.Tests.Controllers;
 
 public class RolesControllerTests
 {
-    private readonly IRoleRepository _repositoryMock;
+    private readonly IRoleService _serviceMock;
     private readonly RolesController _controller;
     private readonly Guid _userId;
 
     public RolesControllerTests()
     {
-        _repositoryMock = Substitute.For<IRoleRepository>();
-        _controller = new RolesController(_repositoryMock);
+        _serviceMock = Substitute.For<IRoleService>();
+        _controller = new RolesController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -44,7 +44,7 @@ public class RolesControllerTests
     {
         // Arrange
         var list = new List<Role> { new Role { Id = 1, Name = "Admin" } };
-        _repositoryMock.GetRoles(Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetRoles(Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetRoles(CancellationToken.None);
@@ -56,18 +56,13 @@ public class RolesControllerTests
     }
 
     [Fact]
-    public async Task GetRoles_Exception_ReturnsBadRequest()
+    public async Task GetRoles_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRoles(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetRoles(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetRoles(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRoles(CancellationToken.None));
     }
 
     [Fact]
@@ -75,7 +70,7 @@ public class RolesControllerTests
     {
         // Arrange
         var role = new Role { Id = 2, Name = "User" };
-        _repositoryMock.GetRole(2, Arg.Any<CancellationToken>()).Returns(role);
+        _serviceMock.GetRole(2, Arg.Any<CancellationToken>()).Returns(role);
 
         // Act
         var result = await _controller.GetRole(2, CancellationToken.None);
@@ -90,7 +85,7 @@ public class RolesControllerTests
     public async Task GetRole_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetRole(3, Arg.Any<CancellationToken>()).Returns((Role?)null);
+        _serviceMock.GetRole(3, Arg.Any<CancellationToken>()).Returns((Role?)null);
 
         // Act
         var result = await _controller.GetRole(3, CancellationToken.None);
@@ -100,18 +95,13 @@ public class RolesControllerTests
     }
 
     [Fact]
-    public async Task GetRole_Exception_ReturnsBadRequest()
+    public async Task GetRole_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetRole(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetRole(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetRole(3, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetRole(3, CancellationToken.None));
     }
 
     [Fact]
@@ -120,7 +110,7 @@ public class RolesControllerTests
         // Arrange
         var dto = new PostRoleDTO { Name = "NewRole" };
         var created = new Role { Id = 10, Name = "NewRole" };
-        _repositoryMock.CreateRole(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateRole(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostRole(dto, CancellationToken.None);
@@ -133,33 +123,25 @@ public class RolesControllerTests
     }
 
     [Fact]
-    public async Task PostRole_Unauthorized_ReturnsForbid()
+    public async Task PostRole_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostRoleDTO { Name = "NewRole" };
-        _repositoryMock.CreateRole(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateRole(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostRole(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRole(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostRole_Exception_ReturnsBadRequest()
+    public async Task PostRole_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostRoleDTO { Name = "NewRole" };
-        _repositoryMock.CreateRole(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.CreateRole(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostRole(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostRole(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -170,48 +152,37 @@ public class RolesControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteRole(1, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteRole(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteRole_NotFound_ReturnsNotFound()
+    public async Task DeleteRole_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteRole(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteRole(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteRole(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteRole(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRole_Unauthorized_ReturnsForbid()
+    public async Task DeleteRole_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteRole(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteRole(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteRole(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteRole(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteRole_Exception_ReturnsBadRequest()
+    public async Task DeleteRole_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteRole(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteRole(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteRole(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteRole(1, CancellationToken.None));
     }
 
     [Fact]
@@ -225,37 +196,29 @@ public class RolesControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchRole(1, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchRole(1, patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchRole_Unauthorized_ReturnsForbid()
+    public async Task PatchRole_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Role>();
-        _repositoryMock.PatchRole(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.PatchRole(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchRole(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchRole(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchRole_Exception_ReturnsBadRequest()
+    public async Task PatchRole_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Role>();
-        _repositoryMock.PatchRole(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchRole(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchRole(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchRole(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -269,36 +232,28 @@ public class RolesControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateRole(1, dto, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).UpdateRole(1, dto, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutRole_Unauthorized_ReturnsForbid()
+    public async Task PutRole_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new RoleUpdateDTO { Name = "Updated" };
-        _repositoryMock.UpdateRole(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.UpdateRole(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutRole(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRole(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutRole_Exception_ReturnsBadRequest()
+    public async Task PutRole_Exception_ThrowsException()
     {
         // Arrange
         var dto = new RoleUpdateDTO { Name = "Updated" };
-        _repositoryMock.UpdateRole(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.UpdateRole(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutRole(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutRole(1, dto, CancellationToken.None));
     }
 }

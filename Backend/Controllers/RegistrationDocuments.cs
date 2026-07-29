@@ -9,23 +9,17 @@ namespace Backend.Controllers;
 /// </summary>
 [ApiController]
 [Route("[controller]")]
-public class RegistrationDocumentsController(IRegistrationDocumentRepository repository) : ControllerBase
+public class RegistrationDocumentsController(IRegistrationDocumentService service) : ControllerBase
 {
     /// <summary>
     /// Retrieves all registration documents in display order.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<RegistrationDocumentResponseDTO>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<RegistrationDocumentResponseDTO>>> GetRegistrationDocuments(CancellationToken ct)
     {
-        try
-        {
-            return Ok(await repository.GetRegistrationDocuments(ct));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(await service.GetRegistrationDocuments(ct));
     }
 
     /// <summary>
@@ -34,18 +28,12 @@ public class RegistrationDocumentsController(IRegistrationDocumentRepository rep
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(RegistrationDocumentResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RegistrationDocumentResponseDTO>> GetRegistrationDocument(int id, CancellationToken ct)
     {
-        try
-        {
-            var doc = await repository.GetRegistrationDocument(id, ct);
-            if (doc == null) return NotFound();
-            return Ok(doc);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var doc = await service.GetRegistrationDocument(id, ct);
+        if (doc == null) return NotFound();
+        return Ok(doc);
     }
 
     /// <summary>
@@ -54,21 +42,11 @@ public class RegistrationDocumentsController(IRegistrationDocumentRepository rep
     [HttpPost]
     [ProducesResponseType(typeof(RegistrationDocumentResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RegistrationDocumentResponseDTO>> PostRegistrationDocument(PostRegistrationDocumentDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await repository.CreateRegistrationDocument(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetRegistrationDocument), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await service.CreateRegistrationDocument(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetRegistrationDocument), new { id = result.Id }, result);
     }
 
     /// <summary>
@@ -78,25 +56,11 @@ public class RegistrationDocumentsController(IRegistrationDocumentRepository rep
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutRegistrationDocument(int id, RegistrationDocumentUpdateDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await repository.UpdateRegistrationDocument(id, dto, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await service.UpdateRegistrationDocument(id, dto, GetUserId(), ct);
+        return NoContent();
     }
 
     /// <summary>
@@ -106,25 +70,11 @@ public class RegistrationDocumentsController(IRegistrationDocumentRepository rep
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteRegistrationDocument(int id, CancellationToken ct)
     {
-        try
-        {
-            await repository.DeleteRegistrationDocument(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await service.DeleteRegistrationDocument(id, GetUserId(), ct);
+        return NoContent();
     }
 
     private Guid GetUserId()

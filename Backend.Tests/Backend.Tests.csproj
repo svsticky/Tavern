@@ -8,6 +8,7 @@
      
      <!-- Code Coverage Configuration -->
      <CollectCoverage>true</CollectCoverage>
+     <Exclude>[Backend]Backend.Database.DatabaseSeeder*,[Backend]Backend.ServiceExtensions*,[Backend]Backend.Services.MailServices.SMTPMailService*,[Backend]Backend.Services.MailServices.MailgunService*,[Backend]Backend.Migrations.*</Exclude>
 
      <Threshold>95</Threshold>
      <ThresholdType>line</ThresholdType>

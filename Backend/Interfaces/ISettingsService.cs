@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for reading and managing application settings.
 /// </summary>
-public interface ISettingsRepository
+public interface ISettingsService
 {
     /// <summary>
     /// Retrieves settings visible to the requesting user.

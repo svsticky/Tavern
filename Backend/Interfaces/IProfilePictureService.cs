@@ -3,7 +3,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines operations for retrieving and uploading member profile pictures.
     /// </summary>
-    public interface IProfilePictureRepository
+    public interface IProfilePictureService
     {
         /// <summary>
         /// Retrieves a profile picture by storage path.

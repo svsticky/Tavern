@@ -8,24 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing the association between members and their specific academic studies. The StudyEnrollmentsController provides a set of endpoints to track when and how users are enrolled in various programs, maintaining a historical and current record of their academic status. This controller is crucial for verifying eligibility for student-specific activities and benefits within the system. It enforces strict authorization to ensure that enrollment data—which often contains sensitive academic timelines—is only accessible to the account owner or authorized administrators. By utilizing the IStudyEnrollmentRepository, the controller abstracts the complex logic of managing overlapping enrollments and status transitions.
+/// Controller for managing the association between members and their specific academic studies. The StudyEnrollmentsController provides a set of endpoints to track when and how users are enrolled in various programs, maintaining a historical and current record of their academic status. This controller is crucial for verifying eligibility for student-specific activities and benefits within the system. It enforces strict authorization to ensure that enrollment data—which often contains sensitive academic timelines—is only accessible to the account owner or authorized administrators. By utilizing the IStudyEnrollmentService, the controller abstracts the complex logic of managing overlapping enrollments and status transitions.
 /// </summary>
+/// <param name="studyEnrollmentService">The study enrollment service responsible for study enrollment business logic and data persistence.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class StudyEnrollmentsController : ControllerBase
+public class StudyEnrollmentsController(IStudyEnrollmentService studyEnrollmentService) : ControllerBase
 {
-    private readonly IStudyEnrollmentRepository _studyEnrollmentRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the StudyEnrollmentsController with the required enrollment management repository.
-    /// </summary>
-    /// <param name="studyEnrollmentRepository">The study enrollment repository responsible for study enrollment business logic and data persistence.</param>
-    public StudyEnrollmentsController(IStudyEnrollmentRepository studyEnrollmentRepository)
-    {
-        _studyEnrollmentRepository = studyEnrollmentRepository;
-    }
-
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
     /// </summary>
@@ -47,21 +37,11 @@ public class StudyEnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<StudyEnrollmentResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<StudyEnrollmentResponseDTO>>> GetStudyEnrollments([FromQuery] GetStudyEnrollmentsDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await _studyEnrollmentRepository.GetStudyEnrollments(dto, GetUserId(), ct);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await studyEnrollmentService.GetStudyEnrollments(dto, GetUserId(), ct);
+        return Ok(result);
     }
 
     // GET: studyenrollments/5
@@ -77,21 +57,11 @@ public class StudyEnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyEnrollmentResponseDTO>> GetStudyEnrollment(uint id, CancellationToken ct)
     {
-        try
-        {
-            var result = await _studyEnrollmentRepository.GetStudyEnrollment(id, GetUserId(), ct);
-            return result != null ? Ok(result) : NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await studyEnrollmentService.GetStudyEnrollment(id, GetUserId(), ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
     // POST: studyenrollments
@@ -107,21 +77,11 @@ public class StudyEnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(StudyEnrollmentResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<StudyEnrollmentResponseDTO>> PostStudyEnrollment(PostStudyEnrollmentDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await _studyEnrollmentRepository.CreateStudyEnrollment(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetStudyEnrollment), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await studyEnrollmentService.CreateStudyEnrollment(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetStudyEnrollment), new { id = result.Id }, result);
     }
 
     // DELETE: studyenrollments/5
@@ -138,21 +98,11 @@ public class StudyEnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteStudyEnrollment(uint id, CancellationToken ct)
     {
-        try
-        {
-            await _studyEnrollmentRepository.DeleteStudyEnrollment(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await studyEnrollmentService.DeleteStudyEnrollment(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // PATCH: studyenrollments/5
@@ -170,20 +120,10 @@ public class StudyEnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchStudy(uint id, [FromBody] JsonPatchDocument<StudyEnrollment> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            await _studyEnrollmentRepository.PatchStudyEnrollment(id, patchDoc, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await studyEnrollmentService.PatchStudyEnrollment(id, patchDoc, GetUserId(), ct);
+        return NoContent();
     }
 }

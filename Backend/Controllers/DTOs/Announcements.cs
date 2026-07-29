@@ -1,3 +1,5 @@
+using Backend.Models.Domain;
+using System.Linq.Expressions;
 using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers.DTOs;
@@ -84,4 +86,27 @@ public class GetAnnouncementResponseDTO
 
     /// <inheritdoc cref="Models.Domain.Announcement.CreatedAt"/>
     public required DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+        /// Projects an Announcement entity into a GetAnnouncementResponseDTO, including conditional logic to determine whether to include the creator's information based on the user's role. The method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information based on the user's role. This projection is used to transform the data from the Announcement model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
+        /// </summary>
+        /// <param name="userId">The ID of the user for whom to project the announcement.</param>
+        /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+        /// <returns>An expression that projects an Announcement entity into a GetAnnouncementResponseDTO.</returns>
+        public static Expression<Func<Announcement, GetAnnouncementResponseDTO>> ToDto(Guid userId, bool isBoard)
+        {
+            return a => new GetAnnouncementResponseDTO
+            {
+                Id = a.Id,
+                TitleDutch = a.TitleDutch,
+                TitleEnglish = a.TitleEnglish,
+                ContentDutch = a.ContentDutch,
+                ContentEnglish = a.ContentEnglish,
+                CreatedById = isBoard || a.CreatedById == userId ? a.CreatedById : null,
+                CreatedAt = a.CreatedAt,
+                CreatedByName = a.CreatedBy != null
+                    ? a.CreatedBy.FirstName + " " + a.CreatedBy.LastName
+                    : "Unknown"
+            };
+        }
 }

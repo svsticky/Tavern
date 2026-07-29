@@ -7,22 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing announcements within the system. The AnnouncementsController provides endpoints for creating, retrieving, updating, and deleting announcements, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify announcement data while providing appropriate error handling for various scenarios. The AnnouncementsController interacts with the IAnnouncementRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing announcements effectively within the application.
+/// Controller for managing announcements within the system. The AnnouncementsController provides endpoints for creating, retrieving, updating, and deleting announcements, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify announcement data while providing appropriate error handling for various scenarios. The AnnouncementsController interacts with the IAnnouncementService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing announcements effectively within the application.
 /// </summary>
+/// <param name="announcementService">The announcement service for managing announcement operations.</param>
 [Route("[controller]")]
 [ApiController]
-public class AnnouncementsController : ControllerBase
+public class AnnouncementsController(IAnnouncementService announcementService) : ControllerBase
 {
-    private readonly IAnnouncementRepository _announcementRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the AnnouncementsController class with the specified announcement repository. The constructor takes an IAnnouncementRepository as a parameter, which is used to perform various operations related to announcements, such as creating, retrieving, updating, and deleting announcements. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the repository layer.
-    /// </summary>
-    /// <param name="announcementRepository">The announcement repository for managing announcement operations.</param>
-    public AnnouncementsController(IAnnouncementRepository announcementRepository)
-    {
-        _announcementRepository = announcementRepository;
-    }
 
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
@@ -44,21 +35,11 @@ public class AnnouncementsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<GetAnnouncementResponseDTO>>> GetAnnouncements(CancellationToken cancellationToken)
     {
-        try
-        {
-            var announcements = await _announcementRepository.GetAnnouncements(GetUserId(), cancellationToken);
-            return Ok(announcements);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception e)
-        {
-            return BadRequest( new ErrorResponseDto { Message = e.Message });;
-        }
+        var announcements = await announcementService.GetAnnouncements(GetUserId(), cancellationToken);
+        return Ok(announcements);
     }
 
     // GET: announcements/5
@@ -74,26 +55,15 @@ public class AnnouncementsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GetAnnouncementResponseDTO>> GetAnnouncement(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var announcement = await _announcementRepository.GetAnnouncement(id, GetUserId(), cancellationToken);
-            
-            if (announcement == null)
-                return NotFound();
+        var announcement = await announcementService.GetAnnouncement(id, GetUserId(), cancellationToken);
         
-            return Ok(announcement);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception e)
-        {
-            return BadRequest( new ErrorResponseDto { Message = e.Message });;
-        }
-
+        if (announcement == null)
+            return NotFound();
+    
+        return Ok(announcement);
     }
 
     // POST: announcements
@@ -109,21 +79,11 @@ public class AnnouncementsController : ControllerBase
     [ProducesResponseType(typeof(Announcement), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Announcement>> PostAnnouncement(PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var created = await _announcementRepository.CreateAnnouncement(GetUserId(), dto, cancellationToken);
-            return CreatedAtAction(nameof(GetAnnouncement), new { id = created.Id }, created);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception e)
-        {
-            return BadRequest( new ErrorResponseDto { Message = e.Message });;
-        }
+        var created = await announcementService.CreateAnnouncement(GetUserId(), dto, cancellationToken);
+        return CreatedAtAction(nameof(GetAnnouncement), new { id = created.Id }, created);
     }
 
     // DELETE: announcements/5
@@ -140,25 +100,11 @@ public class AnnouncementsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteAnnouncement(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            await _announcementRepository.DeleteAnnouncement(id, GetUserId(), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception e)
-        {
-            return BadRequest( new ErrorResponseDto { Message = e.Message });;
-        }
+        await announcementService.DeleteAnnouncement(id, GetUserId(), cancellationToken);
+        return NoContent();
     }
 
     // PATCH: announcements/5
@@ -176,32 +122,14 @@ public class AnnouncementsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchAnnouncement(uint id, [FromBody] JsonPatchDocument<Announcement> patchDoc, CancellationToken cancellationToken)
     {
         if (patchDoc == null)
             return BadRequest();
 
-        try
-        {
-            await _announcementRepository.PatchAnnouncement(id, patchDoc, GetUserId(), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (ArgumentException)
-        {
-            return BadRequest();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception e)
-        {
-            return BadRequest( new ErrorResponseDto { Message = e.Message });;
-        }
+        await announcementService.PatchAnnouncement(id, patchDoc, GetUserId(), cancellationToken);
+        return NoContent();
     }
 
     // PUT: announcements/5
@@ -216,27 +144,12 @@ public class AnnouncementsController : ControllerBase
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutAnnouncement(uint id, UpdateAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            await _announcementRepository.UpdateAnnouncement(id, dto, GetUserId(), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)        
-        {
-            return Forbid();
-        }
-        catch (Exception e)
-        {
-            return BadRequest( new ErrorResponseDto { Message = e.Message });;
-        }
+        await announcementService.UpdateAnnouncement(id, dto, GetUserId(), cancellationToken);
+        return NoContent();
     }
 }

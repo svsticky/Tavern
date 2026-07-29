@@ -14,14 +14,14 @@ namespace Backend.Tests.Controllers;
 
 public class SettingsControllerTests
 {
-    private readonly ISettingsRepository _settingsRepositoryMock;
+    private readonly ISettingsService _settingsServiceMock;
     private readonly Settings _controller;
     private readonly Guid _userId;
 
     public SettingsControllerTests()
     {
-        _settingsRepositoryMock = Substitute.For<ISettingsRepository>();
-        _controller = new Settings(_settingsRepositoryMock);
+        _settingsServiceMock = Substitute.For<ISettingsService>();
+        _controller = new Settings(_settingsServiceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -43,7 +43,7 @@ public class SettingsControllerTests
         {
             new Setting { Name = "Setting1", Value = "Val1" }
         };
-        _settingsRepositoryMock.GetSettings(_userId, Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSettings(_userId, Arg.Any<CancellationToken>())
             .Returns(settingsList);
 
         // Act
@@ -56,33 +56,25 @@ public class SettingsControllerTests
     }
 
     [Fact]
-    public async Task GetSettings_Unauthorized_ReturnsForbid()
+    public async Task GetSettings_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _settingsRepositoryMock.GetSettings(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSettings(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetSettings(CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetSettings(CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetSettings_Exception_ReturnsBadRequest()
+    public async Task GetSettings_Exception_ThrowsException()
     {
         // Arrange
-        _settingsRepositoryMock.GetSettings(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSettings(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new Exception("Database error"));
 
-        // Act
-        var result = await _controller.GetSettings(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Database error", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetSettings(CancellationToken.None));
     }
 
     [Fact]
@@ -91,7 +83,7 @@ public class SettingsControllerTests
         // Arrange
         var settingName = "SpecialSetting";
         var setting = new Setting { Name = settingName, Value = "SpecialValue" };
-        _settingsRepositoryMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
             .Returns(setting);
 
         // Act
@@ -111,7 +103,7 @@ public class SettingsControllerTests
         _controller.ControllerContext.HttpContext = new DefaultHttpContext();
         var settingName = "PublicSetting";
         var setting = new Setting { Name = settingName, Value = "PublicValue" };
-        _settingsRepositoryMock.GetSetting(settingName, null, Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSetting(settingName, null, Arg.Any<CancellationToken>())
             .Returns(setting);
 
         // Act
@@ -128,7 +120,7 @@ public class SettingsControllerTests
     {
         // Arrange
         var settingName = "NonExistent";
-        _settingsRepositoryMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
             .Returns((Setting)null!);
 
         // Act
@@ -139,20 +131,15 @@ public class SettingsControllerTests
     }
 
     [Fact]
-    public async Task GetSetting_GeneralException_ReturnsBadRequest()
+    public async Task GetSetting_GeneralException_ThrowsException()
     {
         // Arrange
         var settingName = "Any";
-        _settingsRepositoryMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
             .Throws(new Exception("Error getting setting"));
 
-        // Act
-        var result = await _controller.GetSetting(settingName, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error getting setting", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetSetting(settingName, CancellationToken.None));
     }
 
     [Fact]
@@ -162,7 +149,7 @@ public class SettingsControllerTests
         var settingName = "NewSetting";
         var settingValue = "NewValue";
         var returnedSetting = new Setting { Name = settingName, Value = settingValue };
-        _settingsRepositoryMock.CreateSetting(settingName, settingValue, _userId, Arg.Any<CancellationToken>())
+        _settingsServiceMock.CreateSetting(settingName, settingValue, _userId, Arg.Any<CancellationToken>())
             .Returns(returnedSetting);
 
         // Act
@@ -176,33 +163,25 @@ public class SettingsControllerTests
     }
 
     [Fact]
-    public async Task PostSetting_Unauthorized_ReturnsForbid()
+    public async Task PostSetting_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _settingsRepositoryMock.CreateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        _settingsServiceMock.CreateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostSetting("Name", "Value", CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostSetting("Name", "Value", CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostSetting_Exception_ReturnsBadRequest()
+    public async Task PostSetting_Exception_ThrowsException()
     {
         // Arrange
-        _settingsRepositoryMock.CreateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
+        _settingsServiceMock.CreateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Throws(new Exception("Create error"));
 
-        // Act
-        var result = await _controller.PostSetting("Name", "Value", CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Create error", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostSetting("Name", "Value", CancellationToken.None));
     }
 
     [Fact]
@@ -213,51 +192,40 @@ public class SettingsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _settingsRepositoryMock.Received(1).DeleteSetting("ToDelete", _userId, Arg.Any<CancellationToken>());
+        await _settingsServiceMock.Received(1).DeleteSetting("ToDelete", _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteSetting_NotFound_ReturnsNotFound()
+    public async Task DeleteSetting_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _settingsRepositoryMock.When(x => x.DeleteSetting(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.DeleteSetting(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteSetting("ToDelete", CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteSetting("ToDelete", CancellationToken.None));
+}
 
     [Fact]
-    public async Task DeleteSetting_Unauthorized_ReturnsForbid()
+    public async Task DeleteSetting_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _settingsRepositoryMock.When(x => x.DeleteSetting(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.DeleteSetting(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteSetting("ToDelete", CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteSetting("ToDelete", CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteSetting_Exception_ReturnsBadRequest()
+    public async Task DeleteSetting_Exception_ThrowsException()
     {
         // Arrange
-        _settingsRepositoryMock.When(x => x.DeleteSetting(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.DeleteSetting(Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new Exception("Delete error"));
 
-        // Act
-        var result = await _controller.DeleteSetting("ToDelete", CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Delete error", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteSetting("ToDelete", CancellationToken.None));
     }
 
     [Fact]
@@ -271,39 +239,31 @@ public class SettingsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _settingsRepositoryMock.Received(1).PatchSetting("ToPatch", patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _settingsServiceMock.Received(1).PatchSetting("ToPatch", patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchSetting_Unauthorized_ReturnsForbid()
+    public async Task PatchSetting_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Setting>();
-        _settingsRepositoryMock.When(x => x.PatchSetting(Arg.Any<string>(), Arg.Any<JsonPatchDocument<Setting>>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.PatchSetting(Arg.Any<string>(), Arg.Any<JsonPatchDocument<Setting>>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchSetting("ToPatch", patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchSetting("ToPatch", patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchSetting_Exception_ReturnsBadRequest()
+    public async Task PatchSetting_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Setting>();
-        _settingsRepositoryMock.When(x => x.PatchSetting(Arg.Any<string>(), Arg.Any<JsonPatchDocument<Setting>>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.PatchSetting(Arg.Any<string>(), Arg.Any<JsonPatchDocument<Setting>>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new Exception("Patch error"));
 
-        // Act
-        var result = await _controller.PatchSetting("ToPatch", patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Patch error", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchSetting("ToPatch", patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -314,51 +274,40 @@ public class SettingsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _settingsRepositoryMock.Received(1).UpdateSetting("ToPut", "NewVal", _userId, Arg.Any<CancellationToken>());
+        await _settingsServiceMock.Received(1).UpdateSetting("ToPut", "NewVal", _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutSetting_Unauthorized_ReturnsForbid()
+    public async Task PutSetting_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _settingsRepositoryMock.When(x => x.UpdateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.UpdateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutSetting("ToPut", "NewVal", CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutSetting("ToPut", "NewVal", CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutSetting_Exception_ReturnsBadRequest()
+    public async Task PutSetting_Exception_ThrowsException()
     {
         // Arrange
-        _settingsRepositoryMock.When(x => x.UpdateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
+        _settingsServiceMock.When(x => x.UpdateSetting(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
             .Do(x => throw new Exception("Put error"));
 
-        // Act
-        var result = await _controller.PutSetting("ToPut", "NewVal", CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Put error", errorDto.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutSetting("ToPut", "NewVal", CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetSetting_Unauthorized_ReturnsForbid()
+    public async Task GetSetting_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var settingName = "SpecialSetting";
-        _settingsRepositoryMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
+        _settingsServiceMock.GetSetting(settingName, _userId, Arg.Any<CancellationToken>())
             .Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetSetting(settingName, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetSetting(settingName, CancellationToken.None));
     }
 }

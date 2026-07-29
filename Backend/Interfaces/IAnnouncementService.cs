@@ -7,7 +7,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for creating, reading, updating, and deleting announcements.
 /// </summary>
-public interface IAnnouncementRepository
+public interface IAnnouncementService
 {
     /// <summary>
     /// Retrieves announcements visible to the requesting user.

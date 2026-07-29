@@ -19,16 +19,16 @@ namespace Backend.Tests.Controllers;
 
 public class MembersControllerTests
 {
-    private readonly IMemberRepository _memberRepositoryMock;
-    private readonly IProfilePictureRepository _profilePictureRepositoryMock;
+    private readonly IMemberService _memberServiceMock;
+    private readonly IProfilePictureService _profilePictureServiceMock;
     private readonly MembersController _controller;
     private readonly Guid _userId;
 
     public MembersControllerTests()
     {
-        _memberRepositoryMock = Substitute.For<IMemberRepository>();
-        _profilePictureRepositoryMock = Substitute.For<IProfilePictureRepository>();
-        _controller = new MembersController(_memberRepositoryMock, _profilePictureRepositoryMock);
+        _memberServiceMock = Substitute.For<IMemberService>();
+        _profilePictureServiceMock = Substitute.For<IProfilePictureService>();
+        _controller = new MembersController(_memberServiceMock, _profilePictureServiceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -48,7 +48,7 @@ public class MembersControllerTests
         // Arrange
         var dto = new GetMembersDto();
         var list = new List<MemberResponseDTO> { new MemberResponseDTO { Id = Guid.NewGuid(), FirstName = "Alice" } };
-        _memberRepositoryMock.GetMembers(dto, _userId, Arg.Any<CancellationToken>()).Returns(list);
+        _memberServiceMock.GetMembers(dto, _userId, Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetMembers(dto, CancellationToken.None);
@@ -60,33 +60,25 @@ public class MembersControllerTests
     }
 
     [Fact]
-    public async Task GetMembers_Unauthorized_ReturnsForbid()
+    public async Task GetMembers_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new GetMembersDto();
-        _memberRepositoryMock.GetMembers(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _memberServiceMock.GetMembers(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetMembers(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetMembers(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetMembers_Exception_ReturnsBadRequest()
+    public async Task GetMembers_Exception_ThrowsException()
     {
         // Arrange
         var dto = new GetMembersDto();
-        _memberRepositoryMock.GetMembers(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.GetMembers(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetMembers(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetMembers(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -95,7 +87,7 @@ public class MembersControllerTests
         // Arrange
         var targetId = Guid.NewGuid();
         var member = new MemberResponseDTO { Id = targetId, FirstName = "Bob" };
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
 
         // Act
         var result = await _controller.GetMember(targetId, CancellationToken.None);
@@ -111,7 +103,7 @@ public class MembersControllerTests
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns((MemberResponseDTO?)null);
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns((MemberResponseDTO?)null);
 
         // Act
         var result = await _controller.GetMember(targetId, CancellationToken.None);
@@ -121,33 +113,25 @@ public class MembersControllerTests
     }
 
     [Fact]
-    public async Task GetMember_Unauthorized_ReturnsForbid()
+    public async Task GetMember_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetMember(targetId, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetMember(targetId, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetMember_Exception_ReturnsBadRequest()
+    public async Task GetMember_Exception_ThrowsException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetMember(targetId, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetMember(targetId, CancellationToken.None));
     }
 
     [Fact]
@@ -181,7 +165,7 @@ public class MembersControllerTests
             PostalCode = "1234AB",
             City = "Enschede"
         };
-        _memberRepositoryMock.CreateMember(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _memberServiceMock.CreateMember(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostMember(dto, CancellationToken.None);
@@ -225,7 +209,7 @@ public class MembersControllerTests
             PostalCode = "1234AB",
             City = "Enschede"
         };
-        _memberRepositoryMock.CreateMember(dto, null, Arg.Any<CancellationToken>()).Returns(created);
+        _memberServiceMock.CreateMember(dto, null, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostMember(dto, CancellationToken.None);
@@ -236,7 +220,7 @@ public class MembersControllerTests
     }
 
     [Fact]
-    public async Task PostMember_Exception_ReturnsBadRequest()
+    public async Task PostMember_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostMemberDTO
@@ -253,16 +237,11 @@ public class MembersControllerTests
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
             PreferredLanguage = Language.NL
         };
-        _memberRepositoryMock.CreateMember(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.CreateMember(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostMember(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostMember(dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task DeleteMember_Success_ReturnsNoContent()
@@ -273,51 +252,40 @@ public class MembersControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _memberRepositoryMock.Received(1).DeleteMember(targetId, _userId, Arg.Any<CancellationToken>());
+        await _memberServiceMock.Received(1).DeleteMember(targetId, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteMember_Unauthorized_ReturnsForbid()
+    public async Task DeleteMember_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.DeleteMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _memberServiceMock.DeleteMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteMember(targetId, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteMember(targetId, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteMember_NotFound_ReturnsNotFound()
+    public async Task DeleteMember_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.DeleteMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _memberServiceMock.DeleteMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteMember(targetId, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteMember(targetId, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteMember_Exception_ReturnsBadRequest()
+    public async Task DeleteMember_Exception_ThrowsException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.DeleteMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.DeleteMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteMember(targetId, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteMember(targetId, CancellationToken.None));
     }
 
     [Fact]
@@ -332,39 +300,31 @@ public class MembersControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _memberRepositoryMock.Received(1).PatchMember(targetId, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _memberServiceMock.Received(1).PatchMember(targetId, patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchMember_NotFound_ReturnsNotFound()
+    public async Task PatchMember_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
         var patchDoc = new JsonPatchDocument<Member>();
-        _memberRepositoryMock.PatchMember(targetId, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _memberServiceMock.PatchMember(targetId, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PatchMember(targetId, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchMember(targetId, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchMember_Exception_ReturnsBadRequest()
+    public async Task PatchMember_Exception_ThrowsException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
         var patchDoc = new JsonPatchDocument<Member>();
-        _memberRepositoryMock.PatchMember(targetId, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.PatchMember(targetId, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchMember(targetId, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchMember(targetId, patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -392,11 +352,11 @@ public class MembersControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _memberRepositoryMock.Received(1).UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>());
+        await _memberServiceMock.Received(1).UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutMember_Unauthorized_ReturnsForbid()
+    public async Task PutMember_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
@@ -414,17 +374,14 @@ public class MembersControllerTests
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
             PreferredLanguage = Language.NL
         };
-        _memberRepositoryMock.UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _memberServiceMock.UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutMember(targetId, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutMember_NotFound_ReturnsNotFound()
+    public async Task PutMember_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
@@ -442,17 +399,14 @@ public class MembersControllerTests
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
             PreferredLanguage = Language.NL
         };
-        _memberRepositoryMock.UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _memberServiceMock.UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutMember(targetId, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
+}
 
     [Fact]
-    public async Task PutMember_Exception_ReturnsBadRequest()
+    public async Task PutMember_Exception_ThrowsException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
@@ -470,23 +424,18 @@ public class MembersControllerTests
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
             PreferredLanguage = Language.NL
         };
-        _memberRepositoryMock.UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.UpdateMember(targetId, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutMember(targetId, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task GetProfilePicture_GroupOrPathNotFound_ReturnsNotFound()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns((MemberResponseDTO?)null);
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns((MemberResponseDTO?)null);
 
         // Act
         var result = await _controller.GetProfilePicture(targetId, CancellationToken.None);
@@ -502,8 +451,8 @@ public class MembersControllerTests
         // Arrange
         var targetId = Guid.NewGuid();
         var member = new MemberResponseDTO { Id = targetId, ProfilePicturePath = "some/path.png" };
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
-        _profilePictureRepositoryMock.GetProfilePictureByPath("some/path.png").Returns(Task.FromResult<(Stream Stream, string ContentType)?>(null));
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
+        _profilePictureServiceMock.GetProfilePictureByPath("some/path.png").Returns(Task.FromResult<(Stream Stream, string ContentType)?>(null));
 
         // Act
         var result = await _controller.GetProfilePicture(targetId, CancellationToken.None);
@@ -519,10 +468,10 @@ public class MembersControllerTests
         // Arrange
         var targetId = Guid.NewGuid();
         var member = new MemberResponseDTO { Id = targetId, ProfilePicturePath = "some/path.png" };
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
         
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        _profilePictureRepositoryMock.GetProfilePictureByPath("some/path.png").Returns(Task.FromResult<(Stream Stream, string ContentType)?>((stream, "image/png")));
+        _profilePictureServiceMock.GetProfilePictureByPath("some/path.png").Returns(Task.FromResult<(Stream Stream, string ContentType)?>((stream, "image/png")));
 
         // Act
         var result = await _controller.GetProfilePicture(targetId, CancellationToken.None);
@@ -534,19 +483,14 @@ public class MembersControllerTests
     }
 
     [Fact]
-    public async Task GetProfilePicture_Exception_ReturnsBadRequest()
+    public async Task GetProfilePicture_Exception_ThrowsException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetProfilePicture(targetId, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetProfilePicture(targetId, CancellationToken.None));
     }
 
     [Fact]
@@ -560,50 +504,40 @@ public class MembersControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _memberRepositoryMock.Received(1).DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>());
+        await _memberServiceMock.Received(1).DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteProfilePicture_Unauthorized_ReturnsForbid()
+    public async Task DeleteProfilePicture_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _memberServiceMock.DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteProfilePicture(targetId, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteProfilePicture(targetId, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteProfilePicture_NotFound_ReturnsNotFound()
+    public async Task DeleteProfilePicture_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _memberServiceMock.DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteProfilePicture(targetId, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteProfilePicture(targetId, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteProfilePicture_Exception_ReturnsBadRequest()
+    public async Task DeleteProfilePicture_Exception_ThrowsException()
     {
         // Arrange
         var targetId = Guid.NewGuid();
-        _memberRepositoryMock.DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.DeleteProfilePicture(targetId, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteProfilePicture(targetId, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Equal("Error", badRequestResult.Value);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteProfilePicture(targetId, CancellationToken.None));
     }
 
     [Fact]
@@ -636,13 +570,13 @@ public class MembersControllerTests
 
         try
         {
-            var controller = new MembersController(_memberRepositoryMock, _profilePictureRepositoryMock);
+            var controller = new MembersController(_memberServiceMock, _profilePictureServiceMock);
             // Act
             var result = await controller.UpdateEmailWebhook("supersecret", targetUser, CancellationToken.None);
 
             // Assert
             Assert.IsType<OkResult>(result);
-            await _memberRepositoryMock.Received(1).RefreshEmail(targetUser, Arg.Any<CancellationToken>());
+            await _memberServiceMock.Received(1).RefreshEmail(targetUser, Arg.Any<CancellationToken>());
         }
         finally
         {
@@ -651,22 +585,18 @@ public class MembersControllerTests
     }
 
     [Fact]
-    public async Task UpdateEmailWebhook_Exception_ReturnsBadRequest()
+    public async Task UpdateEmailWebhook_Exception_ThrowsException()
     {
         // Arrange
         Environment.SetEnvironmentVariable("AUTH_WEBHOOK_SECRET", "supersecret");
         var targetUser = Guid.NewGuid();
-        _memberRepositoryMock.RefreshEmail(targetUser, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _memberServiceMock.RefreshEmail(targetUser, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         try
         {
-            var controller = new MembersController(_memberRepositoryMock, _profilePictureRepositoryMock);
-            // Act
-            var result = await controller.UpdateEmailWebhook("supersecret", targetUser, CancellationToken.None);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            Assert.Equal("Error", badRequestResult.Value);
+            var controller = new MembersController(_memberServiceMock, _profilePictureServiceMock);
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => controller.UpdateEmailWebhook("supersecret", targetUser, CancellationToken.None));
         }
         finally
         {

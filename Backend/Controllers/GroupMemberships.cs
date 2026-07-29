@@ -8,24 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing group memberships within the system. The GroupMembershipsController provides endpoints for creating, retrieving, updating, and deleting group memberships, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify group membership data while providing appropriate error handling for various scenarios. The GroupMembershipsController interacts with the IGroupMembershipRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing group memberships effectively within the application.
+/// Controller for managing group memberships within the system. The GroupMembershipsController provides endpoints for creating, retrieving, updating, and deleting group memberships, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify group membership data while providing appropriate error handling for various scenarios. The GroupMembershipsController interacts with the IGroupMembershipService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing group memberships effectively within the application.
 /// </summary>
+/// <param name="groupMembershipService">The group membership service for managing group membership operations.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class GroupMembershipsController : ControllerBase
+public class GroupMembershipsController(IGroupMembershipService groupMembershipService) : ControllerBase
 {
-    private readonly IGroupMembershipRepository _groupMembershipRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the GroupMembershipsController class with the specified group membership repository. The constructor takes an IGroupMembershipRepository as a parameter, which is used to perform various operations related to group memberships, such as creating, retrieving, updating, and deleting group memberships. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the repository layer.
-    /// </summary>
-    /// <param name="groupMembershipRepository">The group membership repository for managing group membership operations.</param>
-    public GroupMembershipsController(IGroupMembershipRepository groupMembershipRepository)
-    {
-        _groupMembershipRepository = groupMembershipRepository;
-    }
-
     private Guid GetUserId()
     {
         return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
@@ -43,25 +33,14 @@ public class GroupMembershipsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<GroupMembershipResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<GroupMembershipResponseDTO>>> GetGroupMemberships(
         [FromQuery] GetGroupMembershipsDTO dto,
         CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            var result = await _groupMembershipRepository.GetGroupMemberships(dto, userId, cancellationToken);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        var result = await groupMembershipService.GetGroupMemberships(dto, userId, cancellationToken);
+        return Ok(result);
     }
 
     // GET: groupMemberships/5
@@ -77,27 +56,16 @@ public class GroupMembershipsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GroupMembershipResponseDTO>> GetGroupMembership(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
+        var userId = GetUserId();
+        var result = await groupMembershipService.GetGroupMembership(id, userId, cancellationToken);
 
-            var result = await _groupMembershipRepository.GetGroupMembership(id, userId, cancellationToken);
+        if (result == null)
+            return NotFound();
 
-            if (result == null)
-                return NotFound();
-
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(result);
     }
 
     // POST: groupMemberships
@@ -113,30 +81,19 @@ public class GroupMembershipsController : ControllerBase
     [ProducesResponseType(typeof(GroupMembership), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GroupMembership>> PostGroupMembership(
         PostGroupMembershipDTO membershipDto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
+        var userId = GetUserId();
+        var created = await groupMembershipService.CreateGroupMembership(membershipDto, userId, cancellationToken);
 
-            var created = await _groupMembershipRepository.CreateGroupMembership(membershipDto, userId, cancellationToken);
-
-            return CreatedAtAction(
-                nameof(GetGroupMembership),
-                new { id = created.Id },
-                created
-            );
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return CreatedAtAction(
+            nameof(GetGroupMembership),
+            new { id = created.Id },
+            created
+        );
     }
 
     // DELETE: groupMemberships/5
@@ -151,28 +108,12 @@ public class GroupMembershipsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteGroupMembership(uint id, CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            await _groupMembershipRepository.DeleteGroupMembership(id, userId, cancellationToken);
-
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await groupMembershipService.DeleteGroupMembership(id, userId, cancellationToken);
+        return NoContent();
     }
 
     // PATCH: groupMemberships/5
@@ -190,6 +131,7 @@ public class GroupMembershipsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchGroupMembership(
         uint id,
         [FromBody] JsonPatchDocument<GroupMembership> patchDoc,
@@ -198,26 +140,9 @@ public class GroupMembershipsController : ControllerBase
         if (patchDoc == null)
             return BadRequest();
 
-        try
-        {
-            var userId = GetUserId();
-
-            await _groupMembershipRepository.PatchGroupMembership(id, userId, patchDoc, cancellationToken);
-
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await groupMembershipService.PatchGroupMembership(id, userId, patchDoc, cancellationToken);
+        return NoContent();
     }
 
     // PUT: groupMemberships/5
@@ -235,30 +160,14 @@ public class GroupMembershipsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutGroupMembership(
         uint id,
         GroupMembershipUpdateDTO membershipDto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var userId = GetUserId();
-
-            await _groupMembershipRepository.UpdateGroupMembership(id, userId, membershipDto, cancellationToken);
-
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var userId = GetUserId();
+        await groupMembershipService.UpdateGroupMembership(id, userId, membershipDto, cancellationToken);
+        return NoContent();
     }
 }

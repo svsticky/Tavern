@@ -3,7 +3,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Repositories;
+namespace Backend.Services.Domain;
 
 /// <summary>
 /// Implements payment validation and balance calculations.

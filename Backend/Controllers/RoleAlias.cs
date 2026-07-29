@@ -8,23 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing role aliases within the system. The RoleAliasesController provides a set of endpoints for defining and managing alternative names for system roles, allowing for greater flexibility and user-friendly nomenclature across the application. This controller handles the full CRUD lifecycle for role aliases, ensuring that changes to role naming conventions are performed securely by authorized personnel. By interacting with the IRoleAliasRepository, the controller maintains a mapping between internal system roles and their public-facing aliases, facilitating a more intuitive experience for end-users while preserving the integrity of the underlying authorization logic.
+/// Controller for managing role aliases within the system. The RoleAliasesController provides a set of endpoints for defining and managing alternative names for system roles, allowing for greater flexibility and user-friendly nomenclature across the application. This controller handles the full CRUD lifecycle for role aliases, ensuring that changes to role naming conventions are performed securely by authorized personnel. By interacting with the IRoleAliasService, the controller maintains a mapping between internal system roles and their public-facing aliases, facilitating a more intuitive experience for end-users while preserving the integrity of the underlying authorization logic.
 /// </summary>
+/// <param name="roleAliasService">The service responsible for role alias business logic and data persistence.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class RoleAliasesController : ControllerBase
+public class RoleAliasesController(IRoleAliasService roleAliasService) : ControllerBase
 {
-    private readonly IRoleAliasRepository _roleAliasRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the RoleAliasesController with the required role alias management service.
-    /// </summary>
-    /// <param name="roleAliasRepository">The repository responsible for role alias business logic and data persistence.</param>
-    public RoleAliasesController(IRoleAliasRepository roleAliasRepository)
-    {
-        _roleAliasRepository = roleAliasRepository;
-    }
 
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
@@ -45,16 +36,10 @@ public class RoleAliasesController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(IEnumerable<RoleAlias>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<RoleAlias>>> GetRoleAliases(CancellationToken ct)
     {
-        try
-        {
-            return Ok(await _roleAliasRepository.GetRoleAliases(ct));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(await roleAliasService.GetRoleAliases(ct));
     }
 
     // GET: rolealiases/{id}
@@ -69,17 +54,11 @@ public class RoleAliasesController : ControllerBase
     [ProducesResponseType(typeof(RoleAlias), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RoleAlias>> GetRoleAlias(uint id, CancellationToken ct)
     {
-        try
-        {
-            var result = await _roleAliasRepository.GetRoleAlias(id, ct);
-            return result != null ? Ok(result) : NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await roleAliasService.GetRoleAlias(id, ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
     // POST: rolealiases
@@ -95,21 +74,11 @@ public class RoleAliasesController : ControllerBase
     [ProducesResponseType(typeof(RoleAlias), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RoleAlias>> PostRoleAlias(PostRoleAliasDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await _roleAliasRepository.CreateRoleAlias(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetRoleAlias), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await roleAliasService.CreateRoleAlias(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetRoleAlias), new { id = result.Id }, result);
     }
 
     // DELETE: rolealiases/{id}
@@ -126,25 +95,11 @@ public class RoleAliasesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteRoleAlias(uint id, CancellationToken ct)
     {
-        try
-        {
-            await _roleAliasRepository.DeleteRoleAlias(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await roleAliasService.DeleteRoleAlias(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // PATCH: rolealiases/{id}
@@ -161,21 +116,11 @@ public class RoleAliasesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            await _roleAliasRepository.PatchRoleAlias(id, patchDoc, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await roleAliasService.PatchRoleAlias(id, patchDoc, GetUserId(), ct);
+        return NoContent();
     }
 
     // PUT: rolealiases/{id}
@@ -193,20 +138,10 @@ public class RoleAliasesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutRoleAlias(uint id, RoleAliasUpdateDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await _roleAliasRepository.UpdateRoleAlias(id, dto, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await roleAliasService.UpdateRoleAlias(id, dto, GetUserId(), ct);
+        return NoContent();
     }
 }

@@ -19,14 +19,14 @@ namespace Backend.Tests.Controllers;
 
 public class GroupsControllerTests
 {
-    private readonly IGroupRepository _repositoryMock;
+    private readonly IGroupService _serviceMock;
     private readonly GroupsController _controller;
     private readonly Guid _userId;
 
     public GroupsControllerTests()
     {
-        _repositoryMock = Substitute.For<IGroupRepository>();
-        _controller = new GroupsController(_repositoryMock);
+        _serviceMock = Substitute.For<IGroupService>();
+        _controller = new GroupsController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -46,7 +46,7 @@ public class GroupsControllerTests
         // Arrange
         var dto = new GetGroupDTO();
         var list = new List<GroupResponseDTO> { new GroupResponseDTO { Id = 1, Name = "Committee", Active = true, Type = GroupType.Committee } };
-        _repositoryMock.GetGroups(_userId, dto, Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetGroups(_userId, dto, Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetGroups(dto, CancellationToken.None);
@@ -58,33 +58,25 @@ public class GroupsControllerTests
     }
 
     [Fact]
-    public async Task GetGroups_Unauthorized_ReturnsForbid()
+    public async Task GetGroups_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new GetGroupDTO();
-        _repositoryMock.GetGroups(_userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetGroups(_userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetGroups(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetGroups(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetGroups_Exception_ReturnsBadRequest()
+    public async Task GetGroups_Exception_ThrowsException()
     {
         // Arrange
         var dto = new GetGroupDTO();
-        _repositoryMock.GetGroups(_userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetGroups(_userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetGroups(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetGroups(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -92,7 +84,7 @@ public class GroupsControllerTests
     {
         // Arrange
         var group = new GroupResponseDTO { Id = 2, Name = "Board", Active = true, Type = GroupType.Committee };
-        _repositoryMock.GetGroup(2, Arg.Any<CancellationToken>()).Returns(group);
+        _serviceMock.GetGroup(2, Arg.Any<CancellationToken>()).Returns(group);
 
         // Act
         var result = await _controller.GetGroup(2, CancellationToken.None);
@@ -107,7 +99,7 @@ public class GroupsControllerTests
     public async Task GetGroup_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetGroup(3, Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
+        _serviceMock.GetGroup(3, Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
 
         // Act
         var result = await _controller.GetGroup(3, CancellationToken.None);
@@ -117,31 +109,23 @@ public class GroupsControllerTests
     }
 
     [Fact]
-    public async Task GetGroup_Unauthorized_ReturnsForbid()
+    public async Task GetGroup_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetGroup(3, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetGroup(3, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetGroup(3, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetGroup(3, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetGroup_Exception_ReturnsBadRequest()
+    public async Task GetGroup_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetGroup(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetGroup(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetGroup(3, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetGroup(3, CancellationToken.None));
     }
 
     [Fact]
@@ -150,7 +134,7 @@ public class GroupsControllerTests
         // Arrange
         var dto = new PostGroupDTO { Name = "NewGroup", Type = GroupType.Committee, GroupPicture = Substitute.For<IFormFile>() };
         var created = new Group { Id = 10, Name = "NewGroup" };
-        _repositoryMock.CreateGroup(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateGroup(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostGroup(dto, CancellationToken.None);
@@ -163,33 +147,25 @@ public class GroupsControllerTests
     }
 
     [Fact]
-    public async Task PostGroup_Unauthorized_ReturnsForbid()
+    public async Task PostGroup_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostGroupDTO { Name = "NewGroup", Type = GroupType.Committee, GroupPicture = Substitute.For<IFormFile>() };
-        _repositoryMock.CreateGroup(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateGroup(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostGroup(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostGroup(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostGroup_Exception_ReturnsBadRequest()
+    public async Task PostGroup_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostGroupDTO { Name = "NewGroup", Type = GroupType.Committee, GroupPicture = Substitute.For<IFormFile>() };
-        _repositoryMock.CreateGroup(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.CreateGroup(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostGroup(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostGroup(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -197,7 +173,7 @@ public class GroupsControllerTests
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadGroupPicture(1, _userId, fileMock).Returns("path/to/img.png");
+        _serviceMock.UploadGroupPicture(1, _userId, fileMock).Returns("path/to/img.png");
 
         // Act
         var result = await _controller.UploadGroupPicture(1, fileMock);
@@ -209,40 +185,32 @@ public class GroupsControllerTests
     }
 
     [Fact]
-    public async Task UploadGroupPicture_Unauthorized_ReturnsForbid()
+    public async Task UploadGroupPicture_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadGroupPicture(1, _userId, fileMock).Throws(new UnauthorizedAccessException());
+        _serviceMock.UploadGroupPicture(1, _userId, fileMock).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.UploadGroupPicture(1, fileMock);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UploadGroupPicture(1, fileMock));
     }
 
     [Fact]
-    public async Task UploadGroupPicture_Exception_ReturnsBadRequest()
+    public async Task UploadGroupPicture_Exception_ThrowsException()
     {
         // Arrange
         var fileMock = Substitute.For<IFormFile>();
-        _repositoryMock.UploadGroupPicture(1, _userId, fileMock).Throws(new Exception("Error"));
+        _serviceMock.UploadGroupPicture(1, _userId, fileMock).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.UploadGroupPicture(1, fileMock);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.UploadGroupPicture(1, fileMock));
     }
 
     [Fact]
     public async Task GetGroupPicture_GroupOrPathNotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
+        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
 
         // Act
         var result = await _controller.GetGroupPicture(1, CancellationToken.None);
@@ -257,8 +225,8 @@ public class GroupsControllerTests
     {
         // Arrange
         var group = new GroupResponseDTO { Id = 1, GroupPicturePath = "some/path.png", Name = "Committee", Active = true, Type = GroupType.Committee };
-        _repositoryMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
-        _repositoryMock.GetGroupPictureFile("some/path.png").Returns((FileResultDto?)null);
+        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
+        _serviceMock.GetGroupPictureFile("some/path.png").Returns((FileResultDto?)null);
 
         // Act
         var result = await _controller.GetGroupPicture(1, CancellationToken.None);
@@ -273,11 +241,11 @@ public class GroupsControllerTests
     {
         // Arrange
         var group = new GroupResponseDTO { Id = 1, GroupPicturePath = "some/path.png", Name = "Committee", Active = true, Type = GroupType.Committee };
-        _repositoryMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
+        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
         
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
         var fileResultDto = new FileResultDto { Stream = stream, ContentType = "image/png" };
-        _repositoryMock.GetGroupPictureFile("some/path.png").Returns(fileResultDto);
+        _serviceMock.GetGroupPictureFile("some/path.png").Returns(fileResultDto);
 
         // Act
         var result = await _controller.GetGroupPicture(1, CancellationToken.None);
@@ -289,31 +257,23 @@ public class GroupsControllerTests
     }
 
     [Fact]
-    public async Task GetGroupPicture_Unauthorized_ReturnsForbid()
+    public async Task GetGroupPicture_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetGroup(1, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetGroupPicture(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetGroupPicture(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetGroupPicture_Exception_ReturnsBadRequest()
+    public async Task GetGroupPicture_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetGroup(1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetGroupPicture(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetGroupPicture(1, CancellationToken.None));
     }
 
     [Fact]
@@ -324,48 +284,37 @@ public class GroupsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteGroup(1, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteGroup(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteGroup_Unauthorized_ReturnsForbid()
+    public async Task DeleteGroup_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteGroup(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteGroup(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteGroup(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteGroup(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteGroup_NotFound_ReturnsNotFound()
+    public async Task DeleteGroup_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteGroup(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteGroup(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteGroup(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteGroup(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteGroup_Exception_ReturnsBadRequest()
+    public async Task DeleteGroup_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteGroup(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteGroup(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteGroup(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteGroup(1, CancellationToken.None));
     }
 
     [Fact]
@@ -379,51 +328,40 @@ public class GroupsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchGroup_Unauthorized_ReturnsForbid()
+    public async Task PatchGroup_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Group>();
-        _repositoryMock.PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchGroup(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchGroup(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchGroup_NotFound_ReturnsNotFound()
+    public async Task PatchGroup_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Group>();
-        _repositoryMock.PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PatchGroup(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchGroup(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchGroup_Exception_ReturnsBadRequest()
+    public async Task PatchGroup_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Group>();
-        _repositoryMock.PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchGroup(1, _userId, patchDoc, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchGroup(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchGroup(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -437,50 +375,39 @@ public class GroupsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutGroup_Unauthorized_ReturnsForbid()
+    public async Task PutGroup_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new GroupUpdateDTO { Name = "Updated", Active = true, Type = GroupType.Committee };
-        _repositoryMock.UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutGroup(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutGroup(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutGroup_NotFound_ReturnsNotFound()
+    public async Task PutGroup_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new GroupUpdateDTO { Name = "Updated", Active = true, Type = GroupType.Committee };
-        _repositoryMock.UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutGroup(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutGroup(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutGroup_Exception_ReturnsBadRequest()
+    public async Task PutGroup_Exception_ThrowsException()
     {
         // Arrange
         var dto = new GroupUpdateDTO { Name = "Updated", Active = true, Type = GroupType.Committee };
-        _repositoryMock.UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.UpdateGroup(1, _userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutGroup(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutGroup(1, dto, CancellationToken.None));
     }
 }

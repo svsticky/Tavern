@@ -7,7 +7,7 @@ namespace Backend.Interfaces
     /// <summary>
     /// Defines the contract for managing study enrollments.
     /// </summary>
-    public interface IStudyEnrollmentRepository
+    public interface IStudyEnrollmentService
     {
         /// <summary>
         /// Retrieves study enrollments visible to the requesting user.

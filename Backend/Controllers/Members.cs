@@ -8,14 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing system members and their profiles. The MembersController provides a comprehensive suite of endpoints for user lifecycle management, including registration, profile retrieval, data updates, and account deletion. It also handles profile picture management and integrates with identity provider webhooks to ensure data synchronization. This controller enforces security through role-based or ownership-based authorization while allowing specific public actions like self-registration. By coordinating between the IMemberRepository and specialized services like the AuthOutboxWorker, it ensures that member data remains consistent across the internal database and external identity providers.
+    /// Controller for managing system members and their profiles. The MembersController provides a comprehensive suite of endpoints for user lifecycle management, including registration, profile retrieval, data updates, and account deletion. It also handles profile picture management and integrates with identity provider webhooks to ensure data synchronization. This controller enforces security through role-based or ownership-based authorization while allowing specific public actions like self-registration. By coordinating between the IMemberService and specialized services like the AuthOutboxWorker, it ensures that member data remains consistent across the internal database and external identity providers.
     /// </summary>
-    /// <param name="memberRepository">The repository responsible for member business logic and persistence.</param>
-    /// <param name="profilePictureRepository">The repository dedicated to handling profile picture file operations.</param>
+    /// <param name="memberService">The service responsible for member business logic and persistence.</param>
+    /// <param name="profilePictureService">The service dedicated to handling profile picture file operations.</param>
     [Route("[controller]")]
     [ApiController]
     [Authorize]
-    public class MembersController(IMemberRepository memberRepository, IProfilePictureRepository profilePictureRepository) : ControllerBase
+    public class MembersController(IMemberService memberService, IProfilePictureService profilePictureService) : ControllerBase
     {
         private readonly string? _authWebhookSecret = Environment.GetEnvironmentVariable("AUTH_WEBHOOK_SECRET");
 
@@ -40,22 +40,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<MemberResponseDTO>>> GetMembers([FromQuery] GetMembersDto dto, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = GetUserId();
-                var result = await memberRepository.GetMembers(dto, userId, cancellationToken);
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            var userId = GetUserId();
+            var result = await memberService.GetMembers(dto, userId, cancellationToken);
+            return Ok(result);
         }
 
         // GET: members/{id}
@@ -71,24 +61,14 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<MemberResponseDTO>> GetMember(Guid id, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = GetUserId();
-                var result = await memberRepository.GetMember(id, userId, cancellationToken);
-                if (result == null) return NotFound();
+            var userId = GetUserId();
+            var result = await memberService.GetMember(id, userId, cancellationToken);
+            if (result == null) return NotFound();
 
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            return Ok(result);
         }
 
         // POST: members
@@ -104,27 +84,21 @@ namespace Backend.Controllers
         [Consumes("application/json")]
         [ProducesResponseType(typeof(Member), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Member>> PostMember(PostMemberDTO dto, CancellationToken cancellationToken)
         {
+            Guid? userId;
             try
             {
-                Guid? userId;
-                try
-                {
-                    userId = GetUserId();
-                }
-                catch
-                {
-                    userId = null;
-                }
-                
-                var member = await memberRepository.CreateMember(dto, userId, cancellationToken);
-                return CreatedAtAction(nameof(GetMember), new { id = member.Id }, member);
+                userId = GetUserId();
             }
-            catch (Exception ex)
+            catch
             {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
+                userId = null;
             }
+            
+            var member = await memberService.CreateMember(dto, userId, cancellationToken);
+            return CreatedAtAction(nameof(GetMember), new { id = member.Id }, member);
         }
 
         // DELETE: members/{id}
@@ -141,27 +115,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> DeleteMember(Guid id, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = GetUserId();
-                await memberRepository.DeleteMember(id, userId, cancellationToken);
-
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = GetUserId();
+            await memberService.DeleteMember(id, userId, cancellationToken);
+            return NoContent();
         }
 
         // PATCH: members/{id}
@@ -179,23 +138,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> PatchMember(Guid id, JsonPatchDocument<Member> patchDoc, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = GetUserId();
-                await memberRepository.PatchMember(id, patchDoc, userId, cancellationToken);
-
-                return NoContent();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = GetUserId();
+            await memberService.PatchMember(id, patchDoc, userId, cancellationToken);
+            return NoContent();
         }
 
         // PUT: members/{id}
@@ -213,27 +161,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> PutMember(Guid id, MemberUpdateDTO dto, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = GetUserId();
-                await memberRepository.UpdateMember(id, dto, userId, cancellationToken);
-
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            var userId = GetUserId();
+            await memberService.UpdateMember(id, dto, userId, cancellationToken);
+            return NoContent();
         }
 
         // GET: members/{id}/profile-picture
@@ -248,25 +181,19 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> GetProfilePicture(Guid id, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = GetUserId();
-                var member = await memberRepository.GetMember(id, userId, cancellationToken);
-                if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
-                    return NotFound("Member or profile picture not found.");
+            var userId = GetUserId();
+            var member = await memberService.GetMember(id, userId, cancellationToken);
+            if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
+                return NotFound("Member or profile picture not found.");
 
-                var file = await profilePictureRepository.GetProfilePictureByPath(member.ProfilePicturePath);
-                if (file == null)
-                    return NotFound("File is no longer present on the server.");
+            var file = await profilePictureService.GetProfilePictureByPath(member.ProfilePicturePath);
+            if (file == null)
+                return NotFound("File is no longer present on the server.");
 
-                return File(file.Value.Stream, file.Value.ContentType);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new ErrorResponseDto { Message = ex.Message });
-            }
+            return File(file.Value.Stream, file.Value.ContentType);
         }
 
         // DELETE: members/{id}/profile-picture
@@ -283,26 +210,12 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> DeleteProfilePicture(Guid id, CancellationToken cancellationToken)
         {
-            try
-            {
-                var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-                await memberRepository.DeleteProfilePicture(id, userId, cancellationToken);
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            await memberService.DeleteProfilePicture(id, userId, cancellationToken);
+            return NoContent();
         }
 
         // POST: members/webhook/refresh-email
@@ -320,22 +233,16 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> UpdateEmailWebhook([FromHeader(Name = "X-Webhook-Secret")] string secret, [FromBody] Guid userId, CancellationToken cancellationToken)
         {
-            try
+            if (_authWebhookSecret == null || secret != _authWebhookSecret)
             {
-                if (_authWebhookSecret == null || secret != _authWebhookSecret)
-                {
-                    return Unauthorized("Invalid webhook secret.");
-                }
+                return Unauthorized("Invalid webhook secret.");
+            }
 
-                await memberRepository.RefreshEmail(userId, cancellationToken);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            await memberService.RefreshEmail(userId, cancellationToken);
+            return Ok();
         }
     }
 }

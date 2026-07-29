@@ -7,23 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing enrollments within the system. The EnrollmentsController provides endpoints for creating, retrieving, updating, and deleting enrollments, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify enrollment data while providing appropriate error handling for various scenarios. The EnrollmentsController interacts with the IEnrollmentRepository to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing enrollments effectively within the application.
+/// Controller for managing enrollments within the system. The EnrollmentsController provides endpoints for creating, retrieving, updating, and deleting enrollments, as well as handling related operations such as partial updates using JSON Patch. This controller is designed to ensure proper authorization for all operations, allowing only authorized users to access and modify enrollment data while providing appropriate error handling for various scenarios. The EnrollmentsController interacts with the IEnrollmentService to perform the necessary business logic and data manipulation, ensuring a clean separation of concerns and maintainable code structure for managing enrollments effectively within the application.
 /// </summary>
+/// <param name="enrollmentService">The enrollment service for managing enrollment operations.</param>
 [Route("[controller]")]
 [ApiController]
-public class EnrollmentsController : ControllerBase
+public class EnrollmentsController(IEnrollmentService enrollmentService) : ControllerBase
 {
-    private readonly IEnrollmentRepository _enrollmentRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the EnrollmentsController class with the specified enrollment repository. The constructor takes an IEnrollmentRepository as a parameter, which is used to perform various operations related to enrollments, such as creating, retrieving, updating, and deleting enrollments. This dependency injection allows for better separation of concerns and promotes a more modular and testable code structure, enabling the controller to focus on handling HTTP requests and responses while delegating the business logic to the repository layer.
-    /// </summary>
-    /// <param name="enrollmentRepository">The enrollment repository for managing enrollment operations.</param>
-    public EnrollmentsController(IEnrollmentRepository enrollmentRepository)
-    {
-        _enrollmentRepository = enrollmentRepository;
-    }
-
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
     /// </summary>
@@ -45,21 +35,11 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<EnrollmentResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<EnrollmentResponseDTO>>> GetEnrollments([FromQuery] GetEnrollmentsDTO dto, CancellationToken cancellationToken)
     {
-        try
-        {
-            var enrollments = await _enrollmentRepository.GetEnrollments(dto, GetUserId(), cancellationToken);
-            return Ok(enrollments);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"Internal server error: {ex.Message}");
-        }
+        var enrollments = await enrollmentService.GetEnrollments(dto, GetUserId(), cancellationToken);
+        return Ok(enrollments);
     }
 
     // GET: enrollments/1/{memberId}
@@ -76,25 +56,14 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EnrollmentResponseDTO>> GetEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
     {
-        try
-        {
-            var enrollment = await _enrollmentRepository.GetEnrollment(activityId, memberId, GetUserId(), cancellationToken);
+        var enrollment = await enrollmentService.GetEnrollment(activityId, memberId, GetUserId(), cancellationToken);
+        if (enrollment == null)
+            return NotFound();
 
-            if (enrollment == null)
-                return NotFound();
-        
-            return Ok(enrollment);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(enrollment);
     }
 
     // POST: enrollments
@@ -110,28 +79,17 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(typeof(EnrollmentResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<EnrollmentResponseDTO>> PostEnrollment(
         PostEnrollmentDTO dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var created = await _enrollmentRepository.CreateEnrollment(dto, GetUserId(), cancellationToken);
-
-            return CreatedAtAction(
-                nameof(GetEnrollment),
-                new { activityId = created.Activity.Id, memberId = created.Member.Id },
-                created
-            );
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var created = await enrollmentService.CreateEnrollment(dto, GetUserId(), cancellationToken);
+        return CreatedAtAction(
+            nameof(GetEnrollment),
+            new { activityId = created.Activity.Id, memberId = created.Member.Id },
+            created
+        );
     }
 
     // DELETE: enrollments/1/{memberId}
@@ -149,21 +107,11 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteEnrollment(uint activityId, Guid memberId, CancellationToken cancellationToken)
     {
-        try
-        {
-            await _enrollmentRepository.DeleteEnrollment(activityId, memberId, GetUserId(), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await enrollmentService.DeleteEnrollment(activityId, memberId, GetUserId(), cancellationToken);
+        return NoContent();
     }
 
     // PUT: enrollments/1/{memberId}
@@ -182,27 +130,17 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutEnrollment(
         uint activityId, Guid memberId,
         [FromBody] PostEnrollmentDTO dto,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            if(activityId != dto.ActivityId || memberId != dto.MemberId)
-                return BadRequest("ActivityId and MemberId in the URL must match those in the body.");
+        if (activityId != dto.ActivityId || memberId != dto.MemberId)
+            return BadRequest("ActivityId and MemberId in the URL must match those in the body.");
 
-            await _enrollmentRepository.UpdateEnrollment(dto, GetUserId(), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await enrollmentService.UpdateEnrollment(dto, GetUserId(), cancellationToken);
+        return NoContent();
     }
 
     // PATCH: enrollments/1/{MemberId}
@@ -221,6 +159,7 @@ public class EnrollmentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchEnrollment(
         uint activityId, Guid memberId,
         [FromBody] JsonPatchDocument<Enrollment> patchDoc,
@@ -229,18 +168,7 @@ public class EnrollmentsController : ControllerBase
         if (patchDoc == null)
             return BadRequest();
 
-        try
-        {
-            await _enrollmentRepository.PatchEnrollment(activityId, memberId, patchDoc, GetUserId(), cancellationToken);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-            catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await enrollmentService.PatchEnrollment(activityId, memberId, patchDoc, GetUserId(), cancellationToken);
+        return NoContent();
     }
 }

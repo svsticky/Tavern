@@ -18,14 +18,14 @@ namespace Backend.Tests.Controllers;
 
 public class AnnouncementsControllerTests
 {
-    private readonly IAnnouncementRepository _repositoryMock;
+    private readonly IAnnouncementService _serviceMock;
     private readonly AnnouncementsController _controller;
     private readonly Guid _userId;
 
     public AnnouncementsControllerTests()
     {
-        _repositoryMock = Substitute.For<IAnnouncementRepository>();
-        _controller = new AnnouncementsController(_repositoryMock);
+        _serviceMock = Substitute.For<IAnnouncementService>();
+        _controller = new AnnouncementsController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -47,7 +47,7 @@ public class AnnouncementsControllerTests
         {
             new GetAnnouncementResponseDTO { Id = 1, TitleDutch = "Info NL", TitleEnglish = "Info EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN", CreatedByName = "John Doe", CreatedAt = DateTimeOffset.UtcNow }
         };
-        _repositoryMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetAnnouncements(CancellationToken.None);
@@ -59,31 +59,23 @@ public class AnnouncementsControllerTests
     }
 
     [Fact]
-    public async Task GetAnnouncements_Unauthorized_ReturnsForbid()
+    public async Task GetAnnouncements_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetAnnouncements(CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetAnnouncements(CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetAnnouncements_Exception_ReturnsBadRequest()
+    public async Task GetAnnouncements_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetAnnouncements(_userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetAnnouncements(CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetAnnouncements(CancellationToken.None));
     }
 
     [Fact]
@@ -91,7 +83,7 @@ public class AnnouncementsControllerTests
     {
         // Arrange
         var ann = new GetAnnouncementResponseDTO { Id = 2, TitleDutch = "Test NL", TitleEnglish = "Test EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN", CreatedByName = "John Doe", CreatedAt = DateTimeOffset.UtcNow };
-        _repositoryMock.GetAnnouncement(2, _userId, Arg.Any<CancellationToken>()).Returns(ann);
+        _serviceMock.GetAnnouncement(2, _userId, Arg.Any<CancellationToken>()).Returns(ann);
 
         // Act
         var result = await _controller.GetAnnouncement(2, CancellationToken.None);
@@ -106,7 +98,7 @@ public class AnnouncementsControllerTests
     public async Task GetAnnouncement_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _repositoryMock.GetAnnouncement(3, _userId, Arg.Any<CancellationToken>()).Returns((GetAnnouncementResponseDTO?)null);
+        _serviceMock.GetAnnouncement(3, _userId, Arg.Any<CancellationToken>()).Returns((GetAnnouncementResponseDTO?)null);
 
         // Act
         var result = await _controller.GetAnnouncement(3, CancellationToken.None);
@@ -116,31 +108,23 @@ public class AnnouncementsControllerTests
     }
 
     [Fact]
-    public async Task GetAnnouncement_Unauthorized_ReturnsForbid()
+    public async Task GetAnnouncement_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.GetAnnouncement(3, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetAnnouncement(3, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetAnnouncement(3, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetAnnouncement(3, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetAnnouncement_Exception_ReturnsBadRequest()
+    public async Task GetAnnouncement_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.GetAnnouncement(3, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetAnnouncement(3, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetAnnouncement(3, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetAnnouncement(3, CancellationToken.None));
     }
 
     [Fact]
@@ -149,7 +133,7 @@ public class AnnouncementsControllerTests
         // Arrange
         var dto = new PostAnnouncementDTO { TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN" };
         var created = new Announcement { Id = 10, TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN", CreatedAt = DateTimeOffset.UtcNow, CreatedById = _userId };
-        _repositoryMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostAnnouncement(dto, CancellationToken.None);
@@ -162,33 +146,25 @@ public class AnnouncementsControllerTests
     }
 
     [Fact]
-    public async Task PostAnnouncement_Unauthorized_ReturnsForbid()
+    public async Task PostAnnouncement_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostAnnouncementDTO { TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN" };
-        _repositoryMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostAnnouncement(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostAnnouncement(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostAnnouncement_Exception_ReturnsBadRequest()
+    public async Task PostAnnouncement_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostAnnouncementDTO { TitleDutch = "Post NL", TitleEnglish = "Post EN", ContentDutch = "Inhoud NL", ContentEnglish = "Content EN" };
-        _repositoryMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.CreateAnnouncement(_userId, dto, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostAnnouncement(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostAnnouncement(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -199,48 +175,37 @@ public class AnnouncementsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteAnnouncement_NotFound_ReturnsNotFound()
+    public async Task DeleteAnnouncement_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        _repositoryMock.DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteAnnouncement(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteAnnouncement(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteAnnouncement_Unauthorized_ReturnsForbid()
+    public async Task DeleteAnnouncement_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _repositoryMock.DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.DeleteAnnouncement(1, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteAnnouncement(1, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteAnnouncement_Exception_ReturnsBadRequest()
+    public async Task DeleteAnnouncement_Exception_ThrowsException()
     {
         // Arrange
-        _repositoryMock.DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteAnnouncement(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteAnnouncement(1, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteAnnouncement(1, CancellationToken.None));
     }
 
     [Fact]
@@ -264,65 +229,51 @@ public class AnnouncementsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchAnnouncement_NotFound_ReturnsNotFound()
+    public async Task PatchAnnouncement_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Announcement>();
-        _repositoryMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchAnnouncement_ArgumentException_ReturnsBadRequest()
+    public async Task PatchAnnouncement_ArgumentException_ThrowsArgumentException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Announcement>();
-        _repositoryMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new ArgumentException());
+        _serviceMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new ArgumentException());
 
-        // Act
-        var result = await _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<BadRequestResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() => _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchAnnouncement_Unauthorized_ReturnsForbid()
+    public async Task PatchAnnouncement_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Announcement>();
-        _repositoryMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchAnnouncement_Exception_ReturnsBadRequest()
+    public async Task PatchAnnouncement_Exception_ThrowsException()
     {
         // Arrange
         var patchDoc = new JsonPatchDocument<Announcement>();
-        _repositoryMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchAnnouncement(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchAnnouncement(1, patchDoc, CancellationToken.None));
     }
 
     [Fact]
@@ -336,50 +287,39 @@ public class AnnouncementsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutAnnouncement_NotFound_ReturnsNotFound()
+    public async Task PutAnnouncement_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
-        _repositoryMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutAnnouncement(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutAnnouncement(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutAnnouncement_Unauthorized_ReturnsForbid()
+    public async Task PutAnnouncement_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
-        _repositoryMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PutAnnouncement(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutAnnouncement(1, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutAnnouncement_Exception_ReturnsBadRequest()
+    public async Task PutAnnouncement_Exception_ThrowsException()
     {
         // Arrange
         var dto = new UpdateAnnouncementDTO { TitleDutch = "Updated NL", TitleEnglish = "Updated EN", ContentDutch = "Updated Content NL", ContentEnglish = "Updated Content EN" };
-        _repositoryMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.UpdateAnnouncement(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutAnnouncement(1, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutAnnouncement(1, dto, CancellationToken.None));
     }
 }

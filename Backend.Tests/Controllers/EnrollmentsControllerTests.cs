@@ -19,14 +19,14 @@ namespace Backend.Tests.Controllers;
 
 public class EnrollmentsControllerTests
 {
-    private readonly IEnrollmentRepository _repositoryMock;
+    private readonly IEnrollmentService _serviceMock;
     private readonly EnrollmentsController _controller;
     private readonly Guid _userId;
 
     public EnrollmentsControllerTests()
     {
-        _repositoryMock = Substitute.For<IEnrollmentRepository>();
-        _controller = new EnrollmentsController(_repositoryMock);
+        _serviceMock = Substitute.For<IEnrollmentService>();
+        _controller = new EnrollmentsController(_serviceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -73,7 +73,7 @@ public class EnrollmentsControllerTests
                 Member = new MemberResponseDTO { Id = Guid.NewGuid() }
             }
         };
-        _repositoryMock.GetEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
         var result = await _controller.GetEnrollments(dto, CancellationToken.None);
@@ -85,34 +85,26 @@ public class EnrollmentsControllerTests
     }
 
     [Fact]
-    public async Task GetEnrollments_Unauthorized_ReturnsForbid()
+    public async Task GetEnrollments_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new GetEnrollmentsDTO();
-        _repositoryMock.GetEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetEnrollments(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetEnrollments(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetEnrollments_Exception_ReturnsInternalServerError()
+    public async Task GetEnrollments_Exception_ThrowsException()
     {
         // Arrange
         var dto = new GetEnrollmentsDTO();
-        _repositoryMock.GetEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetEnrollments(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetEnrollments(dto, CancellationToken.None);
-
-        // Assert
-        var objectResult = Assert.IsType<ObjectResult>(result.Result);
-        Assert.Equal(500, objectResult.StatusCode);
-        Assert.Equal("Internal server error: Error", objectResult.Value);
-    }
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetEnrollments(dto, CancellationToken.None));
+}
 
     [Fact]
     public async Task GetEnrollment_Found_ReturnsOk()
@@ -144,7 +136,7 @@ public class EnrollmentsControllerTests
             },
             Member = new MemberResponseDTO { Id = targetMember }
         };
-        _repositoryMock.GetEnrollment(2, targetMember, _userId, Arg.Any<CancellationToken>()).Returns(response);
+        _serviceMock.GetEnrollment(2, targetMember, _userId, Arg.Any<CancellationToken>()).Returns(response);
 
         // Act
         var result = await _controller.GetEnrollment(2, targetMember, CancellationToken.None);
@@ -159,7 +151,7 @@ public class EnrollmentsControllerTests
     {
         // Arrange
         var targetMember = Guid.NewGuid();
-        _repositoryMock.GetEnrollment(3, targetMember, _userId, Arg.Any<CancellationToken>()).Returns((EnrollmentResponseDTO?)null);
+        _serviceMock.GetEnrollment(3, targetMember, _userId, Arg.Any<CancellationToken>()).Returns((EnrollmentResponseDTO?)null);
 
         // Act
         var result = await _controller.GetEnrollment(3, targetMember, CancellationToken.None);
@@ -169,33 +161,25 @@ public class EnrollmentsControllerTests
     }
 
     [Fact]
-    public async Task GetEnrollment_Unauthorized_ReturnsForbid()
+    public async Task GetEnrollment_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
-        _repositoryMock.GetEnrollment(3, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetEnrollment(3, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.GetEnrollment(3, targetMember, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetEnrollment(3, targetMember, CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetEnrollment_Exception_ReturnsBadRequest()
+    public async Task GetEnrollment_Exception_ThrowsException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
-        _repositoryMock.GetEnrollment(3, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetEnrollment(3, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.GetEnrollment(3, targetMember, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetEnrollment(3, targetMember, CancellationToken.None));
     }
 
     [Fact]
@@ -228,7 +212,7 @@ public class EnrollmentsControllerTests
             },
             Member = new MemberResponseDTO { Id = dto.MemberId }
         };
-        _repositoryMock.CreateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        _serviceMock.CreateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostEnrollment(dto, CancellationToken.None);
@@ -242,33 +226,25 @@ public class EnrollmentsControllerTests
     }
 
     [Fact]
-    public async Task PostEnrollment_NotFound_ReturnsNotFound()
+    public async Task PostEnrollment_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var dto = new PostEnrollmentDTO { ActivityId = 1, MemberId = Guid.NewGuid() };
-        _repositoryMock.CreateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.CreateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PostEnrollment(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PostEnrollment(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostEnrollment_Exception_ReturnsBadRequest()
+    public async Task PostEnrollment_Exception_ThrowsException()
     {
         // Arrange
         var dto = new PostEnrollmentDTO { ActivityId = 1, MemberId = Guid.NewGuid() };
-        _repositoryMock.CreateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.CreateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PostEnrollment(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result.Result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostEnrollment(dto, CancellationToken.None));
     }
 
     [Fact]
@@ -282,37 +258,29 @@ public class EnrollmentsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).DeleteEnrollment(1, targetMember, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).DeleteEnrollment(1, targetMember, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task DeleteEnrollment_NotFound_ReturnsNotFound()
+    public async Task DeleteEnrollment_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
-        _repositoryMock.DeleteEnrollment(1, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.DeleteEnrollment(1, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.DeleteEnrollment(1, targetMember, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteEnrollment(1, targetMember, CancellationToken.None));
     }
 
     [Fact]
-    public async Task DeleteEnrollment_Exception_ReturnsBadRequest()
+    public async Task DeleteEnrollment_Exception_ThrowsException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
-        _repositoryMock.DeleteEnrollment(1, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.DeleteEnrollment(1, targetMember, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.DeleteEnrollment(1, targetMember, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteEnrollment(1, targetMember, CancellationToken.None));
     }
 
     [Fact]
@@ -341,39 +309,31 @@ public class EnrollmentsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).UpdateEnrollment(dto, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).UpdateEnrollment(dto, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PutEnrollment_NotFound_ReturnsNotFound()
+    public async Task PutEnrollment_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
         var dto = new PostEnrollmentDTO { ActivityId = 1, MemberId = targetMember };
-        _repositoryMock.UpdateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.UpdateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PutEnrollment(1, targetMember, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutEnrollment(1, targetMember, dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PutEnrollment_Exception_ReturnsBadRequest()
+    public async Task PutEnrollment_Exception_ThrowsException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
         var dto = new PostEnrollmentDTO { ActivityId = 1, MemberId = targetMember };
-        _repositoryMock.UpdateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.UpdateEnrollment(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PutEnrollment(1, targetMember, dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PutEnrollment(1, targetMember, dto, CancellationToken.None));
     }
 
     [Fact]
@@ -398,38 +358,30 @@ public class EnrollmentsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _repositoryMock.Received(1).PatchEnrollment(1, targetMember, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _serviceMock.Received(1).PatchEnrollment(1, targetMember, patchDoc, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task PatchEnrollment_NotFound_ReturnsNotFound()
+    public async Task PatchEnrollment_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
         var patchDoc = new JsonPatchDocument<Enrollment>();
-        _repositoryMock.PatchEnrollment(1, targetMember, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        _serviceMock.PatchEnrollment(1, targetMember, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
-        // Act
-        var result = await _controller.PatchEnrollment(1, targetMember, patchDoc, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NotFoundResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchEnrollment(1, targetMember, patchDoc, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PatchEnrollment_Exception_ReturnsBadRequest()
+    public async Task PatchEnrollment_Exception_ThrowsException()
     {
         // Arrange
         var targetMember = Guid.NewGuid();
         var patchDoc = new JsonPatchDocument<Enrollment>();
-        _repositoryMock.PatchEnrollment(1, targetMember, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.PatchEnrollment(1, targetMember, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
-        // Act
-        var result = await _controller.PatchEnrollment(1, targetMember, patchDoc, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var error = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Error", error.Message);
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PatchEnrollment(1, targetMember, patchDoc, CancellationToken.None));
     }
 }

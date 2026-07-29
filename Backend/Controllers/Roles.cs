@@ -8,24 +8,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers;
 
 /// <summary>
-/// Controller for managing system roles and their associated permissions within the application. The RolesController provides a robust set of endpoints for the creation, retrieval, modification, and deletion of roles, which serve as the foundation for the system's access control and organizational structure. By coordinating with the IRoleRepository, this controller ensures that role definitions are managed securely and consistently, allowing administrators to define the levels of authority and responsibilities assigned to different users. Proper authorization is enforced across all endpoints to maintain the integrity of the system's security model, preventing unauthorized modifications to the foundational role data.
+/// Controller for managing system roles and their associated permissions within the application. The RolesController provides a robust set of endpoints for the creation, retrieval, modification, and deletion of roles, which serve as the foundation for the system's access control and organizational structure. By coordinating with the IRoleService, this controller ensures that role definitions are managed securely and consistently, allowing administrators to define the levels of authority and responsibilities assigned to different users. Proper authorization is enforced across all endpoints to maintain the integrity of the system's security model, preventing unauthorized modifications to the foundational role data.
 /// </summary>
+/// <param name="roleService">The service responsible for role-related business logic and data persistence.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class RolesController : ControllerBase
+public class RolesController(IRoleService roleService) : ControllerBase
 {
-    private readonly IRoleRepository _roleRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the RolesController with the required role management service.
-    /// </summary>
-    /// <param name="roleRepository">The repository responsible for role-related business logic and data persistence.</param>
-    public RolesController(IRoleRepository roleRepository)
-    {
-        _roleRepository = roleRepository;
-    }
-
     /// <summary>
     /// Helper method to extract the unique identifier of the currently authenticated user from the request claims.
     /// </summary>
@@ -45,16 +35,10 @@ public class RolesController : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(typeof(IEnumerable<Role>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<Role>>> GetRoles(CancellationToken ct)
     {
-        try
-        {
-            return Ok(await _roleRepository.GetRoles(ct));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(await roleService.GetRoles(ct));
     }
 
     // GET: roles/{id}
@@ -69,17 +53,11 @@ public class RolesController : ControllerBase
     [ProducesResponseType(typeof(Role), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Role>> GetRole(uint id, CancellationToken ct)
     {
-        try
-        {
-            var role = await _roleRepository.GetRole(id, ct);
-            return role != null ? Ok(role) : NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var role = await roleService.GetRole(id, ct);
+        return role != null ? Ok(role) : NotFound();
     }
 
     // POST: roles
@@ -95,21 +73,11 @@ public class RolesController : ControllerBase
     [ProducesResponseType(typeof(Role), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Role>> PostRole(PostRoleDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await _roleRepository.CreateRole(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetRole), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await roleService.CreateRole(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetRole), new { id = result.Id }, result);
     }
 
     // DELETE: roles/{id}
@@ -126,25 +94,11 @@ public class RolesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteRole(uint id, CancellationToken ct)
     {
-        try
-        {
-            await _roleRepository.DeleteRole(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await roleService.DeleteRole(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // PATCH: roles/{id}
@@ -162,21 +116,11 @@ public class RolesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchRole(uint id, JsonPatchDocument<Role> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            await _roleRepository.PatchRole(id, patchDoc, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await roleService.PatchRole(id, patchDoc, GetUserId(), ct);
+        return NoContent();
     }
 
     // PUT: roles/{id}
@@ -194,20 +138,10 @@ public class RolesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutRole(uint id, RoleUpdateDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await _roleRepository.UpdateRole(id, dto, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await roleService.UpdateRole(id, dto, GetUserId(), ct);
+        return NoContent();
     }
 }

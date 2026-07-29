@@ -47,21 +47,11 @@ public class MailsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PostNormalMail(PostMailDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await _service.SendEmailAsync(dto, GetUserId(), ct);
-            return Ok();
-        }
-        catch(UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await _service.SendEmailAsync(dto, GetUserId(), ct);
+        return Ok();
     }
 
     // POST: mails/activity
@@ -77,20 +67,10 @@ public class MailsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PostActivityMail(PostActivityMailDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await _service.SendEmailAsync(dto, GetUserId(), ct);
-            return Ok();
-        }
-        catch(UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await _service.SendEmailAsync(dto, GetUserId(), ct);
+        return Ok();
     }
 }

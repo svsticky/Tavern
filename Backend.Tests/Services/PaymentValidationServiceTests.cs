@@ -1,6 +1,6 @@
 using Backend.Database;
 using Backend.Models.Domain;
-using Backend.Repositories;
+using Backend.Services.Domain;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using NSubstitute;

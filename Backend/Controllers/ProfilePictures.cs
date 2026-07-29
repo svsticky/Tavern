@@ -6,24 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 namespace Backend.Controllers
 {
     /// <summary>
-    /// Controller for managing profile picture assets across the system. The ProfilePictureController provides dedicated endpoints for the retrieval and uploading of user avatars. It serves as a specialized handler for file-based operations, ensuring that image data is correctly processed, stored, and served with the appropriate MIME types. This controller integrates with the IProfilePictureRepository to abstract the underlying storage mechanism—whether local or cloud-based—while enforcing authorization rules to ensure that only authenticated users can access or modify personal profile imagery.
+    /// Controller for managing profile picture assets across the system. The ProfilePictureController provides dedicated endpoints for the retrieval and uploading of user avatars. It serves as a specialized handler for file-based operations, ensuring that image data is correctly processed, stored, and served with the appropriate MIME types. This controller integrates with the IProfilePictureService to abstract the underlying storage mechanism—whether local or cloud-based—while enforcing authorization rules to ensure that only authenticated users can access or modify personal profile imagery.
     /// </summary>
+    /// <param name="profilePictureService">The service responsible for file system interactions and image processing logic.</param>
     [Route("[controller]")]
     [ApiController]
     [Authorize]
-    public class ProfilePictureController : ControllerBase
+    public class ProfilePictureController(IProfilePictureService profilePictureService) : ControllerBase
     {
-        private readonly IProfilePictureRepository _profilePictureRepository;
-
-        /// <summary>
-        /// Initializes a new instance of the ProfilePictureController with the required profile picture repository.
-        /// </summary>
-        /// <param name="profilePictureRepository">The repository responsible for file system interactions and image processing logic.</param>
-        public ProfilePictureController(IProfilePictureRepository profilePictureRepository)
-        {
-            _profilePictureRepository = profilePictureRepository;
-        }
-
         // GET: profilepicture/view/{path}
         /// <summary>
         /// Retrieves and streams a profile picture file based on its storage path. The GetProfilePictureByPath endpoint allows the system to serve image assets directly to the client. By providing the internal path, the endpoint retrieves the file stream and returns it with the correct content-type header, enabling browsers and applications to render the image correctly. This approach avoids exposing direct file system paths to the client and centralizes image delivery through a secured API route.
@@ -35,21 +25,15 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> GetProfilePictureByPath(string path)
         {
-            try
-            {
-                var result = await _profilePictureRepository.GetProfilePictureByPath(path);
+            var result = await profilePictureService.GetProfilePictureByPath(path);
 
-                if (result == null)
-                    return NotFound();
+            if (result == null)
+                return NotFound();
 
-                return File(result.Value.Stream, result.Value.ContentType);
-            }
-            catch (Exception e)
-            {
-                return BadRequest( new ErrorResponseDto { Message = e.Message });;
-            }
+            return File(result.Value.Stream, result.Value.ContentType);
         }
 
         // POST: profilepicture/{id}/profile-picture
@@ -65,23 +49,13 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(UploadPictureResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<UploadPictureResponse>> UploadProfilePicture(Guid id, IFormFile? image)
         {
-            try
-            {
-                Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-                var path = await _profilePictureRepository.UploadProfilePicture(id, userId, image);
+            Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
+            var path = await profilePictureService.UploadProfilePicture(id, userId, image);
 
-                return Ok(new UploadPictureResponse { Path = path });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return Ok(new UploadPictureResponse { Path = path });
         }
     }
 }

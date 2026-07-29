@@ -7,7 +7,7 @@ namespace Backend.Interfaces;
 /// <summary>
 /// Defines the contract for managing memberships of members within groups.
 /// </summary>
-public interface IGroupMembershipRepository
+public interface IGroupMembershipService
 {
     /// <summary>
     /// Retrieves group memberships visible to the requesting user.

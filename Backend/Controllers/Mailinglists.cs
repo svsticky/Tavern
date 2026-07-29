@@ -10,22 +10,12 @@ namespace Backend.Controllers;
 /// <summary>
 /// Controller for managing mailing lists. The Mailinglists controller provides a set of endpoints for authorized users to perform CRUD operations on mailing list entities. This includes retrieving all mailing lists, fetching specific mailing list details, creating new mailing lists, updating existing ones, and deleting mailing lists as needed. The controller ensures that only users with appropriate permissions can access these operations, leveraging the IMailinglistService to handle the underlying business logic and data persistence while maintaining a secure and efficient interface for managing communication channels within the application.
 /// </summary>
+/// <param name="mailinglistService">The mailing list service to use.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class Mailinglists : ControllerBase
+public class Mailinglists(IMailinglistService mailinglistService) : ControllerBase
 {
-    private readonly IMailinglistRepository _mailinglistRepository;
-
-    /// <summary>
-    /// Initializes a new instance of the Mailinglists controller with the specified mailing list repository. The constructor injects the IMailinglistRepository dependency, which is used to handle the data operations for managing mailing lists. This allows the controller to delegate operations such as creating, updating, retrieving, and deleting mailing lists to the repository layer, ensuring a separation of concerns and promoting maintainability and testability of the codebase.
-    /// </summary>
-    /// <param name="mailinglistRepository">The mailing list repository to use.</param>
-    public Mailinglists(IMailinglistRepository mailinglistRepository)
-    {
-        _mailinglistRepository = mailinglistRepository;
-    }
-
     /// <summary>
     /// Retrieves the user ID from the claims of the authenticated user. This method is used to identify the user making the request and is typically used for authorization checks and associating actions with specific users. The user ID is expected to be stored in a claim with the type "UserId" and is parsed as a GUID. This allows the controller to perform operations that require knowledge of the user's identity, such as ensuring that only authorized users can create, update, or delete mailing lists, and to log user actions for auditing purposes.
     /// </summary>
@@ -43,15 +33,11 @@ public class Mailinglists : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<Mailinglist>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<Mailinglist>>> GetMailinglists(CancellationToken ct)
     {
-        try
-        {
-            var result = await _mailinglistRepository.GetMailinglists(ct);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
+        var result = await mailinglistService.GetMailinglists(ct);
+        return Ok(result);
     }
 
     /// <summary>
@@ -66,15 +52,11 @@ public class Mailinglists : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Mailinglist>> GetMailinglist(int id, CancellationToken ct)
     {
-        try
-        {
-            var result = await _mailinglistRepository.GetMailinglist(id, ct);
-            return result != null ? Ok(result) : NotFound();
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
+        var result = await mailinglistService.GetMailinglist(id, ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
     /// <summary>
@@ -89,15 +71,11 @@ public class Mailinglists : ControllerBase
     [ProducesResponseType(typeof(Mailinglist), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Mailinglist>> PostMailinglist([FromBody] PostMailinglistDTO mailinglist, CancellationToken ct)
     {
-        try
-        {
-            var result = await _mailinglistRepository.CreateMailinglist(mailinglist, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetMailinglist), new { id = result.Id, bitValue = result.BitValue }, result);
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
+        var result = await mailinglistService.CreateMailinglist(mailinglist, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetMailinglist), new { id = result.Id, bitValue = result.BitValue }, result);
     }
 
     /// <summary>
@@ -114,16 +92,11 @@ public class Mailinglists : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutMailinglist(int id, [FromBody] PostMailinglistDTO mailinglist, CancellationToken ct)
     {
-        try
-        {
-            await _mailinglistRepository.UpdateMailinglist(id, mailinglist, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException) { return NotFound(); }
-        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
+        await mailinglistService.UpdateMailinglist(id, mailinglist, GetUserId(), ct);
+        return NoContent();
     }
 
     /// <summary>
@@ -140,16 +113,11 @@ public class Mailinglists : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PatchMailinglist(int id, [FromBody] JsonPatchDocument<Mailinglist> patchDoc, CancellationToken ct)
     {
-        try
-        {
-            await _mailinglistRepository.PatchMailinglist(id, patchDoc, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException) { return NotFound(); }
-        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
+        await mailinglistService.PatchMailinglist(id, patchDoc, GetUserId(), ct);
+        return NoContent();
     }
 
     /// <summary>
@@ -165,15 +133,10 @@ public class Mailinglists : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteMailinglist(int id, CancellationToken ct)
     {
-        try
-        {
-            await _mailinglistRepository.DeleteMailinglist(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (UnauthorizedAccessException) { return Forbid(); }
-        catch (KeyNotFoundException) { return NotFound(); }
-        catch (Exception ex) { return BadRequest(new ErrorResponseDto { Message = ex.Message }); }
+        await mailinglistService.DeleteMailinglist(id, GetUserId(), ct);
+        return NoContent();
     }
 }

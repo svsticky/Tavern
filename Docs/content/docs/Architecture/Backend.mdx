@@ -9,28 +9,28 @@ Tavern's backend is implemented using **ASP.NET Core 8.0 Web API** and adheres t
 
 ## Architectural Layout (N-Tier Pattern)
 
-The codebase is organized into layers separating HTTP transport logic, data management, and business logic helper services:
+The codebase is organized into layers separating HTTP transport logic, data management, and business logic domain services:
 
 ```
 ┌────────────────────────────────────────────────────────┐
 │                      Controllers                       │
 │    HTTP Request Handling, JSON serialization/routing   │
 └──────────────────────────┬─────────────────────────────┘
-                           │ (Direct Repository Call)
+                           │ (Direct Service Call)
 ┌──────────────────────────▼─────────────────────────────┐
-│                     Repositories                       │
-│     EF Core operations, data queries, transactions     │
-│     (Injects and uses Services for validation/auth)    │
+│                    Domain Services                     │
+│    EF Core operations, domain logic, authorization     │
+│    (Injects and uses Helper Services & Providers)      │
 └──────────────────────────┬──────────────┬──────────────┘
                            │              │
  ┌─────────────────────────▼──┐        ┌──▼────────────────────────┐
- │   PostgreSQL (Database)    │        │  Services (Helper logic)  │
+ │   PostgreSQL (Database)    │◄───────┤  Services (Helper logic)  │
  └────────────────────────────┘        └───────────────────────────┘
 ```
 
-1. **Controllers:** Manage REST API endpoints, validate incoming request models, serialize responses, and translate domain errors to appropriate HTTP Status Codes (e.g., `200 OK`, `400 BadRequest`, `403 Forbidden`, `404 NotFound`). They communicate directly with repositories to command and query data.
-2. **Repositories:** Interface directly with Entity Framework Core (`PostgresDbContext`) to query and modify database entities. They contain the primary orchestration of the data transactions and inject business helper services to perform checks before committing changes.
-3. **Services:** House business logic helpers. For example, `PaymentValidationService` verifies membership and activity payment records, and `PermissionService` checks group memberships. These services are injected into repositories or outbox workers rather than controllers.
+1. **Controllers:** Manage REST API endpoints, validate incoming request models, serialize responses, and handle HTTP status codes. They delegate requests to domain services.
+2. **Domain Services (`Services/Domain`):** Execute business logic, enforce domain permissions and authorization checks, coordinate entity validation, and interface directly with Entity Framework Core (`PostgresDbContext`) to execute database operations and transactions.
+3. **Helper & Provider Services (`Services/`):** House business logic helpers, specialized features, and third-party provider implementations. They can also directly query/access the PostgreSQL database context when needed. For example, `PaymentValidationService` verifies membership and activity payment records, `PermissionService` checks group memberships, and `KeycloakAPIService` handles identity management.
 
 ---
 
@@ -38,16 +38,16 @@ The codebase is organized into layers separating HTTP transport logic, data mana
 
 The `Backend` project directory contains the following folders and components:
 
-* **`Controllers/`**: Houses the API controllers that define REST endpoints. They handle incoming HTTP requests, serialize/deserialize JSON, and coordinate requests to the repository layer.
+* **`Controllers/`**: Houses the API controllers that define REST endpoints. They handle incoming HTTP requests, serialize/deserialize JSON, and coordinate requests to the domain service layer.
+* **`Controllers/DTOs/`**: Defines the Data Transfer Objects (DTOs) used for API requests and responses, as well as static `ToDto()` LINQ projection methods.
 * **`Database/`**: Contains the Entity Framework Core database context (`PostgresDbContext.cs`) and database seeding configurations (`DatabaseSeeder.cs`).
 * **`Filters/`**: Custom action, schema, and API document filters for ASP.NET Core (such as custom Swagger/OpenAPI documentation schema mapping).
-* **`Interfaces/`**: Holds the interfaces and contracts for repositories and services, maintaining the Dependency Inversion Principle.
+* **`Interfaces/`**: Holds the interfaces and contracts for domain services and provider integration services, maintaining the Dependency Inversion Principle.
+* **`Middleware/`**: Contains custom ASP.NET Core HTTP pipeline middleware (such as `ExceptionHandlingMiddleware` for global error handling).
 * **`Migrations/`**: Automatically generated EF Core database schema migration files.
-* **`Models/`**: Defines the database entities, DTOs (Data Transfer Objects), and core domain enumerations.
-* **`Projections/`**: Query projection classes used to project database queries directly into client-friendly models, optimizing payload size.
+* **`Models/`**: Defines the database entities and core domain enumerations.
 * **`QueryExtensions/`**: Houses reusable LINQ query extensions to filter and load database query streams cleanly.
-* **`Repositories/`**: Contains the implementations of the data access layer, executing database operations via Entity Framework Core.
-* **`Services/`**: Implements domain services, third-party SaaS integrations (Mollie, Mailchimp, Keycloak), outbox task workers, and Hangfire background jobs.
+* **`Services/`**: Contains domain services (`Services/Domain/`), third-party SaaS integrations (Mollie, Mailchimp, Keycloak), outbox task workers, and Hangfire background jobs.
 * **`Utils/`**: Reusable helper functions and general utilities (e.g., date-time helpers).
 * **`Validators/`**: Contains model validation classes (leveraging FluentValidation) to validate incoming HTTP payloads before any business actions occur.
 

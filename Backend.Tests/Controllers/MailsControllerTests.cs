@@ -170,7 +170,7 @@ public class MailsControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task PostNormalMail_Forbidden_ReturnsForbid()
+    public async Task PostNormalMail_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         var dto = new PostMailDTO
@@ -183,15 +183,12 @@ public class MailsControllerTests : IDisposable
         _permissionServiceMock.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostNormalMail(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostNormalMail(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostNormalMail_Error_ReturnsBadRequest()
+    public async Task PostNormalMail_Error_ThrowsException()
     {
         // Arrange
         await SetupDatabaseForSending();
@@ -203,13 +200,9 @@ public class MailsControllerTests : IDisposable
         };
         _mailService.ShouldThrow = true;
 
-        // Act
-        var result = await _controller.PostNormalMail(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("SMTP connection failed", errorDto.Message);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() => _controller.PostNormalMail(dto, CancellationToken.None));
+        Assert.Equal("SMTP connection failed", ex.Message);
     }
 
     [Fact]
@@ -278,7 +271,7 @@ public class MailsControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task PostActivityMail_Forbidden_ReturnsForbid()
+    public async Task PostActivityMail_Forbidden_ThrowsUnauthorizedAccessException()
     {
         // Arrange
         await SetupDatabaseForSending();
@@ -311,15 +304,12 @@ public class MailsControllerTests : IDisposable
         _permissionServiceMock.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 
-        // Act
-        var result = await _controller.PostActivityMail(dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<ForbidResult>(result);
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostActivityMail(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostActivityMail_Error_ReturnsBadRequest()
+    public async Task PostActivityMail_Error_ThrowsArgumentException()
     {
         // Arrange
         var dto = new PostActivityMailDTO
@@ -329,12 +319,8 @@ public class MailsControllerTests : IDisposable
             ActivityId = 999
         };
 
-        // Act
-        var result = await _controller.PostActivityMail(dto, CancellationToken.None);
-
-        // Assert
-        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        var errorDto = Assert.IsType<ErrorResponseDto>(badRequestResult.Value);
-        Assert.Equal("Activity not found", errorDto.Message);
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _controller.PostActivityMail(dto, CancellationToken.None));
+        Assert.Equal("Activity not found", ex.Message);
     }
 }

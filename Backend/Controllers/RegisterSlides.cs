@@ -8,10 +8,11 @@ namespace Backend.Controllers;
 /// <summary>
 /// Controller for managing registration page slideshow images.
 /// </summary>
+/// <param name="registerSlideService">The register slide service used for managing registration slideshow images.</param>
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepository) : ControllerBase
+public class RegisterSlidesController(IRegisterSlideService registerSlideService) : ControllerBase
 {
     private Guid GetUserId()
     {
@@ -27,16 +28,10 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [Produces("application/json")]
     [ProducesResponseType(typeof(IEnumerable<RegisterSlideResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<RegisterSlideResponseDTO>>> GetRegisterSlides(CancellationToken ct)
     {
-        try
-        {
-            return Ok(await registerSlideRepository.GetRegisterSlides(ct));
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        return Ok(await registerSlideService.GetRegisterSlides(ct));
     }
 
     // GET: registerslides/{id}
@@ -49,17 +44,11 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [ProducesResponseType(typeof(RegisterSlideResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RegisterSlideResponseDTO>> GetRegisterSlide(int id, CancellationToken ct)
     {
-        try
-        {
-            var result = await registerSlideRepository.GetRegisterSlide(id, ct);
-            return result != null ? Ok(result) : NotFound();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await registerSlideService.GetRegisterSlide(id, ct);
+        return result != null ? Ok(result) : NotFound();
     }
 
     // POST: registerslides
@@ -72,21 +61,11 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [ProducesResponseType(typeof(RegisterSlideResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<RegisterSlideResponseDTO>> PostRegisterSlide([FromForm] PostRegisterSlideDTO dto, CancellationToken ct)
     {
-        try
-        {
-            var result = await registerSlideRepository.CreateRegisterSlide(dto, GetUserId(), ct);
-            return CreatedAtAction(nameof(GetRegisterSlide), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var result = await registerSlideService.CreateRegisterSlide(dto, GetUserId(), ct);
+        return CreatedAtAction(nameof(GetRegisterSlide), new { id = result.Id }, result);
     }
 
     // PUT: registerslides/{id}
@@ -100,25 +79,11 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> PutRegisterSlide(int id, RegisterSlideUpdateDTO dto, CancellationToken ct)
     {
-        try
-        {
-            await registerSlideRepository.UpdateRegisterSlide(id, dto, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await registerSlideService.UpdateRegisterSlide(id, dto, GetUserId(), ct);
+        return NoContent();
     }
 
     // DELETE: registerslides/{id}
@@ -132,25 +97,11 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult> DeleteRegisterSlide(int id, CancellationToken ct)
     {
-        try
-        {
-            await registerSlideRepository.DeleteRegisterSlide(id, GetUserId(), ct);
-            return NoContent();
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        await registerSlideService.DeleteRegisterSlide(id, GetUserId(), ct);
+        return NoContent();
     }
 
     // POST: registerslides/{id}/image
@@ -163,21 +114,11 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [ProducesResponseType(typeof(UploadPictureResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<UploadPictureResponse>> UploadImage(int id, IFormFile? image)
     {
-        try
-        {
-            var path = await registerSlideRepository.UploadRegisterSlideImage(id, GetUserId(), image);
-            return Ok(new UploadPictureResponse { Path = path });
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return Forbid();
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
-        }
+        var path = await registerSlideService.UploadRegisterSlideImage(id, GetUserId(), image);
+        return Ok(new UploadPictureResponse { Path = path });
     }
 
     // GET: registerslides/{id}/image
@@ -191,27 +132,21 @@ public class RegisterSlidesController(IRegisterSlideRepository registerSlideRepo
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ResponseCache(Duration = 300, Location = ResponseCacheLocation.Any)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Stream>> GetImage(int id, CancellationToken ct)
     {
-        try
+        var slide = await registerSlideService.GetRegisterSlide(id, ct);
+        if (slide == null || string.IsNullOrEmpty(slide.ImagePath))
         {
-            var slide = await registerSlideRepository.GetRegisterSlide(id, ct);
-            if (slide == null || string.IsNullOrEmpty(slide.ImagePath))
-            {
-                return NotFound("Register slide or image not found.");
-            }
-
-            var file = await registerSlideRepository.GetRegisterSlideImageFile(slide.ImagePath);
-            if (file == null)
-            {
-                return NotFound("File is no longer present on the server.");
-            }
-
-            return File(file.Stream, file.ContentType);
+            return NotFound("Register slide or image not found.");
         }
-        catch (Exception ex)
+
+        var file = await registerSlideService.GetRegisterSlideImageFile(slide.ImagePath);
+        if (file == null)
         {
-            return BadRequest(new ErrorResponseDto { Message = ex.Message });
+            return NotFound("File is no longer present on the server.");
         }
+
+        return File(file.Stream, file.ContentType);
     }
 }
