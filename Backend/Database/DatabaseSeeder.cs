@@ -37,6 +37,27 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         
         await EnsureGroupExists(db, "Candidate Board", GroupType.Committee, uint.Parse(candidateBoardGroupId));
 
+        await EnsureSettingExists(db, "PaymentProvider", "MOLLIE");
+        await EnsureSettingExists(db, "MollieApiKey", "");
+
+        await EnsureSettingExists(db, "MailService", "SMTP");
+        await EnsureSettingExists(db, "MailgunToken", "");
+        await EnsureSettingExists(db, "MailgunPublicKey", "");
+        await EnsureSettingExists(db, "MailgunApiBaseUrl", "");
+        await EnsureSettingExists(db, "SmtpHost", "");
+        await EnsureSettingExists(db, "SmtpPort", "587");
+        await EnsureSettingExists(db, "SmtpStartTls", "true");
+        await EnsureSettingExists(db, "SmtpUser", "");
+        await EnsureSettingExists(db, "SmtpPass", "");
+
+        await EnsureSettingExists(db, "AccountingService", "");
+        await EnsureSettingExists(db, "ExactAccessToken", "");
+        await EnsureSettingExists(db, "ExactDivision", "");
+
+        await EnsureSettingExists(db, "MailSubscriptionService", "");
+        await EnsureSettingExists(db, "MailchimpListKey", "");
+        await EnsureSettingExists(db, "MailchimpApiKey", "");
+
         await EnsureSettingExists(db, "PaymentServiceFee", "0.39");
 
         await EnsureSettingExists(db, "PaymentServiceFeeGLAccount", "5007");

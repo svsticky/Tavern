@@ -227,6 +227,7 @@ export const handleActivitySubmit = async ({
           ? new Date(fd.get("PaymentDeadline") as string).toISOString()
           : undefined
         : undefined,
+      IsOpenForPayment: isBoard ? fd.get("IsOpenForPayment") === "on" : undefined,
     },
   };
 
@@ -369,6 +370,11 @@ export const handleActivitySubmit = async ({
               value: fd.get("PaymentDeadline")
                 ? new Date(fd.get("PaymentDeadline") as string).toISOString()
                 : null,
+            },
+            {
+              op: "replace",
+              path: "/IsOpenForPayment",
+              value: fd.get("IsOpenForPayment") === "on",
             },
           );
         }

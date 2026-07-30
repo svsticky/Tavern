@@ -38,7 +38,7 @@ public class PaymentServicesTests : IDisposable
         _db.Database.EnsureCreated();
 
         _mollieClientMock = Substitute.For<IPaymentClient>();
-        _service = new MollieService(_mollieClientMock, _db, NullLogger<MollieService>.Instance);
+        _service = new MollieService(_db, NullLogger<MollieService>.Instance, () => _mollieClientMock);
     }
 
     public void Dispose()
@@ -157,7 +157,8 @@ public class PaymentServicesTests : IDisposable
     public async Task HandleWebhookAsync_PaidStatus_ProcessesPaymentsSuccessfully()
     {
         // Arrange
-        Environment.SetEnvironmentVariable("ACCOUNTING_SERVICE", "exact");
+        _db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+        await _db.SaveChangesAsync();
 
         var member = new Member
         {
@@ -202,7 +203,7 @@ public class PaymentServicesTests : IDisposable
         _mollieClientMock.GetPaymentAsync("tr_paid_1").Returns(mockPaymentResponse);
 
         // Create a new instance of MollieService so that it picks up the Environment variable at creation time
-        var serviceWithAccounting = new MollieService(_mollieClientMock, _db, NullLogger<MollieService>.Instance);
+        var serviceWithAccounting = new MollieService(_db, NullLogger<MollieService>.Instance, () => _mollieClientMock);
 
         // Act
         await serviceWithAccounting.HandleWebhookAsync("tr_paid_1");

@@ -60,7 +60,7 @@ To avoid hard coupling to specific third-party SaaS APIs, Tavern encapsulates ex
 | Interface | Purpose | Concrete Implementations | Configuration Variables |
 | :--- | :--- | :--- | :--- |
 | **`IAuthService`** | User profile creation, realm sync, authentication | `KeycloakAPIService` | `AUTH_SYSTEM=keycloak` |
-| **`IStorageService`** | Object photo upload and storage management | `S3StorageService` | `S3_SERVICE_URL`, `AWS_ACCESS_KEY_ID` |
+| **`IStorageService`** | Object photo upload and storage management | `S3StorageService` | `S3_SERVICE_URL`, `S3_ACCESS_KEY_ID` |
 | **`AbstractPaymentService`** | Generating checkout intents, webhook parsing | `MollieService` | `PAYMENT_PROVIDER=mollie` |
 | **`AbstractMailService`** | Dispatching system emails and invoices | `MailgunService`<br/>`SMTPMailService` | `MAIL_SERVICE=MAILGUN`<br/>`MAIL_SERVICE=SMTP` |
 | **`IAccountingToolService`** | Syncing payments to bookkeeping ledgers | `ExactService` | `ACCOUNTING_SERVICE=EXACT` |

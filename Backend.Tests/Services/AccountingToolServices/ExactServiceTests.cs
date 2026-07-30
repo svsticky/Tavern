@@ -51,6 +51,11 @@ public class ExactServiceTests : IDisposable
         _db = new PostgresDbContext(dbOptions);
         _db.Database.EnsureCreated();
 
+        _db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+        _db.Settings.Add(new Setting { Name = "ExactDivision", Value = "12345" });
+        _db.Settings.Add(new Setting { Name = "ExactAccessToken", Value = "mock_token" });
+        _db.SaveChanges();
+
         _handler = new MockHttpMessageHandler();
         _httpClient = new HttpClient(_handler)
         {

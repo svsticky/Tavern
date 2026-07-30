@@ -17,9 +17,9 @@ public class MailgunService(
     ILogger<MailgunService> logger,
     ILogger<AbstractMailService> baseLogger) : AbstractMailService(db, paymentValidationService, permissionService, baseLogger)
 {
-    private readonly string _privateKey = Environment.GetEnvironmentVariable("MAILGUN_TOKEN")!;
-    private readonly string _publicKey = Environment.GetEnvironmentVariable("MAILGUN_PUBLIC_KEY")!;
-    private readonly string _apiBaseUrl = Environment.GetEnvironmentVariable("MAILGUN_API_BASE_URL")!;
+    private string PrivateKey => _db.Settings.Find("MailgunToken")?.Value ?? "";
+    private string PublicKey => _db.Settings.Find("MailgunPublicKey")?.Value ?? "";
+    private string ApiBaseUrl => _db.Settings.Find("MailgunApiBaseUrl")?.Value ?? "";
 
     /// <summary>
     /// Sends an email through Mailgun.
@@ -32,7 +32,7 @@ public class MailgunService(
     protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
         logger.LogInformation("Sending Mailgun email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);
-        using var client = new MailgunClient(_apiBaseUrl, _privateKey, _publicKey);
+        using var client = new MailgunClient(ApiBaseUrl, PrivateKey, PublicKey);
         
         MailgunMessage message = CreateMessage(from, to, subject, htmlContent);
 

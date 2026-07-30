@@ -10,40 +10,28 @@ namespace Backend.Services.AccountingToolServices
     /// <summary>
     /// Implements synchronization of payment data to Exact Online.
     /// </summary>
-    public class ExactService : IAccountingToolService
+    public class ExactService(
+        HttpClient http,
+        PostgresDbContext db,
+        ILogger<ExactService> logger) : AbstractAccountingToolService(db, logger)
     {
-        private readonly HttpClient _http;
-        private readonly PostgresDbContext _db;
-        private readonly ILogger<ExactService> _logger;
+        private readonly HttpClient _http = http;
 
-        private readonly string _division = Environment.GetEnvironmentVariable("EXACT_DIVISION")!;
+        private string Division => _db.Settings.Find("ExactDivision")?.Value ?? "";
 
-        private readonly string _accessToken = Environment.GetEnvironmentVariable("EXACT_ACCESS_TOKEN")!;
+        private string AccessToken => _db.Settings.Find("ExactAccessToken")?.Value ?? "";
 
-        private readonly string _paymentService = Environment.GetEnvironmentVariable("PAYMENT_PROVIDER")!;
-
-        /// <summary>
-        /// Initializes a new instance of the ExactService class with the specified HTTP client, database context, and logger. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to make HTTP requests to the Exact Online API, interact with the database to retrieve payment information, and log important events and errors that occur during the synchronization process. This setup is essential for ensuring that the service can effectively synchronize payment data to Exact Online while providing visibility into its operations through logging.
-        /// </summary>
-        /// <param name="http">The HTTP client.</param>
-        /// <param name="db">The database context.</param>
-        /// <param name="logger">The logger.</param>
-        public ExactService(HttpClient http, PostgresDbContext db, ILogger<ExactService> logger)
-        {
-            _http = http;
-            _db = db;
-            _logger = logger;
-        }
+        private string PaymentService => _db.Settings.Find("PaymentProvider")?.Value ?? "MOLLIE";
 
         /// <inheritdoc />
-        public async Task<Guid> SyncPaymentAsync(Payment payment, CancellationToken ct)
+        protected override async Task<Guid> SyncPaymentCoreAsync(Payment payment, CancellationToken ct)
         {
             if (payment == null)
                 throw new ArgumentNullException(nameof(payment));
             _logger.LogInformation("Syncing payment {PaymentId} to Exact. Type: {PaymentType}", payment.Id, payment.GetType().Name);
 
             _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _accessToken);
+                new AuthenticationHeaderValue("Bearer", AccessToken);
 
             var existingId = await FindExistingSalesEntryId(payment, ct);
 
@@ -60,7 +48,7 @@ namespace Backend.Services.AccountingToolServices
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _http.PostAsync(
-                $"{_division}/salesentry/SalesEntries",
+                $"{Division}/salesentry/SalesEntries",
                 content,
                 ct
             );
@@ -81,10 +69,11 @@ namespace Backend.Services.AccountingToolServices
 
         private object BuildSalesEntry(Payment payment)
         {
+            var pService = string.IsNullOrEmpty(PaymentService) ? "Mollie" : PaymentService;
             return new
             {
                 EntryDate = DateTime.UtcNow,
-                Description = $"{char.ToUpper(_paymentService[0])}{_paymentService.Substring(1).ToLower()} payment {payment.PaymentServiceId}",
+                Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} payment {payment.PaymentServiceId}",
                 YourRef = $"{(payment is EnrollmentPayment ? "Enrollment payment" : "Membership payment")}-{payment.Id}",
 
                 SalesEntryLines = new[]
@@ -131,10 +120,11 @@ namespace Backend.Services.AccountingToolServices
 
         private object BuildPaymentFeeLine(PaymentServiceFeePayment payment)
         {
+            var pService = string.IsNullOrEmpty(PaymentService) ? "Mollie" : PaymentService;
             return new
             {
                 GLAccount = _db.Settings.Where(s => s.Name == "PaymentServiceFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
-                Description = $"{char.ToUpper(_paymentService[0])}{_paymentService.Substring(1).ToLower()} fee",
+                Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} fee",
                 VATCode = "0",
                 AmountDC = payment.Price
             };
@@ -153,7 +143,7 @@ namespace Backend.Services.AccountingToolServices
 
         private async Task<Guid?> FindExistingSalesEntryId(Payment payment, CancellationToken ct)
         {
-            var division = _division;
+            var division = Division;
 
             var yourRef = $"{(payment is EnrollmentPayment ? "Enrollment payment" : "Membership payment")}-{payment.Id}";
 

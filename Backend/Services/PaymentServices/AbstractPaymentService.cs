@@ -29,9 +29,24 @@ public enum PaymentStatus
 /// <summary>
 /// Defines an interface for a payment client that can retrieve the status of a payment transaction based on its unique identifier.
 /// </summary>
-public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<AbstractPaymentService> logger)
+public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<AbstractPaymentService> _logger)
 {
-    private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE") != null;
+    /// <summary>
+    /// The database context used for accessing and manipulating payment-related data in the underlying database. This context provides methods for querying and saving instances of payment entities, allowing the service to interact with the database in a structured manner.
+    /// </summary>
+    protected readonly PostgresDbContext _db = _db;
+
+    /// <summary>
+    /// The logger instance used for logging informational messages, warnings, and errors related to payment service operations. This logger allows the service to record important events and issues that occur during the execution of payment-related tasks, facilitating debugging and monitoring of the service's behavior.
+    /// </summary>
+    protected readonly ILogger<AbstractPaymentService> _logger = _logger;
+    
+    /// <summary>
+    /// Gets a value indicating whether an accounting tool integration is configured in the database settings.
+    /// </summary>
+    protected bool IsUsingAccountingTool =>
+        !string.Equals(Environment.GetEnvironmentVariable("ACCOUNTING_ENABLED"), "false", StringComparison.OrdinalIgnoreCase) &&
+        !string.IsNullOrWhiteSpace(_db.Settings.FirstOrDefault(s => s.Name == "AccountingService")?.Value);
 
     /// <summary>
     /// Retrieves the status of a payment transaction using its unique identifier.
@@ -66,7 +81,7 @@ public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<Abstr
     /// <exception cref="Exception">Thrown when the payment is not found.</exception>
     public virtual async Task HandleWebhookAsync(string id)
     {
-        logger.LogInformation("Handling payment service webhook for payment id {Id}.", id);
+        _logger.LogInformation("Handling payment service webhook for payment id {Id}.", id);
         GetPaymentResponse result = await GetPaymentAsync(id);
         var payments = await GetPaymentsByPaymentServiceId(id);
 
@@ -76,25 +91,25 @@ public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<Abstr
         if (result.Status == PaymentStatus.Paid)
         {
             await ProcessPaidPayments(payments, result);
-            logger.LogInformation("Processed paid webhook for payment id {Id}. Matched {PaymentCount} local payments.", id, payments.Count);
+            _logger.LogInformation("Processed paid webhook for payment id {Id}. Matched {PaymentCount} local payments.", id, payments.Count);
         }
     }
 
     private async Task<List<Payment>> GetPaymentsByPaymentServiceId(string id)
     {
-        var membershipPayments = await db.MembershipPayments
+        var membershipPayments = await _db.MembershipPayments
             .Include(p => p.Member)
             .Where(p => p.PaymentServiceId == id)
             .Cast<Payment>()
             .ToListAsync();
 
-        var enrollmentPayments = await db.EnrollmentPayments
+        var enrollmentPayments = await _db.EnrollmentPayments
             .Include(p => p.Member)
             .Where(p => p.PaymentServiceId == id)
             .Cast<Payment>()
             .ToListAsync();
 
-        var paymentServiceFeePayments = await db.PaymentServiceFeePayments
+        var paymentServiceFeePayments = await _db.PaymentServiceFeePayments
             .Include(p => p.Member)
             .Where(p => p.PaymentServiceId == id)
             .Cast<Payment>()
@@ -108,7 +123,7 @@ public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<Abstr
 
     private async Task ProcessPaidPayments(IEnumerable<Payment> payments, GetPaymentResponse result)
     {
-        using var transaction = await db.Database.BeginTransactionAsync();
+        using var transaction = await _db.Database.BeginTransactionAsync();
 
         try
         {
@@ -119,13 +134,13 @@ public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<Abstr
                 QueueAccountingTaskIfNeeded(payment);
             }
 
-            await db.SaveChangesAsync();
+            await _db.SaveChangesAsync();
             await transaction.CommitAsync();
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            logger.LogError(ex, "Failed processing paid webhook transaction for payment id {PaymentId}.", result.PaymentId);
+            _logger.LogError(ex, "Failed processing paid webhook transaction for payment id {PaymentId}.", result.PaymentId);
             throw;
         }
     }
@@ -146,15 +161,15 @@ public abstract class AbstractPaymentService(PostgresDbContext db, ILogger<Abstr
                     ?? throw new Exception("Member does not have a authentication system ID")
             };
 
-            db.AuthOutboxTasks.Add(task);
+            _db.AuthOutboxTasks.Add(task);
         }
     }
 
     private void QueueAccountingTaskIfNeeded(Payment payment)
     {
-        if (_isUsingAccountingTool)
+        if (IsUsingAccountingTool)
         {
-            db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
+            _db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
             {
                 PaymentId = payment.Id,
                 TaskType = payment is MembershipPayment

@@ -76,19 +76,11 @@ These variables are pre-configured or overridden for the devcontainer environmen
 
 #### Required to be Filled In (Production & Local Integration Testing)
 Configure these variables in your `.env` to enable specific features locally or in production:
-* **Payments & Accounting:**
-  * `PAYMENT_PROVIDER`: Payment provider choice (e.g., `MOLLIE`).
-  * `MollieApiKey`: API key required for Mollie payment gateway integration.
-  * `ACCOUNTING_SERVICE`, `EXACT_ACCESS_TOKEN`, `EXACT_DIVISION`: Credentials for external accounting sync (e.g., Exact Online). This variables are optional and only needed if you use an accounting service.
 * **Theme & UI Customization:**
   * `LOGO_URL`: Branding logo URL injected into the Vite frontend. Board colors are managed in the admin settings and stored in the database.
 * **Object Storage (S3 / LocalStack):**
-  * `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `S3_SERVICE_URL`: Credentials and endpoints for AWS S3 object storage (defaults are configured to run with LocalStack locally).
-* **Mail Services (optional for development, needed if you want mailing to work):**
-  * `MAIL_SERVICE`: Selector for the mail service (`SMTP` or `MAILGUN`).
-  * `SMTP_HOST`, `SMTP_PORT`, `SMTP_STARTTLS`, `SMTP_USER`, `SMTP_PASS` / `MAILGUN_TOKEN`, `MAILGUN_PUBLIC_KEY`, `MAILGUN_API_BASE_URL`: Server and API configurations for sending system emails.
+  * `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_SERVICE_URL`: Credentials and endpoints for S3 object storage (defaults are configured to run with LocalStack locally).
 * **External Integrations:**
-  * `MAIL_SUBSCRIPTION_SERVICE`, `MAILCHIMP_LIST_KEY`, `MAILCHIMP_API_KEY`: Credentials for newsletter subscription sync (e.g., Mailchimp). These are optional and only needed if you want to work it with a mail subscription service.
   * `NGROK_AUTHTOKEN`, `NGROK_URL`: Auth token and public tunnel URL used by Ngrok for local webhook testing. These are optional, but can be usefull for letting mollie call the webhook after a payment.
 
 

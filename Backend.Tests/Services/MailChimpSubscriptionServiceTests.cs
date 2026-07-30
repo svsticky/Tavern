@@ -86,9 +86,11 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     public async Task UpdateSubscriptionAsync_ServiceEnabled_MailSubscriptionZero_SendsDeleteRequest()
     {
         // Arrange
-        Environment.SetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE", "MAILCHIMP");
-        Environment.SetEnvironmentVariable("MAILCHIMP_LIST_KEY", "test_list_123");
         using var db = new PostgresDbContext(_dbOptions);
+        db.Settings.Add(new Setting { Name = "MailSubscriptionService", Value = "MAILCHIMP" });
+        db.Settings.Add(new Setting { Name = "MailchimpListKey", Value = "test_list_123" });
+        db.SaveChanges();
+
         var service = new MailChimpSubscriptionService(
             NullLogger<MailChimpSubscriptionService>.Instance,
             _httpClient,
@@ -138,11 +140,10 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     public async Task UpdateSubscriptionAsync_ServiceEnabled_MailSubscriptionNonZero_SendsPutRequestWithInterests()
     {
         // Arrange
-        Environment.SetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE", "MAILCHIMP");
-        Environment.SetEnvironmentVariable("MAILCHIMP_LIST_KEY", "test_list_123");
-        
         using var db = new PostgresDbContext(_dbOptions);
         db.Database.EnsureCreated();
+        db.Settings.Add(new Setting { Name = "MailSubscriptionService", Value = "MAILCHIMP" });
+        db.Settings.Add(new Setting { Name = "MailchimpListKey", Value = "test_list_123" });
         db.Mailinglists.Add(new Mailinglist { Id = 1, Name = "Newsletter", BitValue = 1u, ServiceId = "id_news" });
         db.Mailinglists.Add(new Mailinglist { Id = 2, Name = "Events", BitValue = 2u, ServiceId = "id_events" });
         db.Mailinglists.Add(new Mailinglist { Id = 3, Name = "Career", BitValue = 4u, ServiceId = "id_career" });

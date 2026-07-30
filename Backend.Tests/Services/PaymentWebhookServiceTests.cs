@@ -78,7 +78,8 @@ public class PaymentWebhookServiceTests : IDisposable
     public async Task HandleWebhookAsync_WithPaidStatus_ProcessesMembershipPayment_SyncsAuthAndAccounting()
     {
         // Arrange
-        Environment.SetEnvironmentVariable("ACCOUNTING_SERVICE", "true");
+        _db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+        await _db.SaveChangesAsync();
         var id = "pay_12345";
         var paidAt = DateTimeOffset.UtcNow;
         _paymentServiceMock.GetPaymentAsync(id).Returns(new GetPaymentResponse(id, PaymentStatus.Paid, paidAt));
@@ -168,7 +169,8 @@ public class PaymentWebhookServiceTests : IDisposable
     public async Task HandleWebhookAsync_WithPaidStatus_ProcessesEnrollmentPayment_AndFeePayment_WithAccounting()
     {
         // Arrange
-        Environment.SetEnvironmentVariable("ACCOUNTING_SERVICE", "true");
+        _db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+        await _db.SaveChangesAsync();
         var id = "pay_12345";
         var paidAt = DateTimeOffset.UtcNow;
         _paymentServiceMock.GetPaymentAsync(id).Returns(new GetPaymentResponse(id, PaymentStatus.Paid, paidAt));

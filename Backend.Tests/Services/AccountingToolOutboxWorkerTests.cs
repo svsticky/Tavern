@@ -3,9 +3,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Database;
-using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.AccountingToolServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -18,7 +18,7 @@ namespace Backend.Tests.Services;
 public class AccountingToolOutboxWorkerTests
 {
     private readonly DbContextOptions<PostgresDbContext> _dbOptions;
-    private readonly IAccountingToolService _accountingToolService;
+    private readonly AbstractAccountingToolService _accountingToolService;
     private readonly ILogger<AccountingToolOutboxWorker> _logger;
 
     public AccountingToolOutboxWorkerTests()
@@ -28,7 +28,10 @@ public class AccountingToolOutboxWorkerTests
             .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
-        _accountingToolService = Substitute.For<IAccountingToolService>();
+        _accountingToolService = Substitute.For<AbstractAccountingToolService>(
+            Substitute.For<PostgresDbContext>(_dbOptions),
+            NullLogger<AbstractAccountingToolService>.Instance
+        );
         _logger = NullLogger<AccountingToolOutboxWorker>.Instance;
     }
 

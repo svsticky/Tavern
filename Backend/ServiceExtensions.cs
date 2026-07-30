@@ -16,7 +16,6 @@ using Microsoft.EntityFrameworkCore;
 using Amazon.S3;
 using Hangfire;
 using Hangfire.PostgreSql;
-using Mollie.Api;
 using System.Text;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -193,10 +192,13 @@ internal static class ServiceExtensions
             {
                 ServiceURL = Environment.GetEnvironmentVariable("S3_SERVICE_URL") ?? "http://localstack:4566",
                 ForcePathStyle = true,
-                AuthenticationRegion = "us-east-1"
+                AuthenticationRegion = Environment.GetEnvironmentVariable("S3_REGION") ?? Environment.GetEnvironmentVariable("S3_REGION") ?? "us-east-1"
             };
 
-            return new AmazonS3Client(Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID"), Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY"), s3Config);
+            var accessKey = Environment.GetEnvironmentVariable("S3_ACCESS_KEY_ID") ?? Environment.GetEnvironmentVariable("S3_ACCESS_KEY_ID");
+            var secretKey = Environment.GetEnvironmentVariable("S3_SECRET_ACCESS_KEY") ?? Environment.GetEnvironmentVariable("S3_SECRET_ACCESS_KEY");
+
+            return new AmazonS3Client(accessKey, secretKey, s3Config);
         });
 
         services.AddScoped<IStorageService, S3StorageService>();
@@ -207,64 +209,58 @@ internal static class ServiceExtensions
     internal static IServiceCollection AddThirdPartyIntegrations(this IServiceCollection services)
     {
         // Payments
-        string? paymentProvider = Environment.GetEnvironmentVariable("PAYMENT_PROVIDER")?.Trim().ToUpperInvariant();
-        switch (paymentProvider)
+        services.AddScoped<MollieService>();
+        services.AddScoped<AbstractPaymentService>(sp =>
         {
-            default:
-                services.AddMollieApi(options => 
-                {
-                    options.ApiKey = Environment.GetEnvironmentVariable("MollieApiKey") ?? string.Empty;
-                });
-                services.AddScoped<AbstractPaymentService, MollieService>();
-                break;
-        }
+            var db = sp.GetRequiredService<PostgresDbContext>();
+            var paymentProvider = db.Settings.FirstOrDefault(s => s.Name == "PaymentProvider")?.Value?.Trim().ToUpperInvariant();
+            return paymentProvider switch
+            {
+                "MOLLIE" => sp.GetRequiredService<MollieService>(),
+                _ => sp.GetRequiredService<MollieService>()
+            };
+        });
         services.AddHostedService<PaymentSyncService>();
 
         // Mail
-        string? mailProvider = Environment.GetEnvironmentVariable("MAIL_SERVICE");
-        switch (mailProvider)
+        services.AddScoped<MailgunService>();
+        services.AddScoped<SMTPMailService>();
+        services.AddScoped<AbstractMailService>(sp =>
         {
-            case "MAILGUN":
-                services.AddScoped<AbstractMailService, MailgunService>();
-                break;
-            case "SMTP":
-                services.AddScoped<AbstractMailService, SMTPMailService>();
-                break;
-            default:
-                break;
-        }
+            var db = sp.GetRequiredService<PostgresDbContext>();
+            var mailProvider = db.Settings.FirstOrDefault(s => s.Name == "MailService")?.Value?.Trim().ToUpperInvariant();
+            return mailProvider switch
+            {
+                "MAILGUN" => sp.GetRequiredService<MailgunService>(),
+                _ => sp.GetRequiredService<SMTPMailService>()
+            };
+        });
 
         // Accounting
-        string? accountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE");
-        switch (accountingTool)
+        services.AddScoped<ExactService>();
+        services.AddScoped<AbstractAccountingToolService>(sp =>
         {
-            case "EXACT":
-                services.AddScoped<IAccountingToolService, ExactService>();
-                break;
-            default:
-                break;
-        }
+            var db = sp.GetRequiredService<PostgresDbContext>();
+            var accountingTool = db.Settings.FirstOrDefault(s => s.Name == "AccountingService")?.Value?.Trim().ToUpperInvariant();
+            return accountingTool switch
+            {
+                "EXACT" => sp.GetRequiredService<ExactService>(),
+                _ => sp.GetRequiredService<ExactService>()
+            };
+        });
 
         // Mail Subscription
-        string? mailSubscriptionService = Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE");
-        switch (mailSubscriptionService)
+        services.AddHttpClient<MailChimpSubscriptionService>();
+        services.AddScoped<IMailSubscriptionService>(sp =>
         {
-            case "MAILCHIMP":
-                services.AddHttpClient<IMailSubscriptionService, MailChimpSubscriptionService>(client =>
-                {
-                    var apiKey = Environment.GetEnvironmentVariable("MAILCHIMP_API_KEY") ?? throw new InvalidOperationException("MAILCHIMP_API_KEY environment variable is not set.");
-                    var dataCenter = apiKey.Split('-')[1];
-                    
-                    client.BaseAddress = new Uri($"https://{dataCenter}.api.mailchimp.com/3.0/");
-                    
-                    var authValue = Convert.ToBase64String(Encoding.ASCII.GetBytes($"anyuser:{apiKey}"));
-                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", authValue);
-                });
-                services.AddScoped<IMailSubscriptionService, MailChimpSubscriptionService>();
-                break;
-            default:
-                break;
-        }
+            var db = sp.GetRequiredService<PostgresDbContext>();
+            var mailSubscriptionService = db.Settings.FirstOrDefault(s => s.Name == "MailSubscriptionService")?.Value?.Trim().ToUpperInvariant();
+            return mailSubscriptionService switch
+            {
+                "MAILCHIMP" => sp.GetRequiredService<MailChimpSubscriptionService>(),
+                _ => sp.GetRequiredService<MailChimpSubscriptionService>()
+            };
+        });
 
         return services;
     }

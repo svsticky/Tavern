@@ -25,11 +25,20 @@ export const FormSection = ({
   title?: string;
   columns?: number;
   className?: string;
-}) => (
-  <section className={className}>
-    {title && <FormHeader title={title} />}
-    <div className={`grid grid-cols-1 md:grid-cols-${columns} gap-6`}>
-      {children}
-    </div>
-  </section>
-);
+}) => {
+  const gridColsClass =
+    columns === 1
+      ? "grid-cols-1"
+      : columns === 3
+        ? "grid-cols-1 md:grid-cols-3"
+        : "grid-cols-1 md:grid-cols-2";
+
+  return (
+    <section className={className}>
+      {title && <FormHeader title={title} />}
+      <div className={`grid ${gridColsClass} gap-6`}>
+        {children}
+      </div>
+    </section>
+  );
+};
