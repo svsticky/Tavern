@@ -291,6 +291,11 @@ export default function EditActivityForm({
                   type="date"
                   defaultValue={formatDateOnly(activity?.paymentDeadline ?? "")}
                 />
+                <Checkbox
+                  label={t("is_open_for_payment")}
+                  name="IsOpenForPayment"
+                  defaultChecked={activity?.isOpenForPayment ?? false}
+                />
               </>
             )}
           </FormSection>

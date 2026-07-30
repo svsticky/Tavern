@@ -14,8 +14,8 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     private readonly ILogger<MailChimpSubscriptionService> _logger;
     private readonly HttpClient _httpClient;
     private readonly PostgresDbContext _context; 
-    private readonly string _listKey = Environment.GetEnvironmentVariable("MAILCHIMP_LIST_KEY") ?? string.Empty;
-    private readonly bool _isEnabled = Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE") == "MAILCHIMP";
+    private string ListKey => _context.Settings.Find("MailchimpListKey")?.Value ?? string.Empty;
+    private bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("MAILCHIMP", StringComparison.OrdinalIgnoreCase) ?? false;
 
     /// <summary>
     /// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve mailing list definitions. This setup is essential for ensuring that the service can effectively manage mail subscriptions by communicating with MailChimp and maintaining accurate subscription data based on user preferences stored in the database.
@@ -33,6 +33,18 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         _context = context;
     }
 
+    private void ConfigureHttpClient()
+    {
+        var apiKey = _context.Settings.Find("MailchimpApiKey")?.Value ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(apiKey) && apiKey.Contains('-'))
+        {
+            var dataCenter = apiKey.Split('-')[1];
+            _httpClient.BaseAddress = new Uri($"https://{dataCenter}.api.mailchimp.com/3.0/");
+            var authValue = Convert.ToBase64String(Encoding.ASCII.GetBytes($"anyuser:{apiKey}"));
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", authValue);
+        }
+    }
+
     /// <summary>
     /// Updates the mail subscription status for a given email address based on the provided mail subscription bitmap. The UpdateSubscriptionAsync method checks if the mail subscription service is enabled, calculates the MD5 hash of the email address for MailChimp API compatibility, and then either updates or deletes the member's subscription in MailChimp based on whether the mailSubscription bitmap is zero (indicating unsubscription) or not. The method also includes logging to track subscription updates and removals for monitoring and debugging purposes.
     /// </summary>
@@ -42,11 +54,13 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task UpdateSubscriptionAsync(string email, uint mailSubscription, CancellationToken ct)
     {
-        if(!_isEnabled) 
+        if(!IsEnabled) 
         {
             _logger.LogInformation("MailChimp subscription service is disabled. Skipping update for {Email}.", email);
             return;
         }
+
+        ConfigureHttpClient();
 
         var emailHash = CalculateMd5Hash(email);
 
@@ -79,7 +93,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
             interests = interests
         };
 
-        var response = await _httpClient.PutAsJsonAsync($"lists/{_listKey}/members/{emailHash}", payload, ct);
+        var response = await _httpClient.PutAsJsonAsync($"lists/{ListKey}/members/{emailHash}", payload, ct);
         response.EnsureSuccessStatusCode();
         
         _logger.LogInformation("Subscriptions for {Email} updated via dynamic bitmap.", email);
@@ -87,7 +101,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 
     private async Task DeleteMemberAsync(string emailHash, CancellationToken ct)
     {
-        var response = await _httpClient.DeleteAsync($"lists/{_listKey}/members/{emailHash}", ct);
+        var response = await _httpClient.DeleteAsync($"lists/{ListKey}/members/{emailHash}", ct);
 
         if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
         {

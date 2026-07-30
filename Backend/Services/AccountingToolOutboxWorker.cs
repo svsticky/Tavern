@@ -1,6 +1,7 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.AccountingToolServices;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;
@@ -12,7 +13,6 @@ public class AccountingToolOutboxWorker(
     IServiceProvider serviceProvider,
     ILogger<AccountingToolOutboxWorker> logger) : BackgroundService
 {
-    private readonly bool _isEnabled = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE"));
 
     /// <summary>
     /// Enqueues an accounting outbox task for a payment.
@@ -37,22 +37,35 @@ public class AccountingToolOutboxWorker(
     }
 
     /// <summary>
-    /// Executes the background worker, continuously processing accounting outbox tasks until the service is stopped. The worker retrieves tasks from the database, processes them using the appropriate accounting tool service, and handles any failures with retry logic and exponential backoff. The worker also includes logging for monitoring task processing and any errors that occur during execution.
+    /// Executes the background worker loop.
     /// </summary>
     /// <param name="stoppingToken">The cancellation token for stopping the worker.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_isEnabled)
-        {
-            logger.LogInformation("Accounting tool outbox worker is disabled.");
-            return;
-        }
-
         logger.LogInformation("Accounting tool outbox worker started.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var envEnabled = Environment.GetEnvironmentVariable("ACCOUNTING_ENABLED");
+                if (envEnabled != null && envEnabled.Equals("false", StringComparison.OrdinalIgnoreCase))
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    continue;
+                }
+
+                var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
+                var isEnabled = !string.IsNullOrWhiteSpace(db.Settings.FirstOrDefault(s => s.Name == "AccountingService")?.Value);
+
+                if (!isEnabled)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    continue;
+                }
+            }
+
             bool processed = await TryProcessNextTaskAsync(stoppingToken);
 
             if (!processed)
@@ -79,11 +92,11 @@ public class AccountingToolOutboxWorker(
         logger.LogInformation("Processing accounting outbox task {TaskType} for payment {PaymentId}. Retry {RetryCount}.",
             task.TaskType, task.PaymentId, task.RetryCount);
 
-        var exactService = scope.ServiceProvider.GetRequiredService<IAccountingToolService>();
+        var accountingService = scope.ServiceProvider.GetRequiredService<AbstractAccountingToolService>();
 
         try
         {
-            await HandleTaskAsync(db, exactService, task, ct);
+            await HandleTaskAsync(db, accountingService, task, ct);
             db.AccountingToolOutboxTasks.Remove(task);
             logger.LogInformation("Completed accounting outbox task {TaskType} for payment {PaymentId}.", task.TaskType, task.PaymentId);
         }
@@ -96,7 +109,7 @@ public class AccountingToolOutboxWorker(
         return true;
     }
 
-    private async Task HandleTaskAsync(PostgresDbContext db, IAccountingToolService service, AccountingToolOutboxTask task, CancellationToken ct)
+    private async Task HandleTaskAsync(PostgresDbContext db, AbstractAccountingToolService service, AccountingToolOutboxTask task, CancellationToken ct)
     {
         Payment? payment = task.TaskType switch
         {

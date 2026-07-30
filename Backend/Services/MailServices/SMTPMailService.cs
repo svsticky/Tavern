@@ -18,11 +18,11 @@ public class SMTPMailService(
     ILogger<SMTPMailService> logger,
     ILogger<AbstractMailService> baseLogger) : AbstractMailService(db, paymentValidationService, permissionService, baseLogger)
 {
-    private readonly string _host = Environment.GetEnvironmentVariable("SMTP_HOST")!;
-    private readonly int _port = int.Parse(Environment.GetEnvironmentVariable("SMTP_PORT") ?? "587");
-    private readonly bool _startTls = Environment.GetEnvironmentVariable("SMTP_STARTTLS") == "true";
-    private readonly string? _user = Environment.GetEnvironmentVariable("SMTP_USER");
-    private readonly string? _pass = Environment.GetEnvironmentVariable("SMTP_PASS");
+    private string Host => _db.Settings.Find("SmtpHost")?.Value ?? "";
+    private int Port => int.TryParse(_db.Settings.Find("SmtpPort")?.Value, out var port) ? port : 587;
+    private bool StartTls => _db.Settings.Find("SmtpStartTls")?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? true;
+    private string? User => _db.Settings.Find("SmtpUser")?.Value;
+    private string? Pass => _db.Settings.Find("SmtpPass")?.Value;
 
     /// <summary>
     /// Sends an email through SMTP.
@@ -54,12 +54,12 @@ public class SMTPMailService(
 
         using var client = new SmtpClient();
         
-        MailKit.Security.SecureSocketOptions secureSocketOptions = _startTls ? MailKit.Security.SecureSocketOptions.StartTls : MailKit.Security.SecureSocketOptions.Auto;
-        await client.ConnectAsync(_host, _port, secureSocketOptions, ct);
+        MailKit.Security.SecureSocketOptions secureSocketOptions = StartTls ? MailKit.Security.SecureSocketOptions.StartTls : MailKit.Security.SecureSocketOptions.Auto;
+        await client.ConnectAsync(Host, Port, secureSocketOptions, ct);
         
-        if (!string.IsNullOrEmpty(_user) && !string.IsNullOrEmpty(_pass))
+        if (!string.IsNullOrEmpty(User) && !string.IsNullOrEmpty(Pass))
         {
-            await client.AuthenticateAsync(_user, _pass, ct);
+            await client.AuthenticateAsync(User, Pass, ct);
         }
 
         await client.SendAsync(message, ct);

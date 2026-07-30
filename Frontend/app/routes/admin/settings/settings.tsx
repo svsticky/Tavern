@@ -31,6 +31,7 @@ import {
   handleSettingsChange,
   loadSettingsPageData,
 } from "./settings.handlers";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * The primary configuration dashboard for the application's global settings.
@@ -160,11 +161,6 @@ export default function SettingsPage() {
         </div>
 
         <div>
-          <FormHeader title={t("mail_subscriptions")} />
-          <ManageMailingListsDatatable />
-        </div>
-
-        <div>
           <FormHeader title={t("registration_documents")} />
           <ManageRegistrationDocumentsDatatable />
         </div>
@@ -256,34 +252,7 @@ export default function SettingsPage() {
             />
           </FormSection>
 
-          <FormSection title={t("finances")} columns={2}>
-            <Input
-              label={t("payment_service_fee")}
-              type="number"
-              step="0.01"
-              value={settings.PaymentServiceFee || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "PaymentServiceFee",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-              required
-            />
-            <Input
-              label={t("payment_service_fee_vat_code")}
-              type="number"
-              step="1"
-              value={settings.PaymentServiceFeeVATCode || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "PaymentServiceFeeVATCode",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-            />
+          <FormSection title={t("membership_and_association", "Lidmaatschap & Vereniging")} columns={2}>
             <Input
               label={t("membership_price")}
               type="number"
@@ -311,10 +280,62 @@ export default function SettingsPage() {
                 )
               }
             />
-            <Tile className="bg-gray-50 border border-gray-100">
-              <div className="flex flex-col row-span-2">
+            <Input
+              label={t("financial_year_start_date")}
+              placeholder="MM-DD"
+              value={settings.FinancialYearStartDate || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "FinancialYearStartDate",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
+            />
+            <Input
+              label={t("committee_creation_date")}
+              placeholder="MM-DD"
+              value={settings.CommitteeCreationDate || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "CommitteeCreationDate",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
+            />
+            <Input
+              label={t("study_start_dates")}
+              placeholder="MM-DD, MM-DD"
+              value={settings.StudyStartDates || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "StudyStartDates",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
+            />
+            <Input
+              label={t("membership_vat_code")}
+              type="number"
+              step="1"
+              value={settings.MembershipVATCode || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MembershipVATCode",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Tile className="bg-gray-50 border border-gray-100 col-span-1 md:col-span-2">
+              <div className="flex flex-col">
                 <FormHeader title={t("should_pay_membership")} />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-5 ">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 px-5 pb-3">
                   <Checkbox
                     label={t("masters")}
                     checked={settings.MastersShouldPayMembership !== "0"}
@@ -364,117 +385,279 @@ export default function SettingsPage() {
                 </div>
               </div>
             </Tile>
+          </FormSection>
+
+          <FormSection title={t("financial_and_payments", "Financiën & Betalingen")} columns={2}>
+            <Select
+              label={t("payment_provider")}
+              value={settings.PaymentProvider}
+              onChange={(e) =>
+                handleSettingsChange("PaymentProvider", e.target.value, setSettings)
+              }
+              options={[
+                { value: "MOLLIE", label: "Mollie" },
+              ]}
+            />
+            {(settings.PaymentProvider).toUpperCase() === "MOLLIE" ? (
+              <Input
+                label={t("mollie_api_key")}
+                type="password"
+                value={settings.MollieApiKey || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MollieApiKey",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+            ) : <div />}
+
             <Input
-              label={t("membership_vat_code")}
+              label={t("payment_service_fee")}
               type="number"
-              step="1"
-              value={settings.MembershipVATCode || ""}
+              step="0.01"
+              value={settings.PaymentServiceFee || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "MembershipVATCode",
+                  "PaymentServiceFee",
                   e.target.value,
                   setSettings,
                 )
               }
-            />
-            <Input
-              label={t("financial_year_start_date")}
-              placeholder="MM-DD"
-              value={settings.FinancialYearStartDate || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "FinancialYearStartDate",
-                  e.target.value.trim(),
-                  setSettings,
-                )
-              }
               required
             />
             <Input
-              label={t("committee_creation_date", "Insteldatum Commissies")}
-              placeholder="MM-DD"
-              value={settings.CommitteeCreationDate || ""}
+              label={t("payment_service_fee_vat_code")}
+              type="number"
+              step="1"
+              value={settings.PaymentServiceFeeVATCode || ""}
               onChange={(e) =>
                 handleSettingsChange(
-                  "CommitteeCreationDate",
-                  e.target.value.trim(),
+                  "PaymentServiceFeeVATCode",
+                  e.target.value,
                   setSettings,
                 )
               }
-              required
-            />
-            <Input
-              label={t("study_start_dates")}
-              placeholder="MM-DD, MM-DD"
-              value={settings.StudyStartDates || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "StudyStartDates",
-                  e.target.value.trim(),
-                  setSettings,
-                )
-              }
-              required
             />
           </FormSection>
 
-          <FormSection title={t("accounting")} columns={2}>
-            <Input
-              label={t("membership_gl_account")}
-              value={settings.MembershipGLAccount || ""}
+          {getEnv("ACCOUNTING_ENABLED")?.toLowerCase() === "true" && (
+            <FormSection title={t("accounting")} columns={2}>
+              <Select
+                label={t("accounting_service")}
+                value={settings.AccountingService || ""}
+                onChange={(e) =>
+                  handleSettingsChange("AccountingService", e.target.value, setSettings)
+                }
+                options={[
+                  { value: "", label: t("none") },
+                  { value: "EXACT", label: "Exact Online" },
+                ]}
+              />
+              <div />
+
+              {(settings.AccountingService || "").toUpperCase() === "EXACT" && (
+                <>
+                  <Input
+                    label={t("exact_division")}
+                    value={settings.ExactDivision || ""}
+                    onChange={(e) =>
+                      handleSettingsChange("ExactDivision", e.target.value, setSettings)
+                    }
+                  />
+                  <Input
+                    label={t("exact_access_token")}
+                    type="password"
+                    value={settings.ExactAccessToken || ""}
+                    onChange={(e) =>
+                      handleSettingsChange("ExactAccessToken", e.target.value, setSettings)
+                    }
+                  />
+                </>
+              )}
+
+              <Input
+                label={t("membership_gl_account")}
+                value={settings.MembershipGLAccount || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MembershipGLAccount",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("activity_gl_account")}
+                value={settings.ActivityGLAccount || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "ActivityGLAccount",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("payment_service_fee_gl_account")}
+                value={settings.PaymentServiceFeeGLAccount || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "PaymentServiceFeeGLAccount",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("payment_service_relation_code")}
+                value={settings.PaymentServiceRelationCode || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "PaymentServiceRelationCode",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("payment_service_payments_condition")}
+                value={settings.PaymentServicePaymentsCondition || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "PaymentServicePaymentsCondition",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+            </FormSection>
+          )}
+
+          <FormSection title={t("mail_settings")} columns={2}>
+            <Select
+              label={t("mail_service")}
+              value={settings.MailService || "SMTP"}
               onChange={(e) =>
-                handleSettingsChange(
-                  "MembershipGLAccount",
-                  e.target.value,
-                  setSettings,
-                )
+                handleSettingsChange("MailService", e.target.value, setSettings)
               }
+              options={[
+                { value: "SMTP", label: "SMTP" },
+                { value: "MAILGUN", label: "Mailgun" },
+              ]}
             />
-            <Input
-              label={t("activity_gl_account")}
-              value={settings.ActivityGLAccount || ""}
+            <Select
+              label={t("mail_subscription_service")}
+              value={settings.MailSubscriptionService || ""}
               onChange={(e) =>
-                handleSettingsChange(
-                  "ActivityGLAccount",
-                  e.target.value,
-                  setSettings,
-                )
+                handleSettingsChange("MailSubscriptionService", e.target.value, setSettings)
               }
+              options={[
+                { value: "", label: t("none") },
+                { value: "MAILCHIMP", label: "Mailchimp" },
+              ]}
             />
-            <Input
-              label={t("payment_service_fee_gl_account")}
-              value={settings.PaymentServiceFeeGLAccount || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "PaymentServiceFeeGLAccount",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-            />
-            <Input
-              label={t("payment_service_relation_code")}
-              value={settings.PaymentServiceRelationCode || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "PaymentServiceRelationCode",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-            />
-            <Input
-              label={t("payment_service_payments_condition")}
-              value={settings.PaymentServicePaymentsCondition || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "PaymentServicePaymentsCondition",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-            />
+
+            {(settings.MailService || "SMTP").toUpperCase() === "MAILGUN" && (
+              <>
+                <Input
+                  label={t("mailgun_token")}
+                  type="password"
+                  value={settings.MailgunToken || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("MailgunToken", e.target.value, setSettings)
+                  }
+                />
+                <Input
+                  label={t("mailgun_public_key")}
+                  type="password"
+                  value={settings.MailgunPublicKey || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("MailgunPublicKey", e.target.value, setSettings)
+                  }
+                />
+                <Input
+                  label={t("mailgun_api_base_url")}
+                  value={settings.MailgunApiBaseUrl || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("MailgunApiBaseUrl", e.target.value, setSettings)
+                  }
+                />
+              </>
+            )}
+
+            {(settings.MailService || "SMTP").toUpperCase() === "SMTP" && (
+              <>
+                <Input
+                  label={t("smtp_host")}
+                  value={settings.SmtpHost || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("SmtpHost", e.target.value, setSettings)
+                  }
+                />
+                <Input
+                  label={t("smtp_port")}
+                  type="number"
+                  value={settings.SmtpPort || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("SmtpPort", e.target.value, setSettings)
+                  }
+                />
+                <Input
+                  label={t("smtp_user")}
+                  value={settings.SmtpUser || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("SmtpUser", e.target.value, setSettings)
+                  }
+                />
+                <Input
+                  label={t("smtp_pass")}
+                  type="password"
+                  value={settings.SmtpPass || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("SmtpPass", e.target.value, setSettings)
+                  }
+                />
+                <Checkbox
+                  label={t("smtp_starttls")}
+                  checked={settings.SmtpStartTls === "true"}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleSettingsChange(
+                      "SmtpStartTls",
+                      e.target.checked ? "true" : "false",
+                      setSettings,
+                    )
+                  }
+                />
+              </>
+            )}
+
+            {(settings.MailSubscriptionService || "").toUpperCase() === "MAILCHIMP" && (
+              <>
+                <Input
+                  label={t("mailchimp_list_key")}
+                  value={settings.MailchimpListKey || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("MailchimpListKey", e.target.value, setSettings)
+                  }
+                />
+                <Input
+                  label={t("mailchimp_api_key")}
+                  type="password"
+                  value={settings.MailchimpApiKey || ""}
+                  onChange={(e) =>
+                    handleSettingsChange("MailchimpApiKey", e.target.value, setSettings)
+                  }
+                />
+              </>
+            )}
           </FormSection>
+
+          <div>
+            <FormHeader title={t("mail_subscriptions")} />
+            <ManageMailingListsDatatable />
+          </div>
 
           <FormSection title={t("role_email_mapping")} columns={1}>
             <Input
@@ -513,7 +696,7 @@ export default function SettingsPage() {
               }
               required
             />
-            <div className="space-y-6">
+            <div className="space-y-6 pt-2">
               <div className="flex flex-col sm:flex-row items-end gap-4 w-full">
                 <div className="flex-1 w-full">
                   <Select

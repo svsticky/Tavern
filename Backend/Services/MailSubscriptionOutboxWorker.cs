@@ -12,7 +12,6 @@ public class MailSubscriptionOutboxWorker(
     IServiceProvider serviceProvider,
     ILogger<MailSubscriptionOutboxWorker> logger) : BackgroundService
 {
-    private readonly bool _isEnabled = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE"));
 
     /// <summary>
     /// Enqueues an mail subscription outbox task.
@@ -43,16 +42,22 @@ public class MailSubscriptionOutboxWorker(
     /// <returns>A task representing the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!_isEnabled)
-        {
-            logger.LogInformation("Mailsubscription outbox worker is disabled.");
-            return;
-        }
-
         logger.LogInformation("Mailsubscription outbox worker started.");
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
+                var isEnabled = !string.IsNullOrWhiteSpace(db.Settings.FirstOrDefault(s => s.Name == "MailSubscriptionService")?.Value);
+
+                if (!isEnabled)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+                    continue;
+                }
+            }
+
             bool processed = await TryProcessNextTaskAsync(stoppingToken);
 
             if (!processed)

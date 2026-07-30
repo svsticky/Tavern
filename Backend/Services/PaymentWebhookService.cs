@@ -15,7 +15,9 @@ namespace Backend.Services
         ILogger<PaymentWebhookService> logger
     ) : IPaymentWebhookService
     {
-        private readonly bool _isUsingAccountingTool = Environment.GetEnvironmentVariable("ACCOUNTING_SERVICE") != null;
+        private bool IsUsingAccountingTool =>
+            !string.Equals(Environment.GetEnvironmentVariable("ACCOUNTING_ENABLED"), "false", StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(db.Settings.FirstOrDefault(s => s.Name == "AccountingService")?.Value);
 
         /// <inheritdoc />
         public async Task HandleWebhookAsync(string id)
@@ -106,7 +108,7 @@ namespace Backend.Services
 
         private void QueueAccountingTaskIfNeeded(Payment payment)
         {
-            if (_isUsingAccountingTool)
+            if (IsUsingAccountingTool)
             {
                 db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                 {
