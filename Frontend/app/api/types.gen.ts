@@ -1976,6 +1976,10 @@ export type GetActivitiesErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetActivitiesError = GetActivitiesErrors[keyof GetActivitiesErrors];
@@ -2110,6 +2114,10 @@ export type PostActivitiesErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostActivitiesError = PostActivitiesErrors[keyof PostActivitiesErrors];
@@ -2148,6 +2156,10 @@ export type DeleteActivitiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteActivitiesByIdError = DeleteActivitiesByIdErrors[keyof DeleteActivitiesByIdErrors];
@@ -2186,6 +2198,10 @@ export type GetActivitiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetActivitiesByIdError = GetActivitiesByIdErrors[keyof GetActivitiesByIdErrors];
@@ -2227,6 +2243,10 @@ export type PatchActivitiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchActivitiesByIdError = PatchActivitiesByIdErrors[keyof PatchActivitiesByIdErrors];
@@ -2370,6 +2390,10 @@ export type PutActivitiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutActivitiesByIdError = PutActivitiesByIdErrors[keyof PutActivitiesByIdErrors];
@@ -2408,6 +2432,10 @@ export type GetActivitiesByIdPosterErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetActivitiesByIdPosterError = GetActivitiesByIdPosterErrors[keyof GetActivitiesByIdPosterErrors];
@@ -2448,6 +2476,10 @@ export type PostActivitiesByIdPosterErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostActivitiesByIdPosterError = PostActivitiesByIdPosterErrors[keyof PostActivitiesByIdPosterErrors];
@@ -2484,6 +2516,10 @@ export type GetActivitiesByIdPosterDownloadErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetActivitiesByIdPosterDownloadError = GetActivitiesByIdPosterDownloadErrors[keyof GetActivitiesByIdPosterDownloadErrors];
@@ -2522,6 +2558,10 @@ export type GetActivitiesByIdEnrollmentsExportErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetActivitiesByIdEnrollmentsExportError = GetActivitiesByIdEnrollmentsExportErrors[keyof GetActivitiesByIdEnrollmentsExportErrors];
@@ -2551,6 +2591,10 @@ export type GetAnnouncementsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetAnnouncementsError = GetAnnouncementsErrors[keyof GetAnnouncementsErrors];
@@ -2583,6 +2627,10 @@ export type PostAnnouncementsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostAnnouncementsError = PostAnnouncementsErrors[keyof PostAnnouncementsErrors];
@@ -2621,6 +2669,10 @@ export type DeleteAnnouncementsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteAnnouncementsByIdError = DeleteAnnouncementsByIdErrors[keyof DeleteAnnouncementsByIdErrors];
@@ -2659,6 +2711,10 @@ export type GetAnnouncementsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetAnnouncementsByIdError = GetAnnouncementsByIdErrors[keyof GetAnnouncementsByIdErrors];
@@ -2700,6 +2756,10 @@ export type PatchAnnouncementsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchAnnouncementsByIdError = PatchAnnouncementsByIdErrors[keyof PatchAnnouncementsByIdErrors];
@@ -2738,9 +2798,9 @@ export type PutAnnouncementsByIdErrors = {
      */
     403: ProblemDetails;
     /**
-     * Not Found
+     * Internal Server Error
      */
-    404: ProblemDetails;
+    500: ErrorResponseDto;
 };
 
 export type PutAnnouncementsByIdError = PutAnnouncementsByIdErrors[keyof PutAnnouncementsByIdErrors];
@@ -2775,6 +2835,10 @@ export type GetEnrollmentsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetEnrollmentsError = GetEnrollmentsErrors[keyof GetEnrollmentsErrors];
@@ -2807,6 +2871,10 @@ export type PostEnrollmentsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostEnrollmentsError = PostEnrollmentsErrors[keyof PostEnrollmentsErrors];
@@ -2849,6 +2917,10 @@ export type DeleteEnrollmentsByActivityIdByMemberIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteEnrollmentsByActivityIdByMemberIdError = DeleteEnrollmentsByActivityIdByMemberIdErrors[keyof DeleteEnrollmentsByActivityIdByMemberIdErrors];
@@ -2891,6 +2963,10 @@ export type GetEnrollmentsByActivityIdByMemberIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetEnrollmentsByActivityIdByMemberIdError = GetEnrollmentsByActivityIdByMemberIdErrors[keyof GetEnrollmentsByActivityIdByMemberIdErrors];
@@ -2936,6 +3012,10 @@ export type PatchEnrollmentsByActivityIdByMemberIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchEnrollmentsByActivityIdByMemberIdError = PatchEnrollmentsByActivityIdByMemberIdErrors[keyof PatchEnrollmentsByActivityIdByMemberIdErrors];
@@ -2981,6 +3061,10 @@ export type PutEnrollmentsByActivityIdByMemberIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutEnrollmentsByActivityIdByMemberIdError = PutEnrollmentsByActivityIdByMemberIdErrors[keyof PutEnrollmentsByActivityIdByMemberIdErrors];
@@ -3006,6 +3090,10 @@ export type GetExternallinksErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetExternallinksError = GetExternallinksErrors[keyof GetExternallinksErrors];
@@ -3035,6 +3123,10 @@ export type PostExternallinksErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostExternallinksError = PostExternallinksErrors[keyof PostExternallinksErrors];
@@ -3070,6 +3162,10 @@ export type DeleteExternallinksByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteExternallinksByIdError = DeleteExternallinksByIdErrors[keyof DeleteExternallinksByIdErrors];
@@ -3101,6 +3197,10 @@ export type GetExternallinksByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetExternallinksByIdError = GetExternallinksByIdErrors[keyof GetExternallinksByIdErrors];
@@ -3136,6 +3236,10 @@ export type PutExternallinksByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutExternallinksByIdError = PutExternallinksByIdErrors[keyof PutExternallinksByIdErrors];
@@ -3167,6 +3271,10 @@ export type GetExternallinksByIdIconErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetExternallinksByIdIconError = GetExternallinksByIdIconErrors[keyof GetExternallinksByIdIconErrors];
@@ -3200,6 +3308,10 @@ export type PostExternallinksByIdIconErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostExternallinksByIdIconError = PostExternallinksByIdIconErrors[keyof PostExternallinksByIdIconErrors];
@@ -3233,6 +3345,10 @@ export type GetGroupmembershipsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetGroupmembershipsError = GetGroupmembershipsErrors[keyof GetGroupmembershipsErrors];
@@ -3265,6 +3381,10 @@ export type PostGroupmembershipsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostGroupmembershipsError = PostGroupmembershipsErrors[keyof PostGroupmembershipsErrors];
@@ -3303,6 +3423,10 @@ export type DeleteGroupmembershipsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteGroupmembershipsByIdError = DeleteGroupmembershipsByIdErrors[keyof DeleteGroupmembershipsByIdErrors];
@@ -3341,6 +3465,10 @@ export type GetGroupmembershipsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetGroupmembershipsByIdError = GetGroupmembershipsByIdErrors[keyof GetGroupmembershipsByIdErrors];
@@ -3382,6 +3510,10 @@ export type PatchGroupmembershipsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchGroupmembershipsByIdError = PatchGroupmembershipsByIdErrors[keyof PatchGroupmembershipsByIdErrors];
@@ -3423,6 +3555,10 @@ export type PutGroupmembershipsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutGroupmembershipsByIdError = PutGroupmembershipsByIdErrors[keyof PutGroupmembershipsByIdErrors];
@@ -3458,6 +3594,10 @@ export type GetGroupsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetGroupsError = GetGroupsErrors[keyof GetGroupsErrors];
@@ -3500,6 +3640,10 @@ export type PostGroupsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostGroupsError = PostGroupsErrors[keyof PostGroupsErrors];
@@ -3538,6 +3682,10 @@ export type DeleteGroupsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteGroupsByIdError = DeleteGroupsByIdErrors[keyof DeleteGroupsByIdErrors];
@@ -3576,6 +3724,10 @@ export type GetGroupsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetGroupsByIdError = GetGroupsByIdErrors[keyof GetGroupsByIdErrors];
@@ -3617,6 +3769,10 @@ export type PatchGroupsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchGroupsByIdError = PatchGroupsByIdErrors[keyof PatchGroupsByIdErrors];
@@ -3658,6 +3814,10 @@ export type PutGroupsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutGroupsByIdError = PutGroupsByIdErrors[keyof PutGroupsByIdErrors];
@@ -3696,6 +3856,10 @@ export type GetGroupsByIdGroupPictureErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetGroupsByIdGroupPictureError = GetGroupsByIdGroupPictureErrors[keyof GetGroupsByIdGroupPictureErrors];
@@ -3732,6 +3896,10 @@ export type PostGroupsByIdGroupPictureErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostGroupsByIdGroupPictureError = PostGroupsByIdGroupPictureErrors[keyof PostGroupsByIdGroupPictureErrors];
@@ -3761,6 +3929,10 @@ export type PostGroupsPromoteBoardErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostGroupsPromoteBoardError = PostGroupsPromoteBoardErrors[keyof PostGroupsPromoteBoardErrors];
@@ -3788,6 +3960,10 @@ export type GetMailinglistsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetMailinglistsError = GetMailinglistsErrors[keyof GetMailinglistsErrors];
@@ -3820,6 +3996,10 @@ export type PostMailinglistsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostMailinglistsError = PostMailinglistsErrors[keyof PostMailinglistsErrors];
@@ -3858,6 +4038,10 @@ export type DeleteMailinglistsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteMailinglistsByIdError = DeleteMailinglistsByIdErrors[keyof DeleteMailinglistsByIdErrors];
@@ -3896,6 +4080,10 @@ export type GetMailinglistsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetMailinglistsByIdError = GetMailinglistsByIdErrors[keyof GetMailinglistsByIdErrors];
@@ -3937,6 +4125,10 @@ export type PatchMailinglistsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchMailinglistsByIdError = PatchMailinglistsByIdErrors[keyof PatchMailinglistsByIdErrors];
@@ -3978,6 +4170,10 @@ export type PutMailinglistsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutMailinglistsByIdError = PutMailinglistsByIdErrors[keyof PutMailinglistsByIdErrors];
@@ -4010,6 +4206,10 @@ export type PostMailsNormalErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostMailsNormalError = PostMailsNormalErrors[keyof PostMailsNormalErrors];
@@ -4040,6 +4240,10 @@ export type PostMailsActivityErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostMailsActivityError = PostMailsActivityErrors[keyof PostMailsActivityErrors];
@@ -4094,6 +4298,10 @@ export type GetMembersErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetMembersError = GetMembersErrors[keyof GetMembersErrors];
@@ -4122,6 +4330,10 @@ export type PostMembersErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostMembersError = PostMembersErrors[keyof PostMembersErrors];
@@ -4160,6 +4372,10 @@ export type DeleteMembersByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteMembersByIdError = DeleteMembersByIdErrors[keyof DeleteMembersByIdErrors];
@@ -4198,6 +4414,10 @@ export type GetMembersByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetMembersByIdError = GetMembersByIdErrors[keyof GetMembersByIdErrors];
@@ -4239,6 +4459,10 @@ export type PatchMembersByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchMembersByIdError = PatchMembersByIdErrors[keyof PatchMembersByIdErrors];
@@ -4280,6 +4504,10 @@ export type PutMembersByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutMembersByIdError = PutMembersByIdErrors[keyof PutMembersByIdErrors];
@@ -4318,6 +4546,10 @@ export type DeleteMembersByIdProfilePictureErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteMembersByIdProfilePictureError = DeleteMembersByIdProfilePictureErrors[keyof DeleteMembersByIdProfilePictureErrors];
@@ -4352,6 +4584,10 @@ export type GetMembersByIdProfilePictureErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetMembersByIdProfilePictureError = GetMembersByIdProfilePictureErrors[keyof GetMembersByIdProfilePictureErrors];
@@ -4390,6 +4626,10 @@ export type PostMembersWebhookRefreshEmailErrors = {
      * Unauthorized
      */
     401: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostMembersWebhookRefreshEmailError = PostMembersWebhookRefreshEmailErrors[keyof PostMembersWebhookRefreshEmailErrors];
@@ -4417,6 +4657,10 @@ export type GetPaymentsMembershipErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsMembershipError = GetPaymentsMembershipErrors[keyof GetPaymentsMembershipErrors];
@@ -4449,6 +4693,10 @@ export type PostPaymentsMembershipErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostPaymentsMembershipError = PostPaymentsMembershipErrors[keyof PostPaymentsMembershipErrors];
@@ -4487,6 +4735,10 @@ export type GetPaymentsMembershipByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsMembershipByIdError = GetPaymentsMembershipByIdErrors[keyof GetPaymentsMembershipByIdErrors];
@@ -4516,6 +4768,10 @@ export type GetPaymentsEnrollmentErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsEnrollmentError = GetPaymentsEnrollmentErrors[keyof GetPaymentsEnrollmentErrors];
@@ -4554,6 +4810,10 @@ export type GetPaymentsEnrollmentByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsEnrollmentByIdError = GetPaymentsEnrollmentByIdErrors[keyof GetPaymentsEnrollmentByIdErrors];
@@ -4586,6 +4846,10 @@ export type PostPaymentsActivityErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostPaymentsActivityError = PostPaymentsActivityErrors[keyof PostPaymentsActivityErrors];
@@ -4613,6 +4877,10 @@ export type PostPaymentsWebhookErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostPaymentsWebhookError = PostPaymentsWebhookErrors[keyof PostPaymentsWebhookErrors];
@@ -4649,6 +4917,10 @@ export type GetPaymentsUnpaidErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsUnpaidError = GetPaymentsUnpaidErrors[keyof GetPaymentsUnpaidErrors];
@@ -4682,6 +4954,10 @@ export type GetPaymentsOverpaidErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsOverpaidError = GetPaymentsOverpaidErrors[keyof GetPaymentsOverpaidErrors];
@@ -4720,6 +4996,10 @@ export type GetPaymentsMemberByFromUserIdStatusErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsMemberByFromUserIdStatusError = GetPaymentsMemberByFromUserIdStatusErrors[keyof GetPaymentsMemberByFromUserIdStatusErrors];
@@ -4758,6 +5038,10 @@ export type GetPaymentsExportErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetPaymentsExportError = GetPaymentsExportErrors[keyof GetPaymentsExportErrors];
@@ -4792,6 +5076,10 @@ export type GetProfilepictureViewByPathErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetProfilepictureViewByPathError = GetProfilepictureViewByPathErrors[keyof GetProfilepictureViewByPathErrors];
@@ -4828,6 +5116,10 @@ export type PostProfilepictureByIdProfilePictureErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostProfilepictureByIdProfilePictureError = PostProfilepictureByIdProfilePictureErrors[keyof PostProfilepictureByIdProfilePictureErrors];
@@ -4853,6 +5145,10 @@ export type GetRegisterreasonsErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegisterreasonsError = GetRegisterreasonsErrors[keyof GetRegisterreasonsErrors];
@@ -4882,6 +5178,10 @@ export type PostRegisterreasonsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRegisterreasonsError = PostRegisterreasonsErrors[keyof PostRegisterreasonsErrors];
@@ -4917,6 +5217,10 @@ export type DeleteRegisterreasonsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteRegisterreasonsByIdError = DeleteRegisterreasonsByIdErrors[keyof DeleteRegisterreasonsByIdErrors];
@@ -4948,6 +5252,10 @@ export type GetRegisterreasonsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegisterreasonsByIdError = GetRegisterreasonsByIdErrors[keyof GetRegisterreasonsByIdErrors];
@@ -4983,6 +5291,10 @@ export type PutRegisterreasonsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutRegisterreasonsByIdError = PutRegisterreasonsByIdErrors[keyof PutRegisterreasonsByIdErrors];
@@ -5014,6 +5326,10 @@ export type GetRegisterreasonsByIdIconErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegisterreasonsByIdIconError = GetRegisterreasonsByIdIconErrors[keyof GetRegisterreasonsByIdIconErrors];
@@ -5047,6 +5363,10 @@ export type PostRegisterreasonsByIdIconErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRegisterreasonsByIdIconError = PostRegisterreasonsByIdIconErrors[keyof PostRegisterreasonsByIdIconErrors];
@@ -5072,6 +5392,10 @@ export type GetRegisterslidesErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegisterslidesError = GetRegisterslidesErrors[keyof GetRegisterslidesErrors];
@@ -5113,6 +5437,10 @@ export type PostRegisterslidesErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRegisterslidesError = PostRegisterslidesErrors[keyof PostRegisterslidesErrors];
@@ -5148,6 +5476,10 @@ export type DeleteRegisterslidesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteRegisterslidesByIdError = DeleteRegisterslidesByIdErrors[keyof DeleteRegisterslidesByIdErrors];
@@ -5179,6 +5511,10 @@ export type GetRegisterslidesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegisterslidesByIdError = GetRegisterslidesByIdErrors[keyof GetRegisterslidesByIdErrors];
@@ -5214,6 +5550,10 @@ export type PutRegisterslidesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutRegisterslidesByIdError = PutRegisterslidesByIdErrors[keyof PutRegisterslidesByIdErrors];
@@ -5245,6 +5585,10 @@ export type GetRegisterslidesByIdImageErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegisterslidesByIdImageError = GetRegisterslidesByIdImageErrors[keyof GetRegisterslidesByIdImageErrors];
@@ -5278,6 +5622,10 @@ export type PostRegisterslidesByIdImageErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRegisterslidesByIdImageError = PostRegisterslidesByIdImageErrors[keyof PostRegisterslidesByIdImageErrors];
@@ -5297,6 +5645,15 @@ export type GetRegistrationdocumentsData = {
     query?: never;
     url: '/registrationdocuments';
 };
+
+export type GetRegistrationdocumentsErrors = {
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetRegistrationdocumentsError = GetRegistrationdocumentsErrors[keyof GetRegistrationdocumentsErrors];
 
 export type GetRegistrationdocumentsResponses = {
     /**
@@ -5319,6 +5676,10 @@ export type PostRegistrationdocumentsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRegistrationdocumentsError = PostRegistrationdocumentsErrors[keyof PostRegistrationdocumentsErrors];
@@ -5350,6 +5711,10 @@ export type DeleteRegistrationdocumentsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteRegistrationdocumentsByIdError = DeleteRegistrationdocumentsByIdErrors[keyof DeleteRegistrationdocumentsByIdErrors];
@@ -5377,6 +5742,10 @@ export type GetRegistrationdocumentsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRegistrationdocumentsByIdError = GetRegistrationdocumentsByIdErrors[keyof GetRegistrationdocumentsByIdErrors];
@@ -5408,6 +5777,10 @@ export type PutRegistrationdocumentsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutRegistrationdocumentsByIdError = PutRegistrationdocumentsByIdErrors[keyof PutRegistrationdocumentsByIdErrors];
@@ -5433,6 +5806,10 @@ export type GetRolealiasesErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRolealiasesError = GetRolealiasesErrors[keyof GetRolealiasesErrors];
@@ -5465,6 +5842,10 @@ export type PostRolealiasesErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRolealiasesError = PostRolealiasesErrors[keyof PostRolealiasesErrors];
@@ -5503,6 +5884,10 @@ export type DeleteRolealiasesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteRolealiasesByIdError = DeleteRolealiasesByIdErrors[keyof DeleteRolealiasesByIdErrors];
@@ -5537,6 +5922,10 @@ export type GetRolealiasesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRolealiasesByIdError = GetRolealiasesByIdErrors[keyof GetRolealiasesByIdErrors];
@@ -5574,6 +5963,10 @@ export type PatchRolealiasesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchRolealiasesByIdError = PatchRolealiasesByIdErrors[keyof PatchRolealiasesByIdErrors];
@@ -5615,6 +6008,10 @@ export type PutRolealiasesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutRolealiasesByIdError = PutRolealiasesByIdErrors[keyof PutRolealiasesByIdErrors];
@@ -5640,6 +6037,10 @@ export type GetRolesErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRolesError = GetRolesErrors[keyof GetRolesErrors];
@@ -5672,6 +6073,10 @@ export type PostRolesErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostRolesError = PostRolesErrors[keyof PostRolesErrors];
@@ -5710,6 +6115,10 @@ export type DeleteRolesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteRolesByIdError = DeleteRolesByIdErrors[keyof DeleteRolesByIdErrors];
@@ -5744,6 +6153,10 @@ export type GetRolesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetRolesByIdError = GetRolesByIdErrors[keyof GetRolesByIdErrors];
@@ -5785,6 +6198,10 @@ export type PatchRolesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchRolesByIdError = PatchRolesByIdErrors[keyof PatchRolesByIdErrors];
@@ -5826,6 +6243,10 @@ export type PutRolesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutRolesByIdError = PutRolesByIdErrors[keyof PutRolesByIdErrors];
@@ -5855,6 +6276,10 @@ export type GetSettingsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetSettingsError = GetSettingsErrors[keyof GetSettingsErrors];
@@ -5893,6 +6318,10 @@ export type PostSettingsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostSettingsError = PostSettingsErrors[keyof PostSettingsErrors];
@@ -5931,6 +6360,10 @@ export type DeleteSettingsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteSettingsByIdError = DeleteSettingsByIdErrors[keyof DeleteSettingsByIdErrors];
@@ -5969,6 +6402,10 @@ export type GetSettingsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetSettingsByIdError = GetSettingsByIdErrors[keyof GetSettingsByIdErrors];
@@ -6010,6 +6447,10 @@ export type PatchSettingsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchSettingsByIdError = PatchSettingsByIdErrors[keyof PatchSettingsByIdErrors];
@@ -6053,6 +6494,10 @@ export type PutSettingsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutSettingsByIdError = PutSettingsByIdErrors[keyof PutSettingsByIdErrors];
@@ -6094,6 +6539,10 @@ export type PatchSpecificationanswersByAnswerIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchSpecificationanswersByAnswerIdError = PatchSpecificationanswersByAnswerIdErrors[keyof PatchSpecificationanswersByAnswerIdErrors];
@@ -6119,6 +6568,10 @@ export type GetStudiesErrors = {
      * Bad Request
      */
     400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetStudiesError = GetStudiesErrors[keyof GetStudiesErrors];
@@ -6151,6 +6604,10 @@ export type PostStudiesErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostStudiesError = PostStudiesErrors[keyof PostStudiesErrors];
@@ -6189,6 +6646,10 @@ export type DeleteStudiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteStudiesByIdError = DeleteStudiesByIdErrors[keyof DeleteStudiesByIdErrors];
@@ -6223,6 +6684,10 @@ export type GetStudiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetStudiesByIdError = GetStudiesByIdErrors[keyof GetStudiesByIdErrors];
@@ -6264,6 +6729,10 @@ export type PatchStudiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchStudiesByIdError = PatchStudiesByIdErrors[keyof PatchStudiesByIdErrors];
@@ -6305,6 +6774,10 @@ export type PutStudiesByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PutStudiesByIdError = PutStudiesByIdErrors[keyof PutStudiesByIdErrors];
@@ -6336,6 +6809,10 @@ export type GetStudyenrollmentsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetStudyenrollmentsError = GetStudyenrollmentsErrors[keyof GetStudyenrollmentsErrors];
@@ -6368,6 +6845,10 @@ export type PostStudyenrollmentsErrors = {
      * Forbidden
      */
     403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PostStudyenrollmentsError = PostStudyenrollmentsErrors[keyof PostStudyenrollmentsErrors];
@@ -6406,6 +6887,10 @@ export type DeleteStudyenrollmentsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type DeleteStudyenrollmentsByIdError = DeleteStudyenrollmentsByIdErrors[keyof DeleteStudyenrollmentsByIdErrors];
@@ -6444,6 +6929,10 @@ export type GetStudyenrollmentsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type GetStudyenrollmentsByIdError = GetStudyenrollmentsByIdErrors[keyof GetStudyenrollmentsByIdErrors];
@@ -6485,6 +6974,10 @@ export type PatchStudyenrollmentsByIdErrors = {
      * Not Found
      */
     404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
 };
 
 export type PatchStudyenrollmentsByIdError = PatchStudyenrollmentsByIdErrors[keyof PatchStudyenrollmentsByIdErrors];
