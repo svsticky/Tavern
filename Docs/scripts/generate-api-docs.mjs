@@ -9,9 +9,41 @@ const swaggerFilePath = "./swagger.json";
 // Clean generated files
 await rm(out, { recursive: true, force: true });
 
-// Fetch swagger.json and generate documentation
+// Fetch swagger.json, sanitize media types, and generate documentation
 async function main() {
     console.log("Generating API documentation...");
+
+    // Clean swagger.json to remove non-standard media types unsupported by Fumadocs
+    try {
+        const swaggerRaw = await readFile(swaggerFilePath, "utf-8");
+        const swaggerJson = JSON.parse(swaggerRaw);
+        
+        function sanitizeObject(obj) {
+            if (!obj || typeof obj !== "object") return;
+            if (obj.content && typeof obj.content === "object") {
+                const allowedTypes = ["application/json", "application/x-www-form-urlencoded", "multipart/form-data", "application/octet-stream", "image/png", "image/jpeg", "image/webp", "image/gif"];
+                for (const mediaType of Object.keys(obj.content)) {
+                    if (!allowedTypes.includes(mediaType)) {
+                        delete obj.content[mediaType];
+                    }
+                }
+                // If stripping left content empty, provide application/json fallback so Fumadocs doesn't crash on missing media type
+                if (Object.keys(obj.content).length === 0) {
+                    obj.content["application/json"] = { schema: { type: "object" } };
+                }
+            }
+            for (const key of Object.keys(obj)) {
+                if (typeof obj[key] === "object") {
+                    sanitizeObject(obj[key]);
+                }
+            }
+        }
+        
+        sanitizeObject(swaggerJson);
+        await writeFile(swaggerFilePath, JSON.stringify(swaggerJson, null, 2), "utf-8");
+    } catch (e) {
+        console.warn("Could not sanitize swagger.json media types:", e);
+    }
     
     const xmlSummaries = {};
 
