@@ -4,3 +4,8 @@
 /Docs/content/docs/*
 !/Docs/content/docs/index.mdx
 !/Docs/content/docs/Architecture/
+node_modules
+koala_prod.sql
+koala_prod.pgdump
+storage.zip
+migration/
