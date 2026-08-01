@@ -11,3 +11,6 @@ koala_prod.sql
 koala_prod.pgdump
 storage.zip
 migration/
+keycloak-bcrypt-provider/target/
+Frontend/public/env-config.js
+.playwright-mcp/
