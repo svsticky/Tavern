@@ -48,7 +48,7 @@ public class EnrollmentService : IEnrollmentService
     /// <inheritdoc />
     public async Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        bool isBoard = _permissionService.IsAdmin(userId);
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         if (dto.FromMemberId == null || dto.FromMemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -68,7 +68,7 @@ public class EnrollmentService : IEnrollmentService
     /// <inheritdoc />
     public async Task<EnrollmentResponseDTO?> GetEnrollment(uint activityId, Guid enrolledUser, Guid userId, CancellationToken cancellationToken)
     {
-        bool isBoard = _permissionService.IsAdmin(userId);
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         if (enrolledUser != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -95,7 +95,7 @@ public class EnrollmentService : IEnrollmentService
         if(dto.MemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-        bool isBoardMember = _permissionService.IsAdmin(userId);
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         try
         {
@@ -169,7 +169,7 @@ public class EnrollmentService : IEnrollmentService
                 throw new KeyNotFoundException();
 
             // Determine if activity enrollments can be changed 
-            bool isBoardMember = _permissionService.IsAdmin(enrolledUser);
+            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(enrolledUser);
 
             EnsureActivityUnenrollmentOpen(enrollment.Activity, isBoardMember);
 
@@ -228,7 +228,7 @@ public class EnrollmentService : IEnrollmentService
             var activity = await GetActivityWithQuestionsOrThrow(dto.ActivityId, cancellationToken);
 
             // Determine if activity enrollments can be changed
-            bool isBoard = _permissionService.IsAdmin(userId);
+            bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
             if (!isBoard)
             {
@@ -284,7 +284,7 @@ public class EnrollmentService : IEnrollmentService
             throw new KeyNotFoundException();
 
         // Determine if activity enrollments can be changed
-        bool isBoardMember = _permissionService.IsAdmin(userId);
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         if(!isBoardMember)
         {

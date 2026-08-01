@@ -415,6 +415,7 @@ public class PaymentValidationServiceTests : IDisposable
             PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7)
         };
         _db.Activities.Add(activity);
+        enrollment.Activity = activity;
 
         _db.EnrollmentPayments.Add(new EnrollmentPayment
         {

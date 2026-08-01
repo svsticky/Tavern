@@ -75,7 +75,7 @@ public class GroupMembershipService : IGroupMembershipService
         if (result == null)
             return null;
 
-        if (!_permissionService.IsAdmin(userId)
+        if (!_permissionService.IsBoardOrCandidateBoardMember(userId)
             && result.MemberId != userId)
         {
             throw new UnauthorizedAccessException();

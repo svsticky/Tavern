@@ -174,7 +174,7 @@ public class ActivityService : IActivityService
     /// <inheritdoc />
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
-        bool isBoard = _permissionService.IsAdmin(userId);
+        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)
