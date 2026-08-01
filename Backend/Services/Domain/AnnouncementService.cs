@@ -35,7 +35,7 @@ public class AnnouncementService : IAnnouncementService
     {
         return await _db.Announcements
             .AsNoTracking()
-            .Select(GetAnnouncementResponseDTO.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .Select(GetAnnouncementResponseDTO.ToDto(userId, _permissionService.IsAdmin(userId)))
             .OrderByDescending(a => a.CreatedAt)
             .Take(20)
             .ToListAsync(ct);
@@ -46,7 +46,7 @@ public class AnnouncementService : IAnnouncementService
     {
         return await _db.Announcements
             .AsNoTracking()
-            .Select(GetAnnouncementResponseDTO.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .Select(GetAnnouncementResponseDTO.ToDto(userId, _permissionService.IsAdmin(userId)))
             .FirstOrDefaultAsync(a => a.Id == id, ct);
     }
 

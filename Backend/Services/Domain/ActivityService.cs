@@ -65,7 +65,7 @@ public class ActivityService : IActivityService
     /// <inheritdoc />
     public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid? userId, GetActivitiesDTO dto)
     {
-        bool isBoard = userId.HasValue && _permissionService.IsBoardOrCandidateBoardMember(userId.Value);
+        bool isBoard = userId.HasValue && _permissionService.IsAdmin(userId.Value);
 
         // Only board members can see past activities or activities that are not shown in Koala/website
         if (dto.IncludePast)
@@ -174,7 +174,7 @@ public class ActivityService : IActivityService
     /// <inheritdoc />
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
-        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool isBoard = _permissionService.IsAdmin(userId);
 
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)

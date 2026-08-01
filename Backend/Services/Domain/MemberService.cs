@@ -63,7 +63,7 @@ namespace Backend.Services.Domain
                     .ThenInclude(gm => gm.Group)
                 .Include(m => m.GroupMemberships)
                     .ThenInclude(gm => gm.RoleAlias)
-                .Select(MemberResponseDTO.ToDto(userId, permissionService.IsBoardOrCandidateBoardMember(userId)))
+                .Select(MemberResponseDTO.ToDto(userId, permissionService.IsAdmin(userId)))
                 .FirstOrDefaultAsync(cancellationToken);
         }
 

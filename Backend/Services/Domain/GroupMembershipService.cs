@@ -60,7 +60,7 @@ public class GroupMembershipService : IGroupMembershipService
         }
 
         return await query
-            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.IsAdmin(userId)))
             .ToListAsync(cancellationToken);
     }
 
@@ -69,13 +69,13 @@ public class GroupMembershipService : IGroupMembershipService
     {
         var result = await _db.GroupMemberships
             .Where(cm => cm.Id == id)
-            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.IsAdmin(userId)))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (result == null)
             return null;
 
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId)
+        if (!_permissionService.IsAdmin(userId)
             && result.MemberId != userId)
         {
             throw new UnauthorizedAccessException();

@@ -444,7 +444,7 @@ public class EnrollmentServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(true);
-        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        _permissionService.IsAdmin(_userId).Returns(true);
 
         var dto = new PostEnrollmentDTO { MemberId = member.Id, ActivityId = activity.Id };
         
