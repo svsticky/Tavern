@@ -105,8 +105,24 @@ public class PermissionService(
     public bool IsBoardOrCandidateBoardMember(Guid memberId)
     {
         var boardYear = YearUtils.GetBoardYear(db);
-        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1"), boardYear) || 
+        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1"), boardYear) ||
                IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "1"), boardYear);
+    }
+
+    /// <inheritdoc />
+    public bool IsAdmin(Guid memberId)
+    {
+        if (IsBoardOrCandidateBoardMember(memberId))
+            return true;
+
+        var boardYear = YearUtils.GetBoardYear(db);
+        var adminGroupIds = db.Settings.FirstOrDefault(s => s.Name == "AdminGroupIds")?.Value;
+        if (!string.IsNullOrEmpty(adminGroupIds))
+            foreach (var part in adminGroupIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                if (uint.TryParse(part, out var gid) && IsInGroup(memberId, gid, boardYear))
+                    return true;
+
+        return false;
     }
 
     /// <inheritdoc />
@@ -114,7 +130,7 @@ public class PermissionService(
     {
         if (!IsBoardOrCandidateBoardMember(userId))
         {
-            logger.LogWarning("Unauthorized board-or-candidate access for user {UserId}.", userId);
+            logger.LogWarning("Unauthorized admin access for user {UserId}.", userId);
             throw new UnauthorizedAccessException();
         }
     }

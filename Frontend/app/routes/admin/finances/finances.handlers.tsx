@@ -2,13 +2,13 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import {
   type Activity,
-  type ActivityResponseDto,
   type EnrollmentBalance,
-  getActivities,
+  getActivitiesList,
   getPaymentsExport,
   getPaymentsOverpaid,
   getPaymentsUnpaid,
   type Member,
+  type PagedResultDtoActivityListItemDto,
   postPaymentsActivity,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
@@ -311,7 +311,7 @@ export const handlePaymentsExport = (
  */
 type LoadFinancesArgs = {
   setLoading: (loading: boolean) => void;
-  setExpiredActivities: (value: ActivityResponseDto[] | null) => void;
+  setExpiredActivities: (value: PagedResultDtoActivityListItemDto | null) => void;
   setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
   setTotalUnpaid: (value: number) => void;
   setOpenPayments: (value: number) => void;
@@ -342,28 +342,38 @@ export const loadFinancesData = async ({
   try {
     setLoading(true);
 
-    const expiredActivitiesResponse = await getActivities({
-      query: {
-        IncludePast: true,
-        IncludeFuture: false,
-        OpenForPayment: false,
-      },
-    });
+    const [expiredActivitiesResponse, unpaidBalances, overpaidBalances] = await Promise.all([
+      getActivitiesList({
+        query: {
+          IncludePast: true,
+          IncludeFuture: false,
+          IsOpenForPayment: false,
+          SortBy: "date",
+          SortDir: "desc",
+          Page: 1,
+          PageSize: 20,
+        },
+      }),
+      getPaymentsUnpaid({ query: { allUsers: true } }),
+      getPaymentsOverpaid(),
+    ]);
 
     if (expiredActivitiesResponse.error || !expiredActivitiesResponse.data)
       throw new Error("Failed to load expired activities");
 
-    setExpiredActivities(expiredActivitiesResponse.data || []);
+    setExpiredActivities(expiredActivitiesResponse.data);
 
-    await refreshUnpaidPayments({
-      setUnpaidBalances,
-      setTotalUnpaid,
-      setOpenPayments,
-      setUnpaidActivities,
-      setMembersWithOverduePayment,
-    });
+    if (unpaidBalances.data) {
+      setUnpaidPaymentState({
+        balances: unpaidBalances.data,
+        setUnpaidBalances,
+        setTotalUnpaid,
+        setOpenPayments,
+        setUnpaidActivities,
+        setMembersWithOverduePayment,
+      });
+    }
 
-    const overpaidBalances = await getPaymentsOverpaid();
     if (overpaidBalances.data) {
       setOverpaidBalances(overpaidBalances.data.filter((b) => b.balance !== 0));
     }
@@ -372,5 +382,28 @@ export const loadFinancesData = async ({
     toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
+  }
+};
+
+export const loadExpiredActivitiesPage = async (
+  page: number,
+  setExpiredActivities: (value: PagedResultDtoActivityListItemDto | null) => void,
+) => {
+  try {
+    const response = await getActivitiesList({
+      query: {
+        IncludePast: true,
+        IncludeFuture: false,
+        IsOpenForPayment: false,
+        SortBy: "date",
+        SortDir: "desc",
+        Page: page,
+        PageSize: 20,
+      },
+    });
+    if (response.data) setExpiredActivities(response.data);
+  } catch (error) {
+    console.error("Error fetching expired activities:", error);
+    toast.error(appendErrorMessage(t("loading_failed"), error));
   }
 };

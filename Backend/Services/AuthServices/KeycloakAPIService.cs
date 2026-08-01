@@ -233,10 +233,17 @@ public class KeycloakAPIService(
         uint candidateBoardGroupId = string.IsNullOrEmpty(candidateBoardGroupIdStr) ? 0 : uint.Parse(candidateBoardGroupIdStr);
         uint currentBoardYear = YearUtils.GetBoardYear(db);
 
-        bool isAdmin = db.GroupMemberships.Any(gm => 
-            gm.MemberId == member.Id && 
-            gm.MembershipYear == currentBoardYear && 
-            (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId));
+        var adminGroupIdsStr = db.Settings.FirstOrDefault(s => s.Name == "AdminGroupIds")?.Value ?? "";
+        var extraAdminGroupIds = adminGroupIdsStr
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(s => uint.TryParse(s, out var id) ? id : 0u)
+            .Where(id => id > 0)
+            .ToHashSet();
+
+        bool isAdmin = db.GroupMemberships.Any(gm =>
+            gm.MemberId == member.Id &&
+            gm.MembershipYear == currentBoardYear &&
+            (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId || extraAdminGroupIds.Contains(gm.GroupId)));
 
         return new
         {

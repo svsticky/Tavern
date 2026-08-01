@@ -252,6 +252,34 @@ export type ActivityResponseDto = {
 };
 
 /**
+ * Lightweight activity DTO for the admin list — enrollment counts instead of full enrollment objects.
+ */
+export type ActivityListItemDto = {
+    id: number;
+    name: string;
+    location: string;
+    price: number;
+    dateTimeStart: string;
+    dateTimeEnd: string;
+    participantLimit?: number | null;
+    enrolledCount: number;
+    waitlistCount: number;
+    posterPath?: string | null;
+    showInKoala: boolean;
+    isOpenForPayment: boolean;
+};
+
+/**
+ * Generic paginated result wrapper.
+ */
+export type PagedResultDtoActivityListItemDto = {
+    items: Array<ActivityListItemDto>;
+    totalCount: number;
+    page: number;
+    pageSize: number;
+};
+
+/**
  * Represents an announcement that can be created by members. An announcement has a title, content, and information about when it was created and who created it. This entity is used to manage and display announcements within the system, allowing members to stay informed about important updates, events, or news related to the organization or community.
  */
 export type Announcement = {
@@ -1992,6 +2020,36 @@ export type GetActivitiesResponses = {
 };
 
 export type GetActivitiesResponse = GetActivitiesResponses[keyof GetActivitiesResponses];
+
+export type GetActivitiesListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        Page?: number;
+        PageSize?: number;
+        Search?: string;
+        SortBy?: string;
+        SortDir?: string;
+        IncludePast?: boolean;
+        IncludeFuture?: boolean;
+        Year?: number;
+        IsOpenForPayment?: boolean;
+    };
+    url: '/activities/list';
+};
+
+export type GetActivitiesListErrors = {
+    400: ErrorResponseDto;
+    403: ProblemDetails;
+};
+
+export type GetActivitiesListError = GetActivitiesListErrors[keyof GetActivitiesListErrors];
+
+export type GetActivitiesListResponses = {
+    200: PagedResultDtoActivityListItemDto;
+};
+
+export type GetActivitiesListResponse = GetActivitiesListResponses[keyof GetActivitiesListResponses];
 
 export type PostActivitiesData = {
     /**

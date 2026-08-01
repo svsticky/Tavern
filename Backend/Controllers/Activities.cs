@@ -47,6 +47,25 @@ namespace Backend.Controllers
             return Ok(result);
         }
 
+        // GET: activities/list (admin paginated list)
+        /// <summary>
+        /// Returns a paginated, searchable, sortable list of activities for admin use.
+        /// Requires admin permissions. Uses SQL-level COUNT projections — no full enrollment loads.
+        /// </summary>
+        /// <param name="dto">Pagination, filter, and sort parameters.</param>
+        /// <returns>Paginated list of lightweight activity items.</returns>
+        [HttpGet("list")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(PagedResultDTO<ActivityListItemDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PagedResultDTO<ActivityListItemDTO>>> GetAdminActivities([FromQuery] GetAdminActivitiesDTO dto)
+        {
+            var result = await activitiesService.GetAdminActivities(GetUserId(), dto);
+            return Ok(result);
+        }
+
         // GET: activities/5
         /// <summary>
         /// Retrieves a specific activity by its unique identifier. The GetActivity endpoint allows clients to fetch detailed information about a single activity based on the provided ID. This endpoint is designed to return comprehensive data about the specified activity, including its properties and any associated information, enabling clients to access specific activity details efficiently while ensuring proper authorization and error handling for cases where the activity may not be found or the user does not have access rights.

@@ -97,7 +97,14 @@ public interface IPermissionService
     bool IsBoardOrCandidateBoardMember(Guid memberId);
 
     /// <summary>
-    /// Ensures the user is in the board or candidate board and throws when not authorized.
+    /// Checks whether a member has admin access: board, candidate board, or any group listed in the AdminGroupIds setting.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <returns><c>true</c> when the member has admin access; otherwise <c>false</c>.</returns>
+    bool IsAdmin(Guid memberId);
+
+    /// <summary>
+    /// Ensures the user has admin access and throws when not authorized.
     /// </summary>
     /// <param name="userId">The user ID to authorize.</param>
     public void EnsureBoardOrCandidateBoardMember(Guid userId);

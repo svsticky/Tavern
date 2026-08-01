@@ -15,7 +15,7 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public bool HasPaidMembershipPaymentBeforeExpirationTime(Guid memberId)
     {
-         var member = db.Members
+        var member = db.Members
             .Include(m => m.StudyEnrollments)
             .ThenInclude(se => se.Study)
             .FirstOrDefault(m => m.Id == memberId);
@@ -28,28 +28,36 @@ public class PaymentValidationService(
 
         if (member.Begunstiger) return true;
 
-        if (db.Settings.Find("MastersShouldPayMembership")?.Value != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && (e.Status == StudyStatus.Enrolled)))
+        var settingNames = new[]
         {
-            return true;
-        }
+            "MastersShouldPayMembership",
+            "GratieShouldPayMembership",
+            "ErelidShouldPayMembership",
+            "LidVanVerdiensteShouldPayMembership",
+            "MembershipPaymentExpirationTime",
+        };
+        var settings = db.Settings
+            .Where(s => settingNames.Contains(s.Name))
+            .ToDictionary(s => s.Name, s => s.Value);
 
-        if (db.Settings.Find("GratieShouldPayMembership")?.Value != "1" && member.Gratie)
-        {
+        settings.TryGetValue("MastersShouldPayMembership", out var mastersShouldPay);
+        if (mastersShouldPay != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && e.Status == StudyStatus.Enrolled))
             return true;
-        }
 
-        if (db.Settings.Find("ErelidShouldPayMembership")?.Value != "1" && member.EreLid)
-        {
+        settings.TryGetValue("GratieShouldPayMembership", out var gratieShouldPay);
+        if (gratieShouldPay != "1" && member.Gratie)
             return true;
-        }
 
-        if (db.Settings.Find("LidVanVerdiensteShouldPayMembership")?.Value != "1" && member.LidVanVerdienste)
-        {
+        settings.TryGetValue("ErelidShouldPayMembership", out var erelidShouldPay);
+        if (erelidShouldPay != "1" && member.EreLid)
             return true;
-        }
 
-        string? paymentExpirationTime = db.Settings.FirstOrDefault(s => s.Name == "MembershipPaymentExpirationTime")?.Value;
-        if(paymentExpirationTime != null && int.TryParse(paymentExpirationTime, out int expirationYears))
+        settings.TryGetValue("LidVanVerdiensteShouldPayMembership", out var lidVanVerdienteShouldPay);
+        if (lidVanVerdienteShouldPay != "1" && member.LidVanVerdienste)
+            return true;
+
+        settings.TryGetValue("MembershipPaymentExpirationTime", out var paymentExpirationTime);
+        if (paymentExpirationTime != null && int.TryParse(paymentExpirationTime, out int expirationYears))
         {
             var studyEnrollment = member.StudyEnrollments
                 .OrderBy(e => e.EnrollmentDate)
@@ -67,7 +75,7 @@ public class PaymentValidationService(
             // A grace period of 2 months is added to allow paying near the end of the membership cycle for the upcoming period.
             var now = DateTime.UtcNow;
             var startDate = studyEnrollment.EnrollmentDate.DateTime;
-            
+
             // Build candidate date in current calendar year
             var nextOccurrence = new DateTime(now.Year, startDate.Month, startDate.Day, startDate.Hour, startDate.Minute, startDate.Second, DateTimeKind.Utc);
             if (now >= nextOccurrence)
@@ -80,16 +88,14 @@ public class PaymentValidationService(
 
             return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= expirationThresholdDate);
         }
-        else
-        {
-            return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
-        }
+
+        return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
     }
 
     /// <inheritdoc />
     public bool HasEverPaidMembershipPayment(Guid memberId)
     {
-         var member = db.Members
+        var member = db.Members
             .Include(m => m.StudyEnrollments)
             .ThenInclude(se => se.Study)
             .FirstOrDefault(m => m.Id == memberId);
@@ -103,7 +109,6 @@ public class PaymentValidationService(
         if (member.Begunstiger) return true;
 
         bool isMaster = member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master);
-        
         if (isMaster) return true;
 
         return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
@@ -112,28 +117,39 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid memberId)
     {
-        return db.Enrollments
-            .Where(e => e.MemberId == memberId)
+        var enrollments = db.Enrollments
             .Include(e => e.Member)
             .Include(e => e.Activity)
-            .Select(e => new 
-            {
-                Enrollment = e,
-                PaidSum = db.EnrollmentPayments
-                    .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
-                    .Sum(p => (decimal?)p.Price) ?? 0
+            .Where(e => e.MemberId == memberId && e.Activity.IsOpenForPayment && !e.IsOnWaitingList)
+            .AsNoTracking()
+            .ToList();
+
+        if (enrollments.Count == 0)
+            return Enumerable.Empty<EnrollmentBalance>();
+
+        var activityIds = enrollments.Select(e => e.ActivityId).ToHashSet();
+        var paidSums = db.EnrollmentPayments
+            .Where(p => p.PaidAt != null && p.MemberId == memberId && p.ActivityId.HasValue && activityIds.Contains(p.ActivityId!.Value))
+            .GroupBy(p => p.ActivityId!.Value)
+            .Select(g => new { ActivityId = g.Key, Total = g.Sum(p => p.Price) })
+            .ToDictionary(x => x.ActivityId, x => (decimal)x.Total);
+
+        return enrollments
+            .Select(e => {
+                paidSums.TryGetValue(e.ActivityId, out var paid);
+                return new EnrollmentBalance { Enrollment = e, Balance = e.Price - paid };
             })
-            .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
-            .AsEnumerable() 
-            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
+            .Where(x => x.Balance > 0);
     }
 
     /// <inheritdoc />
     public decimal GetUnpaidAmountForEnrollment(Enrollment enrollment)
     {
+        if (!enrollment.Activity.IsOpenForPayment || enrollment.IsOnWaitingList)
+            return 0;
+
         var paidSum = db.EnrollmentPayments
-            .Include(p => p.Activity)
-            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity != null && p.Activity.IsOpenForPayment && !enrollment.IsOnWaitingList)
+            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId)
             .Sum(p => (decimal?)p.Price) ?? 0;
 
         return enrollment.Price - paidSum;
@@ -142,37 +158,57 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments()
     {
-        return db.Enrollments
+        var enrollments = db.Enrollments
             .Include(e => e.Member)
             .Include(e => e.Activity)
-            .Select(e => new 
-            {
-                Enrollment = e,
-                PaidSum = db.EnrollmentPayments
-                    .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
-                    .Sum(p => (decimal?)p.Price) ?? 0
+            .Where(e => e.Activity.IsOpenForPayment && !e.IsOnWaitingList)
+            .AsNoTracking()
+            .ToList();
+
+        if (enrollments.Count == 0)
+            return Enumerable.Empty<EnrollmentBalance>();
+
+        var activityIds = enrollments.Select(e => e.ActivityId).ToHashSet();
+        var paidSums = db.EnrollmentPayments
+            .Where(p => p.PaidAt != null && p.ActivityId.HasValue && p.MemberId.HasValue && activityIds.Contains(p.ActivityId!.Value))
+            .GroupBy(p => new { ActivityId = p.ActivityId!.Value, MemberId = p.MemberId!.Value })
+            .Select(g => new { g.Key.ActivityId, g.Key.MemberId, Total = g.Sum(p => p.Price) })
+            .ToDictionary(x => (x.ActivityId, x.MemberId), x => (decimal)x.Total);
+
+        return enrollments
+            .Select(e => {
+                paidSums.TryGetValue((e.ActivityId, e.MemberId), out var paid);
+                return new EnrollmentBalance { Enrollment = e, Balance = e.Price - paid };
             })
-            .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
-            .AsEnumerable()
-            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
+            .Where(x => x.Balance > 0);
     }
 
     /// <inheritdoc />
     public IEnumerable<EnrollmentBalance> GetAllOverpaidEnrollments()
     {
-        return db.Enrollments
-            .Include(e => e.Activity)
+        var enrollments = db.Enrollments
             .Include(e => e.Member)
-            .Select(e => new 
-            {
-                Enrollment = e,
-                PaidSum = db.EnrollmentPayments
-                    .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
-                    .Sum(p => (decimal?)p.Price) ?? 0
+            .Include(e => e.Activity)
+            .Where(e => e.Activity.IsOpenForPayment && !e.IsOnWaitingList)
+            .AsNoTracking()
+            .ToList();
+
+        if (enrollments.Count == 0)
+            return Enumerable.Empty<EnrollmentBalance>();
+
+        var activityIds = enrollments.Select(e => e.ActivityId).ToHashSet();
+        var paidSums = db.EnrollmentPayments
+            .Where(p => p.PaidAt != null && p.ActivityId.HasValue && p.MemberId.HasValue && activityIds.Contains(p.ActivityId!.Value))
+            .GroupBy(p => new { ActivityId = p.ActivityId!.Value, MemberId = p.MemberId!.Value })
+            .Select(g => new { g.Key.ActivityId, g.Key.MemberId, Total = g.Sum(p => p.Price) })
+            .ToDictionary(x => (x.ActivityId, x.MemberId), x => (decimal)x.Total);
+
+        return enrollments
+            .Select(e => {
+                paidSums.TryGetValue((e.ActivityId, e.MemberId), out var paid);
+                return new EnrollmentBalance { Enrollment = e, Balance = paid - e.Price };
             })
-            .Where(x => x.PaidSum > x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
-            .AsEnumerable()
-            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.PaidSum - x.Enrollment.Price });
+            .Where(x => x.Balance > 0);
     }
 
     /// <inheritdoc />

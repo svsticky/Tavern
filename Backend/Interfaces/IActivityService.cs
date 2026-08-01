@@ -18,6 +18,15 @@ public interface IActivityService
     Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid? userId, GetActivitiesDTO dto);
 
     /// <summary>
+    /// Returns a paginated, searchable, and sortable list of activities for admin use.
+    /// Uses SQL-level COUNT projections for enrollment counts instead of loading full enrollment objects.
+    /// </summary>
+    /// <param name="userId">The ID of the requesting user (must be admin).</param>
+    /// <param name="dto">Pagination, filter, and sort parameters.</param>
+    /// <returns>Paginated list of lightweight activity items.</returns>
+    Task<PagedResultDTO<ActivityListItemDTO>> GetAdminActivities(Guid userId, GetAdminActivitiesDTO dto);
+
+    /// <summary>
     /// Retrieves a specific activity by its ID. This method takes the user's ID and the activity's ID as parameters and returns an ActivityResponseDTO object that represents the details of the requested activity. The retrieval process should ensure that the user has appropriate access rights to view the activity details, and it should handle potential errors or exceptions that may arise during the data access while maintaining data integrity and security within the system.
     /// </summary>
     /// <param name="userId">The ID of the user requesting the activity.</param>

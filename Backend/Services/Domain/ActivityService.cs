@@ -96,9 +96,85 @@ public class ActivityService : IActivityService
     }
 
     /// <inheritdoc />
+    public async Task<PagedResultDTO<ActivityListItemDTO>> GetAdminActivities(Guid userId, GetAdminActivitiesDTO dto)
+    {
+        if (!_permissionService.IsAdmin(userId))
+            throw new UnauthorizedAccessException();
+
+        var now = DateTimeOffset.UtcNow;
+        var query = _db.Activities.AsNoTracking().AsQueryable();
+
+        if (!dto.IncludePast)
+            query = query.Where(a => a.DateTimeEnd >= now);
+
+        if (!dto.IncludeFuture)
+            query = query.Where(a => a.DateTimeStart < now);
+
+        if (dto.Year.HasValue)
+            query = query.Where(a => a.DateTimeStart.Year == (int)dto.Year.Value);
+
+        if (!string.IsNullOrWhiteSpace(dto.Search))
+        {
+            var pattern = $"%{dto.Search}%";
+            query = query.Where(a =>
+                EF.Functions.ILike(a.Name, pattern) ||
+                EF.Functions.ILike(a.Location, pattern));
+        }
+
+        if (dto.IsOpenForPayment.HasValue)
+            query = query.Where(a => a.IsOpenForPayment == dto.IsOpenForPayment.Value);
+
+        var totalCount = await query.CountAsync();
+
+        var projected = query.Select(a => new ActivityListItemDTO
+        {
+            Id = a.Id,
+            Name = a.Name,
+            Location = a.Location,
+            Price = a.Price,
+            DateTimeStart = a.DateTimeStart,
+            DateTimeEnd = a.DateTimeEnd,
+            ParticipantLimit = a.ParticipantLimit,
+            EnrolledCount = a.Enrollments.Count(e => !e.IsOnWaitingList),
+            WaitlistCount = a.Enrollments.Count(e => e.IsOnWaitingList),
+            PosterPath = a.PosterPath,
+            ShowInKoala = a.ShowInKoala,
+            IsOpenForPayment = a.IsOpenForPayment,
+        });
+
+        projected = (dto.SortBy?.ToLowerInvariant(), dto.SortDir?.ToLowerInvariant() == "asc") switch
+        {
+            ("name", true)          => projected.OrderBy(a => a.Name),
+            ("name", false)         => projected.OrderByDescending(a => a.Name),
+            ("price", true)         => projected.OrderBy(a => a.Price),
+            ("price", false)        => projected.OrderByDescending(a => a.Price),
+            ("participants", true)  => projected.OrderBy(a => a.EnrolledCount),
+            ("participants", false) => projected.OrderByDescending(a => a.EnrolledCount),
+            ("date", true)          => projected.OrderBy(a => a.DateTimeStart),
+            _                       => projected.OrderByDescending(a => a.DateTimeStart),
+        };
+
+        var page = Math.Max(1, dto.Page);
+        var pageSize = Math.Clamp(dto.PageSize, 1, 200);
+
+        var items = await projected
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResultDTO<ActivityListItemDTO>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
-        bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool isBoard = _permissionService.IsAdmin(userId);
 
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)

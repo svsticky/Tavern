@@ -29,7 +29,7 @@ public class Announcement
     /// <summary>
     /// The Dutch content of the announcement.
     /// </summary>
-    [StringLength(1000)]
+    [StringLength(10000)]
     [Required(AllowEmptyStrings = false)]
     public string ContentDutch { get; set; } = null!;
 

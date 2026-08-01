@@ -32,10 +32,11 @@ internal static class ServiceExtensions
         {
             case "keycloak":
                 string? devcontainer_issuer = Environment.GetEnvironmentVariable("VITE_KeycloakUrl");
+                string keycloakRealm = Environment.GetEnvironmentVariable("KeycloakRealm") ?? "master";
                 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     .AddJwtBearer(options =>
                     {
-                        options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
+                        options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{keycloakRealm}";
                         
                         options.Events = new JwtBearerEvents
                         {
@@ -107,7 +108,7 @@ internal static class ServiceExtensions
                             ValidateIssuer = true,
                             ValidateAudience = false,
                             ValidateLifetime = true,
-                            ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
+                            ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + keycloakRealm
                         };
                     });
 

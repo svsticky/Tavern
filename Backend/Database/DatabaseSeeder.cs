@@ -106,6 +106,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "StudyStartDates", "09-01,02-01");
 
+        await EnsureSettingExists(db, "AdminGroupIds", ""); // comma-separated extra group IDs with admin access
+
+        if (await db.Members.AnyAsync())
+            return;
+
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();
@@ -222,21 +227,23 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     return;
                 }
 
-                var backupMember = new Member
-                {
-                    Id = Guid.NewGuid(),
-                    PhoneNumber = "0600000000",
-                    StudentNumber = "BackupMember",
-                    Street = "Street",
-                    HouseNumber = "1",
-                    PostalCode = "1234AB",
-                    City = "City",
-                    FirstName = "Backup",
-                    LastName = "Account",
-                    Email = backupEmail
-                };
+                var backupMember = await db.Members.FirstOrDefaultAsync(m => m.Email == backupEmail)
+                    ?? new Member
+                    {
+                        Id = Guid.NewGuid(),
+                        PhoneNumber = "0600000000",
+                        StudentNumber = "BackupMember",
+                        Street = "Street",
+                        HouseNumber = "1",
+                        PostalCode = "1234AB",
+                        City = "City",
+                        FirstName = "Backup",
+                        LastName = "Account",
+                        Email = backupEmail
+                    };
 
-                db.Members.Add(backupMember);
+                if (!db.Members.Local.Contains(backupMember) && !await db.Members.AnyAsync(m => m.Id == backupMember.Id))
+                    db.Members.Add(backupMember);
 
                 db.GroupMemberships.Add(new GroupMembership
                 {

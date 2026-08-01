@@ -128,5 +128,22 @@ public class PostgresDbContext : DbContext
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
         });
+
+        modelBuilder.Entity<Activity>()
+            .HasIndex(a => a.DateTimeStart)
+            .HasDatabaseName("IX_Activities_DateTimeStart");
+
+        modelBuilder.Entity<GroupMembership>()
+            .HasIndex(gm => new { gm.MemberId, gm.MembershipYear })
+            .HasDatabaseName("IX_GroupMemberships_MemberId_MembershipYear");
+
+        modelBuilder.Entity<EnrollmentPayment>()
+            .HasIndex(p => new { p.ActivityId, p.MemberId })
+            .HasFilter("\"PaidAt\" IS NOT NULL")
+            .HasDatabaseName("IX_EnrollmentPayments_ActivityId_MemberId_PaidAt");
+
+        modelBuilder.Entity<Enrollment>()
+            .HasIndex(e => e.ActivityId)
+            .HasDatabaseName("IX_Enrollments_ActivityId");
     }
 }

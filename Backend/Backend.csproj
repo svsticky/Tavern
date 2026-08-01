@@ -7,7 +7,15 @@
       <RootNamespace>Backend</RootNamespace>
       <GenerateDocumentationFile>true</GenerateDocumentationFile>
       <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+      <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+      <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
+
+  <ItemGroup>
+      <Compile Remove="obj\**" />
+      <EmbeddedResource Remove="obj\**" />
+      <None Remove="obj\**" />
+  </ItemGroup>
 
   <ItemGroup>
       <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.26" />

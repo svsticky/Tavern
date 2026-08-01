@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type {
   Activity,
-  ActivityResponseDto,
   EnrollmentBalance,
   Member,
+  PagedResultDtoActivityListItemDto,
 } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Tile from "~/components/Tiles/Tile";
@@ -18,6 +18,7 @@ import {
   handleMarkAsPaid,
   handlePaymentsExport,
   handleWhatsAppClick,
+  loadExpiredActivitiesPage,
   loadFinancesData,
   refreshUnpaidPayments,
 } from "./finances.handlers";
@@ -45,8 +46,9 @@ export default function Finances() {
   const [totalUnpaid, setTotalUnpaid] = useState(0);
   const [openPayments, setOpenPayments] = useState(0);
   const [expiredActivities, setExpiredActivities] = useState<
-    ActivityResponseDto[] | null
+    PagedResultDtoActivityListItemDto | null
   >(null);
+  const [expiredPage, setExpiredPage] = useState(1);
   const [unpaidActivities, setUnpaidActivities] = useState<Activity[] | null>(
     null,
   );
@@ -181,7 +183,7 @@ export default function Finances() {
           title={t("expired_activities")}
           subtitle={t("expired_activities_subtitle")}
         >
-          {expiredActivities.map((activity) => (
+          {expiredActivities.items.map((activity) => (
             <Tile
               className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
               key={activity.id}
@@ -196,10 +198,10 @@ export default function Finances() {
                   </span>
                   <span className="hidden md:inline">•</span>
                   <span>
-                    {activity.enrollments.length} {t("participants")}
+                    {activity.enrolledCount} {t("participants")}
                   </span>
                   <span className="hidden md:inline">•</span>
-                  <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
+                  <span>{activity.price > 0 ? `€${activity.price.toFixed(2)}` : t("free")}</span>
                 </div>
               </div>
 
@@ -212,6 +214,38 @@ export default function Finances() {
               </Button>
             </Tile>
           ))}
+
+          {expiredActivities.totalCount > 20 && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-sm text-slate-500">
+                {(expiredPage - 1) * 20 + 1}–{Math.min(expiredPage * 20, expiredActivities.totalCount)} {t("of")} {expiredActivities.totalCount}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const next = Math.max(1, expiredPage - 1);
+                    setExpiredPage(next);
+                    loadExpiredActivitiesPage(next, setExpiredActivities);
+                  }}
+                  disabled={expiredPage <= 1}
+                >
+                  ‹ {t("previous")}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const next = expiredPage + 1;
+                    setExpiredPage(next);
+                    loadExpiredActivitiesPage(next, setExpiredActivities);
+                  }}
+                  disabled={expiredPage * 20 >= expiredActivities.totalCount}
+                >
+                  {t("next")} ›
+                </Button>
+              </div>
+            </div>
+          )}
         </BorderedTile>
 
         <BorderedTile

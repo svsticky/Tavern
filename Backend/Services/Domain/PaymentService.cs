@@ -389,17 +389,30 @@ namespace Backend.Services.Domain
 
         private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<PaymentServiceFeePayment> paymentServiceFeePayments)
         {
+            // Batch-load all settings needed in this method in a single query
+            var settingNames = new[]
+            {
+                "PaymentServicePaymentsCondition", "PaymentServiceRelationCode",
+                "ActivityGLAccount", "MembershipGLAccount", "MembershipVATCode",
+                "PaymentServiceFeeGLAccount", "PaymentServiceFeeCostCenter", "PaymentServiceFeeVATCode",
+            };
+            var settings = db.Settings
+                .Where(s => settingNames.Contains(s.Name))
+                .ToDictionary(s => s.Name, s => s.Value);
+
+            string Setting(string name, string fallback) =>
+                settings.TryGetValue(name, out var v) ? v : fallback;
+
             var csv = new StringBuilder();
-            
+
             var invoiceDate = endDate.AddDays(-1).ToString("dd-MM-yyyy");
             var periodLabel = $"ideal - {startDate:dd-MM-yyyy} / {endDate:dd-MM-yyyy}";
-            var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
-            var paymentServiceRelationalCode = db.Settings.Where(s => s.Name == "PaymentServiceRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
-            csv.AppendLine($"factuurdatum;{invoiceDate};{periodLabel};{paymentsCondition};{paymentServiceRelationalCode}");
+            csv.AppendLine($"factuurdatum;{invoiceDate};{periodLabel};{Setting("PaymentServicePaymentsCondition", "2")};{Setting("PaymentServiceRelationCode", "473")}");
 
+            var activityGLAccount = Setting("ActivityGLAccount", "7001");
             foreach (var p in enrollmentPayments)
             {
-                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
+                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? activityGLAccount;
                 var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
                 var activityName = p.Activity?.Name ?? "Unknown Activity";
                 var costCenter = p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter ?? "";
@@ -411,14 +424,11 @@ namespace Backend.Services.Domain
                 csv.AppendLine($";{glAccount};{description};{VATCode};{price};{costCenter};{costUnit}");
             }
 
+            var membershipGLAccount = Setting("MembershipGLAccount", "8000");
+            var membershipVATCode = Setting("MembershipVATCode", "0");
             foreach (var p in membershipPayments)
             {
-                var glAccount = db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault() ?? "8000";
-                var description = "Lidmaatschap";
-                var VATCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
-                var price = p.Price;
-                
-                csv.AppendLine($";{glAccount};{description};{VATCode};{price};;");
+                csv.AppendLine($";{membershipGLAccount};Lidmaatschap;{membershipVATCode};{p.Price};;");
             }
 
             var groupedFees = paymentServiceFeePayments
@@ -429,17 +439,14 @@ namespace Backend.Services.Domain
                     TotalPrice = g.Sum(p => p.Price)
                 });
 
-            var paymentServiceFeeGLAccount = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeGLAccount")?.Value ?? "5007";
-            var paymentServiceFeeCostCenter = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value ?? "TRX";
-            var vatCode = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeVATCode")?.Value ?? "21";
+            var paymentServiceFeeGLAccount = Setting("PaymentServiceFeeGLAccount", "5007");
+            var paymentServiceFeeCostCenter = Setting("PaymentServiceFeeCostCenter", "TRX");
+            var vatCode = Setting("PaymentServiceFeeVATCode", "21");
 
             foreach (var group in groupedFees)
             {
                 var description = $"Transaction costs {group.UnitPrice:N2} x {group.Count}";
-                
-                var totalPrice = group.TotalPrice;
-
-                csv.AppendLine($";{paymentServiceFeeGLAccount};{description};{vatCode};{totalPrice};{paymentServiceFeeCostCenter};;");
+                csv.AppendLine($";{paymentServiceFeeGLAccount};{description};{vatCode};{group.TotalPrice};{paymentServiceFeeCostCenter};;");
             }
 
             return csv;

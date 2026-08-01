@@ -282,3 +282,58 @@ public class GetActivitiesDTO
     /// </summary>
     public bool? OpenForPayment { get; set; }
 }
+/// <summary>
+/// Query parameters for the admin activities list endpoint (supports pagination, search, sort).
+/// </summary>
+public class GetAdminActivitiesDTO
+{
+    /// <summary>1-based page number.</summary>
+    public int Page { get; set; } = 1;
+    /// <summary>Number of items per page (1–200).</summary>
+    public int PageSize { get; set; } = 50;
+    /// <summary>Free-text search applied to name and location.</summary>
+    public string? Search { get; set; }
+    /// <summary>Sort field: "name" | "date" | "price" | "participants".</summary>
+    public string? SortBy { get; set; }
+    /// <summary>Sort direction: "asc" | "desc". Defaults to "desc" for date.</summary>
+    public string? SortDir { get; set; }
+    /// <summary>Whether to include activities whose end date is in the past.</summary>
+    public bool IncludePast { get; set; } = true;
+    /// <summary>Whether to include activities whose start date is in the future.</summary>
+    public bool IncludeFuture { get; set; } = true;
+    /// <summary>Filter by calendar year of the activity start date.</summary>
+    public uint? Year { get; set; }
+    /// <summary>When set, filters to only activities matching this IsOpenForPayment value.</summary>
+    public bool? IsOpenForPayment { get; set; }
+}
+
+/// <summary>
+/// Lightweight activity DTO for the admin list — enrollment counts instead of full enrollment objects.
+/// </summary>
+public class ActivityListItemDTO
+{
+    /// <inheritdoc cref="Activity.Id"/>
+    public required uint Id { get; set; }
+    /// <inheritdoc cref="Activity.Name"/>
+    public required string Name { get; set; }
+    /// <inheritdoc cref="Activity.Location"/>
+    public required string Location { get; set; }
+    /// <inheritdoc cref="Activity.Price"/>
+    public required decimal Price { get; set; }
+    /// <inheritdoc cref="Activity.DateTimeStart"/>
+    public required DateTimeOffset DateTimeStart { get; set; }
+    /// <inheritdoc cref="Activity.DateTimeEnd"/>
+    public required DateTimeOffset DateTimeEnd { get; set; }
+    /// <inheritdoc cref="Activity.ParticipantLimit"/>
+    public uint? ParticipantLimit { get; set; }
+    /// <summary>Number of non-waitlist enrollments.</summary>
+    public required int EnrolledCount { get; set; }
+    /// <summary>Number of waitlist enrollments.</summary>
+    public required int WaitlistCount { get; set; }
+    /// <inheritdoc cref="Activity.PosterPath"/>
+    public string? PosterPath { get; set; }
+    /// <inheritdoc cref="Activity.ShowInKoala"/>
+    public required bool ShowInKoala { get; set; }
+    /// <inheritdoc cref="Activity.IsOpenForPayment"/>
+    public required bool IsOpenForPayment { get; set; }
+}

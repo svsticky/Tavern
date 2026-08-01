@@ -1,7 +1,7 @@
 import { t } from "i18next";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import type { ActivityResponseDto } from "~/api";
+import type { PagedResultDtoActivityListItemDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
@@ -10,86 +10,154 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import type { ActivityListItemDto } from "./activities.handlers";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
-/**
- * An administrative management page for viewing and filtering all association activities.
- *
- * This component provides a robust interface for board members to track events across
- * different association years. It features:
- * - **Yearly Archiving**: A selector to view activities as far back as 2007.
- * - **Real-time Filtering**: Search by activity name or location using a memoized filter.
- * - **Data Visualization**: A `DataTable` that summarizes key metrics such as
- *   participant counts (including limits), pricing, and scheduling.
- * - **Contextual Navigation**: Quick access to the administrative details of any specific event.
- *
- * @page
- * @component
- */
+const ALL_YEARS = 0;
+const PAGE_SIZE = 50;
+
 export default function Activities() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const currentYear = getCommitteeYear();
   const [year, setYear] = useState(currentYear);
-  const [activities, setActivities] = useState<ActivityResponseDto[] | null>(
-    null,
-  );
-  const [searchQuery, setSearchQuery] = useState("");
+  const [result, setResult] = useState<PagedResultDtoActivityListItemDto | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
 
-  const yearsSince2007 = Array.from(
-    { length: currentYear - 2007 + 1 },
-    (_, i) => currentYear - i,
-  );
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const filteredActivities = useMemo(() => {
-    if (!activities) return [];
-    return activities.filter(
-      (act) =>
-        act.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        act.location?.toLowerCase().includes(searchQuery.toLowerCase()),
+  const yearOptions = [
+    { label: t("all_time"), value: ALL_YEARS },
+    ...Array.from({ length: currentYear - 2007 + 1 }, (_, i) => {
+      const y = currentYear - i;
+      return { label: `${y - 1}/${y}`, value: y };
+    }),
+  ];
+
+  const fetch = useCallback(() => {
+    loadAdminActivities(
+      {
+        year: year === ALL_YEARS ? null : year,
+        search,
+        sortBy,
+        sortDir,
+        page,
+        pageSize: PAGE_SIZE,
+      },
+      setLoading,
+      setResult,
     );
-  }, [activities, searchQuery]);
+  }, [year, search, sortBy, sortDir, page]);
 
   useEffect(() => {
-    loadAdminActivities(year, setLoading, (next) => setActivities(next));
-  }, [year]);
+    fetch();
+  }, [fetch]);
 
-  const columns: Column<ActivityResponseDto>[] = [
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchInput(e.target.value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setSearch(e.target.value);
+      setPage(1);
+    }, 400);
+  };
+
+  const handleSort = (by: string) => {
+    if (sortBy === by) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(by);
+      setSortDir("asc");
+    }
+    setPage(1);
+  };
+
+  const activities = result?.items ?? [];
+  const totalCount = result?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  const sortIcon = (col: string) => {
+    if (sortBy !== col) return " ⇅";
+    return sortDir === "asc" ? " ▲" : " ▼";
+  };
+
+  const columns: Column<ActivityListItemDto>[] = [
     {
-      header: t("activity"),
+      header: (
+        <button
+          type="button"
+          className="font-medium hover:text-slate-600 cursor-pointer select-none"
+          onClick={() => handleSort("name")}
+        >
+          {t("activity")}{sortIcon("name")}
+        </button>
+      ),
       render: (act) => (
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col">
+          <span className="font-semibold text-slate-700">{act.name}</span>
+          <span className="text-xs text-slate-400">{act.location}</span>
+        </div>
+      ),
+    },
+    {
+      header: (
+        <button
+          type="button"
+          className="font-medium hover:text-slate-600 cursor-pointer select-none"
+          onClick={() => handleSort("date")}
+        >
+          {t("date")}{sortIcon("date")}
+        </button>
+      ),
+      render: (act) => (
+        <span className="text-sm text-slate-600">
+          {formatDate(new Date(act.dateTimeStart), "fullDateTime")}
+        </span>
+      ),
+    },
+    {
+      header: (
+        <button
+          type="button"
+          className="font-medium hover:text-slate-600 cursor-pointer select-none"
+          onClick={() => handleSort("participants")}
+        >
+          {t("participants")}{sortIcon("participants")}
+        </button>
+      ),
+      render: (act) => {
+        const count = act.enrolledCount;
+        const limit = act.participantLimit;
+        const waitlist = act.waitlistCount;
+        const full = limit !== null && limit !== undefined && count >= limit;
+        return (
           <div className="flex flex-col">
-            <span className="font-semibold text-slate-700">{act.name}</span>
-            <span className="text-xs text-slate-400">{act.location}</span>
+            <span className={`text-sm ${full ? "text-amber-600 font-medium" : "text-slate-600"}`}>
+              {count}{limit != null ? `/${limit}` : ""}
+              {full ? ` · ${t("full")}` : ""}
+            </span>
+            {waitlist > 0 && (
+              <span className="text-xs text-slate-400">{waitlist} {t("on_waitlist")}</span>
+            )}
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
-      header: t("date"),
-      render: (act) => (
-        <div className="flex flex-col">
-          <span className="text-sm text-slate-600">
-            {formatDate(new Date(act.dateTimeStart), "fullDateTime")}
-          </span>
-        </div>
+      header: (
+        <button
+          type="button"
+          className="font-medium hover:text-slate-600 cursor-pointer select-none"
+          onClick={() => handleSort("price")}
+        >
+          {t("price")}{sortIcon("price")}
+        </button>
       ),
-    },
-    {
-      header: t("participants"),
-      render: (act) => (
-        <div className="flex flex-col">
-          <span className="text-sm text-slate-600">
-            👥 {act.enrollments.filter((e) => !e.isOnWaitingList).length}
-            {act.participantLimit !== null ? `/${act.participantLimit}` : ""}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: t("price"),
       render: (act) => (
         <span className="font-medium text-slate-700">
           {act.price != null && act.price > 0
@@ -126,21 +194,20 @@ export default function Activities() {
             <Input
               label={t("search")}
               placeholder={t("search_activities")}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(e.target.value)
-              }
+              value={searchInput}
+              onChange={handleSearchChange}
             />
           </div>
           <div className="flex flex-col w-full sm:w-auto">
             <Select
-              options={yearsSince2007.map((y) => ({
-                label: `${y - 1}/${y}`,
-                value: y,
-              }))}
+              options={yearOptions}
               label={t("year")}
               style={{ minWidth: "150px" }}
               value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              onChange={(e) => {
+                setYear(Number(e.target.value));
+                setPage(1);
+              }}
             />
           </div>
         </div>
@@ -149,9 +216,38 @@ export default function Activities() {
       {loading ? (
         t("loading")
       ) : (
-        <BorderedTile className="bg-white p-0">
-          <DataTable data={filteredActivities ?? []} columns={columns} />
-        </BorderedTile>
+        <>
+          <BorderedTile className="bg-white p-0">
+            <DataTable
+              data={activities}
+              columns={columns}
+            />
+          </BorderedTile>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-2">
+              <span className="text-sm text-slate-500">
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, totalCount)} {t("of")} {totalCount}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  ‹ {t("previous")}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  {t("next")} ›
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

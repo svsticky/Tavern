@@ -153,6 +153,9 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DateTimeStart")
+                        .HasDatabaseName("IX_Activities_DateTimeStart");
+
                     b.HasIndex("OrganizerId");
 
                     b.ToTable("Activities");
@@ -173,8 +176,8 @@ namespace Backend.Migrations
 
                     b.Property<string>("ContentEnglish")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -245,6 +248,9 @@ namespace Backend.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("ActivityId", "MemberId");
+
+                    b.HasIndex("ActivityId")
+                        .HasDatabaseName("IX_Enrollments_ActivityId");
 
                     b.HasIndex("MemberId");
 
@@ -360,9 +366,10 @@ namespace Backend.Migrations
 
                     b.HasIndex("GroupId");
 
-                    b.HasIndex("MemberId");
-
                     b.HasIndex("RoleAliasId");
+
+                    b.HasIndex("MemberId", "MembershipYear")
+                        .HasDatabaseName("IX_GroupMemberships_MemberId_MembershipYear");
 
                     b.ToTable("GroupMemberships");
                 });
@@ -862,7 +869,9 @@ namespace Backend.Migrations
                     b.Property<long?>("ActivityId")
                         .HasColumnType("bigint");
 
-                    b.HasIndex("ActivityId");
+                    b.HasIndex("ActivityId", "MemberId")
+                        .HasDatabaseName("IX_EnrollmentPayments_ActivityId_MemberId_PaidAt")
+                        .HasFilter("\"PaidAt\" IS NOT NULL");
 
                     b.ToTable("EnrollmentPayments", (string)null);
                 });
