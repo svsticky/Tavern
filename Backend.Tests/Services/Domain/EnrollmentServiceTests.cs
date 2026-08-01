@@ -828,7 +828,8 @@ public class EnrollmentServiceTests : IDisposable
         await _db.SaveChangesAsync();
         _db.ChangeTracker.Clear();
         var list = await _db.Enrollments.Where(e => e.ActivityId == activity.Id).ToListAsync();
-        Assert.All(list, e => Assert.False(e.IsOnWaitingList));
+        Assert.False(list.First(e => e.MemberId == member1.Id).IsOnWaitingList);
+        Assert.True(list.First(e => e.MemberId == member2.Id).IsOnWaitingList);
     }
 
     [Fact]

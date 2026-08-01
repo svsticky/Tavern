@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,7 @@ namespace Backend.Controllers;
 /// <param name="enrollmentService">The enrollment service for managing enrollment operations.</param>
 [Route("[controller]")]
 [ApiController]
+[Authorize]
 public class EnrollmentsController(IEnrollmentService enrollmentService) : ControllerBase
 {
     /// <summary>

@@ -314,9 +314,10 @@ public class EnrollmentService : IEnrollmentService
 
         var toPromote = next
             .Where(e => TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
-            .Take(numberToPromote);
+            .Take(numberToPromote)
+            .ToList();
 
-        foreach (var enrollment in next)
+        foreach (var enrollment in toPromote)
         {
             enrollment.IsOnWaitingList = false;
         }

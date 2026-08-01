@@ -138,11 +138,9 @@ export class KeycloakAuthService implements IAuthService {
   }
 
   public async resetCredentials(): Promise<string> {
-    const baseUrl = `${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/login-actions/reset-credentials`;
-
-    const clientId = `${getEnv("KeycloakClientId")}`;
-    const redirectUri = encodeURIComponent(`${window.location.origin}/`);
-
-    return `${baseUrl}?client_id=${clientId}&tab_id=...&redirect_uri=${redirectUri}`;
+    return this.keycloak.createLoginUrl({
+      action: "UPDATE_PASSWORD",
+      redirectUri: `${window.location.origin}/`,
+    });
   }
 }

@@ -76,7 +76,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_IMPORT_OVERWRITE: "true"
       webhookUrl: "http://devcontainer:8080/members/webhook/refresh-email"
-      webhookSecret: kdfsjf*DFf9A
+      webhookSecret: ${AUTH_WEBHOOK_SECRET}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://db:5432/postgres
       KC_DB_USERNAME: postgres

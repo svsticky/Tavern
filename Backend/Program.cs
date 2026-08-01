@@ -1,4 +1,5 @@
 using Backend;
+using Backend.Filters;
 using DotNetEnv;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.HttpLogging;
@@ -101,7 +102,10 @@ app.MapControllers();
 if (!isGeneratingDocs)
 {
     await app.MigrateDatabaseAsync();
-    app.UseHangfireDashboard();
+    app.UseHangfireDashboard("/hangfire", new DashboardOptions
+    {
+        Authorization = [new HangfireBoardAuthorizationFilter()]
+    });
     app.ConfigureHangfireJobs();
 }
 

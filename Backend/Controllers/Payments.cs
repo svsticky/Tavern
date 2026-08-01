@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.PaymentServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -12,6 +13,7 @@ namespace Backend.Controllers
     /// <param name="paymentService">The service handling payment processing and ledger operations.</param>
     [Route("[controller]")]
     [ApiController]
+    [Authorize]
     public class PaymentsController(IPaymentService paymentService) : ControllerBase
     {
         // GET: payments/membership
@@ -145,6 +147,7 @@ namespace Backend.Controllers
         /// <param name="webhookService">The service dedicated to handling external payment status webhooks.</param>
         /// <returns>An OK status once the webhook has been successfully processed.</returns>
         [HttpPost("webhook")]
+        [AllowAnonymous]
         [Consumes("application/x-www-form-urlencoded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]

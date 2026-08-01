@@ -1,6 +1,8 @@
 **/.idea/
 **/.vscode/
 .env
+.devcontainer/.env
+.devcontainer/devcontainer.env
 /Docs/content/docs/*
 !/Docs/content/docs/index.mdx
 !/Docs/content/docs/Architecture/

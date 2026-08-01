@@ -106,7 +106,8 @@ internal static class ServiceExtensions
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
                             ValidateIssuer = true,
-                            ValidateAudience = false,
+                            ValidateAudience = true,
+                            ValidAudiences = [Environment.GetEnvironmentVariable("KeycloakBackendClientId") ?? "backend-tavern", "account"],
                             ValidateLifetime = true,
                             ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + keycloakRealm
                         };
