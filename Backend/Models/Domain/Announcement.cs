@@ -36,7 +36,7 @@ public class Announcement
     /// <summary>
     /// The English content of the announcement.
     /// </summary>
-    [StringLength(1000)]
+    [StringLength(10000)]
     [Required(AllowEmptyStrings = false)]
     public string ContentEnglish { get; set; } = null!;
 

@@ -20,12 +20,12 @@ public class PostAnnouncementDTO
     public required string TitleEnglish { get; set; }
 
     /// <inheritdoc cref="Models.Domain.Announcement.ContentDutch"/>>
-    [StringLength(1000)]
+    [StringLength(10000)]
     [Required(AllowEmptyStrings = false)]
     public required string ContentDutch { get; set; }
 
     /// <inheritdoc cref="Models.Domain.Announcement.ContentEnglish"/>>
-    [StringLength(1000)]
+    [StringLength(10000)]
     [Required(AllowEmptyStrings = false)]
     public required string ContentEnglish { get; set; }
 }
@@ -46,12 +46,12 @@ public class UpdateAnnouncementDTO
     public required string TitleEnglish { get; set; }
 
     /// <inheritdoc cref="Models.Domain.Announcement.ContentDutch"/>
-    [StringLength(1000)]
+    [StringLength(10000)]
     [Required(AllowEmptyStrings = false)]
     public required string ContentDutch { get; set; }
 
     /// <inheritdoc cref="Models.Domain.Announcement.ContentEnglish"/>
-    [StringLength(1000)]
+    [StringLength(10000)]
     [Required(AllowEmptyStrings = false)]
     public required string ContentEnglish { get; set; }
 }
