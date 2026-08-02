@@ -49,12 +49,44 @@ public class EnrollmentResponseDTO
             return e => new EnrollmentResponseDTO
             {
                 IsOnWaitingList = e.IsOnWaitingList,
-                Member = e.Member == null ? null! :  MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member),
+                Member = e.Member == null ? null! : MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member),
                 SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
                     .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible)
                     .Select(sa => SpecificationAnswerResponseDTO.ToDto().Compile()(sa)).ToList(),
                 Price = isBoard ? e.Price : null,
-                Activity = e.Activity == null ? null! : includeActivity ? ActivityResponseDTO.ToDto(userId, isBoard).Compile()(e.Activity) : null!
+                Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO
+                {
+                    Id = e.Activity.Id,
+                    Name = e.Activity.Name,
+                    Price = e.Activity.Price,
+                    PosterPath = e.Activity.PosterPath,
+                    PosterFileName = e.Activity.PosterFileName,
+                    DutchDescription = e.Activity.DutchDescription,
+                    EnglishDescription = e.Activity.EnglishDescription,
+                    DateTimeStart = e.Activity.DateTimeStart,
+                    DateTimeEnd = e.Activity.DateTimeEnd,
+                    UnenrollmentDeadline = e.Activity.UnenrollmentDeadline,
+                    EnrollmentDeadline = e.Activity.EnrollmentDeadline,
+                    EnrollOpenDate = e.Activity.EnrollOpenDate,
+                    Location = e.Activity.Location,
+                    ParticipantLimit = e.Activity.ParticipantLimit,
+                    OrganizerId = e.Activity.OrganizerId,
+                    ShowInKoala = e.Activity.ShowInKoala,
+                    ShowOnWebsite = e.Activity.ShowOnWebsite,
+                    IsEnrollable = e.Activity.IsEnrollable,
+                    AreParticipantsVisible = e.Activity.AreParticipantsVisible,
+                    IsAdultOnly = e.Activity.IsAdultOnly,
+                    IsWeeklyDrinks = e.Activity.IsWeeklyDrinks,
+                    AllowedAudience = e.Activity.AllowedAudience,
+                    VatRate = e.Activity.VatRate,
+                    GLAccountId = e.Activity.GLAccountId,
+                    CostCenterId = e.Activity.CostCenterId,
+                    CostUnitId = e.Activity.CostUnitId,
+                    Enrollments = new List<EnrollmentResponseDTO>(),
+                    SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
+                    PaymentDeadline = isBoard ? e.Activity.PaymentDeadline : default,
+                    IsOpenForPayment = e.Activity.IsOpenForPayment
+                } : null!
             };
         }
 }

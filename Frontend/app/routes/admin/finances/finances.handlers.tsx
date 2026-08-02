@@ -342,30 +342,48 @@ export const loadFinancesData = async ({
   try {
     setLoading(true);
 
-    const expiredActivitiesResponse = await getActivities({
-      query: {
-        IncludePast: true,
-        IncludeFuture: false,
-        OpenForPayment: false,
-      },
-    });
+    const [
+      expiredActivitiesResponse,
+      unpaidBalancesResponse,
+      overpaidBalancesResponse,
+    ] = await Promise.all([
+      getActivities({
+        query: {
+          IncludePast: true,
+          IncludeFuture: false,
+          OpenForPayment: false,
+          Page: 1,
+          PageSize: 20,
+        },
+      }),
+      getPaymentsUnpaid({
+        query: {
+          allUsers: true,
+        },
+      }),
+      getPaymentsOverpaid(),
+    ]);
 
     if (expiredActivitiesResponse.error || !expiredActivitiesResponse.data)
       throw new Error("Failed to load expired activities");
 
     setExpiredActivities(expiredActivitiesResponse.data || []);
 
-    await refreshUnpaidPayments({
-      setUnpaidBalances,
-      setTotalUnpaid,
-      setOpenPayments,
-      setUnpaidActivities,
-      setMembersWithOverduePayment,
-    });
+    if (unpaidBalancesResponse.data) {
+      setUnpaidPaymentState({
+        balances: unpaidBalancesResponse.data,
+        setUnpaidBalances,
+        setTotalUnpaid,
+        setOpenPayments,
+        setUnpaidActivities,
+        setMembersWithOverduePayment,
+      });
+    }
 
-    const overpaidBalances = await getPaymentsOverpaid();
-    if (overpaidBalances.data) {
-      setOverpaidBalances(overpaidBalances.data.filter((b) => b.balance !== 0));
+    if (overpaidBalancesResponse.data) {
+      setOverpaidBalances(
+        overpaidBalancesResponse.data.filter((b) => b.balance !== 0),
+      );
     }
   } catch (error) {
     console.error("Error while fetching data:", error);

@@ -29,21 +29,6 @@ Global
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x64.Build.0 = Release|Any CPU
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x86.ActiveCfg = Release|Any CPU
 		{F7DC3FA2-395A-4324-BECF-809B3BAAD70E}.Release|x86.Build.0 = Release|Any CPU
-<<<<<<< HEAD
-=======
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x64.Build.0 = Debug|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Debug|x86.Build.0 = Debug|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x64.ActiveCfg = Release|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x64.Build.0 = Release|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x86.ActiveCfg = Release|Any CPU
-		{4B785E75-4C61-4D38-B864-512497FBFABC}.Release|x86.Build.0 = Release|Any CPU
->>>>>>> db7a98c (Feat: Add backend tests, update readme and add architecture documentation)
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.PaymentServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
@@ -12,6 +13,7 @@ namespace Backend.Controllers
     /// <param name="paymentService">The service handling payment processing and ledger operations.</param>
     [Route("[controller]")]
     [ApiController]
+    [Authorize]
     public class PaymentsController(IPaymentService paymentService) : ControllerBase
     {
         // GET: payments/membership
@@ -101,6 +103,7 @@ namespace Backend.Controllers
         /// <param name="dto">The data transfer object containing membership payment details.</param>
         /// <returns>A response containing the payment status and potential checkout URL.</returns>
         [HttpPost("membership")]
+        [AllowAnonymous]
         [Consumes("application/json")]
         [Produces("application/json")]
         [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]

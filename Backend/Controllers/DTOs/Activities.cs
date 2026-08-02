@@ -281,4 +281,14 @@ public class GetActivitiesDTO
     /// Indicates whether to include activities that are open for payment in the response. If set to true, activities that are currently open for payment will be included in the response; if set to false, only activities that are not open for payment will be included.
     /// </summary>
     public bool? OpenForPayment { get; set; }
+
+    /// <summary>
+    /// The page number for pagination (1-indexed). If specified with PageSize, pagination will be applied.
+    /// </summary>
+    public int? Page { get; set; }
+
+    /// <summary>
+    /// The page size for pagination. Defaults to 50 if Page is specified without PageSize.
+    /// </summary>
+    public int? PageSize { get; set; }
 }

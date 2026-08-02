@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
@@ -12,12 +12,16 @@ import Select from "~/components/UI/Select";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
+/** The number of activities to fetch per page for infinite scrolling. */
+const PAGE_SIZE = 15;
+
 /**
  * An administrative management page for viewing and filtering all association activities.
  *
  * This component provides a robust interface for board members to track events across
  * different association years. It features:
  * - **Yearly Archiving**: A selector to view activities as far back as 2007.
+ * - **Infinite Scrolling**: Automatically loads more activities as the user scrolls down.
  * - **Real-time Filtering**: Search by activity name or location using a memoized filter.
  * - **Data Visualization**: A `DataTable` that summarizes key metrics such as
  *   participant counts (including limits), pricing, and scheduling.
@@ -29,18 +33,82 @@ import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 export default function Activities() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const currentYear = getCommitteeYear();
   const [year, setYear] = useState(currentYear);
-  const [activities, setActivities] = useState<ActivityResponseDto[] | null>(
-    null,
-  );
+  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const loaderRef = useRef<HTMLDivElement>(null);
 
   const yearsSince2007 = Array.from(
     { length: currentYear - 2007 + 1 },
     (_, i) => currentYear - i,
   );
+
+  const fetchActivities = useCallback(
+    async (pageNum: number, isInitial: boolean, targetYear: number) => {
+      loadAdminActivities(
+        targetYear,
+        setLoading,
+        (fetched) => {
+          setActivities((prev) => (isInitial ? fetched : [...prev, ...fetched]));
+          if (fetched.length < PAGE_SIZE) {
+            setHasMore(false);
+          }
+        },
+        pageNum,
+        PAGE_SIZE,
+      );
+    },
+    [],
+  );
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    setPage(1);
+    setHasMore(true);
+
+    loadAdminActivities(
+      year,
+      setLoading,
+      (fetched) => {
+        if (!isCurrent) return;
+        setActivities(fetched);
+        if (fetched.length < PAGE_SIZE) {
+          setHasMore(false);
+        }
+      },
+      1,
+      PAGE_SIZE,
+    );
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [year]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          const nextPage = page + 1;
+          setPage(nextPage);
+          fetchActivities(nextPage, false, year);
+        }
+      },
+      { threshold: 1.0 },
+    );
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loading, page, year, fetchActivities]);
 
   const filteredActivities = useMemo(() => {
     if (!activities) return [];
@@ -50,10 +118,6 @@ export default function Activities() {
         act.location?.toLowerCase().includes(searchQuery.toLowerCase()),
     );
   }, [activities, searchQuery]);
-
-  useEffect(() => {
-    loadAdminActivities(year, setLoading, (next) => setActivities(next));
-  }, [year]);
 
   const columns: Column<ActivityResponseDto>[] = [
     {
@@ -146,13 +210,21 @@ export default function Activities() {
         </div>
       </BorderedTile>
 
-      {loading ? (
-        t("loading")
-      ) : (
-        <BorderedTile className="bg-white p-0">
-          <DataTable data={filteredActivities ?? []} columns={columns} />
-        </BorderedTile>
-      )}
+      <BorderedTile className="bg-white p-0">
+        <DataTable data={filteredActivities} columns={columns} emptyText="" />
+
+        <div ref={loaderRef} className="h-10 flex items-center justify-center">
+          <span className="text-slate-400 text-sm">
+            {loading
+              ? t("loading_more")
+              : hasMore
+                ? t("load_more")
+                : activities.length === 0
+                  ? t("no_data")
+                  : t("no_more_activities")}
+          </span>
+        </div>
+      </BorderedTile>
     </div>
   );
 }

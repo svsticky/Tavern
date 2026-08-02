@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
+using Backend.Utils.DateTime;
 
 namespace Backend.QueryExtensions;
 
@@ -44,11 +45,46 @@ public static class ActivityQueryExtensions
             query = query.Where(a => a.DateTimeStart < now);
 
         if (dto.Year.HasValue)
-            query = query.Where(a => a.DateTimeStart.Year == (int)dto.Year.Value);
+        {
+            var committeeCreationDate = YearUtils.CommitteeCreationDate;
+            
+            var parts = YearUtils.CommitteeCreationDate.Split('-');
+            int month = int.Parse(parts[0]);
+            int day = int.Parse(parts[1]);
+
+            int selectedYear = (int)dto.Year.Value;
+            var creationThreshold = new DateTime(selectedYear - 1, month, day);
+
+            query = query.Where(a => 
+                a.DateTimeStart > creationThreshold
+            );
+        }
 
         if (dto.OpenForPayment.HasValue)
             query = query.Where(a => a.IsOpenForPayment == dto.OpenForPayment.Value);
 
         return query;
+    }
+
+    /// <summary>
+    /// Applies pagination to a queryable collection of Activity entities based on the page number and page size specified in a GetActivitiesDTO object.
+    /// </summary>
+    /// <param name="query">The queryable collection of Activity entities to paginate.</param>
+    /// <param name="dto">The data transfer object containing pagination settings.</param>
+    /// <returns>The paginated queryable collection of Activity entities.</returns>
+    public static IQueryable<Activity> ApplyPaging(
+        this IQueryable<Activity> query,
+        GetActivitiesDTO dto)
+    {
+        if (!dto.Page.HasValue && !dto.PageSize.HasValue)
+            return query;
+
+        int pageSize = dto.PageSize.HasValue && dto.PageSize.Value > 0 ? dto.PageSize.Value : 50;
+        int skip = (dto.Page.HasValue && dto.Page.Value > 0 ? dto.Page.Value - 1 : 0) * pageSize;
+
+        return query
+            .OrderByDescending(a => a.DateTimeStart)
+            .Skip(skip)
+            .Take(pageSize);
     }
 }

@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,6 +13,7 @@ namespace Backend.Controllers;
 /// <param name="announcementService">The announcement service for managing announcement operations.</param>
 [Route("[controller]")]
 [ApiController]
+[Authorize]
 public class AnnouncementsController(IAnnouncementService announcementService) : ControllerBase
 {
 

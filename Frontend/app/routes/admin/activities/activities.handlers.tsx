@@ -20,6 +20,8 @@ export const loadAdminActivities = async (
   year: number,
   setLoading: (loading: boolean) => void,
   setActivities: (activities: ActivityResponseDto[]) => void,
+  page?: number,
+  pageSize?: number,
 ) => {
   try {
     setLoading(true);
@@ -28,6 +30,8 @@ export const loadAdminActivities = async (
         IncludePast: true,
         IncludeFuture: true,
         Year: year,
+        Page: page,
+        PageSize: pageSize,
       },
     });
 
