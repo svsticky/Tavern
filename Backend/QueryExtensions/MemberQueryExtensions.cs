@@ -27,7 +27,7 @@ public static class MemberQueryExtensions
             query = query.Where(m => 
                 (m.FirstName + " " + m.LastName).ToLower().Contains(search) ||
                 m.Email.ToLower().Contains(search) ||
-                m.StudentNumber.ToString().Contains(search) ||
+                m.StudentNumber.Contains(search) ||
                 m.PhoneNumber.Contains(search)
             );
         }

@@ -82,14 +82,10 @@ public class ActivityService : IActivityService
         // Filter activities based on the provided criteria and the user's permissions
         var activities = await _db.Activities
             .Include(a => a.Enrollments)
-                .ThenInclude(e => e.Member)
             .Include(a => a.SpecificationQuestions)
-            .Include(a => a.Enrollments)
-                .ThenInclude(e => e.SpecificationAnswers)
-                    .ThenInclude(sa => sa.Question)
-                        .ThenInclude(q => q.Activity)
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds, userId.HasValue)
+            .ApplyPaging(dto)
             .ToListAsync();
 
         return activities.Select(a => ActivityResponseDTO.ToDto(userId ?? Guid.Empty, isBoard).Compile()(a));

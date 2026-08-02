@@ -85,7 +85,15 @@ export default function DashboardHeader({
       }
 
       try {
-        const outstandingPaymentsResponse = await getPaymentsUnpaid();
+        const [outstandingPaymentsResponse, enrollmentAmountResponse] =
+          await Promise.all([
+            getPaymentsUnpaid(),
+            getEnrollments({
+              query: {
+                FromMemberId: parsedToken.UserId,
+              },
+            }),
+          ]);
 
         if (outstandingPaymentsResponse.data) {
           setOutstandingPayments(
@@ -101,28 +109,24 @@ export default function DashboardHeader({
           );
         }
 
-        const enrollmentAmountResponse = await getEnrollments({
-          query: {
-            FromMemberId: parsedToken.UserId,
-          },
-        });
-
         if (enrollmentAmountResponse.error)
           throw new Error("Failed to load enrollments");
 
         if (enrollmentAmountResponse.data) {
-          setPastEnrollmentAmount(
-            enrollmentAmountResponse.data.filter((enrollment) => {
-              const activityDate = new Date(enrollment.activity.dateTimeStart);
-              return activityDate < new Date(Date.now());
-            }).length,
-          );
-          setComingEnrollmentAmount(
-            enrollmentAmountResponse.data.filter((enrollment) => {
-              const activityDate = new Date(enrollment.activity.dateTimeStart);
-              return activityDate >= new Date(Date.now());
-            }).length,
-          );
+          const now = Date.now();
+          let past = 0;
+          let coming = 0;
+          for (let i = 0; i < enrollmentAmountResponse.data.length; i++) {
+            const enrollment = enrollmentAmountResponse.data[i];
+            const activityDate = new Date(enrollment.activity.dateTimeStart).getTime();
+            if (activityDate < now) {
+              past++;
+            } else {
+              coming++;
+            }
+          }
+          setPastEnrollmentAmount(past);
+          setComingEnrollmentAmount(coming);
         } else {
           throw new Error("No enrollment data returned from API");
         }

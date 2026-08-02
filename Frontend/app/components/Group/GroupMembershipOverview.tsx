@@ -26,7 +26,7 @@ export default function GroupMembershipOverview({
 
   return (
     <ListTile className="w-full">
-      {groupMemberships.map((groupMembership) => (
+      {[...groupMemberships].reverse().map((groupMembership) => (
         <GroupMembershipItem
           key={groupMembership.id}
           groupMembership={groupMembership}

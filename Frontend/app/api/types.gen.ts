@@ -1963,6 +1963,14 @@ export type GetActivitiesData = {
          * Indicates whether to include activities that are open for payment in the response. If set to true, activities that are currently open for payment will be included in the response; if set to false, only activities that are not open for payment will be included.
          */
         OpenForPayment?: boolean;
+        /**
+         * The page number for pagination (1-indexed).
+         */
+        Page?: number;
+        /**
+         * The page size for pagination.
+         */
+        PageSize?: number;
     };
     url: '/activities';
 };
