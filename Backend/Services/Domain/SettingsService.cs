@@ -27,7 +27,8 @@ public class SettingsService : ISettingsService
         "boardprimarylight",
         "boardprimary",
         "boardprimarydark",
-        "studystartdates"
+        "studystartdates",
+        "committeecreationdate"
     };
 
     /// <summary>
