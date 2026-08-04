@@ -217,6 +217,7 @@ export default function Finances() {
         <BorderedTile
           title={t("finances_activity_overview")}
           subtitle={t("overdue_payment_subtitle")}
+          className="flex flex-col gap-3"
         >
           {unpaidActivities?.map((activity) => (
             <BorderedTile

@@ -122,7 +122,9 @@ export default function AuthenticatedLayout() {
             console.warn(
               "Forbidden - user does not have access to this resource.",
             );
-            window.location.href = `/`;
+            if (window.location.pathname !== "/") {
+              window.location.href = `/`;
+            }
           }
         }
 

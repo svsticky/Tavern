@@ -181,7 +181,7 @@ export default function Members() {
         action={
           <Button
             variant="secondary"
-            onClick={() => navigate("/admin/members/create-begunstiger")}
+            onClick={() => navigate("/admin/members/create-member")}
             className="items-center px-3 py-1"
           >
             <PlusIcon className="w-5 h-5" />
