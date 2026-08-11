@@ -5,6 +5,7 @@ import { NoContentTile } from "../Tiles/NoContentTile";
 import ActivityTile from "./ActivityTile/ActivityTile";
 
 const TILE_MIN_WIDTH = 250;
+const GAP = 20; // px, matches gap-5
 const VERTICAL_STACK_COUNT = 3;
 
 /**
@@ -44,7 +45,9 @@ export default function UpcomingActivities({
       for (const entry of entries) {
         const width = entry.contentRect.width;
 
-        const fitsSideBySide = Math.floor(width / TILE_MIN_WIDTH);
+        const fitsSideBySide = Math.floor(
+          (width + GAP) / (TILE_MIN_WIDTH + GAP),
+        );
 
         if (fitsSideBySide < 2) {
           setIsStacked(true);
@@ -65,13 +68,16 @@ export default function UpcomingActivities({
   }
 
   const displayActivities = activities.slice(0, numVisible);
+  const columnCount = Math.max(displayActivities.length, 1);
 
   return (
     <div ref={containerRef} className="w-full">
       <div
         className="grid gap-5 transition-all duration-300"
         style={{
-          gridTemplateColumns: isStacked ? "1fr" : `repeat(${numVisible}, 1fr)`,
+          gridTemplateColumns: isStacked
+            ? "1fr"
+            : `repeat(${columnCount}, minmax(0, 1fr))`,
         }}
       >
         {displayActivities.map((activity) => (
