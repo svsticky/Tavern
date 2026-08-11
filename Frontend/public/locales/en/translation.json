@@ -542,5 +542,5 @@
   "promote_board_error": "Error occurred while performing board rotation",
   "run_board_rotation": "Run Board Rotation",
   "board_rotation": "Board Rotation",
-  "committee_creation_date": "Committee Creation Date"
+  "committee_creation_date": "Committee Creation Date (MM-DD)"
 }

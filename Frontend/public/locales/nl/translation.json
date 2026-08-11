@@ -542,5 +542,5 @@
   "promote_board_error": "Fout bij uitvoeren bestuurswissel",
   "run_board_rotation": "Bestuurswissel Uitvoeren",
   "board_rotation": "Bestuurswissel",
-  "committee_creation_date": "Commissie aanmaakdatum"
+  "committee_creation_date": "Commissie aanmaakdatum (MM-DD)"
 }

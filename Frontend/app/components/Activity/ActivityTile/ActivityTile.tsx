@@ -13,10 +13,10 @@ import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
+import { canEditActivity } from "~/util/group.util";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -68,13 +68,7 @@ export default function ActivityTile({
     };
   }, [authService]);
 
-  const canEdit =
-    !!tokenParsed &&
-    (isBoardOrCandidateBoard(tokenParsed) ||
-      (!activity.showInKoala &&
-        !activity.showOnWebsite &&
-        activity.organizerId &&
-        new Date(activity.dateTimeStart) > new Date(Date.now())));
+  const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
 
   const navigate = useNavigate();
 
