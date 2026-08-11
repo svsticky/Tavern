@@ -141,7 +141,7 @@ export default function ActivityTile({
         {/* Activity details */}
         <div className="rounded-b-2xl border border-t-0 border-gray-200 p-3 bg-white">
           <div className="mb-1 mt-1.5 flex w-full justify-between text-[18px] font-bold">
-            <p className="truncate transition-colors duration-300 group-hover:text-(--board-primary)">
+            <p className="min-w-0 truncate transition-colors duration-300 group-hover:text-(--board-primary)">
               {activity.name}
             </p>
             <p className="shrink-0 text-nowrap text-(--board-primary)">
@@ -166,8 +166,8 @@ export default function ActivityTile({
             </div>
 
             <div className="mt-1 flex items-center gap-1.5">
-              <MapPin size={12} />
-              <span className="truncate">{activity.location}</span>
+              <MapPin size={12} className="shrink-0" />
+              <span className="min-w-0 truncate">{activity.location}</span>
             </div>
 
             <div className="mt-1 flex items-center gap-1.5">
