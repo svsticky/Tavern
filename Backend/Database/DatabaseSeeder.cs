@@ -414,7 +414,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 TitleEnglish = "Jobs",
                 DescriptionDutch = "Bekijk de vacatures binnen onze vereniging.",
                 DescriptionEnglish = "View vacancies within our association.",
-                Url = "https://svsticky.nl/cariere/vacatures",
+                Url = "https://svsticky.nl/carriere/vacatures",
                 SortOrder = 6
             },
             new ExternalLink
