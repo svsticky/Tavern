@@ -45,33 +45,6 @@ export const loadActivityData = async ({
 };
 
 /**
- * Determines if the current user has permission to edit a specific activity.
- *
- * Logic:
- * - **Board Members**: Always allowed to edit.
- * - **Organizers**: Allowed only if the activity hasn't been finalized for
- *   external systems (Website/Koala) and the event hasn't started yet.
- *
- * @param {ActivityResponseDto} activity - The activity data to check against.
- * @param {TokenParsed} tokenParsed - The parsed token containing user roles and ID.
- * @returns {boolean} True if the user is authorized to edit.
- */
-export const canEditActivity = (
-  activity: ActivityResponseDto,
-  tokenParsed: TokenParsed,
-) => {
-  return (
-    isBoardOrCandidateBoard(tokenParsed) ||
-    Boolean(
-      !activity.showInKoala &&
-        !activity.showOnWebsite &&
-        activity.organizerId &&
-        new Date(activity.dateTimeStart) > new Date(Date.now()),
-    )
-  );
-};
-
-/**
  * Generates the appropriate "back" path based on the user's current routing context.
  *
  * @param {string} pathname - The current URL path.

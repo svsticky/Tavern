@@ -1,5 +1,6 @@
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "./date.util";
+import type { ActivityResponseDto } from "~/api/types.gen";
 
 /**
  * Checks if the current user is in a specific group with an optional role.
@@ -76,4 +77,32 @@ export const isBoardOrCandidateBoard = (
   if (!tokenParsed) return false;
 
   return tokenParsed.is_admin ?? false;
+};
+
+/**
+ * Determines if the current user has permission to edit a specific activity.
+ *
+ * Logic:
+ * - **Board Members**: Always allowed to edit.
+ * - **Organizers**: Allowed only if the activity hasn't been finalized for
+ *   external systems (Website/Koala) and the event hasn't started yet and is part of
+ *   the organizing group
+ *
+ * @param {ActivityResponseDto} activity - The activity data to check against.
+ * @param {TokenParsed} tokenParsed - The parsed token containing user roles and ID.
+ * @returns {boolean} True if the user is authorized to edit.
+ */
+export const canEditActivity = (
+  activity: ActivityResponseDto,
+  tokenParsed: TokenParsed,
+) => {
+  return (
+    isBoardOrCandidateBoard(tokenParsed) ||
+    Boolean(
+      !activity.showInKoala &&
+        !activity.showOnWebsite &&
+        activity.organizerId && isInGroupWithId(tokenParsed, activity.organizerId) &&
+        new Date(activity.dateTimeStart) > new Date(Date.now()),
+    )
+  );
 };

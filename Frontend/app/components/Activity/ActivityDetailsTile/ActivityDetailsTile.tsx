@@ -288,14 +288,14 @@ export default function ActivityDetailsTile({
           />
         </div>
 
-        {isEnrolled && (
+        {(isEnrolled || canEnroll) && (
           <AnswerQuestionsTile
             questions={activity.specificationQuestions}
             answers={answers}
             onChange={(id, value) =>
               setAnswers((prev) => ({ ...prev, [id]: value }))
             }
-            disabled={submitting || canEnroll}
+            disabled={submitting || !canUnenroll}
           />
         )}
 

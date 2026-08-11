@@ -46,22 +46,29 @@ public static class ActivityQueryExtensions
 
         if (dto.Year.HasValue)
         {
-            var committeeCreationDate = YearUtils.CommitteeCreationDate;
-            
             var parts = YearUtils.CommitteeCreationDate.Split('-');
             int month = int.Parse(parts[0]);
             int day = int.Parse(parts[1]);
 
-            int selectedYear = (int)dto.Year.Value;
-            var creationThreshold = new DateTime(selectedYear - 1, month, day);
+            uint selectedYear = dto.Year.Value;
 
-            query = query.Where(a => 
-                a.DateTimeStart > creationThreshold
+            uint creationYear = month > 6
+                ? selectedYear - 1
+                : selectedYear;
+
+            var creationThreshold = new DateTime((int)creationYear, month, day);
+            var nextCreationThreshold = creationThreshold.AddYears(1);
+
+            query = query.Where(a =>
+                a.DateTimeStart >= creationThreshold &&
+                a.DateTimeStart < nextCreationThreshold
             );
         }
 
         if (dto.OpenForPayment.HasValue)
             query = query.Where(a => a.IsOpenForPayment == dto.OpenForPayment.Value);
+
+        query = query.OrderBy(a => a.DateTimeStart);
 
         return query;
     }
