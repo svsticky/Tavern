@@ -13,10 +13,10 @@ import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
+import { canEditActivity } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
-import { canEditActivity } from "~/util/group.util";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.

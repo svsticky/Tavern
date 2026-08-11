@@ -88,7 +88,7 @@ export const handleCreateRoleSubmit = ({
         });
 
         if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to create role");
+          throw response.message ?? new Error("Failed to create role");
         }
 
         onRoleCreated({ id: (response.data as any).id, name });
@@ -101,7 +101,7 @@ export const handleCreateRoleSubmit = ({
         });
 
         if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to create role alias");
+          throw response.message ?? new Error("Failed to create role alias");
         }
 
         onRoleAliasCreated({

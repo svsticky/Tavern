@@ -233,7 +233,7 @@ public class ActivityResponseDTO
                 CostCenterId = a.CostCenterId,
                 CostUnitId = a.CostUnitId,
 
-                Enrollments = a.AreParticipantsVisible || isBoard ? a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList() : new List<EnrollmentResponseDTO>(),
+                Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList(),
 
                 SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
 
@@ -291,4 +291,9 @@ public class GetActivitiesDTO
     /// The page size for pagination. Defaults to 50 if Page is specified without PageSize.
     /// </summary>
     public int? PageSize { get; set; }
+
+    /// <summary>
+    /// The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
+    /// </summary>
+    public Guid? UserId { get; set; }
 }

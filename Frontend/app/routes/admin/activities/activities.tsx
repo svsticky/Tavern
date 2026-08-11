@@ -54,7 +54,9 @@ export default function Activities() {
         targetYear,
         setLoading,
         (fetched) => {
-          setActivities((prev) => (isInitial ? fetched : [...prev, ...fetched]));
+          setActivities((prev) =>
+            isInitial ? fetched : [...prev, ...fetched],
+          );
           if (fetched.length < PAGE_SIZE) {
             setHasMore(false);
           }

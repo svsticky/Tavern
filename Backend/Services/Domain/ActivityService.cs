@@ -68,7 +68,7 @@ public class ActivityService : IActivityService
         bool isBoard = userId.HasValue && _permissionService.IsBoardOrCandidateBoardMember(userId.Value);
 
         // Only board members can see past activities or activities that are not shown in Koala/website
-        if (dto.IncludePast)
+        if (dto.IncludePast && (!userId.HasValue || userId.Value != dto.UserId))
             _permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
 
         var currentCommitteeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);

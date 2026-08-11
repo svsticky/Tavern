@@ -126,7 +126,7 @@ export default function ActivityDetailsTile({
     activity.allowedAudience,
   );
   const currentEnrollment = tokenParsed
-    ? activity.enrollments.find((e) => e.member.id === tokenParsed.UserId)
+    ? activity.enrollments.find((e) => e.member?.id === tokenParsed.UserId)
     : undefined;
   const isEnrolled = !!currentEnrollment;
   const [answers, setAnswers] = useState<Record<number, string>>({});

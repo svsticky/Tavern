@@ -68,6 +68,9 @@ public static class ActivityQueryExtensions
         if (dto.OpenForPayment.HasValue)
             query = query.Where(a => a.IsOpenForPayment == dto.OpenForPayment.Value);
 
+        if (dto.UserId.HasValue)
+            query = query.Where(a => a.Enrollments.Any(e => e.MemberId == dto.UserId.Value && !e.IsOnWaitingList));
+
         query = query.OrderBy(a => a.DateTimeStart);
 
         return query;

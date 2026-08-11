@@ -20,6 +20,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import Select from "~/components/UI/Select";
+import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
 import {
   getCurrentRoleMappings,
@@ -31,7 +32,6 @@ import {
   handleSettingsChange,
   loadSettingsPageData,
 } from "./settings.handlers";
-import { getEnv } from "~/util/config.utils";
 
 /**
  * The primary configuration dashboard for the application's global settings.
@@ -95,29 +95,16 @@ export default function SettingsPage() {
   const currentRoleMappings = getCurrentRoleMappings(settings);
 
   const handlePromoteBoard = async () => {
-    if (
-      !confirm(
-        t(
-          "are_you_sure_promote_board"
-        ),
-      )
-    ) {
+    if (!confirm(t("are_you_sure_promote_board"))) {
       return;
     }
     try {
       setIsPromotingBoard(true);
       await postGroupsPromoteBoard({ throwOnError: true });
-      toast.success(
-        t("promote_board_success"),
-      );
+      toast.success(t("promote_board_success"));
     } catch (err) {
       console.error("Failed to promote board:", err);
-      toast.error(
-        appendErrorMessage(
-          t("promote_board_error"),
-          err,
-        ),
-      );
+      toast.error(appendErrorMessage(t("promote_board_error"), err));
     } finally {
       setIsPromotingBoard(false);
     }
@@ -148,9 +135,7 @@ export default function SettingsPage() {
               disabled={isPromotingBoard}
               className="whitespace-nowrap shrink-0"
             >
-              {isPromotingBoard
-                ? t("loading")
-                : t("run_board_rotation")}
+              {isPromotingBoard ? t("loading") : t("run_board_rotation")}
             </Button>
           </Tile>
         </div>
@@ -252,7 +237,10 @@ export default function SettingsPage() {
             />
           </FormSection>
 
-          <FormSection title={t("membership_and_association", "Lidmaatschap & Vereniging")} columns={2}>
+          <FormSection
+            title={t("membership_and_association", "Lidmaatschap & Vereniging")}
+            columns={2}
+          >
             <Input
               label={t("membership_price")}
               type="number"
@@ -387,18 +375,23 @@ export default function SettingsPage() {
             </Tile>
           </FormSection>
 
-          <FormSection title={t("financial_and_payments", "Financiën & Betalingen")} columns={2}>
+          <FormSection
+            title={t("financial_and_payments", "Financiën & Betalingen")}
+            columns={2}
+          >
             <Select
               label={t("payment_provider")}
               value={settings.PaymentProvider}
               onChange={(e) =>
-                handleSettingsChange("PaymentProvider", e.target.value, setSettings)
+                handleSettingsChange(
+                  "PaymentProvider",
+                  e.target.value,
+                  setSettings,
+                )
               }
-              options={[
-                { value: "MOLLIE", label: "Mollie" },
-              ]}
+              options={[{ value: "MOLLIE", label: "Mollie" }]}
             />
-            {(settings.PaymentProvider).toUpperCase() === "MOLLIE" ? (
+            {settings.PaymentProvider.toUpperCase() === "MOLLIE" ? (
               <Input
                 label={t("mollie_api_key")}
                 type="password"
@@ -411,7 +404,9 @@ export default function SettingsPage() {
                   )
                 }
               />
-            ) : <div />}
+            ) : (
+              <div />
+            )}
 
             <Input
               label={t("payment_service_fee")}
@@ -448,7 +443,11 @@ export default function SettingsPage() {
                 label={t("accounting_service")}
                 value={settings.AccountingService || ""}
                 onChange={(e) =>
-                  handleSettingsChange("AccountingService", e.target.value, setSettings)
+                  handleSettingsChange(
+                    "AccountingService",
+                    e.target.value,
+                    setSettings,
+                  )
                 }
                 options={[
                   { value: "", label: t("none") },
@@ -463,7 +462,11 @@ export default function SettingsPage() {
                     label={t("exact_division")}
                     value={settings.ExactDivision || ""}
                     onChange={(e) =>
-                      handleSettingsChange("ExactDivision", e.target.value, setSettings)
+                      handleSettingsChange(
+                        "ExactDivision",
+                        e.target.value,
+                        setSettings,
+                      )
                     }
                   />
                   <Input
@@ -471,7 +474,11 @@ export default function SettingsPage() {
                     type="password"
                     value={settings.ExactAccessToken || ""}
                     onChange={(e) =>
-                      handleSettingsChange("ExactAccessToken", e.target.value, setSettings)
+                      handleSettingsChange(
+                        "ExactAccessToken",
+                        e.target.value,
+                        setSettings,
+                      )
                     }
                   />
                 </>
@@ -551,7 +558,11 @@ export default function SettingsPage() {
               label={t("mail_subscription_service")}
               value={settings.MailSubscriptionService || ""}
               onChange={(e) =>
-                handleSettingsChange("MailSubscriptionService", e.target.value, setSettings)
+                handleSettingsChange(
+                  "MailSubscriptionService",
+                  e.target.value,
+                  setSettings,
+                )
               }
               options={[
                 { value: "", label: t("none") },
@@ -566,7 +577,11 @@ export default function SettingsPage() {
                   type="password"
                   value={settings.MailgunToken || ""}
                   onChange={(e) =>
-                    handleSettingsChange("MailgunToken", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "MailgunToken",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Input
@@ -574,14 +589,22 @@ export default function SettingsPage() {
                   type="password"
                   value={settings.MailgunPublicKey || ""}
                   onChange={(e) =>
-                    handleSettingsChange("MailgunPublicKey", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "MailgunPublicKey",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Input
                   label={t("mailgun_api_base_url")}
                   value={settings.MailgunApiBaseUrl || ""}
                   onChange={(e) =>
-                    handleSettingsChange("MailgunApiBaseUrl", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "MailgunApiBaseUrl",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
               </>
@@ -593,7 +616,11 @@ export default function SettingsPage() {
                   label={t("smtp_host")}
                   value={settings.SmtpHost || ""}
                   onChange={(e) =>
-                    handleSettingsChange("SmtpHost", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "SmtpHost",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Input
@@ -601,14 +628,22 @@ export default function SettingsPage() {
                   type="number"
                   value={settings.SmtpPort || ""}
                   onChange={(e) =>
-                    handleSettingsChange("SmtpPort", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "SmtpPort",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Input
                   label={t("smtp_user")}
                   value={settings.SmtpUser || ""}
                   onChange={(e) =>
-                    handleSettingsChange("SmtpUser", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "SmtpUser",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Input
@@ -616,7 +651,11 @@ export default function SettingsPage() {
                   type="password"
                   value={settings.SmtpPass || ""}
                   onChange={(e) =>
-                    handleSettingsChange("SmtpPass", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "SmtpPass",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Checkbox
@@ -633,13 +672,18 @@ export default function SettingsPage() {
               </>
             )}
 
-            {(settings.MailSubscriptionService || "").toUpperCase() === "MAILCHIMP" && (
+            {(settings.MailSubscriptionService || "").toUpperCase() ===
+              "MAILCHIMP" && (
               <>
                 <Input
                   label={t("mailchimp_list_key")}
                   value={settings.MailchimpListKey || ""}
                   onChange={(e) =>
-                    handleSettingsChange("MailchimpListKey", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "MailchimpListKey",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
                 <Input
@@ -647,7 +691,11 @@ export default function SettingsPage() {
                   type="password"
                   value={settings.MailchimpApiKey || ""}
                   onChange={(e) =>
-                    handleSettingsChange("MailchimpApiKey", e.target.value, setSettings)
+                    handleSettingsChange(
+                      "MailchimpApiKey",
+                      e.target.value,
+                      setSettings,
+                    )
                   }
                 />
               </>

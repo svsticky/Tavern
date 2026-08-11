@@ -36,9 +36,7 @@ export const FormSection = ({
   return (
     <section className={className}>
       {title && <FormHeader title={title} />}
-      <div className={`grid ${gridColsClass} gap-6`}>
-        {children}
-      </div>
+      <div className={`grid ${gridColsClass} gap-6`}>{children}</div>
     </section>
   );
 };

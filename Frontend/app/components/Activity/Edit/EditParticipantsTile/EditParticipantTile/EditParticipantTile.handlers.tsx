@@ -41,7 +41,7 @@ export const handleParticipantUnenroll = ({
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to unenroll");
+        throw response.message ?? new Error("Failed to unenroll");
       }
 
       onUnenroll();
@@ -101,7 +101,7 @@ export const savePriceToServer = async ({
     });
 
     if (response.error) {
-      throw response.error ?? new Error("Update failed");
+      throw response.message ?? new Error("Update failed");
     }
 
     enrollment.price = targetPrice;

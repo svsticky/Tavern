@@ -48,7 +48,7 @@ export default function Groups() {
         const response = await getGroups();
 
         if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to fetch groups");
+          throw response.message ?? new Error("Failed to fetch groups");
         }
 
         setGroups(response.data);

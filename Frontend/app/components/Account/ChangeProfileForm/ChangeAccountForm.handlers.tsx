@@ -96,7 +96,7 @@ export const handleSaveAccount = async (
         ],
       });
       if (response.error) {
-        throw response.error ?? new Error("Failed to save account changes");
+        throw response.message ?? new Error("Failed to save account changes");
       }
 
       i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");

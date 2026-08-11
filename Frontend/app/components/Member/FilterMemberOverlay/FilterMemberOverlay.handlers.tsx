@@ -23,7 +23,7 @@ export const loadStudies = async (
     const response = await getStudies();
 
     if (response.error || !response.data) {
-      throw response.error ?? new Error("Failed to load studies");
+      throw response.message ?? new Error("Failed to load studies");
     }
 
     setStudies(response.data);

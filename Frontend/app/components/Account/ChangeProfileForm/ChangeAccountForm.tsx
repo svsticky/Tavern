@@ -102,7 +102,7 @@ export default function ChangeAccountForm({
         const response = await getMailinglists();
 
         if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to fetch mailing lists");
+          throw response.message ?? new Error("Failed to fetch mailing lists");
         }
 
         setMailinglists(response.data);

@@ -39,7 +39,7 @@ export const handleWaitinglistUnenroll = ({
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to unenroll");
+        throw response.message ?? new Error("Failed to unenroll");
       }
 
       onUnenroll();
@@ -85,7 +85,7 @@ export const handleMoveFromWaitinglist = ({
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to move to participants");
+        throw response.message ?? new Error("Failed to move to participants");
       }
 
       onUnenroll();

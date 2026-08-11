@@ -176,7 +176,7 @@ export const handleSaveGroup = async (
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to save group data");
+        throw response.message ?? new Error("Failed to save group data");
       }
     } catch (err) {
       console.error("Failed to save group data:", err);
@@ -221,7 +221,7 @@ export const handleGroupProfilePictureUpload = async (
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to upload group picture");
+        throw response.message ?? new Error("Failed to upload group picture");
       }
 
       window.location.reload();
@@ -261,7 +261,7 @@ export const handleDeleteGroupEnrollment = async (
       const response = await deleteGroupmembershipsById({ path: { id } });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to delete enrollment");
+        throw response.message ?? new Error("Failed to delete enrollment");
       }
 
       setEnrollments((prev) => prev.filter((e) => e.id !== id));
@@ -373,7 +373,7 @@ export const handleUpdateGroupRole = async (
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Failed to update role");
+        throw response.message ?? new Error("Failed to update role");
       }
 
       setEnrollments((prev) =>

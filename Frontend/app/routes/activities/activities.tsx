@@ -9,6 +9,7 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { getCommitteeYear } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   copyWeekOverview,
@@ -16,7 +17,6 @@ import {
   handleCreateActivityClick,
   loadActivities,
 } from "./activities.handlers";
-import { getCommitteeYear } from "~/util/date.util";
 
 /**
  * The main activities listing page for both members and administrators.
@@ -79,9 +79,11 @@ export default function ActivitiesPage() {
 
   if (!tokenParsed) return null;
 
-  const isInGroup = 
-      isBoardOrCandidateBoard(tokenParsed) || 
-      (tokenParsed?.group_memberships ?? []).filter(g => g.split(':')[0] === getCommitteeYear().toString()).length > 0;
+  const isInGroup =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    (tokenParsed?.group_memberships ?? []).filter(
+      (g) => g.split(":")[0] === getCommitteeYear().toString(),
+    ).length > 0;
 
   return (
     <>

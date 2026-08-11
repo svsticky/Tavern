@@ -22,7 +22,7 @@ export const fetchStudies = async (
       const response = await getStudies();
 
       if (response.error || !response.data) {
-        throw response.error ?? new Error("Failed to fetch studies");
+        throw response.message ?? new Error("Failed to fetch studies");
       }
 
       setStudies(response.data);

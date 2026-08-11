@@ -1964,13 +1964,17 @@ export type GetActivitiesData = {
          */
         OpenForPayment?: boolean;
         /**
-         * The page number for pagination (1-indexed).
+         * The page number for pagination (1-indexed). If specified with PageSize, pagination will be applied.
          */
         Page?: number;
         /**
-         * The page size for pagination.
+         * The page size for pagination. Defaults to 50 if Page is specified without PageSize.
          */
         PageSize?: number;
+        /**
+         * The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
+         */
+        UserId?: string;
     };
     url: '/activities';
 };

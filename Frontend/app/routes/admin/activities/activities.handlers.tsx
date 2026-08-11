@@ -36,7 +36,7 @@ export const loadAdminActivities = async (
     });
 
     if (response.error || !response.data) {
-      throw response.error ?? new Error("Failed to load activities");
+      throw response.message ?? new Error("Failed to load activities");
     }
 
     setActivities(response.data);

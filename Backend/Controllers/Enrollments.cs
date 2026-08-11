@@ -89,7 +89,7 @@ public class EnrollmentsController(IEnrollmentService enrollmentService) : Contr
         var created = await enrollmentService.CreateEnrollment(dto, GetUserId(), cancellationToken);
         return CreatedAtAction(
             nameof(GetEnrollment),
-            new { activityId = created.Activity.Id, memberId = created.Member.Id },
+            new { activityId = created.Activity.Id, memberId = created.Member?.Id },
             created
         );
     }

@@ -84,7 +84,7 @@ export default function UpcomingActivities({
           <ActivityTile
             key={activity.id}
             activity={activity}
-            className="w-full"
+            className="w-full max-w-[400px]"
           />
         ))}
       </div>

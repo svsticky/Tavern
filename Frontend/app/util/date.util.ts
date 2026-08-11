@@ -121,10 +121,7 @@ export const getGlobalCommitteeCreationDate = (): string | null => {
  * @param startDateStr The start date string in MM-DD format (optional).
  * @returns The determined year.
  */
-const getYearForDate = (
-  date: Date,
-  startDateStr?: string | null,
-): number => {
+const getYearForDate = (date: Date, startDateStr?: string | null): number => {
   let targetMonth = 8;
   let targetDay = 1;
 
@@ -192,7 +189,10 @@ const getYearForDate = (
 export const getCommitteeYear = (
   committeeCreationDate?: string | null,
 ): number => {
-  return getYearForDate(new Date(), committeeCreationDate || globalCommitteeCreationDate || "08-01");
+  return getYearForDate(
+    new Date(),
+    committeeCreationDate || globalCommitteeCreationDate || "08-01",
+  );
 };
 
 /**
@@ -202,5 +202,8 @@ export const getCommitteeYear = (
 export const getFinancialYear = (
   financialYearStartDate?: string | null,
 ): number => {
-  return getYearForDate(new Date(), financialYearStartDate || globalFinancialYearStartDate || "08-01");
+  return getYearForDate(
+    new Date(),
+    financialYearStartDate || globalFinancialYearStartDate || "08-01",
+  );
 };

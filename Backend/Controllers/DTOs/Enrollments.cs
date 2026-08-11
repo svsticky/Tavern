@@ -26,7 +26,7 @@ public class EnrollmentResponseDTO
     public required bool IsOnWaitingList { get; set; }
     
     /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
-    public required MemberResponseDTO Member { get; set; }
+    public required MemberResponseDTO? Member { get; set; }
 
     /// <inheritdoc cref="Models.Domain.Enrollment.SpecificationAnswers"/>
     public List<SpecificationAnswerResponseDTO>? SpecificationAnswers { get; set; }
@@ -49,9 +49,11 @@ public class EnrollmentResponseDTO
             return e => new EnrollmentResponseDTO
             {
                 IsOnWaitingList = e.IsOnWaitingList,
-                Member = e.Member == null ? null! : MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member),
+                Member = e.Member != null && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+                            ? MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member)
+                            : null,                
                 SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
-                    .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible)
+                    .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
                     .Select(sa => SpecificationAnswerResponseDTO.ToDto().Compile()(sa)).ToList(),
                 Price = isBoard ? e.Price : null,
                 Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO

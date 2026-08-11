@@ -14,7 +14,7 @@ import { getAudienceString } from "~/types/AudienceMap";
 import { getFinancialYear } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 
-export { formatForInput, formatDateOnly } from "~/util/date.util";
+export { formatDateOnly, formatForInput } from "~/util/date.util";
 
 /**
  * Fetches active association groups for the current membership year from the API.
@@ -227,7 +227,9 @@ export const handleActivitySubmit = async ({
           ? new Date(fd.get("PaymentDeadline") as string).toISOString()
           : undefined
         : undefined,
-      IsOpenForPayment: isBoard ? fd.get("IsOpenForPayment") === "on" : undefined,
+      IsOpenForPayment: isBoard
+        ? fd.get("IsOpenForPayment") === "on"
+        : undefined,
     },
   };
 
@@ -384,7 +386,7 @@ export const handleActivitySubmit = async ({
           body: patchOperations,
         });
         if (response.error) {
-          throw response.error ?? new Error("Failed to update activity");
+          throw response.message ?? new Error("Failed to update activity");
         }
 
         const posterFile = fd.get("Poster") as File;

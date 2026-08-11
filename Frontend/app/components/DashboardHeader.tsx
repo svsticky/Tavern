@@ -95,6 +95,21 @@ export default function DashboardHeader({
             }),
           ]);
 
+        if (outstandingPaymentsResponse.error)
+        {
+          throw new Error(
+            String(outstandingPaymentsResponse.message) ||
+              "Failed to load outstanding payments"
+          );
+        }
+
+        if (enrollmentAmountResponse.error) {
+          throw new Error(
+            String(enrollmentAmountResponse.message) ||
+              "Failed to load enrollments"
+          );
+        }
+
         if (outstandingPaymentsResponse.data) {
           setOutstandingPayments(
             outstandingPaymentsResponse.data.reduce(
@@ -118,7 +133,7 @@ export default function DashboardHeader({
           let coming = 0;
           for (let i = 0; i < enrollmentAmountResponse.data.length; i++) {
             const enrollment = enrollmentAmountResponse.data[i];
-            const activityDate = new Date(enrollment.activity.dateTimeStart).getTime();
+            const activityDate = new Date(enrollment.activity.dateTimeEnd).getTime();
             if (activityDate < now) {
               past++;
             } else {

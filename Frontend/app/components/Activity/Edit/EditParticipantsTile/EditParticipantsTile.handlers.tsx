@@ -26,7 +26,7 @@ export const handleDownloadEnrollments = (activity: ActivityResponseDto) => {
       });
 
       if (response.error || !response.data) {
-        throw response.error ?? new Error("Failed to download enrollments");
+        throw response.message ?? new Error("Failed to download enrollments");
       }
 
       const blob = new Blob([response.data as any], { type: "text/csv" });

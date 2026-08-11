@@ -56,9 +56,6 @@ public class EnrollmentService : IEnrollmentService
         var enrollments = await _db.Enrollments
             .Include(e => e.Activity)
             .Include(e => e.Member)
-            .Include(e => e.SpecificationAnswers)
-                .ThenInclude(sa => sa.Question)
-            .AsNoTracking()
             .Filter(dto)
             .ToListAsync(cancellationToken);
 

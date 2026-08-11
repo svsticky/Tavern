@@ -9,13 +9,13 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { canEditActivity } from "~/util/group.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
   handleEditActivityClick,
   loadActivityData,
 } from "./activity.handlers";
-import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * Detailed view for a specific activity, including description and participant lists.
@@ -104,25 +104,27 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
 
       <div className="space-y-6 w-full">
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
-          {activity.areParticipantsVisible && 
-            <>
-              <ActivityParticipantsTile
-                enrollments={
-                  !activity.areParticipantsVisible
-                    ? []
-                    : (activity.enrollments.filter((e) => !e.isOnWaitingList) ?? [])
-                }
-              />
-              <ActivityParticipantsTile
-                title={t("waiting_list")}
-                enrollments={
-                  !activity.areParticipantsVisible
-                    ? []
-                    : (activity.enrollments.filter((e) => e.isOnWaitingList) ?? [])
-                }
-              />
-            </>
-          }
+        {activity.areParticipantsVisible && (
+          <>
+            <ActivityParticipantsTile
+              enrollments={
+                !activity.areParticipantsVisible
+                  ? []
+                  : (activity.enrollments.filter((e) => !e.isOnWaitingList) ??
+                    [])
+              }
+            />
+            <ActivityParticipantsTile
+              title={t("waiting_list")}
+              enrollments={
+                !activity.areParticipantsVisible
+                  ? []
+                  : (activity.enrollments.filter((e) => e.isOnWaitingList) ??
+                    [])
+              }
+            />
+          </>
+        )}
       </div>
     </div>
   );

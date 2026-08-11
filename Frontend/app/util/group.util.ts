@@ -1,6 +1,6 @@
+import type { ActivityResponseDto } from "~/api/types.gen";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "./date.util";
-import type { ActivityResponseDto } from "~/api/types.gen";
 
 /**
  * Checks if the current user is in a specific group with an optional role.
@@ -101,7 +101,8 @@ export const canEditActivity = (
     Boolean(
       !activity.showInKoala &&
         !activity.showOnWebsite &&
-        activity.organizerId && isInGroupWithId(tokenParsed, activity.organizerId) &&
+        activity.organizerId &&
+        isInGroupWithId(tokenParsed, activity.organizerId) &&
         new Date(activity.dateTimeStart) > new Date(Date.now()),
     )
   );

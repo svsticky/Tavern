@@ -91,7 +91,7 @@ export const handleEnrollment = async (
       });
 
       if (response.error) {
-        throw response.error ?? new Error("Enrollment failed");
+        throw response.message ?? new Error("Enrollment failed");
       }
 
       if (response.data) {
@@ -212,7 +212,7 @@ export const handleUpdateEnrollment = async (
       }
 
       const existingEnrollment = activity.enrollments.find(
-        (e) => e.member.id === tokenParsed.UserId,
+        (e) => e.member?.id === tokenParsed.UserId,
       );
       const existingAnswerIds = new Map(
         (existingEnrollment?.specificationAnswers ?? []).map((answer) => [
@@ -230,7 +230,7 @@ export const handleUpdateEnrollment = async (
       );
 
       const updatedEnrollments = activity.enrollments.map((e) => {
-        if (e.member.id === tokenParsed.UserId) {
+        if (e.member?.id === tokenParsed.UserId) {
           return {
             ...e,
             specificationAnswers: updatedSpecificationAnswers,
@@ -293,7 +293,7 @@ export const handleUnenrollment = async (
       }
 
       activity.enrollments = activity.enrollments.filter(
-        (e) => e.member.id !== tokenParsed.UserId,
+        (e) => e.member?.id !== tokenParsed.UserId,
       );
       setActivity?.({ ...activity });
     } catch (error) {

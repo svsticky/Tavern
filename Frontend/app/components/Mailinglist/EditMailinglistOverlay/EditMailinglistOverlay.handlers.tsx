@@ -51,7 +51,7 @@ export const handleMailingListSubmit = async ({
       });
 
       if (response.error || !response.data) {
-        throw response.error ?? new Error("Failed to create mailing list");
+        throw response.message ?? new Error("Failed to create mailing list");
       }
 
       const data = response.data as any;

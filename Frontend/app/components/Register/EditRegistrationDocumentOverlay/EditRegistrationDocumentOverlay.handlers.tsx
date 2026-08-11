@@ -42,14 +42,14 @@ export const handleDocumentSubmit = async ({
           body: formData,
         });
         if (response.error) {
-          throw response.error ?? new Error("Failed to update document");
+          throw response.message ?? new Error("Failed to update document");
         }
       } else {
         const response = await postRegistrationdocuments({
           body: formData,
         });
         if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to create document");
+          throw response.message ?? new Error("Failed to create document");
         }
       }
       onComplete();
@@ -90,7 +90,7 @@ export const handleDocumentDelete = async ({
         path: { id: document.id },
       });
       if (response.error) {
-        throw response.error ?? new Error("Failed to delete document");
+        throw response.message ?? new Error("Failed to delete document");
       }
       onComplete();
     } catch (error) {

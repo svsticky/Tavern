@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import type {
-  ActivityResponseDto,
-  GetAnnouncementResponseDto,
-  GroupMembershipResponseDto,
+import {
+  getActivities,
+  type ActivityResponseDto,
+  type GetAnnouncementResponseDto,
+  type GroupMembershipResponseDto,
 } from "~/api";
 import ActivityEnrollmentOverview from "~/components/Activity/ActivityEnrollmentOverview";
 import UpcomingActivities from "~/components/Activity/UpcomingActivities";
@@ -14,7 +15,7 @@ import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview"
 import Button from "~/components/UI/Button";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { loadDashboardData } from "./home.handlers";
+import { loadHomePageData } from "./home.handlers";
 
 /**
  * The main application landing page for authenticated members.
@@ -56,6 +57,9 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const [enrolledActivities, setEnrolledActivities] = useState<
+    ActivityResponseDto[]
+  >([]);
   const [announcements, setAnnouncements] = useState<
     GetAnnouncementResponseDto[]
   >([]);
@@ -71,13 +75,14 @@ export default function DashboardPage() {
 
     if (!authenticated) return;
 
-    loadDashboardData({
+    loadHomePageData({
       authenticated: authenticated,
       userId: tokenParsed.UserId,
       setLoading,
       setActivities,
       setAnnouncements,
       setGroupMemberships,
+      setEnrolledActivities,
     });
   }, [authenticated, tokenParsed]);
 
@@ -144,8 +149,8 @@ export default function DashboardPage() {
           <div className="flex flex-col col-span-4 lg:col-span-1 gap-3">
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview
-              enrolledActivities={activities.filter((a) =>
-                a.enrollments!.some((e) => e.member?.id === tokenParsed.UserId),
+              enrolledActivities={enrolledActivities.filter(
+                (a) => new Date(a.dateTimeEnd) >= new Date(Date.now()),
               )}
             />
 

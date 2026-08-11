@@ -22,7 +22,7 @@ export const handleProfilePictureUpload = async (
         body: { image: file },
       });
       if (response.error) {
-        throw response.error ?? new Error("Failed to upload profile picture");
+        throw response.message ?? new Error("Failed to upload profile picture");
       }
       window.location.reload();
     } catch (err) {

@@ -48,7 +48,7 @@ export const handleReasonSubmit = async ({
           body: formData,
         });
         if (response.error) {
-          throw response.error ?? new Error("Failed to update reason");
+          throw response.message ?? new Error("Failed to update reason");
         }
       } else {
         const { ...postData } = formData;
@@ -56,7 +56,7 @@ export const handleReasonSubmit = async ({
           body: postData,
         });
         if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to create reason");
+          throw response.message ?? new Error("Failed to create reason");
         }
         reasonId = response.data.id;
       }
@@ -109,7 +109,7 @@ export const handleReasonDelete = async ({
         path: { id: reason.id },
       });
       if (response.error) {
-        throw response.error ?? new Error("Failed to delete reason");
+        throw response.message ?? new Error("Failed to delete reason");
       }
       onComplete();
     } catch (error) {
