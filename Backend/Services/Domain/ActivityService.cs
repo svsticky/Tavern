@@ -145,10 +145,15 @@ public class ActivityService : IActivityService
             // Save poster
             await SavePosterIfProvided(activity, dto.Poster);
 
-
             // Enroll organizers
+            var currentCommitteeYear = YearUtils.GetYearForDate(
+                activity.DateTimeStart.UtcDateTime,
+                YearUtils.CommitteeCreationDate);
+
             var organizerMembers = await _db.GroupMemberships
-                .Where(gm => gm.GroupId == dto.OrganizerId)
+                .Where(gm =>
+                    gm.GroupId == dto.OrganizerId &&
+                    gm.MembershipYear == currentCommitteeYear)
                 .Select(gm => gm.Member)
                 .ToListAsync();
 

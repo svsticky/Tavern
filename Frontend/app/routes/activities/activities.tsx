@@ -16,6 +16,7 @@ import {
   handleCreateActivityClick,
   loadActivities,
 } from "./activities.handlers";
+import { getCommitteeYear } from "~/util/date.util";
 
 /**
  * The main activities listing page for both members and administrators.
@@ -78,7 +79,9 @@ export default function ActivitiesPage() {
 
   if (!tokenParsed) return null;
 
-  const isInGroup = (tokenParsed.group_memberships || []).length > 0;
+  const isInGroup = 
+      isBoardOrCandidateBoard(tokenParsed) || 
+      (tokenParsed?.group_memberships ?? []).filter(g => g.split(':')[0] === getCommitteeYear().toString()).length > 0;
 
   return (
     <>
