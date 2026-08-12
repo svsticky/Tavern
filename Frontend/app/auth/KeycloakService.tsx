@@ -137,6 +137,15 @@ export class KeycloakAuthService implements IAuthService {
     });
   }
 
+  public async configureMFA(): Promise<string> {
+    if (!this.keycloak.tokenParsed) throw new Error("User not authenticated");
+
+    return this.keycloak.createLoginUrl({
+      action: "CONFIGURE_TOTP",
+      redirectUri: window.location.href,
+    });
+  }
+
   public async resetCredentials(): Promise<string> {
     const baseUrl = `${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/login-actions/reset-credentials`;
 

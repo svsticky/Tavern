@@ -16,10 +16,12 @@ import { appendErrorMessage } from "~/util/error.util";
 import {
   handleChangeEmail,
   handleChangePassword,
+  handleConfigureMFA,
   handleSaveAccount,
   handleSubscriptionChange,
 } from "./ChangeAccountForm.handlers";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
+import { getEnv } from "~/util/config.utils";
 
 /**
  * Renders a form for changing account details.
@@ -261,13 +263,35 @@ export default function ChangeAccountForm({
         </div>
         <div>
           <FormHeader title={t("security")} border={false} />
-          <Button
-            variant="secondary"
-            className="w-full"
-            onClick={() => handleChangePassword(authService)}
-          >
-            {t("change_password")}
-          </Button>
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => handleChangePassword(authService)}
+              >
+                {t("change_password")}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => handleConfigureMFA(authService)}
+              >
+                {t("setup_mfa")}
+              </Button>
+            </div>
+
+            <a
+              href={`${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/account/account-security/signing-in`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-center text-gray-500 hover:text-gray-700 underline pt-1"
+            >
+              {t("manage_or_remove_mfa_devices")}
+            </a>
+          </div>
         </div>
       </FormSection>
 

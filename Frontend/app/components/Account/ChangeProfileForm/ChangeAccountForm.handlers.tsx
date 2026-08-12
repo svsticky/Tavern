@@ -53,6 +53,19 @@ export const handleChangeEmail = async (authService: IAuthService) => {
 };
 
 /**
+ * Handles configuring multi-factor authentication (MFA) for a user.
+ * @param {IAuthService} authService - The authentication service instance.
+ */
+export const handleConfigureMFA = async (authService: IAuthService) => {
+  if (authService) {
+    const url = await authService.configureMFA();
+    window.location.href = url;
+  } else {
+    window.location.href = "/logout";
+  }
+};
+
+/**
  * Saves changes to a user's account.
  * @param {string} userId - The ID of the user whose account is being saved.
  * @param {ChangeAccountFormData} formData - The form data containing the updated account details.

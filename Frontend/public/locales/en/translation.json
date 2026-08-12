@@ -542,5 +542,7 @@
   "promote_board_error": "Error occurred while performing board rotation",
   "run_board_rotation": "Run Board Rotation",
   "board_rotation": "Board Rotation",
-  "committee_creation_date": "Committee Creation Date (MM-DD)"
+  "committee_creation_date": "Committee Creation Date (MM-DD)",
+  "setup_mfa": "Setup MFA",
+  "manage_or_remove_mfa_devices": "Manage or Remove MFA Devices"
 }

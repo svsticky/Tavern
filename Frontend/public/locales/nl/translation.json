@@ -542,5 +542,7 @@
   "promote_board_error": "Fout bij uitvoeren bestuurswissel",
   "run_board_rotation": "Bestuurswissel Uitvoeren",
   "board_rotation": "Bestuurswissel",
-  "committee_creation_date": "Commissie aanmaakdatum (MM-DD)"
+  "committee_creation_date": "Commissie aanmaakdatum (MM-DD)",
+  "setup_mfa": "MFA instellen",
+  "manage_or_remove_mfa_devices": "MFA apparaten beheren/verwijderen"
 }

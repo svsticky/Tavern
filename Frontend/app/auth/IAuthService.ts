@@ -15,4 +15,5 @@ export interface IAuthService {
   getUpdateEmailUrl: () => Promise<string>;
   getUpdatePasswordUrl: () => Promise<string>;
   resetCredentials: () => Promise<string>;
+  configureMFA: () => Promise<string>;
 }
