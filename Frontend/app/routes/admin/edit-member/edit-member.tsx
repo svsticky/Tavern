@@ -14,7 +14,7 @@ import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import {
   handleAddEnrollment,

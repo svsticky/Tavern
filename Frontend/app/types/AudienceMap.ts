@@ -9,6 +9,10 @@ export const audienceMap: Record<number, TargetAudience> = {
   2: "SecondYears",
   4: "ThirdYearsAndAbove",
   8: "Masters",
+  16: "Gratie",
+  32: "ActiveMembers",
+  64: "Begunstigers",
+  127: "All",
 };
 
 /**
@@ -21,7 +25,8 @@ export const AudienceFlags = {
   Masters: 8,
   Gratie: 16,
   ActiveMembers: 32,
-  All: 63,
+  Begunstigers: 64,
+  All: 127,
 };
 
 /**
@@ -60,6 +65,7 @@ export const getAudienceString = (mask: number): TargetAudience => {
   if (mask & AudienceFlags.Masters) activeFlags.push("Masters");
   if (mask & AudienceFlags.Gratie) activeFlags.push("Gratie");
   if (mask & AudienceFlags.ActiveMembers) activeFlags.push("ActiveMembers");
+  if (mask & AudienceFlags.Begunstigers) activeFlags.push("Begunstigers");
 
   return activeFlags.join(", ") as TargetAudience;
 };

@@ -117,7 +117,7 @@ export default function DashboardPage() {
                 <Button
                   showArrow
                   className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  onClick={() => navigate("/announcements")}
+                  href="/announcements"
                 >
                   {t("show_all")}
                 </Button>
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                 <Button
                   showArrow
                   className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  onClick={() => navigate("/activities")}
+                  href="/activities"
                 >
                   {t("show_all")}
                 </Button>

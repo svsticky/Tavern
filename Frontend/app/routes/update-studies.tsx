@@ -15,7 +15,7 @@ import BorderedTile from "~/components/Tiles/BorderedTile";
 import DataTableTile, { type Column } from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
 import Modal from "~/components/UI/Modal/Modal";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useAuth } from "~/context/AuthContext";
 import { appendErrorMessage } from "~/util/error.util";

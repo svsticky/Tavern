@@ -6,7 +6,7 @@ import Button from "~/components/UI/Button";
 import Form from "~/components/UI/Form/Form";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import RequiredAsterisk from "~/components/UI/RequiredAstrix";
 import Select from "~/components/UI/Select";
 import { cn } from "~/util/tailwind.util";

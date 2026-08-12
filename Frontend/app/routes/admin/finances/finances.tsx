@@ -12,7 +12,7 @@ import BorderedTile from "~/components/Tiles/BorderedTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import { formatDate } from "~/util/date.util";
 import {
   handleMarkAsPaid,

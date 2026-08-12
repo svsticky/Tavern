@@ -7,7 +7,7 @@ import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";

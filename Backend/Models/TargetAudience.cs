@@ -46,9 +46,14 @@ public enum TargetAudience : uint
     ActiveMembers = 1 << 5,        // 32
 
     /// <summary>
+    /// Represents Begunstigers as the target audience for an activity, indicating that the activity is specifically designed for or limited to members who have been granted a "Begunstiger" status, which may be a special designation within the system based on certain criteria. This value can be used to ensure that certain activities are tailored to the needs and interests of members with this status, providing them with relevant opportunities and experiences while excluding those who do not meet the criteria for "Begunstiger" status.
+    /// </summary>
+    Begunstigers = 1 << 6,        // 64
+
+    /// <summary>
     /// Represents all possible target audiences for an activity, indicating that the activity is designed for or open to all groups of members regardless of their academic standing or other criteria. This value can be used when an activity is intended to be inclusive and accessible to all members within the system, allowing for maximum participation and engagement across different member groups.
     /// </summary>
-    All = FirstYears | SecondYears | ThirdYearsAndAbove | Masters | Gratie | ActiveMembers // 63
+    All = FirstYears | SecondYears | ThirdYearsAndAbove | Masters | Gratie | ActiveMembers | Begunstigers // 127
 }
 
 /// <summary>
@@ -102,6 +107,11 @@ public static class TargetAudienceHelper
         }
 
         if (targetAudience.HasFlag(TargetAudience.ActiveMembers) && member.GroupMemberships?.Any(gm => gm.MembershipYear == YearUtils.GetYearForDate(DateTime.UtcNow, YearUtils.CommitteeCreationDate)) == true)
+        {
+            return true;
+        }
+
+        if (targetAudience.HasFlag(TargetAudience.Begunstigers) && member.Begunstiger)
         {
             return true;
         }

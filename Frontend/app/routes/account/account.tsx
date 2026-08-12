@@ -2,7 +2,7 @@ import { t } from "i18next";
 import { useEffect, useState } from "react";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 

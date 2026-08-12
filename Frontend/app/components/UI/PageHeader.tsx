@@ -1,7 +1,6 @@
 import { t } from "i18next";
 import { useNavigate } from "react-router";
-import Button from "../Button";
-import { handleBack } from "./PageHeader.handlers";
+import Button from "./Button";
 
 /**
  * A standardized header component for main application pages.
@@ -38,7 +37,8 @@ export const PageHeader = ({
             showArrow
             arrowDirection="left"
             className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) shadow-none mb-2 min-h-0 h-auto"
-            onClick={() => handleBack(onBack, backTo, navigate)}
+            onClick={onBack}
+            href={backTo}
           >
             {t("back")}
           </Button>

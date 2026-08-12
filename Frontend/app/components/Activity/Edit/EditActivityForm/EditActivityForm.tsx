@@ -223,6 +223,12 @@ export default function EditActivityForm({
                   defaultChecked={isEdit ? !!(audienceMask & 16) : true}
                 />
                 <Checkbox
+                  label={t("begunstigers")}
+                  name="AudienceBit"
+                  value="64"
+                  defaultChecked={isEdit ? !!(audienceMask & 64) : true}
+                />
+                <Checkbox
                   label={t("active_members")}
                   name="AudienceBit"
                   value="32"

@@ -11,7 +11,7 @@ import DataTable from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
 

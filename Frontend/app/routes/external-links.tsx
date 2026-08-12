@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type ExternalLinkResponseDto, getExternallinks } from "~/api";
 import ExternalLinkTile from "~/components/ExternalLinkTile";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import { getEnv } from "~/util/config.utils";
 
 /**

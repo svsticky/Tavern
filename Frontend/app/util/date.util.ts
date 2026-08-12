@@ -12,9 +12,11 @@ type DateFormatType =
  * @returns The formatted date string.
  */
 export function formatDate(date: Date, format: DateFormatType): string {
+  const deviceLocale = typeof navigator !== "undefined" ? navigator.language : undefined;
+
   switch (format) {
     case "fullDateTime":
-      return date.toLocaleDateString("default", {
+      return date.toLocaleDateString(deviceLocale, {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -23,22 +25,22 @@ export function formatDate(date: Date, format: DateFormatType): string {
         hour12: false,
       });
     case "shortDate":
-      return date.toLocaleDateString("default", {
+      return date.toLocaleDateString(deviceLocale, {
         day: "numeric",
         month: "short",
       });
     case "monthShort":
-      return date.toLocaleDateString("default", {
+      return date.toLocaleDateString(deviceLocale, {
         month: "short",
       });
     case "timeOnly":
-      return date.toLocaleTimeString("default", {
+      return date.toLocaleTimeString(deviceLocale, {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
       });
     default:
-      return date.toLocaleDateString();
+      return date.toLocaleDateString(deviceLocale);
   }
 }
 

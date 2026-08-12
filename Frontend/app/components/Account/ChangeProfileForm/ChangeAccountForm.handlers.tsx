@@ -99,7 +99,7 @@ export const handleSaveAccount = async (
         throw response.message ?? new Error("Failed to save account changes");
       }
 
-      i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
+      await i18n.changeLanguage(formData.preferredLanguage === "NL" ? "nl" : "en");
 
       setMember((prev) =>
         prev

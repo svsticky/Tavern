@@ -1,18 +1,18 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
+import { NavLink } from "react-router";
 import { cn } from "~/util/tailwind.util";
 
 /**
- * Props for the Button component.
- * Extends standard HTML button attributes to support all native behaviors.
+ * Common properties shared across all Button variants and underlying HTML elements.
  *
- * @typedef {Object} ButtonProps
+ * @typedef {Object} CommonProps
  * @property {string} [className] - Additional CSS classes to customize the button's appearance.
  * @property {boolean} [showArrow=false] - Whether to display a Lucide arrow icon.
  * @property {"left" | "right"} [arrowDirection="right"] - The direction and placement of the arrow icon.
  * @property {"primary" | "secondary" | "danger"} [variant="primary"] - The visual style preset of the button.
  * @property {React.ReactNode} children - The text or elements to be rendered inside the button.
  */
-type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
+type CommonProps = {
   className?: string;
   showArrow?: boolean;
   arrowDirection?: "left" | "right";
@@ -21,15 +21,25 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 /**
- * A highly customizable button component with built-in support for icons and visual variants.
+ * Props for the Button component.
+ * Dynamically extends native HTML anchor attributes when `href` is supplied, or native button attributes otherwise.
  *
- * This component wraps the native HTML `<button>` and applies standardized styling
- * including transitions, rounded corners, and flex alignment. It supports three
- * main semantic variants (primary, secondary, and danger) and can conditionally
- * render arrows on either side of the content.
+ * @typedef {CommonProps & (AnchorProps | NativeButtonProps)} ButtonProps
+ * @property {string} [href] - Optional URL. When supplied, renders an `<a>` tag to support navigation and middle-click.
+ */
+type ButtonProps = CommonProps &
+  (
+    | ({ href: string } & React.AnchorHTMLAttributes<HTMLAnchorElement>)
+    | ({ href?: never } & React.ButtonHTMLAttributes<HTMLButtonElement>)
+  );
+
+/**
+ * A versatile button component that dynamically renders either a native `<button>`
+ * or an `<a>` tag when an `href` prop is supplied (enabling middle-click and open in new tab).
+ * Supports variants, icons, and custom styling overrides.
  *
  * @component
- * @param {ButtonProps} props - The component properties and native button attributes.
+ * @param {ButtonProps} props - The component properties extending button or anchor HTML attributes.
  */
 export default function Button({
   className,
@@ -37,6 +47,7 @@ export default function Button({
   arrowDirection = "right",
   variant = "primary",
   children,
+  href,
   ...props
 }: ButtonProps) {
   const variants = {
@@ -49,25 +60,44 @@ export default function Button({
 
   const Icon = arrowDirection === "left" ? ArrowLeft : ArrowRight;
 
-  return (
-    <button
-      {...props}
-      className={cn(
-        "inline-flex items-center justify-center gap-2 font-semibold px-6 py-2 rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
-        variants[variant],
-        "disabled:opacity-50 disabled:cursor-not-allowed",
-        className,
-      )}
-    >
+  const combinedClassName = cn(
+    "inline-flex items-center justify-center gap-2 font-semibold px-6 py-2 rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap",
+    variants[variant],
+    "disabled:opacity-50 disabled:cursor-not-allowed",
+    className,
+  );
+
+  const content = (
+    <>
       {showArrow && arrowDirection === "left" && (
         <Icon className="shrink-0" size={16} />
       )}
-
       {children}
-
       {showArrow && arrowDirection === "right" && (
         <Icon className="shrink-0" size={16} />
       )}
+    </>
+  );
+
+  // Render as anchor if 'href' is passed to support middle-click / new tab behavior
+  if (href) {
+    return (
+      <NavLink
+        to={href}
+        className={combinedClassName}
+        {...(props as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+      >
+        {content}
+      </NavLink>
+    );
+  }
+
+  return (
+    <button
+      {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
+      className={combinedClassName}
+    >
+      {content}
     </button>
   );
 }

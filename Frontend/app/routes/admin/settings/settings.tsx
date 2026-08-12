@@ -18,7 +18,7 @@ import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";

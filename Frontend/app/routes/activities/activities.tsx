@@ -6,7 +6,7 @@ import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
-import { PageHeader } from "~/components/UI/PageHeader/PageHeader";
+import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";

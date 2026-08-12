@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useNavigate } from "react-router";
 import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
+import type { ProfileDropdownOption } from "~/components/Menu/NavBar/ProfileDropdown/ProfileDropdown";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -98,12 +99,12 @@ export default function NavBarLayout() {
     username: tokenParsed?.name || "",
     avatarUrl: imgSrc,
     options: [
-      { label: t("account"), action: () => navigate("/account") },
+      { label: t("account"), href: "/account" },
       ...(isBoard
         ? [
             {
               label: `${t("all_activities")}`,
-              action: () => navigate("/admin/activities"),
+              href: "/admin/activities",
             },
           ]
         : []),
@@ -111,18 +112,18 @@ export default function NavBarLayout() {
         ? [
             {
               label: `${t("members")}`,
-              action: () => navigate("/admin/members"),
+              href: "/admin/members",
             },
           ]
         : []),
       ...(isBoard
-        ? [{ label: `${t("groups")}`, action: () => navigate("/admin/groups") }]
+        ? [{ label: `${t("groups")}`, href: "/admin/groups" }]
         : []),
       ...(isBoard
         ? [
             {
               label: `${t("finances")}`,
-              action: () => navigate("/admin/finances"),
+              href: "/admin/finances",
             },
           ]
         : []),
@@ -130,11 +131,11 @@ export default function NavBarLayout() {
         ? [
             {
               label: `${t("koala_settings")}`,
-              action: () => navigate("/admin/settings"),
+              href: "/admin/settings",
             },
           ]
         : []),
-      { label: t("logout"), action: () => navigate("/logout") },
+      { label: t("logout"), href: "/logout" },
     ],
   };
 

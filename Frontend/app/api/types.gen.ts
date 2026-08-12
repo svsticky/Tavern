@@ -1909,7 +1909,7 @@ export type StudyUpdateDto = {
 /**
  * Represents the target audience for an activity, allowing for the specification of which groups of members are eligible to participate in a given activity. The TargetAudience enum defines various audience options, such as FirstYears, SecondYears, ThirdYearsAndAbove, and Masters, which can be combined using bitwise operations to create more specific audience groups. This entity is used to manage and enforce eligibility criteria for activities based on the academic standing of members, ensuring that activities are appropriately targeted and accessible to the intended audience within the system.
  */
-export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'Gratie' | 'ActiveMembers' | 'All';
+export type TargetAudience = 'None' | 'FirstYears' | 'SecondYears' | 'ThirdYearsAndAbove' | 'Masters' | 'Gratie' | 'ActiveMembers' | 'Begunstigers' | 'All';
 
 /**
  * Defines the DTO for updating an existing announcement, containing all necessary information for modifying an announcement's properties. The UpdateAnnouncementDTO is used to transfer data from the client to the server when updating an existing announcement, allowing for changes to be made to the announcement's details while ensuring that the provided information is validated appropriately for the update process.

@@ -102,7 +102,7 @@ export default function ChangeAccountForm({
         const response = await getMailinglists();
 
         if (response.error || !response.data) {
-          throw response.message ?? new Error("Failed to fetch mailing lists");
+          throw response.error ?? new Error("Failed to fetch mailing lists");
         }
 
         setMailinglists(response.data);
@@ -202,30 +202,32 @@ export default function ChangeAccountForm({
           />
         </div>
       </FormSection>
-
-      <section>
-        <FormHeader title={t("mail_subscriptions")} />
-        <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
-          {!loadingMailingLists ? (
-            mailingLists.map((list) => (
-              <Checkbox
-                key={list.id}
-                label={list.name}
-                checked={(formData.mailSubscriptions & list.bitValue!) !== 0}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  handleSubscriptionChange(
-                    list.bitValue!,
-                    e.target.checked,
-                    setFormData,
-                  )
-                }
-              />
-            ))
-          ) : (
-            <p className="text-gray-500 italic">{t("loading")}</p>
-          )}
-        </Tile>
-      </section>
+      
+      {mailingLists.length > 0 &&
+        <section>
+          <FormHeader title={t("mail_subscriptions")} />
+          <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
+            {!loadingMailingLists ? (
+              mailingLists.map((list) => (
+                <Checkbox
+                  key={list.id}
+                  label={list.name}
+                  checked={(formData.mailSubscriptions & list.bitValue!) !== 0}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleSubscriptionChange(
+                      list.bitValue!,
+                      e.target.checked,
+                      setFormData,
+                    )
+                  }
+                />
+              ))
+            ) : (
+              <p className="text-gray-500 italic">{t("loading")}</p>
+            )}
+          </Tile>
+        </section>
+      }
 
       <FormSection columns={2}>
         <div>

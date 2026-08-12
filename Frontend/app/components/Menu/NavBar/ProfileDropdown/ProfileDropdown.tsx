@@ -4,6 +4,7 @@ import {
   handleOptionClick,
   toggleDropdown,
 } from "./ProfileDropdown.handlers";
+import { NavLink } from "react-router";
 
 /**
  * Context values required to control the dropdown's layout behavior.
@@ -18,7 +19,7 @@ export type ProfileDropdownContextValues = {
  */
 export type ProfileDropdownOption = {
   label: string;
-  action: () => void;
+  href: string;
 };
 
 /**
@@ -102,22 +103,25 @@ export default function ProfileDropdown({
           `}
         >
           {options.map((option) => (
-            <button
+            <NavLink
+              to={option.href}
               key={option.label}
-              type="button"
-              onClick={() =>
-                handleOptionClick(
-                  () => {
-                    option.action();
-                    onOptionSelect?.(option);
-                    onClose?.();
-                  },
-                  compact,
-                  setIsOpen,
-                )
-              }
+              onClick={(e) => {
+                if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button !== 1) {
+                  handleOptionClick(
+                    () => {
+                      onOptionSelect?.(option);
+                      onClose?.();
+                    },
+                    compact,
+                    setIsOpen,
+                  );
+                } else {
+                  onClose?.();
+                }
+              }}
               className={`
-                text-left px-2 py-2.5 text-sm cursor-pointer
+                block text-left px-2 py-2.5 text-sm cursor-pointer
                 ${
                   compact
                     ? "text-white rounded-lg hover:bg-(--board-primary-light)"
@@ -126,7 +130,7 @@ export default function ProfileDropdown({
               `}
             >
               {option.label}
-            </button>
+            </NavLink>
           ))}
         </div>
       )}
