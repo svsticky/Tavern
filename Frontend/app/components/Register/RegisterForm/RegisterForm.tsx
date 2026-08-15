@@ -337,6 +337,16 @@ export default function RegisterForm({ className }: { className?: string }) {
             disabled={loading}
             required
           />
+          {startDateOptions.length > 0 && (
+            <Select
+              label={t("study_start_date")}
+              value={selectedStartDate}
+              onChange={(e) => setSelectedStartDate(e.target.value)}
+              options={startDateOptions}
+              disabled={loading}
+              required
+            />
+          )}
           <div>
             <span className="text-sm font-medium text-gray-700 block mb-2">
               {t("studies")}
@@ -359,16 +369,6 @@ export default function RegisterForm({ className }: { className?: string }) {
               </div>
             )}
           </div>
-          {startDateOptions.length > 0 && (
-            <Select
-              label={t("study_start_date")}
-              value={selectedStartDate}
-              onChange={(e) => setSelectedStartDate(e.target.value)}
-              options={startDateOptions}
-              disabled={loading}
-              required
-            />
-          )}
         </FormSection>
 
         {mailingLists.length > 0 && (
