@@ -54,8 +54,10 @@ public class GroupService : IGroupService
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
 
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
         return await _db.Groups
-            .Where(g => dto.MembershipYear == null || g.GroupMemberships.Any(gm => gm.MembershipYear == dto.MembershipYear && userId == gm.MemberId))
+            .Where(g => isBoardMember || dto.MembershipYear == null || g.GroupMemberships.Any(gm => gm.MembershipYear == dto.MembershipYear && userId == gm.MemberId))
             .Select(GroupResponseDTO.ToDto())
             .ToListAsync(cancellationToken);
     }
