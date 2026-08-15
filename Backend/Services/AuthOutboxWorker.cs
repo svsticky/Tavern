@@ -9,7 +9,7 @@ namespace Backend.Services;
 /// Processes queued auth-system tasks in the background.
 /// </summary>
 public class AuthOutboxWorker(
-    IServiceProvider serviceProvider, 
+    IServiceProvider serviceProvider,
     ILogger<AuthOutboxWorker> logger) : BackgroundService
 {
     /// <summary>
@@ -58,7 +58,7 @@ public class AuthOutboxWorker(
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-        
+
         var task = await db.AuthOutboxTasks
             .OrderBy(t => t.CreatedAt)
             .ThenBy(t => t.Id)
@@ -74,7 +74,7 @@ public class AuthOutboxWorker(
         try
         {
             await HandleTaskAsync(db, syncService, task, ct);
-            
+
             db.AuthOutboxTasks.Remove(task);
             logger.LogInformation("Completed auth outbox task {TaskType} for {AuthSystemUserId}.", task.TaskType, task.AuthSystemUserId);
         }
@@ -138,7 +138,7 @@ public class AuthOutboxWorker(
         logger.LogError(ex, "Auth sync failed for {Id}. Retry count: {Count}", task.AuthSystemUserId, task.RetryCount);
 
         task.RetryCount++;
-        
+
         // Exponential backoff with a max delay of 1 minute
         double extraSeconds = Math.Min(Math.Pow(2, task.RetryCount), 60);
         task.NextAttemptAt = DateTimeOffset.UtcNow.AddSeconds(extraSeconds);

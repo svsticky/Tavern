@@ -3,12 +3,11 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using Backend.Models.Domain;
-using Backend.Validators;
 using Backend.QueryExtensions;
 using Backend.Services.MailServices;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 
 namespace Backend.Services.Domain;
 
@@ -76,7 +75,7 @@ public class EnrollmentService : IEnrollmentService
             .Include(e => e.SpecificationAnswers)
                 .ThenInclude(sa => sa.Question)
             .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == enrolledUser, cancellationToken);
-        
+
         if (enrollment == null)
             return null;
 
@@ -88,8 +87,8 @@ public class EnrollmentService : IEnrollmentService
     {
         _logger.LogInformation("Creating enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
-        
-        if(dto.MemberId != userId)
+
+        if (dto.MemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -99,7 +98,7 @@ public class EnrollmentService : IEnrollmentService
             // Get member and check if they are allowed to enroll in activities
             var member = await _db.Members.Include(m => m.StudyEnrollments).FirstOrDefaultAsync(m => m.Id == dto.MemberId, cancellationToken);
 
-            if(member == null)
+            if (member == null)
                 throw new KeyNotFoundException("Member not found.");
 
             // Get activity and validate if enrollment is possible
@@ -149,9 +148,9 @@ public class EnrollmentService : IEnrollmentService
     public async Task DeleteEnrollment(uint activityId, Guid enrolledUser, Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Deleting enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", enrolledUser, activityId, userId);
-        if(enrolledUser != userId)
+        if (enrolledUser != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-        
+
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -166,7 +165,7 @@ public class EnrollmentService : IEnrollmentService
                 throw new KeyNotFoundException();
 
             // Determine if activity enrollments can be changed 
-            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(enrolledUser);
+            bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
             EnsureActivityUnenrollmentOpen(enrollment.Activity, isBoardMember);
 
@@ -185,7 +184,7 @@ public class EnrollmentService : IEnrollmentService
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            if(promotedEnrollment != null)
+            if (promotedEnrollment != null)
             {
                 try
                 {
@@ -206,7 +205,7 @@ public class EnrollmentService : IEnrollmentService
     }
 
     /// <inheritdoc />
-    public async Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId,CancellationToken cancellationToken)
+    public async Task UpdateEnrollment(PostEnrollmentDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Updating enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", dto.MemberId, dto.ActivityId, userId);
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
@@ -220,7 +219,7 @@ public class EnrollmentService : IEnrollmentService
 
             if (enrollment == null)
                 throw new KeyNotFoundException("Enrollment not found.");
-            
+
             // Get activity and validate
             var activity = await GetActivityWithQuestionsOrThrow(dto.ActivityId, cancellationToken);
 
@@ -230,14 +229,14 @@ public class EnrollmentService : IEnrollmentService
             if (!isBoard)
             {
                 await EnsureActivityEnrollmentsOpen(activity, isBoard, cancellationToken);
-                
-                if(userId != enrollment.MemberId)
+
+                if (userId != enrollment.MemberId)
                     throw new UnauthorizedAccessException("Members can only update their own enrollments.");
             }
-            
+
             // Get and validate provided answers
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
-            
+
             EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
 
             // Remove old answers and add new ones
@@ -272,7 +271,7 @@ public class EnrollmentService : IEnrollmentService
         {
             throw new ArgumentException("Cannot change ActivityId or MemberId.");
         }
-        
+
         // Get enrollment
         var enrollment = await _db.Enrollments
             .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
@@ -283,11 +282,11 @@ public class EnrollmentService : IEnrollmentService
         // Determine if activity enrollments can be changed
         bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
-        if(!isBoardMember)
+        if (!isBoardMember)
         {
             await EnsureActivityEnrollmentsOpen(enrollment.Activity, isBoardMember, cancellationToken);
-            
-            if(userId != enrollment.MemberId)
+
+            if (userId != enrollment.MemberId)
                 throw new UnauthorizedAccessException("Members can only update their own enrollments.");
         }
 
@@ -336,7 +335,7 @@ public class EnrollmentService : IEnrollmentService
 
         if (!activity.IsEnrollable)
         {
-            if(activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
+            if (activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
             {
                 activity.IsEnrollable = true;
                 activity.EnrollOpenDate = null;
@@ -349,7 +348,7 @@ public class EnrollmentService : IEnrollmentService
         }
 
         var enrollmentDeadline = activity.EnrollmentDeadline ?? activity.DateTimeEnd;
-        if(enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
+        if (enrollmentDeadline < DateTime.UtcNow && !isBoardMember)
             throw new UnauthorizedAccessException("Enrollment deadline has passed.");
     }
 

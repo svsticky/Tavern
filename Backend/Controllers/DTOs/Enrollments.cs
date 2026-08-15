@@ -9,7 +9,7 @@ public class PostEnrollmentDTO
 {
     /// <inheritdoc cref="Models.Domain.Enrollment.ActivityId"/>
     public uint ActivityId { get; set; }
-    
+
     /// <inheritdoc cref="Models.Domain.Enrollment.MemberId"/>
     public Guid MemberId { get; set; }
 
@@ -24,7 +24,7 @@ public class EnrollmentResponseDTO
 {
     /// <inheritdoc cref="Models.Domain.Enrollment.IsOnWaitingList"/>
     public required bool IsOnWaitingList { get; set; }
-    
+
     /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
     public required MemberResponseDTO? Member { get; set; }
 
@@ -38,59 +38,59 @@ public class EnrollmentResponseDTO
     public required ActivityResponseDTO Activity { get; set; }
 
     /// <summary>
-        /// Projects an Enrollment entity into an EnrollmentResponseDTO, including related member information, specification answers, and optionally the associated activity. The method takes a user ID, a boolean indicating whether the requester is a board member, and an optional boolean to include activity information, allowing it to conditionally include certain information based on the user's role and the context of the request. This projection is used to transform the data from the Enrollment model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
-        /// </summary>
-        /// <param name="userId">The ID of the user for whom to project the enrollment.</param>
-        /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
-        /// <param name="includeActivity">A boolean indicating whether to include activity information.</param>
-        /// <returns>An expression that projects an Enrollment entity into an EnrollmentResponseDTO.</returns>
-        public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeActivity = true)
+    /// Projects an Enrollment entity into an EnrollmentResponseDTO, including related member information, specification answers, and optionally the associated activity. The method takes a user ID, a boolean indicating whether the requester is a board member, and an optional boolean to include activity information, allowing it to conditionally include certain information based on the user's role and the context of the request. This projection is used to transform the data from the Enrollment model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
+    /// </summary>
+    /// <param name="userId">The ID of the user for whom to project the enrollment.</param>
+    /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <param name="includeActivity">A boolean indicating whether to include activity information.</param>
+    /// <returns>An expression that projects an Enrollment entity into an EnrollmentResponseDTO.</returns>
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeActivity = true)
+    {
+        return e => new EnrollmentResponseDTO
         {
-            return e => new EnrollmentResponseDTO
+            IsOnWaitingList = e.IsOnWaitingList,
+            Member = e.Member != null && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+                        ? MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member)
+                        : null,
+            SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
+                .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
+                .Select(sa => SpecificationAnswerResponseDTO.ToDto().Compile()(sa)).ToList(),
+            Price = isBoard ? e.Price : null,
+            Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO
             {
-                IsOnWaitingList = e.IsOnWaitingList,
-                Member = e.Member != null && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
-                            ? MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member)
-                            : null,                
-                SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
-                    .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
-                    .Select(sa => SpecificationAnswerResponseDTO.ToDto().Compile()(sa)).ToList(),
-                Price = isBoard ? e.Price : null,
-                Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO
-                {
-                    Id = e.Activity.Id,
-                    Name = e.Activity.Name,
-                    Price = e.Activity.Price,
-                    PosterPath = e.Activity.PosterPath,
-                    PosterFileName = e.Activity.PosterFileName,
-                    DutchDescription = e.Activity.DutchDescription,
-                    EnglishDescription = e.Activity.EnglishDescription,
-                    DateTimeStart = e.Activity.DateTimeStart,
-                    DateTimeEnd = e.Activity.DateTimeEnd,
-                    UnenrollmentDeadline = e.Activity.UnenrollmentDeadline,
-                    EnrollmentDeadline = e.Activity.EnrollmentDeadline,
-                    EnrollOpenDate = e.Activity.EnrollOpenDate,
-                    Location = e.Activity.Location,
-                    ParticipantLimit = e.Activity.ParticipantLimit,
-                    OrganizerId = e.Activity.OrganizerId,
-                    ShowInKoala = e.Activity.ShowInKoala,
-                    ShowOnWebsite = e.Activity.ShowOnWebsite,
-                    IsEnrollable = e.Activity.IsEnrollable,
-                    AreParticipantsVisible = e.Activity.AreParticipantsVisible,
-                    IsAdultOnly = e.Activity.IsAdultOnly,
-                    IsWeeklyDrinks = e.Activity.IsWeeklyDrinks,
-                    AllowedAudience = e.Activity.AllowedAudience,
-                    VatRate = e.Activity.VatRate,
-                    GLAccountId = e.Activity.GLAccountId,
-                    CostCenterId = e.Activity.CostCenterId,
-                    CostUnitId = e.Activity.CostUnitId,
-                    Enrollments = new List<EnrollmentResponseDTO>(),
-                    SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
-                    PaymentDeadline = isBoard ? e.Activity.PaymentDeadline : default,
-                    IsOpenForPayment = e.Activity.IsOpenForPayment
-                } : null!
-            };
-        }
+                Id = e.Activity.Id,
+                Name = e.Activity.Name,
+                Price = e.Activity.Price,
+                PosterPath = e.Activity.PosterPath,
+                PosterFileName = e.Activity.PosterFileName,
+                DutchDescription = e.Activity.DutchDescription,
+                EnglishDescription = e.Activity.EnglishDescription,
+                DateTimeStart = e.Activity.DateTimeStart,
+                DateTimeEnd = e.Activity.DateTimeEnd,
+                UnenrollmentDeadline = e.Activity.UnenrollmentDeadline,
+                EnrollmentDeadline = e.Activity.EnrollmentDeadline,
+                EnrollOpenDate = e.Activity.EnrollOpenDate,
+                Location = e.Activity.Location,
+                ParticipantLimit = e.Activity.ParticipantLimit,
+                OrganizerId = e.Activity.OrganizerId,
+                ShowInKoala = e.Activity.ShowInKoala,
+                ShowOnWebsite = e.Activity.ShowOnWebsite,
+                IsEnrollable = e.Activity.IsEnrollable,
+                AreParticipantsVisible = e.Activity.AreParticipantsVisible,
+                IsAdultOnly = e.Activity.IsAdultOnly,
+                IsWeeklyDrinks = e.Activity.IsWeeklyDrinks,
+                AllowedAudience = e.Activity.AllowedAudience,
+                VatRate = e.Activity.VatRate,
+                GLAccountId = e.Activity.GLAccountId,
+                CostCenterId = e.Activity.CostCenterId,
+                CostUnitId = e.Activity.CostUnitId,
+                Enrollments = new List<EnrollmentResponseDTO>(),
+                SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
+                PaymentDeadline = isBoard ? e.Activity.PaymentDeadline : default,
+                IsOpenForPayment = e.Activity.IsOpenForPayment
+            } : null!
+        };
+    }
 }
 
 /// <summary>

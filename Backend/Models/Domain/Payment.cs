@@ -3,7 +3,7 @@ namespace Backend.Models.Domain;
 /// <summary>
 /// Represents a payment made by a member for either an enrollment or a membership. A payment has properties such as price, payment intent URL, and timestamps for when it was paid. This entity is used to manage and track payments within the system, allowing for better financial management and integration with payment processing services like Mollie. The Payment class serves as a base class for specific types of payments, such as MembershipPayment and EnrollmentPayment, which can have additional properties related to their specific contexts.
 /// </summary>
-public abstract class Payment 
+public abstract class Payment
 {
     /// <summary>
     /// The unique identifier of the payment, assigned incrementally.
@@ -14,7 +14,7 @@ public abstract class Payment
     /// The price of the payment.
     /// </summary>
     public decimal Price { get; set; }
-    
+
     /// <summary>
     /// The identifier provided by the Payment Service for this payment. This is used to track the payment in the Payment Service system and to correlate it with the corresponding payment record in our system. This property is required for all payments, as it is essential for processing and verifying payments through the Payment Service payment gateway.
     /// </summary>
@@ -34,7 +34,7 @@ public abstract class Payment
     /// The identifier of the member who made the payment. This is a foreign key referencing the Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the MemberId would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
     /// </summary>
     public Guid? MemberId { get; set; }
-   
+
     /// <summary>
     /// The member who made the payment. This is a navigation property that allows access to the related Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the Member navigation property would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
     /// </summary>
@@ -96,5 +96,5 @@ public class EnrollmentBalance
 /// </summary>
 public class PaymentServiceFeePayment : Payment
 {
-    
+
 }

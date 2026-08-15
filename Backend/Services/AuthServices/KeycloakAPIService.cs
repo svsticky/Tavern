@@ -1,11 +1,10 @@
-using System.Net.Http.Headers;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
 using Backend.Utils.DateTime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
 
 namespace Backend.Services.AuthServices;
 
@@ -97,11 +96,11 @@ public class KeycloakAPIService(
 
         var newUser = MapToKeycloakUser(member, member.Email, false);
         var response = await client.PostAsJsonAsync("users", newUser);
-        
+
         if (response.IsSuccessStatusCode)
         {
             var id = response.Headers.Location?.Segments.Last();
-            if (id != null && Guid.TryParse(id, out var keycloakId))            
+            if (id != null && Guid.TryParse(id, out var keycloakId))
             {
                 logger.LogInformation("Created Keycloak user {KeycloakId} for member {MemberId}.", keycloakId, member.Id);
                 return keycloakId;
@@ -135,9 +134,9 @@ public class KeycloakAPIService(
     private async Task<string> GetServiceAccountToken()
     {
         var client = httpClientFactory.CreateClient();
-        
+
         var url = $"{_keycloakUrl}/realms/{_keycloakRealm}/protocol/openid-connect/token";
-        
+
         var dict = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
@@ -146,7 +145,7 @@ public class KeycloakAPIService(
         };
 
         var content = new FormUrlEncodedContent(dict);
-        
+
         var response = await client.PostAsync(url, content);
 
         if (!response.IsSuccessStatusCode)
@@ -173,7 +172,7 @@ public class KeycloakAPIService(
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.PutAsJsonAsync($"users/{keycloakId}/execute-actions-email", actions);
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
@@ -194,7 +193,7 @@ public class KeycloakAPIService(
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.GetAsync($"users/{keycloakId}");
-        
+
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
@@ -233,9 +232,9 @@ public class KeycloakAPIService(
         uint candidateBoardGroupId = string.IsNullOrEmpty(candidateBoardGroupIdStr) ? 0 : uint.Parse(candidateBoardGroupIdStr);
         uint currentBoardYear = YearUtils.GetBoardYear(db);
 
-        bool isAdmin = db.GroupMemberships.Any(gm => 
-            gm.MemberId == member.Id && 
-            gm.MembershipYear == currentBoardYear && 
+        bool isAdmin = db.GroupMemberships.Any(gm =>
+            gm.MemberId == member.Id &&
+            gm.MembershipYear == currentBoardYear &&
             (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId));
 
         return new

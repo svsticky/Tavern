@@ -78,7 +78,7 @@ public class MailSubscriptionOutboxWorker(
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-        
+
         var task = await db.MailSubscriptionOutboxTasks
             .OrderBy(t => t.CreatedAt)
             .ThenBy(t => t.Id)
@@ -126,7 +126,7 @@ public class MailSubscriptionOutboxWorker(
     private void HandleFailure(MailSubscriptionOutboxTask task, Exception ex)
     {
         logger.LogError(ex, "Sync failed for {Email}. Retry count: {Retry}", task.Email, task.RetryCount);
-        
+
         task.RetryCount++;
         // Exponential backoff with a max delay of 1 hour
         double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);

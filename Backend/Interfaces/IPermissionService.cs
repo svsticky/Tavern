@@ -6,7 +6,7 @@ namespace Backend.Interfaces;
 /// Defines permission and authorization checks used across Tavern services.
 /// </summary>
 public interface IPermissionService
-{    
+{
     /// <summary>
     /// Checks whether a member belongs to a group in the current year.
     /// </summary>
@@ -78,7 +78,7 @@ public interface IPermissionService
     /// <param name="groupId">An optional group constraint.</param>
     /// <returns><c>true</c> when the member has the role; otherwise <c>false</c>.</returns>
     bool IsInRole(Member member, uint roleId, uint year, uint? groupId = null);
-    
+
     /// <summary>
     /// Checks whether a member is in the board group in the current board year.
     /// </summary>

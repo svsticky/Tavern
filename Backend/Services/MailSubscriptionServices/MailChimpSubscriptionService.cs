@@ -1,8 +1,8 @@
-using System.Security.Cryptography;
-using System.Text;
 using Backend.Database;
 using Backend.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Backend.Services.MailSubscriptionServices;
 
@@ -13,7 +13,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 {
     private readonly ILogger<MailChimpSubscriptionService> _logger;
     private readonly HttpClient _httpClient;
-    private readonly PostgresDbContext _context; 
+    private readonly PostgresDbContext _context;
     private string ListKey => _context.Settings.Find("MailchimpListKey")?.Value ?? string.Empty;
     private bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("MAILCHIMP", StringComparison.OrdinalIgnoreCase) ?? false;
 
@@ -24,7 +24,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     /// <param name="httpClient">The HTTP client.</param>
     /// <param name="context">The database context.</param>
     public MailChimpSubscriptionService(
-        ILogger<MailChimpSubscriptionService> logger, 
+        ILogger<MailChimpSubscriptionService> logger,
         HttpClient httpClient,
         PostgresDbContext context)
     {
@@ -54,7 +54,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     /// <returns>A task representing the asynchronous operation.</returns>
     public async Task UpdateSubscriptionAsync(string email, uint mailSubscription, CancellationToken ct)
     {
-        if(!IsEnabled) 
+        if (!IsEnabled)
         {
             _logger.LogInformation("MailChimp subscription service is disabled. Skipping update for {Email}.", email);
             return;
@@ -95,7 +95,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 
         var response = await _httpClient.PutAsJsonAsync($"lists/{ListKey}/members/{emailHash}", payload, ct);
         response.EnsureSuccessStatusCode();
-        
+
         _logger.LogInformation("Subscriptions for {Email} updated via dynamic bitmap.", email);
     }
 

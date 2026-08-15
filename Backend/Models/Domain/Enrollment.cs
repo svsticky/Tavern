@@ -20,7 +20,7 @@ public class Enrollment
     /// The activity which is enrolled for.
     /// </summary>
     public Activity Activity { get; set; }
-    
+
     /// <summary>
     /// The ID of the user, as determined by the used OAuth application, which enrolls for the activity.
     /// </summary>

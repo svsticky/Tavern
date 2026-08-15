@@ -29,7 +29,7 @@ public static class EnrollmentValidator
         if (activity.Enrollments.Any(e => e.MemberId == member.Id))
             throw new ArgumentException("Member is already enrolled (or on waiting list).");
 
-        if(activity.IsAdultOnly && member.DateOfBirth.Date >= activity.DateTimeStart.Date)
+        if (activity.IsAdultOnly && member.DateOfBirth.Date >= activity.DateTimeStart.Date)
             throw new ArgumentException("Member does not meet the age requirement for this activity.");
 
         ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoardMember);
@@ -44,7 +44,7 @@ public static class EnrollmentValidator
     /// <exception cref="ArgumentException">Thrown when answers are missing or invalid.</exception>
     public static void ValidateAnswers(
         IEnumerable<PostSpecificationAnswerDTO>? providedAnswers,
-        IEnumerable<SpecificationQuestion> questions, 
+        IEnumerable<SpecificationQuestion> questions,
         bool isBoard)
     {
         var validQuestionIds = questions.Select(q => q.Id).ToHashSet();
@@ -54,7 +54,7 @@ public static class EnrollmentValidator
         if (!isBoard && mandatoryQuestionIds.Except(providedQuestionIds).Any())
             throw new ArgumentException("Missing mandatory answers.");
 
-        if(providedAnswers == null)
+        if (providedAnswers == null)
             return;
 
         if (providedAnswers.Any(a => !validQuestionIds.Contains(a.QuestionId)))

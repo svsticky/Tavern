@@ -1,25 +1,23 @@
+using Amazon.S3;
 using Backend.Database;
-using Backend.Services.Domain;
+using Backend.Filters;
+using Backend.Interfaces;
 using Backend.Services;
 using Backend.Services.AccountingToolServices;
 using Backend.Services.AuthServices;
+using Backend.Services.Domain;
 using Backend.Services.FileCompressServices;
 using Backend.Services.MailServices;
 using Backend.Services.MailSubscriptionServices;
-using Backend.Services.StorageServices;
 using Backend.Services.PaymentServices;
-using Backend.Interfaces;
-using Backend.Filters;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.EntityFrameworkCore;
-using Amazon.S3;
+using Backend.Services.StorageServices;
 using Hangfire;
 using Hangfire.PostgreSql;
-using System.Text;
-using System.Net.Http.Headers;
-using System.Reflection;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace Backend;
 
@@ -36,7 +34,7 @@ internal static class ServiceExtensions
                     .AddJwtBearer(options =>
                     {
                         options.Authority = $"{Environment.GetEnvironmentVariable("KeycloakUrl")}/realms/{Environment.GetEnvironmentVariable("KeycloakRealm")}";
-                        
+
                         options.Events = new JwtBearerEvents
                         {
                             OnMessageReceived = context =>
@@ -56,9 +54,9 @@ internal static class ServiceExtensions
                                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
                                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
                                 var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
-                                
+
                                 var authIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                                var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email) 
+                                var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)
                                                  ?? context.Principal?.FindFirst("email");
 
                                 if (authIdClaim != null && Guid.TryParse(authIdClaim.Value, out var authId))
@@ -99,9 +97,9 @@ internal static class ServiceExtensions
                                 return Task.CompletedTask;
                             }
                         };
-                        
+
                         options.RequireHttpsMetadata = false;
-                        
+
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
                             ValidateIssuer = true,
@@ -175,7 +173,7 @@ internal static class ServiceExtensions
         if (!isGeneratingDocs)
         {
             services.AddHangfire(config => config
-                .UsePostgreSqlStorage(options => 
+                .UsePostgreSqlStorage(options =>
                 {
                     options.UseNpgsqlConnection(connectionString);
                 })
@@ -288,7 +286,7 @@ internal static class ServiceExtensions
         services.AddScoped<IRegistrationDocumentService, RegistrationDocumentService>();
         services.AddScoped<IRegisterSlideService, RegisterSlideService>();
         services.AddScoped<IExternalLinkService, ExternalLinkService>();
-        
+
         return services;
     }
 
@@ -323,8 +321,8 @@ internal static class ServiceExtensions
         };
 
         recurringJobManager.AddOrUpdate<AbstractMailService>(
-            "outstanding-payments-mail", 
-            service => service.SendOutstandingPaymentMails(), 
+            "outstanding-payments-mail",
+            service => service.SendOutstandingPaymentMails(),
             "0 10 * * 5", // Each Friday at 10:00 AM
             recurringJobOptions
         );

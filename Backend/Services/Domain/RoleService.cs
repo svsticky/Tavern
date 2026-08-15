@@ -29,13 +29,13 @@ namespace Backend.Services.Domain
             return await db.Roles.FindAsync(id, ct);
         }
 
-    /// <inheritdoc />
-    public async Task<Role> CreateRole(PostRoleDTO dto, Guid userId, CancellationToken ct)
-    {
-        permissionService.EnsureBoardOrCandidateBoardMember(userId);
-        logger.LogInformation("Creating role by user {UserId}.", userId);
+        /// <inheritdoc />
+        public async Task<Role> CreateRole(PostRoleDTO dto, Guid userId, CancellationToken ct)
+        {
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            logger.LogInformation("Creating role by user {UserId}.", userId);
 
-        var role = BuildRole(dto);
+            var role = BuildRole(dto);
 
             StateValidator.Validate(role);
 
@@ -54,9 +54,9 @@ namespace Backend.Services.Domain
 
             var role = await GetRoleOrThrow(id, ct);
 
-                db.Roles.Remove(role);
-                await db.SaveChangesAsync(ct);
-            }
+            db.Roles.Remove(role);
+            await db.SaveChangesAsync(ct);
+        }
 
         /// <inheritdoc />
         public async Task PatchRole(uint id, JsonPatchDocument<Role> patchDoc, Guid userId, CancellationToken ct)
@@ -67,7 +67,7 @@ namespace Backend.Services.Domain
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
-            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
+            if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cannot modify Id field.");
 
             var role = await GetRoleOrThrow(id, ct);

@@ -6,7 +6,6 @@ using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using System.IO;
 
 namespace Backend.Services.Domain;
 
@@ -56,6 +55,7 @@ public class GroupService : IGroupService
         }
 
         return await _db.Groups
+            .Where(g => dto.MembershipYear == null || g.GroupMemberships.Any(gm => gm.MembershipYear == dto.MembershipYear && userId == gm.MemberId))
             .Select(GroupResponseDTO.ToDto())
             .ToListAsync(cancellationToken);
     }
@@ -98,7 +98,7 @@ public class GroupService : IGroupService
 
             _db.Groups.Add(group);
             await _db.SaveChangesAsync(cancellationToken);
-            
+
             await transaction.CommitAsync(cancellationToken);
 
             return group;
@@ -168,7 +168,7 @@ public class GroupService : IGroupService
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
-        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
+        if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException("Cannot modify Id field.");
 
         var group = await GetGroupOrThrow(id, cancellationToken);

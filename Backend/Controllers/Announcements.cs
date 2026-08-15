@@ -61,10 +61,10 @@ public class AnnouncementsController(IAnnouncementService announcementService) :
     public async Task<ActionResult<GetAnnouncementResponseDTO>> GetAnnouncement(uint id, CancellationToken cancellationToken)
     {
         var announcement = await announcementService.GetAnnouncement(id, GetUserId(), cancellationToken);
-        
+
         if (announcement == null)
             return NotFound();
-    
+
         return Ok(announcement);
     }
 

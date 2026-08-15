@@ -5,7 +5,6 @@ using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using System.IO;
 
 namespace Backend.Services.Domain;
 

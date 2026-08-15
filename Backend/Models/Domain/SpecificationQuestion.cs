@@ -53,21 +53,21 @@ public class SpecificationQuestion
     /// The unique identifier of the activity to which this specification question belongs.
     /// </summary>
     public uint ActivityId { get; set; }
-    
+
     /// <summary>
     /// The question in Dutch.
     /// </summary>
     [StringLength(200)]
     [Required(AllowEmptyStrings = false)]
     public required string QuestionDutch { get; set; }
-    
+
     /// <summary> 
     /// The question in English.
     /// </summary>
     [StringLength(200)]
     [Required(AllowEmptyStrings = false)]
     public required string QuestionEnglish { get; set; }
-    
+
     /// <summary>
     /// The type of the specification question, determining the content and format of the answers provided for this question.
     /// </summary>

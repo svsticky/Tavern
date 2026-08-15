@@ -4,6 +4,8 @@ using Backend.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace Backend.Controllers
 {
@@ -96,7 +98,7 @@ namespace Backend.Controllers
             {
                 userId = null;
             }
-            
+
             var member = await memberService.CreateMember(dto, userId, cancellationToken);
             return CreatedAtAction(nameof(GetMember), new { id = member.Id }, member);
         }
@@ -236,7 +238,10 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> UpdateEmailWebhook([FromHeader(Name = "X-Webhook-Secret")] string secret, [FromBody] Guid userId, CancellationToken cancellationToken)
         {
-            if (_authWebhookSecret == null || secret != _authWebhookSecret)
+            byte[] secretBytes = Encoding.UTF8.GetBytes(secret);
+            byte[] expectedBytes = Encoding.UTF8.GetBytes(_authWebhookSecret ?? string.Empty);
+
+            if (string.IsNullOrEmpty(_authWebhookSecret) || !CryptographicOperations.FixedTimeEquals(secretBytes, expectedBytes))
             {
                 return Unauthorized("Invalid webhook secret.");
             }

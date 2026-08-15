@@ -53,10 +53,10 @@ public class SMTPMailService(
         message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
-        
+
         MailKit.Security.SecureSocketOptions secureSocketOptions = StartTls ? MailKit.Security.SecureSocketOptions.StartTls : MailKit.Security.SecureSocketOptions.Auto;
         await client.ConnectAsync(Host, Port, secureSocketOptions, ct);
-        
+
         if (!string.IsNullOrEmpty(User) && !string.IsNullOrEmpty(Pass))
         {
             await client.AuthenticateAsync(User, Pass, ct);

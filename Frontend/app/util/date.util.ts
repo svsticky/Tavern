@@ -12,7 +12,8 @@ type DateFormatType =
  * @returns The formatted date string.
  */
 export function formatDate(date: Date, format: DateFormatType): string {
-  const deviceLocale = typeof navigator !== "undefined" ? navigator.language : undefined;
+  const deviceLocale =
+    typeof navigator !== "undefined" ? navigator.language : undefined;
 
   switch (format) {
     case "fullDateTime":

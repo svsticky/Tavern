@@ -1,11 +1,11 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
-using Backend.Models.Domain;
 using Backend.Models;
+using Backend.Models.Domain;
+using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
-using Backend.Utils.DateTime;
 
 namespace Backend.Services.MailServices;
 
@@ -23,7 +23,7 @@ public abstract class AbstractMailService
     /// <param name="htmlContent">The HTML email body.</param>
     /// <param name="ct">The cancellation token.</param>
     protected abstract Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct);
-    
+
     private readonly Dictionary<uint, string> _roleMailMap;
 
     /// <summary>
@@ -73,7 +73,7 @@ public abstract class AbstractMailService
             {
                 string roleId = setting.Name.Replace("ROLEMAILMAP_", "");
                 string email = setting.Value;
-                
+
                 _roleMailMap.Add(uint.Parse(roleId), email);
             }
         }
@@ -90,7 +90,7 @@ public abstract class AbstractMailService
         _permissionService.EnsureBoardOrCandidateBoardMember(UserId);
         _logger.LogInformation("Preparing mail send by user {UserId} to {RecipientCount} recipients.", UserId, dto.Recipients.Length);
 
-        if(dto.Recipients.Length == 0)
+        if (dto.Recipients.Length == 0)
         {
             _logger.LogInformation("Skipping mail send by user {UserId} because recipient list is empty.", UserId);
             return;
@@ -98,7 +98,7 @@ public abstract class AbstractMailService
 
         MailRecipient? from = await GetSenderInfo(UserId, ct);
 
-        if(from == null)
+        if (from == null)
         {
             throw new InvalidOperationException("Sender information could not be retrieved");
         }
@@ -133,7 +133,7 @@ public abstract class AbstractMailService
     public virtual async Task SendEnrollmentPromotionEmail(Enrollment promotedEnrollment)
     {
         var sender = _db.Settings.Where(s => s.Name == "ActivityUpdateEmailSender").Select(s => s.Value).FirstOrDefault();
-        if(string.IsNullOrEmpty(sender))
+        if (string.IsNullOrEmpty(sender))
         {
             _logger.LogWarning("ActivityUpdateEmailSender setting is not configured. Skipping enrollment promotion mail.");
             return;
@@ -162,7 +162,7 @@ public abstract class AbstractMailService
     public async Task SendOutstandingPaymentMails()
     {
         var sender = _db.Settings.Where(s => s.Name == "FinancialEmailSender").Select(s => s.Value).FirstOrDefault();
-        if(string.IsNullOrEmpty(sender))
+        if (string.IsNullOrEmpty(sender))
         {
             _logger.LogWarning("FinancialEmailSender setting is not configured. Skipping outstanding payment mails.");
             return;
@@ -199,7 +199,7 @@ public abstract class AbstractMailService
             await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
         }
     }
-    
+
     /// <summary>
     /// Sends study status update emails to members whose study enrollments are approaching their nominal duration, prompting them to update their study status on the platform. The method retrieves the sender's email address from the settings and identifies members with study enrollments that are nearing their nominal duration based on the current date. For each member identified, an email is composed in their preferred language, encouraging them to visit the platform and update their study status if necessary. This proactive communication helps ensure that members keep their study information up-to-date, which can be important for various administrative and organizational purposes within the system.
     /// </summary>
@@ -208,7 +208,7 @@ public abstract class AbstractMailService
     public async Task SendStudyStatusUpdateMails()
     {
         var sender = _db.Settings.Where(s => s.Name == "MainBoardMail").Select(s => s.Value).FirstOrDefault();
-        if(string.IsNullOrEmpty(sender))
+        if (string.IsNullOrEmpty(sender))
         {
             _logger.LogWarning("MainBoardMail setting is not configured. Skipping study status update mails.");
             return;
@@ -241,13 +241,13 @@ public abstract class AbstractMailService
                 Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you are currently not enrolled in a study with our association. If this information is no longer correct or if you would like to update your study details, please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. If you are no longer studying or an active member, you will also find the option to delete your account there.<br><br>Best regards,<br>The board",
                 _ => throw new InvalidOperationException("Unsupported language")
             };
-            
+
             await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
         }
 
         var membersWithOutstandingStudies = potentialMembers
             .Where(m =>
-                m.StudyEnrollments.Any(se => 
+                m.StudyEnrollments.Any(se =>
                     se.Status != StudyStatus.Completed &&
                     se.EnrollmentDate.AddYears((int)se.Study.NominalDurationYears) < DateTime.Now))
             .ToList();
@@ -291,13 +291,13 @@ public abstract class AbstractMailService
             .Select(gm => gm.RoleAlias != null ? gm.RoleAlias.Role : null)
             .FirstOrDefaultAsync(ct);
 
-        if(role == null)
+        if (role == null)
         {
             throw new UnauthorizedAccessException("User does not have permission to send mails");
         }
 
         Member? sender = await _db.Members.FindAsync(userId, ct);
-        if(sender == null)
+        if (sender == null)
         {
             return null;
         }
@@ -318,12 +318,12 @@ public abstract class AbstractMailService
         MailRecipient[] resultRecipients = Array.Empty<MailRecipient>();
 
         Activity? activity = await _db.Activities.Where(a => a.Id == activityId).Include(a => a.Enrollments.Where(e => includeWaitingList || !e.IsOnWaitingList)).ThenInclude(e => e.Member).FirstOrDefaultAsync(ct);
-        if(activity == null)
+        if (activity == null)
         {
             throw new InvalidOperationException("Activity not found");
         }
 
-        foreach(var enrollment in activity.Enrollments)
+        foreach (var enrollment in activity.Enrollments)
         {
             resultRecipients = resultRecipients.Append(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" }).ToArray();
         }
@@ -338,13 +338,13 @@ public abstract class AbstractMailService
     protected string StripHtml(string text)
     {
         if (string.IsNullOrEmpty(text)) return string.Empty;
-        
+
         // Replace breaks, closing paragraphs, opening paragraphs, and closing headers with a newline
         text = Regex.Replace(text, @"<(?:br\/?|\/p|<p>|\/h[1-6])>", "\r\n", RegexOptions.IgnoreCase);
-        
+
         // Strip out all remaining HTML tags
         text = Regex.Replace(text, @"<[^>]*>", string.Empty);
-        
+
         // Clean up excessive spacing
         text = Regex.Replace(text, @" +", " ");
         return Regex.Replace(text, @"[\r\n]{2,}", "\r\n").Trim();

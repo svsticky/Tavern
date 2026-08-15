@@ -2,11 +2,10 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
+using Backend.Services.PaymentServices;
+using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
-using Backend.Validators;
-using Backend.Services.PaymentServices;
 
 namespace Backend.Services.Domain
 {
@@ -73,7 +72,7 @@ namespace Backend.Services.Domain
             try
             {
                 EnsureMemberHasNoPaidMembership(dto.MemberId);
-                
+
                 // return existing payment
                 var existingResponse = await HandleExistingMembershipPayment(member, dto.MemberId);
                 if (existingResponse != null)
@@ -138,13 +137,13 @@ namespace Backend.Services.Domain
         {
             logger.LogInformation("Creating activity payment for member {MemberId} and {ActivityCount} activities. Manual: {Manual}",
                 dto.MemberId, dto.ActivityIds.Count, dto.ManuallyMarkedAsPaid);
-            if(userId != dto.MemberId)
+            if (userId != dto.MemberId)
             {
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
 
             var member = await GetMemberOrThrow(dto.MemberId);
-            
+
             using var transaction = await db.Database.BeginTransactionAsync();
 
             try
@@ -210,7 +209,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public IEnumerable<EnrollmentBalance> GetUnpaid(Guid userId, bool allUsers = false)
         {
-            if(allUsers)
+            if (allUsers)
             {
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
@@ -228,7 +227,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public IEnumerable<EnrollmentBalance> GetOverpaid(Guid userId)
         {
-            if(userId != Guid.Empty)
+            if (userId != Guid.Empty)
             {
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
@@ -239,7 +238,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<PaymentStatusResponse> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
         {
-            if(fromUserId != userId)
+            if (fromUserId != userId)
             {
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
@@ -287,7 +286,7 @@ namespace Backend.Services.Domain
                 return null;
 
             var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
-            if(paymentResponse.Status == PaymentStatus.Paid)
+            if (paymentResponse.Status == PaymentStatus.Paid)
             {
                 throw new InvalidOperationException("Member already paid membership");
             }
@@ -298,23 +297,23 @@ namespace Backend.Services.Domain
             }
 
             db.MembershipPayments.Remove(existingPayment);
-            
+
             db.Members.Remove(member);
             await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status."));
-            
+
             await db.SaveChangesAsync();
             await db.Database.CommitTransactionAsync();
-            
+
             throw new InvalidOperationException("Payment is expired or canceled.");
         }
 
         private async Task<CreatePaymentResponse> BuildMembershipPaymentRequest(Member member, Guid memberId)
         {
             return await paymentService.CreatePaymentAsync(
-                decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"), 
+                decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"),
                 $"Membership payment for {member.FirstName} {member.LastName}",
                 $"{_frontendUrl}/confirm-mail",
-                string.IsNullOrEmpty(_ngrokUrl) ? 
+                string.IsNullOrEmpty(_ngrokUrl) ?
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
                     : $"{_ngrokUrl}/payments/webhook",
                 $"membership_{memberId}"
@@ -343,7 +342,7 @@ namespace Backend.Services.Domain
                 totalPrice + GetPaymentServiceFee(),
                 $"Activity payment for {member.FirstName} {member.LastName}",
                 _frontendUrl,
-                string.IsNullOrEmpty(_ngrokUrl) ? 
+                string.IsNullOrEmpty(_ngrokUrl) ?
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
                     : $"{_ngrokUrl}/payments/webhook",
                 $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
@@ -357,7 +356,7 @@ namespace Backend.Services.Domain
 
         private void CreateEnrollmentPayments(Guid memberId, List<Enrollment> enrollments, bool manuallyMarkedAsPaid, CreatePaymentResponse? paymentResponse = null)
         {
-            if(paymentResponse == null && !manuallyMarkedAsPaid)
+            if (paymentResponse == null && !manuallyMarkedAsPaid)
             {
                 throw new ArgumentException("Payment response must be provided if payment is not manually marked as paid");
             }
@@ -390,7 +389,7 @@ namespace Backend.Services.Domain
         private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<PaymentServiceFeePayment> paymentServiceFeePayments)
         {
             var csv = new StringBuilder();
-            
+
             var invoiceDate = endDate.AddDays(-1).ToString("dd-MM-yyyy");
             var periodLabel = $"ideal - {startDate:dd-MM-yyyy} / {endDate:dd-MM-yyyy}";
             var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
@@ -417,13 +416,14 @@ namespace Backend.Services.Domain
                 var description = "Lidmaatschap";
                 var VATCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
                 var price = p.Price;
-                
+
                 csv.AppendLine($";{glAccount};{description};{VATCode};{price};;");
             }
 
             var groupedFees = paymentServiceFeePayments
                 .GroupBy(p => p.Price)
-                .Select(g => new {
+                .Select(g => new
+                {
                     UnitPrice = g.Key,
                     Count = g.Count(),
                     TotalPrice = g.Sum(p => p.Price)
@@ -436,7 +436,7 @@ namespace Backend.Services.Domain
             foreach (var group in groupedFees)
             {
                 var description = $"Transaction costs {group.UnitPrice:N2} x {group.Count}";
-                
+
                 var totalPrice = group.TotalPrice;
 
                 csv.AppendLine($";{paymentServiceFeeGLAccount};{description};{vatCode};{totalPrice};{paymentServiceFeeCostCenter};;");

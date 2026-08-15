@@ -67,7 +67,7 @@ public interface IGroupService
     /// <param name="dto">The replacement group payload.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken);
-    
+
     /// <summary>
     /// Uploads and assigns a picture to a group.
     /// </summary>

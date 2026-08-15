@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
-using Backend.Models.Domain;
 using Backend.Controllers.DTOs;
-using Microsoft.AspNetCore.Authorization;
 using Backend.Interfaces;
+using Backend.Models.Domain;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers
 {
@@ -42,7 +42,16 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<IEnumerable<ActivityResponseDTO>>> GetActivities([FromQuery] GetActivitiesDTO dto)
         {
-            Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            string? origin = Request.Headers.Origin.FirstOrDefault();
+            string trustedHost = Environment.GetEnvironmentVariable("HostUrl")!;
+
+            bool isTrustedOrigin = string.IsNullOrEmpty(origin) ||
+                                string.Equals(origin.TrimEnd('/'), trustedHost.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+            Guid? userId = (isTrustedOrigin && User.Identity?.IsAuthenticated == true)
+                    ? GetUserId()
+                    : null;
+
             var result = await activitiesService.GetActivities(userId, dto);
             return Ok(result);
         }
@@ -189,8 +198,17 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> GetPoster(uint id)
         {
-            Guid? guid = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
-            var result = await activitiesService.GetPoster(guid, id, download: false);
+            string? origin = Request.Headers.Origin.FirstOrDefault();
+            string trustedHost = Environment.GetEnvironmentVariable("HostUrl")!;
+
+            bool isTrustedOrigin = string.IsNullOrEmpty(origin) ||
+                                string.Equals(origin.TrimEnd('/'), trustedHost.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+            Guid? userId = (isTrustedOrigin && User.Identity?.IsAuthenticated == true)
+                    ? GetUserId()
+                    : null;
+
+            var result = await activitiesService.GetPoster(userId, id, download: false);
 
             if (result == null)
                 return NotFound();
@@ -215,7 +233,16 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Stream>> DownloadPoster(uint id)
         {
-            Guid? userId = User.Identity?.IsAuthenticated == true ? GetUserId() : null;
+            string? origin = Request.Headers.Origin.FirstOrDefault();
+            string trustedHost = Environment.GetEnvironmentVariable("HostUrl")!;
+
+            bool isTrustedOrigin = string.IsNullOrEmpty(origin) ||
+                                string.Equals(origin.TrimEnd('/'), trustedHost.TrimEnd('/'), StringComparison.OrdinalIgnoreCase);
+
+            Guid? userId = (isTrustedOrigin && User.Identity?.IsAuthenticated == true)
+                    ? GetUserId()
+                    : null;
+
             var result = await activitiesService.GetPoster(userId, id, download: true);
 
             if (result == null)

@@ -18,7 +18,7 @@ public class GroupMembership
     /// The member associated with this membership.
     /// </summary>
     public Guid MemberId { get; set; }
-    
+
     /// <summary>
     /// The member associated with this membership.
     /// </summary>

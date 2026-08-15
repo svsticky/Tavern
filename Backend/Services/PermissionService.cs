@@ -14,27 +14,27 @@ public class PermissionService(
 {
     #region Group Checks
     /// <inheritdoc />
-    public bool IsInGroupInCurrentYear(Guid memberId, uint groupId) 
+    public bool IsInGroupInCurrentYear(Guid memberId, uint groupId)
         => IsInGroup(memberId, groupId, YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate));
 
     /// <inheritdoc />
-    public bool IsInGroupInCurrentYear(Member member, uint groupId) 
+    public bool IsInGroupInCurrentYear(Member member, uint groupId)
         => IsInGroup(member, groupId, YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate));
 
     /// <inheritdoc />
     public bool IsInGroup(Guid memberId, uint groupId, uint year)
     {
-        return db.GroupMemberships.Any(gm => 
-            gm.MemberId == memberId && 
-            gm.GroupId == groupId && 
+        return db.GroupMemberships.Any(gm =>
+            gm.MemberId == memberId &&
+            gm.GroupId == groupId &&
             gm.MembershipYear == year);
     }
 
     /// <inheritdoc />
     public bool IsInGroup(Member member, uint groupId, uint year)
     {
-        return member.GroupMemberships.Any(gm => 
-            gm.GroupId == groupId && 
+        return member.GroupMemberships.Any(gm =>
+            gm.GroupId == groupId &&
             gm.MembershipYear == year);
     }
     #endregion
@@ -51,10 +51,10 @@ public class PermissionService(
     /// <inheritdoc />
     public bool IsInRole(Guid memberId, uint roleId, uint year, uint? groupId = null)
     {
-        var query = db.GroupMemberships.Where(gm => 
-            gm.MemberId == memberId && 
-            gm.MembershipYear == year && 
-            gm.RoleAlias != null && 
+        var query = db.GroupMemberships.Where(gm =>
+            gm.MemberId == memberId &&
+            gm.MembershipYear == year &&
+            gm.RoleAlias != null &&
             gm.RoleAlias.RoleId == roleId);
 
         if (groupId.HasValue)
@@ -66,9 +66,9 @@ public class PermissionService(
     /// <inheritdoc />
     public bool IsInRole(Member member, uint roleId, uint year, uint? groupId = null)
     {
-        var query = member.GroupMemberships.AsQueryable().Where(gm => 
-            gm.MembershipYear == year && 
-            gm.RoleAlias != null && 
+        var query = member.GroupMemberships.AsQueryable().Where(gm =>
+            gm.MembershipYear == year &&
+            gm.RoleAlias != null &&
             gm.RoleAlias.RoleId == roleId);
 
         if (groupId.HasValue)
@@ -105,7 +105,7 @@ public class PermissionService(
     public bool IsBoardOrCandidateBoardMember(Guid memberId)
     {
         var boardYear = YearUtils.GetBoardYear(db);
-        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1"), boardYear) || 
+        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1"), boardYear) ||
                IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "1"), boardYear);
     }
 

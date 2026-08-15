@@ -2,15 +2,14 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Validators;
 using Backend.QueryExtensions;
 using Backend.Services.MailServices;
+using Backend.Utils.DateTime;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
-using System.Text;
-using Backend.Utils.DateTime;
 using Microsoft.Extensions.Caching.Memory;
-using System.IO;
+using System.Text;
 
 namespace Backend.Services.Domain;
 
@@ -28,7 +27,7 @@ public class ActivityService : IActivityService
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<ActivityService> _logger;
 
-    private readonly string[] _restrictedForEveryonePaths = new [] {"/id", "/posterFileName", "/posterPath", };
+    private readonly string[] _restrictedForEveryonePaths = new[] { "/id", "/posterFileName", "/posterPath", };
     private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/enrollOpenDate", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
     /// <summary>
@@ -109,7 +108,7 @@ public class ActivityService : IActivityService
         if (activity == null)
             return null;
 
-        if(!activity.IsEnrollable && activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
+        if (!activity.IsEnrollable && activity.EnrollOpenDate != null && activity.EnrollOpenDate <= DateTimeOffset.UtcNow)
         {
             activity.IsEnrollable = true;
             activity.EnrollOpenDate = null;
@@ -139,7 +138,7 @@ public class ActivityService : IActivityService
             var questions = ActivityValidator.ParseCreateQuestions(dto.SpecificationQuestionsJson);
             var activity = BuildActivity(dto, questions);
             _db.Activities.Add(activity);
-            
+
             StateValidator.Validate(activity);
 
             // Save poster
@@ -157,7 +156,7 @@ public class ActivityService : IActivityService
                 .Select(gm => gm.Member)
                 .ToListAsync();
 
-            foreach(var member in organizerMembers)
+            foreach (var member in organizerMembers)
             {
                 _db.Enrollments.Add(new Enrollment
                 {
@@ -214,7 +213,7 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        if(patchDoc.Operations.Any(op => _restrictedForEveryonePaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
+        if (patchDoc.Operations.Any(op => _restrictedForEveryonePaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
             throw new UnauthorizedAccessException("You are not allowed to modify the id or poster properties of the activity.");
 
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -230,7 +229,7 @@ public class ActivityService : IActivityService
         }
 
         // Intercept and handle SpecificationQuestionsJson operations from the patch document
-        var specQuestionsOp = patchDoc.Operations.FirstOrDefault(op => 
+        var specQuestionsOp = patchDoc.Operations.FirstOrDefault(op =>
             op.path.Equals("/SpecificationQuestionsJson", StringComparison.OrdinalIgnoreCase));
 
         List<UpdateSpecificationQuestionDTO>? questionsToSync = null;
@@ -271,7 +270,7 @@ public class ActivityService : IActivityService
             IEnumerable<Enrollment> promotedEnrollments;
 
             // Update waiting list
-            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
+            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit)
                 || activity.AllowedAudience != oldAudience)
             {
                 promotedEnrollments = await ProcessWaitingList(id, activity.ParticipantLimit, ct);
@@ -295,7 +294,7 @@ public class ActivityService : IActivityService
             await _db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            foreach(var enrollment in promotedEnrollments)
+            foreach (var enrollment in promotedEnrollments)
             {
                 try
                 {
@@ -332,7 +331,7 @@ public class ActivityService : IActivityService
         // Validate poster if provided
         if (poster != null)
             ExtensionValidator.ValidatePosterExtension(poster);
-        
+
         // Save old path for deletion after successful upload of the new poster
         string? oldPath = activity.PosterPath;
 
@@ -428,7 +427,7 @@ public class ActivityService : IActivityService
             IEnumerable<Enrollment> promotedEnrollments;
 
             // Update waiting list if participant limit or allowed audience has changed
-            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit) 
+            if (activity.ParticipantLimit == null || (oldLimit.HasValue && activity.ParticipantLimit > oldLimit)
                 || activity.AllowedAudience != oldAudience)
             {
                 promotedEnrollments = await ProcessWaitingList(id, activity.ParticipantLimit, default);
@@ -441,7 +440,7 @@ public class ActivityService : IActivityService
             await _db.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            foreach(var enrollment in promotedEnrollments)
+            foreach (var enrollment in promotedEnrollments)
             {
                 try
                 {
@@ -479,15 +478,15 @@ public class ActivityService : IActivityService
         bool isPast = activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow;
 
         // Only board members or candidate board members can access posters of past activities
-        if(isPast)
+        if (isPast)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
 
         // If not authenticated, you can only see posters of activities that are shown on the website
-        if(!userId.HasValue && !activity.ShowOnWebsite)
+        if (!userId.HasValue && !activity.ShowOnWebsite)
             throw new UnauthorizedAccessException("Authentication required.");
 
         // If authenticated, you can only see posters of activities that are shown in Koala or if you are a board member or a member of the organizer group
-        if(userId.HasValue)
+        if (userId.HasValue)
         {
             // Only board members or members of the organizer group can see posters of activities that are not shown in Koala
             if (!activity.ShowInKoala && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId.Value, activity.OrganizerId.Value)))
@@ -530,10 +529,10 @@ public class ActivityService : IActivityService
     {
         // Only board members or members of the organizer group can download the enrollments CSV
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
-            
+
         // Get user preferred language for CSV header
         Member? member = await _db.Members.FirstOrDefaultAsync(m => m.Id == userId, ct);
-        if(member == null)
+        if (member == null)
             throw new UnauthorizedAccessException("User not found");
         Language language = member.PreferredLanguage;
 
@@ -707,10 +706,10 @@ public class ActivityService : IActivityService
     private static StringBuilder BuildEnrollmentsCsv(Language language, Activity activity)
     {
         var csv = new StringBuilder();
-        
+
         // Create CSV header
         var header = language == Language.NL ? new List<string> { "Voornaam", "Achternaam", "Op Wachtlijst" } : new List<string> { "First Name", "Last Name", "On Waiting List" };
-        
+
         foreach (var question in activity.SpecificationQuestions.OrderBy(q => q.Id))
         {
             header.Add(language == Language.NL ? question.QuestionDutch : question.QuestionEnglish);
@@ -736,8 +735,8 @@ public class ActivityService : IActivityService
             {
                 var answer = enrollment.SpecificationAnswers
                     .FirstOrDefault(a => a.SpecificationQuestionId == question.Id)?.Answer ?? "";
-                
-                row.Add(answer.Replace(";", ",")); 
+
+                row.Add(answer.Replace(";", ","));
             }
 
             csv.AppendLine(string.Join(";", row));

@@ -2,7 +2,6 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -87,7 +86,7 @@ namespace Backend.Services.Domain
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
-            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+            if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)
                 || op.path.Equals("/role", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cannot modify Id or RoleId fields.");
 

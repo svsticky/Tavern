@@ -204,7 +204,7 @@ public class ProjectionsTests
 
         Assert.NotNull(dto.Activity);
         Assert.Equal(1u, dto.Activity.Id);
-        Assert.Equal(member.Id, dto.Member.Id);
+        Assert.Equal(member.Id, dto.Member?.Id);
         Assert.Equal(10.00m, dto.Price);
     }
 
@@ -233,5 +233,42 @@ public class ProjectionsTests
         Assert.Equal("Party", dto.Name);
         Assert.Equal(5.00m, dto.Price);
         Assert.True(dto.AreParticipantsVisible);
+    }
+
+    [Fact]
+    public void ActivityProjections_ToDto_HidesFinancialFieldsForNonBoardMembers()
+    {
+        var activity = new Activity
+        {
+            Id = 3u,
+            Name = "Party",
+            Price = 5.00m,
+            DateTimeStart = DateTimeOffset.UtcNow,
+            DateTimeEnd = DateTimeOffset.UtcNow.AddHours(3),
+            Location = "Tavern",
+            DutchDescription = "NL desc",
+            EnglishDescription = "EN desc",
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7),
+            AreParticipantsVisible = true,
+            Enrollments = new List<Enrollment>(),
+            SpecificationQuestions = new List<SpecificationQuestion>(),
+            VatRate = 21u,
+            GLAccountId = "GL123",
+            CostCenterId = "CC123",
+            CostUnitId = "CU123"
+        };
+
+        var boardDto = ActivityResponseDTO.ToDto(_userId, isBoard: true).Compile()(activity);
+        var nonBoardDto = ActivityResponseDTO.ToDto(_userId, isBoard: false).Compile()(activity);
+
+        Assert.Equal(21u, boardDto.VatRate);
+        Assert.Equal("GL123", boardDto.GLAccountId);
+        Assert.Equal("CC123", boardDto.CostCenterId);
+        Assert.Equal("CU123", boardDto.CostUnitId);
+
+        Assert.Null(nonBoardDto.VatRate);
+        Assert.Null(nonBoardDto.GLAccountId);
+        Assert.Null(nonBoardDto.CostCenterId);
+        Assert.Null(nonBoardDto.CostUnitId);
     }
 }

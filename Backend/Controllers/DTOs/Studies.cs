@@ -1,6 +1,5 @@
-using System.ComponentModel.DataAnnotations;
-
 using Backend.Models.Domain;
+using System.ComponentModel.DataAnnotations;
 
 namespace Backend.Controllers.DTOs;
 

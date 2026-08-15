@@ -152,7 +152,7 @@ public class Activity
     /// Bitflag representing which student years/levels are allowed to enroll.
     /// </summary>
     public TargetAudience AllowedAudience { get; set; }
-    
+
     /// <summary>
     /// Whether the activity is open for payment.
     /// </summary>

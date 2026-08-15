@@ -16,7 +16,7 @@ public static class StateValidator
     /// <exception cref="ValidationException">Thrown when validation fails.</exception>
     public static void Validate<T>(T obj)
     {
-        if(obj == null)
+        if (obj == null)
         {
             throw new ArgumentNullException(nameof(obj), "Object to validate cannot be null.");
         }

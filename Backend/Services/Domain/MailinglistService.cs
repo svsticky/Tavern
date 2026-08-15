@@ -83,19 +83,19 @@ public class MailinglistService : IMailinglistService
     {
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         _logger.LogInformation("Deleting mailinglist {Id} by user {UserId}.", id, userId);
-    
+
         var mailinglist = await GetMailinglistOrThrow(id, ct);
         var bitToDelete = mailinglist.BitValue;
 
         await _db.Members
             .Where(m => (m.MailSubscriptions & bitToDelete) != 0)
             .ExecuteUpdateAsync(s => s.SetProperty(
-                m => m.MailSubscriptions, 
-                m => m.MailSubscriptions & ~bitToDelete), 
+                m => m.MailSubscriptions,
+                m => m.MailSubscriptions & ~bitToDelete),
                 ct);
 
         _db.Mailinglists.Remove(mailinglist);
-        
+
         await _db.SaveChangesAsync(ct);
     }
 
@@ -108,7 +108,7 @@ public class MailinglistService : IMailinglistService
         var mailinglist = await GetMailinglistOrThrow(id, ct);
 
         if (patchDoc == null) throw new ArgumentException("Patch document is null");
-        
+
         if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)
             || op.path.Equals("/BitValue", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException("Cannot modify Id or BitValue field.");
@@ -122,7 +122,7 @@ public class MailinglistService : IMailinglistService
         var mailinglist = await _db.Mailinglists.FindAsync(new object[] { id }, ct);
         if (mailinglist == null)
             throw new KeyNotFoundException($"Mailinglist with id '{id}' not found.");
-        
+
         return mailinglist;
     }
 }

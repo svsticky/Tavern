@@ -46,7 +46,8 @@ public static class StudyEnrollmentValidator
                 }
 
                 var nextFutureDate = configuredStartDates
-                    .Select(s => {
+                    .Select(s =>
+                    {
                         var p = s.Split('-');
                         if (p.Length == 2 && int.TryParse(p[0], out int m) && int.TryParse(p[1], out int d))
                         {

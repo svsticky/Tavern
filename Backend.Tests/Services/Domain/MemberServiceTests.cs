@@ -396,6 +396,59 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchMember_MoveOperationFromDisallowedField_ThrowsUnauthorized()
+    {
+        // Arrange - the "from" path of a move/copy operation must also be checked against the allowed
+        // list, otherwise a member could smuggle a disallowed field's value out via a "move" whose
+        // destination path is allowed.
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("move", "/PhoneNumber", "/StudentNumber")
+            },
+            new DefaultContractResolver()
+        );
+
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(x => throw new UnauthorizedAccessException());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PatchMember_AllowedFieldWithDifferentCasing_Self_Succeeds()
+    {
+        // Arrange - AllowedFields is compared case-insensitively.
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("replace", "/PHONENUMBER", null, "0699999999")
+            },
+            new DefaultContractResolver()
+        );
+
+        // Act
+        await _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None);
+
+        // Assert - no board check should have been required for the member's own allowed-field edit.
+        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(_userId);
+        Assert.NotNull(updated);
+        Assert.Equal("0699999999", updated.PhoneNumber);
+    }
+
+    [Fact]
     public async Task PatchMember_ValidRequest_UpdatesDb()
     {
         // Arrange

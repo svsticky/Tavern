@@ -3,7 +3,6 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.Extensions.Caching.Memory;
-using System.IO;
 
 namespace Backend.Services.Domain
 {
@@ -46,7 +45,7 @@ namespace Backend.Services.Domain
         {
             logger.LogInformation("Updating profile picture for member {MemberId}. Requested by {UserId}.", fromUserId, userId);
             var member = await GetMemberOrThrow(fromUserId);
-            if(fromUserId != userId)
+            if (fromUserId != userId)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             ValidateImage(image);

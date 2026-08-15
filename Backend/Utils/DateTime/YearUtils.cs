@@ -29,10 +29,10 @@ public static class YearUtils
     /// <returns>The calculated financial year.</returns>
     public static uint GetCurrentFinancialYear(System.DateTime utcNow)
     {
-        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
-            ? "W. Europe Standard Time" 
+        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "W. Europe Standard Time"
             : "Europe/Amsterdam";
-        
+
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
         System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
@@ -41,8 +41,8 @@ public static class YearUtils
         if (!string.IsNullOrEmpty(FinancialYearStartDate))
         {
             var parts = FinancialYearStartDate.Split('-');
-            if (parts.Length == 2 && 
-                int.TryParse(parts[0], out int m) && 
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out int m) &&
                 int.TryParse(parts[1], out int d))
             {
                 targetMonth = m;
@@ -64,11 +64,11 @@ public static class YearUtils
             isAfterOrEqual = false;
         }
 
-        return targetMonth <= 6 ? isAfterOrEqual 
-            ? (uint)nowInNetherlands.Year 
+        return targetMonth <= 6 ? isAfterOrEqual
+            ? (uint)nowInNetherlands.Year
             : (uint)nowInNetherlands.Year - 1
-            : isAfterOrEqual 
-            ? (uint)nowInNetherlands.Year + 1 
+            : isAfterOrEqual
+            ? (uint)nowInNetherlands.Year + 1
             : (uint)nowInNetherlands.Year;
     }
 
@@ -82,10 +82,10 @@ public static class YearUtils
     /// </summary>
     public static uint GetYearForDate(System.DateTime utcNow, string startDateStr)
     {
-        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
-            ? "W. Europe Standard Time" 
+        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            ? "W. Europe Standard Time"
             : "Europe/Amsterdam";
-        
+
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
         System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
@@ -94,8 +94,8 @@ public static class YearUtils
         if (!string.IsNullOrEmpty(startDateStr))
         {
             var parts = startDateStr.Split('-');
-            if (parts.Length == 2 && 
-                int.TryParse(parts[0], out int m) && 
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out int m) &&
                 int.TryParse(parts[1], out int d))
             {
                 targetMonth = m;
@@ -117,11 +117,11 @@ public static class YearUtils
             isAfterOrEqual = false;
         }
 
-        return targetMonth <= 6 ? isAfterOrEqual 
-            ? (uint)nowInNetherlands.Year 
+        return targetMonth <= 6 ? isAfterOrEqual
+            ? (uint)nowInNetherlands.Year
             : (uint)nowInNetherlands.Year - 1
-            : isAfterOrEqual 
-            ? (uint)nowInNetherlands.Year + 1 
+            : isAfterOrEqual
+            ? (uint)nowInNetherlands.Year + 1
             : (uint)nowInNetherlands.Year;
     }
 

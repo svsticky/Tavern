@@ -1,10 +1,10 @@
 using Backend;
 using DotNetEnv;
-using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.HttpLogging;
-using System.IdentityModel.Tokens.Jwt;
 using Hangfire;
+using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.HttpOverrides;
 using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Tokens.Jwt;
 
 Env.Load();
 
@@ -21,7 +21,7 @@ builder.Logging.AddConsole();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    
+
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -61,9 +61,9 @@ if (!isGeneratingDocs)
 
         options.AddPolicy("PublicCorsPolicy", policy =>
             policy.SetIsOriginAllowed(origin => true)
-                    .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials());
+                .WithMethods("GET")
+                .AllowAnyHeader()
+                .AllowCredentials());
     });
 }
 

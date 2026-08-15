@@ -39,7 +39,7 @@ public class StudyEnrollment
     /// The member associated with this enrollment.
     /// </summary>
     public Guid MemberId { get; set; }
-    
+
     /// <summary>
     /// The member associated with this enrollment.
     /// </summary>

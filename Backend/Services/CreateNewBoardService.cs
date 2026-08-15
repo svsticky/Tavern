@@ -1,7 +1,6 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
 
@@ -28,15 +27,15 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
 
         var boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))?.Value ?? "1");
         var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))?.Value ?? "2");
-        
+
         var maxBoardYear = await db.GroupMemberships
             .Where(gm => gm.GroupId == boardGroupId)
             .MaxAsync(gm => (uint?)gm.MembershipYear);
-        
+
         // Target year is the year for the upcoming/current committee creation date
         var committeeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
-        var targetYear = maxBoardYear.HasValue && maxBoardYear.Value >= committeeYear 
-            ? maxBoardYear.Value + 1 
+        var targetYear = maxBoardYear.HasValue && maxBoardYear.Value >= committeeYear
+            ? maxBoardYear.Value + 1
             : committeeYear;
 
         var currentYear = targetYear;
@@ -72,7 +71,7 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, candidate.MemberId);
             }
 
-            foreach(var oldMember in oldBoardMembers)
+            foreach (var oldMember in oldBoardMembers)
             {
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.MemberId);
             }

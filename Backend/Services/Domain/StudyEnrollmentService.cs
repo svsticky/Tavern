@@ -53,7 +53,7 @@ namespace Backend.Services.Domain
         {
             if (dto.MemberId != userId)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
-            
+
             logger.LogInformation("Creating study enrollment for member {MemberId} study {StudyId} by user {UserId}.", dto.MemberId, dto.StudyId, userId);
 
             var member = await GetMemberOrThrow(dto.MemberId, ct);
@@ -90,21 +90,21 @@ namespace Backend.Services.Domain
         {
             logger.LogInformation("Patching study enrollment {EnrollmentId} by user {UserId}.", id, userId);
 
-            if(patchDoc == null)
+            if (patchDoc == null)
                 throw new ArgumentException("Patch document is null");
-            
-            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
+
+            if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)
                 || op.path.Equals("/memberId", StringComparison.OrdinalIgnoreCase)
                 || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase)
                 || op.path.Equals("/studyId", StringComparison.OrdinalIgnoreCase)
                 || op.path.Equals("/study", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cannot modify Id, MemberId or StudyId fields.");
-            
+
             var enrollment = await db.StudyEnrollments.Include(e => e.Study).FirstOrDefaultAsync(e => e.Id == id, ct);
-            
+
             ArgumentNullException.ThrowIfNull(enrollment, nameof(enrollment));
 
-            if(userId != enrollment.MemberId || DateTime.UtcNow < enrollment.EnrollmentDate.AddYears((int)enrollment.Study.NominalDurationYears))
+            if (userId != enrollment.MemberId || DateTime.UtcNow < enrollment.EnrollmentDate.AddYears((int)enrollment.Study.NominalDurationYears))
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             using var transaction = await db.Database.BeginTransactionAsync(ct);
@@ -115,9 +115,9 @@ namespace Backend.Services.Domain
 
                 patchDoc.ApplyTo(enrollment);
 
-                if(oldStatus != enrollment.Status)
+                if (oldStatus != enrollment.Status)
                 {
-                    switch(enrollment.Status)
+                    switch (enrollment.Status)
                     {
                         case StudyStatus.Enrolled:
                             enrollment.CompletionDate = null;
@@ -139,7 +139,7 @@ namespace Backend.Services.Domain
                 await transaction.RollbackAsync(ct);
                 logger.LogError(ex, "Failed patching study enrollment {EnrollmentId}.", id);
                 throw;
-            }            
+            }
         }
 
         private async Task<Member> GetMemberOrThrow(Guid memberId, CancellationToken ct)

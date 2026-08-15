@@ -6,10 +6,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet } from "react-router";
 import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-import type { ProfileDropdownOption } from "~/components/Menu/NavBar/ProfileDropdown/ProfileDropdown";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -28,7 +27,6 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
  */
 export default function NavBarLayout() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
 
   const authService = useAuth();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
@@ -116,9 +114,7 @@ export default function NavBarLayout() {
             },
           ]
         : []),
-      ...(isBoard
-        ? [{ label: `${t("groups")}`, href: "/admin/groups" }]
-        : []),
+      ...(isBoard ? [{ label: `${t("groups")}`, href: "/admin/groups" }] : []),
       ...(isBoard
         ? [
             {

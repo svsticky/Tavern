@@ -18,13 +18,11 @@ type HandleSubmitArgs = {
   onComplete: (list?: Mailinglist) => void;
 };
 export const handleMailingListSubmit = async ({
-  e,
   formData,
   mailingList,
   setLoading,
   onComplete,
 }: HandleSubmitArgs) => {
-  e.preventDefault();
   setLoading(true);
 
   try {

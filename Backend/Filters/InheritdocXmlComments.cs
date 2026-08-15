@@ -1,6 +1,4 @@
 using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 
@@ -8,7 +6,7 @@ namespace Backend.Filters;
 
 internal sealed class InheritdocXmlComments
 {
-    private static readonly ConcurrentDictionary<string, InheritdocXmlComments> Cache =
+    private static readonly ConcurrentDictionary<string, InheritdocXmlComments> _cache =
         new(StringComparer.OrdinalIgnoreCase);
 
     private readonly IReadOnlyDictionary<string, XElement> _members;
@@ -34,7 +32,7 @@ internal sealed class InheritdocXmlComments
 
     public static InheritdocXmlComments GetOrCreate(string xmlPath)
     {
-        return Cache.GetOrAdd(xmlPath, path => new InheritdocXmlComments(path));
+        return _cache.GetOrAdd(xmlPath, path => new InheritdocXmlComments(path));
     }
 
     public string? GetSummary(string memberName)

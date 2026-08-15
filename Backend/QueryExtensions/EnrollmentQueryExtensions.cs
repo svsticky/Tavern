@@ -15,7 +15,7 @@ public static class EnrollmentQueryExtensions
     /// <param name="dto">The data transfer object containing the filtering criteria.</param>
     /// <returns>The filtered queryable collection of Enrollment entities.</returns>
     public static IQueryable<Enrollment> Filter(
-        this IQueryable<Enrollment> query, 
+        this IQueryable<Enrollment> query,
         GetEnrollmentsDTO dto)
     {
         if (dto.FromMemberId != null)

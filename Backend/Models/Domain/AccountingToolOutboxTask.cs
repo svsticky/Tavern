@@ -3,11 +3,12 @@ namespace Backend.Models.Domain;
 /// <summary>
 /// Defines the type of an accounting tool task. This enumeration is used to specify the specific type of task that needs to be processed for the accounting tool
 /// </summary>
-public enum AccountingToolTaskType { 
+public enum AccountingToolTaskType
+{
     /// <summary>
     /// Indicates that the task is to process an enrollment payment. This task type is used when a payment related to an enrollment needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the enrollment transaction.
     /// </summary>
-    EnrollmentPayment, 
+    EnrollmentPayment,
 
     /// <summary>
     /// Indicates that the task is to process a membership payment. This task type is used when a payment related to a membership needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the membership transaction.
@@ -17,7 +18,7 @@ public enum AccountingToolTaskType {
     /// <summary>
     /// Indicates that the task is to process a Payment Service fee payment. This task type is used when a payment related to a fee from the Payment Service payment provider needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the fee transaction.
     /// </summary>
-    PaymentServiceFeePayment 
+    PaymentServiceFeePayment
 }
 
 /// <summary>

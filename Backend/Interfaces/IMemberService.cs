@@ -61,7 +61,7 @@ namespace Backend.Interfaces
         /// <param name="userId">The ID of the user performing the update.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         Task UpdateMember(Guid id, MemberUpdateDTO dto, Guid userId, CancellationToken cancellationToken);
-                 
+
         /// <summary>
         /// Deletes the profile picture for a member.
         /// </summary>

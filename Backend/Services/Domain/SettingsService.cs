@@ -1,8 +1,8 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Microsoft.AspNetCore.JsonPatch;
 using Hangfire;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace Backend.Services.Domain;
 
@@ -15,7 +15,7 @@ public class SettingsService : ISettingsService
     private readonly IPermissionService _permissionService;
     private readonly ILogger<SettingsService> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
-    private readonly string[] _openSettings = new []
+    private readonly string[] _openSettings = new[]
     {
         "boardgroupid",
         "candidateboardgroupid",
@@ -57,9 +57,9 @@ public class SettingsService : ISettingsService
     /// <inheritdoc />
     public Task<Setting?> GetSetting(string name, Guid? UserId, CancellationToken ct)
     {
-        if(!_openSettings.Contains(name, StringComparer.InvariantCultureIgnoreCase))
+        if (!_openSettings.Contains(name, StringComparer.InvariantCultureIgnoreCase))
         {
-            if(UserId == null) throw new UnauthorizedAccessException();
+            if (UserId == null) throw new UnauthorizedAccessException();
             _permissionService.EnsureBoardOrCandidateBoardMember(UserId.Value);
         }
 
@@ -143,7 +143,7 @@ public class SettingsService : ISettingsService
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
-        if(patchDoc.Operations.Any(op => op.path.Equals("/name", StringComparison.OrdinalIgnoreCase)))
+        if (patchDoc.Operations.Any(op => op.path.Equals("/name", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException("Cannot modify Name field.");
 
         patchDoc.ApplyTo(setting);

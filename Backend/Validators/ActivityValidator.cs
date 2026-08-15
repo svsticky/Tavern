@@ -23,11 +23,11 @@ public static class ActivityValidator
         ValidatePosterIfProvided(dto.Poster);
 
         // Only board members can create activities that are shown in Koala/website or have enrollment/payment options, to prevent abuse of these features
-        if (dto.ShowInKoala 
-                || dto.ShowOnWebsite 
-                || dto.PaymentDeadline != null 
+        if (dto.ShowInKoala
+                || dto.ShowOnWebsite
+                || dto.PaymentDeadline != null
                 || dto.EnrollOpenDate != null
-                || dto.OrganizerId == null 
+                || dto.OrganizerId == null
                 || !permissionService.IsInGroupInCurrentYear(userId, dto.OrganizerId.Value)
             )
             permissionService.EnsureBoardOrCandidateBoardMember(userId);

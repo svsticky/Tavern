@@ -1,5 +1,4 @@
 using Backend.Database;
-using Backend.Interfaces;
 using Backend.Models.Domain;
 using Mollie.Api.Client;
 using Mollie.Api.Client.Abstract;
@@ -59,7 +58,7 @@ public class MollieService(PostgresDbContext db, ILogger<MollieService> logger, 
 
         PaymentResponse response = await mollieClient.CreatePaymentAsync(request);
 
-        if(response.Links.Checkout == null)
+        if (response.Links.Checkout == null)
         {
             throw new InvalidOperationException("Mollie response did not contain a checkout link.");
         }

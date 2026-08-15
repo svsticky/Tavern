@@ -54,14 +54,14 @@ public class FileCompressService : IFileCompressService
                 {
                     Quality = 75
                 });
-                
+
                 contentType = "image/webp";
             }
         }
 
         outputStream.Position = 0;
         _logger.LogInformation("Compressed file {FileName}. Output content type: {OutputContentType}.", file.FileName, contentType);
-        
+
         return (outputStream, contentType);
     }
 }

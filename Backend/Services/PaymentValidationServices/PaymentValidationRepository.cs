@@ -15,10 +15,10 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public bool HasPaidMembershipPaymentBeforeExpirationTime(Guid memberId)
     {
-         var member = db.Members
-            .Include(m => m.StudyEnrollments)
-            .ThenInclude(se => se.Study)
-            .FirstOrDefault(m => m.Id == memberId);
+        var member = db.Members
+           .Include(m => m.StudyEnrollments)
+           .ThenInclude(se => se.Study)
+           .FirstOrDefault(m => m.Id == memberId);
 
         if (member == null)
         {
@@ -49,7 +49,7 @@ public class PaymentValidationService(
         }
 
         string? paymentExpirationTime = db.Settings.FirstOrDefault(s => s.Name == "MembershipPaymentExpirationTime")?.Value;
-        if(paymentExpirationTime != null && int.TryParse(paymentExpirationTime, out int expirationYears))
+        if (paymentExpirationTime != null && int.TryParse(paymentExpirationTime, out int expirationYears))
         {
             var studyEnrollment = member.StudyEnrollments
                 .OrderBy(e => e.EnrollmentDate)
@@ -67,7 +67,7 @@ public class PaymentValidationService(
             // A grace period of 2 months is added to allow paying near the end of the membership cycle for the upcoming period.
             var now = DateTime.UtcNow;
             var startDate = studyEnrollment.EnrollmentDate.DateTime;
-            
+
             // Build candidate date in current calendar year
             var nextOccurrence = new DateTime(now.Year, startDate.Month, startDate.Day, startDate.Hour, startDate.Minute, startDate.Second, DateTimeKind.Utc);
             if (now >= nextOccurrence)
@@ -89,10 +89,10 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public bool HasEverPaidMembershipPayment(Guid memberId)
     {
-         var member = db.Members
-            .Include(m => m.StudyEnrollments)
-            .ThenInclude(se => se.Study)
-            .FirstOrDefault(m => m.Id == memberId);
+        var member = db.Members
+           .Include(m => m.StudyEnrollments)
+           .ThenInclude(se => se.Study)
+           .FirstOrDefault(m => m.Id == memberId);
 
         if (member == null)
         {
@@ -103,7 +103,7 @@ public class PaymentValidationService(
         if (member.Begunstiger) return true;
 
         bool isMaster = member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master);
-        
+
         if (isMaster) return true;
 
         return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
@@ -116,7 +116,7 @@ public class PaymentValidationService(
             .Where(e => e.MemberId == memberId)
             .Include(e => e.Member)
             .Include(e => e.Activity)
-            .Select(e => new 
+            .Select(e => new
             {
                 Enrollment = e,
                 PaidSum = db.EnrollmentPayments
@@ -124,8 +124,8 @@ public class PaymentValidationService(
                     .Sum(p => (decimal?)p.Price) ?? 0
             })
             .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
-            .AsEnumerable() 
-            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
+            .AsEnumerable()
+            .Select(x => new EnrollmentBalance { Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
     /// <inheritdoc />
@@ -145,7 +145,7 @@ public class PaymentValidationService(
         return db.Enrollments
             .Include(e => e.Member)
             .Include(e => e.Activity)
-            .Select(e => new 
+            .Select(e => new
             {
                 Enrollment = e,
                 PaidSum = db.EnrollmentPayments
@@ -154,7 +154,7 @@ public class PaymentValidationService(
             })
             .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable()
-            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
+            .Select(x => new EnrollmentBalance { Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
     /// <inheritdoc />
@@ -163,7 +163,7 @@ public class PaymentValidationService(
         return db.Enrollments
             .Include(e => e.Activity)
             .Include(e => e.Member)
-            .Select(e => new 
+            .Select(e => new
             {
                 Enrollment = e,
                 PaidSum = db.EnrollmentPayments
@@ -172,7 +172,7 @@ public class PaymentValidationService(
             })
             .Where(x => x.PaidSum > x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable()
-            .Select(x => new EnrollmentBalance{ Enrollment = x.Enrollment, Balance = x.PaidSum - x.Enrollment.Price });
+            .Select(x => new EnrollmentBalance { Enrollment = x.Enrollment, Balance = x.PaidSum - x.Enrollment.Price });
     }
 
     /// <inheritdoc />

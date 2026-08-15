@@ -2,13 +2,12 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Validators;
 using Backend.QueryExtensions;
-using Backend.Services;
+using Backend.Services.PaymentServices;
+using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Backend.Services.PaymentServices;
 
 namespace Backend.Services.Domain
 {
@@ -45,7 +44,7 @@ namespace Backend.Services.Domain
                 .ToListAsync(cancellationToken);
 
             var mapper = MemberResponseDTO.ToDto(userId, true).Compile();
-            
+
             return members.Select(m => mapper(m)).ToList();
         }
 
@@ -75,16 +74,16 @@ namespace Backend.Services.Domain
             // Check if begunstiger, and if so: make sure it's done by a board member, otherwise check if at least 1 study enrollment
             if (dto.Begunstiger.HasValue && dto.Begunstiger.Value)
             {
-                if(userId == null)
+                if (userId == null)
                     throw new UnauthorizedAccessException();
                 permissionService.EnsureBoardOrCandidateBoardMember(userId.Value);
             }
             else
             {
-                if(dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0)
+                if (dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0)
                     throw new ArgumentException("Member must be enrolled to atleast one study.");
-                
-                if(dto.StudentNumber.Trim() == "" || !int.TryParse(dto.StudentNumber, out var _))
+
+                if (dto.StudentNumber.Trim() == "" || !int.TryParse(dto.StudentNumber, out var _))
                     throw new ArgumentException("Student number must be a number.");
 
                 var studyStartDatesSetting = (await db.Settings.FindAsync(new object[] { "StudyStartDates" }, cancellationToken))?.Value ?? "09-01,02-01";
@@ -92,7 +91,7 @@ namespace Backend.Services.Domain
             }
 
             // Check if date of birth is in the past
-            if(dto.DateOfBirth >= DateTimeOffset.UtcNow)
+            if (dto.DateOfBirth >= DateTimeOffset.UtcNow)
             {
                 throw new ArgumentException("Date of birth must be in the past.");
             }
@@ -105,7 +104,7 @@ namespace Backend.Services.Domain
             }
 
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            
+
             try
             {
                 // Remove any existing member with same mail if they didn't pay membership
@@ -148,7 +147,7 @@ namespace Backend.Services.Domain
             logger.LogInformation("Deleting member {MemberId}. Requested by {UserId}.", id, userId);
             var member = await db.Members.FindAsync(id, cancellationToken);
 
-            if (member == null) 
+            if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
             if (id != userId)
@@ -217,15 +216,19 @@ namespace Backend.Services.Domain
         {
             logger.LogInformation("Patching member {MemberId}. Requested by {UserId}.", id, userId);
             var member = await db.Members.FindAsync(id, cancellationToken);
-            if (member == null) 
+            if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
-            if(member.Id != userId || patchDoc.Operations.Any(operation => Member.RestrictedFields.Contains(operation.path.ToLower())))
+            bool hasUnauthorizedOperations = patchDoc.Operations.Any(op =>
+                !Member.AllowedFields.Contains(op.path) ||
+                (!string.IsNullOrEmpty(op.from) && !Member.AllowedFields.Contains(op.from))
+            );
+            if (member.Id != userId || hasUnauthorizedOperations)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
-            
+
             try
             {
                 patchDoc.ApplyTo(member);
@@ -257,12 +260,12 @@ namespace Backend.Services.Domain
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
             // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
-            if(member.Id != userId 
+            if (member.Id != userId
                 || member.Email != dto.Email
                 || member.Id != userId
-                || dto.StudentNumber != member.StudentNumber 
-                || dto.FirstName != member.FirstName 
-                || dto.LastName != member.LastName 
+                || dto.StudentNumber != member.StudentNumber
+                || dto.FirstName != member.FirstName
+                || dto.LastName != member.LastName
                 || dto.DateOfBirth != member.DateOfBirth
                 || dto.Notes != member.Notes
                 || dto.Gratie != member.Gratie
@@ -295,7 +298,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task DeleteProfilePicture(Guid id, Guid userId, CancellationToken cancellationToken)
         {
-            if(id != userId)
+            if (id != userId)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             var member = await db.Members.FindAsync(id, cancellationToken);
@@ -321,7 +324,7 @@ namespace Backend.Services.Domain
         public async Task RefreshEmail(Guid id, CancellationToken cancellationToken)
         {
             var member = await db.Members.FirstOrDefaultAsync((member) => member.AuthSystemUserId == id);
-            if (member == null)                
+            if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -351,19 +354,19 @@ namespace Backend.Services.Domain
             if (existingMember == null)
                 return;
 
-            if(existingMember.Begunstiger)
+            if (existingMember.Begunstiger)
                 throw new InvalidOperationException("Existing member with same email address found.");
 
-            if((await db.Settings.FindAsync("MastersShouldPayMembership"))?.Value != "1" &&  existingMember.StudyEnrollments.Any(se => se.Study.Type == StudyType.Master))
+            if ((await db.Settings.FindAsync("MastersShouldPayMembership"))?.Value != "1" && existingMember.StudyEnrollments.Any(se => se.Study.Type == StudyType.Master))
                 throw new InvalidOperationException("Existing member with same email address found.");
 
-            if((await db.Settings.FindAsync("GratieShouldPayMembership"))?.Value != "1" && existingMember.Gratie)
+            if ((await db.Settings.FindAsync("GratieShouldPayMembership"))?.Value != "1" && existingMember.Gratie)
                 throw new InvalidOperationException("Existing member with same email address found.");
-            
-            if((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1" && existingMember.EreLid)
+
+            if ((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1" && existingMember.EreLid)
                 throw new InvalidOperationException("Existing member with same email address found.");
-                
-            if((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
+
+            if ((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
                 throw new InvalidOperationException("Existing member with same email address found.");
 
             var existingPayment = await db.MembershipPayments

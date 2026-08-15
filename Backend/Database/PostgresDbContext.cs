@@ -81,7 +81,7 @@ public class PostgresDbContext : DbContext
         modelBuilder.Entity<MembershipPayment>(entity =>
         {
             entity.ToTable("MembershipPayments");
-            
+
             entity.HasOne(p => p.Member)
                 .WithMany()
                 .HasForeignKey(p => p.MemberId)

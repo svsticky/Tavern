@@ -14,9 +14,9 @@ namespace Backend.Database;
 [ExcludeFromCodeCoverage]
 public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 {
-    private const string BoardPrimaryLightDefault = "#f98f55";
-    private const string BoardPrimaryDefault = "#fa6b20";
-    private const string BoardPrimaryDarkDefault = "#ca5617";
+    private const string _boardPrimaryLightDefault = "#f98f55";
+    private const string _boardPrimaryDefault = "#fa6b20";
+    private const string _boardPrimaryDarkDefault = "#ca5617";
 
     /// <summary>
     /// Starts the database seeding process. This method is called when the application starts and is responsible for ensuring that essential settings and groups are present in the database. It creates a new service scope to access the database context and performs checks to create default settings and groups if they do not already exist. Additionally, it ensures that a backup board account is created if there are no existing board members, providing a fallback option for administrative access. The seeding process helps to establish a baseline configuration for the application, allowing it to function correctly from the outset.
@@ -30,11 +30,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
 
         string boardGroupId = await EnsureSettingExists(db, "BoardGroupId", "1");
-        
+
         string candidateBoardGroupId = await EnsureSettingExists(db, "CandidateBoardGroupId", "2");
-        
+
         await EnsureGroupExists(db, "Board", GroupType.Committee, uint.Parse(boardGroupId));
-        
+
         await EnsureGroupExists(db, "Candidate Board", GroupType.Committee, uint.Parse(candidateBoardGroupId));
 
         await EnsureSettingExists(db, "PaymentProvider", "MOLLIE");
@@ -65,7 +65,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         await EnsureSettingExists(db, "PaymentServiceFeeCostUnit", "TRX");
 
         await EnsureSettingExists(db, "MembershipGLAccount", "8000");
-        
+
         await EnsureSettingExists(db, "ActivityGLAccount", "7001");
 
         await EnsureSettingExists(db, "PaymentServicePaymentsCondition", "2");
@@ -86,10 +86,10 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "MembershipPaymentExpirationTime", ""); // If empty, no expiration time will be set on payments, and they will not automatically expire.
 
-        await EnsureSettingExists(db, "BoardPrimaryLight", BoardPrimaryLightDefault);
-        await EnsureSettingExists(db, "BoardPrimary", BoardPrimaryDefault);
-        await EnsureSettingExists(db, "BoardPrimaryDark", BoardPrimaryDarkDefault);
-        
+        await EnsureSettingExists(db, "BoardPrimaryLight", _boardPrimaryLightDefault);
+        await EnsureSettingExists(db, "BoardPrimary", _boardPrimaryDefault);
+        await EnsureSettingExists(db, "BoardPrimaryDark", _boardPrimaryDarkDefault);
+
         await EnsureSettingExists(db, "MastersShouldPayMembership", "0");
 
         await EnsureSettingExists(db, "GratieShouldPayMembership", "0");
@@ -208,8 +208,8 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
             {
                 var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value);
                 var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == maxBoardYear - 1).ToListAsync();
-                
-                if(candidateBoardMembershipsLastYear.Any())
+
+                if (candidateBoardMembershipsLastYear.Any())
                 {
                     await createNewBoardService.PromoteCandidateBoardToBoardAsync();
                     return;
@@ -217,7 +217,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
                 string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
 
-                if(string.IsNullOrEmpty(backupEmail))
+                if (string.IsNullOrEmpty(backupEmail))
                 {
                     return;
                 }

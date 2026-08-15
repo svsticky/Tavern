@@ -1,5 +1,4 @@
 using Backend.Controllers.DTOs;
-using Backend.Interfaces;
 using Backend.Services.MailServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,7 +32,7 @@ public class MailsController : ControllerBase
     {
         return Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
     }
-    
+
     // POST: mails/normal
     /// <summary>
     /// Sends a standard email based on the provided recipient and content data. The PostNormalMail endpoint allows authorized users to dispatch general-purpose emails by providing a PostMailDTO containing the necessary details such as recipient address, subject, and body content. This endpoint is designed to facilitate flexible communication within the system, ensuring that the request is validated and the sender is authorized before the mail service processes the delivery. Upon successful dispatch, the endpoint returns a 200 OK status, confirming that the email has been queued or sent successfully.

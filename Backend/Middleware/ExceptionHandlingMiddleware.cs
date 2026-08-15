@@ -1,5 +1,5 @@
-using System.ComponentModel.DataAnnotations;
 using Backend.Controllers.DTOs;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace Backend.Middleware;
@@ -50,8 +50,8 @@ public class ExceptionHandlingMiddleware
                 statusCode = StatusCodes.Status404NotFound;
                 break;
             case UnauthorizedAccessException:
-                statusCode = context.User.Identity?.IsAuthenticated == true 
-                    ? StatusCodes.Status403Forbidden 
+                statusCode = context.User.Identity?.IsAuthenticated == true
+                    ? StatusCodes.Status403Forbidden
                     : StatusCodes.Status401Unauthorized;
                 break;
             case ArgumentException:

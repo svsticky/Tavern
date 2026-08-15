@@ -50,7 +50,7 @@ public interface IActivityService
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task PatchActivity(Guid userId, uint id, JsonPatchDocument<Activity> patchDoc, CancellationToken ct);
-    
+
     /// <summary>
     /// Uploads a poster image for a specific activity based on the provided activity ID. This method takes the user's ID, the activity's ID, and the poster file as parameters, and it handles the process of uploading and associating the poster image with the specified activity. The upload process should ensure that the user has appropriate permissions to modify the activity, validate that the activity exists, and handle potential errors or exceptions that may arise during the file upload while maintaining data integrity and security within the system. The method should also ensure that the uploaded file is of an acceptable format and size for use as a poster image for the activity.
     /// </summary>

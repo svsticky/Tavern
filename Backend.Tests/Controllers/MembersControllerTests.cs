@@ -562,6 +562,31 @@ public class MembersControllerTests
     }
 
     [Fact]
+    public async Task UpdateEmailWebhook_SecretNotConfigured_RejectsEvenWithEmptySecret()
+    {
+        // Arrange - AUTH_WEBHOOK_SECRET is intentionally left unset. An empty header value must not
+        // be treated as a match against the (also empty) expected secret.
+        Environment.SetEnvironmentVariable("AUTH_WEBHOOK_SECRET", null);
+
+        try
+        {
+            var controller = new MembersController(_memberServiceMock, _profilePictureServiceMock);
+
+            // Act
+            var result = await controller.UpdateEmailWebhook(string.Empty, Guid.NewGuid(), CancellationToken.None);
+
+            // Assert
+            var unauthorized = Assert.IsType<UnauthorizedObjectResult>(result);
+            Assert.Equal("Invalid webhook secret.", unauthorized.Value);
+            await _memberServiceMock.DidNotReceive().RefreshEmail(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("AUTH_WEBHOOK_SECRET", null);
+        }
+    }
+
+    [Fact]
     public async Task UpdateEmailWebhook_ValidSecret_Success_ReturnsOk()
     {
         // Arrange

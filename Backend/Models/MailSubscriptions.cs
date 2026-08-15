@@ -28,7 +28,7 @@ public enum MailSubscriptions : uint
 
     /// <summary>
     /// Represents a subscription to emails related to lectures and workshops, indicating that the member has opted to receive communications about upcoming lectures, workshops, or similar events. This value can be used to ensure that members who are interested in attending or staying informed about educational events receive relevant updates and notifications, while those who are not interested can choose not to subscribe to this category of emails.
-     ///
+    ///
     /// </summary>
     LecturesAndWorkshops = 1 << 3,             // 8
 

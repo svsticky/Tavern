@@ -274,7 +274,7 @@ public class ActivityServiceTests : IDisposable
         {
             MemberId = member.Id,
             GroupId = group.Id,
-            MembershipYear = 2026,
+            MembershipYear = Backend.Utils.DateTime.YearUtils.GetYearForDate(System.DateTime.UtcNow, Backend.Utils.DateTime.YearUtils.CommitteeCreationDate),
             RoleAlias = null
         };
         _db.GroupMemberships.Add(membership);

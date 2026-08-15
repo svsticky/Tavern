@@ -40,7 +40,7 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
     /// The logger instance used for logging informational messages, warnings, and errors related to payment service operations. This logger allows the service to record important events and issues that occur during the execution of payment-related tasks, facilitating debugging and monitoring of the service's behavior.
     /// </summary>
     protected readonly ILogger<AbstractPaymentService> _logger = _logger;
-    
+
     /// <summary>
     /// Gets a value indicating whether an accounting tool integration is configured in the database settings.
     /// </summary>

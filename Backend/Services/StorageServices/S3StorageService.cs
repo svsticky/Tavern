@@ -1,9 +1,9 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Formats.Webp;
 using Backend.Interfaces;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 
 namespace Backend.Services.StorageServices;
 
@@ -18,7 +18,7 @@ public class S3StorageService(
     public async Task<string> SaveFileAsync(IFormFile file, string bucketname)
     {
         var fileKey = Guid.NewGuid().ToString();
-        
+
         using var outputStream = new MemoryStream();
         using (var inputStream = file.OpenReadStream())
         {
@@ -80,10 +80,10 @@ public class S3StorageService(
                 Key = fileKey
             };
             var response = await s3Client.GetObjectAsync(request);
-        
+
             return new StorageFile(
-                response.ResponseStream, 
-                response.Headers.ContentType, 
+                response.ResponseStream,
+                response.Headers.ContentType,
                 Path.GetFileName(fileKey)
             );
         }
@@ -103,7 +103,7 @@ public class S3StorageService(
     public async Task DeleteFileAsync(string bucketname, string? fileKey)
     {
         if (string.IsNullOrEmpty(fileKey)) return;
-        
+
         await s3Client.DeleteObjectAsync(bucketname, fileKey);
         logger.LogInformation("Deleted file {FileKey} from bucket {BucketName}.", fileKey, bucketname);
     }

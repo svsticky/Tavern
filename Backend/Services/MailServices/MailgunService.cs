@@ -33,7 +33,7 @@ public class MailgunService(
     {
         logger.LogInformation("Sending Mailgun email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);
         using var client = new MailgunClient(ApiBaseUrl, PrivateKey, PublicKey);
-        
+
         MailgunMessage message = CreateMessage(from, to, subject, htmlContent);
 
         await client.SendMessageAsync(message);

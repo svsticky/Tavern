@@ -36,7 +36,7 @@ public enum TargetAudience : uint
 
     /// <summary>
     /// Represents members with a "gratie" status as the target audience for an activity, indicating that the activity is specifically designed for or limited to members who have been granted a "gratie" status, which may be a special designation within the system based on certain criteria. This value can be used to ensure that certain activities are tailored to the needs and interests of members with this status, providing them with relevant opportunities and experiences while excluding those who do not meet the criteria for "gratie" status.
-     ///
+    ///
     /// </summary>
     Gratie = 1 << 4,              // 16
 
@@ -69,9 +69,9 @@ public static class TargetAudienceHelper
     /// <returns>True if the member belongs to the specified target audience, otherwise false.</returns>
     public static bool IsMemberInTargetAudience(Member member, TargetAudience targetAudience)
     {
-        if (targetAudience.HasFlag(TargetAudience.FirstYears) && member.StudyEnrollments.Any(se => 
+        if (targetAudience.HasFlag(TargetAudience.FirstYears) && member.StudyEnrollments.Any(se =>
             se.Status == StudyStatus.Enrolled
-            && se.Study.Type == StudyType.Bachelor 
+            && se.Study.Type == StudyType.Bachelor
             && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-1)))
         {
             return true;
@@ -80,13 +80,13 @@ public static class TargetAudienceHelper
         if (targetAudience.HasFlag(TargetAudience.SecondYears) && member.StudyEnrollments.Any(se =>
             se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Bachelor
-            && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-2) 
+            && se.EnrollmentDate >= DateTimeOffset.UtcNow.AddYears(-2)
             && se.EnrollmentDate < DateTimeOffset.UtcNow.AddYears(-1)))
         {
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.ThirdYearsAndAbove) && member.StudyEnrollments.Any(se => 
+        if (targetAudience.HasFlag(TargetAudience.ThirdYearsAndAbove) && member.StudyEnrollments.Any(se =>
             se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Bachelor
             && se.EnrollmentDate < DateTimeOffset.UtcNow.AddYears(-2)))
@@ -94,7 +94,7 @@ public static class TargetAudienceHelper
             return true;
         }
 
-        if (targetAudience.HasFlag(TargetAudience.Masters) && member.StudyEnrollments.Any(se => 
+        if (targetAudience.HasFlag(TargetAudience.Masters) && member.StudyEnrollments.Any(se =>
             se.Status == StudyStatus.Enrolled
             && se.Study.Type == StudyType.Master))
         {

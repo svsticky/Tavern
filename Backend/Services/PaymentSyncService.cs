@@ -68,7 +68,7 @@ public class PaymentSyncService(
 
         foreach (var payment in pendingPayments)
         {
-            try 
+            try
             {
                 var paymentResponse = await paymentService.GetPaymentAsync(payment.PaymentServiceId);
                 if (paymentResponse.Status == PaymentStatus.Paid)
@@ -76,7 +76,7 @@ public class PaymentSyncService(
                     logger.LogInformation("Payment {PaymentId} marked paid in the payment service system. Processing sync.", payment.Id);
                     Payment fullPayment;
 
-                    if(payment is MembershipPayment)
+                    if (payment is MembershipPayment)
                     {
                         fullPayment = await db.MembershipPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
                     }
@@ -97,9 +97,9 @@ public class PaymentSyncService(
 
                     try
                     {
-                        if(fullPayment.Member != null)
+                        if (fullPayment.Member != null)
                         {
-                            if(fullPayment.Member.AuthSystemUserId == null) throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status.");
+                            if (fullPayment.Member.AuthSystemUserId == null) throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status.");
 
                             db.AuthOutboxTasks.Add(new AuthOutboxTask
                             {
@@ -126,7 +126,7 @@ public class PaymentSyncService(
                         await transaction.RollbackAsync();
                     }
                 }
-                
+
                 if (paymentResponse.Status == PaymentStatus.Failed)
                 {
                     logger.LogInformation("Payment {PaymentId} is {Status}. Removing stale payment records.", payment.Id, paymentResponse.Status);
@@ -137,7 +137,7 @@ public class PaymentSyncService(
                         db.Remove(payment);
 
                         // If it's a membership payment, we also want to check if we should remove the member associated with it. 
-                        if(payment is MembershipPayment mp && mp.Member != null)
+                        if (payment is MembershipPayment mp && mp.Member != null)
                         {
                             if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id))
                             {

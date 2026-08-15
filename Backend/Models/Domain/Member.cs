@@ -7,16 +7,17 @@ namespace Backend.Models.Domain;
 /// <summary>
 /// Defines the language preference of a member, which can be either Dutch (NL) or English (EN). This enumeration is used to indicate the preferred language for communication and content presentation for a member within the system.
 /// </summary>
-public enum Language { 
+public enum Language
+{
     /// <summary>
     /// Indicates that the member's preferred language is Dutch (NL), which may be used for communication, content presentation, and other interactions within the system that are tailored to Dutch-speaking members.
     /// </summary>
-    NL, 
+    NL,
 
     /// <summary>
     /// Indicates that the member's preferred language is English (EN), which may be used for communication, content presentation, and other interactions within the system that are tailored to English-speaking members.
     /// </summary>
-    EN 
+    EN
 }
 
 /// <summary>
@@ -28,9 +29,19 @@ public enum Language {
 public class Member
 {
     /// <summary>
-    /// A list of fields that are restricted and cannot be modified by certain operations, such as updates through the API. This list includes sensitive information such as email, ID, student number, personal details, and membership status. The presence of this list helps to enforce data integrity and security by preventing unauthorized changes to critical member information, ensuring that only authorized users or processes can modify these fields when necessary.
+    /// A list of allowed field paths that can be modified by standard update operations (such as JSON Patch or partial updates via the API).
     /// </summary>
-    public static readonly IList<string> RestrictedFields = new[] { "/email", "/id", "/studentnumber", "/firstname", "/lastname", "/dateofbirth", "/notes", "/registeredon", "/gratie", "/lidvanverdienste", "/erelid", "/begunstiger", "/suspended" };
+    public static readonly IReadOnlySet<string> AllowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "/phonenumber",
+        "/parentphonenumber",
+        "/street",
+        "/housenumber",
+        "/postalcode",
+        "/city",
+        "/mailsubscriptions",
+        "/preferredlanguage"
+    };
 
     /// <summary>
     /// The unique identifier of a member, assigned incrementally.
@@ -38,7 +49,7 @@ public class Member
     public Guid Id { get; set; }
 
     /// <summary>
-    /// The id of the member int he authenticatioin system, used for authentication and authorization.
+    /// The id of the member in the authentication system, used for authentication and authorization.
     /// </summary>
     public Guid? AuthSystemUserId { get; set; }
 
@@ -104,7 +115,7 @@ public class Member
     [StringLength(10)]
     [Required(AllowEmptyStrings = false)]
     public required string PostalCode { get; set; }
-    
+
     /// <summary>
     /// The city of the member.
     /// </summary>

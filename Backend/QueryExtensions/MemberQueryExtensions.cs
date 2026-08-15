@@ -15,7 +15,7 @@ public static class MemberQueryExtensions
     /// <param name="dto">The data transfer object containing the filtering criteria.</param>
     /// <returns>The filtered queryable collection of Member entities.</returns>
     public static IQueryable<Member> Filter(
-        this IQueryable<Member> query, 
+        this IQueryable<Member> query,
         GetMembersDto dto)
     {
         var now = DateTimeOffset.UtcNow;
@@ -24,7 +24,7 @@ public static class MemberQueryExtensions
         {
             var search = dto.Search.Trim().ToLower();
 
-            query = query.Where(m => 
+            query = query.Where(m =>
                 (m.FirstName + " " + m.LastName).ToLower().Contains(search) ||
                 m.Email.ToLower().Contains(search) ||
                 m.StudentNumber.Contains(search) ||
@@ -37,39 +37,39 @@ public static class MemberQueryExtensions
             query = query.Where(m => m.StudyEnrollments.Any(se => se.StudyId == dto.StudyId.Value));
         }
 
-        if(dto.Gratie.HasValue)
+        if (dto.Gratie.HasValue)
         {
             query = query.Where(m => m.Gratie == dto.Gratie.Value);
         }
 
-        if(dto.LidVanVerdienste.HasValue)
+        if (dto.LidVanVerdienste.HasValue)
         {
             query = query.Where(m => m.LidVanVerdienste == dto.LidVanVerdienste.Value);
         }
 
-        if(dto.EreLid.HasValue)
+        if (dto.EreLid.HasValue)
         {
             query = query.Where(m => m.EreLid == dto.EreLid.Value);
         }
 
-        if(dto.Begunstiger.HasValue)
+        if (dto.Begunstiger.HasValue)
         {
             query = query.Where(m => m.Begunstiger == dto.Begunstiger.Value);
         }
 
-        if(dto.Suspended.HasValue)
+        if (dto.Suspended.HasValue)
         {
             query = query.Where(m => m.Suspended == dto.Suspended.Value);
         }
 
-        if(dto.Inactive.HasValue)
+        if (dto.Inactive.HasValue)
         {
-            query = dto.Inactive.Value 
-                ? query.Where(m => m.StudyEnrollments.All(se => se.Status == StudyStatus.Completed || se.Status == StudyStatus.DroppedOut)) 
+            query = dto.Inactive.Value
+                ? query.Where(m => m.StudyEnrollments.All(se => se.Status == StudyStatus.Completed || se.Status == StudyStatus.DroppedOut))
                 : query.Where(m => m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled));
         }
 
-        if(dto.StudyType.HasValue)
+        if (dto.StudyType.HasValue)
         {
             query = query.Where(m => m.StudyEnrollments.Any(se => se.Study.Type == dto.StudyType.Value));
         }

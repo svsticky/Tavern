@@ -16,7 +16,7 @@ public interface IEnrollmentService
     /// <param name="userId">The ID of the requesting user.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The enrollments matching the supplied filters.</returns>
-    Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId,CancellationToken cancellationToken);
+    Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Retrieves a single enrollment by its composite key.

@@ -1,5 +1,4 @@
 using Backend.Database;
-using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.AccountingToolServices;
 using Microsoft.EntityFrameworkCore;
@@ -81,7 +80,7 @@ public class AccountingToolOutboxWorker(
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-        
+
         var task = await db.AccountingToolOutboxTasks
             .OrderBy(t => t.CreatedAt)
             .ThenBy(t => t.Id)
@@ -132,7 +131,7 @@ public class AccountingToolOutboxWorker(
     private void HandleFailure(AccountingToolOutboxTask task, Exception ex)
     {
         logger.LogError(ex, "Sync failed for {PaymentId}. Retry count: {Retry}", task.PaymentId, task.RetryCount);
-        
+
         task.RetryCount++;
         // Exponential backoff with a max delay of 1 hour
         double extraMinutes = Math.Min(Math.Pow(2, task.RetryCount), 60);

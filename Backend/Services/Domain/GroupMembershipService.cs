@@ -3,7 +3,6 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
-using Backend.Services;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
 
@@ -52,7 +51,7 @@ public class GroupMembershipService : IGroupMembershipService
 
         if (dto.MemberId != null)
         {
-            if(dto.MemberId != userId)
+            if (dto.MemberId != userId)
             {
                 _permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
@@ -166,9 +165,9 @@ public class GroupMembershipService : IGroupMembershipService
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
 
-        if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase) 
-            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase) 
-            || op.path.Equals("/memberId", StringComparison.OrdinalIgnoreCase) 
+        if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase)
+            || op.path.Equals("/memberId", StringComparison.OrdinalIgnoreCase)
             || op.path.Equals("/group", StringComparison.OrdinalIgnoreCase)
             || op.path.Equals("/groupId", StringComparison.OrdinalIgnoreCase)
             || op.path.Equals("/groupAlias", StringComparison.OrdinalIgnoreCase)))

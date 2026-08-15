@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router";
-import {
-  getActivities,
-  type ActivityResponseDto,
-  type GetAnnouncementResponseDto,
-  type GroupMembershipResponseDto,
+import type {
+  ActivityResponseDto,
+  GetAnnouncementResponseDto,
+  GroupMembershipResponseDto,
 } from "~/api";
 import ActivityEnrollmentOverview from "~/components/Activity/ActivityEnrollmentOverview";
 import UpcomingActivities from "~/components/Activity/UpcomingActivities";
@@ -53,8 +51,6 @@ export default function DashboardPage() {
     };
     loadTokenAndAuth();
   }, [authService]);
-
-  const navigate = useNavigate();
 
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [enrolledActivities, setEnrolledActivities] = useState<

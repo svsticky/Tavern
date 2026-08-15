@@ -1,9 +1,9 @@
+using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
-using Backend.Controllers.DTOs;
 
 namespace Backend.Controllers;
 

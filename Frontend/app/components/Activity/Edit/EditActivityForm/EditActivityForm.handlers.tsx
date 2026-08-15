@@ -11,7 +11,7 @@ import {
   postActivitiesByIdPoster,
 } from "~/api";
 import { getAudienceString } from "~/types/AudienceMap";
-import { getFinancialYear } from "~/util/date.util";
+import { getCommitteeYear } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 
 export { formatDateOnly, formatForInput } from "~/util/date.util";
@@ -29,7 +29,7 @@ export const loadGroups = async (
 ) => {
   try {
     const groupsRes = await getGroups({
-      query: { IncludeInactive: false, MembershipYear: getFinancialYear() },
+      query: { IncludeInactive: false, MembershipYear: getCommitteeYear() },
     });
     if (groupsRes.error) {
       throw groupsRes.error ?? new Error("Failed to load groups");

@@ -87,6 +87,79 @@ public class GroupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetGroups_WithMembershipYear_ReturnsOnlyGroupsUserBelongsToInThatYear()
+    {
+        // Arrange
+        var currentMember = new Member
+        {
+            Id = _userId,
+            StudentNumber = "s7654321",
+            FirstName = "Current",
+            LastName = "Member",
+            Email = "current@example.com",
+            PhoneNumber = "0612345678",
+            Street = "Street",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "Enschede",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20)
+        };
+        var otherMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            StudentNumber = "s1234567",
+            FirstName = "Other",
+            LastName = "Member",
+            Email = "other@example.com",
+            PhoneNumber = "0612345678",
+            Street = "Street",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "Enschede",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20)
+        };
+        _db.Members.AddRange(currentMember, otherMember);
+
+        var groupUserBelongsTo = new Group { Id = 1, Name = "Committee A", Type = GroupType.Committee };
+        var groupUserDoesNotBelongTo = new Group { Id = 2, Name = "Committee B", Type = GroupType.Committee };
+        var groupWrongYear = new Group { Id = 3, Name = "Committee C", Type = GroupType.Committee };
+        _db.Groups.AddRange(groupUserBelongsTo, groupUserDoesNotBelongTo, groupWrongYear);
+
+        _db.GroupMemberships.Add(new GroupMembership { MemberId = _userId, GroupId = groupUserBelongsTo.Id, MembershipYear = 2026 });
+        _db.GroupMemberships.Add(new GroupMembership { MemberId = otherMember.Id, GroupId = groupUserDoesNotBelongTo.Id, MembershipYear = 2026 });
+        _db.GroupMemberships.Add(new GroupMembership { MemberId = _userId, GroupId = groupWrongYear.Id, MembershipYear = 2025 });
+        await _db.SaveChangesAsync();
+
+        var dto = new GetGroupDTO { MembershipYear = 2026 };
+
+        // Act
+        var result = await _service.GetGroups(_userId, dto, CancellationToken.None);
+
+        // Assert
+        var list = result.ToList();
+        var single = Assert.Single(list);
+        Assert.Equal(groupUserBelongsTo.Id, single.Id);
+        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+    }
+
+    [Fact]
+    public async Task GetGroups_MembershipYearNull_RequiresBoardPermission()
+    {
+        // Arrange
+        _db.Groups.Add(new Group { Id = 1, Name = "Committee A", Type = GroupType.Committee });
+        await _db.SaveChangesAsync();
+
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(x => throw new UnauthorizedAccessException());
+
+        var dto = new GetGroupDTO();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.GetGroups(_userId, dto, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task GetGroup_Found_ReturnsDto()
     {
         // Arrange

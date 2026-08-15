@@ -1,5 +1,3 @@
-using Backend.Models;
-
 namespace Backend.Interfaces;
 
 /// <summary>

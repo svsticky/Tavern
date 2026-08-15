@@ -13,6 +13,15 @@ tab_width = 4
 # XMLDoc settings
 resharper_xmldoc_indent_size = 0
 
+# Unused usings
+dotnet_diagnostic.IDE0005.severity = warning
+
+# EF Core migrations are scaffolded/regenerated and shouldn't be hand-formatted or linted
+[Migrations/**.cs]
+generated_code = true
+
+[*.cs]
+
 #### Core EditorConfig Options ####
 
 # Indentation and spacing

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
+import { NavLink } from "react-router";
 import {
   handleClickOutside,
   handleOptionClick,
   toggleDropdown,
 } from "./ProfileDropdown.handlers";
-import { NavLink } from "react-router";
 
 /**
  * Context values required to control the dropdown's layout behavior.

@@ -1,8 +1,8 @@
-using System.Linq.Expressions;
 using Backend.Models;
 using Backend.Models.Domain;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq.Expressions;
 
 namespace Backend.Controllers.DTOs;
 
@@ -122,7 +122,7 @@ public class ActivityResponseDTO
     public string? PosterFileName { get; set; }
 
     /// <inheritdoc cref="Activity.DutchDescription"/>
-    public required string DutchDescription { get; set; }   
+    public required string DutchDescription { get; set; }
 
     /// <inheritdoc cref="Activity.EnglishDescription"/>
     public required string EnglishDescription { get; set; }
@@ -183,7 +183,7 @@ public class ActivityResponseDTO
 
     /// <inheritdoc cref="Activity.CostUnitId"/>
     public string? CostUnitId { get; set; }
-    
+
     /// <inheritdoc cref="Activity.Enrollments"/>
     public required List<EnrollmentResponseDTO> Enrollments { get; set; }
 
@@ -197,50 +197,50 @@ public class ActivityResponseDTO
     public bool? IsOpenForPayment { get; set; }
 
     /// <summary>
-        /// Projects an Activity entity into an ActivityResponseDTO, including related enrollments and specification questions. The method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information based on the user's role. This projection is used to transform the data from the Activity model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
-        /// </summary>
-        /// <param name="userId">The ID of the user for whom to project the activity.</param>
-        /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
-        /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
-        public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
+    /// Projects an Activity entity into an ActivityResponseDTO, including related enrollments and specification questions. The method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information based on the user's role. This projection is used to transform the data from the Activity model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
+    /// </summary>
+    /// <param name="userId">The ID of the user for whom to project the activity.</param>
+    /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
+    {
+        return a => new ActivityResponseDTO
         {
-            return a => new ActivityResponseDTO
-            {
-                Id = a.Id,
-                Name = a.Name,
-                Price = a.Price,
-                PosterPath = a.PosterPath,
-                PosterFileName = a.PosterFileName,
-                DutchDescription = a.DutchDescription,
-                EnglishDescription = a.EnglishDescription,
-                DateTimeStart = a.DateTimeStart,
-                DateTimeEnd = a.DateTimeEnd,
-                UnenrollmentDeadline = a.UnenrollmentDeadline,
-                EnrollmentDeadline = a.EnrollmentDeadline,
-                EnrollOpenDate = a.EnrollOpenDate,
-                Location = a.Location,
-                ParticipantLimit = a.ParticipantLimit,
-                OrganizerId = a.OrganizerId,
-                ShowInKoala = a.ShowInKoala,
-                ShowOnWebsite = a.ShowOnWebsite,
-                IsEnrollable = a.IsEnrollable,
-                AreParticipantsVisible = a.AreParticipantsVisible,
-                IsAdultOnly = a.IsAdultOnly,
-                IsWeeklyDrinks = a.IsWeeklyDrinks,
-                AllowedAudience = a.AllowedAudience,
-                VatRate = a.VatRate,
-                GLAccountId = a.GLAccountId,
-                CostCenterId = a.CostCenterId,
-                CostUnitId = a.CostUnitId,
+            Id = a.Id,
+            Name = a.Name,
+            Price = a.Price,
+            PosterPath = a.PosterPath,
+            PosterFileName = a.PosterFileName,
+            DutchDescription = a.DutchDescription,
+            EnglishDescription = a.EnglishDescription,
+            DateTimeStart = a.DateTimeStart,
+            DateTimeEnd = a.DateTimeEnd,
+            UnenrollmentDeadline = a.UnenrollmentDeadline,
+            EnrollmentDeadline = a.EnrollmentDeadline,
+            EnrollOpenDate = a.EnrollOpenDate,
+            Location = a.Location,
+            ParticipantLimit = a.ParticipantLimit,
+            OrganizerId = a.OrganizerId,
+            ShowInKoala = a.ShowInKoala,
+            ShowOnWebsite = a.ShowOnWebsite,
+            IsEnrollable = a.IsEnrollable,
+            AreParticipantsVisible = a.AreParticipantsVisible,
+            IsAdultOnly = a.IsAdultOnly,
+            IsWeeklyDrinks = a.IsWeeklyDrinks,
+            AllowedAudience = a.AllowedAudience,
+            VatRate = isBoard ? a.VatRate : null,
+            GLAccountId = isBoard ? a.GLAccountId : null,
+            CostCenterId = isBoard ? a.CostCenterId : null,
+            CostUnitId = isBoard ? a.CostUnitId : null,
 
-                Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList(),
+            Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList(),
 
-                SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
+            SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
 
-                PaymentDeadline = isBoard ? a.PaymentDeadline : default,
-                IsOpenForPayment = a.IsOpenForPayment
-            };
-        }
+            PaymentDeadline = isBoard ? a.PaymentDeadline : default,
+            IsOpenForPayment = a.IsOpenForPayment
+        };
+    }
 }
 
 /// <summary>

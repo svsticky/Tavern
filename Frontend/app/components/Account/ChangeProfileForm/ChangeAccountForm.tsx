@@ -12,6 +12,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
+import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
 import {
   handleChangeEmail,
@@ -21,7 +22,6 @@ import {
   handleSubscriptionChange,
 } from "./ChangeAccountForm.handlers";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
-import { getEnv } from "~/util/config.utils";
 
 /**
  * Renders a form for changing account details.
@@ -204,8 +204,8 @@ export default function ChangeAccountForm({
           />
         </div>
       </FormSection>
-      
-      {mailingLists.length > 0 &&
+
+      {mailingLists.length > 0 && (
         <section>
           <FormHeader title={t("mail_subscriptions")} />
           <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
@@ -229,7 +229,7 @@ export default function ChangeAccountForm({
             )}
           </Tile>
         </section>
-      }
+      )}
 
       <FormSection columns={2}>
         <div>

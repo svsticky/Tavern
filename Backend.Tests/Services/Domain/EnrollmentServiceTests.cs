@@ -143,7 +143,7 @@ public class EnrollmentServiceTests : IDisposable
         // Assert
         var list = result.ToList();
         Assert.Single(list);
-        Assert.Equal(member.Id, list[0].Member.Id);
+        Assert.Equal(member.Id, list[0].Member?.Id);
     }
 
     [Fact]
@@ -207,7 +207,7 @@ public class EnrollmentServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(member.Id, result.Member.Id);
+        Assert.Equal(member.Id, result.Member?.Id);
     }
 
     [Fact]
@@ -585,6 +585,39 @@ public class EnrollmentServiceTests : IDisposable
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _service.DeleteEnrollment(activity.Id, member.Id, member.Id, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DeleteEnrollment_BoardMemberDeletesOtherPastDeadline_UsesActingUsersBoardStatus()
+    {
+        // The unenrollment-deadline check must be based on whether the *acting* user (userId) is a board
+        // member, not the enrolled member being removed - a board member should be able to unenroll a
+        // regular member even after that member's own unenrollment deadline has passed.
+        var boardMember = CreateMember("1111111");
+        var regularMember = CreateMember("2222222");
+        var activity = CreateActivity("Deadline Passed");
+        activity.DateTimeStart = DateTime.UtcNow.AddDays(-1);
+        activity.DateTimeEnd = DateTime.UtcNow.AddDays(-1);
+        activity.UnenrollmentDeadline = DateTime.UtcNow.AddDays(-1);
+
+        _db.Members.AddRange(boardMember, regularMember);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var enrollment = new Enrollment { MemberId = regularMember.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false };
+        _db.Enrollments.Add(enrollment);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(boardMember.Id).Returns(true);
+        _permissionService.IsBoardOrCandidateBoardMember(regularMember.Id).Returns(false);
+
+        // Act - boardMember (userId) removes regularMember (enrolledUser) after the deadline passed.
+        await _service.DeleteEnrollment(activity.Id, regularMember.Id, boardMember.Id, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var remaining = await _db.Enrollments.FirstOrDefaultAsync(e => e.MemberId == regularMember.Id && e.ActivityId == activity.Id);
+        Assert.Null(remaining);
     }
 
     [Fact]

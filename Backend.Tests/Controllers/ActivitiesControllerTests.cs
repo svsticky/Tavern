@@ -103,6 +103,78 @@ public class ActivitiesControllerTests
     }
 
     [Fact]
+    public async Task GetActivities_TrustedOrigin_PassesAuthenticatedUserId()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("HostUrl", "https://tavern.example.com/");
+        try
+        {
+            _controller.ControllerContext.HttpContext.Request.Headers.Origin = "https://tavern.example.com";
+            var dto = new GetActivitiesDTO();
+            _serviceMock.GetActivities(_userId, dto).Returns(new List<ActivityResponseDTO>());
+
+            // Act
+            var result = await _controller.GetActivities(dto);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result.Result);
+            await _serviceMock.Received(1).GetActivities(_userId, dto);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("HostUrl", null);
+        }
+    }
+
+    [Fact]
+    public async Task GetActivities_UntrustedOrigin_PassesNullUserIdEvenIfAuthenticated()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("HostUrl", "https://tavern.example.com");
+        try
+        {
+            _controller.ControllerContext.HttpContext.Request.Headers.Origin = "https://evil.example.com";
+            var dto = new GetActivitiesDTO();
+            _serviceMock.GetActivities(Arg.Any<Guid?>(), dto).Returns(new List<ActivityResponseDTO>());
+
+            // Act
+            var result = await _controller.GetActivities(dto);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result.Result);
+            await _serviceMock.Received(1).GetActivities(null, dto);
+            await _serviceMock.DidNotReceive().GetActivities(_userId, dto);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("HostUrl", null);
+        }
+    }
+
+    [Fact]
+    public async Task GetActivities_NoOriginHeader_PassesAuthenticatedUserId()
+    {
+        // Arrange - requests without an Origin header (e.g. same-origin/non-CORS) are always trusted.
+        Environment.SetEnvironmentVariable("HostUrl", "https://tavern.example.com");
+        try
+        {
+            var dto = new GetActivitiesDTO();
+            _serviceMock.GetActivities(_userId, dto).Returns(new List<ActivityResponseDTO>());
+
+            // Act
+            var result = await _controller.GetActivities(dto);
+
+            // Assert
+            Assert.IsType<OkObjectResult>(result.Result);
+            await _serviceMock.Received(1).GetActivities(_userId, dto);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("HostUrl", null);
+        }
+    }
+
+    [Fact]
     public async Task GetActivity_Found_ReturnsOk()
     {
         // Arrange

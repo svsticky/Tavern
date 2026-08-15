@@ -27,17 +27,7 @@ export default function EditMailingListOverlay({
   const isFormValid = formData.name.trim() !== "";
 
   return (
-    <Form
-      onSubmit={(e) =>
-        handleMailingListSubmit({
-          e,
-          formData,
-          mailingList,
-          setLoading,
-          onComplete,
-        })
-      }
-    >
+    <Form>
       <div className="space-y-4">
         <Input
           label={t("name")}
@@ -60,8 +50,17 @@ export default function EditMailingListOverlay({
         <div className="flex flex-col gap-2 pt-4">
           <Button
             variant="primary"
+            type="button"
+            onClick={(e) =>
+              handleMailingListSubmit({
+                e,
+                formData,
+                mailingList,
+                setLoading,
+                onComplete,
+              })
+            }
             disabled={loading || !isFormValid}
-            type="submit"
           >
             {mailingList ? t("save") : t("create")}
           </Button>

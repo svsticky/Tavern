@@ -1,5 +1,4 @@
 import { t } from "i18next";
-import { useNavigate } from "react-router";
 import Button from "./Button";
 
 /**
@@ -27,8 +26,6 @@ export const PageHeader = ({
   onBack?: () => void;
   action?: React.ReactNode;
 }) => {
-  const navigate = useNavigate();
-
   return (
     <div className="mb-4 flex flex-row flex-wrap justify-between items-center w-full gap-x-4 gap-y-2">
       <div className="flex flex-col items-start">

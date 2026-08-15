@@ -18,7 +18,7 @@ namespace Backend.Controllers
     {
         // GET: payments/membership
         /// <summary>
-        /// Retrieves a history of membership-related payments for the authenticated user or organization. The GetMembershipPayments endpoint allows users to track their subscription or membership fees, providing a clear audit trail of past and pending transactions. By interacting with the IPaymentService, this endpoint fetches relevant financial records while ensuring that users can only access data they are authorized to view.
+        /// Retrieves a list of all membership payments. Can only be called by board members.
         /// </summary>
         /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
         /// <returns>A collection of membership payment records.</returns>
@@ -58,7 +58,7 @@ namespace Backend.Controllers
 
         // GET: payments/enrollment
         /// <summary>
-        /// Retrieves a list of payments specifically associated with activity enrollments. The GetEnrollmentPayments endpoint allows users to review the costs and payment statuses of the activities they have registered for. This helps maintain clarity regarding which events have been fully paid for and which require further financial action.
+        /// Retrieves a list of all enrollment payments. Can only be called by board members.
         /// </summary>
         /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
         /// <returns>A collection of enrollment-related payment records.</returns>
@@ -179,7 +179,7 @@ namespace Backend.Controllers
             var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
             var result = paymentService.GetUnpaid(userId, allUsers);
 
-            if(result == null)
+            if (result == null)
                 return NotFound();
 
             return Ok(result);
@@ -202,7 +202,7 @@ namespace Backend.Controllers
             var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
             var result = paymentService.GetOverpaid(userId);
 
-            if(result == null)
+            if (result == null)
                 return NotFound();
 
             return Ok(result);
@@ -227,7 +227,7 @@ namespace Backend.Controllers
             var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
             var result = await paymentService.GetMemberPaymentStatus(fromUserId, userId, ct);
 
-            if(result == null)
+            if (result == null)
                 return NotFound();
 
             return Ok(result);

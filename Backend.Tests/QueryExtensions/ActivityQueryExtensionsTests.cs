@@ -114,7 +114,7 @@ public class ActivityQueryExtensionsTests
     public void Filter_ByYear_FiltersCorrectly()
     {
         var query = GetTestActivities().AsQueryable();
-        var currentYear = (uint)DateTimeOffset.UtcNow.Year;
+        var currentYear = Backend.Utils.DateTime.YearUtils.GetYearForDate(System.DateTime.UtcNow, Backend.Utils.DateTime.YearUtils.CommitteeCreationDate);
         var dto = new GetActivitiesDTO { IncludePast = true, Year = currentYear };
 
         var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();

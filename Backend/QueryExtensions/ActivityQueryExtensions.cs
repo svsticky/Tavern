@@ -19,9 +19,9 @@ public static class ActivityQueryExtensions
     /// <param name="isLoggedIn">Indicates whether the user is logged in.</param>
     /// <returns>The filtered queryable collection of Activity entities.</returns>
     public static IQueryable<Activity> Filter(
-        this IQueryable<Activity> query, 
-        GetActivitiesDTO dto, 
-        bool isBoard, 
+        this IQueryable<Activity> query,
+        GetActivitiesDTO dto,
+        bool isBoard,
         IEnumerable<uint> userGroupIds,
         bool isLoggedIn)
     {
@@ -33,9 +33,9 @@ public static class ActivityQueryExtensions
 
             return query;
         }
-        
-        query = query.Where(a => isBoard 
-                                || a.ShowInKoala 
+
+        query = query.Where(a => isBoard
+                                || a.ShowInKoala
                                 || (a.OrganizerId != null && userGroupIds.Contains(a.OrganizerId.Value) && !a.ShowOnWebsite && !a.ShowInKoala && !a.EnrollOpenDate.HasValue));
 
         if (!dto.IncludePast)

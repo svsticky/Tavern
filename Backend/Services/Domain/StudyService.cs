@@ -39,11 +39,11 @@ namespace Backend.Services.Domain
             StateValidator.Validate(study);
 
             db.Studies.Add(study);
-                await db.SaveChangesAsync(ct);
-                logger.LogInformation("Created study {StudyId}.", study.Id);
+            await db.SaveChangesAsync(ct);
+            logger.LogInformation("Created study {StudyId}.", study.Id);
 
-                return study;
-            }
+            return study;
+        }
 
         /// <inheritdoc />
         public async Task DeleteStudy(uint id, Guid userId, CancellationToken ct)
@@ -65,17 +65,17 @@ namespace Backend.Services.Domain
             if (patchDoc == null)
                 throw new Exception("Patch document is null");
 
-            if(patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
+            if (patchDoc.Operations.Any(op => op.path.Equals("/id", StringComparison.OrdinalIgnoreCase)))
                 throw new ArgumentException("Cannot modify Id field.");
 
             var study = await GetStudyOrThrow(id, ct);
 
             patchDoc.ApplyTo(study);
 
-                StateValidator.Validate(study);
+            StateValidator.Validate(study);
 
-                await db.SaveChangesAsync(ct);
-            }
+            await db.SaveChangesAsync(ct);
+        }
 
         /// <inheritdoc />
         public async Task UpdateStudy(uint id, StudyUpdateDTO dto, Guid userId, CancellationToken ct)

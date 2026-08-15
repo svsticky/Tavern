@@ -1,6 +1,6 @@
-using System.Linq.Expressions;
 using Backend.Models.Domain;
 using System.ComponentModel.DataAnnotations;
+using System.Linq.Expressions;
 
 namespace Backend.Controllers.DTOs;
 
@@ -64,20 +64,20 @@ public class GroupResponseDTO
     public string? GroupPicturePath { get; set; }
 
     /// <summary>
-        /// Projects a Group entity into a GroupResponseDTO, including relevant group information such as its name, type, active status, and picture path. This projection is used to transform the data from the Group model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
-        /// </summary>
-        /// <returns>An expression that projects a Group entity into a GroupResponseDTO.</returns>
-        public static Expression<Func<Group, GroupResponseDTO>> ToDto()
+    /// Projects a Group entity into a GroupResponseDTO, including relevant group information such as its name, type, active status, and picture path. This projection is used to transform the data from the Group model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
+    /// </summary>
+    /// <returns>An expression that projects a Group entity into a GroupResponseDTO.</returns>
+    public static Expression<Func<Group, GroupResponseDTO>> ToDto()
+    {
+        return g => new GroupResponseDTO
         {
-            return g => new GroupResponseDTO
-            {
-                Id = g.Id,
-                Name = g.Name,
-                Type = g.Type,
-                Active = g.Active,
-                GroupPicturePath = g.GroupPicturePath
-            };
-        }
+            Id = g.Id,
+            Name = g.Name,
+            Type = g.Type,
+            Active = g.Active,
+            GroupPicturePath = g.GroupPicturePath
+        };
+    }
 }
 
 /// <summary>
