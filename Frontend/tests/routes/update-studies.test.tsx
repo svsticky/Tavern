@@ -1,0 +1,284 @@
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { Study, StudyEnrollmentResponseDto } from "~/api";
+import {
+  handleAddEnrollment,
+  handleUpdateEnrollmentStatus,
+} from "~/routes/admin/edit-member/edit-member.handlers";
+import UpdateStudies from "~/routes/update-studies";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import type { TokenParsed } from "~/types/TokenParsed";
+
+const { getStudyenrollments, getStudies, deleteMembersById } = vi.hoisted(
+  () => ({
+    getStudyenrollments: vi.fn(),
+    getStudies: vi.fn(),
+    deleteMembersById: vi.fn(),
+  }),
+);
+
+vi.mock("~/api", () => ({
+  getStudyenrollments,
+  getStudies,
+  deleteMembersById,
+}));
+
+const { loadStudyStartDates } = vi.hoisted(() => ({
+  loadStudyStartDates: vi.fn(async (_setter?: (value: string) => void) => {}),
+}));
+
+vi.mock("~/components/Register/RegisterForm/RegisterForm.handlers", () => ({
+  loadStudyStartDates,
+}));
+
+vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
+  handleAddEnrollment: vi.fn(),
+  handleUpdateEnrollmentStatus: vi.fn(),
+}));
+
+vi.mock("react-hot-toast", () => ({
+  default: {
+    promise: vi.fn((p: Promise<unknown>, opts: any) => {
+      p.then(
+        (data) => opts.success?.(data),
+        (err) => opts.error?.(err),
+      ).catch(() => {});
+      return p;
+    }),
+  },
+}));
+
+const token: TokenParsed = {
+  locale: "en",
+  UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
+  access_level: "member",
+  given_name: "Jane",
+  family_name: "Doe",
+  name: "Jane Doe",
+};
+
+function makeStudy(overrides: Partial<Study> = {}): Study {
+  return {
+    id: 1,
+    title: "Computer Science",
+    nominalDurationYears: 3,
+    ...overrides,
+  } as Study;
+}
+
+function makeEnrollment(
+  overrides: Partial<StudyEnrollmentResponseDto> = {},
+): StudyEnrollmentResponseDto {
+  return {
+    id: 1,
+    studyId: 1,
+    studyTitle: "Computer Science",
+    enrollmentDate: "2020-09-01T00:00:00Z",
+    status: "Enrolled",
+    ...overrides,
+  } as StudyEnrollmentResponseDto;
+}
+
+describe("UpdateStudies", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    loadStudyStartDates.mockImplementation(async () => {});
+  });
+
+  it("logs an error when there is no parsed token", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => null),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await waitFor(() => expect(consoleError).toHaveBeenCalled());
+    consoleError.mockRestore();
+  });
+
+  it("renders enrolled studies once loaded", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [makeEnrollment()] });
+    getStudies.mockResolvedValue({ data: [makeStudy()] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    expect(
+      (await screen.findAllByText("Computer Science")).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("shows the empty-state message when there are no enrollments", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    expect(await screen.findByText("no_enrollments_found")).toBeInTheDocument();
+  });
+
+  it("shows a status dropdown for an in-progress enrollment within the nominal duration and calls the update handler", async () => {
+    getStudyenrollments.mockResolvedValue({
+      data: [
+        makeEnrollment({
+          enrollmentDate: new Date().toISOString(),
+          status: "Enrolled",
+        }),
+      ],
+    });
+    getStudies.mockResolvedValue({ data: [makeStudy()] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    const select = await screen.findByDisplayValue("status_in_progress");
+    fireEvent.change(select, { target: { value: "Completed" } });
+
+    expect(handleUpdateEnrollmentStatus).toHaveBeenCalledWith(
+      1,
+      "Completed",
+      expect.any(Function),
+      expect.any(Function),
+    );
+  });
+
+  it("enables and wires up the add-enrollment button once a study and date are chosen", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [makeStudy()] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await screen.findByText("no_enrollments_found");
+    expect(screen.getByText("add")).toBeDisabled();
+  });
+
+  it("opens the delete-account modal and calls handleDeleteAccount", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    deleteMembersById.mockResolvedValue({});
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+      logout: vi.fn(async () => {}),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await screen.findByText("no_enrollments_found");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Account Verwijderen/ }),
+    );
+    fireEvent.click(await screen.findByText("Definitief Verwijderen"));
+
+    await waitFor(() =>
+      expect(deleteMembersById).toHaveBeenCalledWith({
+        path: { id: token.UserId },
+      }),
+    );
+  });
+
+  it("generates start-date options and preselects the closest one, allowing the study and date selects to be changed", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [makeStudy()] });
+    loadStudyStartDates.mockImplementation(async (setter: any) => {
+      setter("09-01, 03-15");
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await screen.findByText("no_enrollments_found");
+
+    const studySelect = screen.getByLabelText(
+      "add_study_enrollment",
+    ) as HTMLSelectElement;
+    fireEvent.change(studySelect, { target: { value: "1" } });
+
+    const dateSelect = screen.getByLabelText("start_date") as HTMLSelectElement;
+    expect(dateSelect.options.length).toBeGreaterThan(0);
+    const optionValue = dateSelect.options[0].value;
+    fireEvent.change(dateSelect, { target: { value: optionValue } });
+
+    fireEvent.click(screen.getByText("add"));
+
+    expect(handleAddEnrollment).toHaveBeenCalledWith(
+      token.UserId,
+      1,
+      expect.any(Function),
+      expect.any(Function),
+      optionValue,
+    );
+
+    // Clearing the study selection back to the placeholder disables add again.
+    fireEvent.change(studySelect, { target: { value: "" } });
+    expect(screen.getByText("add")).toBeDisabled();
+  });
+
+  it("shows a loading placeholder in the status column while studies haven't loaded, and a dropped-out label once the deadline has passed", async () => {
+    getStudyenrollments.mockResolvedValue({
+      data: [
+        makeEnrollment({
+          status: "DroppedOut",
+          enrollmentDate: "2000-01-01T00:00:00Z",
+        }),
+      ],
+    });
+    getStudies.mockResolvedValue({ data: [makeStudy()] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    expect(
+      (await screen.findAllByText("status_dropped_out")).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("shows an error toast when the delete account API call returns an error", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    deleteMembersById.mockResolvedValue({
+      error: "fail",
+      message: "delete failed",
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await screen.findByText("no_enrollments_found");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Account Verwijderen/ }),
+    );
+    fireEvent.click(await screen.findByText("Definitief Verwijderen"));
+
+    await waitFor(() => expect(deleteMembersById).toHaveBeenCalled());
+  });
+
+  it("closes the delete-account modal via the cancel button", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await screen.findByText("no_enrollments_found");
+    fireEvent.click(
+      screen.getByRole("button", { name: /Account Verwijderen/ }),
+    );
+    const cancelButton = await screen.findByText("Annuleren");
+    fireEvent.click(cancelButton);
+
+    await waitFor(() =>
+      expect(screen.queryByText("Annuleren")).not.toBeInTheDocument(),
+    );
+  });
+});

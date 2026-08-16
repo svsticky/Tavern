@@ -1,0 +1,214 @@
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ActivityResponseDto } from "~/api";
+import ActivityPage from "~/routes/activity/activity";
+import {
+  getActivityBackPath,
+  handleEditActivityClick,
+  loadActivityData,
+} from "~/routes/activity/activity.handlers";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import type { TokenParsed } from "~/types/TokenParsed";
+
+vi.mock("~/routes/activity/activity.handlers", () => ({
+  loadActivityData: vi.fn(),
+  getActivityBackPath: vi.fn(() => "/activities"),
+  handleEditActivityClick: vi.fn(),
+}));
+
+vi.mock(
+  "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile",
+  () => ({
+    default: () => <div>activity-details-tile</div>,
+  }),
+);
+
+vi.mock(
+  "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile",
+  () => ({
+    default: ({ title }: { title?: string }) => (
+      <div>participants-tile-{title ?? "main"}</div>
+    ),
+  }),
+);
+
+const memberToken: TokenParsed = {
+  locale: "en",
+  UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
+  access_level: "member",
+  given_name: "Test",
+  family_name: "User",
+  name: "Test User",
+};
+
+function buildActivity(
+  overrides: Partial<ActivityResponseDto> = {},
+): ActivityResponseDto {
+  return {
+    id: 1,
+    name: "Party",
+    enrollments: [],
+    areParticipantsVisible: true,
+    ...overrides,
+  } as ActivityResponseDto;
+}
+
+describe("ActivityPage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("shows a loading state while the token or activity has not loaded", () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(() => new Promise<TokenParsed | null>(() => {})),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+    expect(screen.getByText("loading")).toBeInTheDocument();
+  });
+
+  it("logs an error when there is no parsed token", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => null),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await waitFor(() => expect(consoleError).toHaveBeenCalled());
+    consoleError.mockRestore();
+  });
+
+  it("shows a failed-fetching message when the activity could not be loaded", async () => {
+    vi.mocked(loadActivityData).mockImplementation(async ({ setLoading }) => {
+      setLoading(false);
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(await screen.findByText("failed_fetching")).toBeInTheDocument();
+  });
+
+  it("renders the activity details and participant tiles when participants are visible", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("activity-details-tile"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("participants-tile-main")).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-waiting_list"),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render participant tiles when participants are not visible", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity({ areParticipantsVisible: false }));
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    expect(
+      screen.queryByText("participants-tile-main"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not show an edit button for a member without edit rights", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: false,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    expect(document.querySelector("svg.lucide-pencil")).not.toBeInTheDocument();
+  });
+
+  it("shows and wires up an edit button for a board member", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    await waitFor(() =>
+      expect(document.querySelector("svg.lucide-pencil")).toBeTruthy(),
+    );
+    const editButton = document
+      .querySelector("svg.lucide-pencil")
+      ?.closest("button");
+    expect(editButton).toBeTruthy();
+    fireEvent.click(editButton!);
+    expect(handleEditActivityClick).toHaveBeenCalled();
+    expect(getActivityBackPath).toHaveBeenCalled();
+  });
+});

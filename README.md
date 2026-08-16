@@ -134,18 +134,36 @@ Once the devcontainer is running, the following services are mapped locally:
 
 ## Testing & Code Coverage
 
+### Backend
 Backend tests are run using **xUnit** and code coverage is tracked via **Coverlet**. 
 
-### Running Tests Locally
+#### Running Tests Locally
 To execute the backend test suite and calculate code coverage:
 ```bash
 dotnet test
 ```
 
-### Exclusions & Coverage Requirements
+#### Exclusions & Coverage Requirements
 * **Line Coverage Requirement:** $\ge 95\%$
 * **Excluded Classes:** Infrastructure and startup elements (e.g., `Program`, `DatabaseSeeder`, `ServiceExtensions`, `SMTPMailService`, and `MailgunService`) are excluded from coverage statistics.
 * **Parallelization:** Disabled (`DisableTestParallelization = true`) to prevent race conditions during process-wide environment variable updates.
+
+### Frontend
+Frontend tests are run using **Vitest** and **React Testing Library**, with coverage tracked via **v8** across the entire app (routes, layouts, context, and components — not just utility/handler logic).
+
+#### Exclusions & Coverage Requirements
+* **Statement/Function/Line Coverage Requirement:** $\ge 95\%$
+* **Branch Coverage Requirement:** $\ge 80\%$ — kept lower than the other metrics because a meaningful share of remaining branches are defensive fallbacks (e.g. `?? new Error(...)` after a guard that already guarantees truthiness) that aren't reachable through real user interaction.
+* **Excluded Files:** the generated OpenAPI client (`app/api/**`), composition roots and declarative config with no branching logic of their own (`app/root.tsx`, `app/routes.ts`, `app/i18n/index.ts`), and type-only modules (`**/*.d.ts`, `**/*.gen.ts`, `**/*.types.ts(x)`, `app/auth/IAuthService.ts`, `app/types/TokenParsed.ts`, `app/types/MembersFilterDto.ts`).
+
+#### Running Tests Locally
+```bash
+cd Frontend
+npm test              # run once
+npm run test:watch    # watch mode
+npm run test:coverage # run with a coverage report
+```
+Note: Vitest's `jsdom` environment requires Node 22.13+ or 24+; CI uses Node 22.x.
 
 ---
 
@@ -156,6 +174,8 @@ Tavern utilizes automated builds for production hosting. You do not need to buil
 ### CI/CD Pipeline
 GitHub Actions automatically builds, tests, and pushes optimized production containers to the GitHub Container Registry (`ghcr.io`) whenever changes are merged into the `development` or `main` branches.
 * **Backend Coverage Verification:** Any pull request merging into `development` or `main` must pass the test suite and meet the minimum **95%** code coverage requirement to succeed.
+* **Frontend Coverage Verification:** Pull requests also run the Vitest suite via `npm run test:coverage` and must meet the frontend coverage thresholds above to succeed.
+* **Linting:** Backend (`dotnet format`) and Frontend (Biome) formatting/lint checks run as separate jobs from the test suites.
 
 ### Deploying the Stack
 To deploy the stack to production, supply your production `.env` file and execute:
