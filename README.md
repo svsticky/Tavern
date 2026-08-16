@@ -1,6 +1,7 @@
 # Tavern
 
 [![Build and Test Status](https://github.com/svsticky/tavern/actions/workflows/test.yml/badge.svg)](https://github.com/svsticky/tavern/actions/workflows/test.yml)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial-blue.svg)](LICENSE)
 ![Target Framework](https://img.shields.io/badge/.NET-8.0-blue)
 ![Frontend Tech](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-cyan)
 ![Code Coverage](https://img.shields.io/badge/Line%20Coverage-%E2%89%A595%25-green)
