@@ -169,6 +169,16 @@ export const handleSaveMember = async (
   setSaving: (saving: boolean) => void,
 ) => {
   if (!memberId) return;
+
+  if (
+    !formData.studentNumber.trim() ||
+    !formData.postalCode.trim() ||
+    !formData.city.trim()
+  ) {
+    toast.error(t("please_fill_all_fields"));
+    return;
+  }
+
   const saveProcess = async () => {
     try {
       setSaving(true);
@@ -185,7 +195,7 @@ export const handleSaveMember = async (
       });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to save member data");
+        throw response.error ?? new Error("Failed to save member data");
       }
     } catch (err) {
       console.error("Failed to save member data:", err);
@@ -225,7 +235,7 @@ export const handleDeleteMember = async (
       const response = await deleteMembersById({ path: { id: memberId } });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to delete member");
+        throw response.error ?? new Error("Failed to delete member");
       }
 
       onSuccess();
@@ -265,7 +275,7 @@ export const handleDeleteEnrollment = async (
       const response = await deleteStudyenrollmentsById({ path: { id } });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to delete enrollment");
+        throw response.error ?? new Error("Failed to delete enrollment");
       }
 
       setEnrollments((prev) => prev.filter((e) => e.id !== id));
@@ -362,7 +372,7 @@ export const handleUpdateEnrollmentStatus = async (
       });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to update status");
+        throw response.error ?? new Error("Failed to update status");
       }
 
       setEnrollments((prev) =>

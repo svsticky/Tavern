@@ -12,8 +12,11 @@
   "activity": "Activity",
   "activity_created": "Activity created",
   "activity_creation_failed": "Activity creation failed",
+  "activity_end_before_start": "The end date and time must be after the start date and time",
+  "activity_enrollment_deadline_after_end": "The enrollment deadline cannot be after the activity ends",
   "activity_gl_account": "Activity gl account",
   "activity_not_found": "Activity not found.",
+  "activity_unenrollment_deadline_after_end": "The unenrollment deadline cannot be after the activity ends",
   "activity_update_failed": "Activity update failed",
   "activity_updated": "Activity updated",
   "add": "Add",
@@ -371,6 +374,7 @@
   "sign_in": "Sign in",
   "sign_in_on_waitlist": "Sign in on waitlist",
   "sign_out": "Sign out",
+  "leave_waitlist": "Leave waitlist",
   "signing_in": "Signing in",
   "signing_out": "Signing out",
   "specification_questions": "Specification questions",
@@ -544,5 +548,10 @@
   "board_rotation": "Board Rotation",
   "committee_creation_date": "Committee Creation Date (MM-DD)",
   "setup_mfa": "Setup MFA",
-  "manage_or_remove_mfa_devices": "Manage or Remove MFA Devices"
+  "manage_or_remove_mfa_devices": "Manage or Remove MFA Devices",
+  "text": "Text",
+  "true_or_false": "True or False",
+  "number": "Number",
+  "date_and_time": "Date and Time",
+  "multiple_choice": "Multiple Choice"
 }

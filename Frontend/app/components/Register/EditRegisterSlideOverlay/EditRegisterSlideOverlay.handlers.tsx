@@ -37,7 +37,7 @@ export const handleSlideSubmit = async ({
           path: { id: slide.id },
         });
         if (response.error) {
-          throw response.message ?? new Error("Failed to update slide");
+          throw response.error ?? new Error("Failed to update slide");
         }
       } else {
         if (!slideFile) {
@@ -49,7 +49,7 @@ export const handleSlideSubmit = async ({
           },
         });
         if (response.error || !response.data) {
-          throw response.message ?? new Error("Failed to create slide");
+          throw response.error ?? new Error("Failed to create slide");
         }
         slideId = response.data.id;
       }
@@ -104,7 +104,7 @@ export const handleSlideDelete = async ({
         path: { id: slide.id },
       });
       if (response.error) {
-        throw response.message ?? new Error("Failed to delete slide");
+        throw response.error ?? new Error("Failed to delete slide");
       }
       onComplete();
     } catch (error) {

@@ -158,7 +158,7 @@ export default function UpdateStudies() {
         setLoading(true);
         const response = await deleteMembersById({ path: { id: memberId } });
         if (response.error) {
-          throw response.message ?? new Error("Failed to delete account");
+          throw response.error ?? new Error("Failed to delete account");
         }
         await authService?.logout(window.location.origin);
       } catch (err) {

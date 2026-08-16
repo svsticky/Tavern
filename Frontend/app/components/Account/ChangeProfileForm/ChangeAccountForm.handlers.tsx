@@ -109,7 +109,7 @@ export const handleSaveAccount = async (
         ],
       });
       if (response.error) {
-        throw response.message ?? new Error("Failed to save account changes");
+        throw response.error ?? new Error("Failed to save account changes");
       }
 
       await i18n.changeLanguage(

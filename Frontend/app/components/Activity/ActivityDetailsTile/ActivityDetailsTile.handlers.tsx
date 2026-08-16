@@ -91,7 +91,7 @@ export const handleEnrollment = async (
       });
 
       if (response.error) {
-        throw response.message ?? new Error("Enrollment failed");
+        throw response.error ?? new Error("Enrollment failed");
       }
 
       if (response.data) {

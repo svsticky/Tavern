@@ -65,7 +65,7 @@ export const handleSendMail = async ({
       });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to send mail");
+        throw response.error ?? new Error("Failed to send mail");
       }
 
       clearForm();

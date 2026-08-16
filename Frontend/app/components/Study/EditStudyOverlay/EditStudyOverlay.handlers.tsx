@@ -129,7 +129,7 @@ export const handleStudyDelete = async ({
     try {
       const response = await deleteStudiesById({ path: { id: study.id! } });
       if (response.error) {
-        throw response.message ?? new Error("Failed to delete study");
+        throw response.error ?? new Error("Failed to delete study");
       }
       onComplete();
     } catch (error) {

@@ -78,12 +78,12 @@ export default function EditQuestionTile({
           value={question.type}
           onChange={(e) => onUpdate("type", e.target.value)}
           options={[
-            { value: "String", label: "String" },
-            { value: "Boolean", label: "Boolean" },
-            { value: "Number", label: "Number" },
-            { value: "Date", label: "Date" },
-            { value: "DateTime", label: "DateTime" },
-            { value: "MultipleChoice", label: "Multiple Choice" },
+            { value: "String", label: t("text") },
+            { value: "Boolean", label: t("true_or_false") },
+            { value: "Number", label: t("number") },
+            { value: "Date", label: t("date") },
+            { value: "DateTime", label: t("date_and_time") },
+            { value: "MultipleChoice", label: t("multiple_choice") },
           ]}
         />
 

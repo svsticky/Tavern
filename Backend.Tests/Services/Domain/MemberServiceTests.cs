@@ -235,6 +235,34 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateMember_EmptyStudentNumber_ThrowsArgumentException()
+    {
+        // Arrange
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "",
+            FirstName = "A",
+            LastName = "B",
+            Email = "a@b.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.CreateMember(dto, _userId, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task CreateMember_FutureDOB_ThrowsArgumentException()
     {
         // Arrange
@@ -471,6 +499,28 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchMember_EmptyStudentNumber_ThrowsValidationException()
+    {
+        // Arrange
+        var otherId = Guid.NewGuid();
+        var member = CreateTestMember(otherId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("replace", "/StudentNumber", null, "")
+            },
+            new DefaultContractResolver()
+        );
+
+        // Act & Assert
+        await Assert.ThrowsAsync<System.ComponentModel.DataAnnotations.ValidationException>(() =>
+            _service.PatchMember(otherId, patchDoc, _userId, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task UpdateMember_ValidRequest_UpdatesDb()
     {
         // Arrange
@@ -501,6 +551,34 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
         Assert.Equal("NewName", updated.FirstName);
+    }
+
+    [Fact]
+    public async Task UpdateMember_EmptyStudentNumber_ThrowsValidationException()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = "",
+            FirstName = member.FirstName,
+            LastName = member.LastName,
+            Email = member.Email,
+            PhoneNumber = member.PhoneNumber,
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<System.ComponentModel.DataAnnotations.ValidationException>(() =>
+            _service.UpdateMember(_userId, dto, _userId, CancellationToken.None));
     }
 
     [Fact]

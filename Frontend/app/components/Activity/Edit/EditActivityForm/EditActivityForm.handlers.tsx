@@ -160,6 +160,26 @@ export const handleActivitySubmit = async ({
   e.preventDefault();
 
   const fd = new FormData(e.currentTarget);
+
+  const dateTimeStart = new Date(fd.get("DateTimeStart") as string);
+  const dateTimeEnd = new Date(fd.get("DateTimeEnd") as string);
+  if (dateTimeEnd < dateTimeStart) {
+    toast.error(t("activity_end_before_start"));
+    return;
+  }
+
+  const enrollmentDeadline = fd.get("EnrollmentDeadline") as string;
+  if (enrollmentDeadline && new Date(enrollmentDeadline) > dateTimeEnd) {
+    toast.error(t("activity_enrollment_deadline_after_end"));
+    return;
+  }
+
+  const unenrollmentDeadline = fd.get("UnenrollmentDeadline") as string;
+  if (unenrollmentDeadline && new Date(unenrollmentDeadline) > dateTimeEnd) {
+    toast.error(t("activity_unenrollment_deadline_after_end"));
+    return;
+  }
+
   const audienceFlags = fd
     .getAll("AudienceBit")
     .reduce((acc, val) => acc + Number(val), 0);
@@ -386,7 +406,7 @@ export const handleActivitySubmit = async ({
           body: patchOperations,
         });
         if (response.error) {
-          throw response.message ?? new Error("Failed to update activity");
+          throw response.error ?? new Error("Failed to update activity");
         }
 
         const posterFile = fd.get("Poster") as File;

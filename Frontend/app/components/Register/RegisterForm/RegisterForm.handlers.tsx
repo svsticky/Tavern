@@ -45,7 +45,7 @@ export const loadStudies = async (setStudies: (studies: Study[]) => void) => {
     const response = await getStudies();
 
     if (response.error || !response.data) {
-      throw response.message ?? new Error("Failed to fetch studies");
+      throw response.error ?? new Error("Failed to fetch studies");
     }
 
     setStudies(response.data);
@@ -124,7 +124,7 @@ export const loadMailingLists = async (
     const response = await getMailinglists();
 
     if (response.error || !response.data) {
-      throw response.message ?? new Error("Failed to fetch mailing lists");
+      throw response.error ?? new Error("Failed to fetch mailing lists");
     }
 
     setMailingLists(response.data);

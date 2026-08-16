@@ -320,6 +320,83 @@ public class ActivityServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateActivity_EnrollmentDeadlineAfterEnd_ThrowsArgumentException()
+    {
+        var dto = new PostActivityDTO
+        {
+            Name = "New Activity",
+            Price = 5,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            EnrollmentDeadline = DateTime.UtcNow.AddDays(3),
+            Location = "Enschede",
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = false,
+            AreParticipantsVisible = true,
+            IsAdultOnly = false,
+            IsWeeklyDrinks = false,
+            AllowedAudience = TargetAudience.All,
+            SpecificationQuestionsJson = "[]"
+        };
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.CreateActivity(_userId, dto));
+    }
+
+    [Fact]
+    public async Task CreateActivity_UnenrollmentDeadlineAfterEnd_ThrowsArgumentException()
+    {
+        var dto = new PostActivityDTO
+        {
+            Name = "New Activity",
+            Price = 5,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            UnenrollmentDeadline = DateTime.UtcNow.AddDays(3),
+            Location = "Enschede",
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = false,
+            AreParticipantsVisible = true,
+            IsAdultOnly = false,
+            IsWeeklyDrinks = false,
+            AllowedAudience = TargetAudience.All,
+            SpecificationQuestionsJson = "[]"
+        };
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.CreateActivity(_userId, dto));
+    }
+
+    [Fact]
+    public async Task PatchActivity_EnrollmentDeadlineAfterEnd_ThrowsArgumentException()
+    {
+        var activity = CreateActivity("A1");
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var originalEnrollmentDeadline = activity.EnrollmentDeadline;
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.EnrollmentDeadline, activity.DateTimeEnd.AddDays(1));
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.NotNull(saved);
+        Assert.Equal(originalEnrollmentDeadline, saved.EnrollmentDeadline);
+    }
+
+    [Fact]
     public async Task DeleteActivity_NotFound_ThrowsKeyNotFoundException()
     {
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
@@ -410,6 +487,29 @@ public class ActivityServiceTests : IDisposable
 
         var savedEnrollment = await _db.Enrollments.FirstAsync(e => e.MemberId == member.Id);
         Assert.Equal(20m, savedEnrollment.Price);
+    }
+
+    [Fact]
+    public async Task PatchActivity_EndBeforeStart_ThrowsArgumentException()
+    {
+        var activity = CreateActivity("A1");
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var originalDateTimeEnd = activity.DateTimeEnd;
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.DateTimeEnd, activity.DateTimeStart.AddDays(-1));
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.NotNull(saved);
+        Assert.Equal(originalDateTimeEnd, saved.DateTimeEnd, TimeSpan.FromSeconds(1));
     }
 
     [Fact]

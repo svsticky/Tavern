@@ -230,7 +230,7 @@ export const handleMarkAsPaid = ({
       });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to mark as paid");
+        throw response.error ?? new Error("Failed to mark as paid");
       }
 
       await refreshUnpaid();
@@ -274,7 +274,7 @@ export const handlePaymentsExport = (
       });
 
       if (response.error || !response.data) {
-        throw response.message ?? new Error("Failed to export payments");
+        throw response.error ?? new Error("Failed to export payments");
       }
 
       const blob = new Blob([response.data as any], { type: "text/csv" });

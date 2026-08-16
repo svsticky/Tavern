@@ -68,7 +68,7 @@ export default function Members() {
         });
 
         if (response.error || !response.data) {
-          throw response.message ?? new Error("Failed to fetch members");
+          throw response.error ?? new Error("Failed to fetch members");
         }
 
         setMembers((prev) =>

@@ -223,7 +223,7 @@ export default function EditActivityForm({
                   defaultChecked={isEdit ? !!(audienceMask & 16) : true}
                 />
                 <Checkbox
-                  label={t("begunstigers")}
+                  label={t("begunstiger")}
                   name="AudienceBit"
                   value="64"
                   defaultChecked={isEdit ? !!(audienceMask & 64) : true}
@@ -260,12 +260,14 @@ export default function EditActivityForm({
               name="Price"
               type="number"
               step="0.01"
+              min="0"
               defaultValue={activity?.price.toFixed(2)}
             />
             <Input
               label={t("participant_limit")}
               name="ParticipantLimit"
               type="number"
+              min="1"
               defaultValue={activity?.participantLimit ?? ""}
             />
             {isBoard && (

@@ -260,6 +260,8 @@ public class ActivityService : IActivityService
                 activity.EnrollOpenDate = null;
             }
 
+            ActivityValidator.ValidateTimeRange(activity.DateTimeStart, activity.DateTimeEnd);
+            ActivityValidator.ValidateDeadlines(activity.DateTimeEnd, activity.EnrollmentDeadline, activity.UnenrollmentDeadline);
             StateValidator.Validate(activity);
 
             if (questionsToSync != null)

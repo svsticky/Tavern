@@ -12,8 +12,11 @@
   "activity": "Activiteit",
   "activity_created": "Activiteit aangemaakt",
   "activity_creation_failed": "Aanmaken activiteit mislukt",
+  "activity_end_before_start": "De einddatum en -tijd moeten na de startdatum en -tijd liggen",
+  "activity_enrollment_deadline_after_end": "De inschrijfdeadline mag niet na het einde van de activiteit liggen",
   "activity_gl_account": "Grootboekrekening activiteit",
   "activity_not_found": "Activiteit niet gevonden.",
+  "activity_unenrollment_deadline_after_end": "De uitschrijfdeadline mag niet na het einde van de activiteit liggen",
   "activity_update_failed": "Updaten activiteit mislukt",
   "activity_updated": "Activiteit geüpdatet",
   "add": "Toevoegen",
@@ -372,6 +375,7 @@
   "sign_in": "Aanmelden",
   "sign_in_on_waitlist": "Meld aan op wachtlijst",
   "sign_out": "Afmelden",
+  "leave_waitlist": "Verlaat wachtlijst",
   "signing_in": "Aanmelden",
   "signing_out": "Afmelden",
   "specification_questions": "Specificatie vragen",
@@ -544,5 +548,10 @@
   "board_rotation": "Bestuurswissel",
   "committee_creation_date": "Commissie aanmaakdatum (MM-DD)",
   "setup_mfa": "MFA instellen",
-  "manage_or_remove_mfa_devices": "MFA apparaten beheren/verwijderen"
+  "manage_or_remove_mfa_devices": "MFA apparaten beheren/verwijderen",
+  "text": "Tekst",
+  "true_or_false": "Waar of niet waar",
+  "number": "Nummer",
+  "date_and_time": "Datum en tijd",
+  "multiple_choice": "Meerkeuze"
 }

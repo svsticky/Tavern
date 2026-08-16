@@ -91,7 +91,7 @@ export const handleCreateGroupSubmit = ({
       });
 
       if (response.error) {
-        throw response.message ?? new Error("Failed to create group");
+        throw response.error ?? new Error("Failed to create group");
       }
 
       onSuccess();

@@ -57,8 +57,10 @@ public class GroupService : IGroupService
         bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         return await _db.Groups
+            .Where(g => dto.IncludeInactive || g.Active)
             .Where(g => isBoardMember || dto.MembershipYear == null || g.GroupMemberships.Any(gm => gm.MembershipYear == dto.MembershipYear && userId == gm.MemberId))
             .Select(GroupResponseDTO.ToDto())
+            .OrderBy(g => g.Name)
             .ToListAsync(cancellationToken);
     }
 

@@ -240,6 +240,7 @@ export default function EditGroupPage() {
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, Name: e.target.value })
               }
+              required
             />
             <Select
               label={t("group_type")}

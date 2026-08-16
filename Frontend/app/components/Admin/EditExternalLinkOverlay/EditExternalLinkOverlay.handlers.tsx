@@ -49,7 +49,7 @@ export const handleLinkSubmit = async ({
           body: formData,
         });
         if (response.error) {
-          throw response.message ?? new Error("Failed to update external link");
+          throw response.error ?? new Error("Failed to update external link");
         }
       } else {
         const response = await postExternallinks({
@@ -63,7 +63,7 @@ export const handleLinkSubmit = async ({
           },
         });
         if (response.error || !response.data) {
-          throw response.message ?? new Error("Failed to create external link");
+          throw response.error ?? new Error("Failed to create external link");
         }
         linkId = response.data.id;
       }
@@ -116,7 +116,7 @@ export const handleLinkDelete = async ({
         path: { id: link.id },
       });
       if (response.error) {
-        throw response.message ?? new Error("Failed to delete external link");
+        throw response.error ?? new Error("Failed to delete external link");
       }
       onComplete();
     } catch (error) {

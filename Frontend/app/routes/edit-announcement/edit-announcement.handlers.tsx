@@ -81,12 +81,12 @@ export const handleAnnouncementSubmit = async ({
           body,
         });
         if (response.error) {
-          throw response.message ?? new Error("Failed to update announcement");
+          throw response.error ?? new Error("Failed to update announcement");
         }
       } else {
         const response = await postAnnouncements({ body });
         if (response.error) {
-          throw response.message ?? new Error("Failed to create announcement");
+          throw response.error ?? new Error("Failed to create announcement");
         }
       }
       navigate("/announcements");
@@ -130,7 +130,7 @@ export const handleDeleteAnnouncement = async (
         path: { id: Number(id) },
       });
       if (response.error) {
-        throw response.message ?? new Error("Failed to delete announcement");
+        throw response.error ?? new Error("Failed to delete announcement");
       }
       navigate("/announcements");
     } catch (error) {

@@ -12,7 +12,7 @@ export const fetchMailingLists = async (
     setLoading(true);
     const response = await getMailinglists();
     if (response.error || !response.data) {
-      throw response.message ?? new Error("Failed to fetch mailing lists");
+      throw response.error ?? new Error("Failed to fetch mailing lists");
     }
     setMailingLists(response.data);
   } catch (error) {

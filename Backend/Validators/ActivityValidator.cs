@@ -20,6 +20,7 @@ public static class ActivityValidator
     public static void ValidateRequest<TQuestion>(BaseActivityDTO<TQuestion> dto, Guid userId, IPermissionService permissionService)
     {
         ValidateTimeRange(dto.DateTimeStart, dto.DateTimeEnd);
+        ValidateDeadlines(dto.DateTimeEnd, dto.EnrollmentDeadline, dto.UnenrollmentDeadline);
         ValidatePosterIfProvided(dto.Poster);
 
         // Only board members can create activities that are shown in Koala/website or have enrollment/payment options, to prevent abuse of these features
@@ -98,10 +99,26 @@ public static class ActivityValidator
     /// <param name="start">The start date and time of the activity.</param>
     /// <param name="end">The end date and time of the activity.</param>
     /// <exception cref="ArgumentException">Thrown when the end date and time is before the start date and time.</exception>
-    private static void ValidateTimeRange(DateTimeOffset start, DateTimeOffset end)
+    public static void ValidateTimeRange(DateTimeOffset start, DateTimeOffset end)
     {
         if (end < start)
             throw new ArgumentException("Activity cannot end before it starts.");
+    }
+
+    /// <summary>
+    /// Validates that the enrollment and unenrollment deadlines, if provided, are not after the end date and time of the activity. If either deadline is after the activity's end date and time, this method throws an ArgumentException. This validation ensures that participants cannot (un)enroll after the activity has already ended.
+    /// </summary>
+    /// <param name="end">The end date and time of the activity.</param>
+    /// <param name="enrollmentDeadline">The enrollment deadline of the activity, if any.</param>
+    /// <param name="unenrollmentDeadline">The unenrollment deadline of the activity, if any.</param>
+    /// <exception cref="ArgumentException">Thrown when a deadline is after the activity's end date and time.</exception>
+    public static void ValidateDeadlines(DateTimeOffset end, DateTimeOffset? enrollmentDeadline, DateTimeOffset? unenrollmentDeadline)
+    {
+        if (enrollmentDeadline > end)
+            throw new ArgumentException("Enrollment deadline cannot be after the activity ends.");
+
+        if (unenrollmentDeadline > end)
+            throw new ArgumentException("Unenrollment deadline cannot be after the activity ends.");
     }
 
 

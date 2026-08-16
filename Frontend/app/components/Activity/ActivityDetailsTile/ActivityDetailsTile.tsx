@@ -7,6 +7,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import Markdown from "react-markdown";
 import type {
   ActivityResponseDto,
@@ -16,6 +17,7 @@ import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getActivityEnrollmentStatus } from "~/util/activity.util";
+import { hasAllMandatoryAnswers } from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -137,6 +139,15 @@ export default function ActivityDetailsTile({
   }, [currentEnrollment?.specificationAnswers]);
 
   const { canEnroll, canUnenroll } = getActivityEnrollmentStatus(activity);
+
+  const submitAnswers = (action: typeof handleEnrollment) => {
+    if (!hasAllMandatoryAnswers(activity.specificationQuestions, answers)) {
+      toast.error(t("please_fill_all_fields"));
+      return;
+    }
+
+    action(authService, activity, setActivity, answers, setSubmitting);
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -308,15 +319,7 @@ export default function ActivityDetailsTile({
                     <Button
                       variant="primary"
                       className="w-full sm:w-auto"
-                      onClick={() =>
-                        handleUpdateEnrollment(
-                          authService,
-                          activity,
-                          setActivity,
-                          answers,
-                          setSubmitting,
-                        )
-                      }
+                      onClick={() => submitAnswers(handleUpdateEnrollment)}
                       disabled={submitting}
                     >
                       {submitting ? t("saving") : t("update_answers")}
@@ -342,7 +345,9 @@ export default function ActivityDetailsTile({
                         : false)
                     }
                   >
-                    {t("sign_out")}
+                    {currentEnrollment.isOnWaitingList
+                      ? t("leave_waitlist")
+                      : t("sign_out")}
                     {submitting && "..."}
                   </Button>
                 </div>
@@ -351,15 +356,7 @@ export default function ActivityDetailsTile({
                 <Button
                   variant="primary"
                   className="w-full sm:w-auto"
-                  onClick={() =>
-                    handleEnrollment(
-                      authService,
-                      activity,
-                      setActivity,
-                      answers,
-                      setSubmitting,
-                    )
-                  }
+                  onClick={() => submitAnswers(handleEnrollment)}
                   disabled={submitting}
                 >
                   {activity.participantLimit &&
