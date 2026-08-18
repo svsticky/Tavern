@@ -69,7 +69,7 @@ type RenderWithProvidersOptions = Omit<RenderOptions, "wrapper"> & {
 /**
  * Renders a component wrapped with the same providers the real app tree supplies:
  * a router, AuthContext, and AppContext. Use this for anything that calls useAuth(),
- * useApp(), useNavigate(), useParams(), or renders <Link>.
+ * useApp(), useNavigate(), useParams(), or renders `<Link>`.
  */
 export function renderWithProviders(
   ui: ReactElement,

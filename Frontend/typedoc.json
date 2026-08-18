@@ -5,6 +5,7 @@
   "entryPointStrategy": "expand",
   "readme": "none",
   "skipErrorChecking": true,
+  "excludeExternals": true,
   "plugin": ["typedoc-plugin-markdown"],
   "exclude": ["**/__tests__/**"]
 }
