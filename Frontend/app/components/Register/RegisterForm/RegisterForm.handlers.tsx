@@ -7,7 +7,7 @@ import {
   getRegistrationdocuments,
   getSettingsById,
   getStudies,
-  type Mailinglist,
+  type MailinglistDto,
   type PostMemberDto,
   postMembers,
   postPaymentsMembership,
@@ -118,7 +118,7 @@ export const loadPrice = async (
  * @returns {Promise<void>}
  */
 export const loadMailingLists = async (
-  setMailingLists: (lists: Mailinglist[]) => void,
+  setMailingLists: (lists: MailinglistDto[]) => void,
 ) => {
   try {
     const response = await getMailinglists();
@@ -213,7 +213,7 @@ type RegisterSubmitArgs = {
   formData: RegisterFormData;
   selectedStudies: number[];
   selectedStartDate: string;
-  subscriptions: number;
+  subscribedMailinglistIds: string[];
   studies: Study[];
   navigate: NavigateFunction;
   mastersMustPay: boolean | null;
@@ -233,7 +233,7 @@ export const handleRegisterSubmit = async ({
   formData,
   selectedStudies,
   selectedStartDate,
-  subscriptions,
+  subscribedMailinglistIds,
   studies,
   navigate,
   mastersMustPay,
@@ -264,7 +264,7 @@ export const handleRegisterSubmit = async ({
         studentNumber: formData.studentNumber,
         parentPhoneNumber: formData.parentPhone || null,
         preferredLanguage: isDutch ? "NL" : "EN",
-        mailSubscriptions: subscriptions,
+        subscribedMailinglistIds,
         studyEnrollments: selectedStudies.map((id) => ({
           studyId: id,
           memberId: "00000000-0000-0000-0000-000000000000",

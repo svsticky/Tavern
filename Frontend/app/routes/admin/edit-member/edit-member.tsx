@@ -70,7 +70,6 @@ export default function EditMemberPage() {
     city: "",
     parentPhoneNumber: "",
     preferredLanguage: "NL",
-    mailSubscriptions: 0,
     notes: "",
     gratie: false,
     lidVanVerdienste: false,

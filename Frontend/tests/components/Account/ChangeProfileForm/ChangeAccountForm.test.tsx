@@ -5,8 +5,8 @@ import type { MemberResponseDto } from "~/api/types.gen";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 
-const { getMailinglists, deleteMembersById } = vi.hoisted(() => ({
-  getMailinglists: vi.fn(),
+const { getMembersByIdMailinglists, deleteMembersById } = vi.hoisted(() => ({
+  getMembersByIdMailinglists: vi.fn(),
   deleteMembersById: vi.fn(),
 }));
 
@@ -15,16 +15,16 @@ const {
   handleChangePassword,
   handleConfigureMFA,
   handleSaveAccount,
-  handleSubscriptionChange,
+  handleSubscriptionToggle,
 } = vi.hoisted(() => ({
   handleChangeEmail: vi.fn(),
   handleChangePassword: vi.fn(),
   handleConfigureMFA: vi.fn(),
   handleSaveAccount: vi.fn(),
-  handleSubscriptionChange: vi.fn(),
+  handleSubscriptionToggle: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ getMailinglists, deleteMembersById }));
+vi.mock("~/api", () => ({ getMembersByIdMailinglists, deleteMembersById }));
 vi.mock(
   "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers",
   () => ({
@@ -32,7 +32,7 @@ vi.mock(
     handleChangePassword,
     handleConfigureMFA,
     handleSaveAccount,
-    handleSubscriptionChange,
+    handleSubscriptionToggle,
   }),
 );
 vi.mock("react-hot-toast", () => ({
@@ -52,7 +52,6 @@ function buildMember(
     city: "Enschede",
     parentPhoneNumber: "",
     preferredLanguage: "EN",
-    mailSubscriptions: 0,
     dateOfBirth: "2000-01-01",
     ...overrides,
   } as MemberResponseDto;
@@ -61,7 +60,7 @@ function buildMember(
 describe("ChangeAccountForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getMailinglists.mockResolvedValue({ data: [] });
+    getMembersByIdMailinglists.mockResolvedValue({ data: [] });
   });
 
   it("pre-fills the form fields from the member", () => {
@@ -93,8 +92,8 @@ describe("ChangeAccountForm", () => {
   });
 
   it("fetches and renders mailing lists, and toggles subscriptions", async () => {
-    getMailinglists.mockResolvedValue({
-      data: [{ id: 1, name: "Newsletter", bitValue: 1 }],
+    getMembersByIdMailinglists.mockResolvedValue({
+      data: [{ id: "list-1", name: "Newsletter", subscribed: false }],
     });
     const user = userEvent.setup();
     renderWithProviders(<ChangeAccountForm member={buildMember()} />);
@@ -104,15 +103,15 @@ describe("ChangeAccountForm", () => {
     );
 
     await user.click(screen.getByLabelText("Newsletter"));
-    expect(handleSubscriptionChange).toHaveBeenCalledWith(
-      1,
+    expect(handleSubscriptionToggle).toHaveBeenCalledWith(
+      "list-1",
       true,
       expect.any(Function),
     );
   });
 
   it("shows an error toast when fetching mailing lists fails", async () => {
-    getMailinglists.mockResolvedValue({ error: { title: "Boom" } });
+    getMembersByIdMailinglists.mockResolvedValue({ error: { title: "Boom" } });
     const toast = (await import("react-hot-toast")).default;
 
     renderWithProviders(<ChangeAccountForm member={buildMember()} />);
@@ -140,6 +139,7 @@ describe("ChangeAccountForm", () => {
     expect(handleSaveAccount).toHaveBeenCalledWith(
       member.id,
       expect.objectContaining({ phoneNumber: member.phoneNumber }),
+      [],
       expect.any(Function),
       expect.any(Function),
     );

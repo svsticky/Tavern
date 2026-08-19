@@ -11,5 +11,4 @@ export type ChangeAccountFormData = {
   city: string;
   parentPhoneNumber: string;
   preferredLanguage: Language;
-  mailSubscriptions: number;
 };

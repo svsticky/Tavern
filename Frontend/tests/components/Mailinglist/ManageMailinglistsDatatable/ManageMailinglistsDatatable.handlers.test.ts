@@ -1,103 +1,131 @@
-import { describe, expect, it, vi } from "vitest";
-import type { Mailinglist } from "~/api";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CuratedMailinglistDto } from "~/api";
 import {
-  fetchMailingLists,
-  handleMailingListEdited,
+  fetchCuratedMailinglists,
+  handleMailinglistEdited,
 } from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable.handlers";
 
-const { getMailinglists } = vi.hoisted(() => ({ getMailinglists: vi.fn() }));
+const { getMailinglistsCurated } = vi.hoisted(() => ({
+  getMailinglistsCurated: vi.fn(),
+}));
 
-vi.mock("~/api", () => ({ getMailinglists }));
-vi.mock("react-hot-toast", () => ({ default: { error: vi.fn() } }));
+vi.mock("~/api", () => ({ getMailinglistsCurated }));
 
-describe("fetchMailingLists", () => {
-  it("sets the mailing lists on success", async () => {
-    const lists: Mailinglist[] = [{ id: 1, name: "News" } as Mailinglist];
-    getMailinglists.mockResolvedValue({ data: lists });
-    const setLoading = vi.fn();
-    const setMailingLists = vi.fn();
+const toastErrorFn = vi.fn();
+vi.mock("react-hot-toast", () => ({
+  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
+}));
 
-    await fetchMailingLists(setLoading, setMailingLists);
-
-    expect(setMailingLists).toHaveBeenCalledWith(lists);
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
+describe("fetchCuratedMailinglists", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("shows an error toast and does not set lists on failure", async () => {
-    getMailinglists.mockResolvedValue({ error: { title: "Boom" } });
-    const toast = (await import("react-hot-toast")).default;
-    const setMailingLists = vi.fn();
+  it("sets curated lists on success", async () => {
+    const lists: CuratedMailinglistDto[] = [
+      {
+        id: 1,
+        providerListId: "p1",
+        name: "Newsletter",
+        visibility: "General",
+      },
+    ];
+    getMailinglistsCurated.mockResolvedValue({ data: lists });
+    const setCuratedLists = vi.fn();
+    const setLoading = vi.fn();
 
-    await fetchMailingLists(vi.fn(), setMailingLists);
+    await fetchCuratedMailinglists(setLoading, setCuratedLists);
 
-    expect(setMailingLists).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalled();
+    expect(setCuratedLists).toHaveBeenCalledWith(lists);
+    expect(setLoading).toHaveBeenCalledWith(true);
+    expect(setLoading).toHaveBeenCalledWith(false);
+  });
+
+  it("shows an error toast on failure", async () => {
+    getMailinglistsCurated.mockResolvedValue({ error: "fail" });
+    const setCuratedLists = vi.fn();
+
+    await fetchCuratedMailinglists(vi.fn(), setCuratedLists);
+
+    expect(toastErrorFn).toHaveBeenCalled();
+    expect(setCuratedLists).not.toHaveBeenCalled();
   });
 });
 
-describe("handleMailingListEdited", () => {
-  const existing: Mailinglist[] = [
-    { id: 1, name: "A" } as Mailinglist,
-    { id: 2, name: "B" } as Mailinglist,
-  ];
-
-  it("removes the list when it was deleted (no list, but an editedList)", () => {
-    const setMailingLists = vi.fn();
-    handleMailingListEdited({
-      list: undefined,
-      editedList: existing[0],
-      setMailingLists,
-      setIsEditModalOpen: vi.fn(),
-      setEditedList: vi.fn(),
-    });
-
-    const updater = setMailingLists.mock.calls[0][0];
-    expect(updater(existing)).toEqual([existing[1]]);
-  });
-
-  it("replaces the matching list when editing an existing one", () => {
-    const setMailingLists = vi.fn();
-    const updated = { id: 1, name: "A updated" } as Mailinglist;
-    handleMailingListEdited({
-      list: updated,
-      editedList: existing[0],
-      setMailingLists,
-      setIsEditModalOpen: vi.fn(),
-      setEditedList: vi.fn(),
-    });
-
-    const updater = setMailingLists.mock.calls[0][0];
-    expect(updater(existing)).toEqual([updated, existing[1]]);
-  });
-
-  it("appends the new list when creating (list present, no editedList)", () => {
-    const setMailingLists = vi.fn();
-    const created = { id: 3, name: "C" } as Mailinglist;
-    handleMailingListEdited({
-      list: created,
-      editedList: undefined,
-      setMailingLists,
-      setIsEditModalOpen: vi.fn(),
-      setEditedList: vi.fn(),
-    });
-
-    const updater = setMailingLists.mock.calls[0][0];
-    expect(updater(existing)).toEqual([...existing, created]);
-  });
-
-  it("always closes the modal and clears the edited list", () => {
+describe("handleMailinglistEdited", () => {
+  it("removes the edited list from the list when list is undefined (deletion)", () => {
+    const setCuratedLists = vi.fn();
     const setIsEditModalOpen = vi.fn();
     const setEditedList = vi.fn();
-    handleMailingListEdited({
+
+    handleMailinglistEdited({
       list: undefined,
-      editedList: undefined,
-      setMailingLists: vi.fn(),
+      editedList: { id: 1 } as CuratedMailinglistDto,
+      setCuratedLists,
       setIsEditModalOpen,
       setEditedList,
     });
 
+    const updater = setCuratedLists.mock.calls[0][0];
+    expect(
+      updater([
+        { id: 1 } as CuratedMailinglistDto,
+        { id: 2 } as CuratedMailinglistDto,
+      ]),
+    ).toEqual([{ id: 2 }]);
     expect(setIsEditModalOpen).toHaveBeenCalledWith(false);
     expect(setEditedList).toHaveBeenCalledWith(undefined);
+  });
+
+  it("does not touch the list when deleting without an editedList", () => {
+    const setCuratedLists = vi.fn();
+    handleMailinglistEdited({
+      list: undefined,
+      editedList: undefined,
+      setCuratedLists,
+      setIsEditModalOpen: vi.fn(),
+      setEditedList: vi.fn(),
+    });
+    expect(setCuratedLists).not.toHaveBeenCalled();
+  });
+
+  it("replaces an existing entry when the id matches (visibility change)", () => {
+    const setCuratedLists = vi.fn();
+    const updated = {
+      id: 1,
+      providerListId: "p1",
+      visibility: "YearlyRenewalOnly",
+    } as CuratedMailinglistDto;
+
+    handleMailinglistEdited({
+      list: updated,
+      editedList: { id: 1 } as CuratedMailinglistDto,
+      setCuratedLists,
+      setIsEditModalOpen: vi.fn(),
+      setEditedList: vi.fn(),
+    });
+
+    const updater = setCuratedLists.mock.calls[0][0];
+    expect(
+      updater([{ id: 1, visibility: "General" } as CuratedMailinglistDto]),
+    ).toEqual([updated]);
+  });
+
+  it("appends a new entry when adding a mailing list", () => {
+    const setCuratedLists = vi.fn();
+    const created = { id: 2, providerListId: "p2" } as CuratedMailinglistDto;
+
+    handleMailinglistEdited({
+      list: created,
+      editedList: undefined,
+      setCuratedLists,
+      setIsEditModalOpen: vi.fn(),
+      setEditedList: vi.fn(),
+    });
+
+    const updater = setCuratedLists.mock.calls[0][0];
+    expect(
+      updater([{ id: 1, providerListId: "p1" } as CuratedMailinglistDto]),
+    ).toEqual([{ id: 1, providerListId: "p1" }, created]);
   });
 });

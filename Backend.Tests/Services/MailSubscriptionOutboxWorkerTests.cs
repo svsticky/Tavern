@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Database;
@@ -56,7 +57,7 @@ public class MailSubscriptionOutboxWorkerTests
     }
 
     [Fact]
-    public async Task EnqueueTask_SavesTaskToDatabase()
+    public async Task EnqueueUpdateSubscriptionsTask_SavesTaskToDatabase()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
@@ -65,14 +66,55 @@ public class MailSubscriptionOutboxWorkerTests
         var worker = new MailSubscriptionOutboxWorker(provider, _logger);
 
         // Act
-        worker.EnqueueTask("test@example.com", 3u, db);
+        worker.EnqueueUpdateSubscriptionsTask("test@example.com", ["id_news", "id_events"], db);
 
         // Assert
         var tasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
         Assert.Single(tasks);
+        Assert.Equal(MailSubscriptionOutboxTaskType.UpdateSubscriptions, tasks[0].TaskType);
         Assert.Equal("test@example.com", tasks[0].Email);
-        Assert.Equal(3u, tasks[0].MailSubscription);
         Assert.Equal(0, tasks[0].RetryCount);
+        var ids = JsonSerializer.Deserialize<string[]>(tasks[0].SubscribedListIdsJson!)!;
+        Assert.Equal(["id_news", "id_events"], ids);
+    }
+
+    [Fact]
+    public async Task EnqueueDeleteTask_SavesTaskToDatabase()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var provider = CreateServiceProvider(db);
+        var worker = new MailSubscriptionOutboxWorker(provider, _logger);
+
+        // Act
+        worker.EnqueueDeleteTask("test@example.com", db);
+
+        // Assert
+        var tasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
+        Assert.Single(tasks);
+        Assert.Equal(MailSubscriptionOutboxTaskType.Delete, tasks[0].TaskType);
+        Assert.Equal("test@example.com", tasks[0].Email);
+    }
+
+    [Fact]
+    public async Task EnqueueMigrateEmailTask_SavesTaskToDatabase()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var provider = CreateServiceProvider(db);
+        var worker = new MailSubscriptionOutboxWorker(provider, _logger);
+
+        // Act
+        worker.EnqueueMigrateEmailTask("old@example.com", "new@example.com", db);
+
+        // Assert
+        var tasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
+        Assert.Single(tasks);
+        Assert.Equal(MailSubscriptionOutboxTaskType.MigrateEmail, tasks[0].TaskType);
+        Assert.Equal("old@example.com", tasks[0].OldEmail);
+        Assert.Equal("new@example.com", tasks[0].Email);
     }
 
     [Fact]
@@ -100,8 +142,8 @@ public class MailSubscriptionOutboxWorkerTests
 
         db.MailSubscriptionOutboxTasks.Add(new MailSubscriptionOutboxTask
         {
+            TaskType = MailSubscriptionOutboxTaskType.Delete,
             Email = "test@example.com",
-            MailSubscription = 1u,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow.AddMinutes(5)
         });
@@ -118,7 +160,7 @@ public class MailSubscriptionOutboxWorkerTests
     }
 
     [Fact]
-    public async Task TryProcessNextTaskAsync_TaskFound_UpdatesSubscriptionAndRemovesTask()
+    public async Task TryProcessNextTaskAsync_UpdateSubscriptionsTask_CallsUpdateAndRemovesTask()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
@@ -126,8 +168,9 @@ public class MailSubscriptionOutboxWorkerTests
 
         var task = new MailSubscriptionOutboxTask
         {
+            TaskType = MailSubscriptionOutboxTaskType.UpdateSubscriptions,
             Email = "sync@example.com",
-            MailSubscription = 7u,
+            SubscribedListIdsJson = JsonSerializer.Serialize(new[] { "id_news", "id_events" }),
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow
         };
@@ -142,10 +185,76 @@ public class MailSubscriptionOutboxWorkerTests
 
         // Assert
         Assert.True(result);
-        await _mailSubscriptionService.Received(1).UpdateSubscriptionAsync("sync@example.com", 7u, Arg.Any<CancellationToken>());
+        await _mailSubscriptionService.Received(1).UpdateMemberSubscriptionsAsync(
+            "sync@example.com",
+            Arg.Is<System.Collections.Generic.IEnumerable<string>>(ids => ids.SequenceEqual(new[] { "id_news", "id_events" })),
+            Arg.Any<CancellationToken>());
 
         var tasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
-        Assert.Empty(tasks); // Removed
+        Assert.Empty(tasks);
+    }
+
+    [Fact]
+    public async Task TryProcessNextTaskAsync_DeleteTask_CallsDeleteAndRemovesTask()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var task = new MailSubscriptionOutboxTask
+        {
+            TaskType = MailSubscriptionOutboxTaskType.Delete,
+            Email = "gone@example.com",
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow
+        };
+        db.MailSubscriptionOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableMailSubscriptionOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        await _mailSubscriptionService.Received(1).DeleteMemberAsync("gone@example.com", Arg.Any<CancellationToken>());
+
+        var tasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
+        Assert.Empty(tasks);
+    }
+
+    [Fact]
+    public async Task TryProcessNextTaskAsync_MigrateEmailTask_CallsMigrateAndRemovesTask()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var task = new MailSubscriptionOutboxTask
+        {
+            TaskType = MailSubscriptionOutboxTaskType.MigrateEmail,
+            Email = "new@example.com",
+            OldEmail = "old@example.com",
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow
+        };
+        db.MailSubscriptionOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableMailSubscriptionOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        await _mailSubscriptionService.Received(1).MigrateEmailAsync("old@example.com", "new@example.com", Arg.Any<CancellationToken>());
+
+        var tasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
+        Assert.Empty(tasks);
     }
 
     [Fact]
@@ -157,8 +266,8 @@ public class MailSubscriptionOutboxWorkerTests
 
         var task = new MailSubscriptionOutboxTask
         {
+            TaskType = MailSubscriptionOutboxTaskType.Delete,
             Email = "fail@example.com",
-            MailSubscription = 2u,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow,
             RetryCount = 1
@@ -166,7 +275,7 @@ public class MailSubscriptionOutboxWorkerTests
         db.MailSubscriptionOutboxTasks.Add(task);
         await db.SaveChangesAsync();
 
-        _mailSubscriptionService.UpdateSubscriptionAsync(Arg.Any<string>(), Arg.Any<uint>(), Arg.Any<CancellationToken>())
+        _mailSubscriptionService.DeleteMemberAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new Exception("MailChimp API Error")));
 
         var provider = CreateServiceProvider(db);
@@ -177,7 +286,7 @@ public class MailSubscriptionOutboxWorkerTests
 
         // Assert
         Assert.True(result);
-        
+
         var updatedTasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
         Assert.Single(updatedTasks);
         Assert.Equal(2, updatedTasks[0].RetryCount); // RetryCount incremented
@@ -214,9 +323,9 @@ public class MailSubscriptionOutboxWorkerTests
             // Act
             var cts = new CancellationTokenSource();
             var startTask = worker.StartAsync(cts.Token);
-            
+
             await Task.Delay(100);
-            
+
             cts.Cancel();
             await worker.StopAsync(CancellationToken.None);
             await startTask;

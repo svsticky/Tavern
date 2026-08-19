@@ -65,7 +65,6 @@ namespace Backend.Tests.Controllers.DTOs
                 City = "Enschede",
                 DateOfBirth = dob,
                 ParentPhoneNumber = "0699887766",
-                MailSubscriptions = 5,
                 Notes = "Some note",
                 PreferredLanguage = Language.EN,
                 Gratie = true,
@@ -86,7 +85,6 @@ namespace Backend.Tests.Controllers.DTOs
             Assert.Equal("Enschede", dto.City);
             Assert.Equal(dob, dto.DateOfBirth);
             Assert.Equal("0699887766", dto.ParentPhoneNumber);
-            Assert.Equal(5u, dto.MailSubscriptions);
             Assert.Equal("Some note", dto.Notes);
             Assert.Equal(Language.EN, dto.PreferredLanguage);
             Assert.True(dto.Gratie);

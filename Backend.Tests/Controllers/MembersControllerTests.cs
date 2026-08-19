@@ -541,6 +541,94 @@ public class MembersControllerTests
     }
 
     [Fact]
+    public async Task GetMemberMailinglists_Success_ReturnsOk()
+    {
+        // Arrange
+        var targetId = Guid.NewGuid();
+        var lists = new List<MemberMailinglistDto> { new("id_news", "Newsletter", true) };
+        _memberServiceMock.GetMemberMailinglists(targetId, false, _userId, Arg.Any<CancellationToken>()).Returns(lists);
+
+        // Act
+        var result = await _controller.GetMemberMailinglists(targetId, false, CancellationToken.None);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returned = Assert.IsAssignableFrom<IEnumerable<MemberMailinglistDto>>(okResult.Value);
+        Assert.Single(returned);
+    }
+
+    [Fact]
+    public async Task GetMemberMailinglists_IncludeYearlyRenewal_PassesFlagThrough()
+    {
+        // Arrange
+        var targetId = Guid.NewGuid();
+        var lists = new List<MemberMailinglistDto> { new("id_alumni", "Alumni", true) };
+        _memberServiceMock.GetMemberMailinglists(targetId, true, _userId, Arg.Any<CancellationToken>()).Returns(lists);
+
+        // Act
+        var result = await _controller.GetMemberMailinglists(targetId, true, CancellationToken.None);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returned = Assert.IsAssignableFrom<IEnumerable<MemberMailinglistDto>>(okResult.Value);
+        Assert.Single(returned);
+        await _memberServiceMock.Received(1).GetMemberMailinglists(targetId, true, _userId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetMemberMailinglists_Unauthorized_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var targetId = Guid.NewGuid();
+        _memberServiceMock.GetMemberMailinglists(targetId, false, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetMemberMailinglists(targetId, false, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task UpdateMemberMailinglists_Success_ReturnsNoContent()
+    {
+        // Arrange
+        var targetId = Guid.NewGuid();
+        var ids = new List<string> { "id_news", "id_events" };
+
+        // Act
+        var result = await _controller.UpdateMemberMailinglists(targetId, ids, false, CancellationToken.None);
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+        await _memberServiceMock.Received(1).UpdateMemberMailinglists(targetId, ids, false, _userId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateMemberMailinglists_IncludeYearlyRenewal_PassesFlagThrough()
+    {
+        // Arrange
+        var targetId = Guid.NewGuid();
+        var ids = new List<string> { "id_news", "id_alumni" };
+
+        // Act
+        var result = await _controller.UpdateMemberMailinglists(targetId, ids, true, CancellationToken.None);
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+        await _memberServiceMock.Received(1).UpdateMemberMailinglists(targetId, ids, true, _userId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateMemberMailinglists_Unauthorized_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var targetId = Guid.NewGuid();
+        var ids = new List<string> { "id_news" };
+        _memberServiceMock.UpdateMemberMailinglists(targetId, ids, false, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.UpdateMemberMailinglists(targetId, ids, false, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task UpdateEmailWebhook_InvalidSecret_ReturnsUnauthorized()
     {
         // Arrange

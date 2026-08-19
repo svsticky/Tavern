@@ -1,8 +1,8 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { deleteMembersById, getMailinglists } from "~/api";
-import type { Mailinglist, MemberResponseDto } from "~/api/types.gen";
+import { deleteMembersById, getMembersByIdMailinglists } from "~/api";
+import type { MemberMailinglistDto, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
@@ -19,7 +19,7 @@ import {
   handleChangePassword,
   handleConfigureMFA,
   handleSaveAccount,
-  handleSubscriptionChange,
+  handleSubscriptionToggle,
 } from "./ChangeAccountForm.handlers";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 
@@ -38,8 +38,10 @@ export default function ChangeAccountForm({
   const { setMember } = useApp();
   const [saving, setSaving] = useState(false);
   const [loadingMailingLists, setLoadingMailingLists] = useState(false);
+  const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
 
-  const [mailingLists, setMailinglists] = useState<Mailinglist[]>([]);
+  const [mailingLists, setMailingLists] = useState<MemberMailinglistDto[]>([]);
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState<ChangeAccountFormData>({
     phoneNumber: "",
     street: "",
@@ -48,7 +50,6 @@ export default function ChangeAccountForm({
     city: "",
     parentPhoneNumber: "",
     preferredLanguage: "NL",
-    mailSubscriptions: 0,
   });
 
   const [isFormValid, setIsFormValid] = useState(false);
@@ -93,31 +94,44 @@ export default function ChangeAccountForm({
       city: member.city || "",
       parentPhoneNumber: member.parentPhoneNumber || "",
       preferredLanguage: member.preferredLanguage ?? "EN",
-      mailSubscriptions: member.mailSubscriptions || 0,
     });
   }, [member]);
 
   useEffect(() => {
     const fetchMailingLists = async () => {
+      if (!member.id) return;
+
       setLoadingMailingLists(true);
       try {
-        const response = await getMailinglists();
+        const response = await getMembersByIdMailinglists({
+          path: { id: member.id },
+        });
 
         if (response.error || !response.data) {
           throw response.error ?? new Error("Failed to fetch mailing lists");
         }
 
-        setMailinglists(response.data);
+        setMailingLists(response.data);
+        setSubscribedIds(
+          new Set(
+            response.data
+              .filter((list) => list.subscribed)
+              .map((list) => list.id!),
+          ),
+        );
+        setMailingListsUnavailable(false);
       } catch (error) {
         console.error("Error fetching mailing lists:", error);
         toast.error(appendErrorMessage(t("fetch_mailinglists_failed"), error));
+        setMailingLists([]);
+        setMailingListsUnavailable(true);
       } finally {
         setLoadingMailingLists(false);
       }
     };
 
     fetchMailingLists();
-  }, []);
+  }, [member.id]);
 
   return (
     <Form className="w-full">
@@ -205,7 +219,7 @@ export default function ChangeAccountForm({
         </div>
       </FormSection>
 
-      {mailingLists.length > 0 && (
+      {(mailingLists.length > 0 || loadingMailingLists) && (
         <section>
           <FormHeader title={t("mail_subscriptions")} />
           <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
@@ -214,12 +228,12 @@ export default function ChangeAccountForm({
                 <Checkbox
                   key={list.id}
                   label={list.name}
-                  checked={(formData.mailSubscriptions & list.bitValue!) !== 0}
+                  checked={subscribedIds.has(list.id!)}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    handleSubscriptionChange(
-                      list.bitValue!,
+                    handleSubscriptionToggle(
+                      list.id!,
                       e.target.checked,
-                      setFormData,
+                      setSubscribedIds,
                     )
                   }
                 />
@@ -229,6 +243,11 @@ export default function ChangeAccountForm({
             )}
           </Tile>
         </section>
+      )}
+      {mailingListsUnavailable && (
+        <p className="text-sm text-gray-500 italic">
+          {t("mailinglists_unavailable")}
+        </p>
       )}
 
       <FormSection columns={2}>
@@ -284,7 +303,7 @@ export default function ChangeAccountForm({
             </div>
 
             <a
-              href={`${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/account/account-security/signing-in`}
+              href={`${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/account/#/account-security/signing-in`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-center text-gray-500 hover:text-gray-700 underline pt-1"
@@ -298,7 +317,13 @@ export default function ChangeAccountForm({
       <Button
         onClick={() =>
           member.id &&
-          handleSaveAccount(member.id, formData, setSaving, setMember)
+          handleSaveAccount(
+            member.id,
+            formData,
+            Array.from(subscribedIds),
+            setSaving,
+            setMember,
+          )
         }
         disabled={saving || !isFormValid}
         className="w-full"

@@ -6,6 +6,7 @@ import {
   deleteMembersById,
   getStudies,
   getStudyenrollments,
+  type MemberMailinglistDto,
   type Study,
   type StudyEnrollmentResponseDto,
   type StudyStatus,
@@ -14,6 +15,8 @@ import { loadStudyStartDates } from "~/components/Register/RegisterForm/Register
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import DataTableTile, { type Column } from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
+import Checkbox from "~/components/UI/Checkbox";
+import { FormHeader } from "~/components/UI/Form/FormHeader";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
@@ -23,6 +26,11 @@ import {
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
 } from "./admin/edit-member/edit-member.handlers";
+import {
+  fetchYearlyMailinglists,
+  handleSaveYearlyMailinglists,
+  handleYearlyMailinglistToggle,
+} from "./update-studies.handlers";
 
 /**
  * Page to update your study. You can only update studies where you have been enrolled
@@ -43,6 +51,11 @@ export default function UpdateStudies() {
     [],
   );
   const [studies, setStudies] = useState<Study[]>([]);
+  const [mailingLists, setMailingLists] = useState<MemberMailinglistDto[]>([]);
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
+  const [loadingMailingLists, setLoadingMailingLists] = useState(false);
+  const [savingMailingLists, setSavingMailingLists] = useState(false);
+  const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
 
   useEffect(() => {
     if (!authService) return;
@@ -84,6 +97,18 @@ export default function UpdateStudies() {
 
     loadData();
   }, [authService]);
+
+  useEffect(() => {
+    if (!memberId) return;
+
+    fetchYearlyMailinglists(
+      memberId,
+      setLoadingMailingLists,
+      setMailingLists,
+      setSubscribedIds,
+      setMailingListsUnavailable,
+    );
+  }, [memberId]);
 
   const startDateOptions = useMemo(() => {
     const configured = startDatesRaw
@@ -290,6 +315,56 @@ export default function UpdateStudies() {
             </Button>
           </div>
         </BorderedTile>
+
+        {(mailingLists.length > 0 || loadingMailingLists) && (
+          <BorderedTile>
+            <FormHeader title={t("yearly_mail_subscriptions")} border={false} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {!loadingMailingLists ? (
+                mailingLists.map((list) => (
+                  <Checkbox
+                    key={list.id}
+                    label={list.name}
+                    checked={subscribedIds.has(list.id!)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      handleYearlyMailinglistToggle(
+                        list.id!,
+                        e.target.checked,
+                        setSubscribedIds,
+                      )
+                    }
+                  />
+                ))
+              ) : (
+                <p className="text-gray-500 italic">{t("loading")}</p>
+              )}
+            </div>
+            <div className="flex justify-end mt-6 pt-4 border-t border-slate-200">
+              <Button
+                type="button"
+                variant="primary"
+                disabled={savingMailingLists || !memberId}
+                onClick={() =>
+                  memberId &&
+                  handleSaveYearlyMailinglists(
+                    memberId,
+                    subscribedIds,
+                    setSavingMailingLists,
+                  )
+                }
+              >
+                {savingMailingLists
+                  ? t("saving")
+                  : t("save_mailing_list_preferences")}
+              </Button>
+            </div>
+          </BorderedTile>
+        )}
+        {mailingListsUnavailable && (
+          <p className="text-sm text-gray-500 italic">
+            {t("mailinglists_unavailable")}
+          </p>
+        )}
 
         <div className="mt-8 border border-red-200 bg-red-50/50 rounded-xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 transition-all">
           <div className="flex items-start gap-4">

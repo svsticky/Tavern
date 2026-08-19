@@ -72,9 +72,8 @@ internal static class ServiceExtensions
                                             using var transaction = await dbContext.Database.BeginTransactionAsync();
                                             try
                                             {
-                                                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, dbContext);
+                                                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newEmail, dbContext);
                                                 member.Email = newEmail;
-                                                mailSubscriptionOutboxWorker.EnqueueTask(newEmail, member.MailSubscriptions, dbContext);
                                                 await dbContext.SaveChangesAsync();
                                                 logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
                                                 await transaction.CommitAsync();
@@ -271,6 +270,7 @@ internal static class ServiceExtensions
         services.AddScoped<IGroupMembershipService, GroupMembershipService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IMemberService, MemberService>();
+        services.AddScoped<IMailinglistCurationService, MailinglistCurationService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IPaymentWebhookService, PaymentWebhookService>();
         services.AddScoped<IPermissionService, PermissionService>();
@@ -281,7 +281,6 @@ internal static class ServiceExtensions
         services.AddScoped<IStudyService, StudyService>();
         services.AddScoped<ISpecificationAnswerService, SpecificationAnswerService>();
         services.AddScoped<ISettingsService, SettingsService>();
-        services.AddScoped<IMailinglistService, MailinglistService>();
         services.AddScoped<IRegisterReasonService, RegisterReasonService>();
         services.AddScoped<IRegistrationDocumentService, RegistrationDocumentService>();
         services.AddScoped<IRegisterSlideService, RegisterSlideService>();

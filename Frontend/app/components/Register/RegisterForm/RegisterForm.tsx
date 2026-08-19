@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import type {
-  Mailinglist,
+  MailinglistDto,
   RegistrationDocumentResponseDto,
   Study,
 } from "~/api";
@@ -31,7 +31,7 @@ export default function RegisterForm({ className }: { className?: string }) {
   const isDutch = i18n.language.startsWith("nl");
   const [loading, setLoading] = useState(true);
   const [studies, setStudies] = useState<Study[]>([]);
-  const [mailingLists, setMailingLists] = useState<Mailinglist[]>([]);
+  const [mailingLists, setMailingLists] = useState<MailinglistDto[]>([]);
   const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>(
     [],
   );
@@ -192,7 +192,9 @@ export default function RegisterForm({ className }: { className?: string }) {
     agreedDocumentIds,
   ]);
 
-  const [subscriptions, setSubscriptions] = useState<number>(0);
+  const [subscribedMailinglistIds, setSubscribedMailinglistIds] = useState<
+    string[]
+  >([]);
 
   if (!loading && mastersMustPay === null) {
     return t("error_loading_page");
@@ -213,7 +215,7 @@ export default function RegisterForm({ className }: { className?: string }) {
             formData,
             selectedStudies,
             selectedStartDate,
-            subscriptions,
+            subscribedMailinglistIds,
             studies,
             navigate,
             mastersMustPay,
@@ -382,12 +384,13 @@ export default function RegisterForm({ className }: { className?: string }) {
                     key={list.id}
                     label={list.name}
                     disabled={loading}
-                    checked={(subscriptions & list.bitValue!) !== 0}
+                    checked={subscribedMailinglistIds.includes(list.id!)}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      const newValue = e.target.checked
-                        ? subscriptions | list.bitValue!
-                        : subscriptions & ~list.bitValue!;
-                      setSubscriptions(newValue);
+                      setSubscribedMailinglistIds((prev) =>
+                        e.target.checked
+                          ? [...prev, list.id!]
+                          : prev.filter((id) => id !== list.id),
+                      );
                     }}
                   />
                 ))}

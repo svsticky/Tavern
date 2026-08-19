@@ -76,5 +76,24 @@ namespace Backend.Interfaces
         /// <param name="id">The user ID of the member whose email is refreshed.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         Task RefreshEmail(Guid id, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Retrieves the curated mailing lists together with the given member's current subscription status for each, fetched live from the mail subscription provider.
+        /// </summary>
+        /// <param name="id">The user ID of the member whose mailing lists are retrieved.</param>
+        /// <param name="includeYearlyRenewal">Whether to also include YearlyRenewalOnly lists, not just General ones.</param>
+        /// <param name="userId">The ID of the user performing the request.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglists(Guid id, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Replaces a member's mailing list subscriptions within the given context with the given set of list IDs. Subscriptions to lists outside the given context (e.g. YearlyRenewalOnly lists, when updating from the General context) are left untouched.
+        /// </summary>
+        /// <param name="id">The user ID of the member whose subscriptions are updated.</param>
+        /// <param name="subscribedListIds">The IDs of the mailing lists, within the given context, the member should be subscribed to.</param>
+        /// <param name="includeYearlyRenewal">Whether the given IDs are being edited within the General+YearlyRenewalOnly context rather than just General.</param>
+        /// <param name="userId">The ID of the user performing the update.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task UpdateMemberMailinglists(Guid id, List<string> subscribedListIds, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken);
     }
 }

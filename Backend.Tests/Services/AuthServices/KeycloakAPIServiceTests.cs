@@ -178,8 +178,7 @@ public class KeycloakAPIServiceTests : IDisposable
             Street = "St",
             HouseNumber = "1",
             PostalCode = "1234AB",
-            City = "Enschede",
-            MailSubscriptions = 3
+            City = "Enschede"
         };
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
@@ -212,9 +211,9 @@ public class KeycloakAPIServiceTests : IDisposable
         Assert.Equal("newbob@example.com", updatedMember.Email);
 
         var tasks = await _db.MailSubscriptionOutboxTasks.ToListAsync();
-        Assert.Equal(2, tasks.Count);
-        Assert.Contains(tasks, t => t.Email == "bob@example.com" && t.MailSubscription == 0);
-        Assert.Contains(tasks, t => t.Email == "newbob@example.com" && t.MailSubscription == 3);
+        Assert.Single(tasks);
+        Assert.Contains(tasks, t => t.TaskType == MailSubscriptionOutboxTaskType.MigrateEmail
+            && t.OldEmail == "bob@example.com" && t.Email == "newbob@example.com");
     }
 
     [Fact]

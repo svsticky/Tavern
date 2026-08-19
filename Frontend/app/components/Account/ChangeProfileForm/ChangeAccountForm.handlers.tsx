@@ -1,29 +1,36 @@
 import { t } from "i18next";
 import type { Dispatch, SetStateAction } from "react";
 import toast from "react-hot-toast";
-import { type MemberResponseDto, patchMembersById } from "~/api";
+import {
+  type MemberResponseDto,
+  patchMembersById,
+  putMembersByIdMailinglists,
+} from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
 import i18n from "~/i18n";
 import { appendErrorMessage } from "~/util/error.util";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
 
 /**
- * Handles the change in subscription status for a mailing list.
- * @param {number} flag - The bit value representing the mailing list.
+ * Toggles a mailing list's membership in the set of subscribed list ids.
+ * @param {string} id - The id of the mailing list.
  * @param {boolean} checked - Whether the checkbox is checked or not.
- * @param {(formData: SetStateAction<ChangeAccountFormData>) => void} setFormData - A function to update the form data state.
+ * @param {(setter: SetStateAction<Set<string>>) => void} setSubscribedIds - A function to update the subscribed-ids state.
  */
-export const handleSubscriptionChange = (
-  flag: number,
+export const handleSubscriptionToggle = (
+  id: string,
   checked: boolean,
-  setFormData: (formData: SetStateAction<ChangeAccountFormData>) => void,
+  setSubscribedIds: (setter: SetStateAction<Set<string>>) => void,
 ) => {
-  setFormData((prev) => ({
-    ...prev,
-    mailSubscriptions: checked
-      ? prev.mailSubscriptions | flag
-      : prev.mailSubscriptions & ~flag,
-  }));
+  setSubscribedIds((prev) => {
+    const next = new Set(prev);
+    if (checked) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    return next;
+  });
 };
 
 /**
@@ -69,13 +76,14 @@ export const handleConfigureMFA = async (authService: IAuthService) => {
  * Saves changes to a user's account.
  * @param {string} userId - The ID of the user whose account is being saved.
  * @param {ChangeAccountFormData} formData - The form data containing the updated account details.
+ * @param {string[]} subscribedMailinglistIds - The ids of the mailing lists the member should be subscribed to.
  * @param {(saving: boolean) => void} setSaving - A function to update the saving state.
  * @param {Dispatch<SetStateAction<MemberResponseDto | null>>} setMember - A function to update the member state.
  */
 export const handleSaveAccount = async (
   userId: string,
   formData: ChangeAccountFormData,
-
+  subscribedMailinglistIds: string[],
   setSaving: (saving: boolean) => void,
   setMember: Dispatch<SetStateAction<MemberResponseDto | null>>,
 ) => {
@@ -101,30 +109,28 @@ export const handleSaveAccount = async (
             path: "/preferredLanguage",
             value: formData.preferredLanguage,
           },
-          {
-            op: "replace",
-            path: "/mailSubscriptions",
-            value: formData.mailSubscriptions,
-          },
         ],
       });
       if (response.error) {
         throw response.error ?? new Error("Failed to save account changes");
       }
 
+      const mailinglistsResponse = await putMembersByIdMailinglists({
+        path: { id: userId },
+        body: subscribedMailinglistIds,
+      });
+      if (mailinglistsResponse.error) {
+        throw (
+          mailinglistsResponse.error ??
+          new Error("Failed to save mail subscriptions")
+        );
+      }
+
       await i18n.changeLanguage(
         formData.preferredLanguage === "NL" ? "nl" : "en",
       );
 
-      setMember((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...formData,
-              mailSubscriptions: formData.mailSubscriptions,
-            }
-          : null,
-      );
+      setMember((prev) => (prev ? { ...prev, ...formData } : null));
     } catch (err) {
       console.error("Error saving account:", err);
       throw err;

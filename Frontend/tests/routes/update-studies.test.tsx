@@ -9,18 +9,26 @@ import UpdateStudies from "~/routes/update-studies";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
-const { getStudyenrollments, getStudies, deleteMembersById } = vi.hoisted(
-  () => ({
-    getStudyenrollments: vi.fn(),
-    getStudies: vi.fn(),
-    deleteMembersById: vi.fn(),
-  }),
-);
+const {
+  getStudyenrollments,
+  getStudies,
+  deleteMembersById,
+  getMembersByIdMailinglists,
+  putMembersByIdMailinglists,
+} = vi.hoisted(() => ({
+  getStudyenrollments: vi.fn(),
+  getStudies: vi.fn(),
+  deleteMembersById: vi.fn(),
+  getMembersByIdMailinglists: vi.fn(),
+  putMembersByIdMailinglists: vi.fn(),
+}));
 
 vi.mock("~/api", () => ({
   getStudyenrollments,
   getStudies,
   deleteMembersById,
+  getMembersByIdMailinglists,
+  putMembersByIdMailinglists,
 }));
 
 const { loadStudyStartDates } = vi.hoisted(() => ({
@@ -45,6 +53,8 @@ vi.mock("react-hot-toast", () => ({
       ).catch(() => {});
       return p;
     }),
+    error: vi.fn(),
+    success: vi.fn(),
   },
 }));
 
@@ -83,6 +93,8 @@ describe("UpdateStudies", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     loadStudyStartDates.mockImplementation(async () => {});
+    getMembersByIdMailinglists.mockResolvedValue({ data: [] });
+    putMembersByIdMailinglists.mockResolvedValue({});
   });
 
   it("logs an error when there is no parsed token", async () => {
@@ -280,5 +292,75 @@ describe("UpdateStudies", () => {
     await waitFor(() =>
       expect(screen.queryByText("Annuleren")).not.toBeInTheDocument(),
     );
+  });
+
+  it("fetches the yearly (General + YearlyRenewalOnly) mailing list context and renders it", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    getMembersByIdMailinglists.mockResolvedValue({
+      data: [
+        { id: "list-1", name: "Newsletter", subscribed: false },
+        { id: "alumni", name: "Alumni", subscribed: true },
+      ],
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    await waitFor(() =>
+      expect(getMembersByIdMailinglists).toHaveBeenCalledWith({
+        path: { id: token.UserId },
+        query: { includeYearlyRenewal: true },
+      }),
+    );
+    expect(await screen.findByText("Newsletter")).toBeInTheDocument();
+    expect(screen.getByText("Alumni")).toBeInTheDocument();
+    expect(screen.getByLabelText("Alumni")).toBeChecked();
+    expect(screen.getByLabelText("Newsletter")).not.toBeChecked();
+  });
+
+  it("toggles a mailing list checkbox and saves preferences within the yearly context", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    getMembersByIdMailinglists.mockResolvedValue({
+      data: [{ id: "alumni", name: "Alumni", subscribed: false }],
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    const checkbox = await screen.findByLabelText("Alumni");
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "save_mailing_list_preferences" }),
+    );
+
+    await waitFor(() =>
+      expect(putMembersByIdMailinglists).toHaveBeenCalledWith({
+        path: { id: token.UserId },
+        query: { includeYearlyRenewal: true },
+        body: ["alumni"],
+      }),
+    );
+  });
+
+  it("shows the unavailable message when fetching mailing lists fails", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    getMembersByIdMailinglists.mockResolvedValue({
+      error: { title: "Boom" },
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateStudies />, { authService });
+
+    expect(
+      await screen.findByText("mailinglists_unavailable"),
+    ).toBeInTheDocument();
   });
 });

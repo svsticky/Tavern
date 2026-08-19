@@ -1,7 +1,28 @@
 namespace Backend.Models.Domain;
 
 /// <summary>
-/// Represents a task in the outbox for mail subscription operations. This entity is used to track tasks that need to be processed for managing mail subscriptions, such as adding or removing a user from a mail subscription list. Each task is associated with a specific user and includes information about when it was created, how many times it has been retried, and the type of task being performed.
+/// Identifies which mail subscription provider operation an outbox task should perform.
+/// </summary>
+public enum MailSubscriptionOutboxTaskType
+{
+    /// <summary>
+    /// Replace a member's subscriptions with the set of list IDs carried by the task.
+    /// </summary>
+    UpdateSubscriptions,
+
+    /// <summary>
+    /// Remove a member from the mail subscription provider entirely.
+    /// </summary>
+    Delete,
+
+    /// <summary>
+    /// Move a member's subscriptions from an old email address to a new one.
+    /// </summary>
+    MigrateEmail
+}
+
+/// <summary>
+/// Represents a task in the outbox for mail subscription operations. This entity is used to track tasks that need to be processed for managing mail subscriptions, such as updating a member's subscribed lists, removing a member, or migrating a member's subscriptions to a new email address. Each task includes information about when it was created, how many times it has been retried, and the type of operation being performed.
 /// </summary>
 public class MailSubscriptionOutboxTask
 {
@@ -11,9 +32,24 @@ public class MailSubscriptionOutboxTask
     public long Id { get; set; }
 
     /// <summary>
-    /// The email address of the user associated with this outbox task. This is used to identify the target user for the mail subscription operation and is essential for processing the task correctly.
+    /// The type of mail subscription operation this task should perform.
+    /// </summary>
+    public required MailSubscriptionOutboxTaskType TaskType { get; set; }
+
+    /// <summary>
+    /// The target email address for this task. For <see cref="MailSubscriptionOutboxTaskType.MigrateEmail"/> this is the new email address.
     /// </summary>
     public required string Email { get; set; }
+
+    /// <summary>
+    /// The member's previous email address. Only set for <see cref="MailSubscriptionOutboxTaskType.MigrateEmail"/> tasks.
+    /// </summary>
+    public string? OldEmail { get; set; }
+
+    /// <summary>
+    /// The JSON-serialized list of mailing list IDs the member should be subscribed to. Only set for <see cref="MailSubscriptionOutboxTaskType.UpdateSubscriptions"/> tasks.
+    /// </summary>
+    public string? SubscribedListIdsJson { get; set; }
 
     /// <summary>
     /// The timestamp indicating when the outbox task was created. This is used to track when the task was generated and can be useful for retry logic or auditing purposes.
@@ -29,9 +65,4 @@ public class MailSubscriptionOutboxTask
     /// The number of times this outbox task has been retried. This is used to track how many times the task has been attempted, which can be useful for implementing retry logic or for monitoring the success of task processing.
     /// </summary>
     public int RetryCount { get; set; } = 0;
-
-    /// <summary>
-    /// The mail subscription associated with this outbox task. This is a required property that references the MailSubscriptions entity, which contains information about the specific mail subscription that this task is related to. This association allows for better organization and retrieval of tasks based on the related mail subscription.
-    /// </summary>
-    public required uint MailSubscription { get; set; }
 }

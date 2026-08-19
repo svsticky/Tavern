@@ -1,12 +1,30 @@
+using Backend.Models;
+
 namespace Backend.Controllers.DTOs;
 
 /// <summary>
-/// Data Transfer Object for creating or updating a mailing list. The PostMailinglistDTO class encapsulates the necessary information required to create or update a mailing list entity, including the Name of the mailing list and the ServiceId that identifies the associated email service. This DTO is used in the Mailinglists controller to receive data from client requests when creating new mailing lists or updating existing ones, ensuring that the required fields are provided and structured correctly for processing by the underlying business logic in the MailinglistService.
+/// Defines the DTO for curating a new mailing list.
 /// </summary>
-public class PostMailinglistDTO
+public class PostCuratedMailinglistDTO
 {
-    /// <inheritdoc cref="Models.Domain.Mailinglist.Name"/>
-    public string Name { get; set; } = null!;
-    /// <inheritdoc cref="Models.Domain.Mailinglist.ServiceId"/>
-    public string ServiceId { get; set; } = null!;
+    /// <summary>
+    /// The mail subscription provider's identifier for the list to curate (e.g. a Mailchimp interest ID).
+    /// </summary>
+    public required string ProviderListId { get; set; }
+
+    /// <summary>
+    /// Where this list should be shown to members.
+    /// </summary>
+    public required MailinglistVisibility Visibility { get; set; }
+}
+
+/// <summary>
+/// Defines the DTO for changing a curated mailing list's visibility.
+/// </summary>
+public class PatchCuratedMailinglistDTO
+{
+    /// <summary>
+    /// The new visibility for the curated mailing list.
+    /// </summary>
+    public required MailinglistVisibility Visibility { get; set; }
 }

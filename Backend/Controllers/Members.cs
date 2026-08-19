@@ -220,6 +220,52 @@ namespace Backend.Controllers
             return NoContent();
         }
 
+        // GET: members/{id}/mailinglists
+        /// <summary>
+        /// Retrieves the mailing lists together with the member's current subscription status for each, fetched live from the configured mail subscription provider. The GetMemberMailinglists endpoint lets a member (or a board member on their behalf) see exactly what Mailchimp currently has on record, so there is never a stale local copy to fall out of sync.
+        /// </summary>
+        /// <param name="id">The unique identifier of the member whose mailing lists are retrieved.</param>
+        /// <param name="includeYearlyRenewal">Whether to also include YearlyRenewalOnly lists (used by the yearly study-renewal page), not just General ones.</param>
+        /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>The mailing lists with the member's subscription status.</returns>
+        [HttpGet("{id}/mailinglists")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(IEnumerable<MemberMailinglistDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<IEnumerable<MemberMailinglistDto>>> GetMemberMailinglists(Guid id, [FromQuery] bool includeYearlyRenewal, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            var result = await memberService.GetMemberMailinglists(id, includeYearlyRenewal, userId, cancellationToken);
+            return Ok(result);
+        }
+
+        // PUT: members/{id}/mailinglists
+        /// <summary>
+        /// Replaces a member's mailing list subscriptions with the given set of list IDs. The UpdateMemberMailinglists endpoint queues the change for the mail subscription provider and returns immediately, so a slow or unavailable provider never blocks the request.
+        /// </summary>
+        /// <param name="id">The unique identifier of the member whose subscriptions are updated.</param>
+        /// <param name="subscribedListIds">The IDs of the mailing lists, within the given context, the member should be subscribed to.</param>
+        /// <param name="includeYearlyRenewal">Whether the given IDs are being edited within the General+YearlyRenewalOnly context rather than just General. Subscriptions to lists outside the given context are left untouched.</param>
+        /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>A 204 No Content status upon successfully queuing the update.</returns>
+        [HttpPut("{id}/mailinglists")]
+        [Consumes("application/json")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult> UpdateMemberMailinglists(Guid id, [FromBody] List<string> subscribedListIds, [FromQuery] bool includeYearlyRenewal, CancellationToken cancellationToken)
+        {
+            var userId = GetUserId();
+            await memberService.UpdateMemberMailinglists(id, subscribedListIds, includeYearlyRenewal, userId, cancellationToken);
+            return NoContent();
+        }
+
         // POST: members/webhook/refresh-email
         /// <summary>
         /// Handles incoming webhooks from authentication system to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.

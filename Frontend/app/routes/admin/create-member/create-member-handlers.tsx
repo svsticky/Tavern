@@ -93,7 +93,6 @@ export const handleCreateSubmit = async ({
         studentNumber: finalStudentNumber,
         parentPhoneNumber: formData.parentPhone || null,
         preferredLanguage: formData.language,
-        mailSubscriptions: 0,
         studyEnrollments: [],
         begunstiger: formData.isBegunstiger,
       };

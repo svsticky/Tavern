@@ -61,12 +61,6 @@ vi.mock(
   }),
 );
 vi.mock(
-  "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable",
-  () => ({
-    default: () => <div>mailing-lists-datatable</div>,
-  }),
-);
-vi.mock(
   "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable",
   () => ({
     default: () => <div>register-reasons-datatable</div>,
@@ -180,7 +174,6 @@ describe("SettingsPage", () => {
     expect(screen.getByText("register-reasons-datatable")).toBeInTheDocument();
     expect(screen.getByText("register-slides-datatable")).toBeInTheDocument();
     expect(screen.getByText("external-links-datatable")).toBeInTheDocument();
-    expect(screen.getByText("mailing-lists-datatable")).toBeInTheDocument();
   });
 
   it("disables save while a required field is missing", async () => {

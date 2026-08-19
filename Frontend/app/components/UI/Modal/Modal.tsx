@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { X } from "lucide-react";
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { createModalKeyDownHandler } from "./Modal.handlers";
 
 /**
@@ -54,7 +55,12 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  return (
+  // Rendered via a portal straight onto <body> rather than in place: this content often
+  // contains its own <form> (e.g. EditMailinglistOverlay), and a page that renders <Modal>
+  // inside its own <form> (e.g. the admin settings page) would otherwise end up with an
+  // invalid nested <form> in the DOM - clicking the modal's submit button then submits the
+  // page's outer form instead of the modal's own one.
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
@@ -75,6 +81,7 @@ export default function Modal({
 
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

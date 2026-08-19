@@ -1,107 +1,164 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-import type { Mailinglist } from "~/api";
-import EditMailingListOverlay from "~/components/Mailinglist/EditMailinglistOverlay/EditMailinglistOverlay";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { CuratedMailinglistDto, MailinglistDto } from "~/api";
+import EditMailinglistOverlay from "~/components/Mailinglist/EditMailinglistOverlay/EditMailinglistOverlay";
 
-const { handleMailingListDelete, handleMailingListSubmit } = vi.hoisted(() => ({
-  handleMailingListDelete: vi.fn(),
-  handleMailingListSubmit: vi.fn(),
+const {
+  fetchAddableMailinglists,
+  handleMailinglistDelete,
+  handleMailinglistSubmit,
+} = vi.hoisted(() => ({
+  fetchAddableMailinglists: vi.fn(),
+  handleMailinglistDelete: vi.fn(),
+  handleMailinglistSubmit: vi.fn(),
 }));
 
 vi.mock(
   "~/components/Mailinglist/EditMailinglistOverlay/EditMailinglistOverlay.handlers",
   () => ({
-    handleMailingListDelete,
-    handleMailingListSubmit,
+    fetchAddableMailinglists,
+    handleMailinglistDelete,
+    handleMailinglistSubmit,
   }),
 );
 
-describe("EditMailingListOverlay", () => {
-  it("renders empty fields and a disabled create button for a new list", () => {
-    render(<EditMailingListOverlay onMailingListEdited={vi.fn()} />);
+describe("EditMailinglistOverlay", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-    expect(screen.getByLabelText(/name/)).toHaveValue("");
-    expect(screen.getByRole("button", { name: "create" })).toBeDisabled();
+  it("fetches addable lists and shows a disabled add button when adding", () => {
+    render(<EditMailinglistOverlay onMailinglistEdited={vi.fn()} />);
+
+    expect(fetchAddableMailinglists).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(
+      screen.getByRole("button", { name: "add_mailing_list" }),
+    ).toBeDisabled();
     expect(
       screen.queryByRole("button", { name: "delete" }),
     ).not.toBeInTheDocument();
   });
 
-  it("pre-fills fields and shows save/delete for an existing list", () => {
-    const list: Mailinglist = {
+  it("shows edit mode for an existing curated list without fetching addable lists", () => {
+    const curatedList = {
       id: 1,
+      providerListId: "p1",
       name: "Newsletter",
-      serviceId: "svc-1",
-    } as Mailinglist;
+      visibility: "General",
+    } as CuratedMailinglistDto;
 
     render(
-      <EditMailingListOverlay
-        onMailingListEdited={vi.fn()}
-        mailingList={list}
+      <EditMailinglistOverlay
+        onMailinglistEdited={vi.fn()}
+        curatedList={curatedList}
       />,
     );
 
-    expect(screen.getByLabelText(/name/)).toHaveValue("Newsletter");
-    expect(screen.getByLabelText("service_id")).toHaveValue("svc-1");
+    expect(fetchAddableMailinglists).not.toHaveBeenCalled();
+    expect(screen.getByText("Newsletter")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "save" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "delete" })).toBeInTheDocument();
   });
 
-  it("enables the create button once a name is entered", async () => {
-    const user = userEvent.setup();
-    render(<EditMailingListOverlay onMailingListEdited={vi.fn()} />);
-
-    await user.type(screen.getByLabelText(/name/), "New list");
-
-    expect(screen.getByRole("button", { name: "create" })).toBeEnabled();
-  });
-
-  it("updates the service id field as the user types", () => {
-    render(<EditMailingListOverlay onMailingListEdited={vi.fn()} />);
-    fireEvent.change(screen.getByLabelText(/service_id/), {
-      target: { value: "newsletter_general" },
-    });
-    expect(screen.getByLabelText(/service_id/)).toHaveValue(
-      "newsletter_general",
+  it("enables the add button once a provider list is picked", async () => {
+    fetchAddableMailinglists.mockImplementation(
+      async (
+        setLoading: (l: boolean) => void,
+        setAddableLists: (lists: MailinglistDto[]) => void,
+      ) => {
+        setAddableLists([{ id: "p1", name: "Newsletter" }]);
+        setLoading(false);
+      },
     );
+    const user = userEvent.setup();
+    render(<EditMailinglistOverlay onMailinglistEdited={vi.fn()} />);
+
+    await waitFor(() =>
+      expect(screen.getByLabelText(/name/)).toBeInTheDocument(),
+    );
+    await user.selectOptions(screen.getByLabelText(/name/), "p1");
+
+    expect(
+      screen.getByRole("button", { name: "add_mailing_list" }),
+    ).toBeEnabled();
   });
 
-  it("calls handleMailingListSubmit when save/create is clicked", async () => {
+  it("calls handleMailinglistSubmit with the picked list and visibility on submit", async () => {
+    fetchAddableMailinglists.mockImplementation(
+      async (
+        setLoading: (l: boolean) => void,
+        setAddableLists: (lists: MailinglistDto[]) => void,
+      ) => {
+        setAddableLists([{ id: "p1", name: "Newsletter" }]);
+        setLoading(false);
+      },
+    );
     const user = userEvent.setup();
-    const onMailingListEdited = vi.fn();
+    const onMailinglistEdited = vi.fn();
     render(
-      <EditMailingListOverlay onMailingListEdited={onMailingListEdited} />,
+      <EditMailinglistOverlay onMailinglistEdited={onMailinglistEdited} />,
     );
 
-    await user.type(screen.getByLabelText(/name/), "New list");
-    await user.click(screen.getByRole("button", { name: "create" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText(/name/)).toBeInTheDocument(),
+    );
+    await user.selectOptions(screen.getByLabelText(/name/), "p1");
+    await user.selectOptions(
+      screen.getByLabelText(/visibility/),
+      "YearlyRenewalOnly",
+    );
+    await user.click(screen.getByRole("button", { name: "add_mailing_list" }));
 
-    expect(handleMailingListSubmit).toHaveBeenCalledWith(
+    expect(handleMailinglistSubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        formData: { name: "New list", serviceId: "" },
-        onComplete: onMailingListEdited,
+        providerListId: "p1",
+        visibility: "YearlyRenewalOnly",
+        onComplete: onMailinglistEdited,
       }),
     );
   });
 
-  it("calls handleMailingListDelete when delete is clicked", async () => {
+  it("calls handleMailinglistDelete when delete is clicked", async () => {
     const user = userEvent.setup();
-    const list: Mailinglist = { id: 1, name: "Newsletter" } as Mailinglist;
-    const onMailingListEdited = vi.fn();
+    const curatedList = {
+      id: 5,
+      providerListId: "p1",
+    } as CuratedMailinglistDto;
+    const onMailinglistEdited = vi.fn();
     render(
-      <EditMailingListOverlay
-        onMailingListEdited={onMailingListEdited}
-        mailingList={list}
+      <EditMailinglistOverlay
+        onMailinglistEdited={onMailinglistEdited}
+        curatedList={curatedList}
       />,
     );
 
     await user.click(screen.getByRole("button", { name: "delete" }));
 
-    expect(handleMailingListDelete).toHaveBeenCalledWith({
-      mailingList: list,
+    expect(handleMailinglistDelete).toHaveBeenCalledWith({
+      curatedList,
       setLoading: expect.any(Function),
-      onComplete: onMailingListEdited,
+      onComplete: onMailinglistEdited,
     });
+  });
+
+  it("shows a message when there are no addable lists left", async () => {
+    fetchAddableMailinglists.mockImplementation(
+      async (
+        setLoading: (l: boolean) => void,
+        setAddableLists: (lists: MailinglistDto[]) => void,
+      ) => {
+        setAddableLists([]);
+        setLoading(false);
+      },
+    );
+    render(<EditMailinglistOverlay onMailinglistEdited={vi.fn()} />);
+
+    expect(
+      await screen.findByText("no_addable_mailing_lists"),
+    ).toBeInTheDocument();
   });
 });

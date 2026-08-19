@@ -90,7 +90,6 @@ describe("loadMemberData", () => {
         city: "Enschede",
         parentPhoneNumber: null,
         preferredLanguage: "NL",
-        mailSubscriptions: 1,
         notes: "note",
         gratie: true,
         lidVanVerdienste: false,
@@ -164,7 +163,6 @@ describe("loadMemberData", () => {
       expect.objectContaining({
         firstName: "",
         preferredLanguage: "NL",
-        mailSubscriptions: 0,
         dateOfBirth: "",
         gratie: false,
       }),

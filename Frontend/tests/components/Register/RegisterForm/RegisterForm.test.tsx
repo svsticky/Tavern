@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
-  Mailinglist,
+  MailinglistDto,
   RegistrationDocumentResponseDto,
   Study,
 } from "~/api";
@@ -92,8 +92,8 @@ describe("RegisterForm", () => {
   });
 
   it("renders mailing list checkboxes when lists are available", async () => {
-    const lists: Mailinglist[] = [
-      { id: 1, name: "Newsletter", bitValue: 1 } as Mailinglist,
+    const lists: MailinglistDto[] = [
+      { id: "list-1", name: "Newsletter" } as MailinglistDto,
     ];
     vi.mocked(loadMailingLists).mockImplementation(async (setLists) =>
       setLists(lists),
@@ -190,9 +190,9 @@ describe("RegisterForm", () => {
     expect(handleRegisterInputChange).toHaveBeenCalledTimes(fields.length);
   });
 
-  it("toggles a mail subscription checkbox on and off via bitmask", async () => {
-    const lists: Mailinglist[] = [
-      { id: 1, name: "Newsletter", bitValue: 1 } as Mailinglist,
+  it("toggles a mail subscription checkbox on and off", async () => {
+    const lists: MailinglistDto[] = [
+      { id: "list-1", name: "Newsletter" } as MailinglistDto,
     ];
     vi.mocked(loadMailingLists).mockImplementation(async (setLists) =>
       setLists(lists),

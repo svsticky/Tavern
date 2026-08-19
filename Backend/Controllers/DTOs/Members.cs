@@ -60,8 +60,10 @@ public class PostMemberDTO
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public string? ParentPhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Member.MailSubscriptions"/>
-    public uint MailSubscriptions { get; set; }
+    /// <summary>
+    /// The IDs of the mailing lists the member should be subscribed to.
+    /// </summary>
+    public List<string>? SubscribedMailinglistIds { get; set; }
 
     /// <inheritdoc cref="Member.PreferredLanguage"/>
     public required Language PreferredLanguage { get; set; }
@@ -120,9 +122,6 @@ public class MemberResponseDTO
     /// <inheritdoc cref="Member.ParentPhoneNumber"/>
     public string? ParentPhoneNumber { get; set; }
 
-    /// <inheritdoc cref="Member.MailSubscriptions"/>
-    public uint? MailSubscriptions { get; set; }
-
     /// <inheritdoc cref="Member.Notes"/>
     public string? Notes { get; set; }
 
@@ -179,7 +178,6 @@ public class MemberResponseDTO
             City = isBoard || userId == m.Id ? m.City : null,
             DateOfBirth = isBoard || userId == m.Id ? m.DateOfBirth : null,
             ParentPhoneNumber = isBoard || userId == m.Id ? m.ParentPhoneNumber : null,
-            MailSubscriptions = m.MailSubscriptions,
             Notes = isBoard ? m.Notes : null,
             RegisteredOn = isBoard || userId == m.Id ? m.RegisteredOn : null,
             PreferredLanguage = isBoard || userId == m.Id ? m.PreferredLanguage : null,
@@ -261,9 +259,6 @@ public class MemberUpdateDTO
     /// <inheritdoc cref="Member.ParentPhoneNumber"/>  
     [RegularExpression(@"^(\+?[1-9]\d{6,14}|0[1-9]\d{8})$", ErrorMessage = "Invalid phone number format.")]
     public string? ParentPhoneNumber { get; set; }
-
-    /// <inheritdoc cref="Member.MailSubscriptions"/>
-    public uint MailSubscriptions { get; set; }
 
     /// <inheritdoc cref="Member.Notes"/>
     public string? Notes { get; set; }

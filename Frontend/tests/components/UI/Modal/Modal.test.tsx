@@ -50,13 +50,15 @@ describe("Modal", () => {
 
   it("calls onClose when the backdrop is clicked", async () => {
     const onClose = vi.fn();
-    const { container } = render(
+    const { baseElement } = render(
       <Modal isOpen onClose={onClose} title="Details">
         <p>Content</p>
       </Modal>,
     );
 
-    const backdrop = container.querySelector(
+    // Modal renders via a portal onto document.body, so it's outside the render's own
+    // `container` - `baseElement` (defaults to document.body) is what actually contains it.
+    const backdrop = baseElement.querySelector(
       ".bg-slate-900\\/60",
     ) as HTMLElement;
     await userEvent.click(backdrop);

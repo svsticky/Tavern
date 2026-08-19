@@ -20,14 +20,21 @@ export function generateIndexFiles(
 
     if (folders.length === 0 && files.length === 0) return;
 
+    // This index.mdx renders AT this folder's own route (e.g. a folder "answer.util"
+    // becomes the page /docs/Frontend/util/answer.util), so its own name is never part
+    // of a relative link's starting point the way a regular page's filename would be.
+    // Without re-adding it here, the browser resolves a plain "./child" link one level
+    // too high (it drops this folder's own name instead of descending into it).
+    const currentFolderName = path.basename(baseDir);
+
     // Create links for the index
     const folderLinks = folders
-        .map((f) => `- [${f}](./${f})`)
+        .map((f) => `- [${f}](./${currentFolderName}/${f})`)
         .join("\n");
     const fileLinks = files
         .map(
             (f) =>
-                `- [${f.replace(".mdx", "")}](./${f.replace(".mdx", "")})`,
+                `- [${f.replace(".mdx", "")}](./${currentFolderName}/${f.replace(".mdx", "")})`,
         )
         .join("\n");
     const links =

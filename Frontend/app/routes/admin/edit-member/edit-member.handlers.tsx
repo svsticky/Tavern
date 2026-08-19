@@ -31,7 +31,6 @@ type EditMemberFormData = {
   city: string;
   parentPhoneNumber: string;
   preferredLanguage: string;
-  mailSubscriptions: number;
   notes: string;
   gratie: boolean;
   lidVanVerdienste: boolean;
@@ -99,7 +98,6 @@ export const loadMemberData = async ({
       city: memberResponse.data.city || "",
       parentPhoneNumber: memberResponse.data.parentPhoneNumber || "",
       preferredLanguage: memberResponse.data.preferredLanguage ?? "NL",
-      mailSubscriptions: Number(memberResponse.data.mailSubscriptions) || 0,
       notes: memberResponse.data.notes || "",
       gratie: !!memberResponse.data.gratie,
       lidVanVerdienste: !!memberResponse.data.lidVanVerdienste,

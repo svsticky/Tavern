@@ -183,7 +183,7 @@ describe("RegisterForm.handlers", () => {
 
   describe("loadMailingLists", () => {
     it("sets the mailing lists on success", async () => {
-      const lists = [{ id: 1, name: "News", bitValue: 1 }];
+      const lists = [{ id: "list-1", name: "News" }];
       getMailinglists.mockResolvedValue({ data: lists });
       const setMailingLists = vi.fn();
 
@@ -315,7 +315,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "2024-09-01",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [],
         navigate,
         mastersMustPay: false,
@@ -334,7 +334,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [],
         selectedStartDate: "",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [],
         navigate,
         mastersMustPay: null,
@@ -358,7 +358,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "2024-09-01",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [{ id: 1, title: "Master CS", type: "Master" } as Study],
         navigate,
         mastersMustPay: true,
@@ -401,7 +401,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "2024-09-01",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [{ id: 1, title: "Bachelor CS", type: "Bachelor" } as Study],
         navigate,
         mastersMustPay: false,
@@ -423,7 +423,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "2024-09-01",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [{ id: 1, title: "Master CS", type: "Master" } as Study],
         navigate,
         mastersMustPay: false,
@@ -448,7 +448,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "2024-09-01",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [],
         navigate,
         mastersMustPay: true,
@@ -474,7 +474,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "2024-09-01",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [],
         navigate,
         mastersMustPay: true,
@@ -498,7 +498,7 @@ describe("RegisterForm.handlers", () => {
         formData: baseFormData(),
         selectedStudies: [1],
         selectedStartDate: "",
-        subscriptions: 0,
+        subscribedMailinglistIds: [],
         studies: [],
         navigate,
         mastersMustPay: true,

@@ -36,6 +36,8 @@ public class MemberServiceTests : IDisposable
     private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
     private readonly IAuthService _authService;
+    private readonly IMailSubscriptionService _mailSubscriptionService;
+    private readonly IMailinglistCurationService _mailinglistCurationService;
     private readonly IMemoryCache _memoryCache;
     private readonly MemberService _service;
     private readonly Guid _userId = Guid.NewGuid();
@@ -59,7 +61,16 @@ public class MemberServiceTests : IDisposable
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, NullLogger<AuthOutboxWorker>.Instance);
         _mailSubscriptionOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
         _authService = Substitute.For<IAuthService>();
+        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>();
+        _mailinglistCurationService = Substitute.For<IMailinglistCurationService>();
         _memoryCache = Substitute.For<IMemoryCache>();
+
+        // Sensible defaults so tests that don't care about mailing lists don't have to mock these -
+        // no curated lists, and the member isn't subscribed to anything at the provider.
+        _mailinglistCurationService.GetVisibleProviderListIds(Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string>());
+        _mailSubscriptionService.GetMemberMailinglistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new List<MemberMailinglistDto>());
 
         _service = new MemberService(
             _db,
@@ -70,6 +81,8 @@ public class MemberServiceTests : IDisposable
             _authOutboxWorker,
             _mailSubscriptionOutboxWorker,
             _authService,
+            _mailSubscriptionService,
+            _mailinglistCurationService,
             _memoryCache,
             NullLogger<MemberService>.Instance
         );
@@ -332,6 +345,7 @@ public class MemberServiceTests : IDisposable
             City = "C",
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
             PreferredLanguage = Language.NL,
+            SubscribedMailinglistIds = new List<string> { "id_news" },
             StudyEnrollments = new List<PostStudyEnrollmentDTO>
             {
                 new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
@@ -348,6 +362,10 @@ public class MemberServiceTests : IDisposable
         Assert.NotNull(saved);
         Assert.Equal("a@b.com", saved.Email);
         await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Create, result.Id);
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
+            "a@b.com",
+            Arg.Is<IEnumerable<string>>(ids => ids.SequenceEqual(new[] { "id_news" })),
+            _db);
     }
 
     [Fact]
@@ -372,6 +390,7 @@ public class MemberServiceTests : IDisposable
         var memberId = Guid.NewGuid();
         var member = CreateTestMember(memberId);
         member.ProfilePicturePath = "pic.webp";
+        var originalEmail = member.Email;
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
@@ -397,6 +416,7 @@ public class MemberServiceTests : IDisposable
         await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value);
         await _storageService.Received(1).DeleteFileAsync("profile-pictures", "pic.webp");
         _memoryCache.Received(1).Remove("prof-pic-pic.webp");
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueDeleteTask(originalEmail, _db);
     }
 
     [Fact]
@@ -496,6 +516,7 @@ public class MemberServiceTests : IDisposable
         Assert.NotNull(updated);
         Assert.Equal("New Street", updated.Street);
         await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value);
+        _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
     }
 
     [Fact]
@@ -551,6 +572,7 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
         Assert.Equal("NewName", updated.FirstName);
+        _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
     }
 
     [Fact]
@@ -621,7 +643,7 @@ public class MemberServiceTests : IDisposable
 
         // Assert
         await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, authUserId);
-        _mailSubscriptionOutboxWorker.Received(1).EnqueueTask("new-email@example.com", member.MailSubscriptions, _db);
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueMigrateEmailTask(member.Email, "new-email@example.com", _db);
     }
 
     [Fact]
@@ -964,9 +986,166 @@ public class MemberServiceTests : IDisposable
         // Assert
         Assert.NotNull(result);
         await _paymentService.Received(1).CancelPaymentAsync("pay_456");
-        
+
         _db.ChangeTracker.Clear();
         var oldMemberDeleted = await _db.Members.FindAsync(existing.Id);
         Assert.Null(oldMemberDeleted);
+    }
+
+    [Fact]
+    public async Task GetMemberMailinglists_Self_ReturnsOnlyVisibleProviderLists()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId, "self@example.com");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var lists = new List<MemberMailinglistDto>
+        {
+            new("id_news", "Newsletter", true),
+            new("id_alumni", "Alumni", false)
+        };
+        _mailSubscriptionService.GetMemberMailinglistsAsync("self@example.com", Arg.Any<CancellationToken>()).Returns(lists);
+        _mailinglistCurationService.GetVisibleProviderListIds(false, Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string> { "id_news" });
+
+        // Act
+        var result = await _service.GetMemberMailinglists(_userId, false, _userId, CancellationToken.None);
+
+        // Assert
+        var single = Assert.Single(result);
+        Assert.Equal("id_news", single.Id);
+        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+    }
+
+    [Fact]
+    public async Task GetMemberMailinglists_Other_RequiresBoard()
+    {
+        // Arrange
+        var otherId = Guid.NewGuid();
+        var member = CreateTestMember(otherId, "other@example.com");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(x => throw new UnauthorizedAccessException());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.GetMemberMailinglists(otherId, false, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetMemberMailinglists_MemberNotFound_ThrowsKeyNotFoundException()
+    {
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _service.GetMemberMailinglists(Guid.NewGuid(), false, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task UpdateMemberMailinglists_Self_EnqueuesUpdateTask()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId, "self@example.com");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var ids = new List<string> { "id_news", "id_events" };
+
+        // Act
+        await _service.UpdateMemberMailinglists(_userId, ids, false, _userId, CancellationToken.None);
+
+        // Assert
+        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
+            "self@example.com",
+            Arg.Is<IEnumerable<string>>(actual => actual.OrderBy(x => x).SequenceEqual(ids.OrderBy(x => x))),
+            _db);
+    }
+
+    [Fact]
+    public async Task UpdateMemberMailinglists_MemberNotFound_ThrowsKeyNotFoundException()
+    {
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _service.UpdateMemberMailinglists(Guid.NewGuid(), new List<string>(), false, _userId, CancellationToken.None));
+    }
+
+    /// <summary>
+    /// The critical correctness case for this feature: saving from the General context
+    /// (includeYearlyRenewal=false) must not touch subscription state for a list outside that
+    /// context - e.g. a YearlyRenewalOnly "alumni" list the member is already subscribed to - since
+    /// UpdateMemberSubscriptionsAsync at the provider does a full replace of everything not
+    /// explicitly included.
+    /// </summary>
+    [Fact]
+    public async Task UpdateMemberMailinglists_GeneralContext_PreservesSubscriptionsOutsideContext()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId, "self@example.com");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        // Member is currently subscribed to a General list (being edited) and a YearlyRenewalOnly
+        // list (not shown/editable in this context) plus an uncurated provider list.
+        var currentState = new List<MemberMailinglistDto>
+        {
+            new("id_news", "Newsletter", true),
+            new("id_alumni", "Alumni", true),
+            new("id_uncurated", "Uncurated", true)
+        };
+        _mailSubscriptionService.GetMemberMailinglistsAsync("self@example.com", Arg.Any<CancellationToken>()).Returns(currentState);
+
+        // Only "id_news" is visible in the General context.
+        _mailinglistCurationService.GetVisibleProviderListIds(false, Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string> { "id_news" });
+
+        // The member unsubscribes from the one General list they can see.
+        var submittedIds = new List<string>();
+
+        // Act
+        await _service.UpdateMemberMailinglists(_userId, submittedIds, false, _userId, CancellationToken.None);
+
+        // Assert - the final set sent to the provider must still include the two lists outside the
+        // General context ("id_alumni", "id_uncurated"), even though the submitted set was empty.
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
+            "self@example.com",
+            Arg.Is<IEnumerable<string>>(actual =>
+                actual.OrderBy(x => x).SequenceEqual(new[] { "id_alumni", "id_uncurated" }.OrderBy(x => x))),
+            _db);
+    }
+
+    [Fact]
+    public async Task UpdateMemberMailinglists_YearlyRenewalContext_SubmittedSetCoversEverythingCurated()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId, "self@example.com");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var currentState = new List<MemberMailinglistDto>
+        {
+            new("id_news", "Newsletter", true),
+            new("id_alumni", "Alumni", false),
+            new("id_uncurated", "Uncurated", true)
+        };
+        _mailSubscriptionService.GetMemberMailinglistsAsync("self@example.com", Arg.Any<CancellationToken>()).Returns(currentState);
+
+        // Both General and YearlyRenewalOnly lists are visible in this context.
+        _mailinglistCurationService.GetVisibleProviderListIds(true, Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string> { "id_news", "id_alumni" });
+
+        // Member subscribes to alumni too, in the yearly renewal form.
+        var submittedIds = new List<string> { "id_news", "id_alumni" };
+
+        // Act
+        await _service.UpdateMemberMailinglists(_userId, submittedIds, true, _userId, CancellationToken.None);
+
+        // Assert - the uncurated provider list the member happens to already be on is still
+        // preserved, since it's outside even the full curated context.
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
+            "self@example.com",
+            Arg.Is<IEnumerable<string>>(actual =>
+                actual.OrderBy(x => x).SequenceEqual(new[] { "id_news", "id_alumni", "id_uncurated" }.OrderBy(x => x))),
+            _db);
     }
 }

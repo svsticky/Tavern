@@ -39,7 +39,6 @@ public class Member
         "/housenumber",
         "/postalcode",
         "/city",
-        "/mailsubscriptions",
         "/preferredlanguage"
     };
 
@@ -127,11 +126,6 @@ public class Member
     /// The date of birth of the member.
     /// </summary>
     public DateTimeOffset DateOfBirth { get; set; }
-
-    /// <summary>
-    /// The mail subscriptions of the member.
-    /// </summary>
-    public uint MailSubscriptions { get; set; } = 0;
 
     /// <summary>
     /// The notes about the member.

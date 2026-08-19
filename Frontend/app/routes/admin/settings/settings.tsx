@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import type { GroupResponseDto, Role } from "~/api";
 import { postGroupsPromoteBoard } from "~/api/sdk.gen";
 import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
-import ManageMailingListsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
+import ManageMailinglistsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
 import ManageRegisterSlidesDatatable from "~/components/Register/ManageRegisterSlidesDatatable/ManageRegisterSlidesDatatable";
 import ManageRegistrationDocumentsDatatable from "~/components/Register/ManageRegistrationDocumentsDatatable/ManageRegistrationDocumentsDatatable";
@@ -703,8 +703,8 @@ export default function SettingsPage() {
           </FormSection>
 
           <div>
-            <FormHeader title={t("mail_subscriptions")} />
-            <ManageMailingListsDatatable />
+            <FormHeader title={t("manage_mailing_lists")} />
+            <ManageMailinglistsDatatable />
           </div>
 
           <FormSection title={t("role_email_mapping")} columns={1}>

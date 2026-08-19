@@ -23,6 +23,8 @@ namespace Backend.Services.Domain
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
         IAuthService authService,
+        IMailSubscriptionService mailSubscriptionService,
+        IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
         ILogger<MemberService> logger
     ) : IMemberService
@@ -121,11 +123,11 @@ namespace Backend.Services.Domain
                     AddStudyEnrollments(member.Id, dto.StudyEnrollments);
                 }
 
-                // Sync with the auth system 
+                // Sync with the auth system
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Create, member.Id);
 
                 // Enqueue mail subscription update
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
+                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, dto.SubscribedMailinglistIds ?? [], db);
 
                 await db.SaveChangesAsync(cancellationToken);
 
@@ -163,10 +165,10 @@ namespace Backend.Services.Domain
             {
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."));
 
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
-
                 // Anonymize member PII while retaining foreign keys and financial history
                 var oldEmail = member.Email;
+
+                mailSubscriptionOutboxWorker.EnqueueDeleteTask(oldEmail, db);
                 member.FirstName = "Deleted";
                 member.LastName = "Member";
                 member.Email = $"deleted-{member.Id}@deleted.local";
@@ -178,7 +180,6 @@ namespace Backend.Services.Domain
                 member.PostalCode = "0000AA";
                 member.City = "Deleted";
                 member.Notes = null;
-                member.MailSubscriptions = 0;
                 member.Gratie = false;
                 member.LidVanVerdienste = false;
                 member.EreLid = false;
@@ -236,8 +237,6 @@ namespace Backend.Services.Domain
 
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
 
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
-
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
@@ -281,8 +280,6 @@ namespace Backend.Services.Domain
                 StateValidator.Validate(member);
 
                 await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
-
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, member.MailSubscriptions, db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -330,10 +327,9 @@ namespace Backend.Services.Domain
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
                 await authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
                 var newMail = await authService.GetEmail(member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
-                mailSubscriptionOutboxWorker.EnqueueTask(newMail, member.MailSubscriptions, db);
+                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newMail, db);
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }
@@ -343,6 +339,47 @@ namespace Backend.Services.Domain
                 logger.LogError(ex, "Failed updating member email {MemberId}.", id);
                 throw;
             }
+        }
+
+        /// <inheritdoc />
+        public async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglists(Guid id, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken)
+        {
+            if (id != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+            var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
+            if (member == null)
+                throw new KeyNotFoundException($"Member with ID {id} not found.");
+
+            var visibleIds = await mailinglistCurationService.GetVisibleProviderListIds(includeYearlyRenewal, cancellationToken);
+            var allLists = await mailSubscriptionService.GetMemberMailinglistsAsync(member.Email, cancellationToken);
+
+            return allLists.Where(l => visibleIds.Contains(l.Id));
+        }
+
+        /// <inheritdoc />
+        public async Task UpdateMemberMailinglists(Guid id, List<string> subscribedListIds, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken)
+        {
+            if (id != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+
+            var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
+            if (member == null)
+                throw new KeyNotFoundException($"Member with ID {id} not found.");
+
+            logger.LogInformation("Updating mailing list subscriptions for member {MemberId}. Requested by {UserId}.", id, userId);
+
+            // subscribedListIds only covers the lists visible in this context (e.g. General only,
+            // when saving from the everyday account settings page). Preserve whatever the member is
+            // already subscribed to outside that context - including YearlyRenewalOnly lists, and
+            // any provider list Tavern doesn't curate at all - so an edit in one context can never
+            // silently unsubscribe a member from something outside it.
+            var visibleIds = await mailinglistCurationService.GetVisibleProviderListIds(includeYearlyRenewal, cancellationToken);
+            var currentState = await mailSubscriptionService.GetMemberMailinglistsAsync(member.Email, cancellationToken);
+            var preserved = currentState.Where(l => l.Subscribed && !visibleIds.Contains(l.Id)).Select(l => l.Id);
+            var finalSet = subscribedListIds.Union(preserved);
+
+            mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, finalSet, db);
         }
 
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
@@ -414,7 +451,6 @@ namespace Backend.Services.Domain
                 City = dto.City,
                 DateOfBirth = dto.DateOfBirth,
                 ParentPhoneNumber = dto.ParentPhoneNumber,
-                MailSubscriptions = dto.MailSubscriptions,
                 PreferredLanguage = dto.PreferredLanguage,
                 RegisteredOn = DateTimeOffset.UtcNow,
                 StudyEnrollments = new List<StudyEnrollment>(),

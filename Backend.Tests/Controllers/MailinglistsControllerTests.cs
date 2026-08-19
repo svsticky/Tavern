@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 using Backend.Controllers;
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
-using Backend.Models.Domain;
+using Backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.JsonPatch;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Xunit;
@@ -18,14 +17,16 @@ namespace Backend.Tests.Controllers;
 
 public class MailinglistsControllerTests
 {
-    private readonly IMailinglistService _serviceMock;
+    private readonly IMailSubscriptionService _mailSubscriptionServiceMock;
+    private readonly IMailinglistCurationService _curationServiceMock;
     private readonly Mailinglists _controller;
     private readonly Guid _userId;
 
     public MailinglistsControllerTests()
     {
-        _serviceMock = Substitute.For<IMailinglistService>();
-        _controller = new Mailinglists(_serviceMock);
+        _mailSubscriptionServiceMock = Substitute.For<IMailSubscriptionService>();
+        _curationServiceMock = Substitute.For<IMailinglistCurationService>();
+        _controller = new Mailinglists(_mailSubscriptionServiceMock, _curationServiceMock);
         _userId = Guid.NewGuid();
 
         var user = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -40,105 +41,101 @@ public class MailinglistsControllerTests
     }
 
     [Fact]
-    public async Task GetMailinglists_Success_ReturnsOk()
+    public async Task GetMailinglists_Success_ReturnsOnlyGeneralVisibleLists()
     {
         // Arrange
-        var list = new List<Mailinglist> { new Mailinglist { Id = 1, Name = "Newsletter", BitValue = 1 } };
-        _serviceMock.GetMailinglists(Arg.Any<CancellationToken>()).Returns(list);
+        var providerLists = new List<MailinglistDto> { new("id_news", "Newsletter"), new("id_alumni", "Alumni") };
+        _mailSubscriptionServiceMock.GetAvailableMailinglistsAsync(Arg.Any<CancellationToken>()).Returns(providerLists);
+        _curationServiceMock.GetVisibleProviderListIds(false, Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string> { "id_news" });
 
         // Act
         var result = await _controller.GetMailinglists(CancellationToken.None);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnedList = Assert.IsAssignableFrom<IEnumerable<Mailinglist>>(okResult.Value);
-        Assert.Single(returnedList);
-    }
-
-    [Fact]
-    public async Task GetMailinglists_Unauthorized_ThrowsUnauthorizedAccessException()
-    {
-        // Arrange
-        _serviceMock.GetMailinglists(Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetMailinglists(CancellationToken.None));
+        var returnedList = Assert.IsAssignableFrom<IEnumerable<MailinglistDto>>(okResult.Value);
+        var single = Assert.Single(returnedList);
+        Assert.Equal("id_news", single.Id);
     }
 
     [Fact]
     public async Task GetMailinglists_Exception_ThrowsException()
     {
         // Arrange
-        _serviceMock.GetMailinglists(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _curationServiceMock.GetVisibleProviderListIds(false, Arg.Any<CancellationToken>())
+            .Returns(new HashSet<string>());
+        _mailSubscriptionServiceMock.GetAvailableMailinglistsAsync(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.GetMailinglists(CancellationToken.None));
     }
 
     [Fact]
-    public async Task GetMailinglist_Found_ReturnsOk()
+    public async Task GetAddableMailinglists_Success_ReturnsOk()
     {
         // Arrange
-        var mailinglist = new Mailinglist { Id = 2, Name = "Announcements", BitValue = 2 };
-        _serviceMock.GetMailinglist(2, Arg.Any<CancellationToken>()).Returns(mailinglist);
+        var addable = new List<MailinglistDto> { new("id_new", "New list") };
+        _curationServiceMock.GetAddableProviderMailinglists(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(addable);
 
         // Act
-        var result = await _controller.GetMailinglist(2, CancellationToken.None);
+        var result = await _controller.GetAddableMailinglists(CancellationToken.None);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returned = Assert.IsType<Mailinglist>(okResult.Value);
-        Assert.Equal("Announcements", returned.Name);
+        var returned = Assert.IsAssignableFrom<IEnumerable<MailinglistDto>>(okResult.Value);
+        Assert.Single(returned);
     }
 
     [Fact]
-    public async Task GetMailinglist_NotFound_ReturnsNotFound()
+    public async Task GetAddableMailinglists_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _serviceMock.GetMailinglist(3, Arg.Any<CancellationToken>()).Returns((Mailinglist?)null);
+        _curationServiceMock.GetAddableProviderMailinglists(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetAddableMailinglists(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetCuratedMailinglists_Success_ReturnsOk()
+    {
+        // Arrange
+        var curated = new List<CuratedMailinglistDto> { new(1, "id_news", "Newsletter", MailinglistVisibility.General, false) };
+        _curationServiceMock.GetCuratedMailinglists(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(curated);
 
         // Act
-        var result = await _controller.GetMailinglist(3, CancellationToken.None);
+        var result = await _controller.GetCuratedMailinglists(CancellationToken.None);
 
         // Assert
-        Assert.IsType<NotFoundResult>(result.Result);
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        var returned = Assert.IsAssignableFrom<IEnumerable<CuratedMailinglistDto>>(okResult.Value);
+        Assert.Single(returned);
     }
 
     [Fact]
-    public async Task GetMailinglist_Unauthorized_ThrowsUnauthorizedAccessException()
+    public async Task GetCuratedMailinglists_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _serviceMock.GetMailinglist(3, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _curationServiceMock.GetCuratedMailinglists(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetMailinglist(3, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task GetMailinglist_Exception_ThrowsException()
-    {
-        // Arrange
-        _serviceMock.GetMailinglist(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
-
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.GetMailinglist(3, CancellationToken.None));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetCuratedMailinglists(CancellationToken.None));
     }
 
     [Fact]
     public async Task PostMailinglist_Success_ReturnsCreated()
     {
         // Arrange
-        var dto = new PostMailinglistDTO { Name = "NewList", ServiceId = "service_1" };
-        var created = new Mailinglist { Id = 10, Name = "NewList", BitValue = 4 };
-        _serviceMock.CreateMailinglist(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
+        var dto = new PostCuratedMailinglistDTO { ProviderListId = "id_news", Visibility = MailinglistVisibility.General };
+        var created = new CuratedMailinglistDto(1, "id_news", "Newsletter", MailinglistVisibility.General, false);
+        _curationServiceMock.AddMailinglist(dto.ProviderListId, dto.Visibility, _userId, Arg.Any<CancellationToken>()).Returns(created);
 
         // Act
         var result = await _controller.PostMailinglist(dto, CancellationToken.None);
 
         // Assert
         var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
-        Assert.Equal(nameof(_controller.GetMailinglist), createdResult.ActionName);
-        Assert.Equal(10, createdResult.RouteValues!["id"]);
         Assert.Equal(created, createdResult.Value);
     }
 
@@ -146,116 +143,38 @@ public class MailinglistsControllerTests
     public async Task PostMailinglist_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        var dto = new PostMailinglistDTO { Name = "NewList", ServiceId = "service_1" };
-        _serviceMock.CreateMailinglist(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        var dto = new PostCuratedMailinglistDTO { ProviderListId = "id_news", Visibility = MailinglistVisibility.General };
+        _curationServiceMock.AddMailinglist(dto.ProviderListId, dto.Visibility, _userId, Arg.Any<CancellationToken>())
+            .Throws(new UnauthorizedAccessException());
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostMailinglist(dto, CancellationToken.None));
     }
 
     [Fact]
-    public async Task PostMailinglist_Exception_ThrowsException()
-    {
-        // Arrange
-        var dto = new PostMailinglistDTO { Name = "NewList", ServiceId = "service_1" };
-        _serviceMock.CreateMailinglist(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
-
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.PostMailinglist(dto, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task PutMailinglist_Success_ReturnsNoContent()
-    {
-        // Arrange
-        var dto = new PostMailinglistDTO { Name = "Updated", ServiceId = "service_1" };
-
-        // Act
-        var result = await _controller.PutMailinglist(1, dto, CancellationToken.None);
-
-        // Assert
-        Assert.IsType<NoContentResult>(result);
-        await _serviceMock.Received(1).UpdateMailinglist(1, dto, _userId, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task PutMailinglist_NotFound_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        var dto = new PostMailinglistDTO { Name = "Updated", ServiceId = "service_1" };
-        _serviceMock.UpdateMailinglist(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutMailinglist(1, dto, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task PutMailinglist_Unauthorized_ThrowsUnauthorizedAccessException()
-    {
-        // Arrange
-        var dto = new PostMailinglistDTO { Name = "Updated", ServiceId = "service_1" };
-        _serviceMock.UpdateMailinglist(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutMailinglist(1, dto, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task PutMailinglist_Exception_ThrowsException()
-    {
-        // Arrange
-        var dto = new PostMailinglistDTO { Name = "Updated", ServiceId = "service_1" };
-        _serviceMock.UpdateMailinglist(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
-
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.PutMailinglist(1, dto, CancellationToken.None));
-    }
-
-    [Fact]
     public async Task PatchMailinglist_Success_ReturnsNoContent()
     {
         // Arrange
-        var patchDoc = new JsonPatchDocument<Mailinglist>();
+        var dto = new PatchCuratedMailinglistDTO { Visibility = MailinglistVisibility.YearlyRenewalOnly };
 
         // Act
-        var result = await _controller.PatchMailinglist(1, patchDoc, CancellationToken.None);
+        var result = await _controller.PatchMailinglist(1, dto, CancellationToken.None);
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _serviceMock.Received(1).PatchMailinglist(1, patchDoc, _userId, Arg.Any<CancellationToken>());
+        await _curationServiceMock.Received(1).UpdateMailinglistVisibility(1, MailinglistVisibility.YearlyRenewalOnly, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task PatchMailinglist_NotFound_ThrowsKeyNotFoundException()
     {
         // Arrange
-        var patchDoc = new JsonPatchDocument<Mailinglist>();
-        _serviceMock.PatchMailinglist(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
+        var dto = new PatchCuratedMailinglistDTO { Visibility = MailinglistVisibility.General };
+        _curationServiceMock.UpdateMailinglistVisibility(1, dto.Visibility, _userId, Arg.Any<CancellationToken>())
+            .Throws(new KeyNotFoundException());
 
         // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchMailinglist(1, patchDoc, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task PatchMailinglist_Unauthorized_ThrowsUnauthorizedAccessException()
-    {
-        // Arrange
-        var patchDoc = new JsonPatchDocument<Mailinglist>();
-        _serviceMock.PatchMailinglist(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PatchMailinglist(1, patchDoc, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task PatchMailinglist_Exception_ThrowsException()
-    {
-        // Arrange
-        var patchDoc = new JsonPatchDocument<Mailinglist>();
-        _serviceMock.PatchMailinglist(1, patchDoc, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
-
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.PatchMailinglist(1, patchDoc, CancellationToken.None));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PatchMailinglist(1, dto, CancellationToken.None));
     }
 
     [Fact]
@@ -266,36 +185,16 @@ public class MailinglistsControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _serviceMock.Received(1).DeleteMailinglist(1, _userId, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task DeleteMailinglist_NotFound_ThrowsKeyNotFoundException()
-    {
-        // Arrange
-        _serviceMock.DeleteMailinglist(1, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
-
-        // Act & Assert
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteMailinglist(1, CancellationToken.None));
+        await _curationServiceMock.Received(1).DeleteMailinglist(1, _userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task DeleteMailinglist_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _serviceMock.DeleteMailinglist(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _curationServiceMock.DeleteMailinglist(1, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.DeleteMailinglist(1, CancellationToken.None));
-    }
-
-    [Fact]
-    public async Task DeleteMailinglist_Exception_ThrowsException()
-    {
-        // Arrange
-        _serviceMock.DeleteMailinglist(1, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
-
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.DeleteMailinglist(1, CancellationToken.None));
     }
 }

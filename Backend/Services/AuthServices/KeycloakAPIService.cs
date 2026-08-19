@@ -66,9 +66,8 @@ public class KeycloakAPIService(
             using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueTask(member.Email, 0, db);
+                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, currentEmail, db);
                 member.Email = currentEmail;
-                mailSubscriptionOutboxWorker.EnqueueTask(currentEmail, member.MailSubscriptions, db);
                 await db.SaveChangesAsync();
                 logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);
                 await transaction.CommitAsync();
