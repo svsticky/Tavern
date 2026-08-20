@@ -148,6 +148,7 @@ namespace Backend.Controllers
         /// <param name="webhookService">The service dedicated to handling external payment status webhooks.</param>
         /// <returns>An OK status once the webhook has been successfully processed.</returns>
         [HttpPost("webhook")]
+        [AllowAnonymous]
         [Consumes("application/x-www-form-urlencoded")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]

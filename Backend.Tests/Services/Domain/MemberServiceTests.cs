@@ -938,6 +938,63 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateMember_DuplicateEmail_ExistingMemberHasActivityEnrollment_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var existing = CreateTestMember(Guid.NewGuid(), "dup7@example.com");
+        _db.Members.Add(existing);
+
+        var activity = new Activity
+        {
+            Name = "Act",
+            Price = 15m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
+        };
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = existing.Id, ActivityId = activity.Id, Price = 15m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false });
+        await _db.SaveChangesAsync();
+
+        var study = new Study { Id = 16, Title = "S", NominalDurationYears = 3, Type = StudyType.Bachelor };
+        _db.Studies.Add(study);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "123456",
+            FirstName = "A",
+            LastName = "B",
+            Email = "dup7@example.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 16, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateMember(dto, _userId, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        var stillExists = await _db.Members.FindAsync(existing.Id);
+        Assert.NotNull(stillExists);
+    }
+
+    [Fact]
     public async Task CreateMember_DuplicateEmail_PendingPayment_CancelsPaymentAndRemovesExisting()
     {
         // Arrange

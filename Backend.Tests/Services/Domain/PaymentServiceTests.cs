@@ -42,10 +42,6 @@ public class PaymentTestPostgresDbContext : PostgresDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<MembershipPayment>()
-            .HasIndex(p => p.MemberId)
-            .IsUnique()
-            .HasFilter("MemberId IS NOT NULL");
 
         modelBuilder.Entity<Payment>()
             .Property(p => p.Id)
@@ -220,7 +216,7 @@ public class PaymentServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateMembershipPayment_PendingPaymentExists_ReturnsExistingUrl()
+    public async Task CreateMembershipPayment_PendingPaymentExists_CancelsItAndCreatesNewPayment()
     {
         var member = CreateMember("1234567");
         _db.Members.Add(member);
@@ -231,19 +227,28 @@ public class PaymentServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
-        
+
         _paymentService.GetPaymentAsync("pending_id")
             .Returns(Task.FromResult(new GetPaymentResponse("pending_id", PaymentStatus.Pending, null)));
+
+        _paymentService.CreatePaymentAsync(7.50m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_id", "new_url")));
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
         var result = await _service.CreateMembershipPayment(dto);
 
-        Assert.Equal("pending_url", result.CheckoutUrl);
+        Assert.Equal("new_url", result.CheckoutUrl);
+        await _paymentService.Received(1).CancelPaymentAsync("pending_id");
+
+        _db.ChangeTracker.Clear();
+        var payments = await _db.MembershipPayments.Where(p => p.MemberId == member.Id).ToListAsync();
+        Assert.Single(payments);
+        Assert.Equal("new_id", payments[0].PaymentServiceId);
     }
 
     [Fact]
-    public async Task CreateMembershipPayment_ExistingPaidPayment_ThrowsInvalidOperation()
+    public async Task CreateMembershipPayment_ExistingUnconfirmedPaymentAlreadyPaidAtMollie_ThrowsInsteadOfDoubleCharging()
     {
         var member = CreateMember("1234567");
         _db.Members.Add(member);
@@ -253,19 +258,24 @@ public class PaymentServiceTests : IDisposable
         _db.MembershipPayments.Add(payment);
         await _db.SaveChangesAsync();
 
-        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
-        
+        // First call (top-level gate, before HandleExistingMembershipPayment) simulates the webhook
+        // not having landed yet; second call (after self-healing PaidAt) simulates the payment now
+        // being visible as within the current window, which should reject the duplicate attempt.
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false, true);
+
         _paymentService.GetPaymentAsync("paid_id")
-            .Returns(Task.FromResult(new GetPaymentResponse("paid_id", PaymentStatus.Paid, null)));
+            .Returns(Task.FromResult(new GetPaymentResponse("paid_id", PaymentStatus.Paid, DateTimeOffset.UtcNow)));
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.CreateMembershipPayment(dto));
+
+        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value);
     }
 
     [Fact]
-    public async Task CreateMembershipPayment_ExpiredPayment_DeletesAndThrows()
+    public async Task CreateMembershipPayment_ExpiredPayment_DoesNotDeleteMemberAndCreatesNewPayment()
     {
         var member = CreateMember("1234567");
         _db.Members.Add(member);
@@ -276,22 +286,24 @@ public class PaymentServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
-        
+
         _paymentService.GetPaymentAsync("expired_id")
             .Returns(Task.FromResult(new GetPaymentResponse("expired_id", PaymentStatus.Failed, null)));
 
+        _paymentService.CreatePaymentAsync(7.50m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_id", "new_url")));
+
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.CreateMembershipPayment(dto));
+        var result = await _service.CreateMembershipPayment(dto);
+
+        Assert.Equal("new_url", result.CheckoutUrl);
 
         _db.ChangeTracker.Clear();
-        var deletedPayment = await _db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id);
-        var deletedMember = await _db.Members.FindAsync(member.Id);
+        var stillExistingMember = await _db.Members.FindAsync(member.Id);
+        Assert.NotNull(stillExistingMember);
 
-        Assert.Null(deletedPayment);
-        Assert.Null(deletedMember);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value);
+        await _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Delete, Arg.Any<Guid>());
     }
 
     [Fact]
@@ -500,6 +512,206 @@ public class PaymentServiceTests : IDisposable
         var feePayment = await _db.PaymentServiceFeePayments.FirstOrDefaultAsync(x => x.MemberId == member.Id);
         Assert.NotNull(feePayment);
         Assert.Equal(0.50m, feePayment.Price);
+    }
+
+    [Fact]
+    public async Task CreateActivityPayment_ExistingPendingPayment_CancelsItAndCreatesFreshPayment()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+
+        var activity = new Activity
+        {
+            Name = "Act",
+            Price = 15m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
+        };
+        _db.Activities.Add(activity);
+
+        _db.Settings.Add(new Setting { Name = "PaymentServiceFee", Value = "0.50" });
+        await _db.SaveChangesAsync();
+
+        var enrollment = new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 15m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false };
+        _db.Enrollments.Add(enrollment);
+
+        var pendingPayment = new EnrollmentPayment
+        {
+            MemberId = member.Id,
+            ActivityId = activity.Id,
+            Price = 15m,
+            PaymentServiceId = "pending_ps",
+            PaymentIntentUrl = "pending_checkout_url",
+            PaidAt = null
+        };
+        _db.EnrollmentPayments.Add(pendingPayment);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.GetUnpaidAmountForEnrollment(Arg.Is<Enrollment>(e => e.ActivityId == activity.Id)).Returns(15m);
+
+        _paymentService.GetPaymentAsync("pending_ps")
+            .Returns(Task.FromResult(new GetPaymentResponse("pending_ps", PaymentStatus.Pending, null)));
+
+        _paymentService.CreatePaymentAsync(15.50m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_ps", "new_checkout_url")));
+
+        var dto = new PostActivityPaymentDTO
+        {
+            MemberId = member.Id,
+            ActivityIds = new List<uint> { activity.Id },
+            ManuallyMarkedAsPaid = false
+        };
+
+        var result = await _service.CreateActivityPayment(dto, member.Id);
+
+        Assert.Equal("new_checkout_url", result.CheckoutUrl);
+        await _paymentService.Received(1).CancelPaymentAsync("pending_ps");
+
+        _db.ChangeTracker.Clear();
+        var payments = await _db.EnrollmentPayments.Where(p => p.MemberId == member.Id).ToListAsync();
+        Assert.Single(payments);
+        Assert.Equal("new_ps", payments[0].PaymentServiceId);
+    }
+
+    [Fact]
+    public async Task CreateActivityPayment_ExistingPaymentAlreadyPaidAtMollie_SelfHealsWithoutDoubleCharging()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+
+        var activity = new Activity
+        {
+            Name = "Act",
+            Price = 15m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
+        };
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var enrollment = new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 15m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false };
+        _db.Enrollments.Add(enrollment);
+
+        var pendingPayment = new EnrollmentPayment
+        {
+            MemberId = member.Id,
+            ActivityId = activity.Id,
+            Price = 15m,
+            PaymentServiceId = "paid_ps",
+            PaymentIntentUrl = "paid_checkout_url",
+            PaidAt = null
+        };
+        _db.EnrollmentPayments.Add(pendingPayment);
+
+        var pendingFeePayment = new PaymentServiceFeePayment
+        {
+            MemberId = member.Id,
+            Price = 0.50m,
+            PaymentServiceId = "paid_ps",
+            PaymentIntentUrl = "paid_checkout_url",
+            PaidAt = null
+        };
+        _db.PaymentServiceFeePayments.Add(pendingFeePayment);
+        await _db.SaveChangesAsync();
+
+        // After self-healing, the €15 payment fully covers the €15 enrollment, so nothing remains owed.
+        _paymentValidationService.GetUnpaidAmountForEnrollment(Arg.Is<Enrollment>(e => e.ActivityId == activity.Id)).Returns(0m);
+
+        var paidAt = DateTimeOffset.UtcNow;
+        _paymentService.GetPaymentAsync("paid_ps")
+            .Returns(Task.FromResult(new GetPaymentResponse("paid_ps", PaymentStatus.Paid, paidAt)));
+
+        var dto = new PostActivityPaymentDTO
+        {
+            MemberId = member.Id,
+            ActivityIds = new List<uint> { activity.Id },
+            ManuallyMarkedAsPaid = false
+        };
+
+        var result = await _service.CreateActivityPayment(dto, member.Id);
+
+        Assert.Null(result.CheckoutUrl);
+        await _paymentService.DidNotReceive().CreatePaymentAsync(Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
+
+        _db.ChangeTracker.Clear();
+        var enrollmentPayment = await _db.EnrollmentPayments.FirstAsync(p => p.MemberId == member.Id);
+        Assert.True(enrollmentPayment.PaidAt.HasValue);
+
+        var feePayment = await _db.PaymentServiceFeePayments.FirstAsync(p => p.MemberId == member.Id);
+        Assert.True(feePayment.PaidAt.HasValue);
+    }
+
+    [Fact]
+    public async Task CreateActivityPayment_ExistingPaymentExpiredAtMollie_CreatesFreshPayment()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+
+        var activity = new Activity
+        {
+            Name = "Act",
+            Price = 15m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
+        };
+        _db.Activities.Add(activity);
+
+        _db.Settings.Add(new Setting { Name = "PaymentServiceFee", Value = "0.50" });
+        await _db.SaveChangesAsync();
+
+        var enrollment = new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 15m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false };
+        _db.Enrollments.Add(enrollment);
+
+        var stalePayment = new EnrollmentPayment
+        {
+            MemberId = member.Id,
+            ActivityId = activity.Id,
+            Price = 15m,
+            PaymentServiceId = "expired_ps",
+            PaymentIntentUrl = "expired_checkout_url",
+            PaidAt = null
+        };
+        _db.EnrollmentPayments.Add(stalePayment);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.GetUnpaidAmountForEnrollment(Arg.Is<Enrollment>(e => e.ActivityId == activity.Id)).Returns(15m);
+
+        _paymentService.GetPaymentAsync("expired_ps")
+            .Returns(Task.FromResult(new GetPaymentResponse("expired_ps", PaymentStatus.Failed, null)));
+
+        _paymentService.CreatePaymentAsync(15.50m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_ps", "new_checkout_url")));
+
+        var dto = new PostActivityPaymentDTO
+        {
+            MemberId = member.Id,
+            ActivityIds = new List<uint> { activity.Id },
+            ManuallyMarkedAsPaid = false
+        };
+
+        var result = await _service.CreateActivityPayment(dto, member.Id);
+
+        Assert.Equal("new_checkout_url", result.CheckoutUrl);
+
+        _db.ChangeTracker.Clear();
+        var payments = await _db.EnrollmentPayments.Where(p => p.MemberId == member.Id).ToListAsync();
+        Assert.Equal(2, payments.Count);
+        Assert.Contains(payments, p => p.PaymentServiceId == "new_ps");
     }
 
     [Fact]

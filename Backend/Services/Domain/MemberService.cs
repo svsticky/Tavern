@@ -387,6 +387,7 @@ namespace Backend.Services.Domain
             var existingMember = await db.Members
                 .Include(m => m.StudyEnrollments)
                 .ThenInclude(se => se.Study)
+                .Include(m => m.Enrollments)
                 .FirstOrDefaultAsync(m => m.Email == email, ct);
             if (existingMember == null)
                 return;
@@ -404,6 +405,10 @@ namespace Backend.Services.Domain
                 throw new InvalidOperationException("Existing member with same email address found.");
 
             if ((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
+                throw new InvalidOperationException("Existing member with same email address found.");
+
+            // if ever enrolled for an activity, we don't want to delete the member, (can be an old begunstiger that isn't begunstiger anymore, we want to keep the history of their activity enrollments)
+            if (existingMember.Enrollments.Any())
                 throw new InvalidOperationException("Existing member with same email address found.");
 
             var existingPayment = await db.MembershipPayments

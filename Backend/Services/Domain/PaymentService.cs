@@ -66,21 +66,17 @@ namespace Backend.Services.Domain
         public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
         {
             logger.LogInformation("Creating membership payment for member {MemberId}.", dto.MemberId);
-            var member = await GetMemberOrThrow(dto.MemberId);
 
             using var transaction = await db.Database.BeginTransactionAsync();
+
+            var member = await GetMemberOrThrow(dto.MemberId);
+
             try
             {
                 EnsureMemberHasNoPaidMembership(dto.MemberId);
 
                 // return existing payment
-                var existingResponse = await HandleExistingMembershipPayment(member, dto.MemberId);
-                if (existingResponse != null)
-                {
-                    logger.LogInformation("Reusing existing membership payment for member {MemberId}.", dto.MemberId);
-                    return existingResponse;
-                }
-
+                await HandleExistingMembershipPayment(member, dto.MemberId);
 
                 // create new payment
                 var paymentResponse = await BuildMembershipPaymentRequest(member, dto.MemberId);
@@ -148,6 +144,8 @@ namespace Backend.Services.Domain
 
             try
             {
+                await HandleExistingActivityPayment(dto.MemberId, dto.ActivityIds);
+
                 var enrollments = await db.Enrollments
                     .Include(e => e.Activity)
                     .Where(e => dto.ActivityIds.Contains(e.ActivityId) && e.MemberId == dto.MemberId)
@@ -155,10 +153,6 @@ namespace Backend.Services.Domain
 
                 if (enrollments.Count != dto.ActivityIds.Count)
                     throw new Exception("One or more enrollments not found");
-
-                var totalPrice = enrollments.Sum(e =>
-                    paymentValidationService.GetUnpaidAmountForEnrollment(e)
-                );
 
                 if (dto.ManuallyMarkedAsPaid)
                 {
@@ -173,6 +167,20 @@ namespace Backend.Services.Domain
                 }
                 else
                 {
+                    // Recomputed after HandleExistingActivityPayment, which may have self-healed some of the
+                    // requested activities to paid - using a value computed beforehand would overcharge the
+                    // member for activities that are already settled.
+                    var totalPrice = enrollments.Sum(e =>
+                        paymentValidationService.GetUnpaidAmountForEnrollment(e)
+                    );
+
+                    if (totalPrice <= 0)
+                    {
+                        await transaction.CommitAsync();
+                        logger.LogInformation("All requested activities for member {MemberId} are already paid.", dto.MemberId);
+                        return new PostPaymentResponse();
+                    }
+
                     // Create payment service fee payment
                     CreatePaymentResponse paymentResponse = await BuildPaymentServiceFeePaymentRequest(totalPrice, member, dto);
 
@@ -279,32 +287,87 @@ namespace Backend.Services.Domain
             }
         }
 
-        private async Task<PostPaymentResponse?> HandleExistingMembershipPayment(Member member, Guid memberId)
+        private async Task HandleExistingMembershipPayment(Member member, Guid memberId)
         {
-            var existingPayment = await db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == memberId);
-            if (existingPayment == null)
-                return null;
+            var existingPayments = await db.MembershipPayments.Where(p => p.MemberId == memberId && p.PaidAt == null).ToListAsync();
 
-            var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
-            if (paymentResponse.Status == PaymentStatus.Paid)
+            foreach (var existingPayment in existingPayments)
             {
-                throw new InvalidOperationException("Member already paid membership");
+                var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
+                if (paymentResponse.Status == PaymentStatus.Pending)
+                {
+                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                    db.MembershipPayments.Remove(existingPayment);
+                    await db.SaveChangesAsync();
+                }
+                else if (paymentResponse.Status == PaymentStatus.Paid)
+                {
+                    existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
+                    await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."));
+                    await db.SaveChangesAsync();
+                    EnsureMemberHasNoPaidMembership(memberId);
+                }
             }
+        }
 
-            if (paymentResponse.Status == PaymentStatus.Pending)
+        /// <summary>
+        /// Checks for a still-pending activity payment covering the requested activities and reuses its checkout
+        /// URL instead of creating a duplicate Mollie payment. Also self-heals payments that Mollie already
+        /// confirmed as paid but whose webhook hasn't arrived yet, so the member isn't charged twice while
+        /// waiting for the webhook.
+        /// </summary>
+        private async Task HandleExistingActivityPayment(Guid memberId, List<uint> activityIds)
+        {
+            var pendingPayments = await db.EnrollmentPayments
+                .Where(p => p.MemberId == memberId && p.PaidAt == null && p.ActivityId != null && activityIds.Contains(p.ActivityId.Value))
+                .ToListAsync();
+
+            foreach (var payment in pendingPayments)
             {
-                return ToCheckoutResponse(existingPayment.PaymentIntentUrl);
+                var paymentResponse = await paymentService.GetPaymentAsync(payment.PaymentServiceId);
+                var paymentsInSameMollieUrl = pendingPayments.Where(p => p.PaymentServiceId == payment.PaymentServiceId).ToList();
+                if (paymentResponse.Status == PaymentStatus.Pending)
+                {
+                    // try to cancel the payment, so a new one can be created
+                    await paymentService.CancelPaymentAsync(payment.PaymentServiceId);
+                    db.EnrollmentPayments.Remove(payment);
+                }
+
+                if (paymentResponse.Status == PaymentStatus.Paid)
+                {
+                    payment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
+                    var feePayment = await db.PaymentServiceFeePayments
+                        .FirstOrDefaultAsync(p => p.MemberId == memberId && p.PaymentServiceId == payment.PaymentServiceId && p.PaidAt == null);
+
+                    if (feePayment != null)
+                    {
+                        feePayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
+                    }
+                    await db.SaveChangesAsync();
+
+
+                    var coveredActivityIds = paymentsInSameMollieUrl.Select(p => p.ActivityId!.Value);
+
+                    foreach (var activityId in coveredActivityIds)
+                    {
+                        // check if paid enough that payment for this activity is covered by the existing payment
+                        var enrollment = await db.Enrollments
+                            .Include(e => e.Activity)
+                            .FirstOrDefaultAsync(e => e.MemberId == memberId && e.ActivityId == activityId);
+
+                        if (enrollment == null)
+                        {
+                            throw new KeyNotFoundException($"Enrollment for member {memberId} and activity {activityId} not found");
+                        }
+
+                        var unpaidAmount = paymentValidationService.GetUnpaidAmountForEnrollment(enrollment);
+                        if (unpaidAmount <= 0)
+                        {
+                            activityIds.Remove(activityId);
+                        }
+                    }
+                }
             }
-
-            db.MembershipPayments.Remove(existingPayment);
-
-            db.Members.Remove(member);
-            await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status."));
-
-            await db.SaveChangesAsync();
-            await db.Database.CommitTransactionAsync();
-
-            throw new InvalidOperationException("Payment is expired or canceled.");
         }
 
         private async Task<CreatePaymentResponse> BuildMembershipPaymentRequest(Member member, Guid memberId)
@@ -341,12 +404,20 @@ namespace Backend.Services.Domain
             return await paymentService.CreatePaymentAsync(
                 totalPrice + GetPaymentServiceFee(),
                 $"Activity payment for {member.FirstName} {member.LastName}",
-                _frontendUrl,
+                BuildActivityPaymentRedirectUrl(),
                 string.IsNullOrEmpty(_ngrokUrl) ?
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
                     : $"{_ngrokUrl}/payments/webhook",
                 $"activity_{dto.MemberId}_{string.Join("_", dto.ActivityIds)}"
             );
+        }
+
+        private string BuildActivityPaymentRedirectUrl()
+        {
+            // Lets the frontend know it's landing back from a Mollie checkout, so it can briefly
+            // wait/poll for the payment webhook instead of trusting a single immediate status fetch.
+            var separator = _frontendUrl.Contains('?') ? "&" : "?";
+            return $"{_frontendUrl}{separator}paymentReturn=activity";
         }
 
         private decimal GetPaymentServiceFee()

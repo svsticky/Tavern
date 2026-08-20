@@ -67,6 +67,7 @@
   "company_mails": "Company mails",
   "confirm_mail": "Confirm your email",
   "confirm_mail_description": "A confirmation email has been sent to set your password. Click the link in that email to confirm your email address and set your password. If you don't receive an email, you can click on forgot password on the login page to have the email resent.",
+  "confirming_payment": "Confirming payment...",
   "contact_and_address": "Contact and address",
   "contact_details": "Contact details",
   "content": "Content",
