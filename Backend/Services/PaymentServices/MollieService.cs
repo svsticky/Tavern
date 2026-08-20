@@ -49,7 +49,7 @@ public class MollieService(PostgresDbContext db, ILogger<MollieService> logger, 
         IPaymentClient mollieClient = await GetMollieClientAsync();
         PaymentRequest request = new PaymentRequest
         {
-            Amount = new Amount(Currency.EUR, 7.50m),
+            Amount = new Amount(Currency.EUR, amount),
             Description = description,
             RedirectUrl = redirectUrl,
             WebhookUrl = webhookUrl,

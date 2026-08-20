@@ -111,10 +111,12 @@ public class PostgresDbContext : DbContext
                 .OnDelete(DeleteBehavior.NoAction);
         });
 
-        modelBuilder.Entity<MembershipPayment>()
-            .HasIndex(p => p.MemberId)
-            .IsUnique()
-            .HasFilter("\"MemberId\" IS NOT NULL");
+        // NOTE: intentionally not configured via modelBuilder.Entity<MembershipPayment>().HasIndex(...).
+        // Because MemberId is declared on the shared abstract Payment base class and Payment uses the
+        // TPC mapping strategy, EF Core hoists any fluent index config for MemberId onto the base
+        // entity, which then propagates the same unique index to EnrollmentPayments and
+        // PaymentServiceFeePayments too - wrongly limiting members to a single activity payment ever.
+        // The unique index is created directly on MembershipPayments only via raw SQL in the migration.
 
         modelBuilder.Entity<Member>(entity =>
         {
