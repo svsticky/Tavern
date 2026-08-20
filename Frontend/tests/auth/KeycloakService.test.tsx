@@ -210,7 +210,7 @@ describe("KeycloakAuthService", () => {
       await expect(service.getUpdatePasswordUrl()).rejects.toThrow(
         "User not authenticated",
       );
-      await expect(service.configureMFA()).rejects.toThrow(
+      await expect(service.configure2FA()).rejects.toThrow(
         "User not authenticated",
       );
     });
@@ -221,7 +221,7 @@ describe("KeycloakAuthService", () => {
 
       expect(await service.getUpdateEmailUrl()).toContain("UPDATE_EMAIL");
       expect(await service.getUpdatePasswordUrl()).toContain("UPDATE_PASSWORD");
-      expect(await service.configureMFA()).toContain("CONFIGURE_TOTP");
+      expect(await service.configure2FA()).toContain("CONFIGURE_TOTP");
     });
   });
 

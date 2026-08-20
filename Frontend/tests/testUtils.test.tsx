@@ -26,8 +26,8 @@ describe("createMockAuthService", () => {
     await expect(authService.resetCredentials()).resolves.toBe(
       "https://example.com/reset",
     );
-    await expect(authService.configureMFA()).resolves.toBe(
-      "https://example.com/mfa",
+    await expect(authService.configure2FA()).resolves.toBe(
+      "https://example.com/2fa",
     );
   });
 

@@ -52,7 +52,7 @@ export function createMockAuthService(
       async () => "https://example.com/update-password",
     ),
     resetCredentials: vi.fn(async () => "https://example.com/reset"),
-    configureMFA: vi.fn(async () => "https://example.com/mfa"),
+    configure2FA: vi.fn(async () => "https://example.com/2fa"),
     ...overrides,
   };
 }

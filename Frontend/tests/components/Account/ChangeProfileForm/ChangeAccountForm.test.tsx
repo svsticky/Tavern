@@ -13,13 +13,13 @@ const { getMembersByIdMailinglists, deleteMembersById } = vi.hoisted(() => ({
 const {
   handleChangeEmail,
   handleChangePassword,
-  handleConfigureMFA,
+  handleConfigure2FA,
   handleSaveAccount,
   handleSubscriptionToggle,
 } = vi.hoisted(() => ({
   handleChangeEmail: vi.fn(),
   handleChangePassword: vi.fn(),
-  handleConfigureMFA: vi.fn(),
+  handleConfigure2FA: vi.fn(),
   handleSaveAccount: vi.fn(),
   handleSubscriptionToggle: vi.fn(),
 }));
@@ -30,7 +30,7 @@ vi.mock(
   () => ({
     handleChangeEmail,
     handleChangePassword,
-    handleConfigureMFA,
+    handleConfigure2FA,
     handleSaveAccount,
     handleSubscriptionToggle,
   }),
@@ -145,7 +145,7 @@ describe("ChangeAccountForm", () => {
     );
   });
 
-  it("calls handleChangePassword, handleChangeEmail, and handleConfigureMFA with the auth service", async () => {
+  it("calls handleChangePassword, handleChangeEmail, and handleConfigure2FA with the auth service", async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService();
     renderWithProviders(<ChangeAccountForm member={buildMember()} />, {
@@ -155,8 +155,8 @@ describe("ChangeAccountForm", () => {
     await user.click(screen.getByRole("button", { name: "change_password" }));
     expect(handleChangePassword).toHaveBeenCalledWith(authService);
 
-    await user.click(screen.getByRole("button", { name: "setup_mfa" }));
-    expect(handleConfigureMFA).toHaveBeenCalledWith(authService);
+    await user.click(screen.getByRole("button", { name: "setup_2fa" }));
+    expect(handleConfigure2FA).toHaveBeenCalledWith(authService);
 
     await user.click(screen.getByText("change_email"));
     expect(handleChangeEmail).toHaveBeenCalledWith(authService);

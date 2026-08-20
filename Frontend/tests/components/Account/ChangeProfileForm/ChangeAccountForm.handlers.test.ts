@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   handleChangeEmail,
   handleChangePassword,
-  handleConfigureMFA,
+  handleConfigure2FA,
   handleSaveAccount,
   handleSubscriptionToggle,
 } from "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers";
@@ -73,14 +73,14 @@ describe("auth redirect handlers", () => {
     expect(window.location.href).toBe("https://kc.example.com/email");
   });
 
-  it("handleConfigureMFA redirects to the auth service's MFA URL", async () => {
+  it("handleConfigure2FA redirects to the auth service's 2FA URL", async () => {
     const authService = createMockAuthService({
-      configureMFA: vi.fn(async () => "https://kc.example.com/mfa"),
+      configure2FA: vi.fn(async () => "https://kc.example.com/2fa"),
     });
 
-    await handleConfigureMFA(authService);
+    await handleConfigure2FA(authService);
 
-    expect(window.location.href).toBe("https://kc.example.com/mfa");
+    expect(window.location.href).toBe("https://kc.example.com/2fa");
   });
 
   it("falls back to /logout when no auth service is provided", async () => {
@@ -93,7 +93,7 @@ describe("auth redirect handlers", () => {
     expect(window.location.href).toBe("/logout");
 
     // @ts-expect-error - exercising the falsy-authService branch intentionally
-    await handleConfigureMFA(null);
+    await handleConfigure2FA(null);
     expect(window.location.href).toBe("/logout");
   });
 });

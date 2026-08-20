@@ -137,7 +137,7 @@ export class KeycloakAuthService implements IAuthService {
     });
   }
 
-  public async configureMFA(): Promise<string> {
+  public async configure2FA(): Promise<string> {
     if (!this.keycloak.tokenParsed) throw new Error("User not authenticated");
 
     return this.keycloak.createLoginUrl({

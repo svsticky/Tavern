@@ -60,12 +60,12 @@ export const handleChangeEmail = async (authService: IAuthService) => {
 };
 
 /**
- * Handles configuring multi-factor authentication (MFA) for a user.
+ * Handles configuring multi-factor authentication (2FA) for a user.
  * @param {IAuthService} authService - The authentication service instance.
  */
-export const handleConfigureMFA = async (authService: IAuthService) => {
+export const handleConfigure2FA = async (authService: IAuthService) => {
   if (authService) {
-    const url = await authService.configureMFA();
+    const url = await authService.configure2FA();
     window.location.href = url;
   } else {
     window.location.href = "/logout";

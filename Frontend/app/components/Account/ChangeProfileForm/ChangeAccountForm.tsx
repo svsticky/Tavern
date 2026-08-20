@@ -17,7 +17,7 @@ import { appendErrorMessage } from "~/util/error.util";
 import {
   handleChangeEmail,
   handleChangePassword,
-  handleConfigureMFA,
+  handleConfigure2FA,
   handleSaveAccount,
   handleSubscriptionToggle,
 } from "./ChangeAccountForm.handlers";
@@ -296,9 +296,9 @@ export default function ChangeAccountForm({
                 type="button"
                 variant="secondary"
                 className="flex-1"
-                onClick={() => handleConfigureMFA(authService)}
+                onClick={() => handleConfigure2FA(authService)}
               >
-                {t("setup_mfa")}
+                {t("setup_2fa")}
               </Button>
             </div>
 
@@ -308,7 +308,7 @@ export default function ChangeAccountForm({
               rel="noopener noreferrer"
               className="text-xs text-center text-gray-500 hover:text-gray-700 underline pt-1"
             >
-              {t("manage_or_remove_mfa_devices")}
+              {t("manage_or_remove_2fa_devices")}
             </a>
           </div>
         </div>
