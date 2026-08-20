@@ -73,11 +73,11 @@ export default function UpcomingActivities({
   return (
     <div ref={containerRef} className="w-full">
       <div
-        className="grid gap-5 transition-all duration-300"
+        className="grid gap-5 justify-start transition-all duration-300"
         style={{
           gridTemplateColumns: isStacked
             ? "1fr"
-            : `repeat(${columnCount}, minmax(0, 1fr))`,
+            : `repeat(${columnCount}, minmax(${TILE_MIN_WIDTH}px, 400px))`,
         }}
       >
         {displayActivities.map((activity) => (

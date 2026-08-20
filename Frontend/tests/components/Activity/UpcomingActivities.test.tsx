@@ -102,7 +102,7 @@ describe("UpcomingActivities", () => {
 
     const grid = container.querySelector(".grid");
     expect(grid).toHaveStyle({
-      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+      gridTemplateColumns: "repeat(3, minmax(250px, 400px))",
     });
   });
 
