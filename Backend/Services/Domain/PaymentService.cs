@@ -386,7 +386,7 @@ namespace Backend.Services.Domain
             return await paymentService.CreatePaymentAsync(
                 decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"),
                 $"Membership payment for {member.FirstName} {member.LastName}",
-                $"{_frontendUrl}/confirm-mail",
+                $"{_frontendUrl}/confirm-mail?memberId={memberId}",
                 string.IsNullOrEmpty(_ngrokUrl) ?
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
                     : $"{_ngrokUrl}/payments/webhook",

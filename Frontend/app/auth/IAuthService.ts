@@ -14,6 +14,5 @@ export interface IAuthService {
   AuthProvider: ({ children }: { children: React.ReactNode }) => JSX.Element;
   getUpdateEmailUrl: () => Promise<string>;
   getUpdatePasswordUrl: () => Promise<string>;
-  resetCredentials: () => Promise<string>;
   configure2FA: () => Promise<string>;
 }

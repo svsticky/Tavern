@@ -53,6 +53,12 @@ public class Member
     public Guid? AuthSystemUserId { get; set; }
 
     /// <summary>
+    /// When the one-time account-activation email (verify email + set password) was sent to this member, if ever.
+    /// Used to make sending it idempotent regardless of how many times the confirmation page is visited.
+    /// </summary>
+    public DateTimeOffset? ActivationEmailSentAt { get; set; }
+
+    /// <summary>
     /// The student number of the member.
     /// </summary>
     [Required(AllowEmptyStrings = false)]

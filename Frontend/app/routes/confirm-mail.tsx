@@ -1,37 +1,64 @@
 import { t } from "i18next";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
+import { postMembersByIdActivationEmail } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
-import { useAuth } from "~/context/AuthContext";
+
+const RETRY_DELAY_MS = 2000;
+const MAX_ATTEMPTS = 5;
 
 /**
- * A bridge component used during the email confirmation or password reset flow.
- *
- * This page serves as a temporary landing spot after a user clicks a link in a
- * system-generated email. Its primary purpose is to:
- * - **Transition to Identity Provider**: After a brief delay (1000ms), it constructs
- *   the necessary URL to redirect the user back into the auth credential reset flow.
- * - **Preserve Context**: It dynamically builds the `redirect_uri` using the current
- *   window origin to ensure the user returns to the application after finishing the
- *   flow on the auth server.
- * - **UI Continuity**: Displays a minimal navigation bar and a loading state to inform
- *   the user that a redirection is in progress.
+ * Landing page shown right after registration - whether the member paid a membership fee via
+ * Mollie or was exempt - and after board-created member registration. Triggers the one-time
+ * account-activation email (verify email + set password) for the given member and shows a
+ * confirmation message. The `memberId` query param identifies which member to send it for; the
+ * endpoint itself is idempotent (Member.ActivationEmailSentAt), so it's safe even if this page
+ * is revisited or the request is retried.
  *
  * @page
  * @component
  */
 export default function ConfirmMail() {
-  const authService = useAuth();
+  const [searchParams] = useSearchParams();
+  const memberId = searchParams.get("memberId");
+  const [status, setStatus] = useState<"loading" | "done">(
+    memberId ? "loading" : "done",
+  );
+  const attemptsRef = useRef(0);
 
   useEffect(() => {
-    if (!authService) return;
-    const redirectAction = async () => {
-      // Give auth service some time to process the email token and set up the session before redirecting
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (!memberId) return;
+    let cancelled = false;
 
-      window.location.href = await authService.resetCredentials();
+    const trySend = async () => {
+      attemptsRef.current += 1;
+
+      const response = await postMembersByIdActivationEmail({
+        path: { id: memberId },
+      });
+
+      if (cancelled) return;
+
+      if (
+        response.status === 200 &&
+        response.data === "Pending" &&
+        attemptsRef.current < MAX_ATTEMPTS
+      ) {
+        // The member isn't linked to the auth system yet (still being provisioned in the
+        // background right after registration). Retry briefly instead of giving up.
+        setTimeout(trySend, RETRY_DELAY_MS);
+        return;
+      }
+
+      setStatus("done");
     };
-    redirectAction();
-  }, [authService]);
+
+    trySend();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [memberId]);
 
   return (
     <>
@@ -42,7 +69,14 @@ export default function ConfirmMail() {
       </section>
 
       <div className="p-4">
-        <p className="text-lg">{t("loading")}...</p>
+        {status === "loading" ? (
+          <p className="text-lg">{t("loading")}...</p>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold">{t("confirm_mail")}</h1>
+            <p className="text-lg">{t("confirm_mail_description")}</p>
+          </>
+        )}
       </div>
     </>
   );

@@ -158,6 +158,9 @@ public class KeycloakAPIService(
         return json.GetProperty("access_token").GetString()!;
     }
 
+    /// <inheritdoc />
+    public Task SendActivationEmail(Guid keycloakId) => SendActionEmail(keycloakId, ["VERIFY_EMAIL", "UPDATE_PASSWORD"]);
+
     /// <summary>
     /// Sends a Keycloak execute-actions email to a user.
     /// </summary>

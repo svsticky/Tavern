@@ -117,7 +117,7 @@ describe("handleCreateSubmit", () => {
     });
 
     await vi.waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith("/confirm-mail"),
+      expect(navigate).toHaveBeenCalledWith("/confirm-mail?memberId=1"),
     );
 
     const payload = postMembers.mock.calls[0][0].body as PostMemberDto;

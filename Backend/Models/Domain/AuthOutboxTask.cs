@@ -26,7 +26,12 @@ public enum AuthTaskType
     /// <summary>
     /// Indicates that the task is to refresh a user's email in the authentication system.
     /// </summary>
-    RefreshEmail
+    RefreshEmail,
+
+    /// <summary>
+    /// Indicates that the task is to send the user a combined email-verification and set-password action email.
+    /// </summary>
+    SendActivationEmail
 }
 
 /// <summary>

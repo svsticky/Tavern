@@ -224,14 +224,4 @@ describe("KeycloakAuthService", () => {
       expect(await service.configure2FA()).toContain("CONFIGURE_TOTP");
     });
   });
-
-  describe("resetCredentials", () => {
-    it("builds a reset-credentials URL containing the client id and redirect uri", async () => {
-      const service = new KeycloakAuthService();
-      const url = await service.resetCredentials();
-      expect(url).toContain("reset-credentials");
-      expect(url).toContain("client_id=");
-      expect(url).toContain("redirect_uri=");
-    });
-  });
 });

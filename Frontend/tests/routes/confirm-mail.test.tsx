@@ -1,43 +1,92 @@
 import { screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import ConfirmMail from "~/routes/confirm-mail";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import { renderWithProviders } from "~/testUtils";
+
+const { postMembersByIdActivationEmail } = vi.hoisted(() => ({
+  postMembersByIdActivationEmail: vi.fn(),
+}));
+
+vi.mock("~/api", () => ({ postMembersByIdActivationEmail }));
 
 describe("ConfirmMail", () => {
-  it("renders the loading message and the branding nav bar", () => {
-    const authService = createMockAuthService({
-      resetCredentials: vi.fn(() => new Promise<string>(() => {})),
-    });
-
-    renderWithProviders(<ConfirmMail />, { authService });
-
-    expect(screen.getByText(/loading/)).toBeInTheDocument();
+  beforeEach(() => {
+    postMembersByIdActivationEmail.mockClear();
   });
 
-  it("redirects to the credential reset URL after the delay once authService is available", async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const resetCredentials = vi.fn(
-      async () => "https://example.com/reset-flow",
-    );
-    const authService = createMockAuthService({ resetCredentials });
+  it("shows the confirmation message immediately when no memberId is present", () => {
+    renderWithProviders(<ConfirmMail />, { route: "/confirm-mail" });
 
-    const originalLocation = window.location;
-    // @ts-expect-error - overriding window.location for the assertion
-    delete window.location;
-    // @ts-expect-error - partial stub is fine for this assertion
-    window.location = { href: "" };
+    expect(screen.getByText(/confirm_mail_description/)).toBeInTheDocument();
+    expect(postMembersByIdActivationEmail).not.toHaveBeenCalled();
+  });
 
-    renderWithProviders(<ConfirmMail />, { authService });
+  it("shows loading, then the confirmation message once the email is sent", async () => {
+    postMembersByIdActivationEmail.mockResolvedValue({
+      status: 200,
+      data: "Sent",
+    });
 
-    await vi.advanceTimersByTimeAsync(1000);
+    renderWithProviders(<ConfirmMail />, {
+      route: "/confirm-mail?memberId=member-1",
+    });
 
-    await waitFor(() => expect(resetCredentials).toHaveBeenCalled());
+    expect(screen.getByText(/loading/)).toBeInTheDocument();
+
     await waitFor(() =>
-      expect(window.location.href).toBe("https://example.com/reset-flow"),
+      expect(postMembersByIdActivationEmail).toHaveBeenCalledWith({
+        path: { id: "member-1" },
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/confirm_mail_description/)).toBeInTheDocument(),
+    );
+  });
+
+  it("shows the confirmation message when the email was already sent before", async () => {
+    postMembersByIdActivationEmail.mockResolvedValue({
+      status: 200,
+      data: "AlreadySent",
+    });
+
+    renderWithProviders(<ConfirmMail />, {
+      route: "/confirm-mail?memberId=member-2",
+    });
+
+    await waitFor(() =>
+      expect(screen.getByText(/confirm_mail_description/)).toBeInTheDocument(),
+    );
+    expect(postMembersByIdActivationEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries while the member isn't linked to the auth system yet, then stops", async () => {
+    vi.useFakeTimers();
+    postMembersByIdActivationEmail.mockResolvedValue({
+      status: 200,
+      data: "Pending",
+    });
+
+    renderWithProviders(<ConfirmMail />, {
+      route: "/confirm-mail?memberId=member-3",
+    });
+
+    // Attempt 1 fires on mount; 4 more retries (5 total) at the fixed delay, then it gives up.
+    await vi.advanceTimersByTimeAsync(0);
+    for (let i = 0; i < 4; i++) {
+      await vi.advanceTimersByTimeAsync(2000);
+    }
+    expect(postMembersByIdActivationEmail).toHaveBeenCalledTimes(5);
+
+    // Switch to real timers so testing-library's waitFor can flush the resulting re-render.
+    vi.useRealTimers();
+    await waitFor(() =>
+      expect(screen.getByText(/confirm_mail_description/)).toBeInTheDocument(),
     );
 
-    // @ts-expect-error - restoring the real Location object after the stub above
-    window.location = originalLocation;
+    // No further retries beyond the cap.
+    vi.useFakeTimers();
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(postMembersByIdActivationEmail).toHaveBeenCalledTimes(5);
     vi.useRealTimers();
   });
 });

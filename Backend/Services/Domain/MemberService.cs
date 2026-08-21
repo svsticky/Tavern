@@ -382,6 +382,32 @@ namespace Backend.Services.Domain
             mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, finalSet, db);
         }
 
+        /// <inheritdoc />
+        public async Task<ActivationEmailStatus> SendActivationEmail(Guid id, CancellationToken cancellationToken)
+        {
+            var member = await db.Members.FindAsync([id], cancellationToken)
+                ?? throw new KeyNotFoundException($"Member with ID {id} not found.");
+
+            if (member.ActivationEmailSentAt != null)
+            {
+                return ActivationEmailStatus.AlreadySent;
+            }
+
+            if (member.AuthSystemUserId == null)
+            {
+                // Not linked to the auth system yet (their AuthOutboxTask.Create task is still pending).
+                // The caller (the confirm-mail page) retries shortly.
+                return ActivationEmailStatus.Pending;
+            }
+
+            member.ActivationEmailSentAt = DateTimeOffset.UtcNow;
+            authOutboxWorker.EnqueueTask(AuthTaskType.SendActivationEmail, member.AuthSystemUserId.Value, db);
+            await db.SaveChangesAsync(cancellationToken);
+
+            logger.LogInformation("Queued activation email for member {MemberId}.", id);
+            return ActivationEmailStatus.Sent;
+        }
+
         private async Task RemoveExistingMemberWithSameEmail(string email, CancellationToken ct)
         {
             var existingMember = await db.Members

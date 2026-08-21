@@ -266,6 +266,28 @@ namespace Backend.Controllers
             return NoContent();
         }
 
+        // POST: members/{id}/activation-email
+        /// <summary>
+        /// Sends the one-time account-activation email (verify email + set password) for a member, if it hasn't
+        /// been sent already and the member is linked to the authentication system yet. Called by the confirm-mail
+        /// page right after registration, regardless of whether the member needed to pay a membership fee - this
+        /// endpoint is intentionally anonymous since the member has no session yet at that point. Safe to call
+        /// repeatedly: sending is a one-time, idempotent action gated on Member.ActivationEmailSentAt.
+        /// </summary>
+        /// <param name="id">The unique identifier of the member to send the activation email for.</param>
+        /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+        /// <returns>The outcome of the request.</returns>
+        [AllowAnonymous]
+        [HttpPost("{id}/activation-email")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(ActivationEmailStatus), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ActivationEmailStatus>> SendActivationEmail(Guid id, CancellationToken cancellationToken)
+        {
+            var status = await memberService.SendActivationEmail(id, cancellationToken);
+            return Ok(status);
+        }
+
         // POST: members/webhook/refresh-email
         /// <summary>
         /// Handles incoming webhooks from authentication system to synchronize email changes. The UpdateEmailWebhook endpoint is a specialized administrative entry point that listens for external signals regarding identity updates. It validates the request using a shared secret and enqueues a background task to refresh the member's email address in the local database, ensuring the application stays in sync with the central identity provider.

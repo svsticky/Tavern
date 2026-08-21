@@ -38,5 +38,11 @@ namespace Backend.Interfaces
         /// </summary>
         /// <param name="authSystemId">The auth system user ID.</param>
         Task RefreshEmail(Guid authSystemId);
+
+        /// <summary>
+        /// Sends a combined email-verification and set-password action email to a user.
+        /// </summary>
+        /// <param name="authSystemId">The auth system user ID.</param>
+        Task SendActivationEmail(Guid authSystemId);
     }
 }

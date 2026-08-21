@@ -5,6 +5,27 @@ using Microsoft.AspNetCore.JsonPatch;
 namespace Backend.Interfaces
 {
     /// <summary>
+    /// The outcome of a <see cref="IMemberService.SendActivationEmail"/> call.
+    /// </summary>
+    public enum ActivationEmailStatus
+    {
+        /// <summary>
+        /// The activation email was queued to be sent.
+        /// </summary>
+        Sent,
+
+        /// <summary>
+        /// An activation email was already sent for this member previously; nothing was queued again.
+        /// </summary>
+        AlreadySent,
+
+        /// <summary>
+        /// The member isn't linked to the authentication system yet. The caller should retry shortly.
+        /// </summary>
+        Pending
+    }
+
+    /// <summary>
     /// Defines the contract for managing member profiles and related member data.
     /// </summary>
     public interface IMemberService
@@ -95,5 +116,13 @@ namespace Backend.Interfaces
         /// <param name="userId">The ID of the user performing the update.</param>
         /// <param name="cancellationToken">The cancellation token.</param>
         Task UpdateMemberMailinglists(Guid id, List<string> subscribedListIds, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Sends the one-time account-activation email (verify email + set password) for a member, if it hasn't
+        /// been sent before and the member is linked to the authentication system yet. Safe to call repeatedly.
+        /// </summary>
+        /// <param name="id">The ID of the member to send the activation email for.</param>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        Task<ActivationEmailStatus> SendActivationEmail(Guid id, CancellationToken cancellationToken);
     }
 }

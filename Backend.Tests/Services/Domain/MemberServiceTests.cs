@@ -1205,4 +1205,68 @@ public class MemberServiceTests : IDisposable
                 actual.OrderBy(x => x).SequenceEqual(new[] { "id_news", "id_alumni", "id_uncurated" }.OrderBy(x => x))),
             _db);
     }
+
+    [Fact]
+    public async Task SendActivationEmail_MemberLinked_QueuesEmailAndMarksSent()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Sent, status);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.SendActivationEmail, member.AuthSystemUserId!.Value, _db);
+
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.NotNull(updated!.ActivationEmailSentAt);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_AlreadySent_DoesNotQueueAgain()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        member.ActivationEmailSentAt = DateTimeOffset.UtcNow.AddMinutes(-5);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.AlreadySent, status);
+        _authOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_NotLinkedToAuthSystem_ReturnsPending()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        member.AuthSystemUserId = null;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Pending, status);
+        _authOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
+
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.Null(updated!.ActivationEmailSentAt);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MemberNotFound_ThrowsKeyNotFound()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _service.SendActivationEmail(Guid.NewGuid(), CancellationToken.None));
+    }
 }

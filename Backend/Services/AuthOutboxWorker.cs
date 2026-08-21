@@ -137,6 +137,10 @@ public class AuthOutboxWorker(
                 await syncService.RefreshEmail(task.AuthSystemUserId);
                 break;
 
+            case AuthTaskType.SendActivationEmail:
+                await syncService.SendActivationEmail(task.AuthSystemUserId);
+                break;
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(task.TaskType), "Unknown auth task type");
         }
