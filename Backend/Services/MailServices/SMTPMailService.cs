@@ -39,9 +39,18 @@ public class SMTPMailService(
         message.From.Add(new MailboxAddress(from.Name, from.Mail));
         message.Subject = subject;
 
-        foreach (var recipient in to)
+        // A single recipient goes in To so their mail client shows who the mail was sent to; multiple
+        // recipients (e.g. an activity mail to a whole group) go in Bcc so they don't see each other's address.
+        if (to.Length == 1)
         {
-            message.Bcc.Add(new MailboxAddress(recipient.Name, recipient.Mail));
+            message.To.Add(new MailboxAddress(to[0].Name, to[0].Mail));
+        }
+        else
+        {
+            foreach (var recipient in to)
+            {
+                message.Bcc.Add(new MailboxAddress(recipient.Name, recipient.Mail));
+            }
         }
 
         var bodyBuilder = new BodyBuilder
