@@ -39,4 +39,8 @@
       <Link>.dockerignore</Link>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Services\MailServices\Templates\**\*.html" />
+  </ItemGroup>
 </Project>

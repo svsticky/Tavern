@@ -103,7 +103,7 @@ public abstract class AbstractMailService
             throw new InvalidOperationException("Sender information could not be retrieved");
         }
 
-        await SendEmailCoreAsync(from, dto.Recipients, dto.Subject, dto.HtmlContent, ct);
+        await SendEmailCoreAsync(from, dto.Recipients, dto.Subject, BuildHtmlEmail(dto.HtmlContent), ct);
         _logger.LogInformation("Completed mail send by user {UserId} to {RecipientCount} recipients.", UserId, dto.Recipients.Length);
     }
 
@@ -145,14 +145,13 @@ public abstract class AbstractMailService
             Language.EN => $"Your enrollment for {promotedEnrollment.Activity.Name} is confirmed!",
             _ => throw new InvalidOperationException("Unsupported language")
         };
-        string htmlContent = promotedEnrollment.Member.PreferredLanguage switch
+        string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(promotedEnrollment.Member.PreferredLanguage)}/EnrollmentPromotion.html", new Dictionary<string, string>
         {
-            Language.NL => $"Beste {promotedEnrollment.Member.FirstName},<br><br>Er is een plek vrijgekomen voor {promotedEnrollment.Activity.Name} en je bent ingeschreven vanaf de reserve lijst! We kijken ernaar uit je te zien bij de activiteit!<br><br>Met vriendelijke groet,<br>Het bestuur",
-            Language.EN => $"Dear {promotedEnrollment.Member.FirstName},<br><br>A spot has opened up for {promotedEnrollment.Activity.Name} and you have been enrolled from the waiting list! We look forward to seeing you at the activity!<br><br>Best regards,<br>The board",
-            _ => throw new InvalidOperationException("Unsupported language")
-        };
+            ["FirstName"] = promotedEnrollment.Member.FirstName,
+            ["ActivityName"] = promotedEnrollment.Activity.Name
+        });
 
-        await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = promotedEnrollment.Member.Email, Name = promotedEnrollment.Member.FirstName } }, subject, htmlContent, CancellationToken.None);
+        await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = promotedEnrollment.Member.Email, Name = promotedEnrollment.Member.FirstName } }, subject, BuildHtmlEmail(htmlContent, promotedEnrollment.Member.PreferredLanguage), CancellationToken.None);
     }
 
     /// <summary>
@@ -189,14 +188,14 @@ public abstract class AbstractMailService
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 
-            string htmlContent = language switch
+            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/OutstandingPayment.html", new Dictionary<string, string>
             {
-                Language.NL => $"Beste {member.FirstName},<br><br>Je hebt nog openstaande betalingen voor de volgende activiteiten:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Gelieve deze zo snel mogelijk te voldoen op <a href='{Environment.GetEnvironmentVariable("HostUrl")}'>Koala</a>.<br><br>Met vriendelijke groet,<br>Het bestuur",
-                Language.EN => $"Dear {member.FirstName},<br><br>You have outstanding payments for the following activities:<br><ul>{string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>"))}</ul><br>Please settle these as soon as possible at <a href='{Environment.GetEnvironmentVariable("HostUrl")}'>Koala</a>.<br><br>Best regards,<br>The board",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                ["FirstName"] = member.FirstName,
+                ["ActivityList"] = string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>")),
+                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+            });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
     }
 
@@ -235,14 +234,13 @@ public abstract class AbstractMailService
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 
-            string htmlContent = language switch
+            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusNoActiveStudy.html", new Dictionary<string, string>
             {
-                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens sta je momenteel niet ingeschreven voor een studie bij onze vereniging. Als deze informatie niet meer klopt of als je je studie wilt bijwerken, kun je dit aanpassen via <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. Ben je niet langer studerend of actief lid, dan vind je daar eventueel ook de optie om je account op te heffen.<br><br>Met vriendelijke groet,<br>Het bestuur",
-                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you are currently not enrolled in a study with our association. If this information is no longer correct or if you would like to update your study details, please visit <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. If you are no longer studying or an active member, you will also find the option to delete your account there.<br><br>Best regards,<br>The board",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                ["FirstName"] = member.FirstName,
+                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+            });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
 
         var membersWithOutstandingStudies = potentialMembers
@@ -263,14 +261,13 @@ public abstract class AbstractMailService
                 _ => throw new InvalidOperationException("Unsupported language")
             };
 
-            string htmlContent = language switch
+            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusApproachingDuration.html", new Dictionary<string, string>
             {
-                Language.NL => $"Beste {member.FirstName},<br><br>Volgens onze gegevens loop je mogelijk tegen het einde van je nominale studietijd aan of is je studiestatus nog niet bijgewerkt. Mocht je studie inmiddels afgerond zijn of veranderd zijn, dan verzoeken we je dit bij te werken via <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. Als je niet meer actief bent, kun je daar desgewenst ook je account verwijderen.<br><br>Met vriendelijke groet,<br>Het bestuur",
-                Language.EN => $"Dear {member.FirstName},<br><br>According to our records, you may be approaching the end of your nominal study duration or your study status has not yet been updated. If your study status has changed or has been completed, please update it on <a href='{Environment.GetEnvironmentVariable("HostUrl")}/update-study-progress'>Koala</a>. If you are no longer active, you may also choose to delete your account there.<br><br>Best regards,<br>The board",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                ["FirstName"] = member.FirstName,
+                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+            });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, htmlContent, CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
     }
 
@@ -329,6 +326,55 @@ public abstract class AbstractMailService
         }
         return resultRecipients;
     }
+
+    /// <summary>
+    /// Wraps a fragment of email body HTML in the association's branded layout: a colored header bar showing the board logo, the body content, and a footer linking to the frontend host and the main board mailbox. Colors and addresses are read from settings/environment on every call so that board-configured branding (e.g. after an admin changes BoardPrimary) is always reflected without a restart.
+    /// </summary>
+    /// <param name="bodyContent">The inner HTML for the message body.</param>
+    /// <param name="language">The language to render the footer copy in.</param>
+    /// <returns>A complete, styled HTML document ready to be used as an email body.</returns>
+    protected string BuildHtmlEmail(string bodyContent, Language language = Language.NL)
+    {
+        string? boardPrimarySetting = _db.Settings.Where(s => s.Name == "BoardPrimary").Select(s => s.Value).FirstOrDefault();
+        string boardPrimary = string.IsNullOrEmpty(boardPrimarySetting) ? "#fa6b20" : boardPrimarySetting;
+
+        string mainBoardMail = _db.Settings.Where(s => s.Name == "MainBoardMail").Select(s => s.Value).FirstOrDefault() ?? "";
+        string hostUrl = Environment.GetEnvironmentVariable("HostUrl") ?? "";
+        string logoUrl = Environment.GetEnvironmentVariable("LOGO_URL") ?? "";
+
+        string hostDisplay = Regex.Replace(hostUrl, @"^https?:\/\/", "");
+
+        string headerContent = string.IsNullOrEmpty(logoUrl)
+            ? string.Empty
+            : $"<img src='{logoUrl}' alt='Logo' style='max-height: 40px; vertical-align: middle;' />";
+
+        string languageFolder = LanguageFolder(language);
+
+        string footerText = MailTemplateLoader.Render($"{languageFolder}/Footer.html", new Dictionary<string, string>
+        {
+            ["HostUrl"] = hostUrl,
+            ["HostDisplay"] = hostDisplay,
+            ["MainBoardMail"] = mainBoardMail
+        });
+
+        return MailTemplateLoader.Render("Layout.html", new Dictionary<string, string>
+        {
+            ["BoardPrimary"] = boardPrimary,
+            ["HeaderContent"] = headerContent,
+            ["BodyContent"] = bodyContent,
+            ["FooterText"] = footerText
+        });
+    }
+
+    /// <summary>
+    /// Maps a member's preferred language to the corresponding mail-template folder name.
+    /// </summary>
+    private static string LanguageFolder(Language language) => language switch
+    {
+        Language.NL => "nl",
+        Language.EN => "en",
+        _ => throw new InvalidOperationException("Unsupported language")
+    };
 
     /// <summary>
     /// Strips HTML tags from the provided text and converts it to plain text by replacing line breaks and multiple spaces with appropriate formatting. This method is useful for generating plain text versions of email content that may originally be in HTML format, ensuring that the resulting text is clean and readable without any HTML tags or excessive whitespace. The method uses regular expressions to identify and replace HTML elements and whitespace patterns effectively.
