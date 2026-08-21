@@ -1,7 +1,6 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
 import type {
   Activity,
   ActivityResponseDto,
@@ -61,8 +60,6 @@ export default function Finances() {
   >(null);
   const [exportStartDate, setExportStartDate] = useState<string>("");
   const [exportEndDate, setExportEndDate] = useState<string>("");
-
-  const navigate = useNavigate();
 
   useEffect(() => {
     loadFinancesData({
@@ -206,7 +203,7 @@ export default function Finances() {
               <Button
                 variant="primary"
                 className="w-full md:w-auto"
-                onClick={() => navigate(`/activities/${activity.id}`)}
+                href={`/activities/${activity.id}`}
               >
                 {t("go_to_activity")}
               </Button>

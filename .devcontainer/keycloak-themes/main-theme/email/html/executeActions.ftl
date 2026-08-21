@@ -6,29 +6,30 @@
         <h2 style="margin-top: 0; color: #333;">${msg("welcomeTitle")}</h2>
         <p>${msg("welcomeIntro")}</p>
         <p>${msg("welcomeAbout")}</p>
-        <p>${msg("welcomeCommunity")}</p>
+        <p>${msg("welcomeCommunity")?no_esc}</p>
 
         <h2 style="color: #333;">${msg("welcomeEducationTitle")}</h2>
-        <p>${msg("welcomeEducationBody")}</p>
+        <p>${msg("welcomeEducationBody")?no_esc}</p>
 
         <h2 style="color: #333;">${msg("welcomeCareerTitle")}</h2>
-        <p>${msg("welcomeCareerBody")}</p>
+        <p>${msg("welcomeCareerBody")?no_esc}</p>
 
         <h2 style="color: #333;">${msg("welcomeSocialTitle")}</h2>
         <p>${msg("welcomeSocialBody")}</p>
 
         <h2 style="color: #333;">${msg("welcomeNextTitle")}</h2>
-        <p>${msg("welcomeNextBody")}</p>
+        <p>${msg("welcomeNextBody")?no_esc}</p>
+        <p>${msg("welcomeActivateInstructions", linkExpiration)}</p>
     <#else>
         <h2 style="margin-top: 0; color: #333;">${msg("executeActionsTitle")}</h2>
         <p>${msg("executeActionsBody")}</p>
+
+        <ul style="color: #333; padding-left: 20px;">
+            <#list requiredActions as action>
+                <li><strong>${msg("requiredAction.${action}")}</strong></li>
+            </#list>
+        </ul>
+
+        <p>${msg("executeActionsWarning", linkExpiration)}</p>
     </#if>
-
-    <ul style="color: #333; padding-left: 20px;">
-        <#list requiredActions as action>
-            <li><strong>${msg("requiredAction.${action}")}</strong></li>
-        </#list>
-    </ul>
-
-    <p>${msg("executeActionsWarning", linkExpiration)}</p>
 </@layout.emailLayout>
