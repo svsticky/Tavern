@@ -361,7 +361,7 @@ public class MemberServiceTests : IDisposable
         var saved = await _db.Members.FindAsync(result.Id);
         Assert.NotNull(saved);
         Assert.Equal("a@b.com", saved.Email);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Create, result.Id);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Create, result.Id, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
             "a@b.com",
             Arg.Is<IEnumerable<string>>(ids => ids.SequenceEqual(new[] { "id_news" })),
@@ -413,7 +413,7 @@ public class MemberServiceTests : IDisposable
         Assert.Equal($"DELETED-{memberId}", anonymized.StudentNumber);
         Assert.Null(anonymized.ProfilePicturePath);
 
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
         await _storageService.Received(1).DeleteFileAsync("profile-pictures", "pic.webp");
         _memoryCache.Received(1).Remove("prof-pic-pic.webp");
         _mailSubscriptionOutboxWorker.Received(1).EnqueueDeleteTask(originalEmail, _db);
@@ -515,7 +515,7 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
         Assert.Equal("New Street", updated.Street);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
     }
 
@@ -642,7 +642,7 @@ public class MemberServiceTests : IDisposable
         await _service.RefreshEmail(authUserId, CancellationToken.None);
 
         // Assert
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, authUserId);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, authUserId, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.Received(1).EnqueueMigrateEmailTask(member.Email, "new-email@example.com", _db);
     }
 

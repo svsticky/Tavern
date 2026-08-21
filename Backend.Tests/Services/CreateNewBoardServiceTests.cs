@@ -97,7 +97,7 @@ public class CreateNewBoardServiceTests : IDisposable
         // Verify candidate was promoted to targetYear (committeeYear + 2)
         var totalMemberships = await _db.GroupMemberships.CountAsync();
         Assert.Equal(4, totalMemberships);
-        await _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidateId);
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidateId, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -192,9 +192,9 @@ public class CreateNewBoardServiceTests : IDisposable
         Assert.False(updatedBegunstiger!.Begunstiger);
 
         // Verify sync tasks were enqueued for all candidates and old board members
-        await _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate1);
-        await _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate2);
-        await _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, oldBoardMember);
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate1, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate2, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, oldBoardMember, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public class CreateNewBoardServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         // Force EnqueueTask to throw an exception
-        _authOutboxWorkerMock.When(x => x.EnqueueTask(Arg.Any<AuthTaskType>(), Arg.Any<Guid>()))
+        _authOutboxWorkerMock.When(x => x.EnqueueTask(Arg.Any<AuthTaskType>(), Arg.Any<Guid>(), Arg.Any<PostgresDbContext>()))
             .Do(x => throw new InvalidOperationException("Simulated auth worker failure"));
 
         // Act & Assert

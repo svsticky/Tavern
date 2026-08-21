@@ -303,7 +303,18 @@ namespace Backend.Services.Domain
                 else if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
-                    await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."));
+
+                    if (member.AuthSystemUserId == null)
+                    {
+                        // The member isn't linked to the auth system yet. Don't let that block marking the payment
+                        // as paid; AuthOutboxWorker queues a catch-up Sync task once they do get linked.
+                        logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking payment {PaymentId} paid without queuing an auth sync.", member.Id, existingPayment.Id);
+                    }
+                    else
+                    {
+                        authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
+                    }
+
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidMembership(memberId);
                 }

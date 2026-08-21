@@ -99,15 +99,22 @@ public class PaymentSyncService(
                     {
                         if (fullPayment.Member != null)
                         {
-                            if (fullPayment.Member.AuthSystemUserId == null) throw new Exception("Member isn't synced with the authentication system yet, cannot sync payment status.");
-
-                            db.AuthOutboxTasks.Add(new AuthOutboxTask
+                            if (fullPayment.Member.AuthSystemUserId == null)
                             {
-                                AuthSystemUserId = fullPayment.Member.AuthSystemUserId.Value,
-                                TaskType = AuthTaskType.Sync,
-                                CreatedAt = DateTimeOffset.UtcNow,
-                                NextAttemptAt = DateTimeOffset.UtcNow
-                            });
+                                // The member isn't linked to the auth system yet. Don't let that block marking the
+                                // payment as paid; AuthOutboxWorker queues a catch-up Sync task once they do get linked.
+                                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking payment {PaymentId} paid without queuing an auth sync.", fullPayment.Member.Id, payment.Id);
+                            }
+                            else
+                            {
+                                db.AuthOutboxTasks.Add(new AuthOutboxTask
+                                {
+                                    AuthSystemUserId = fullPayment.Member.AuthSystemUserId.Value,
+                                    TaskType = AuthTaskType.Sync,
+                                    CreatedAt = DateTimeOffset.UtcNow,
+                                    NextAttemptAt = DateTimeOffset.UtcNow
+                                });
+                            }
                         }
                         payment.PaidAt = paymentResponse.PaidAt;
 
@@ -142,7 +149,7 @@ public class PaymentSyncService(
                             if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id))
                             {
                                 db.Members.Remove(mp.Member);
-                                await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, mp.Member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."));
+                                authOutboxWorker.EnqueueTask(AuthTaskType.Delete, mp.Member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."), db);
                             }
                         }
                         await db.SaveChangesAsync();

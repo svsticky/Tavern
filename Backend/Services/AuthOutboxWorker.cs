@@ -13,15 +13,16 @@ public class AuthOutboxWorker(
     ILogger<AuthOutboxWorker> logger) : BackgroundService
 {
     /// <summary>
-    /// Enqueues a auth outbox task for asynchronous processing.
+    /// Enqueues an auth outbox task on the caller's own database context, so it's only persisted once the
+    /// caller's surrounding transaction (if any) commits - instead of on a separate connection that would commit
+    /// immediately and could become visible to (and get picked up and discarded by) the background worker before
+    /// the entity the task depends on (e.g. a newly created Member) has actually been committed.
     /// </summary>
     /// <param name="taskType">The task type to enqueue.</param>
     /// <param name="authSystemUserId">The target auth user ID.</param>
-    public virtual async Task EnqueueTask(AuthTaskType taskType, Guid authSystemUserId)
+    /// <param name="db">The database context used to persist the task.</param>
+    public virtual void EnqueueTask(AuthTaskType taskType, Guid authSystemUserId, PostgresDbContext db)
     {
-        using var scope = serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
-
         var task = new AuthOutboxTask
         {
             TaskType = taskType,
@@ -32,7 +33,7 @@ public class AuthOutboxWorker(
         };
 
         db.AuthOutboxTasks.Add(task);
-        await db.SaveChangesAsync();
+        db.SaveChanges();
         logger.LogInformation("Enqueued auth outbox task {TaskType} for {AuthSystemUserId}.", taskType, authSystemUserId);
     }
 
@@ -92,19 +93,27 @@ public class AuthOutboxWorker(
         switch (task.TaskType)
         {
             case AuthTaskType.Create:
-                var member = await db.Members.FindAsync([task.AuthSystemUserId], ct);
-                if (member != null)
+                var member = await db.Members.FindAsync([task.AuthSystemUserId], ct)
+                    // The member row can briefly be invisible to this task's own connection if it was inserted
+                    // in a transaction that hadn't committed yet when this task became eligible to run. Retry
+                    // instead of silently dropping the task, rather than permanently losing the auth link.
+                    ?? throw new InvalidOperationException($"Member {task.AuthSystemUserId} was not found (yet); will retry.");
+
+                var kId = await syncService.CreateUser(member);
+                if (kId != null)
                 {
-                    var kId = await syncService.CreateUser(member);
-                    if (kId != null)
+                    member.AuthSystemUserId = kId;
+                    logger.LogInformation("Linked local member {MemberId} to auth user {AuthSystemUserId}.", member.Id, kId);
+
+                    // Catch up any auth-system state (e.g. membership/payment status) that couldn't be synced
+                    // while this member had no AuthSystemUserId yet.
+                    db.AuthOutboxTasks.Add(new AuthOutboxTask
                     {
-                        member.AuthSystemUserId = kId;
-                        logger.LogInformation("Linked local member {MemberId} to auth user {AuthSystemUserId}.", member.Id, kId);
-                    }
-                }
-                else
-                {
-                    logger.LogWarning("Auth create task skipped: member {MemberId} was not found.", task.AuthSystemUserId);
+                        TaskType = AuthTaskType.Sync,
+                        AuthSystemUserId = kId.Value,
+                        CreatedAt = DateTimeOffset.UtcNow,
+                        NextAttemptAt = DateTimeOffset.UtcNow
+                    });
                 }
                 break;
 

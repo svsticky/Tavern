@@ -211,7 +211,7 @@ public class GroupMembershipServiceTests : IDisposable
         Assert.NotNull(saved);
         Assert.Equal(m.Id, saved.MemberId);
         Assert.Equal(g.Id, saved.GroupId);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -245,7 +245,7 @@ public class GroupMembershipServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var deleted = await _db.GroupMemberships.FindAsync(5u);
         Assert.Null(deleted);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -305,7 +305,7 @@ public class GroupMembershipServiceTests : IDisposable
         var updated = await _db.GroupMemberships.FindAsync(10u);
         Assert.NotNull(updated);
         Assert.Equal(2025u, updated.MembershipYear);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -334,7 +334,7 @@ public class GroupMembershipServiceTests : IDisposable
         var updated = await _db.GroupMemberships.FindAsync(10u);
         Assert.NotNull(updated);
         Assert.Equal(r2.Id, updated.RoleAliasId);
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]

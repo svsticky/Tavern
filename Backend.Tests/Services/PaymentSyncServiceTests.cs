@@ -231,7 +231,7 @@ public class PaymentSyncServiceTests
     }
 
     [Fact]
-    public async Task SyncPayments_MembershipPaymentPaidButNoAuthSystemUserId_ThrowsAndRollsBack()
+    public async Task SyncPayments_MembershipPaymentPaidButNoAuthSystemUserId_StillMarksPaidWithoutAuthSync()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
@@ -255,7 +255,8 @@ public class PaymentSyncServiceTests
         var provider = CreateServiceProvider(db);
         var service = new TestablePaymentSyncService(provider, _logger);
 
-        _paymentService.GetPaymentAsync("tr_noauth").Returns(new GetPaymentResponse("tr_noauth", PaymentStatus.Paid, DateTimeOffset.UtcNow));
+        var now = DateTimeOffset.UtcNow;
+        _paymentService.GetPaymentAsync("tr_noauth").Returns(new GetPaymentResponse("tr_noauth", PaymentStatus.Paid, now));
 
         // Act
         await service.PublicSyncPayments();
@@ -263,10 +264,14 @@ public class PaymentSyncServiceTests
         // Assert
         var updatedPayment = await db.MembershipPayments.FindAsync(4u);
         Assert.NotNull(updatedPayment);
-        Assert.Null(updatedPayment.PaidAt); // Should not have saved
+        Assert.Equal(now, updatedPayment.PaidAt); // Payment status must not be blocked by a missing auth link
 
         var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
-        Assert.Empty(outboxTasks);
+        Assert.Empty(outboxTasks); // No auth sync queued since there's no AuthSystemUserId yet
+
+        var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
+        Assert.Single(accountingTasks);
+        Assert.Equal(payment.Id, accountingTasks[0].PaymentId);
     }
 
     [Fact]
@@ -308,7 +313,7 @@ public class PaymentSyncServiceTests
         var updatedMember = await db.Members.FindAsync(member.Id);
         Assert.Null(updatedMember); // Removed
 
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -350,7 +355,7 @@ public class PaymentSyncServiceTests
         var updatedMember = await db.Members.FindAsync(member.Id);
         Assert.NotNull(updatedMember); // Kept!
 
-        await _authOutboxWorker.DidNotReceive().EnqueueTask(Arg.Any<AuthTaskType>(), Arg.Any<Guid>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(Arg.Any<AuthTaskType>(), Arg.Any<Guid>(), Arg.Any<PostgresDbContext>());
     }
 
     [Fact]

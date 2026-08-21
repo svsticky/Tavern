@@ -246,7 +246,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     MembershipYear = maxBoardYear
                 });
 
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id);
+                authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id, db);
 
                 db.MembershipPayments.Add(new MembershipPayment
                 {

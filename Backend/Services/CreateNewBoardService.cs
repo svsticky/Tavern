@@ -68,12 +68,12 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
                     MembershipYear = currentYear
                 });
 
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, candidate.MemberId);
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, candidate.MemberId, db);
             }
 
             foreach (var oldMember in oldBoardMembers)
             {
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.MemberId);
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.MemberId, db);
             }
 
             // Reset Gratie and Begunstiger status for all active members upon board rotation

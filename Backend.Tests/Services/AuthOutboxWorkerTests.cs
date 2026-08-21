@@ -87,7 +87,7 @@ public class AuthOutboxWorkerTests
         var userId = Guid.NewGuid();
 
         // Act
-        await worker.EnqueueTask(AuthTaskType.Create, userId);
+        worker.EnqueueTask(AuthTaskType.Create, userId, db);
 
         // Assert
         var tasks = await db.AuthOutboxTasks.ToListAsync();
@@ -178,11 +178,13 @@ public class AuthOutboxWorkerTests
         Assert.Equal(newAuthId, updatedMember.AuthSystemUserId);
 
         var tasks = await db.AuthOutboxTasks.ToListAsync();
-        Assert.Empty(tasks); // Removed
+        var queuedTask = Assert.Single(tasks); // Create task removed, catch-up Sync task queued
+        Assert.Equal(AuthTaskType.Sync, queuedTask.TaskType);
+        Assert.Equal(newAuthId, queuedTask.AuthSystemUserId);
     }
 
     [Fact]
-    public async Task TryProcessNextTaskAsync_CreateTask_MemberNotFound_LogsWarningAndRemovesTask()
+    public async Task TryProcessNextTaskAsync_CreateTask_MemberNotFound_RetriesInsteadOfDroppingTask()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
@@ -210,7 +212,9 @@ public class AuthOutboxWorkerTests
         await _authService.DidNotReceiveWithAnyArgs().CreateUser(default!);
 
         var tasks = await db.AuthOutboxTasks.ToListAsync();
-        Assert.Empty(tasks); // Removed
+        var remainingTask = Assert.Single(tasks); // Not dropped - rescheduled for retry
+        Assert.Equal(1, remainingTask.RetryCount);
+        Assert.True(remainingTask.NextAttemptAt > DateTimeOffset.UtcNow);
     }
 
     [Fact]

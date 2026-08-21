@@ -124,7 +124,7 @@ namespace Backend.Services.Domain
                 }
 
                 // Sync with the auth system
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Create, member.Id);
+                authOutboxWorker.EnqueueTask(AuthTaskType.Create, member.Id, db);
 
                 // Enqueue mail subscription update
                 mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, dto.SubscribedMailinglistIds ?? [], db);
@@ -163,7 +163,7 @@ namespace Backend.Services.Domain
 
             try
             {
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."));
+                authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."), db);
 
                 // Anonymize member PII while retaining foreign keys and financial history
                 var oldEmail = member.Email;
@@ -235,7 +235,7 @@ namespace Backend.Services.Domain
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -279,7 +279,7 @@ namespace Backend.Services.Domain
                 ApplyMemberUpdate(member, dto);
                 StateValidator.Validate(member);
 
-                await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -327,7 +327,7 @@ namespace Backend.Services.Domain
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                await authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
+                authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
                 var newMail = await authService.GetEmail(member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
                 mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newMail, db);
                 await db.SaveChangesAsync(cancellationToken);
@@ -435,9 +435,10 @@ namespace Backend.Services.Domain
             }
 
             db.Members.Remove(existingMember);
-            await authOutboxWorker.EnqueueTask(
+            authOutboxWorker.EnqueueTask(
                 AuthTaskType.Delete,
-                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet.")
+                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet."),
+                db
             );
         }
 

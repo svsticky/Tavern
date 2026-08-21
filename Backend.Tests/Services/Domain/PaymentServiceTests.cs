@@ -271,7 +271,7 @@ public class PaymentServiceTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.CreateMembershipPayment(dto));
 
-        await _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -303,7 +303,7 @@ public class PaymentServiceTests : IDisposable
         var stillExistingMember = await _db.Members.FindAsync(member.Id);
         Assert.NotNull(stillExistingMember);
 
-        await _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Delete, Arg.Any<Guid>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Delete, Arg.Any<Guid>(), Arg.Any<PostgresDbContext>());
     }
 
     [Fact]

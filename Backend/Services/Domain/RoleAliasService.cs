@@ -72,7 +72,7 @@ namespace Backend.Services.Domain
                 var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
 
                 db.RoleAliases.Remove(roleAlias);
-                await QueueSyncTasks(affectedMembers);
+                QueueSyncTasks(affectedMembers);
                 await db.SaveChangesAsync(ct);
             });
         }
@@ -99,7 +99,7 @@ namespace Backend.Services.Domain
                 StateValidator.Validate(roleAlias);
 
                 var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
-                await QueueSyncTasks(affectedMembers);
+                QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
             });
@@ -121,7 +121,7 @@ namespace Backend.Services.Domain
                 StateValidator.Validate(roleAlias);
 
                 var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
-                await QueueSyncTasks(affectedMembers);
+                QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
             });
@@ -142,13 +142,13 @@ namespace Backend.Services.Domain
                 .ToListAsync(ct);
         }
 
-        private async Task QueueSyncTasks(IEnumerable<Guid?> authSystemIds)
+        private void QueueSyncTasks(IEnumerable<Guid?> authSystemIds)
         {
             foreach (var authSystemId in authSystemIds)
             {
                 if (authSystemId.HasValue)
                 {
-                    await authOutboxWorker.EnqueueTask(AuthTaskType.Sync, authSystemId.Value);
+                    authOutboxWorker.EnqueueTask(AuthTaskType.Sync, authSystemId.Value, db);
                 }
             }
         }

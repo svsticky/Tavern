@@ -154,14 +154,20 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
     {
         if (payment is MembershipPayment membershipPayment)
         {
-            var task = new AuthOutboxTask
+            if (membershipPayment.Member?.AuthSystemUserId == null)
+            {
+                // The member isn't linked to the auth system yet (their AuthOutboxTask.Create task hasn't completed).
+                // Don't let that block marking the payment as paid; AuthOutboxWorker queues a catch-up Sync task
+                // once the member does get linked.
+                _logger.LogWarning("Member {MemberId} does not have an authentication system ID yet. Skipping auth sync for payment {PaymentId}.", membershipPayment.MemberId, payment.Id);
+                return;
+            }
+
+            _db.AuthOutboxTasks.Add(new AuthOutboxTask
             {
                 TaskType = AuthTaskType.Sync,
-                AuthSystemUserId = membershipPayment.Member?.AuthSystemUserId
-                    ?? throw new Exception("Member does not have a authentication system ID")
-            };
-
-            _db.AuthOutboxTasks.Add(task);
+                AuthSystemUserId = membershipPayment.Member.AuthSystemUserId.Value
+            });
         }
     }
 
