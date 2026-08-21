@@ -122,15 +122,7 @@ public class AuthOutboxWorker(
                 break;
 
             case AuthTaskType.Delete:
-                var memberToDelete = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == task.AuthSystemUserId, ct);
-                if (memberToDelete?.AuthSystemUserId != null)
-                {
-                    await syncService.DeleteUser(memberToDelete.AuthSystemUserId.Value);
-                }
-                else
-                {
-                    logger.LogWarning("Auth delete task skipped: user {AuthSystemUserId} was not found in local members.", task.AuthSystemUserId);
-                }
+                await syncService.DeleteUser(task.AuthSystemUserId);
                 break;
 
             case AuthTaskType.RefreshEmail:

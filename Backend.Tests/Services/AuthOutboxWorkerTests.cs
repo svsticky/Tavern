@@ -286,9 +286,11 @@ public class AuthOutboxWorkerTests
     }
 
     [Fact]
-    public async Task TryProcessNextTaskAsync_DeleteTask_MemberNotFound_LogsWarningAndRemovesTask()
+    public async Task TryProcessNextTaskAsync_DeleteTask_MemberAlreadySoftDeletedLocally_StillDeletesFromAuthSystem()
     {
-        // Arrange
+        // Arrange: the member enqueuing this Delete task has already been soft-deleted (IsDeleted = true)
+        // by the same transaction that queued it, so it's invisible to Member's global query filter. The
+        // task must not depend on looking the member back up - task.AuthSystemUserId is already correct.
         using var db = new PostgresDbContext(_dbOptions);
         db.Database.EnsureCreated();
 
@@ -311,7 +313,7 @@ public class AuthOutboxWorkerTests
 
         // Assert
         Assert.True(result);
-        await _authService.DidNotReceiveWithAnyArgs().DeleteUser(default);
+        await _authService.Received(1).DeleteUser(authUserId);
 
         var tasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Empty(tasks); // Removed
