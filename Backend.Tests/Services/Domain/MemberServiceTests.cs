@@ -369,6 +369,97 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateMember_NoStudyEnrollments_AsAnonymous_ThrowsArgumentException()
+    {
+        // Arrange
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "123456",
+            FirstName = "A",
+            LastName = "B",
+            Email = "a@b.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>(),
+            PreferredLanguage = Language.NL
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.CreateMember(dto, null, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreateMember_NoStudyEnrollments_AsBoardMember_Succeeds()
+    {
+        // Arrange
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "123456",
+            FirstName = "A",
+            LastName = "B",
+            Email = "board-created@b.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>(),
+            PreferredLanguage = Language.NL
+        };
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        // Act
+        var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Members.FindAsync(result.Id);
+        Assert.NotNull(saved);
+        Assert.Equal("board-created@b.com", saved.Email);
+    }
+
+    [Fact]
+    public async Task CreateMember_NullStudyEnrollments_AsBoardMember_Succeeds()
+    {
+        // Arrange
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "123456",
+            FirstName = "A",
+            LastName = "B",
+            Email = "board-created-null-studies@b.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            StudyEnrollments = null,
+            PreferredLanguage = Language.NL
+        };
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        // Act
+        var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Members.FindAsync(result.Id);
+        Assert.NotNull(saved);
+        Assert.Equal("board-created-null-studies@b.com", saved.Email);
+    }
+
+    [Fact]
     public async Task DeleteMember_WithUnpaidActivities_ThrowsInvalidOperationException()
     {
         // Arrange

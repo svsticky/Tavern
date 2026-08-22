@@ -82,14 +82,14 @@ namespace Backend.Services.Domain
             }
             else
             {
-                if (dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0)
+                if ((dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0) && (userId == null || !permissionService.IsBoardOrCandidateBoardMember(userId.Value)))
                     throw new ArgumentException("Member must be enrolled to atleast one study.");
 
                 if (dto.StudentNumber.Trim() == "" || !int.TryParse(dto.StudentNumber, out var _))
                     throw new ArgumentException("Student number must be a number.");
 
                 var studyStartDatesSetting = (await db.Settings.FindAsync(new object[] { "StudyStartDates" }, cancellationToken))?.Value ?? "09-01,02-01";
-                Validators.StudyEnrollmentValidator.ValidateEnrollmentDates(dto.StudyEnrollments, studyStartDatesSetting);
+                Validators.StudyEnrollmentValidator.ValidateEnrollmentDates(dto.StudyEnrollments ?? new List<PostStudyEnrollmentDTO>(), studyStartDatesSetting);
             }
 
             // Check if date of birth is in the past
