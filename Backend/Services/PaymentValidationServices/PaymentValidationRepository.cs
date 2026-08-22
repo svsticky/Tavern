@@ -110,7 +110,7 @@ public class PaymentValidationService(
     }
 
     /// <inheritdoc />
-    public IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid memberId)
+    public IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid memberId, bool includeNotOpenForPayment = false)
     {
         return db.Enrollments
             .Where(e => e.MemberId == memberId)
@@ -123,24 +123,24 @@ public class PaymentValidationService(
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
             })
-            .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
+            .Where(x => x.PaidSum < x.Enrollment.Price && (includeNotOpenForPayment || x.Enrollment.Activity.IsOpenForPayment) && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable()
             .Select(x => new EnrollmentBalance { Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
 
     /// <inheritdoc />
-    public decimal GetUnpaidAmountForEnrollment(Enrollment enrollment)
+    public decimal GetUnpaidAmountForEnrollment(Enrollment enrollment, bool includeNotOpenForPayment = false)
     {
         var paidSum = db.EnrollmentPayments
             .Include(p => p.Activity)
-            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity != null && p.Activity.IsOpenForPayment && !enrollment.IsOnWaitingList)
+            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity != null && (includeNotOpenForPayment || p.Activity.IsOpenForPayment) && !enrollment.IsOnWaitingList)
             .Sum(p => (decimal?)p.Price) ?? 0;
 
         return enrollment.Price - paidSum;
     }
 
     /// <inheritdoc />
-    public IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments()
+    public IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments(bool includeNotOpenForPayment = false)
     {
         return db.Enrollments
             .Include(e => e.Member)
@@ -152,7 +152,7 @@ public class PaymentValidationService(
                     .Where(p => p.PaidAt != null && p.ActivityId == e.ActivityId && p.MemberId == e.MemberId)
                     .Sum(p => (decimal?)p.Price) ?? 0
             })
-            .Where(x => x.PaidSum < x.Enrollment.Price && x.Enrollment.Activity.IsOpenForPayment && !x.Enrollment.IsOnWaitingList)
+            .Where(x => x.PaidSum < x.Enrollment.Price && (includeNotOpenForPayment || x.Enrollment.Activity.IsOpenForPayment) && !x.Enrollment.IsOnWaitingList)
             .AsEnumerable()
             .Select(x => new EnrollmentBalance { Enrollment = x.Enrollment, Balance = x.Enrollment.Price - x.PaidSum });
     }
@@ -178,6 +178,6 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public bool MemberHasPaidAllActivities(Member member)
     {
-        return !GetUnpaidEnrollmentsForMember(member.Id).Any();
+        return !GetUnpaidEnrollmentsForMember(member.Id, true).Any();
     }
 }

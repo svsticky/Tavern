@@ -420,6 +420,150 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteMember_WithActiveFutureEnrollment_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var memberId = Guid.NewGuid();
+        var member = CreateTestMember(memberId);
+        _db.Members.Add(member);
+
+        var futureActivity = new Activity
+        {
+            Name = "Future Hackathon",
+            Price = 10m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(1)
+        };
+        _db.Activities.Add(futureActivity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment
+        {
+            MemberId = memberId,
+            ActivityId = futureActivity.Id,
+            Price = 10m,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.MemberHasPaidAllActivities(Arg.Any<Member>()).Returns(true);
+
+        // Act & Assert
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.DeleteMember(memberId, _userId, CancellationToken.None));
+
+        Assert.Equal("Member has future enrollments and cannot be deleted.", exception.Message);
+
+        _db.ChangeTracker.Clear();
+        var memberStillExists = await _db.Members.FindAsync(memberId);
+        Assert.NotNull(memberStillExists);
+    }
+
+    [Fact]
+    public async Task DeleteMember_WithWaitingListFutureEnrollment_RemovesEnrollmentAndSucceeds()
+    {
+        // Arrange
+        var memberId = Guid.NewGuid();
+        var member = CreateTestMember(memberId);
+        _db.Members.Add(member);
+
+        var futureActivity = new Activity
+        {
+            Name = "Future Gala",
+            Price = 15m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(3),
+            DateTimeEnd = DateTime.UtcNow.AddDays(4),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(2)
+        };
+        _db.Activities.Add(futureActivity);
+        await _db.SaveChangesAsync();
+
+        var waitingListEnrollment = new Enrollment
+        {
+            MemberId = memberId,
+            ActivityId = futureActivity.Id,
+            Price = 15m,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = true
+        };
+        _db.Enrollments.Add(waitingListEnrollment);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.MemberHasPaidAllActivities(Arg.Any<Member>()).Returns(true);
+
+        // Act
+        await _service.DeleteMember(memberId, _userId, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var remainingEnrollment = await _db.Enrollments
+            .FirstOrDefaultAsync(e => e.MemberId == memberId && e.ActivityId == futureActivity.Id);
+
+        Assert.Null(remainingEnrollment);
+
+        var deletedMember = await _db.Members.IgnoreQueryFilters().FirstOrDefaultAsync(m => m.Id == memberId);
+        Assert.NotNull(deletedMember);
+        Assert.True(deletedMember.IsDeleted);
+    }
+
+    [Fact]
+    public async Task DeleteMember_WithPastActivityEnrollment_RetainsEnrollmentForHistory()
+    {
+        // Arrange
+        var memberId = Guid.NewGuid();
+        var member = CreateTestMember(memberId);
+        _db.Members.Add(member);
+
+        var pastActivity = new Activity
+        {
+            Name = "Past Workshop",
+            Price = 5m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(-5),
+            DateTimeEnd = DateTime.UtcNow.AddDays(-4),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(-6)
+        };
+        _db.Activities.Add(pastActivity);
+        await _db.SaveChangesAsync();
+
+        var pastEnrollment = new Enrollment
+        {
+            MemberId = memberId,
+            ActivityId = pastActivity.Id,
+            Price = 5m,
+            RegisteredOn = DateTime.UtcNow.AddDays(-10),
+            IsOnWaitingList = false
+        };
+        _db.Enrollments.Add(pastEnrollment);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.MemberHasPaidAllActivities(Arg.Any<Member>()).Returns(true);
+
+        // Act
+        await _service.DeleteMember(memberId, _userId, CancellationToken.None);
+
+        // Assert - Past enrollment should stay in DB for historical/financial integrity
+        _db.ChangeTracker.Clear();
+        var preservedEnrollment = await _db.Enrollments
+            .FirstOrDefaultAsync(e => e.MemberId == memberId && e.ActivityId == pastActivity.Id);
+
+        Assert.NotNull(preservedEnrollment);
+    }
+
+    [Fact]
     public async Task PatchMember_RestrictedFieldBySelf_ThrowsUnauthorized()
     {
         // Arrange

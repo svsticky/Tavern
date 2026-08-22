@@ -187,6 +187,25 @@ namespace Backend.Services.Domain
                 member.Suspended = false;
                 member.IsDeleted = true;
 
+                // Remove study enrollments that are still in progress
+                var activeStudyEnrollments = await db.StudyEnrollments
+                    .Where(se => se.MemberId == id && se.Status == StudyStatus.Enrolled)
+                    .ToListAsync(cancellationToken);
+                db.StudyEnrollments.RemoveRange(activeStudyEnrollments);
+
+                // Check if not enrolled for any future activities
+                var now = DateTimeOffset.UtcNow;
+                var futureEnrollments = (await db.Enrollments
+                        .Where(e => e.MemberId == id)
+                        .Include(e => e.Activity)
+                        .ToListAsync(cancellationToken))
+                    .Where(e => e.Activity.DateTimeEnd > now)
+                    .ToList();
+                if (futureEnrollments.Any(fe => !fe.IsOnWaitingList))
+                    throw new InvalidOperationException("Member has future enrollments and cannot be deleted.");
+
+                db.Enrollments.RemoveRange(futureEnrollments);
+
                 if (!string.IsNullOrEmpty(member.ProfilePicturePath))
                 {
                     await storageService.DeleteFileAsync("profile-pictures", member.ProfilePicturePath);
@@ -194,12 +213,6 @@ namespace Backend.Services.Domain
                     member.ProfilePicturePath = null;
                     member.ProfilePictureFileName = null;
                 }
-
-                // Remove study enrollments that are still in progress
-                var activeStudyEnrollments = await db.StudyEnrollments
-                    .Where(se => se.MemberId == id && se.Status == StudyStatus.Enrolled)
-                    .ToListAsync(cancellationToken);
-                db.StudyEnrollments.RemoveRange(activeStudyEnrollments);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);

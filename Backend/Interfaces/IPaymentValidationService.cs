@@ -26,21 +26,24 @@ public interface IPaymentValidationService
     /// Retrieves unpaid enrollments for a member.
     /// </summary>
     /// <param name="member">The member user ID.</param>
+    /// <param name="includeNotOpenForPayment">Whether to include enrollments that are not open for payment.</param>
     /// <returns>The unpaid enrollment balances.</returns>
-    IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid member);
+    IEnumerable<EnrollmentBalance> GetUnpaidEnrollmentsForMember(Guid member, bool includeNotOpenForPayment = false);
 
     /// <summary>
     /// Calculates the unpaid amount for an enrollment.
     /// </summary>
     /// <param name="enrollment">The enrollment to evaluate.</param>
+    /// <param name="includeNotOpenForPayment">Whether to include enrollments that are not open for payment.</param>
     /// <returns>The remaining unpaid amount.</returns>
-    decimal GetUnpaidAmountForEnrollment(Enrollment enrollment);
+    decimal GetUnpaidAmountForEnrollment(Enrollment enrollment, bool includeNotOpenForPayment = false);
 
     /// <summary>
     /// Retrieves all unpaid enrollments.
     /// </summary>
+    /// <param name="includeNotOpenForPayment">Whether to include enrollments that are not open for payment.</param>
     /// <returns>The unpaid enrollment balances across members.</returns>
-    IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments();
+    IEnumerable<EnrollmentBalance> GetAllUnpaidEnrollments(bool includeNotOpenForPayment = false);
 
     /// <summary>
     /// Retrieves all overpaid enrollments.
