@@ -100,7 +100,9 @@ export const handleCreateSubmit = async ({
       const response = await postMembers({ body: payload });
 
       if (response.status === 201 && response.data) {
-        navigate(`/confirm-mail?memberId=${response.data.id}`);
+        navigate(
+          `/confirm-mail?memberId=${response.data.id}&createdByAdmin=true`,
+        );
       } else {
         throw response.error ?? new Error("Registration failed");
       }

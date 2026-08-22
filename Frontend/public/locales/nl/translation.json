@@ -68,6 +68,9 @@
   "confirm_mail": "Bevestig je e-mail",
   "confirm_mail_description": "Er is een email gestuurd om je wachtwoord in te stellen naar je e-mailadres. Klik op de link in die e-mail om je e-mailadres te bevestigen en je wachtwoord in te stellen. Mocht je geen e-mail ontvangen, kan je op wachtwoord vergeten klikken op de inlog pagina om de e-mail opnieuw te laten sturen.",
   "confirming_payment": "Betaling bevestigen...",
+  "verification_mail_sent_to_new_user": "Verificatiemail verstuurd naar nieuw lid",
+  "verification_mail_sent_to_new_user_description": "Er is een e-mail gestuurd naar het nieuwe lid om het e-mailadres te bevestigen en een wachtwoord in te stellen.",
+  "back_to_member": "Terug naar lid",
   "contact_and_address": "Contact en adres",
   "contact_details": "Contactgegevens",
   "content": "Inhoud",
@@ -572,5 +575,6 @@
   "true_or_false": "Waar of niet waar",
   "number": "Nummer",
   "date_and_time": "Datum en tijd",
-  "multiple_choice": "Meerkeuze"
+  "multiple_choice": "Meerkeuze",
+  "delete_account_instead_of_paying": "Verwijder account in plaats van betalen"
 }

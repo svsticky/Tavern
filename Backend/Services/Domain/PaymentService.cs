@@ -386,12 +386,26 @@ namespace Backend.Services.Domain
             return await paymentService.CreatePaymentAsync(
                 decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"),
                 $"Membership payment for {member.FirstName} {member.LastName}",
-                $"{_frontendUrl}/confirm-mail?memberId={memberId}",
+                BuildMembershipPaymentRedirectUrl(member, memberId),
                 string.IsNullOrEmpty(_ngrokUrl) ?
                     (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
                     : $"{_ngrokUrl}/payments/webhook",
                 $"membership_{memberId}"
             );
+        }
+
+        private string BuildMembershipPaymentRedirectUrl(Member member, Guid memberId)
+        {
+            // Members who haven't been sent their activation email yet are still mid-registration
+            // (no password/verified email), so they need to land on confirm-mail to trigger it.
+            // Already-activated members (e.g. paying to renew an expired membership) already have a
+            // working account and should be sent straight back into the app instead.
+            if (member.ActivationEmailSentAt == null)
+            {
+                return $"{_frontendUrl}/confirm-mail?memberId={memberId}";
+            }
+
+            return _frontendUrl;
         }
 
         private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, CreatePaymentResponse paymentResponse)

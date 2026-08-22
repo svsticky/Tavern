@@ -59,6 +59,29 @@ describe("ConfirmMail", () => {
     expect(postMembersByIdActivationEmail).toHaveBeenCalledTimes(1);
   });
 
+  it("shows the admin-facing message and a link back to the member when createdByAdmin is set", async () => {
+    postMembersByIdActivationEmail.mockResolvedValue({
+      status: 200,
+      data: "Sent",
+    });
+
+    renderWithProviders(<ConfirmMail />, {
+      route: "/confirm-mail?memberId=member-4&createdByAdmin=true",
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/verification_mail_sent_to_new_user_description/),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText(/confirm_mail_description/),
+    ).not.toBeInTheDocument();
+
+    const link = screen.getByRole("link", { name: /back_to_member/ });
+    expect(link).toHaveAttribute("href", "/admin/members/member-4");
+  });
+
   it("retries while the member isn't linked to the auth system yet, then stops", async () => {
     vi.useFakeTimers();
     postMembersByIdActivationEmail.mockResolvedValue({

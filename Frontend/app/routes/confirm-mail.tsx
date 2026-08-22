@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { postMembersByIdActivationEmail } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 
@@ -15,12 +15,17 @@ const MAX_ATTEMPTS = 5;
  * endpoint itself is idempotent (Member.ActivationEmailSentAt), so it's safe even if this page
  * is revisited or the request is retried.
  *
+ * When reached via the `createdByAdmin` query param (set by the admin create-member flow), the
+ * visitor is the board member who just created the account, not the new member - so the copy and
+ * navigation reflect that instead of talking to the new member.
+ *
  * @page
  * @component
  */
 export default function ConfirmMail() {
   const [searchParams] = useSearchParams();
   const memberId = searchParams.get("memberId");
+  const createdByAdmin = searchParams.get("createdByAdmin") === "true";
   const [status, setStatus] = useState<"loading" | "done">(
     memberId ? "loading" : "done",
   );
@@ -71,6 +76,16 @@ export default function ConfirmMail() {
       <div className="p-4">
         {status === "loading" ? (
           <p className="text-lg">{t("loading")}...</p>
+        ) : createdByAdmin && memberId ? (
+          <>
+            <h1 className="text-2xl font-bold">
+              {t("verification_mail_sent_to_new_user")}
+            </h1>
+            <p className="text-lg mb-4">
+              {t("verification_mail_sent_to_new_user_description")}
+            </p>
+            <Link to={`/admin/members/${memberId}`}>{t("back_to_member")}</Link>
+          </>
         ) : (
           <>
             <h1 className="text-2xl font-bold">{t("confirm_mail")}</h1>

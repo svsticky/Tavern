@@ -331,6 +331,58 @@ public class PaymentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateMembershipPayment_MemberNeverActivated_RedirectsToConfirmMail()
+    {
+        var member = CreateMember("1234567");
+        member.ActivationEmailSentAt = null;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+
+        _paymentService.CreatePaymentAsync(7.50m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_id", "new_url")));
+
+        var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
+
+        await _service.CreateMembershipPayment(dto);
+
+        await _paymentService.Received(1).CreatePaymentAsync(
+            7.50m,
+            Arg.Any<string>(),
+            $"http://localhost:3000/confirm-mail?memberId={member.Id}",
+            Arg.Any<string>(),
+            Arg.Any<string>()
+        );
+    }
+
+    [Fact]
+    public async Task CreateMembershipPayment_MemberAlreadyActivated_RedirectsBackToApp()
+    {
+        var member = CreateMember("1234567");
+        member.ActivationEmailSentAt = DateTimeOffset.UtcNow;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+
+        _paymentService.CreatePaymentAsync(7.50m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_id", "new_url")));
+
+        var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
+
+        await _service.CreateMembershipPayment(dto);
+
+        await _paymentService.Received(1).CreatePaymentAsync(
+            7.50m,
+            Arg.Any<string>(),
+            "http://localhost:3000",
+            Arg.Any<string>(),
+            Arg.Any<string>()
+        );
+    }
+
+    [Fact]
     public async Task ExportPaymentsToCsv_GeneratesValidCsv()
     {
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
