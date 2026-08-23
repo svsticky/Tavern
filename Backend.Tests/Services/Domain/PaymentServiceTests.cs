@@ -212,7 +212,7 @@ public class PaymentServiceTests : IDisposable
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.CreateMembershipPayment(dto));
+            _service.CreateMembershipPayment(dto, null));
     }
 
     [Fact]
@@ -236,7 +236,7 @@ public class PaymentServiceTests : IDisposable
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
-        var result = await _service.CreateMembershipPayment(dto);
+        var result = await _service.CreateMembershipPayment(dto, null);
 
         Assert.Equal("new_url", result.CheckoutUrl);
         await _paymentService.Received(1).CancelPaymentAsync("pending_id");
@@ -269,7 +269,7 @@ public class PaymentServiceTests : IDisposable
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.CreateMembershipPayment(dto));
+            _service.CreateMembershipPayment(dto, null));
 
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
     }
@@ -295,7 +295,7 @@ public class PaymentServiceTests : IDisposable
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
-        var result = await _service.CreateMembershipPayment(dto);
+        var result = await _service.CreateMembershipPayment(dto, null);
 
         Assert.Equal("new_url", result.CheckoutUrl);
 
@@ -320,7 +320,7 @@ public class PaymentServiceTests : IDisposable
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
-        var result = await _service.CreateMembershipPayment(dto);
+        var result = await _service.CreateMembershipPayment(dto, null);
 
         Assert.Equal("new_url", result.CheckoutUrl);
 
@@ -328,6 +328,7 @@ public class PaymentServiceTests : IDisposable
         var created = await _db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id);
         Assert.NotNull(created);
         Assert.Equal("new_id", created.PaymentServiceId);
+        Assert.False(created.ManuallyMarkedAsPaid);
     }
 
     [Fact]
@@ -345,7 +346,7 @@ public class PaymentServiceTests : IDisposable
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
-        await _service.CreateMembershipPayment(dto);
+        await _service.CreateMembershipPayment(dto, null);
 
         await _paymentService.Received(1).CreatePaymentAsync(
             7.50m,
@@ -371,7 +372,7 @@ public class PaymentServiceTests : IDisposable
 
         var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
 
-        await _service.CreateMembershipPayment(dto);
+        await _service.CreateMembershipPayment(dto, null);
 
         await _paymentService.Received(1).CreatePaymentAsync(
             7.50m,
@@ -380,6 +381,49 @@ public class PaymentServiceTests : IDisposable
             Arg.Any<string>(),
             Arg.Any<string>()
         );
+    }
+
+    [Fact]
+    public async Task CreateMembershipPayment_Manual_CreatesPaidMembershipPayment()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+
+        var dto = new PostMembershipPaymentDTO { MemberId = member.Id, ManuallyMarkedAsPaid = true };
+
+        var result = await _service.CreateMembershipPayment(dto, _userId);
+
+        Assert.Null(result.CheckoutUrl);
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        await _paymentService.DidNotReceive().CreatePaymentAsync(Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>());
+
+        _db.ChangeTracker.Clear();
+        var payment = await _db.MembershipPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id);
+        Assert.NotNull(payment);
+        Assert.True(payment.PaidAt.HasValue);
+        Assert.Equal("", payment.PaymentServiceId);
+        Assert.True(payment.ManuallyMarkedAsPaid);
+
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
+    public async Task CreateMembershipPayment_ManualWithoutAuthentication_ThrowsUnauthorizedAccessException()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostMembershipPaymentDTO { MemberId = member.Id, ManuallyMarkedAsPaid = true };
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.CreateMembershipPayment(dto, null));
+
+        _db.ChangeTracker.Clear();
+        Assert.Empty(await _db.MembershipPayments.Where(p => p.MemberId == member.Id).ToListAsync());
     }
 
     [Fact]

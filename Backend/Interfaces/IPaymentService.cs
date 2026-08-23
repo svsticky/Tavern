@@ -43,11 +43,12 @@ namespace Backend.Interfaces
         Task<EnrollmentPayment?> GetEnrollmentPayment(uint id, Guid userId, CancellationToken ct);
 
         /// <summary>
-        /// Creates a membership payment.
+        /// Creates a membership payment. When <see cref="AbstractPaymentDTO.ManuallyMarkedAsPaid"/> is set, <paramref name="userId"/> must belong to a board or candidate board member.
         /// </summary>
         /// <param name="dto">The membership payment payload.</param>
+        /// <param name="userId">The ID of the requesting user, if authenticated.</param>
         /// <returns>The created payment response.</returns>
-        Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto);
+        Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto, Guid? userId);
 
         /// <summary>
         /// Creates an activity payment.

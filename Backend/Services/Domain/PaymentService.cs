@@ -63,9 +63,14 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
+        public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto, Guid? userId)
         {
-            logger.LogInformation("Creating membership payment for member {MemberId}.", dto.MemberId);
+            logger.LogInformation("Creating membership payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
+
+            if (dto.ManuallyMarkedAsPaid)
+            {
+                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+            }
 
             using var transaction = await db.Database.BeginTransactionAsync();
 
@@ -77,6 +82,22 @@ namespace Backend.Services.Domain
 
                 // return existing payment
                 await HandleExistingMembershipPayment(member, dto.MemberId);
+
+                if (dto.ManuallyMarkedAsPaid)
+                {
+                    // If payment is manually marked as paid, we can skip creating a payment service fee payment and create it directly in the database
+                    var manualPayment = await BuildMembershipPayment(dto.MemberId, null, manuallyMarkedAsPaid: true);
+                    StateValidator.Validate(manualPayment);
+
+                    db.MembershipPayments.Add(manualPayment);
+                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    logger.LogInformation("Created manual membership payment for member {MemberId}.", dto.MemberId);
+
+                    return new PostPaymentResponse();
+                }
 
                 // create new payment
                 var paymentResponse = await BuildMembershipPaymentRequest(member, dto.MemberId);
@@ -304,16 +325,7 @@ namespace Backend.Services.Domain
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
-                    if (member.AuthSystemUserId == null)
-                    {
-                        // The member isn't linked to the auth system yet. Don't let that block marking the payment
-                        // as paid; AuthOutboxWorker queues a catch-up Sync task once they do get linked.
-                        logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking payment {PaymentId} paid without queuing an auth sync.", member.Id, existingPayment.Id);
-                    }
-                    else
-                    {
-                        authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
-                    }
+                    EnqueueAuthSyncOrWarnForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidMembership(memberId);
@@ -408,15 +420,39 @@ namespace Backend.Services.Domain
             return _frontendUrl;
         }
 
-        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, CreatePaymentResponse paymentResponse)
+        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, CreatePaymentResponse? paymentResponse, bool manuallyMarkedAsPaid = false)
         {
+            if (paymentResponse == null && !manuallyMarkedAsPaid)
+            {
+                throw new ArgumentException("Payment response must be provided if payment is not manually marked as paid");
+            }
+
             return new MembershipPayment
             {
                 MemberId = memberId,
                 Price = decimal.TryParse((await db.Settings.FindAsync("MembershipPrice"))?.Value ?? "7.50", out var price) ? price : 7.50m,
-                PaymentServiceId = paymentResponse.PaymentId,
-                PaymentIntentUrl = paymentResponse.PaymentUrl
+                PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse!.PaymentId,
+                PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse!.PaymentUrl,
+                PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                ManuallyMarkedAsPaid = manuallyMarkedAsPaid
             };
+        }
+
+        /// <summary>
+        /// Queues an auth-system sync for a member whose membership payment was just marked paid. The member isn't
+        /// linked to the auth system yet in some cases; don't let that block marking the payment as paid,
+        /// AuthOutboxWorker queues a catch-up Sync task once they do get linked.
+        /// </summary>
+        private void EnqueueAuthSyncOrWarnForPaidMembership(Member member)
+        {
+            if (member.AuthSystemUserId == null)
+            {
+                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking membership payment paid without queuing an auth sync.", member.Id);
+            }
+            else
+            {
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
+            }
         }
 
         private static PostPaymentResponse ToCheckoutResponse(string checkoutUrl)

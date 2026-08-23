@@ -98,7 +98,7 @@ namespace Backend.Controllers
 
         // POST: payments/membership
         /// <summary>
-        /// Initiates a new membership payment process. The PostMembershipPayment endpoint receives the PostMembershipPaymentDTO to trigger the creation of a payment intent. This usually involves communicating with an external payment gateway to generate a checkout URL, allowing the user to securely complete their membership purchase.
+        /// Initiates a new membership payment process. The PostMembershipPayment endpoint receives the PostMembershipPaymentDTO to trigger the creation of a payment intent. This usually involves communicating with an external payment gateway to generate a checkout URL, allowing the user to securely complete their membership purchase. Board members may instead set ManuallyMarkedAsPaid to record the payment directly, e.g. when a member paid in cash.
         /// </summary>
         /// <param name="dto">The data transfer object containing membership payment details.</param>
         /// <returns>A response containing the payment status and potential checkout URL.</returns>
@@ -114,7 +114,11 @@ namespace Backend.Controllers
             PostMembershipPaymentDTO dto
         )
         {
-            var result = await paymentService.CreateMembershipPayment(dto);
+            Guid? userId = User.Identity?.IsAuthenticated == true
+                ? Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value)
+                : null;
+
+            var result = await paymentService.CreateMembershipPayment(dto, userId);
             return Ok(result);
         }
 

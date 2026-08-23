@@ -222,7 +222,7 @@ public class PaymentsControllerTests
         // Arrange
         var dto = new PostMembershipPaymentDTO { MemberId = Guid.NewGuid() };
         var response = new PostPaymentResponse { CheckoutUrl = "http://pay" };
-        _serviceMock.CreateMembershipPayment(dto).Returns(response);
+        _serviceMock.CreateMembershipPayment(dto, _userId).Returns(response);
 
         // Act
         var result = await _controller.PostMembershipPayment(dto);
@@ -237,7 +237,7 @@ public class PaymentsControllerTests
     {
         // Arrange
         var dto = new PostMembershipPaymentDTO { MemberId = Guid.NewGuid() };
-        _serviceMock.CreateMembershipPayment(dto).Throws(new Exception("Error"));
+        _serviceMock.CreateMembershipPayment(dto, _userId).Throws(new Exception("Error"));
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostMembershipPayment(dto));

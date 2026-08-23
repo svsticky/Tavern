@@ -3,29 +3,33 @@ using Backend.Models.Domain;
 namespace Backend.Controllers.DTOs;
 
 /// <summary>
-/// Defines the DTO for posting a membership payment, containing the necessary information for creating a new membership payment, including the member ID. The PostMembershipPaymentDTO is used to transfer data from the client to the server when creating a new membership payment, ensuring that all required information is provided and validated appropriately for the creation process.
+/// Defines the abstract base class for payment DTOs, containing common properties for payment-related data transfer objects, including the member ID and a flag indicating whether the payment was manually marked as paid. The AbstractPaymentDTO serves as a foundation for specific payment DTOs, ensuring consistency and reusability of common payment-related properties across different payment operations within the application.
 /// </summary>
-public class PostMembershipPaymentDTO
+public abstract class AbstractPaymentDTO
 {
     /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
     public Guid MemberId { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Payment.ManuallyMarkedAsPaid"/>
+    public bool ManuallyMarkedAsPaid { get; set; } = false;
 }
 
 /// <summary>
-/// Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, a list of activity IDs, and an optional flag indicating whether the payment was manually marked as paid. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process.
+/// Defines the DTO for posting a membership payment, containing the necessary information for creating a new membership payment, including the member ID and an optional flag indicating whether the payment was manually marked as paid. The PostMembershipPaymentDTO is used to transfer data from the client to the server when creating a new membership payment, ensuring that all required information is provided and validated appropriately for the creation process.
 /// </summary>
-public class PostActivityPaymentDTO
+public class PostMembershipPaymentDTO : AbstractPaymentDTO
 {
-    /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
-    public Guid MemberId { get; set; }
+}
 
+/// <summary>
+/// Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, an optional flag indicating whether the payment was manually marked as paid, and a list of unique identifiers of the activities for which the activity payment is being created. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload.
+/// </summary>
+public class PostActivityPaymentDTO : AbstractPaymentDTO
+{
     /// <summary>
     /// The list of unique identifiers of the activities for which the activity payment is being created. This field is required to associate the activity payment with the correct activities within the system, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload. The PostActivityPaymentDTO ensures that the activity payment is created with the necessary information to effectively manage and track activity payments for the specified activities, providing a structured and validated approach to activity payment creation in the application.
     /// </summary>
     public List<uint> ActivityIds { get; set; } = new();
-
-    /// <inheritdoc cref="Models.Domain.Payment.ManuallyMarkedAsPaid"/>
-    public bool ManuallyMarkedAsPaid { get; set; } = false;
 }
 
 /// <summary>

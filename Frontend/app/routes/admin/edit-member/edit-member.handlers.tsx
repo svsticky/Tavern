@@ -6,10 +6,12 @@ import {
   deleteStudyenrollmentsById,
   getMembersById,
   getMembersByIdProfilePicture,
+  getPaymentsMemberByFromUserIdStatus,
   getStudies,
   getStudyenrollments,
   patchMembersById,
   patchStudyenrollmentsById,
+  postPaymentsMembership,
   postStudyenrollments,
   type Study,
   type StudyEnrollmentResponseDto,
@@ -52,12 +54,13 @@ type LoadMemberArgs = {
   >;
   setAvailableStudies: React.Dispatch<React.SetStateAction<Study[]>>;
   setProfilePictureSrc: (value: string | null) => void;
+  setHasPaidMembership: (value: boolean) => void;
   setLoading: (value: boolean) => void;
 };
 
 /**
  * Initializes the edit page by fetching member profile, study enrollments,
- * available study programs, and the profile picture.
+ * available study programs, membership payment status, and the profile picture.
  *
  * @async
  * @param {LoadMemberArgs} args - Configuration object containing:
@@ -67,6 +70,7 @@ type LoadMemberArgs = {
  * @param {Function} args.setEnrollments - Setter for the list of study history records.
  * @param {Function} args.setAvailableStudies - Setter for the global list of selectable study programs.
  * @param {Function} args.setProfilePictureSrc - Setter for the profile image source URL.
+ * @param {Function} args.setHasPaidMembership - Setter for whether the member currently has a valid membership payment.
  * @param {Function} args.setLoading - Setter to toggle the component's global loading state.
  * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
  */
@@ -77,6 +81,7 @@ export const loadMemberData = async ({
   setEnrollments,
   setAvailableStudies,
   setProfilePictureSrc,
+  setHasPaidMembership,
   setLoading,
 }: LoadMemberArgs) => {
   if (!memberId) return;
@@ -129,6 +134,15 @@ export const loadMemberData = async ({
       );
     }
     setAvailableStudies(studiesResponse.data);
+
+    // Non-critical: falls back to assuming the membership is paid (hiding the manual mark-as-paid
+    // action) rather than failing the whole page load if this lookup fails.
+    const paymentStatusResponse = await getPaymentsMemberByFromUserIdStatus({
+      path: { fromUserId: memberId },
+    });
+    setHasPaidMembership(
+      paymentStatusResponse.data?.hasPaidMembershipBeforeExpirationTime ?? true,
+    );
 
     const profilePictureResponse = await getMembersByIdProfilePicture({
       path: { id: memberId },
@@ -249,6 +263,51 @@ export const handleDeleteMember = async (
     loading: t("deleting"),
     success: t("delete_success"),
     error: (error) => appendErrorMessage(t("delete_error"), error),
+  });
+};
+
+/**
+ * Manually marks a member's membership fee as paid (e.g., if the member paid in cash).
+ *
+ * @async
+ * @param {string | undefined} memberId - The ID of the member whose membership payment is recorded.
+ * @param {Function} setLoading - State setter to track the request.
+ * @param {Function} onSuccess - Callback invoked once the payment has been recorded.
+ */
+export const handleMarkMembershipAsPaid = async (
+  memberId: string | undefined,
+  setLoading: (loading: boolean) => void,
+  onSuccess: () => void,
+) => {
+  if (!memberId) return;
+
+  const process = async () => {
+    try {
+      setLoading(true);
+      const response = await postPaymentsMembership({
+        body: {
+          memberId,
+          manuallyMarkedAsPaid: true,
+        },
+      });
+
+      if (response.error) {
+        throw response.error ?? new Error("Failed to mark membership as paid");
+      }
+
+      onSuccess();
+    } catch (err) {
+      console.error("Failed to mark membership as paid:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  toast.promise(process(), {
+    loading: t("marking_as_paid"),
+    success: t("marked_as_paid"),
+    error: (error) => appendErrorMessage(t("mark_as_paid_failed"), error),
   });
 };
 
