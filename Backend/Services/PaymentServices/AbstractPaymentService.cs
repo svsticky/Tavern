@@ -115,9 +115,16 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
             .Cast<Payment>()
             .ToListAsync();
 
+        var begunstigerPayments = await _db.BegunstigerPayments
+            .Include(p => p.Member)
+            .Where(p => p.PaymentServiceId == id)
+            .Cast<Payment>()
+            .ToListAsync();
+
         return membershipPayments
             .Concat(enrollmentPayments)
             .Concat(paymentServiceFeePayments)
+            .Concat(begunstigerPayments)
             .ToList();
     }
 
@@ -152,37 +159,41 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
 
     private void QueueAuthenticationSystemSyncIfNeeded(Payment payment)
     {
-        if (payment is MembershipPayment membershipPayment)
-        {
-            if (membershipPayment.Member?.AuthSystemUserId == null)
-            {
-                // The member isn't linked to the auth system yet (their AuthOutboxTask.Create task hasn't completed).
-                // Don't let that block marking the payment as paid; AuthOutboxWorker queues a catch-up Sync task
-                // once the member does get linked.
-                _logger.LogWarning("Member {MemberId} does not have an authentication system ID yet. Skipping auth sync for payment {PaymentId}.", membershipPayment.MemberId, payment.Id);
-                return;
-            }
+        // Only membership and begunstiger payments change the member's overall paid-access status,
+        // so only those need to trigger a re-sync of their access level in the auth system.
+        if (payment is not (MembershipPayment or BegunstigerPayment)) return;
 
-            _db.AuthOutboxTasks.Add(new AuthOutboxTask
-            {
-                TaskType = AuthTaskType.Sync,
-                AuthSystemUserId = membershipPayment.Member.AuthSystemUserId.Value
-            });
+        if (payment.Member?.AuthSystemUserId == null)
+        {
+            // The member isn't linked to the auth system yet (their AuthOutboxTask.Create task hasn't completed).
+            // Don't let that block marking the payment as paid; AuthOutboxWorker queues a catch-up Sync task
+            // once the member does get linked.
+            _logger.LogWarning("Member {MemberId} does not have an authentication system ID yet. Skipping auth sync for payment {PaymentId}.", payment.MemberId, payment.Id);
+            return;
         }
+
+        _db.AuthOutboxTasks.Add(new AuthOutboxTask
+        {
+            TaskType = AuthTaskType.Sync,
+            AuthSystemUserId = payment.Member.AuthSystemUserId.Value
+        });
     }
 
     private void QueueAccountingTaskIfNeeded(Payment payment)
     {
-        if (IsUsingAccountingTool)
+        if (!IsUsingAccountingTool) return;
+
+        _db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
         {
-            _db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
+            PaymentId = payment.Id,
+            TaskType = payment switch
             {
-                PaymentId = payment.Id,
-                TaskType = payment is MembershipPayment
-                    ? AccountingToolTaskType.MembershipPayment
-                    : AccountingToolTaskType.EnrollmentPayment
-            });
-        }
+                MembershipPayment => AccountingToolTaskType.MembershipPayment,
+                PaymentServiceFeePayment => AccountingToolTaskType.PaymentServiceFeePayment,
+                BegunstigerPayment => AccountingToolTaskType.BegunstigerPayment,
+                _ => AccountingToolTaskType.EnrollmentPayment
+            }
+        });
     }
 }
 

@@ -59,6 +59,14 @@ namespace Backend.Interfaces
         Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, Guid userId);
 
         /// <summary>
+        /// Creates a "Begunstiger" (benefactor) fee payment. Only allowed when <paramref name="userId"/> is the begunstiger themselves, or belongs to a board or candidate board member acting on their behalf.
+        /// </summary>
+        /// <param name="dto">The begunstiger payment payload.</param>
+        /// <param name="userId">The ID of the requesting user, if authenticated.</param>
+        /// <returns>The created payment response.</returns>
+        Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId);
+
+        /// <summary>
         /// Retrieves unpaid enrollment balances.
         /// </summary>
         /// <param name="userId">The ID of the requesting user.</param>

@@ -313,6 +313,75 @@ public class MailServicesTests : IDisposable
     }
 
     [Fact]
+    public async Task SendStudyStatusUpdateMails_MemberWithNoStudyHistory_SendsNeverStudiedMail()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Carl",
+            LastName = "Wheezer",
+            Email = "carl@example.com",
+            PreferredLanguage = Language.EN,
+            Begunstiger = false,
+            StudentNumber = "s3",
+            PhoneNumber = "3",
+            Street = "Retroville",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Retroville"
+        };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act
+        await mailService.SendStudyStatusUpdateMails();
+
+        // Assert
+        Assert.Equal("carl@example.com", mailService.LastTo?[0].Mail);
+        Assert.Equal("Check your membership", mailService.LastSubject);
+        Assert.Contains("Dear Carl", mailService.LastHtmlContent);
+        Assert.Contains("update-account-status", mailService.LastHtmlContent);
+    }
+
+    [Fact]
+    public async Task SendStudyStatusUpdateMails_BegunstigerWithNoStudyHistory_DoesNotSendMail()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Donna",
+            LastName = "Sinclair",
+            Email = "donna@example.com",
+            PreferredLanguage = Language.EN,
+            Begunstiger = true,
+            StudentNumber = "s4",
+            PhoneNumber = "4",
+            Street = "Main St",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Enschede"
+        };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act
+        await mailService.SendStudyStatusUpdateMails();
+
+        // Assert
+        Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
     public void StripHtml_StripsHtmlCorrectly()
     {
         // Arrange

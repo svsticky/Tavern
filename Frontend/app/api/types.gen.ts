@@ -1163,6 +1163,14 @@ export type PaymentStatusResponse = {
      */
     hasPaidAllActivities: boolean;
     /**
+     * A boolean value indicating whether the member is currently flagged as a "Begunstiger" (benefactor). When `true`, Backend.Controllers.DTOs.PaymentStatusResponse.HasPaidMembershipBeforeExpirationTime reflects the begunstiger fee status (paid since the last board rotation) instead of the regular membership expiration window, and payments for this member must go through the begunstiger payment endpoint rather than the membership one.
+     */
+    isBegunstiger: boolean;
+    /**
+     * A boolean value indicating whether the member is eligible to pay for membership at all, i.e. whether they are a begunstiger or have ever been enrolled in a study. Members who are neither must not be offered a membership payment.
+     */
+    canPayMembership: boolean;
+    /**
      * A list of unpaid enrollments for the member. This field provides detailed information about any enrollments for which the member has not yet made a payment, allowing for the identification of specific activities or memberships that require attention. The PaymentStatusResponse includes this information to offer a comprehensive overview of the member's outstanding payments, enabling effective management and tracking of unpaid enrollments and ensuring that members are aware of any pending payments for their enrolled activities or memberships within the application.
      */
     unpaidEnrollments: Array<EnrollmentBalance>;
@@ -1228,6 +1236,20 @@ export type PostAnnouncementDto = {
      * The English content of the announcement.
      */
     contentEnglish: string;
+};
+
+/**
+ * Defines the DTO for posting a "Begunstiger" (benefactor) fee payment, containing the necessary information for creating a new begunstiger payment, including the member ID and an optional flag indicating whether the payment was manually marked as paid. This is a distinct payment type from PostMembershipPaymentDTO so that a begunstiger cannot pay the (cheaper) regular membership fee through the membership payment endpoint instead of their own fee.
+ */
+export type PostBegunstigerPaymentDto = {
+    /**
+     * The identifier of the member who made the payment. This is a foreign key referencing the Member entity. This property is nullable because even if the member is removed from the database, we may want to keep the payment record for historical and auditing purposes. In such cases, the MemberId would be set to null to indicate that the member associated with the payment has been deleted, while still retaining the payment information for reference.
+     */
+    memberId?: string;
+    /**
+     * Indicates whether the payment was manually marked as paid by an administrator. This is used to differentiate between payments that were processed through the normal payment flow and those that were manually marked as paid, which may require different handling in terms of accounting and reporting. This property is set to false by default, and can be set to true by an administrator when they manually mark a payment as paid, allowing for better tracking and management of payments that may not have gone through the standard payment processing flow.
+     */
+    manuallyMarkedAsPaid?: boolean;
 };
 
 /**
@@ -5023,6 +5045,42 @@ export type PostPaymentsActivityResponses = {
 };
 
 export type PostPaymentsActivityResponse = PostPaymentsActivityResponses[keyof PostPaymentsActivityResponses];
+
+export type PostPaymentsBegunstigerData = {
+    /**
+     * The data transfer object containing begunstiger payment details.
+     */
+    body?: PostBegunstigerPaymentDto;
+    path?: never;
+    query?: never;
+    url: '/payments/begunstiger';
+};
+
+export type PostPaymentsBegunstigerErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type PostPaymentsBegunstigerError = PostPaymentsBegunstigerErrors[keyof PostPaymentsBegunstigerErrors];
+
+export type PostPaymentsBegunstigerResponses = {
+    /**
+     * OK
+     */
+    200: PostPaymentResponse;
+};
+
+export type PostPaymentsBegunstigerResponse = PostPaymentsBegunstigerResponses[keyof PostPaymentsBegunstigerResponses];
 
 export type PostPaymentsWebhookData = {
     body?: {

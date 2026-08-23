@@ -219,8 +219,32 @@ public abstract class AbstractMailService
             .Where(m => !m.IsDeleted)
             .ToList();
 
+        var membersWithNoStudyHistory = potentialMembers
+            .Where(m => m.StudyEnrollments.Count == 0 && !m.Begunstiger)
+            .ToList();
+
+        foreach (var member in membersWithNoStudyHistory)
+        {
+            var language = member.PreferredLanguage;
+
+            string subject = language switch
+            {
+                Language.NL => "Controleer je lidmaatschap",
+                Language.EN => "Check your membership",
+                _ => throw new InvalidOperationException("Unsupported language")
+            };
+
+            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusNeverStudied.html", new Dictionary<string, string>
+            {
+                ["FirstName"] = member.FirstName,
+                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+            });
+
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+        }
+
         var membersWithoutActiveStudy = potentialMembers
-            .Where(m => !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled))
+            .Where(m => m.StudyEnrollments.Count > 0 && !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled))
             .ToList();
 
         foreach (var member in membersWithoutActiveStudy)

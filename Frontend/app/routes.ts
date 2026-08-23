@@ -69,7 +69,7 @@ export default [
             route("admin/settings", "routes/admin/settings/settings.tsx"),
           ]),
         ]),
-        route("update-study-progress", "routes/update-studies.tsx"),
+        route("update-account-status", "routes/update-account-status.tsx"),
       ]),
     ]),
 

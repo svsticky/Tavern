@@ -21,6 +21,7 @@ import {
   handleAddEnrollment,
   handleDeleteEnrollment,
   handleDeleteMember,
+  handleMarkBegunstigerFeeAsPaid,
   handleMarkMembershipAsPaid,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
@@ -54,6 +55,7 @@ export default function EditMemberPage() {
   const [isMarkPaidModalOpen, setIsMarkPaidModalOpen] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
   const [hasPaidMembership, setHasPaidMembership] = useState(true);
+  const [isBegunstiger, setIsBegunstiger] = useState(false);
   const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
     null,
   );
@@ -149,6 +151,7 @@ export default function EditMemberPage() {
       setAvailableStudies,
       setProfilePictureSrc,
       setHasPaidMembership,
+      setIsBegunstiger,
       setLoading,
     });
     return () => {
@@ -311,7 +314,9 @@ export default function EditMemberPage() {
                 <div className="flex items-center gap-2 text-amber-800">
                   <CircleAlert className="w-5 h-5 shrink-0" />
                   <span className="text-sm font-medium">
-                    {t("membership_fee_unpaid")}
+                    {isBegunstiger
+                      ? t("begunstiger_fee_unpaid")
+                      : t("membership_fee_unpaid")}
                   </span>
                 </div>
                 <Button
@@ -321,7 +326,9 @@ export default function EditMemberPage() {
                   onClick={() => setIsMarkPaidModalOpen(true)}
                   disabled={markingPaid}
                 >
-                  {t("mark_membership_as_paid")}
+                  {isBegunstiger
+                    ? t("mark_begunstiger_fee_as_paid")
+                    : t("mark_membership_as_paid")}
                 </Button>
               </div>
             )}
@@ -330,11 +337,17 @@ export default function EditMemberPage() {
           <Modal
             isOpen={isMarkPaidModalOpen}
             onClose={() => setIsMarkPaidModalOpen(false)}
-            title={t("mark_membership_as_paid")}
+            title={
+              isBegunstiger
+                ? t("mark_begunstiger_fee_as_paid")
+                : t("mark_membership_as_paid")
+            }
           >
             <div className="flex flex-col gap-4">
               <p className="text-slate-700">
-                {t("are_you_sure_mark_membership_as_paid")}
+                {isBegunstiger
+                  ? t("are_you_sure_mark_begunstiger_fee_as_paid")
+                  : t("are_you_sure_mark_membership_as_paid")}
               </p>
               <div className="flex justify-end gap-2">
                 <Button
@@ -347,7 +360,10 @@ export default function EditMemberPage() {
                 <Button
                   variant="primary"
                   onClick={() => {
-                    handleMarkMembershipAsPaid(memberId, setMarkingPaid, () =>
+                    const markAsPaid = isBegunstiger
+                      ? handleMarkBegunstigerFeeAsPaid
+                      : handleMarkMembershipAsPaid;
+                    markAsPaid(memberId, setMarkingPaid, () =>
                       setHasPaidMembership(true),
                     );
                     setIsMarkPaidModalOpen(false);
@@ -356,7 +372,9 @@ export default function EditMemberPage() {
                 >
                   {markingPaid
                     ? t("marking_as_paid")
-                    : t("mark_membership_as_paid")}
+                    : isBegunstiger
+                      ? t("mark_begunstiger_fee_as_paid")
+                      : t("mark_membership_as_paid")}
                 </Button>
               </div>
             </div>

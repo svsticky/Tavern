@@ -6,6 +6,7 @@ import {
   deleteMembersById,
   getPaymentsMemberByFromUserIdStatus,
   patchMembersById,
+  postPaymentsBegunstiger,
   postPaymentsMembership,
 } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
@@ -24,6 +25,10 @@ export default function PaywallLayout() {
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<boolean | null>(null);
+  const [canPayMembership, setCanPayMembership] = useState<boolean | null>(
+    null,
+  );
+  const [isBegunstiger, setIsBegunstiger] = useState(false);
 
   useEffect(() => {
     const loadToken = async () => {
@@ -46,6 +51,8 @@ export default function PaywallLayout() {
       })
         .then((res) => {
           if (res.data) {
+            setIsBegunstiger(res.data.isBegunstiger);
+            setCanPayMembership(res.data.canPayMembership);
             setPaymentStatus(
               res.data.hasEverPaidMembership &&
                 res.data.hasPaidMembershipBeforeExpirationTime,
@@ -72,10 +79,17 @@ export default function PaywallLayout() {
       }
     }
 
-    if (!paymentUrl && paymentStatus === false) {
+    // Members who are neither a begunstiger nor have ever done a study aren't eligible to pay
+    // membership at all - don't offer them a checkout.
+    if (!paymentUrl && paymentStatus === false && canPayMembership !== false) {
       console.log("User has not paid for membership, loading payment url...");
 
-      postPaymentsMembership({
+      // Begunstigers pay their own separate fee
+      const createPayment = isBegunstiger
+        ? postPaymentsBegunstiger
+        : postPaymentsMembership;
+
+      createPayment({
         body: { memberId: tokenParsed?.UserId ?? "" },
       })
         .then((res) => {
@@ -93,9 +107,22 @@ export default function PaywallLayout() {
 
       return;
     }
-  }, [tokenParsed, paymentUrl, paymentStatus]);
+  }, [tokenParsed, paymentUrl, paymentStatus, canPayMembership, isBegunstiger]);
 
   if (!tokenParsed) return null;
+
+  if (canPayMembership === false) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen">
+        <h1 className="text-2xl font-bold mb-4">
+          {i18n.t("membership_payment_not_eligible_title")}
+        </h1>
+        <p className="mb-6">
+          {i18n.t("membership_payment_not_eligible_description")}
+        </p>
+      </div>
+    );
+  }
 
   if (paymentStatus === false) {
     return (

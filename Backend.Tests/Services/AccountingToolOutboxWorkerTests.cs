@@ -213,6 +213,98 @@ public class AccountingToolOutboxWorkerTests
     }
 
     [Fact]
+    public async Task TryProcessNextTaskAsync_PaymentServiceFeePaymentTask_PaymentFound_SyncsAndUpdatesId()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var payment = new PaymentServiceFeePayment
+        {
+            Id = 4,
+            Price = 0.39m,
+            PaymentServiceId = "tr_fee",
+            PaymentIntentUrl = "https://example.com/pay"
+        };
+        db.PaymentServiceFeePayments.Add(payment);
+
+        var task = new AccountingToolOutboxTask
+        {
+            TaskType = AccountingToolTaskType.PaymentServiceFeePayment,
+            PaymentId = 4,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow
+        };
+        db.AccountingToolOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var expectedEntryId = Guid.NewGuid();
+        _accountingToolService.SyncPaymentAsync(Arg.Any<Payment>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(expectedEntryId));
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableAccountingToolOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        var updatedPayment = await db.PaymentServiceFeePayments.FindAsync(4u);
+        Assert.NotNull(updatedPayment);
+        Assert.Equal(expectedEntryId, updatedPayment.AccountingToolEntryId);
+
+        var tasks = await db.AccountingToolOutboxTasks.ToListAsync();
+        Assert.Empty(tasks); // Removed
+    }
+
+    [Fact]
+    public async Task TryProcessNextTaskAsync_BegunstigerPaymentTask_PaymentFound_SyncsAndUpdatesId()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var payment = new BegunstigerPayment
+        {
+            Id = 5,
+            Price = 10.0m,
+            PaymentServiceId = "tr_begunstiger",
+            PaymentIntentUrl = "https://example.com/pay"
+        };
+        db.BegunstigerPayments.Add(payment);
+
+        var task = new AccountingToolOutboxTask
+        {
+            TaskType = AccountingToolTaskType.BegunstigerPayment,
+            PaymentId = 5,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow
+        };
+        db.AccountingToolOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var expectedEntryId = Guid.NewGuid();
+        _accountingToolService.SyncPaymentAsync(Arg.Any<Payment>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(expectedEntryId));
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableAccountingToolOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        var updatedPayment = await db.BegunstigerPayments.FindAsync(5u);
+        Assert.NotNull(updatedPayment);
+        Assert.Equal(expectedEntryId, updatedPayment.AccountingToolEntryId);
+
+        var tasks = await db.AccountingToolOutboxTasks.ToListAsync();
+        Assert.Empty(tasks); // Removed
+    }
+
+    [Fact]
     public async Task TryProcessNextTaskAsync_PaymentNotFound_LogsWarningAndRemovesTask()
     {
         // Arrange

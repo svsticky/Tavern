@@ -53,6 +53,8 @@ namespace Backend.Services.Domain
         {
             if (dto.MemberId != userId)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            else if (!await db.StudyEnrollments.AnyAsync(se => se.MemberId == dto.MemberId, ct))
+                throw new InvalidOperationException("Members who have never had a study enrollment cannot add one themselves.");
 
             logger.LogInformation("Creating study enrollment for member {MemberId} study {StudyId} by user {UserId}.", dto.MemberId, dto.StudyId, userId);
 

@@ -90,6 +90,10 @@ public class PaymentServiceTests : IDisposable
 
         _permissionService = Substitute.For<IPermissionService>();
         _paymentValidationService = Substitute.For<IPaymentValidationService>();
+        // Default to "has done or is doing a study" so existing membership payment tests (which
+        // aren't about eligibility) don't all need to stub this. Tests for the eligibility guard
+        // itself override it.
+        _paymentValidationService.HasDoneOrDoingStudy(Arg.Any<Guid>()).Returns(true);
         _paymentService = Substitute.For<AbstractPaymentService>(_db, NullLogger<AbstractPaymentService>.Instance);
         
         var serviceProvider = Substitute.For<IServiceProvider>();
@@ -213,6 +217,49 @@ public class PaymentServiceTests : IDisposable
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.CreateMembershipPayment(dto, null));
+    }
+
+    [Fact]
+    public async Task CreateMembershipPayment_NotBegunstigerAndNoStudy_ThrowsInvalidOperationException()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+        _paymentValidationService.HasDoneOrDoingStudy(member.Id).Returns(false);
+
+        var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateMembershipPayment(dto, null));
+        Assert.Equal("Member is not eligible to pay membership", exception.Message);
+
+        _db.ChangeTracker.Clear();
+        Assert.Empty(await _db.MembershipPayments.Where(p => p.MemberId == member.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task CreateMembershipPayment_Begunstiger_ThrowsInvalidOperationExceptionEvenWithStudy()
+    {
+        // Begunstigers must always pay through CreateBegunstigerPayment, regardless of study status -
+        // otherwise they could use the (cheaper) membership endpoint to underpay.
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+        _paymentValidationService.HasDoneOrDoingStudy(member.Id).Returns(true);
+
+        var dto = new PostMembershipPaymentDTO { MemberId = member.Id };
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateMembershipPayment(dto, null));
+        Assert.Equal("Member is not eligible to pay membership", exception.Message);
+
+        _db.ChangeTracker.Clear();
+        Assert.Empty(await _db.MembershipPayments.Where(p => p.MemberId == member.Id).ToListAsync());
     }
 
     [Fact]
@@ -427,6 +474,192 @@ public class PaymentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateBegunstigerPayment_SelfPayAsBegunstiger_CreatesPaymentRequest()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(false);
+        _paymentService.CreatePaymentAsync(10.00m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_id", "new_url")));
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id };
+
+        var result = await _service.CreateBegunstigerPayment(dto, member.Id);
+
+        Assert.Equal("new_url", result.CheckoutUrl);
+        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(Arg.Any<Guid>());
+
+        _db.ChangeTracker.Clear();
+        var created = await _db.BegunstigerPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id);
+        Assert.NotNull(created);
+        Assert.Equal("new_id", created.PaymentServiceId);
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_SelfPayButNotFlaggedBegunstiger_ThrowsInvalidOperationExceptionWithoutPermissionCheck()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = false;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(false);
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id };
+
+        // Self-pay (userId == dto.MemberId) skips the board-permission check entirely; a non-begunstiger
+        // is instead rejected by the eligibility guard - a begunstiger fee can never be created for a
+        // non-begunstiger member, whoever is asking.
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateBegunstigerPayment(dto, member.Id));
+        Assert.Equal("Member is not a begunstiger", exception.Message);
+
+        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(Arg.Any<Guid>());
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_BoardMemberOnBehalfOfNonBegunstiger_ThrowsInvalidOperationException()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = false;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id, ManuallyMarkedAsPaid = true };
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateBegunstigerPayment(dto, _userId));
+        Assert.Equal("Member is not a begunstiger", exception.Message);
+
+        _db.ChangeTracker.Clear();
+        Assert.Empty(await _db.BegunstigerPayments.Where(p => p.MemberId == member.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_BoardMemberOnBehalf_Manual_CreatesPaidPayment()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(false);
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id, ManuallyMarkedAsPaid = true };
+
+        var result = await _service.CreateBegunstigerPayment(dto, _userId);
+
+        Assert.Null(result.CheckoutUrl);
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        await _paymentService.DidNotReceive().CreatePaymentAsync(Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>());
+
+        _db.ChangeTracker.Clear();
+        var payment = await _db.BegunstigerPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id);
+        Assert.NotNull(payment);
+        Assert.True(payment.PaidAt.HasValue);
+        Assert.Equal("", payment.PaymentServiceId);
+        Assert.True(payment.ManuallyMarkedAsPaid);
+
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_PendingPaymentExists_CancelsItAndCreatesNewPayment()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var payment = new BegunstigerPayment { MemberId = member.Id, Price = 10.00m, PaymentServiceId = "pending_id", PaymentIntentUrl = "pending_url" };
+        _db.BegunstigerPayments.Add(payment);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(false);
+
+        _paymentService.GetPaymentAsync("pending_id")
+            .Returns(Task.FromResult(new GetPaymentResponse("pending_id", PaymentStatus.Pending, null)));
+
+        _paymentService.CreatePaymentAsync(10.00m, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.FromResult(new CreatePaymentResponse("new_id", "new_url")));
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id };
+
+        var result = await _service.CreateBegunstigerPayment(dto, member.Id);
+
+        Assert.Equal("new_url", result.CheckoutUrl);
+        await _paymentService.Received(1).CancelPaymentAsync("pending_id");
+
+        _db.ChangeTracker.Clear();
+        var payments = await _db.BegunstigerPayments.Where(p => p.MemberId == member.Id).ToListAsync();
+        Assert.Single(payments);
+        Assert.Equal("new_id", payments[0].PaymentServiceId);
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_ExistingUnconfirmedPaymentAlreadyPaidAtMollie_ThrowsInsteadOfDoubleCharging()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var payment = new BegunstigerPayment { MemberId = member.Id, Price = 10.00m, PaymentServiceId = "paid_id", PaymentIntentUrl = "paid_url" };
+        _db.BegunstigerPayments.Add(payment);
+        await _db.SaveChangesAsync();
+
+        // First call (top-level gate) simulates the webhook not having landed yet; second call (after
+        // self-healing PaidAt) simulates the payment now being visible, which should reject the duplicate.
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(false, true);
+
+        _paymentService.GetPaymentAsync("paid_id")
+            .Returns(Task.FromResult(new GetPaymentResponse("paid_id", PaymentStatus.Paid, DateTimeOffset.UtcNow)));
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateBegunstigerPayment(dto, member.Id));
+
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_AlreadyPaidSinceLastBoardChange_ThrowsInvalidOperationException()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(true);
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id };
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateBegunstigerPayment(dto, member.Id));
+    }
+
+    [Fact]
+    public async Task CreateBegunstigerPayment_ManualWithoutAuthentication_ThrowsUnauthorizedAccessException()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id, ManuallyMarkedAsPaid = true };
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.CreateBegunstigerPayment(dto, null));
+
+        _db.ChangeTracker.Clear();
+        Assert.Empty(await _db.BegunstigerPayments.Where(p => p.MemberId == member.Id).ToListAsync());
+    }
+
+    [Fact]
     public async Task ExportPaymentsToCsv_GeneratesValidCsv()
     {
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
@@ -439,6 +672,10 @@ public class PaymentServiceTests : IDisposable
         _db.Settings.Add(new Setting { Name = "PaymentServiceFeeGLAccount", Value = "5007" });
         _db.Settings.Add(new Setting { Name = "PaymentServiceFeeCostCenter", Value = "TRX" });
         _db.Settings.Add(new Setting { Name = "PaymentServiceFeeVATCode", Value = "21" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerGLAccount", Value = "8010" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerVATCode", Value = "0" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerCostCenter", Value = "BEG" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerCostUnit", Value = "BU1" });
         await _db.SaveChangesAsync();
 
         var member = CreateMember("1234567");
@@ -497,6 +734,17 @@ public class PaymentServiceTests : IDisposable
             ManuallyMarkedAsPaid = false
         };
         _db.PaymentServiceFeePayments.Add(feePayment);
+
+        var begunstigerPayment = new BegunstigerPayment
+        {
+            MemberId = member.Id,
+            Price = 10.00m,
+            PaymentServiceId = "ps4",
+            PaymentIntentUrl = "url4",
+            PaidAt = DateTime.UtcNow,
+            ManuallyMarkedAsPaid = false
+        };
+        _db.BegunstigerPayments.Add(begunstigerPayment);
         await _db.SaveChangesAsync();
 
         var startDate = DateTime.UtcNow.AddDays(-1);
@@ -509,6 +757,7 @@ public class PaymentServiceTests : IDisposable
         Assert.Contains(";8000;Lidmaatschap;0;7.50;;", csvStr);
         Assert.Contains("Test Organizer | Test Activity", csvStr);
         Assert.Contains("Transaction costs 0.50 x 1", csvStr);
+        Assert.Contains(";8010;Begunstiger;0;10.00;BEG;BU1", csvStr);
     }
 
     [Fact]
@@ -850,6 +1099,7 @@ public class PaymentServiceTests : IDisposable
         _paymentValidationService.GetUnpaidEnrollmentsForMember(member.Id).Returns(new List<EnrollmentBalance>());
         _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(true);
         _paymentValidationService.HasEverPaidMembershipPayment(member.Id).Returns(true);
+        _paymentValidationService.HasDoneOrDoingStudy(member.Id).Returns(true);
 
         var result = await _service.GetMemberPaymentStatus(member.Id, member.Id, CancellationToken.None);
 
@@ -857,6 +1107,48 @@ public class PaymentServiceTests : IDisposable
         Assert.True(result.HasEverPaidMembership);
         Assert.True(result.HasPaidMembershipBeforeExpirationTime);
         Assert.True(result.HasPaidAllActivities);
+        Assert.False(result.IsBegunstiger);
+        Assert.True(result.CanPayMembership);
+    }
+
+    [Fact]
+    public async Task GetMemberPaymentStatus_NeitherStudyNorBegunstiger_CannotPayMembership()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.GetUnpaidEnrollmentsForMember(member.Id).Returns(new List<EnrollmentBalance>());
+        _paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+        _paymentValidationService.HasEverPaidMembershipPayment(member.Id).Returns(false);
+        _paymentValidationService.HasDoneOrDoingStudy(member.Id).Returns(false);
+
+        var result = await _service.GetMemberPaymentStatus(member.Id, member.Id, CancellationToken.None);
+
+        Assert.False(result.IsBegunstiger);
+        Assert.False(result.CanPayMembership);
+    }
+
+    [Fact]
+    public async Task GetMemberPaymentStatus_Begunstiger_UsesBegunstigerFeeCheckInsteadOfMembership()
+    {
+        var member = CreateMember("1234567");
+        member.Begunstiger = true;
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.GetUnpaidEnrollmentsForMember(member.Id).Returns(new List<EnrollmentBalance>());
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(true);
+        _paymentValidationService.HasDoneOrDoingStudy(member.Id).Returns(false);
+
+        var result = await _service.GetMemberPaymentStatus(member.Id, member.Id, CancellationToken.None);
+
+        Assert.True(result.IsBegunstiger);
+        Assert.True(result.CanPayMembership);
+        Assert.True(result.HasPaidMembershipBeforeExpirationTime);
+        Assert.True(result.HasEverPaidMembership);
+        _paymentValidationService.DidNotReceive().HasPaidMembershipPaymentBeforeExpirationTime(Arg.Any<Guid>());
+        _paymentValidationService.DidNotReceive().HasEverPaidMembershipPayment(Arg.Any<Guid>());
     }
 
     [Fact]

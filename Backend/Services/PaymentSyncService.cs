@@ -61,10 +61,14 @@ public class PaymentSyncService(
         var pendingMembershipPayments = await db.MembershipPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingEnrollmentPayments = await db.EnrollmentPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingPaymentServiceFeePayments = await db.PaymentServiceFeePayments.Where(p => p.PaidAt == null).ToListAsync();
+        var pendingBegunstigerPayments = await db.BegunstigerPayments.Where(p => p.PaidAt == null).ToListAsync();
 
-        var pendingPayments = pendingMembershipPayments.Cast<Payment>().Concat(pendingPaymentServiceFeePayments.Cast<Payment>()).Concat(pendingEnrollmentPayments.Cast<Payment>());
-        logger.LogInformation("Syncing pending payments. Membership: {MembershipCount}, Enrollment: {EnrollmentCount}, PaymentServiceFee: {PaymentServiceFeeCount}",
-            pendingMembershipPayments.Count, pendingEnrollmentPayments.Count, pendingPaymentServiceFeePayments.Count);
+        var pendingPayments = pendingMembershipPayments.Cast<Payment>()
+            .Concat(pendingPaymentServiceFeePayments.Cast<Payment>())
+            .Concat(pendingEnrollmentPayments.Cast<Payment>())
+            .Concat(pendingBegunstigerPayments.Cast<Payment>());
+        logger.LogInformation("Syncing pending payments. Membership: {MembershipCount}, Enrollment: {EnrollmentCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
+            pendingMembershipPayments.Count, pendingEnrollmentPayments.Count, pendingPaymentServiceFeePayments.Count, pendingBegunstigerPayments.Count);
 
         foreach (var payment in pendingPayments)
         {
@@ -87,6 +91,10 @@ public class PaymentSyncService(
                     else if (payment is EnrollmentPayment)
                     {
                         fullPayment = await db.EnrollmentPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
+                    }
+                    else if (payment is BegunstigerPayment)
+                    {
+                        fullPayment = await db.BegunstigerPayments.Include(p => p.Member).FirstAsync(p => p.Id == payment.Id);
                     }
                     else
                     {
@@ -121,7 +129,13 @@ public class PaymentSyncService(
                         db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                         {
                             PaymentId = payment.Id,
-                            TaskType = payment is MembershipPayment ? AccountingToolTaskType.MembershipPayment : payment is PaymentServiceFeePayment ? AccountingToolTaskType.PaymentServiceFeePayment : AccountingToolTaskType.EnrollmentPayment
+                            TaskType = payment switch
+                            {
+                                MembershipPayment => AccountingToolTaskType.MembershipPayment,
+                                PaymentServiceFeePayment => AccountingToolTaskType.PaymentServiceFeePayment,
+                                BegunstigerPayment => AccountingToolTaskType.BegunstigerPayment,
+                                _ => AccountingToolTaskType.EnrollmentPayment
+                            }
                         });
 
                         await db.SaveChangesAsync();
@@ -146,7 +160,7 @@ public class PaymentSyncService(
                         // If it's a membership payment, we also want to check if we should remove the member associated with it. 
                         if (payment is MembershipPayment mp && mp.Member != null)
                         {
-                            if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id))
+                            if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(mp.Member.Id))
                             {
                                 db.Members.Remove(mp.Member);
                                 authOutboxWorker.EnqueueTask(AuthTaskType.Delete, mp.Member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."), db);

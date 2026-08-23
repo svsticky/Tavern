@@ -39,7 +39,6 @@ public class ExactServiceTests : IDisposable
         // Setup Environment Variables
         Environment.SetEnvironmentVariable("EXACT_DIVISION", "12345");
         Environment.SetEnvironmentVariable("EXACT_ACCESS_TOKEN", "mock_token");
-        Environment.SetEnvironmentVariable("PAYMENT_PROVIDER", "mollie");
 
         _connection = new SqliteConnection("Filename=:memory:");
         _connection.Open();
@@ -280,6 +279,63 @@ public class ExactServiceTests : IDisposable
 
         // Assert
         Assert.Equal(expectedGuid, result);
+    }
+
+    [Fact]
+    public async Task SyncPaymentAsync_NewBegunstigerPayment_SyncsAndReturnsIdUsingConfiguredVatCode()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "BegunstigerGLAccount", Value = "8010" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerVATCode", Value = "H" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerCostCenter", Value = "BEG" });
+        _db.Settings.Add(new Setting { Name = "BegunstigerCostUnit", Value = "BU1" });
+        await _db.SaveChangesAsync();
+
+        var payment = new BegunstigerPayment
+        {
+            Id = 80,
+            PaymentServiceId = "tr_begunstiger",
+            PaymentIntentUrl = "https://mollie.com/pay/begunstiger",
+            Price = 10.00m
+        };
+
+        var expectedGuid = Guid.NewGuid();
+        string? postedBody = null;
+
+        _handler.SendAsyncFunc = (req, ct) =>
+        {
+            if (req.Method == HttpMethod.Get)
+            {
+                Assert.Contains("YourRef%20eq%20'Begunstiger%20payment-80", req.RequestUri?.Query);
+                var emptyResponse = new { d = new { results = Array.Empty<object>() } };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(emptyResponse))
+                });
+            }
+            else if (req.Method == HttpMethod.Post)
+            {
+                postedBody = req.Content?.ReadAsStringAsync(ct).Result;
+                var createdResponse = new { ID = expectedGuid };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(createdResponse))
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest));
+        };
+
+        // Act
+        var result = await _service.SyncPaymentAsync(payment, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(expectedGuid, result);
+        Assert.NotNull(postedBody);
+        Assert.Contains("\"GLAccount\":\"8010\"", postedBody);
+        Assert.Contains("\"VATCode\":\"H\"", postedBody);
+        Assert.Contains("\"CostCenter\":\"BEG\"", postedBody);
+        Assert.Contains("\"CostUnit\":\"BU1\"", postedBody);
     }
 
     [Fact]

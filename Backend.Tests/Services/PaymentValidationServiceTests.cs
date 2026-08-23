@@ -61,8 +61,10 @@ public class PaymentValidationServiceTests : IDisposable
     }
 
     [Fact]
-    public void HasPaidMembershipPaymentBeforeExpirationTime_IsBegunstiger_ReturnsTrue()
+    public void HasPaidMembershipPaymentBeforeExpirationTime_IsBegunstigerWithoutMembershipPayment_ReturnsFalse()
     {
+        // Begunstigers pay their own separate fee (checked via HasPaidBegunstigerFeeSinceLastBoardChange)
+        // rather than being auto-treated as having paid the regular membership fee.
         var member = CreateMember();
         member.Begunstiger = true;
         _db.Members.Add(member);
@@ -70,7 +72,7 @@ public class PaymentValidationServiceTests : IDisposable
 
         var result = _service.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
 
-        Assert.True(result);
+        Assert.False(result);
     }
 
     [Fact]
@@ -238,7 +240,7 @@ public class PaymentValidationServiceTests : IDisposable
     }
 
     [Fact]
-    public void HasEverPaidMembershipPayment_IsBegunstiger_ReturnsTrue()
+    public void HasEverPaidMembershipPayment_IsBegunstigerWithoutMembershipPayment_ReturnsFalse()
     {
         var member = CreateMember();
         member.Begunstiger = true;
@@ -247,7 +249,7 @@ public class PaymentValidationServiceTests : IDisposable
 
         var result = _service.HasEverPaidMembershipPayment(member.Id);
 
-        Assert.True(result);
+        Assert.False(result);
     }
 
     [Fact]
@@ -588,5 +590,119 @@ public class PaymentValidationServiceTests : IDisposable
         var result = _service.MemberHasPaidAllActivities(member);
 
         Assert.False(result);
+    }
+
+    [Fact]
+    public void HasDoneOrDoingStudy_NoEnrollments_ReturnsFalse()
+    {
+        var member = CreateMember();
+        _db.Members.Add(member);
+        _db.SaveChanges();
+
+        var result = _service.HasDoneOrDoingStudy(member.Id);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void HasDoneOrDoingStudy_HasDroppedOutEnrollment_ReturnsTrue()
+    {
+        // Any enrollment record counts as "did or does a study", regardless of status - a member
+        // who dropped out still did a study.
+        var member = CreateMember();
+        _db.Members.Add(member);
+
+        var study = new Study { Id = 1, Title = "Computer Science", Type = StudyType.Bachelor };
+        _db.Studies.Add(study);
+
+        _db.StudyEnrollments.Add(new StudyEnrollment
+        {
+            MemberId = member.Id,
+            StudyId = study.Id,
+            Status = StudyStatus.DroppedOut,
+            EnrollmentDate = DateTimeOffset.UtcNow
+        });
+        _db.SaveChanges();
+
+        var result = _service.HasDoneOrDoingStudy(member.Id);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void HasPaidBegunstigerFeeSinceLastBoardChange_NoPayment_ReturnsFalse()
+    {
+        var member = CreateMember();
+        _db.Members.Add(member);
+        _db.SaveChanges();
+
+        var result = _service.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void HasPaidBegunstigerFeeSinceLastBoardChange_PaidBeforeLastBoardRotation_ReturnsFalse()
+    {
+        var member = CreateMember();
+        _db.Members.Add(member);
+        _db.Settings.Add(new Setting { Name = "LastBoardRotationAt", Value = DateTimeOffset.UtcNow.ToString("o") });
+
+        _db.BegunstigerPayments.Add(new BegunstigerPayment
+        {
+            MemberId = member.Id,
+            Price = 10.00m,
+            PaymentServiceId = "pay_begunstiger",
+            PaymentIntentUrl = "http://url",
+            PaidAt = DateTimeOffset.UtcNow.AddDays(-1)
+        });
+        _db.SaveChanges();
+
+        var result = _service.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void HasPaidBegunstigerFeeSinceLastBoardChange_PaidAfterLastBoardRotation_ReturnsTrue()
+    {
+        var member = CreateMember();
+        _db.Members.Add(member);
+        _db.Settings.Add(new Setting { Name = "LastBoardRotationAt", Value = DateTimeOffset.UtcNow.AddDays(-1).ToString("o") });
+
+        _db.BegunstigerPayments.Add(new BegunstigerPayment
+        {
+            MemberId = member.Id,
+            Price = 10.00m,
+            PaymentServiceId = "pay_begunstiger",
+            PaymentIntentUrl = "http://url",
+            PaidAt = DateTimeOffset.UtcNow
+        });
+        _db.SaveChanges();
+
+        var result = _service.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void HasPaidBegunstigerFeeSinceLastBoardChange_NoLastBoardRotationSetting_TreatsAnyPastPaymentAsValid()
+    {
+        var member = CreateMember();
+        _db.Members.Add(member);
+
+        _db.BegunstigerPayments.Add(new BegunstigerPayment
+        {
+            MemberId = member.Id,
+            Price = 10.00m,
+            PaymentServiceId = "pay_begunstiger",
+            PaymentIntentUrl = "http://url",
+            PaidAt = DateTimeOffset.UtcNow.AddYears(-5)
+        });
+        _db.SaveChanges();
+
+        var result = _service.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id);
+
+        Assert.True(result);
     }
 }

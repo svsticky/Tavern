@@ -189,6 +189,54 @@ public class PaymentSyncServiceTests
     }
 
     [Fact]
+    public async Task SyncPayments_BegunstigerPaymentPaid_UpdatesDatabase()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var member = CreateTestMember();
+        member.Begunstiger = true;
+        db.Members.Add(member);
+
+        var payment = new BegunstigerPayment
+        {
+            Id = 6,
+            Price = 10.0m,
+            PaymentServiceId = "tr_begunstiger123",
+            PaymentIntentUrl = "https://example.com/pay",
+            Member = member,
+            MemberId = member.Id
+        };
+        db.BegunstigerPayments.Add(payment);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var service = new TestablePaymentSyncService(provider, _logger);
+
+        var now = DateTimeOffset.UtcNow;
+        _paymentService.GetPaymentAsync("tr_begunstiger123").Returns(new GetPaymentResponse("tr_begunstiger123", PaymentStatus.Paid, now));
+
+        // Act
+        await service.PublicSyncPayments();
+
+        // Assert
+        var updatedPayment = await db.BegunstigerPayments.FindAsync(6u);
+        Assert.NotNull(updatedPayment);
+        Assert.Equal(now, updatedPayment.PaidAt);
+
+        var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
+        Assert.Single(outboxTasks);
+        Assert.Equal(member.AuthSystemUserId, outboxTasks[0].AuthSystemUserId);
+        Assert.Equal(AuthTaskType.Sync, outboxTasks[0].TaskType);
+
+        var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
+        Assert.Single(accountingTasks);
+        Assert.Equal(payment.Id, accountingTasks[0].PaymentId);
+        Assert.Equal(AccountingToolTaskType.BegunstigerPayment, accountingTasks[0].TaskType);
+    }
+
+    [Fact]
     public async Task SyncPayments_EnrollmentPaymentPaid_UpdatesDatabase()
     {
         // Arrange

@@ -18,7 +18,12 @@ public enum AccountingToolTaskType
     /// <summary>
     /// Indicates that the task is to process a Payment Service fee payment. This task type is used when a payment related to a fee from the Payment Service payment provider needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the fee transaction.
     /// </summary>
-    PaymentServiceFeePayment
+    PaymentServiceFeePayment,
+
+    /// <summary>
+    /// Indicates that the task is to process a "Begunstiger" (benefactor) fee payment. This task type is used when a begunstiger fee payment needs to be processed in the accounting tool, ensuring that the financial records are updated accordingly for the transaction.
+    /// </summary>
+    BegunstigerPayment
 }
 
 /// <summary>

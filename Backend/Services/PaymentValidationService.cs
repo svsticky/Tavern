@@ -26,8 +26,6 @@ public class PaymentValidationService(
             throw new Exception($"Member with id {memberId} not found.");
         }
 
-        if (member.Begunstiger) return true;
-
         if (db.Settings.Find("MastersShouldPayMembership")?.Value != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && (e.Status == StudyStatus.Enrolled)))
         {
             return true;
@@ -60,6 +58,12 @@ public class PaymentValidationService(
                 // If member has no study enrollment, fallback to rolling expiration window (or simple PaidAt threshold)
                 DateTime expirationThreshold = DateTime.UtcNow.AddYears(-expirationYears);
                 return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= expirationThreshold);
+            }
+
+            if (studyEnrollment.EnrollmentDate.AddYears(expirationYears) > DateTime.UtcNow)
+            {
+                // Allow the first payment to be made up to 6 months before the first study enrollment date
+                return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= studyEnrollment.EnrollmentDate.AddMonths(-6));
             }
 
             // If member has a study enrollment:
@@ -100,13 +104,32 @@ public class PaymentValidationService(
             throw new Exception($"Member with id {memberId} not found.");
         }
 
-        if (member.Begunstiger) return true;
-
         bool isMaster = member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master);
 
         if (isMaster) return true;
 
         return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
+    }
+
+    /// <inheritdoc />
+    public bool HasEverPaidBegunstigerFee(Guid memberId)
+    {
+        return db.BegunstigerPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
+    }
+
+    /// <inheritdoc />
+    public bool HasDoneOrDoingStudy(Guid memberId)
+    {
+        return db.StudyEnrollments.Any(e => e.MemberId == memberId);
+    }
+
+    /// <inheritdoc />
+    public bool HasPaidBegunstigerFeeSinceLastBoardChange(Guid memberId)
+    {
+        var lastBoardRotationAtValue = db.Settings.Find("LastBoardRotationAt")?.Value;
+        var threshold = DateTimeOffset.TryParse(lastBoardRotationAtValue, out var parsed) ? parsed : DateTimeOffset.MinValue;
+
+        return db.BegunstigerPayments.Any(p => p.MemberId == memberId && p.PaidAt != null && p.PaidAt >= threshold);
     }
 
     /// <inheritdoc />

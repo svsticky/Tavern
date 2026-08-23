@@ -12,6 +12,7 @@ const {
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
   handleMarkMembershipAsPaid,
+  handleMarkBegunstigerFeeAsPaid,
 } = vi.hoisted(() => ({
   loadMemberData: vi.fn(),
   handleSaveMember: vi.fn(),
@@ -20,6 +21,7 @@ const {
   handleAddEnrollment: vi.fn(),
   handleUpdateEnrollmentStatus: vi.fn(),
   handleMarkMembershipAsPaid: vi.fn(),
+  handleMarkBegunstigerFeeAsPaid: vi.fn(),
 }));
 
 vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
@@ -30,6 +32,7 @@ vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
   handleMarkMembershipAsPaid,
+  handleMarkBegunstigerFeeAsPaid,
 }));
 
 // ChangeProfilePicture makes its own ~/api call (getMembersByIdProfilePicture) - it's not part
@@ -200,6 +203,51 @@ describe("EditMemberPage", () => {
         screen.queryByText("are_you_sure_mark_membership_as_paid"),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it("shows the begunstiger-fee action instead of the membership one for a begunstiger", async () => {
+    loadMemberData.mockImplementation(
+      async ({
+        setFormData,
+        setEnrollments,
+        setHasPaidMembership,
+        setIsBegunstiger,
+        setLoading,
+      }: any) => {
+        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
+        setEnrollments([]);
+        setHasPaidMembership(false);
+        setIsBegunstiger(true);
+        setLoading(false);
+      },
+    );
+
+    renderPage();
+
+    const markPaidButton = await screen.findByRole("button", {
+      name: "mark_begunstiger_fee_as_paid",
+    });
+    expect(
+      screen.queryByRole("button", { name: "mark_membership_as_paid" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(markPaidButton);
+
+    expect(
+      await screen.findByText("are_you_sure_mark_begunstiger_fee_as_paid"),
+    ).toBeInTheDocument();
+
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "mark_begunstiger_fee_as_paid",
+    });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+
+    expect(handleMarkBegunstigerFeeAsPaid).toHaveBeenCalledWith(
+      "m1",
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(handleMarkMembershipAsPaid).not.toHaveBeenCalled();
   });
 
   it("hides the mark-membership-as-paid action once the membership is paid", async () => {

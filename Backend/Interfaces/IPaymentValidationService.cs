@@ -23,6 +23,27 @@ public interface IPaymentValidationService
     bool HasEverPaidMembershipPayment(Guid memberId);
 
     /// <summary>
+    /// Checks whether a member has ever been, or currently is, enrolled in a study.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <returns><c>true</c> when at least one study enrollment record exists for the member; otherwise <c>false</c>.</returns>
+    bool HasDoneOrDoingStudy(Guid memberId);
+
+    /// <summary>
+    /// Checks whether a member has paid their "Begunstiger" (benefactor) fee since the last board rotation. Begunstiger status is reset on every board rotation, so the fee is due again each term rather than following the regular membership expiration window.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <returns><c>true</c> when a paid begunstiger payment exists on or after the last board rotation; otherwise <c>false</c>.</returns>
+    bool HasPaidBegunstigerFeeSinceLastBoardChange(Guid memberId);
+
+    /// <summary>
+    /// Checks whether a member has ever paid their "Begunstiger" (benefactor) fee. This is used to determine if a member has ever been a benefactor, regardless of their current status or the timing of board rotations.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <returns><c>true</c> when a paid begunstiger payment exists for the member; otherwise <c>false</c>.</returns>
+    bool HasEverPaidBegunstigerFee(Guid memberId);
+
+    /// <summary>
     /// Retrieves unpaid enrollments for a member.
     /// </summary>
     /// <param name="member">The member user ID.</param>

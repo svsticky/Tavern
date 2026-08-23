@@ -11,6 +11,7 @@ import {
   getStudyenrollments,
   patchMembersById,
   patchStudyenrollmentsById,
+  postPaymentsBegunstiger,
   postPaymentsMembership,
   postStudyenrollments,
   type Study,
@@ -55,12 +56,13 @@ type LoadMemberArgs = {
   setAvailableStudies: React.Dispatch<React.SetStateAction<Study[]>>;
   setProfilePictureSrc: (value: string | null) => void;
   setHasPaidMembership: (value: boolean) => void;
+  setIsBegunstiger: (value: boolean) => void;
   setLoading: (value: boolean) => void;
 };
 
 /**
  * Initializes the edit page by fetching member profile, study enrollments,
- * available study programs, membership payment status, and the profile picture.
+ * available study programs, membership/begunstiger payment status, and the profile picture.
  *
  * @async
  * @param {LoadMemberArgs} args - Configuration object containing:
@@ -70,7 +72,8 @@ type LoadMemberArgs = {
  * @param {Function} args.setEnrollments - Setter for the list of study history records.
  * @param {Function} args.setAvailableStudies - Setter for the global list of selectable study programs.
  * @param {Function} args.setProfilePictureSrc - Setter for the profile image source URL.
- * @param {Function} args.setHasPaidMembership - Setter for whether the member currently has a valid membership payment.
+ * @param {Function} args.setHasPaidMembership - Setter for whether the member currently has a valid membership or begunstiger fee payment.
+ * @param {Function} args.setIsBegunstiger - Setter for whether the member is currently flagged as a begunstiger.
  * @param {Function} args.setLoading - Setter to toggle the component's global loading state.
  * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
  */
@@ -82,6 +85,7 @@ export const loadMemberData = async ({
   setAvailableStudies,
   setProfilePictureSrc,
   setHasPaidMembership,
+  setIsBegunstiger,
   setLoading,
 }: LoadMemberArgs) => {
   if (!memberId) return;
@@ -135,14 +139,16 @@ export const loadMemberData = async ({
     }
     setAvailableStudies(studiesResponse.data);
 
-    // Non-critical: falls back to assuming the membership is paid (hiding the manual mark-as-paid
-    // action) rather than failing the whole page load if this lookup fails.
+    // Non-critical: falls back to assuming the fee is paid (hiding the manual mark-as-paid action)
+    // rather than failing the whole page load if this lookup fails. hasPaidMembershipBeforeExpirationTime
+    // already reflects the begunstiger fee status instead of the regular membership one when isBegunstiger.
     const paymentStatusResponse = await getPaymentsMemberByFromUserIdStatus({
       path: { fromUserId: memberId },
     });
     setHasPaidMembership(
       paymentStatusResponse.data?.hasPaidMembershipBeforeExpirationTime ?? true,
     );
+    setIsBegunstiger(paymentStatusResponse.data?.isBegunstiger ?? false);
 
     const profilePictureResponse = await getMembersByIdProfilePicture({
       path: { id: memberId },
@@ -298,6 +304,55 @@ export const handleMarkMembershipAsPaid = async (
       onSuccess();
     } catch (err) {
       console.error("Failed to mark membership as paid:", err);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  toast.promise(process(), {
+    loading: t("marking_as_paid"),
+    success: t("marked_as_paid"),
+    error: (error) => appendErrorMessage(t("mark_as_paid_failed"), error),
+  });
+};
+
+/**
+ * Manually marks a member's "Begunstiger" (benefactor) fee as paid (e.g., if they paid in cash).
+ * Posts to the dedicated begunstiger payment endpoint rather than the membership one, since
+ * begunstigers pay their own separate fee.
+ *
+ * @async
+ * @param {string | undefined} memberId - The ID of the member whose begunstiger payment is recorded.
+ * @param {Function} setLoading - State setter to track the request.
+ * @param {Function} onSuccess - Callback invoked once the payment has been recorded.
+ */
+export const handleMarkBegunstigerFeeAsPaid = async (
+  memberId: string | undefined,
+  setLoading: (loading: boolean) => void,
+  onSuccess: () => void,
+) => {
+  if (!memberId) return;
+
+  const process = async () => {
+    try {
+      setLoading(true);
+      const response = await postPaymentsBegunstiger({
+        body: {
+          memberId,
+          manuallyMarkedAsPaid: true,
+        },
+      });
+
+      if (response.error) {
+        throw (
+          response.error ?? new Error("Failed to mark begunstiger fee as paid")
+        );
+      }
+
+      onSuccess();
+    } catch (err) {
+      console.error("Failed to mark begunstiger fee as paid:", err);
       throw err;
     } finally {
       setLoading(false);

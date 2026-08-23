@@ -11,6 +11,7 @@ const {
   getStudyenrollments,
   patchMembersById,
   patchStudyenrollmentsById,
+  postPaymentsBegunstiger,
   postPaymentsMembership,
   postStudyenrollments,
 } = vi.hoisted(() => ({
@@ -23,6 +24,7 @@ const {
   getStudyenrollments: vi.fn(),
   patchMembersById: vi.fn(),
   patchStudyenrollmentsById: vi.fn(),
+  postPaymentsBegunstiger: vi.fn(),
   postPaymentsMembership: vi.fn(),
   postStudyenrollments: vi.fn(),
 }));
@@ -37,6 +39,7 @@ vi.mock("~/api", () => ({
   getStudyenrollments,
   patchMembersById,
   patchStudyenrollmentsById,
+  postPaymentsBegunstiger,
   postPaymentsMembership,
   postStudyenrollments,
 }));
@@ -54,6 +57,7 @@ import {
   handleAddEnrollment,
   handleDeleteEnrollment,
   handleDeleteMember,
+  handleMarkBegunstigerFeeAsPaid,
   handleMarkMembershipAsPaid,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
@@ -83,6 +87,7 @@ describe("loadMemberData", () => {
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
+      setIsBegunstiger: vi.fn(),
       setLoading,
     });
     expect(setLoading).not.toHaveBeenCalled();
@@ -114,7 +119,10 @@ describe("loadMemberData", () => {
     getStudyenrollments.mockResolvedValue({ data: [{ id: 1 }] });
     getStudies.mockResolvedValue({ data: [{ id: 1, title: "CS" }] });
     getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
-      data: { hasPaidMembershipBeforeExpirationTime: false },
+      data: {
+        hasPaidMembershipBeforeExpirationTime: false,
+        isBegunstiger: true,
+      },
     });
     getMembersByIdProfilePicture.mockResolvedValue({ data: new Blob(["x"]) });
 
@@ -124,6 +132,7 @@ describe("loadMemberData", () => {
     const setAvailableStudies = vi.fn();
     const setProfilePictureSrc = vi.fn();
     const setHasPaidMembership = vi.fn();
+    const setIsBegunstiger = vi.fn();
     const setLoading = vi.fn();
 
     const cleanup = await loadMemberData({
@@ -134,6 +143,7 @@ describe("loadMemberData", () => {
       setAvailableStudies,
       setProfilePictureSrc,
       setHasPaidMembership,
+      setIsBegunstiger,
       setLoading,
     });
 
@@ -152,6 +162,7 @@ describe("loadMemberData", () => {
       path: { fromUserId: "m1" },
     });
     expect(setHasPaidMembership).toHaveBeenCalledWith(false);
+    expect(setIsBegunstiger).toHaveBeenCalledWith(true);
     expect(setProfilePictureSrc).toHaveBeenCalledWith("blob:mock-url");
     expect(setLoading).toHaveBeenCalledWith(false);
 
@@ -178,6 +189,7 @@ describe("loadMemberData", () => {
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership,
+      setIsBegunstiger: vi.fn(),
       setLoading: vi.fn(),
     });
 
@@ -202,6 +214,7 @@ describe("loadMemberData", () => {
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
+      setIsBegunstiger: vi.fn(),
       setLoading: vi.fn(),
     });
 
@@ -227,6 +240,7 @@ describe("loadMemberData", () => {
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
+      setIsBegunstiger: vi.fn(),
       setLoading,
     });
 
@@ -248,6 +262,7 @@ describe("loadMemberData", () => {
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
+      setIsBegunstiger: vi.fn(),
       setLoading: vi.fn(),
     });
 
@@ -267,6 +282,7 @@ describe("loadMemberData", () => {
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
+      setIsBegunstiger: vi.fn(),
       setLoading: vi.fn(),
     });
 
@@ -410,6 +426,46 @@ describe("handleMarkMembershipAsPaid", () => {
     const onSuccess = vi.fn();
 
     await handleMarkMembershipAsPaid("m1", setLoading, onSuccess);
+
+    await vi.waitFor(() => expect(setLoading).toHaveBeenLastCalledWith(false));
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleMarkBegunstigerFeeAsPaid", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns immediately when memberId is undefined", async () => {
+    const setLoading = vi.fn();
+    const onSuccess = vi.fn();
+    await handleMarkBegunstigerFeeAsPaid(undefined, setLoading, onSuccess);
+    expect(setLoading).not.toHaveBeenCalled();
+    expect(postPaymentsBegunstiger).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it("marks the begunstiger fee as paid", async () => {
+    postPaymentsBegunstiger.mockResolvedValue({});
+    const setLoading = vi.fn();
+    const onSuccess = vi.fn();
+
+    await handleMarkBegunstigerFeeAsPaid("m1", setLoading, onSuccess);
+
+    await vi.waitFor(() => expect(setLoading).toHaveBeenLastCalledWith(false));
+    expect(postPaymentsBegunstiger).toHaveBeenCalledWith({
+      body: { memberId: "m1", manuallyMarkedAsPaid: true },
+    });
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it("throws when marking as paid fails", async () => {
+    postPaymentsBegunstiger.mockResolvedValue({ error: true, message: "bad" });
+    const setLoading = vi.fn();
+    const onSuccess = vi.fn();
+
+    await handleMarkBegunstigerFeeAsPaid("m1", setLoading, onSuccess);
 
     await vi.waitFor(() => expect(setLoading).toHaveBeenLastCalledWith(false));
     expect(onSuccess).not.toHaveBeenCalled();

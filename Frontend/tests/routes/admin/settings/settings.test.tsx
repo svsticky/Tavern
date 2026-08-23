@@ -93,11 +93,13 @@ function defaultSettings(overrides: Record<string, string> = {}) {
     CandidateBoardGroupId: "2",
     PaymentServiceFee: "0.30",
     MembershipPrice: "10",
+    BegunstigerPrice: "10",
     FinancialEmailSender: "finance@example.com",
     MainBoardMail: "board@example.com",
     ActivityUpdateEmailSender: "activities@example.com",
     FinancialYearStartDate: "01-01",
     CommitteeCreationDate: "08-01",
+    YearlyMailSendDate: "09-01",
     PaymentProvider: "MOLLIE",
     MailService: "SMTP",
     SmtpStartTls: "true",
@@ -220,6 +222,46 @@ describe("SettingsPage", () => {
       "20",
       expect.any(Function),
     );
+  });
+
+  it("delegates a begunstiger price change to handleSettingsChange", async () => {
+    renderWithProviders(<SettingsPage />);
+
+    const begunstigerPriceInput =
+      await screen.findByLabelText(/begunstiger_price/);
+    fireEvent.change(begunstigerPriceInput, { target: { value: "15" } });
+
+    expect(handleSettingsChange).toHaveBeenCalledWith(
+      "BegunstigerPrice",
+      "15",
+      expect.any(Function),
+    );
+  });
+
+  it("disables save while the begunstiger price is missing", async () => {
+    loadWith(defaultSettings({ BegunstigerPrice: "" }));
+
+    renderWithProviders(<SettingsPage />);
+
+    const saveButton = await screen.findByRole("button", {
+      name: "save_all_settings",
+    });
+    expect(saveButton).toBeDisabled();
+  });
+
+  it("renders the begunstiger accounting fields when ACCOUNTING_ENABLED is true", async () => {
+    getEnv.mockReturnValue("true");
+
+    renderWithProviders(<SettingsPage />);
+
+    expect(
+      await screen.findByLabelText("begunstiger_gl_account"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("begunstiger_cost_center"),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("begunstiger_cost_unit")).toBeInTheDocument();
+    expect(screen.getByLabelText(/begunstiger_vat_code/)).toBeInTheDocument();
   });
 
   it("shows the mollie api key field only when Mollie is the payment provider", async () => {

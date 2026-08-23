@@ -162,6 +162,66 @@ public class KeycloakAPIServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SyncMember_Begunstiger_UsesBegunstigerFeeCheckForAccessLevelInsteadOfMembershipCheck()
+    {
+        // Arrange
+        var keycloakId = Guid.NewGuid();
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            AuthSystemUserId = keycloakId,
+            Begunstiger = true,
+            FirstName = "Bea",
+            LastName = "Vermeer",
+            Email = "bea@example.com",
+            StudentNumber = "s2222222",
+            PhoneNumber = "+31600000001",
+            Street = "St",
+            HouseNumber = "2",
+            PostalCode = "1234AB",
+            City = "Enschede"
+        };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        // The member has never had a qualifying study/membership payment, so the regular check would
+        // say "not paid" - but they did pay their begunstiger fee, so access_level should still be "full".
+        _paymentMock.HasPaidMembershipPaymentBeforeExpirationTime(member.Id).Returns(false);
+        _paymentMock.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(true);
+
+        string? putBody = null;
+
+        _adminHandler.SendAsyncFunc = (req) =>
+        {
+            if (req.Method == HttpMethod.Get && req.RequestUri?.AbsolutePath.EndsWith($"users/{keycloakId}") == true)
+            {
+                var userResponse = new { email = "bea@example.com" };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(userResponse))
+                });
+            }
+            if (req.Method == HttpMethod.Put && req.RequestUri?.AbsolutePath.EndsWith($"users/{keycloakId}") == true)
+            {
+                putBody = req.Content?.ReadAsStringAsync().Result;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        };
+
+        // Act
+        await _service.SyncMember(keycloakId);
+
+        // Assert
+        _paymentMock.Received(1).HasPaidBegunstigerFeeSinceLastBoardChange(member.Id);
+        _paymentMock.DidNotReceive().HasPaidMembershipPaymentBeforeExpirationTime(Arg.Any<Guid>());
+
+        Assert.NotNull(putBody);
+        Assert.Contains("\"access_level\":[\"full\"]", putBody);
+    }
+
+    [Fact]
     public async Task SyncMember_EmailChanged_UpdatesLocalDatabaseAndEnqueuesMailSubscriptionTasks()
     {
         // Arrange

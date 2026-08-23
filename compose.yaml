@@ -32,7 +32,6 @@ services:
       - VITE_HostUrl=${HostUrl}
       - VITE_ApiUrl=${ApiUrl}
       - VITE_LOGO_URL=${LOGO_URL}
-      - VITE_PAYMENT_PROVIDER=${PAYMENT_PROVIDER}
       - VITE_MAIL_SERVICE=${MAIL_SERVICE}
       - VITE_ACCOUNTING_ENABLED=${ACCOUNTING_ENABLED}
 

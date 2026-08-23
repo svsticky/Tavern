@@ -294,6 +294,7 @@ internal static class ServiceExtensions
         services.AddSingleton<AuthOutboxWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<AuthOutboxWorker>());
         services.AddHostedService<AccountingToolOutboxWorker>();
+        services.AddHostedService<MembershipExpirationSyncService>();
         services.AddSingleton<MailSubscriptionOutboxWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
 
@@ -329,12 +330,29 @@ internal static class ServiceExtensions
         recurringJobManager.AddOrUpdate<AbstractMailService>(
             "annual-study-status-update",
             service => service.SendStudyStatusUpdateMails(),
-            "0 9 1 9 *", // 1 September
+            BuildYearlyMailCronExpression(db),
             recurringJobOptions
         );
 
 
         return app;
+    }
+
+    /// <summary>
+    /// Builds the cron expression for the yearly account-status mail job from the configurable
+    /// "YearlyMailSendDate" (MM-DD) setting, falling back to 1 September if unset or malformed.
+    /// </summary>
+    private static string BuildYearlyMailCronExpression(PostgresDbContext db)
+    {
+        var dateSetting = db.Settings.Find("YearlyMailSendDate")?.Value;
+        var parts = dateSetting?.Split('-') ?? [];
+
+        if (parts.Length == 2 && int.TryParse(parts[0], out var month) && int.TryParse(parts[1], out var day))
+        {
+            return $"0 9 {day} {month} *";
+        }
+
+        return "0 9 1 9 *"; // 1 September
     }
 
     internal static async Task MigrateDatabaseAsync(this WebApplication app)

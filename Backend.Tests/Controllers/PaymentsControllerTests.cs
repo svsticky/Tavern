@@ -282,6 +282,44 @@ public class PaymentsControllerTests
     }
 
     [Fact]
+    public async Task PostBegunstigerPayment_Success_ReturnsOk()
+    {
+        // Arrange
+        var dto = new PostBegunstigerPaymentDTO { MemberId = Guid.NewGuid() };
+        var response = new PostPaymentResponse { CheckoutUrl = "http://pay" };
+        _serviceMock.CreateBegunstigerPayment(dto, _userId).Returns(response);
+
+        // Act
+        var result = await _controller.PostBegunstigerPayment(dto);
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(result.Result);
+        Assert.Equal(response, okResult.Value);
+    }
+
+    [Fact]
+    public async Task PostBegunstigerPayment_Unauthorized_ThrowsUnauthorizedAccessException()
+    {
+        // Arrange
+        var dto = new PostBegunstigerPaymentDTO { MemberId = Guid.NewGuid() };
+        _serviceMock.CreateBegunstigerPayment(dto, _userId).Throws(new UnauthorizedAccessException());
+
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostBegunstigerPayment(dto));
+    }
+
+    [Fact]
+    public async Task PostBegunstigerPayment_Exception_ThrowsException()
+    {
+        // Arrange
+        var dto = new PostBegunstigerPaymentDTO { MemberId = Guid.NewGuid() };
+        _serviceMock.CreateBegunstigerPayment(dto, _userId).Throws(new Exception("Error"));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _controller.PostBegunstigerPayment(dto));
+    }
+
+    [Fact]
     public async Task PaymentWebhook_Success_ReturnsOk()
     {
         // Arrange
@@ -413,6 +451,8 @@ public class PaymentsControllerTests
             HasEverPaidMembership = true,
             HasPaidMembershipBeforeExpirationTime = true,
             HasPaidAllActivities = true,
+            IsBegunstiger = false,
+            CanPayMembership = true,
             UnpaidEnrollments = new List<EnrollmentBalance>()
         };
         _serviceMock.GetMemberPaymentStatus(targetUser, _userId, Arg.Any<CancellationToken>()).Returns(response);

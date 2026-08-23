@@ -33,6 +33,13 @@ public class PostActivityPaymentDTO : AbstractPaymentDTO
 }
 
 /// <summary>
+/// Defines the DTO for posting a "Begunstiger" (benefactor) fee payment, containing the necessary information for creating a new begunstiger payment, including the member ID and an optional flag indicating whether the payment was manually marked as paid. This is a distinct payment type from PostMembershipPaymentDTO so that a begunstiger cannot pay the (cheaper) regular membership fee through the membership payment endpoint instead of their own fee.
+/// </summary>
+public class PostBegunstigerPaymentDTO : AbstractPaymentDTO
+{
+}
+
+/// <summary>
 /// Defines the response DTO for a payment, containing the necessary information about the payment response, including an optional checkout URL. The PostPaymentResponse is used to transfer data from the server to the client after creating a new payment, allowing for the inclusion of relevant information such as a checkout URL if applicable, providing a structured and informative response for payment-related operations in the application.
 /// </summary>
 public class PostPaymentResponse
@@ -65,6 +72,16 @@ public class PaymentStatusResponse
     /// A boolean value indicating whether the member has paid for all activities. This field provides insight into the member's payment status for activities, allowing for the identification of members who have fulfilled their payment obligations for all enrolled activities. The PaymentStatusResponse includes this information to offer a comprehensive overview of the member's payment status for activities within the application, enabling effective management and tracking of activity payments and ensuring that members are aware of any outstanding payments for their enrolled activities.
     /// </summary>
     public required bool HasPaidAllActivities { get; set; }
+
+    /// <summary>
+    /// A boolean value indicating whether the member is currently flagged as a "Begunstiger" (benefactor). When <c>true</c>, <see cref="HasPaidMembershipBeforeExpirationTime"/> reflects the begunstiger fee status (paid since the last board rotation) instead of the regular membership expiration window, and payments for this member must go through the begunstiger payment endpoint rather than the membership one.
+    /// </summary>
+    public required bool IsBegunstiger { get; set; }
+
+    /// <summary>
+    /// A boolean value indicating whether the member is eligible to pay for membership at all, i.e. whether they are a begunstiger or have ever been enrolled in a study. Members who are neither must not be offered a membership payment.
+    /// </summary>
+    public required bool CanPayMembership { get; set; }
 
     /// <summary>
     /// A list of unpaid enrollments for the member. This field provides detailed information about any enrollments for which the member has not yet made a payment, allowing for the identification of specific activities or memberships that require attention. The PaymentStatusResponse includes this information to offer a comprehensive overview of the member's outstanding payments, enabling effective management and tracking of unpaid enrollments and ensuring that members are aware of any pending payments for their enrolled activities or memberships within the application.

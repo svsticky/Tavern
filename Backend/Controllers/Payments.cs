@@ -144,6 +144,28 @@ namespace Backend.Controllers
             return Ok(result);
         }
 
+        // POST: payments/begunstiger
+        /// <summary>
+        /// Initiates a "Begunstiger" (benefactor) fee payment. Unlike the regular membership payment, this is only allowed for a logged-in member who is themselves flagged as a begunstiger (self-pay), or for a board member creating/marking it on the begunstiger's behalf, e.g. via ManuallyMarkedAsPaid.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing begunstiger payment details.</param>
+        /// <returns>A response containing the payment status and potential checkout URL.</returns>
+        [HttpPost("begunstiger")]
+        [Consumes("application/json")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PostPaymentResponse>> PostBegunstigerPayment(
+            PostBegunstigerPaymentDTO dto
+        )
+        {
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.CreateBegunstigerPayment(dto, userId);
+            return Ok(result);
+        }
+
         // POST: payments/webhook
         /// <summary>
         /// Processes asynchronous status updates from the paymentservice payment gateway. The webhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
