@@ -407,6 +407,106 @@ public class PaymentSyncServiceTests
     }
 
     [Fact]
+    public async Task SyncPayments_BegunstigerPaymentFailed_NeverPaid_RemovesMember()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var member = CreateTestMember();
+        member.Begunstiger = true;
+        db.Members.Add(member);
+
+        var payment = new BegunstigerPayment
+        {
+            Id = 8,
+            Price = 10.0m,
+            PaymentServiceId = "tr_begunstiger_fail1",
+            PaymentIntentUrl = "https://example.com/pay",
+            Member = member,
+            MemberId = member.Id
+        };
+        db.BegunstigerPayments.Add(payment);
+        await db.SaveChangesAsync();
+
+        _paymentValidationService.HasEverPaidMembershipPayment(member.Id).Returns(false);
+        _paymentValidationService.HasEverPaidBegunstigerFee(member.Id).Returns(false);
+
+        var provider = CreateServiceProvider(db);
+        var service = new TestablePaymentSyncService(provider, _logger);
+
+        _paymentService.GetPaymentAsync("tr_begunstiger_fail1").Returns(new GetPaymentResponse("tr_begunstiger_fail1", PaymentStatus.Failed, null));
+
+        // Act
+        await service.PublicSyncPayments();
+
+        // Assert
+        var updatedPayment = await db.BegunstigerPayments.FindAsync(8u);
+        Assert.Null(updatedPayment); // Removed
+
+        var updatedMember = await db.Members.FindAsync(member.Id);
+        Assert.Null(updatedMember); // Removed
+
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
+    public async Task SyncPayments_MembershipPaymentFailed_HasOtherPendingBegunstigerPayment_KeepsMember()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var member = CreateTestMember();
+        member.Begunstiger = true;
+        db.Members.Add(member);
+
+        var failedPayment = new MembershipPayment
+        {
+            Id = 9,
+            Price = 10.0m,
+            PaymentServiceId = "tr_fail_other_pending",
+            PaymentIntentUrl = "https://example.com/pay",
+            Member = member,
+            MemberId = member.Id
+        };
+        db.MembershipPayments.Add(failedPayment);
+
+        var otherPendingPayment = new BegunstigerPayment
+        {
+            Id = 10,
+            Price = 10.0m,
+            PaymentServiceId = "tr_still_pending",
+            PaymentIntentUrl = "https://example.com/pay",
+            Member = member,
+            MemberId = member.Id
+        };
+        db.BegunstigerPayments.Add(otherPendingPayment);
+        await db.SaveChangesAsync();
+
+        _paymentValidationService.HasEverPaidMembershipPayment(member.Id).Returns(false);
+        _paymentValidationService.HasEverPaidBegunstigerFee(member.Id).Returns(false);
+
+        var provider = CreateServiceProvider(db);
+        var service = new TestablePaymentSyncService(provider, _logger);
+
+        _paymentService.GetPaymentAsync("tr_fail_other_pending").Returns(new GetPaymentResponse("tr_fail_other_pending", PaymentStatus.Failed, null));
+        _paymentService.GetPaymentAsync("tr_still_pending").Returns(new GetPaymentResponse("tr_still_pending", PaymentStatus.Pending, null));
+
+        // Act
+        await service.PublicSyncPayments();
+
+        // Assert
+        var updatedPayment = await db.MembershipPayments.FindAsync(9u);
+        Assert.Null(updatedPayment); // Removed
+
+        var updatedMember = await db.Members.FindAsync(member.Id);
+        Assert.NotNull(updatedMember); // Kept, since the begunstiger payment is still pending
+
+        _authOutboxWorker.DidNotReceive().EnqueueTask(Arg.Any<AuthTaskType>(), Arg.Any<Guid>(), Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
     public async Task SyncPayments_ExceptionInLoop_LogsErrorAndContinues()
     {
         // Arrange

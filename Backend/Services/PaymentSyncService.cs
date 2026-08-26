@@ -58,10 +58,10 @@ public class PaymentSyncService(
         var paymentValidationService = scope.ServiceProvider.GetRequiredService<IPaymentValidationService>();
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
-        var pendingMembershipPayments = await db.MembershipPayments.Where(p => p.PaidAt == null).ToListAsync();
+        var pendingMembershipPayments = await db.MembershipPayments.Include(p => p.Member).Where(p => p.PaidAt == null).ToListAsync();
         var pendingEnrollmentPayments = await db.EnrollmentPayments.Where(p => p.PaidAt == null).ToListAsync();
         var pendingPaymentServiceFeePayments = await db.PaymentServiceFeePayments.Where(p => p.PaidAt == null).ToListAsync();
-        var pendingBegunstigerPayments = await db.BegunstigerPayments.Where(p => p.PaidAt == null).ToListAsync();
+        var pendingBegunstigerPayments = await db.BegunstigerPayments.Include(p => p.Member).Where(p => p.PaidAt == null).ToListAsync();
 
         var pendingPayments = pendingMembershipPayments.Cast<Payment>()
             .Concat(pendingPaymentServiceFeePayments.Cast<Payment>())
@@ -157,13 +157,22 @@ public class PaymentSyncService(
                     {
                         db.Remove(payment);
 
-                        // If it's a membership payment, we also want to check if we should remove the member associated with it. 
-                        if (payment is MembershipPayment mp && mp.Member != null)
+                        // If it's a membership or begunstiger payment, we also want to check if we should remove the member associated with it.
+                        if (payment is MembershipPayment or BegunstigerPayment)
                         {
-                            if (!paymentValidationService.HasEverPaidMembershipPayment(mp.Member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(mp.Member.Id))
+                            var member = (payment as MembershipPayment)?.Member ?? (payment as BegunstigerPayment)?.Member;
+
+                            if (member != null)
                             {
-                                db.Members.Remove(mp.Member);
-                                authOutboxWorker.EnqueueTask(AuthTaskType.Delete, mp.Member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."), db);
+                                // Don't remove the member if they have another payment still in flight - it may yet succeed.
+                                bool hasOtherPendingPayments = await db.MembershipPayments.AnyAsync(p => p.MemberId == member.Id && p.PaidAt == null && p.Id != payment.Id)
+                                    || await db.BegunstigerPayments.AnyAsync(p => p.MemberId == member.Id && p.PaidAt == null && p.Id != payment.Id);
+
+                                if (!hasOtherPendingPayments && !paymentValidationService.HasEverPaidMembershipPayment(member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(member.Id))
+                                {
+                                    db.Members.Remove(member);
+                                    authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."), db);
+                                }
                             }
                         }
                         await db.SaveChangesAsync();

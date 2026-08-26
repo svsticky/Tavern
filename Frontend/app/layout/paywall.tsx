@@ -5,6 +5,7 @@ import { client } from "~/api/client.gen";
 import {
   deleteMembersById,
   getPaymentsMemberByFromUserIdStatus,
+  getSettingsById,
   patchMembersById,
   postPaymentsBegunstiger,
   postPaymentsMembership,
@@ -29,6 +30,7 @@ export default function PaywallLayout() {
     null,
   );
   const [isBegunstiger, setIsBegunstiger] = useState(false);
+  const [mainBoardMail, setMainBoardMail] = useState<string | null>(null);
 
   useEffect(() => {
     const loadToken = async () => {
@@ -39,6 +41,43 @@ export default function PaywallLayout() {
 
     loadToken();
   }, [authService]);
+
+  useEffect(() => {
+    if (!client.instance) return;
+
+    getSettingsById({ path: { id: "MainBoardMail" } })
+      .then((res) => {
+        if (res.data?.value) {
+          setMainBoardMail(res.data.value);
+        }
+      })
+      .catch((err) =>
+        console.error("Could not fetch main board mail setting", err),
+      );
+  }, []);
+
+  const deleteAccount = async () => {
+    if (!tokenParsed || !authService) return;
+    if (!window.confirm(i18n.t("delete_account_confirmation"))) {
+      return;
+    }
+
+    try {
+      const response = await deleteMembersById({
+        path: { id: tokenParsed.UserId },
+      });
+
+      if (response.error || response.status >= 400) {
+        throw response.error ?? new Error("Failed to delete account");
+      }
+
+      toast.success(i18n.t("account_deleted_successfully"));
+      authService.logout(`${window.location.origin}/login`);
+    } catch (err) {
+      console.error("Error deleting account:", err);
+      toast.error(appendErrorMessage(i18n.t("delete_account_error"), err));
+    }
+  };
 
   useEffect(() => {
     if (!client.instance || !tokenParsed) return;
@@ -111,6 +150,22 @@ export default function PaywallLayout() {
 
   if (!tokenParsed) return null;
 
+  const contactAndDelete = (
+    <>
+      {mainBoardMail && (
+        <p className="mb-6">
+          {i18n.t("contact_board_for_questions")}{" "}
+          <a href={`mailto:${mainBoardMail}`} className="underline">
+            {mainBoardMail}
+          </a>
+        </p>
+      )}
+      <Button variant="danger" onClick={deleteAccount}>
+        {i18n.t("delete_account")}
+      </Button>
+    </>
+  );
+
   if (canPayMembership === false) {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
@@ -120,6 +175,7 @@ export default function PaywallLayout() {
         <p className="mb-6">
           {i18n.t("membership_payment_not_eligible_description")}
         </p>
+        {contactAndDelete}
       </div>
     );
   }
@@ -132,49 +188,18 @@ export default function PaywallLayout() {
         </h1>
         <p className="mb-6">{i18n.t("membership_payment_description")}</p>
         {paymentUrl && (
-          <>
-            <Button
-              onClick={async () => {
-                window.location.href = paymentUrl;
-              }}
-            >
-              {i18n.t("pay")}
-            </Button>
-            <p className="text-red-500 text-sm font-bold ">
-              {i18n.t("delete_account_instead_of_paying")}
-            </p>
-            <Button
-              variant="danger"
-              onClick={async () => {
-                if (!window.confirm(i18n.t("delete_account_confirmation"))) {
-                  return;
-                }
-
-                try {
-                  const response = await deleteMembersById({
-                    path: { id: tokenParsed.UserId },
-                  });
-
-                  if (response.error || response.status >= 400) {
-                    throw (
-                      response.error ?? new Error("Failed to delete account")
-                    );
-                  }
-
-                  toast.success(i18n.t("account_deleted_successfully"));
-                  authService.logout(`${window.location.origin}/login`);
-                } catch (err) {
-                  console.error("Error deleting account:", err);
-                  toast.error(
-                    appendErrorMessage(i18n.t("delete_account_error"), err),
-                  );
-                }
-              }}
-            >
-              {i18n.t("delete_account")}
-            </Button>
-          </>
+          <Button
+            onClick={async () => {
+              window.location.href = paymentUrl;
+            }}
+          >
+            {i18n.t("pay")}
+          </Button>
         )}
+        <p className="text-red-500 text-sm font-bold ">
+          {i18n.t("delete_account_instead_of_paying")}
+        </p>
+        {contactAndDelete}
       </div>
     );
   }
@@ -188,6 +213,7 @@ export default function PaywallLayout() {
         <p className="mb-6">
           {i18n.t("membership_payment_not_processed_description")}
         </p>
+        {contactAndDelete}
       </div>
     );
   }

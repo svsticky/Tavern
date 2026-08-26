@@ -28,7 +28,8 @@ public class SettingsService : ISettingsService
         "boardprimary",
         "boardprimarydark",
         "studystartdates",
-        "committeecreationdate"
+        "committeecreationdate",
+        "mainboardmail"
     };
 
     /// <summary>

@@ -9,11 +9,13 @@ const {
   patchMembersById,
   postPaymentsMembership,
   deleteMembersById,
+  getSettingsById,
 } = vi.hoisted(() => ({
   getPaymentsMemberByFromUserIdStatus: vi.fn(),
   patchMembersById: vi.fn(),
   postPaymentsMembership: vi.fn(),
   deleteMembersById: vi.fn(),
+  getSettingsById: vi.fn(),
 }));
 
 vi.mock("~/api/sdk.gen", () => ({
@@ -21,6 +23,7 @@ vi.mock("~/api/sdk.gen", () => ({
   patchMembersById,
   postPaymentsMembership,
   deleteMembersById,
+  getSettingsById,
 }));
 
 vi.mock("react-hot-toast", () => ({
@@ -39,6 +42,9 @@ const token: TokenParsed = {
 describe("PaywallLayout", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getSettingsById.mockResolvedValue({
+      data: { name: "MainBoardMail", value: "board@example.com" },
+    });
   });
 
   it("renders nothing while the token hasn't loaded yet", () => {
@@ -96,6 +102,13 @@ describe("PaywallLayout", () => {
       ).toBeInTheDocument(),
     );
     await waitFor(() => expect(screen.getByText("pay")).toBeInTheDocument());
+
+    const mailLink = await screen.findByText("board@example.com");
+    expect(mailLink.closest("a")).toHaveAttribute(
+      "href",
+      "mailto:board@example.com",
+    );
+    expect(screen.getByText("delete_account")).toBeInTheDocument();
   });
 
   it("logs an error when fetching the payment status fails", async () => {
@@ -153,6 +166,13 @@ describe("PaywallLayout", () => {
     expect(
       await screen.findByText("payment_not_processed"),
     ).toBeInTheDocument();
+
+    const mailLink = await screen.findByText("board@example.com");
+    expect(mailLink.closest("a")).toHaveAttribute(
+      "href",
+      "mailto:board@example.com",
+    );
+    expect(screen.getByText("delete_account")).toBeInTheDocument();
   });
 
   it("redirects to the checkout URL when the pay button is clicked", async () => {
@@ -224,6 +244,62 @@ describe("PaywallLayout", () => {
     });
     postPaymentsMembership.mockResolvedValue({
       data: { checkoutUrl: "https://pay.example.com/checkout" },
+    });
+    deleteMembersById.mockResolvedValue({ status: 200 });
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    renderWithProviders(<PaywallLayout />, { authService });
+
+    const deleteButton = await screen.findByText("delete_account");
+    fireEvent.click(deleteButton);
+
+    await waitFor(() =>
+      expect(deleteMembersById).toHaveBeenCalledWith({
+        path: { id: token.UserId },
+      }),
+    );
+    await waitFor(() => expect(authService.logout).toHaveBeenCalled());
+    confirmSpy.mockRestore();
+  });
+
+  it("shows a mailto link to the main board and a delete option when not eligible to pay", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
+      data: {
+        hasEverPaidMembership: false,
+        hasPaidMembershipBeforeExpirationTime: false,
+        canPayMembership: false,
+      },
+    });
+
+    renderWithProviders(<PaywallLayout />, { authService });
+
+    expect(
+      await screen.findByText("membership_payment_not_eligible_title"),
+    ).toBeInTheDocument();
+
+    const mailLink = await screen.findByText("board@example.com");
+    expect(mailLink.closest("a")).toHaveAttribute(
+      "href",
+      "mailto:board@example.com",
+    );
+
+    expect(screen.getByText("delete_account")).toBeInTheDocument();
+  });
+
+  it("deletes the account from the not-eligible page when confirmed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+      logout: vi.fn(async () => {}),
+    });
+    getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
+      data: {
+        hasEverPaidMembership: false,
+        hasPaidMembershipBeforeExpirationTime: false,
+        canPayMembership: false,
+      },
     });
     deleteMembersById.mockResolvedValue({ status: 200 });
     const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);

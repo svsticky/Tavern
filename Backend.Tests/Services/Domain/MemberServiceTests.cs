@@ -882,18 +882,30 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateMember_BegunstigerDuplicateEmail_ThrowsInvalidOperationException()
+    public async Task CreateMember_BegunstigerDuplicateEmail_PaidBegunstigerFee_ThrowsInvalidOperationException()
     {
         // Arrange
         var otherId = Guid.NewGuid();
         var existing = CreateTestMember(otherId, "dup@example.com");
         existing.Begunstiger = true;
         _db.Members.Add(existing);
+
+        var payment = new BegunstigerPayment
+        {
+            MemberId = existing.Id,
+            PaymentServiceId = "pay_begunstiger_dup",
+            PaymentIntentUrl = "http://intent-begunstiger",
+            Price = 15m
+        };
+        _db.BegunstigerPayments.Add(payment);
         await _db.SaveChangesAsync();
 
         var study = new Study { Id = 1, Title = "S", NominalDurationYears = 3, Type = StudyType.Bachelor };
         _db.Studies.Add(study);
         await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_begunstiger_dup")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_begunstiger_dup", PaymentStatus.Paid, null)));
 
         var dto = new PostMemberDTO
         {
@@ -917,6 +929,63 @@ public class MemberServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.CreateMember(dto, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task CreateMember_BegunstigerDuplicateEmail_PendingBegunstigerFee_CancelsPaymentAndRemovesExisting()
+    {
+        // Arrange
+        var otherId = Guid.NewGuid();
+        var existing = CreateTestMember(otherId, "dup-pending-begunstiger@example.com");
+        existing.Begunstiger = true;
+        _db.Members.Add(existing);
+
+        var payment = new BegunstigerPayment
+        {
+            MemberId = existing.Id,
+            PaymentServiceId = "pay_begunstiger_pending",
+            PaymentIntentUrl = "http://intent-begunstiger-pending",
+            Price = 15m
+        };
+        _db.BegunstigerPayments.Add(payment);
+        await _db.SaveChangesAsync();
+
+        var study = new Study { Id = 17, Title = "S", NominalDurationYears = 3, Type = StudyType.Bachelor };
+        _db.Studies.Add(study);
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_begunstiger_pending")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_begunstiger_pending", PaymentStatus.Pending, null)));
+
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "999",
+            FirstName = "A",
+            LastName = "B",
+            Email = "dup-pending-begunstiger@example.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 17, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
+        };
+
+        // Act
+        var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        await _paymentService.Received(1).CancelPaymentAsync("pay_begunstiger_pending");
+
+        _db.ChangeTracker.Clear();
+        var oldMemberDeleted = await _db.Members.FindAsync(existing.Id);
+        Assert.Null(oldMemberDeleted);
     }
 
     [Fact]
