@@ -46,7 +46,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
         await EnsureSettingExists(db, "MailgunToken", "");
         await EnsureSettingExists(db, "MailgunPublicKey", "");
         await EnsureSettingExists(db, "MailgunApiBaseUrl", "");
-        
+
         bool useMailpit = environment.IsDevelopment();
         await EnsureSettingExists(db, "SmtpHost", useMailpit ? "mailpit" : "");
         await EnsureSettingExists(db, "SmtpPort", useMailpit ? "1025" : "587");
