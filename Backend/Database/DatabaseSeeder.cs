@@ -12,8 +12,9 @@ namespace Backend.Database;
 /// </summary>
 /// <param name="scopeFactory">The factory for creating service scopes.</param>
 /// <param name="logger">The logger used to surface otherwise-silent seeding failures.</param>
+/// <param name="environment">Used to only default local-dev-only settings (e.g. the Mailpit SMTP catcher) when actually running in the devcontainer, never in production.</param>
 [ExcludeFromCodeCoverage]
-public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseSeeder> logger) : IHostedService
+public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseSeeder> logger, IHostEnvironment environment) : IHostedService
 {
     private const string _boardPrimaryLightDefault = "#f98f55";
     private const string _boardPrimaryDefault = "#fa6b20";
@@ -45,9 +46,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
         await EnsureSettingExists(db, "MailgunToken", "");
         await EnsureSettingExists(db, "MailgunPublicKey", "");
         await EnsureSettingExists(db, "MailgunApiBaseUrl", "");
-        await EnsureSettingExists(db, "SmtpHost", "");
-        await EnsureSettingExists(db, "SmtpPort", "587");
-        await EnsureSettingExists(db, "SmtpStartTls", "true");
+        
+        bool useMailpit = environment.IsDevelopment();
+        await EnsureSettingExists(db, "SmtpHost", useMailpit ? "mailpit" : "");
+        await EnsureSettingExists(db, "SmtpPort", useMailpit ? "1025" : "587");
+        await EnsureSettingExists(db, "SmtpStartTls", useMailpit ? "false" : "true");
         await EnsureSettingExists(db, "SmtpUser", "");
         await EnsureSettingExists(db, "SmtpPass", "");
 
