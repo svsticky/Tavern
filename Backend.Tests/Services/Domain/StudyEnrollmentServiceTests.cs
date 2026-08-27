@@ -242,10 +242,23 @@ public class StudyEnrollmentServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateStudyEnrollment_OwnUserNotBoard_DoesNotRequireBoardPermission()
+    public async Task CreateStudyEnrollment_OwnUserNotBoardWithExistingEnrollment_DoesNotRequireBoardPermission()
     {
         // Arrange
         var (member, study) = SetUpDependencies();
+        _db.StudyEnrollments.Add(new StudyEnrollment
+        {
+            Id = 20,
+            MemberId = member.Id,
+            Member = member,
+            StudyId = study.Id,
+            Study = study,
+            EnrollmentDate = DateTimeOffset.UtcNow.AddYears(-1),
+            Status = StudyStatus.DroppedOut,
+            CompletionDate = DateTimeOffset.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
         var dto = new PostStudyEnrollmentDTO
         {
             MemberId = member.Id,
@@ -260,6 +273,46 @@ public class StudyEnrollmentServiceTests : IDisposable
         // Assert
         Assert.True(result.Id > 0);
         _permissionService.DidNotReceiveWithAnyArgs().EnsureBoardOrCandidateBoardMember(default);
+    }
+
+    [Fact]
+    public async Task CreateStudyEnrollment_OwnUserNoEnrollmentHistory_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var (member, study) = SetUpDependencies();
+        var dto = new PostStudyEnrollmentDTO
+        {
+            MemberId = member.Id,
+            StudyId = study.Id,
+            EnrollmentDate = DateTimeOffset.UtcNow,
+            Status = StudyStatus.Enrolled
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateStudyEnrollment(dto, member.Id, CancellationToken.None));
+        _permissionService.DidNotReceiveWithAnyArgs().EnsureBoardOrCandidateBoardMember(default);
+    }
+
+    [Fact]
+    public async Task CreateStudyEnrollment_BoardMemberOnBehalfOfMemberWithNoHistory_Succeeds()
+    {
+        // Arrange
+        var (member, study) = SetUpDependencies();
+        var dto = new PostStudyEnrollmentDTO
+        {
+            MemberId = member.Id,
+            StudyId = study.Id,
+            EnrollmentDate = DateTimeOffset.UtcNow,
+            Status = StudyStatus.Enrolled
+        };
+
+        // Act
+        var result = await _service.CreateStudyEnrollment(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.True(result.Id > 0);
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
     }
 
     [Fact]

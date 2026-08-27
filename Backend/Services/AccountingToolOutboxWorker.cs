@@ -114,6 +114,8 @@ public class AccountingToolOutboxWorker(
         {
             AccountingToolTaskType.EnrollmentPayment => await db.EnrollmentPayments.FindAsync([task.PaymentId], ct),
             AccountingToolTaskType.MembershipPayment => await db.MembershipPayments.FindAsync([task.PaymentId], ct),
+            AccountingToolTaskType.PaymentServiceFeePayment => await db.PaymentServiceFeePayments.FindAsync([task.PaymentId], ct),
+            AccountingToolTaskType.BegunstigerPayment => await db.BegunstigerPayments.FindAsync([task.PaymentId], ct),
             _ => throw new ArgumentOutOfRangeException(nameof(task.TaskType), "Unknown task type")
         };
 

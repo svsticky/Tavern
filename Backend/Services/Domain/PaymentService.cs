@@ -63,9 +63,14 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto)
+        public async Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto, Guid? userId)
         {
-            logger.LogInformation("Creating membership payment for member {MemberId}.", dto.MemberId);
+            logger.LogInformation("Creating membership payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
+
+            if (dto.ManuallyMarkedAsPaid)
+            {
+                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+            }
 
             using var transaction = await db.Database.BeginTransactionAsync();
 
@@ -73,10 +78,27 @@ namespace Backend.Services.Domain
 
             try
             {
+                EnsureMemberCanPayMembership(member);
                 EnsureMemberHasNoPaidMembership(dto.MemberId);
 
                 // return existing payment
                 await HandleExistingMembershipPayment(member, dto.MemberId);
+
+                if (dto.ManuallyMarkedAsPaid)
+                {
+                    // If payment is manually marked as paid, we can skip creating a payment service fee payment and create it directly in the database
+                    var manualPayment = await BuildMembershipPayment(dto.MemberId, null, manuallyMarkedAsPaid: true);
+                    StateValidator.Validate(manualPayment);
+
+                    db.MembershipPayments.Add(manualPayment);
+                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    logger.LogInformation("Created manual membership payment for member {MemberId}.", dto.MemberId);
+
+                    return new PostPaymentResponse();
+                }
 
                 // create new payment
                 var paymentResponse = await BuildMembershipPaymentRequest(member, dto.MemberId);
@@ -88,6 +110,64 @@ namespace Backend.Services.Domain
                 await db.SaveChangesAsync();
                 await transaction.CommitAsync();
                 logger.LogInformation("Created membership payment {PaymentId} for member {MemberId}.", payment.Id, dto.MemberId);
+
+                return ToCheckoutResponse(paymentResponse.PaymentUrl);
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        /// <inheritdoc />
+        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId)
+        {
+            logger.LogInformation("Creating begunstiger payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
+
+            var member = await GetMemberOrThrow(dto.MemberId);
+
+            if (userId != dto.MemberId)
+            {
+                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+            }
+
+            using var transaction = await db.Database.BeginTransactionAsync();
+
+            try
+            {
+                EnsureMemberIsBegunstiger(member);
+                EnsureMemberHasNoPaidBegunstigerFee(dto.MemberId);
+
+                // return existing payment
+                await HandleExistingBegunstigerPayment(member, dto.MemberId);
+
+                if (dto.ManuallyMarkedAsPaid)
+                {
+                    // If payment is manually marked as paid, we can skip creating a Mollie payment and create it directly in the database
+                    var manualPayment = await BuildBegunstigerPayment(dto.MemberId, null, manuallyMarkedAsPaid: true);
+                    StateValidator.Validate(manualPayment);
+
+                    db.BegunstigerPayments.Add(manualPayment);
+                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    logger.LogInformation("Created manual begunstiger payment for member {MemberId}.", dto.MemberId);
+
+                    return new PostPaymentResponse();
+                }
+
+                // create new payment
+                var paymentResponse = await BuildBegunstigerPaymentRequest(member, dto.MemberId);
+
+                var payment = await BuildBegunstigerPayment(dto.MemberId, paymentResponse);
+                StateValidator.Validate(payment);
+
+                db.BegunstigerPayments.Add(payment);
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+                logger.LogInformation("Created begunstiger payment {PaymentId} for member {MemberId}.", payment.Id, dto.MemberId);
 
                 return ToCheckoutResponse(paymentResponse.PaymentUrl);
             }
@@ -120,9 +200,13 @@ namespace Backend.Services.Domain
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, paymentServiceFeePayments);
-            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}",
-                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count);
+            var begunstigerPayments = await db.BegunstigerPayments
+                .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
+                .ToListAsync(ct);
+
+            var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
+            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
+                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
 
             var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
@@ -260,8 +344,17 @@ namespace Backend.Services.Domain
             if (member == null) throw new KeyNotFoundException("Member not found");
 
             var unpaid = paymentValidationService.GetUnpaidEnrollmentsForMember(member.Id);
-            var hasPaidMembershipBeforeExpirationTime = paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
-            var hasEverPaidMembership = paymentValidationService.HasEverPaidMembershipPayment(member.Id);
+            var hasDoneOrDoingStudy = paymentValidationService.HasDoneOrDoingStudy(member.Id);
+
+            // Begunstigers pay their own separate fee, due again every board term, instead of the
+            // regular membership fee - so "is currently paid" and "has ever paid" are answered by
+            // the begunstiger-specific checks for them rather than the membership ones.
+            var hasPaidMembershipBeforeExpirationTime = member.Begunstiger
+                ? paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id)
+                : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
+            var hasEverPaidMembership = member.Begunstiger
+                ? paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id)
+                : paymentValidationService.HasEverPaidMembershipPayment(member.Id);
 
             return new PaymentStatusResponse
             {
@@ -269,6 +362,8 @@ namespace Backend.Services.Domain
                 HasEverPaidMembership = hasEverPaidMembership,
                 HasPaidMembershipBeforeExpirationTime = hasPaidMembershipBeforeExpirationTime,
                 HasPaidAllActivities = !unpaid.Any(),
+                IsBegunstiger = member.Begunstiger,
+                CanPayMembership = member.Begunstiger || hasDoneOrDoingStudy,
                 UnpaidEnrollments = unpaid
             };
         }
@@ -277,6 +372,32 @@ namespace Backend.Services.Domain
         {
             var member = await db.Members.FindAsync(memberId);
             return member ?? throw new KeyNotFoundException("Member not found");
+        }
+
+        /// <summary>
+        /// Enforces server-side that regular membership payments can only ever be created for members
+        /// who have (had) a study enrollment and are not a begunstiger - begunstigers must pay through
+        /// CreateBegunstigerPayment instead, so they can't use this (cheaper) endpoint to underpay.
+        /// </summary>
+        private void EnsureMemberCanPayMembership(Member member)
+        {
+            if (member.Begunstiger || !paymentValidationService.HasDoneOrDoingStudy(member.Id))
+            {
+                throw new InvalidOperationException("Member is not eligible to pay membership");
+            }
+        }
+
+        /// <summary>
+        /// Enforces server-side that begunstiger fee payments can only ever be created for members who
+        /// are currently flagged as a begunstiger - regardless of whether it's the member paying
+        /// themselves or a board member creating/marking it on their behalf.
+        /// </summary>
+        private void EnsureMemberIsBegunstiger(Member member)
+        {
+            if (!member.Begunstiger)
+            {
+                throw new InvalidOperationException("Member is not a begunstiger");
+            }
         }
 
         private void EnsureMemberHasNoPaidMembership(Guid memberId)
@@ -304,21 +425,76 @@ namespace Backend.Services.Domain
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
-                    if (member.AuthSystemUserId == null)
-                    {
-                        // The member isn't linked to the auth system yet. Don't let that block marking the payment
-                        // as paid; AuthOutboxWorker queues a catch-up Sync task once they do get linked.
-                        logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking payment {PaymentId} paid without queuing an auth sync.", member.Id, existingPayment.Id);
-                    }
-                    else
-                    {
-                        authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
-                    }
+                    EnqueueAuthSyncOrWarnForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidMembership(memberId);
                 }
             }
+        }
+
+        private void EnsureMemberHasNoPaidBegunstigerFee(Guid memberId)
+        {
+            if (paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(memberId))
+            {
+                throw new InvalidOperationException("Member already paid their begunstiger fee since the last board change");
+            }
+        }
+
+        private async Task HandleExistingBegunstigerPayment(Member member, Guid memberId)
+        {
+            var existingPayments = await db.BegunstigerPayments.Where(p => p.MemberId == memberId && p.PaidAt == null).ToListAsync();
+
+            foreach (var existingPayment in existingPayments)
+            {
+                var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
+                if (paymentResponse.Status == PaymentStatus.Pending)
+                {
+                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                    db.BegunstigerPayments.Remove(existingPayment);
+                    await db.SaveChangesAsync();
+                }
+                else if (paymentResponse.Status == PaymentStatus.Paid)
+                {
+                    existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
+
+                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+
+                    await db.SaveChangesAsync();
+                    EnsureMemberHasNoPaidBegunstigerFee(memberId);
+                }
+            }
+        }
+
+        private async Task<CreatePaymentResponse> BuildBegunstigerPaymentRequest(Member member, Guid memberId)
+        {
+            return await paymentService.CreatePaymentAsync(
+                decimal.Parse(db.Settings.Find("BegunstigerPrice")?.Value ?? "10.00"),
+                $"Begunstiger payment for {member.FirstName} {member.LastName}",
+                _frontendUrl,
+                string.IsNullOrEmpty(_ngrokUrl) ?
+                    (_backendUrl.ToLower().Contains("localhost") ? null : _backendUrl + "/payments/webhook")
+                    : $"{_ngrokUrl}/payments/webhook",
+                $"begunstiger_{memberId}"
+            );
+        }
+
+        private async Task<BegunstigerPayment> BuildBegunstigerPayment(Guid memberId, CreatePaymentResponse? paymentResponse, bool manuallyMarkedAsPaid = false)
+        {
+            if (paymentResponse == null && !manuallyMarkedAsPaid)
+            {
+                throw new ArgumentException("Payment response must be provided if payment is not manually marked as paid");
+            }
+
+            return new BegunstigerPayment
+            {
+                MemberId = memberId,
+                Price = decimal.TryParse((await db.Settings.FindAsync("BegunstigerPrice"))?.Value ?? "10.00", out var price) ? price : 10.00m,
+                PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse!.PaymentId,
+                PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse!.PaymentUrl,
+                PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                ManuallyMarkedAsPaid = manuallyMarkedAsPaid
+            };
         }
 
         /// <summary>
@@ -408,15 +584,39 @@ namespace Backend.Services.Domain
             return _frontendUrl;
         }
 
-        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, CreatePaymentResponse paymentResponse)
+        private async Task<MembershipPayment> BuildMembershipPayment(Guid memberId, CreatePaymentResponse? paymentResponse, bool manuallyMarkedAsPaid = false)
         {
+            if (paymentResponse == null && !manuallyMarkedAsPaid)
+            {
+                throw new ArgumentException("Payment response must be provided if payment is not manually marked as paid");
+            }
+
             return new MembershipPayment
             {
                 MemberId = memberId,
                 Price = decimal.TryParse((await db.Settings.FindAsync("MembershipPrice"))?.Value ?? "7.50", out var price) ? price : 7.50m,
-                PaymentServiceId = paymentResponse.PaymentId,
-                PaymentIntentUrl = paymentResponse.PaymentUrl
+                PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse!.PaymentId,
+                PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse!.PaymentUrl,
+                PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                ManuallyMarkedAsPaid = manuallyMarkedAsPaid
             };
+        }
+
+        /// <summary>
+        /// Queues an auth-system sync for a member whose membership payment was just marked paid. The member isn't
+        /// linked to the auth system yet in some cases; don't let that block marking the payment as paid,
+        /// AuthOutboxWorker queues a catch-up Sync task once they do get linked.
+        /// </summary>
+        private void EnqueueAuthSyncOrWarnForPaidMembership(Member member)
+        {
+            if (member.AuthSystemUserId == null)
+            {
+                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking membership payment paid without queuing an auth sync.", member.Id);
+            }
+            else
+            {
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
+            }
         }
 
         private static PostPaymentResponse ToCheckoutResponse(string checkoutUrl)
@@ -482,7 +682,7 @@ namespace Backend.Services.Domain
         }
 
 
-        private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<PaymentServiceFeePayment> paymentServiceFeePayments)
+        private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<PaymentServiceFeePayment> paymentServiceFeePayments, List<BegunstigerPayment> begunstigerPayments)
         {
             var csv = new StringBuilder();
 
@@ -514,6 +714,18 @@ namespace Backend.Services.Domain
                 var price = p.Price;
 
                 csv.AppendLine($";{glAccount};{description};{VATCode};{price};;");
+            }
+
+            foreach (var p in begunstigerPayments)
+            {
+                var glAccount = db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault() ?? "";
+                var description = "Begunstiger";
+                var VATCode = db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+                var costCenter = db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault() ?? "";
+                var costUnit = db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault() ?? "";
+                var price = p.Price;
+
+                csv.AppendLine($";{glAccount};{description};{VATCode};{price};{costCenter};{costUnit}");
             }
 
             var groupedFees = paymentServiceFeePayments

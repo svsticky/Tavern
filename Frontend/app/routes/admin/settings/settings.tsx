@@ -84,11 +84,13 @@ export default function SettingsPage() {
     !settings.CandidateBoardGroupId ||
     !settings.PaymentServiceFee ||
     !settings.MembershipPrice ||
+    !settings.BegunstigerPrice ||
     !settings.FinancialEmailSender ||
     !settings.MainBoardMail ||
     !settings.ActivityUpdateEmailSender ||
     !settings.FinancialYearStartDate ||
-    !settings.CommitteeCreationDate;
+    !settings.CommitteeCreationDate ||
+    !settings.YearlyMailSendDate;
 
   const groupOptions = getGroupOptions(availableGroups);
   const roleOptions = getRoleOptions(availableRoles, settings);
@@ -320,6 +322,20 @@ export default function SettingsPage() {
                 )
               }
             />
+            <Input
+              label={t("begunstiger_price")}
+              type="number"
+              step="0.01"
+              value={settings.BegunstigerPrice || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BegunstigerPrice",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+              required
+            />
             <Tile className="bg-gray-50 border border-gray-100 col-span-1 md:col-span-2">
               <div className="flex flex-col">
                 <FormHeader title={t("should_pay_membership")} />
@@ -518,6 +534,52 @@ export default function SettingsPage() {
                 }
               />
               <Input
+                label={t("begunstiger_gl_account")}
+                value={settings.BegunstigerGLAccount || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "BegunstigerGLAccount",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("begunstiger_cost_center")}
+                value={settings.BegunstigerCostCenter || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "BegunstigerCostCenter",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("begunstiger_cost_unit")}
+                value={settings.BegunstigerCostUnit || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "BegunstigerCostUnit",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("begunstiger_vat_code")}
+                type="number"
+                step="1"
+                value={settings.BegunstigerVATCode || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "BegunstigerVATCode",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
                 label={t("payment_service_relation_code")}
                 value={settings.PaymentServiceRelationCode || ""}
                 onChange={(e) =>
@@ -543,6 +605,20 @@ export default function SettingsPage() {
           )}
 
           <FormSection title={t("mail_settings")} columns={2}>
+            <Input
+              label={t("yearly_mail_send_date")}
+              placeholder="MM-DD"
+              value={settings.YearlyMailSendDate || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "YearlyMailSendDate",
+                  e.target.value.trim(),
+                  setSettings,
+                )
+              }
+              required
+            />
+            <div />
             <Select
               label={t("mail_service")}
               value={settings.MailService || "SMTP"}

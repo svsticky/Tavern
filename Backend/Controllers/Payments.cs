@@ -98,7 +98,7 @@ namespace Backend.Controllers
 
         // POST: payments/membership
         /// <summary>
-        /// Initiates a new membership payment process. The PostMembershipPayment endpoint receives the PostMembershipPaymentDTO to trigger the creation of a payment intent. This usually involves communicating with an external payment gateway to generate a checkout URL, allowing the user to securely complete their membership purchase.
+        /// Initiates a new membership payment process. The PostMembershipPayment endpoint receives the PostMembershipPaymentDTO to trigger the creation of a payment intent. This usually involves communicating with an external payment gateway to generate a checkout URL, allowing the user to securely complete their membership purchase. Board members may instead set ManuallyMarkedAsPaid to record the payment directly, e.g. when a member paid in cash.
         /// </summary>
         /// <param name="dto">The data transfer object containing membership payment details.</param>
         /// <returns>A response containing the payment status and potential checkout URL.</returns>
@@ -114,7 +114,11 @@ namespace Backend.Controllers
             PostMembershipPaymentDTO dto
         )
         {
-            var result = await paymentService.CreateMembershipPayment(dto);
+            Guid? userId = User.Identity?.IsAuthenticated == true
+                ? Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value)
+                : null;
+
+            var result = await paymentService.CreateMembershipPayment(dto, userId);
             return Ok(result);
         }
 
@@ -137,6 +141,28 @@ namespace Backend.Controllers
         {
             var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
             var result = await paymentService.CreateActivityPayment(dto, userId);
+            return Ok(result);
+        }
+
+        // POST: payments/begunstiger
+        /// <summary>
+        /// Initiates a "Begunstiger" (benefactor) fee payment. Unlike the regular membership payment, this is only allowed for a logged-in member who is themselves flagged as a begunstiger (self-pay), or for a board member creating/marking it on the begunstiger's behalf, e.g. via ManuallyMarkedAsPaid.
+        /// </summary>
+        /// <param name="dto">The data transfer object containing begunstiger payment details.</param>
+        /// <returns>A response containing the payment status and potential checkout URL.</returns>
+        [HttpPost("begunstiger")]
+        [Consumes("application/json")]
+        [Produces("application/json")]
+        [ProducesResponseType(typeof(PostPaymentResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+        public async Task<ActionResult<PostPaymentResponse>> PostBegunstigerPayment(
+            PostBegunstigerPaymentDTO dto
+        )
+        {
+            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
+            var result = await paymentService.CreateBegunstigerPayment(dto, userId);
             return Ok(result);
         }
 

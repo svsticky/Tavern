@@ -11,8 +11,10 @@ namespace Backend.Database;
 /// The DatabaseSeeder class is responsible for seeding the database with initial data and ensuring that certain essential settings and groups exist when the application starts. It implements the IHostedService interface, allowing it to run as a background service during the application's startup process. The seeder checks for the existence of specific settings and groups, creating them if they do not already exist, and also ensures that a backup board account is created if there are no existing board members. This helps to ensure that the application has the necessary configuration and data in place for proper functionality from the moment it is launched.
 /// </summary>
 /// <param name="scopeFactory">The factory for creating service scopes.</param>
+/// <param name="logger">The logger used to surface otherwise-silent seeding failures.</param>
+/// <param name="environment">Used to only default local-dev-only settings (e.g. the Mailpit SMTP catcher) when actually running in the devcontainer, never in production.</param>
 [ExcludeFromCodeCoverage]
-public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
+public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseSeeder> logger, IHostEnvironment environment) : IHostedService
 {
     private const string _boardPrimaryLightDefault = "#f98f55";
     private const string _boardPrimaryDefault = "#fa6b20";
@@ -44,9 +46,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
         await EnsureSettingExists(db, "MailgunToken", "");
         await EnsureSettingExists(db, "MailgunPublicKey", "");
         await EnsureSettingExists(db, "MailgunApiBaseUrl", "");
-        await EnsureSettingExists(db, "SmtpHost", "");
-        await EnsureSettingExists(db, "SmtpPort", "587");
-        await EnsureSettingExists(db, "SmtpStartTls", "true");
+
+        bool useMailpit = environment.IsDevelopment();
+        await EnsureSettingExists(db, "SmtpHost", useMailpit ? "mailpit" : "");
+        await EnsureSettingExists(db, "SmtpPort", useMailpit ? "1025" : "587");
+        await EnsureSettingExists(db, "SmtpStartTls", useMailpit ? "false" : "true");
         await EnsureSettingExists(db, "SmtpUser", "");
         await EnsureSettingExists(db, "SmtpPass", "");
 
@@ -74,9 +78,19 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "MembershipVATCode", "0");
 
-        await EnsureSettingExists(db, "PaymentServiceVATCode", "21");
+        await EnsureSettingExists(db, "PaymentServiceFeeVATCode", "21");
 
         await EnsureSettingExists(db, "MembershipPrice", "7.50");
+
+        await EnsureSettingExists(db, "BegunstigerPrice", "10.00");
+
+        await EnsureSettingExists(db, "BegunstigerGLAccount", "");
+
+        await EnsureSettingExists(db, "BegunstigerCostCenter", "");
+
+        await EnsureSettingExists(db, "BegunstigerCostUnit", "");
+
+        await EnsureSettingExists(db, "BegunstigerVATCode", "0");
 
         await EnsureSettingExists(db, "MainBoardMail", "");
 
@@ -106,11 +120,13 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
 
         await EnsureSettingExists(db, "StudyStartDates", "09-01,02-01");
 
+        await EnsureSettingExists(db, "YearlyMailSendDate", "09-01");
+
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
 
         var createNewBoardService = scope.ServiceProvider.GetRequiredService<ICreateNewBoardService>();
 
-        await EnsureBoardAccountExists(db, authOutboxWorker, createNewBoardService);
+        await EnsureBoardAccountExists(db, authOutboxWorker, createNewBoardService, logger);
 
         await EnsureRegisterReasonsSeeded(db);
         await EnsureRegistrationDocumentsSeeded(db);
@@ -188,21 +204,85 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
     }
 
     /// <summary>
-    /// Ensures that a backup board account exists in the database. This method checks if there are any existing board members in the group specified by the "BoardGroupId" setting. If no board members are found, it creates a backup member with predefined details and adds them to the board group. This is a safety measure to ensure that there is always at least one member in the board group, providing a fallback option for administrative access in case all other board members are removed or become inactive. The method also handles the creation of a membership payment for the backup member and ensures that the database state remains consistent through the use of transactions.
+    /// Ensures that a backup board account exists in the database and stays in good repair. This method checks if there are any existing board members in the group specified by the "BoardGroupId" setting. If a backup member already exists (matched by the "BACKUP_ACCOUNT_EMAIL" env var) but is currently missing board rights for the current year or a study enrollment - e.g. because a board rotation or manual edit reset it, or because it was created before study enrollments were required - it is repaired in place rather than silently failing to re-create a duplicate. Only when no such member exists yet, and there are no other board members to fall back on, is a brand new backup member created with board rights, a study enrollment, and a paid membership. The method ensures the database state remains consistent through the use of transactions.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="authOutboxWorker">The authentication outbox worker.</param>
     /// <param name="createNewBoardService">The service for creating new board members.</param>
+    /// <param name="logger">The logger used to surface otherwise-silent seeding failures.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private static async Task EnsureBoardAccountExists(PostgresDbContext db, AuthOutboxWorker authOutboxWorker, ICreateNewBoardService createNewBoardService)
+    private static async Task EnsureBoardAccountExists(PostgresDbContext db, AuthOutboxWorker authOutboxWorker, ICreateNewBoardService createNewBoardService, ILogger<DatabaseSeeder> logger)
     {
         uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
-
+        string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
 
         using var transaction = await db.Database.BeginTransactionAsync();
         try
         {
             uint maxBoardYear = await db.GroupMemberships.Where(gm => gm.GroupId == boardGroupId).MaxAsync(gm => (uint?)gm.MembershipYear) ?? YearUtils.GetYearForDate(DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+
+            var existingBackupMember = !string.IsNullOrEmpty(backupEmail)
+                ? await db.Members.FirstOrDefaultAsync(m => m.Email == backupEmail)
+                : null;
+
+            if (!string.IsNullOrEmpty(backupEmail) && existingBackupMember == null)
+            {
+                logger.LogInformation("BACKUP_ACCOUNT_EMAIL is set to {BackupEmail} but no member with that email exists yet - it will be created if there are no other board members.", backupEmail);
+            }
+
+            if (existingBackupMember != null)
+            {
+                // The backup account already exists - repair it in place instead of trying to insert
+                // a duplicate (which would fail on the unique email index and silently roll back,
+                // leaving it without board rights or a study forever).
+                bool addedGroupMembership = false;
+
+                bool isCurrentBoardMember = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MemberId == existingBackupMember.Id && gm.MembershipYear == maxBoardYear);
+                if (!isCurrentBoardMember)
+                {
+                    db.GroupMemberships.Add(new GroupMembership
+                    {
+                        GroupId = boardGroupId,
+                        MemberId = existingBackupMember.Id,
+                        RoleAliasId = null,
+                        MembershipYear = maxBoardYear
+                    });
+                    authOutboxWorker.EnqueueTask(AuthTaskType.Sync, existingBackupMember.Id, db);
+                    addedGroupMembership = true;
+                }
+
+                bool hasStudy = await db.StudyEnrollments.AnyAsync(se => se.MemberId == existingBackupMember.Id);
+                if (!hasStudy)
+                {
+                    var backupStudy = await EnsureBackupStudyExists(db);
+                    db.StudyEnrollments.Add(new StudyEnrollment
+                    {
+                        MemberId = existingBackupMember.Id,
+                        Study = backupStudy,
+                        EnrollmentDate = DateTimeOffset.UtcNow,
+                        Status = StudyStatus.Enrolled
+                    });
+                }
+
+                if (addedGroupMembership || !hasStudy)
+                {
+                    logger.LogInformation("Repairing backup board account {BackupEmail}: addedGroupMembership={AddedGroupMembership}, addedStudyEnrollment={AddedStudyEnrollment}.", backupEmail, addedGroupMembership, !hasStudy);
+                }
+
+                await db.SaveChangesAsync();
+
+                if (addedGroupMembership)
+                {
+                    await db.Database.ExecuteSqlRawAsync($@"
+                        SELECT setval(pg_get_serial_sequence('""GroupMemberships""', 'Id'),
+                        COALESCE((SELECT MAX(""Id"") FROM ""GroupMemberships""), 1));
+                    ");
+                }
+
+                await transaction.CommitAsync();
+                return;
+            }
+
             bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == maxBoardYear);
             if (!hasBoardMembers)
             {
@@ -214,8 +294,6 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     await createNewBoardService.PromoteCandidateBoardToBoardAsync();
                     return;
                 }
-
-                string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
 
                 if (string.IsNullOrEmpty(backupEmail))
                 {
@@ -246,6 +324,18 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                     MembershipYear = maxBoardYear
                 });
 
+                // The paywall only allows paying membership - and therefore only grants access -
+                // to members who are a begunstiger or have (had) a study enrollment. Give the backup
+                // account a study enrollment too, so it isn't locked out of the app it needs to administer.
+                var backupStudy = await EnsureBackupStudyExists(db);
+                db.StudyEnrollments.Add(new StudyEnrollment
+                {
+                    MemberId = backupMember.Id,
+                    Study = backupStudy,
+                    EnrollmentDate = DateTimeOffset.UtcNow,
+                    Status = StudyStatus.Enrolled
+                });
+
                 authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id, db);
 
                 db.MembershipPayments.Add(new MembershipPayment
@@ -261,17 +351,42 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory) : IHostedService
                 await db.SaveChangesAsync();
 
                 await db.Database.ExecuteSqlRawAsync($@"
-                    SELECT setval(pg_get_serial_sequence('""GroupMemberships""', 'Id'), 
+                    SELECT setval(pg_get_serial_sequence('""GroupMemberships""', 'Id'),
                     COALESCE((SELECT MAX(""Id"") FROM ""GroupMemberships""), 1));
                 ");
 
                 await transaction.CommitAsync();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Failed to ensure the backup board account exists/is repaired.");
             await transaction.RollbackAsync();
         }
+    }
+
+    /// <summary>
+    /// Ensures a placeholder study exists for enrolling the backup board account into, so it satisfies
+    /// the "has (had) a study" requirement for paying membership without representing a real study program.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <returns>The existing or newly created placeholder study.</returns>
+    private static async Task<Study> EnsureBackupStudyExists(PostgresDbContext db)
+    {
+        var study = await db.Studies.FirstOrDefaultAsync(s => s.Title == "Backup");
+        if (study != null)
+        {
+            return study;
+        }
+
+        study = new Study
+        {
+            Title = "Backup",
+            NominalDurationYears = 3,
+            Type = StudyType.Bachelor
+        };
+        db.Studies.Add(study);
+        return study;
     }
 
     private static async Task EnsureRegisterReasonsSeeded(PostgresDbContext db)

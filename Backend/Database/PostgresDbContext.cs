@@ -45,6 +45,8 @@ public class PostgresDbContext : DbContext
     public DbSet<EnrollmentPayment> EnrollmentPayments { get; set; }
     /// <summary>Reference to the Payment Service Fee Payments relational table. </summary>
     public DbSet<PaymentServiceFeePayment> PaymentServiceFeePayments { get; set; }
+    /// <summary>Reference to the Begunstiger Payments relational table. </summary>
+    public DbSet<BegunstigerPayment> BegunstigerPayments { get; set; }
     /// <summary>Reference to the Settings relational table. </summary>
     public DbSet<Setting> Settings { get; set; }
     /// <summary>Reference to the MailSubscriptionOutboxTasks relational table. </summary>
@@ -100,6 +102,16 @@ public class PostgresDbContext : DbContext
             entity.HasOne(p => p.Activity)
                 .WithMany()
                 .HasForeignKey(p => p.ActivityId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<BegunstigerPayment>(entity =>
+        {
+            entity.ToTable("BegunstigerPayments");
+
+            entity.HasOne(p => p.Member)
+                .WithMany()
+                .HasForeignKey(p => p.MemberId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
 

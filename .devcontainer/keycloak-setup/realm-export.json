@@ -1739,10 +1739,10 @@
   },
   "smtpServer": {
     "replyToDisplayName": "",
-    "starttls": "true",
+    "starttls": "false",
     "auth": "",
-    "port": "587",
-    "host": "smtp-relay.gmail.com",
+    "port": "1025",
+    "host": "mailpit",
     "replyTo": "",
     "from": "bestuur@svsticky.nl",
     "fromDisplayName": "Studievereniging Sticky",

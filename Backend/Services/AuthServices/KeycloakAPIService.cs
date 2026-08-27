@@ -226,6 +226,19 @@ public class KeycloakAPIService(
         }
     }
 
+    /// <summary>
+    /// Determines whether a member currently counts as having paid, for the purposes of the Keycloak
+    /// access_level attribute. Begunstigers pay their own separate fee (checked against the last board
+    /// rotation) instead of the regular membership fee, so this mirrors PaymentService.GetMemberPaymentStatus's
+    /// branching rather than calling HasPaidMembershipPaymentBeforeExpirationTime directly.
+    /// </summary>
+    private bool HasPaidMembership(Member member)
+    {
+        return member.Begunstiger
+            ? paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id)
+            : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
+    }
+
     private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
     {
         var boardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
@@ -249,7 +262,7 @@ public class KeycloakAPIService(
             emailVerified = emailVerified,
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
-                { "access_level", new List<string> { member.Suspended ? "suspended" : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id) ? "full" : "not_paid" } },
+                { "access_level", new List<string> { member.Suspended ? "suspended" : HasPaidMembership(member) ? "full" : "not_paid" } },
                 { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } },

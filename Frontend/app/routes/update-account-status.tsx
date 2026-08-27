@@ -30,7 +30,7 @@ import {
   fetchYearlyMailinglists,
   handleSaveYearlyMailinglists,
   handleYearlyMailinglistToggle,
-} from "./update-studies.handlers";
+} from "./update-account-status.handlers";
 
 /**
  * Page to update your study. You can only update studies where you have been enrolled
@@ -39,7 +39,7 @@ import {
  * @page
  * @component
  */
-export default function UpdateStudies() {
+export default function UpdateAccountStatus() {
   const authService = useAuth();
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
@@ -254,9 +254,14 @@ export default function UpdateStudies() {
     },
   ];
 
+  // Members who have never had a study enrollment can't add one themselves anymore (the backend
+  // rejects it) - the yearly account-status mail instead offers them account deletion, so the
+  // add-enrollment controls only make sense once at least one enrollment already exists.
+  const canAddStudy = loading || enrollments.length > 0;
+
   return (
     <>
-      <PageHeader title={t("update_study_progress")} />
+      <PageHeader title={t("update_account_status")} />
       <div className="flex flex-col gap-6 p-4">
         <BorderedTile>
           <DataTableTile
@@ -265,55 +270,57 @@ export default function UpdateStudies() {
             emptyText={t("no_enrollments_found")}
           />
 
-          <div className="flex flex-col sm:flex-row items-end gap-4 w-full mt-6 pt-4 border-t border-slate-200">
-            <div className="flex-1 w-full">
-              <Select
-                label={t("add_study_enrollment")}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setSelectedStudyId(parseInt(e.target.value, 10));
-                  } else {
-                    setSelectedStudyId("");
-                  }
-                }}
-                defaultValue=""
-                options={[
-                  { value: "", label: `${t("select_a_study")}...` },
-                  ...studies.map((study) => ({
-                    value: study.id!.toString(),
-                    label: study.title,
-                  })),
-                ]}
-              />
-            </div>
+          {canAddStudy && (
+            <div className="flex flex-col sm:flex-row items-end gap-4 w-full mt-6 pt-4 border-t border-slate-200">
+              <div className="flex-1 w-full">
+                <Select
+                  label={t("add_study_enrollment")}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setSelectedStudyId(parseInt(e.target.value, 10));
+                    } else {
+                      setSelectedStudyId("");
+                    }
+                  }}
+                  defaultValue=""
+                  options={[
+                    { value: "", label: `${t("select_a_study")}...` },
+                    ...studies.map((study) => ({
+                      value: study.id!.toString(),
+                      label: study.title,
+                    })),
+                  ]}
+                />
+              </div>
 
-            <div className="w-full sm:w-56">
-              <Select
-                label={t("start_date")}
-                value={selectedStartDate}
-                onChange={(e) => setSelectedStartDate(e.target.value)}
-                options={startDateOptions}
-              />
-            </div>
+              <div className="w-full sm:w-56">
+                <Select
+                  label={t("start_date")}
+                  value={selectedStartDate}
+                  onChange={(e) => setSelectedStartDate(e.target.value)}
+                  options={startDateOptions}
+                />
+              </div>
 
-            <Button
-              variant="primary"
-              onClick={() =>
-                handleAddEnrollment(
-                  memberId ?? undefined,
-                  selectedStudyId,
-                  setLoading,
-                  setEnrollments,
-                  selectedStartDate,
-                )
-              }
-              disabled={!selectedStudyId || !selectedStartDate || loading}
-              className="h-[46px] whitespace-nowrap px-6"
-              type="button"
-            >
-              {t("add")}
-            </Button>
-          </div>
+              <Button
+                variant="primary"
+                onClick={() =>
+                  handleAddEnrollment(
+                    memberId ?? undefined,
+                    selectedStudyId,
+                    setLoading,
+                    setEnrollments,
+                    selectedStartDate,
+                  )
+                }
+                disabled={!selectedStudyId || !selectedStartDate || loading}
+                className="h-[46px] whitespace-nowrap px-6"
+                type="button"
+              >
+                {t("add")}
+              </Button>
+            </div>
+          )}
         </BorderedTile>
 
         {(mailingLists.length > 0 || loadingMailingLists) && (

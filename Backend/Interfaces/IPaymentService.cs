@@ -43,11 +43,12 @@ namespace Backend.Interfaces
         Task<EnrollmentPayment?> GetEnrollmentPayment(uint id, Guid userId, CancellationToken ct);
 
         /// <summary>
-        /// Creates a membership payment.
+        /// Creates a membership payment. When <see cref="AbstractPaymentDTO.ManuallyMarkedAsPaid"/> is set, <paramref name="userId"/> must belong to a board or candidate board member.
         /// </summary>
         /// <param name="dto">The membership payment payload.</param>
+        /// <param name="userId">The ID of the requesting user, if authenticated.</param>
         /// <returns>The created payment response.</returns>
-        Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto);
+        Task<PostPaymentResponse> CreateMembershipPayment(PostMembershipPaymentDTO dto, Guid? userId);
 
         /// <summary>
         /// Creates an activity payment.
@@ -56,6 +57,14 @@ namespace Backend.Interfaces
         /// <param name="userId">The ID of the paying user.</param>
         /// <returns>The created payment response.</returns>
         Task<PostPaymentResponse> CreateActivityPayment(PostActivityPaymentDTO dto, Guid userId);
+
+        /// <summary>
+        /// Creates a "Begunstiger" (benefactor) fee payment. Only allowed when <paramref name="userId"/> is the begunstiger themselves, or belongs to a board or candidate board member acting on their behalf.
+        /// </summary>
+        /// <param name="dto">The begunstiger payment payload.</param>
+        /// <param name="userId">The ID of the requesting user, if authenticated.</param>
+        /// <returns>The created payment response.</returns>
+        Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId);
 
         /// <summary>
         /// Retrieves unpaid enrollment balances.

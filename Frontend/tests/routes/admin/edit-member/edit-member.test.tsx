@@ -11,6 +11,8 @@ const {
   handleDeleteEnrollment,
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
+  handleMarkMembershipAsPaid,
+  handleMarkBegunstigerFeeAsPaid,
 } = vi.hoisted(() => ({
   loadMemberData: vi.fn(),
   handleSaveMember: vi.fn(),
@@ -18,6 +20,8 @@ const {
   handleDeleteEnrollment: vi.fn(),
   handleAddEnrollment: vi.fn(),
   handleUpdateEnrollmentStatus: vi.fn(),
+  handleMarkMembershipAsPaid: vi.fn(),
+  handleMarkBegunstigerFeeAsPaid: vi.fn(),
 }));
 
 vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
@@ -27,6 +31,8 @@ vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
   handleDeleteEnrollment,
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
+  handleMarkMembershipAsPaid,
+  handleMarkBegunstigerFeeAsPaid,
 }));
 
 // ChangeProfilePicture makes its own ~/api call (getMembersByIdProfilePicture) - it's not part
@@ -65,9 +71,15 @@ describe("EditMemberPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     loadMemberData.mockImplementation(
-      async ({ setFormData, setEnrollments, setLoading }: any) => {
+      async ({
+        setFormData,
+        setEnrollments,
+        setHasPaidMembership,
+        setLoading,
+      }: any) => {
         setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
         setEnrollments([enrollment()]);
+        setHasPaidMembership(false);
         setLoading(false);
       },
     );
@@ -159,6 +171,119 @@ describe("EditMemberPage", () => {
         screen.queryByText("are_you_sure_delete_member"),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it("opens the mark-membership-as-paid modal and confirms it", async () => {
+    renderPage();
+
+    const markPaidButton = await screen.findByRole("button", {
+      name: "mark_membership_as_paid",
+    });
+    fireEvent.click(markPaidButton);
+
+    expect(
+      await screen.findByText("are_you_sure_mark_membership_as_paid"),
+    ).toBeInTheDocument();
+
+    // Both the trigger button and the modal's confirm button share the label - the modal's is
+    // the one rendered later in the DOM once it opens.
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "mark_membership_as_paid",
+    });
+    expect(confirmButtons.length).toBeGreaterThan(1);
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+
+    expect(handleMarkMembershipAsPaid).toHaveBeenCalledWith(
+      "m1",
+      expect.any(Function),
+      expect.any(Function),
+    );
+    await waitFor(() =>
+      expect(
+        screen.queryByText("are_you_sure_mark_membership_as_paid"),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("shows the begunstiger-fee action instead of the membership one for a begunstiger", async () => {
+    loadMemberData.mockImplementation(
+      async ({
+        setFormData,
+        setEnrollments,
+        setHasPaidMembership,
+        setIsBegunstiger,
+        setLoading,
+      }: any) => {
+        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
+        setEnrollments([]);
+        setHasPaidMembership(false);
+        setIsBegunstiger(true);
+        setLoading(false);
+      },
+    );
+
+    renderPage();
+
+    const markPaidButton = await screen.findByRole("button", {
+      name: "mark_begunstiger_fee_as_paid",
+    });
+    expect(
+      screen.queryByRole("button", { name: "mark_membership_as_paid" }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(markPaidButton);
+
+    expect(
+      await screen.findByText("are_you_sure_mark_begunstiger_fee_as_paid"),
+    ).toBeInTheDocument();
+
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "mark_begunstiger_fee_as_paid",
+    });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+
+    expect(handleMarkBegunstigerFeeAsPaid).toHaveBeenCalledWith(
+      "m1",
+      expect.any(Function),
+      expect.any(Function),
+    );
+    expect(handleMarkMembershipAsPaid).not.toHaveBeenCalled();
+  });
+
+  it("hides the mark-membership-as-paid action once the membership is paid", async () => {
+    loadMemberData.mockImplementation(
+      async ({ setEnrollments, setHasPaidMembership, setLoading }: any) => {
+        setEnrollments([]);
+        setHasPaidMembership(true);
+        setLoading(false);
+      },
+    );
+
+    renderPage();
+
+    await screen.findByRole("button", { name: "save" });
+    expect(
+      screen.queryByRole("button", { name: "mark_membership_as_paid" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("closes the mark-membership-as-paid modal on cancel", async () => {
+    renderPage();
+
+    const markPaidButton = await screen.findByRole("button", {
+      name: "mark_membership_as_paid",
+    });
+    fireEvent.click(markPaidButton);
+
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
+    fireEvent.click(cancelButton);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("are_you_sure_mark_membership_as_paid"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(handleMarkMembershipAsPaid).not.toHaveBeenCalled();
   });
 
   it("deletes a study enrollment when remove is clicked", async () => {

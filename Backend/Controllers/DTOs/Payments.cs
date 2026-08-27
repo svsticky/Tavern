@@ -3,29 +3,40 @@ using Backend.Models.Domain;
 namespace Backend.Controllers.DTOs;
 
 /// <summary>
-/// Defines the DTO for posting a membership payment, containing the necessary information for creating a new membership payment, including the member ID. The PostMembershipPaymentDTO is used to transfer data from the client to the server when creating a new membership payment, ensuring that all required information is provided and validated appropriately for the creation process.
+/// Defines the abstract base class for payment DTOs, containing common properties for payment-related data transfer objects, including the member ID and a flag indicating whether the payment was manually marked as paid. The AbstractPaymentDTO serves as a foundation for specific payment DTOs, ensuring consistency and reusability of common payment-related properties across different payment operations within the application.
 /// </summary>
-public class PostMembershipPaymentDTO
+public abstract class AbstractPaymentDTO
 {
     /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
     public Guid MemberId { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.Payment.ManuallyMarkedAsPaid"/>
+    public bool ManuallyMarkedAsPaid { get; set; } = false;
 }
 
 /// <summary>
-/// Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, a list of activity IDs, and an optional flag indicating whether the payment was manually marked as paid. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process.
+/// Defines the DTO for posting a membership payment, containing the necessary information for creating a new membership payment, including the member ID and an optional flag indicating whether the payment was manually marked as paid. The PostMembershipPaymentDTO is used to transfer data from the client to the server when creating a new membership payment, ensuring that all required information is provided and validated appropriately for the creation process.
 /// </summary>
-public class PostActivityPaymentDTO
+public class PostMembershipPaymentDTO : AbstractPaymentDTO
 {
-    /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
-    public Guid MemberId { get; set; }
+}
 
+/// <summary>
+/// Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, an optional flag indicating whether the payment was manually marked as paid, and a list of unique identifiers of the activities for which the activity payment is being created. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload.
+/// </summary>
+public class PostActivityPaymentDTO : AbstractPaymentDTO
+{
     /// <summary>
     /// The list of unique identifiers of the activities for which the activity payment is being created. This field is required to associate the activity payment with the correct activities within the system, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload. The PostActivityPaymentDTO ensures that the activity payment is created with the necessary information to effectively manage and track activity payments for the specified activities, providing a structured and validated approach to activity payment creation in the application.
     /// </summary>
     public List<uint> ActivityIds { get; set; } = new();
+}
 
-    /// <inheritdoc cref="Models.Domain.Payment.ManuallyMarkedAsPaid"/>
-    public bool ManuallyMarkedAsPaid { get; set; } = false;
+/// <summary>
+/// Defines the DTO for posting a "Begunstiger" (benefactor) fee payment, containing the necessary information for creating a new begunstiger payment, including the member ID and an optional flag indicating whether the payment was manually marked as paid. This is a distinct payment type from PostMembershipPaymentDTO so that a begunstiger cannot pay the (cheaper) regular membership fee through the membership payment endpoint instead of their own fee.
+/// </summary>
+public class PostBegunstigerPaymentDTO : AbstractPaymentDTO
+{
 }
 
 /// <summary>
@@ -61,6 +72,16 @@ public class PaymentStatusResponse
     /// A boolean value indicating whether the member has paid for all activities. This field provides insight into the member's payment status for activities, allowing for the identification of members who have fulfilled their payment obligations for all enrolled activities. The PaymentStatusResponse includes this information to offer a comprehensive overview of the member's payment status for activities within the application, enabling effective management and tracking of activity payments and ensuring that members are aware of any outstanding payments for their enrolled activities.
     /// </summary>
     public required bool HasPaidAllActivities { get; set; }
+
+    /// <summary>
+    /// A boolean value indicating whether the member is currently flagged as a "Begunstiger" (benefactor). When <c>true</c>, <see cref="HasPaidMembershipBeforeExpirationTime"/> reflects the begunstiger fee status (paid since the last board rotation) instead of the regular membership expiration window, and payments for this member must go through the begunstiger payment endpoint rather than the membership one.
+    /// </summary>
+    public required bool IsBegunstiger { get; set; }
+
+    /// <summary>
+    /// A boolean value indicating whether the member is eligible to pay for membership at all, i.e. whether they are a begunstiger or have ever been enrolled in a study. Members who are neither must not be offered a membership payment.
+    /// </summary>
+    public required bool CanPayMembership { get; set; }
 
     /// <summary>
     /// A list of unpaid enrollments for the member. This field provides detailed information about any enrollments for which the member has not yet made a payment, allowing for the identification of specific activities or memberships that require attention. The PaymentStatusResponse includes this information to offer a comprehensive overview of the member's outstanding payments, enabling effective management and tracking of unpaid enrollments and ensuring that members are aware of any pending payments for their enrolled activities or memberships within the application.

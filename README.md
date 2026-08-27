@@ -29,6 +29,7 @@ To replicate the production environment perfectly, the local development setup o
 * **Frontend:** React SPA built with Vite
 * **Identity Provider:** Keycloak 26.1 (with custom themes/plugins)
 * **Object Storage:** LocalStack 3.0 (mocking AWS S3)
+* **Mail Catcher:** Mailpit (catches both Keycloak's activation/verification/reset emails and Tavern's own outgoing mail locally, no real mail provider needed)
 * **Expose Tunneling:** Ngrok (for local webhook testing)
 * **Background Processing:** Hangfire with PostgreSQL storage
 
@@ -88,7 +89,7 @@ Configure these variables in your `.env` to enable specific features locally or 
 ### 3. Launch the Devcontainer
 * Open the project directory in VS Code or JetBrains Rider.
 * When prompted, select **"Reopen in Container"** (or press `Ctrl+Shift+P` -> type `Dev Containers: Reopen in Container`).
-* Docker Compose will automatically spin up all services (`db`, `localstack`, `keycloak`, and `ngrok`).
+* Docker Compose will automatically spin up all services (`db`, `localstack`, `keycloak`, `mailpit`, and `ngrok`).
 
 ### 4. Start the Application
 Once the devcontainer is running, follow these steps to start the application and configure the default local user:
@@ -100,14 +101,18 @@ dotnet run --project Backend
 ```
 
 #### Step B: Configure the Local Keycloak User
-As keycloak in the devcontainer isn't connected to a mailing service, you can't verify the email and set a password. To log in with the newly created user, you need to set their password and verify their email address in Keycloak:
-1. Open the local Keycloak Admin console at [http://localhost:8082](http://localhost:8082).
-2. Log in with the admin credentials:
-   - **Username**: `admin`
-   - **Password**: `admin`
-3. Navigate to **Users** in the sidebar, search for the user matching your configured `BACKUP_ACCOUNT_EMAIL`, and click on their username.
-4. Go to the **Credentials** tab, click **Reset password**, enter your desired password, and toggle **Temporary** to **Off**.
-5. Go to the **Details** tab, toggle **Email Verified** to **On**, and save the changes.
+Keycloak's realm in the devcontainer is configured to send its activation/verification/reset emails through **Mailpit** instead of a real mail provider, so you can either go through the real email flow or just set the user up directly:
+
+* **Option 1 - via email (closer to production):**
+  1. Open the local Keycloak Admin console at [http://localhost:8082](http://localhost:8082) and log in with `admin` / `admin`.
+  2. Navigate to **Users**, search for the user matching your configured `BACKUP_ACCOUNT_EMAIL`, and open it.
+  3. Use Keycloak's **Send verification email** / **Send password reset** actions on the user.
+  4. Open Mailpit at [http://localhost:8025](http://localhost:8025) to view the email and click the link to verify the address and set a password.
+* **Option 2 - directly in Keycloak (quicker):**
+  1. Open the local Keycloak Admin console at [http://localhost:8082](http://localhost:8082) and log in with `admin` / `admin`.
+  2. Navigate to **Users**, search for the user matching your configured `BACKUP_ACCOUNT_EMAIL`, and click on their username.
+  3. Go to the **Credentials** tab, click **Reset password**, enter your desired password, and toggle **Temporary** to **Off**.
+  4. Go to the **Details** tab, toggle **Email Verified** to **On**, and save the changes.
 
 #### Step C: Run the Frontend
 With the backend running and the local user configured, open a new terminal in the container and start the React dev server:
@@ -129,6 +134,7 @@ Once the devcontainer is running, the following services are mapped locally:
 | **Frontend (React Server)** | [http://localhost:5173](http://localhost:5173) | Development dev server |
 | **Backend API** | [http://localhost:8080](http://localhost:8080) | Swagger documentation at `/swagger` |
 | **Keycloak Admin** | [http://localhost:8082](http://localhost:8082) | Credentials: `admin` / `admin` |
+| **Mailpit** | [http://localhost:8025](http://localhost:8025) | Inbox for Keycloak's and Tavern's outgoing emails |
 | **Ngrok Dashboard** | [http://localhost:4040](http://localhost:4040) | Check active public tunnels |
 
 ---

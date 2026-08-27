@@ -31,6 +31,16 @@ services:
     networks:
       - tavern-net
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: tavern-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - tavern-net
+
   localstack:
     image: localstack/localstack:3.0
     container_name: tavern-localstack
@@ -91,6 +101,7 @@ services:
       - tavern-net
     depends_on:
       - db
+      - mailpit
 volumes:
   postgres-data:
 

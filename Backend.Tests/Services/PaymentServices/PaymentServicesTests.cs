@@ -226,4 +226,62 @@ public class PaymentServicesTests : IDisposable
         Assert.Contains(accountingTasks, t => t.PaymentId == 1 && t.TaskType == AccountingToolTaskType.MembershipPayment);
         Assert.Contains(accountingTasks, t => t.PaymentId == 2 && t.TaskType == AccountingToolTaskType.EnrollmentPayment);
     }
+
+    [Fact]
+    public async Task HandleWebhookAsync_BegunstigerPayment_ProcessesSuccessfullyWithAuthAndAccountingSync()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+        await _db.SaveChangesAsync();
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Bea",
+            LastName = "Vermeer",
+            Email = "bea@example.com",
+            StudentNumber = "s10",
+            PhoneNumber = "10",
+            Street = "St",
+            HouseNumber = "10",
+            PostalCode = "10",
+            City = "Enschede",
+            Begunstiger = true,
+            AuthSystemUserId = Guid.NewGuid()
+        };
+
+        var begunstigerPayment = new BegunstigerPayment
+        {
+            Id = 3,
+            PaymentServiceId = "tr_paid_begunstiger",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+
+        _db.Members.Add(member);
+        _db.BegunstigerPayments.Add(begunstigerPayment);
+        await _db.SaveChangesAsync();
+
+        var paidTime = DateTimeOffset.UtcNow;
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_paid_begunstiger", "paid", paidTime);
+        _mollieClientMock.GetPaymentAsync("tr_paid_begunstiger").Returns(mockPaymentResponse);
+
+        var serviceWithAccounting = new MollieService(_db, NullLogger<MollieService>.Instance, () => _mollieClientMock);
+
+        // Act
+        await serviceWithAccounting.HandleWebhookAsync("tr_paid_begunstiger");
+
+        // Assert
+        var updatedBegunstigerPayment = await _db.BegunstigerPayments.FirstAsync(p => p.Id == 3);
+        Assert.NotNull(updatedBegunstigerPayment.PaidAt);
+
+        var authTask = await _db.AuthOutboxTasks.SingleAsync();
+        Assert.Equal(AuthTaskType.Sync, authTask.TaskType);
+        Assert.Equal(member.AuthSystemUserId, authTask.AuthSystemUserId);
+
+        var accountingTask = await _db.AccountingToolOutboxTasks.SingleAsync();
+        Assert.Equal(3u, accountingTask.PaymentId);
+        Assert.Equal(AccountingToolTaskType.BegunstigerPayment, accountingTask.TaskType);
+    }
 }

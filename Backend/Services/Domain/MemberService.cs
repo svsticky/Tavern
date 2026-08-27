@@ -431,9 +431,6 @@ namespace Backend.Services.Domain
             if (existingMember == null)
                 return;
 
-            if (existingMember.Begunstiger)
-                throw new InvalidOperationException("Existing member with same email address found.");
-
             if ((await db.Settings.FindAsync("MastersShouldPayMembership"))?.Value != "1" && existingMember.StudyEnrollments.Any(se => se.Study.Type == StudyType.Master))
                 throw new InvalidOperationException("Existing member with same email address found.");
 
@@ -450,28 +447,36 @@ namespace Backend.Services.Domain
             if (existingMember.Enrollments.Any())
                 throw new InvalidOperationException("Existing member with same email address found.");
 
-            var existingPayment = await db.MembershipPayments
-                .Where(p => p.MemberId == existingMember.Id)
-                .FirstOrDefaultAsync(ct);
+            if (paymentValidationService.HasEverPaidMembershipPayment(existingMember.Id) || paymentValidationService.HasEverPaidBegunstigerFee(existingMember.Id))
+                throw new InvalidOperationException("Existing member with same email address found.");
 
-            if (existingPayment != null)
+            var existingMembershipPayments = await db.MembershipPayments
+                .Where(p => p.MemberId == existingMember.Id)
+                .ToListAsync(ct);
+
+            var existingBegunstigerPayments = await db.BegunstigerPayments
+                .Where(p => p.MemberId == existingMember.Id)
+                .ToListAsync(ct);
+
+            foreach (var existingPayment in existingMembershipPayments.Cast<Payment>().Concat(existingBegunstigerPayments))
             {
                 var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
 
-                // Make sure there is no paid membership with the same email, if there is, we don't want to delete the member
+                // Make sure there is no paid membership/begunstiger payment with the same email, if there is, we don't want to delete the member
                 if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     throw new InvalidOperationException("Existing member with same email address found.");
                 }
 
-                // If there is a pending payment, we cancel it to prevent the member from paying for a membership they won't get
+                // If there is a pending payment, we cancel it to prevent the member from paying for a membership/fee they won't get
                 if (paymentResponse.Status == PaymentStatus.Pending)
                 {
                     await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
                 }
-
-                db.MembershipPayments.Remove(existingPayment);
             }
+
+            db.MembershipPayments.RemoveRange(existingMembershipPayments);
+            db.BegunstigerPayments.RemoveRange(existingBegunstigerPayments);
 
             db.Members.Remove(existingMember);
             authOutboxWorker.EnqueueTask(

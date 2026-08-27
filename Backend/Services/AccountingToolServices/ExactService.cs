@@ -73,12 +73,28 @@ namespace Backend.Services.AccountingToolServices
             {
                 EntryDate = DateTime.UtcNow,
                 Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} payment {payment.PaymentServiceId}",
-                YourRef = $"{(payment is EnrollmentPayment ? "Enrollment payment" : "Membership payment")}-{payment.Id}",
+                YourRef = $"{GetYourRefPrefix(payment)}-{payment.Id}",
 
                 SalesEntryLines = new[]
                 {
                     BuildLine(payment)
                 }
+            };
+        }
+
+        /// <summary>
+        /// Labels the sales entry's YourRef by payment type, so entries for different payment types
+        /// (and the lookup in FindExistingSalesEntryId) don't get ambiguously grouped together.
+        /// </summary>
+        private static string GetYourRefPrefix(Payment payment)
+        {
+            return payment switch
+            {
+                EnrollmentPayment => "Enrollment payment",
+                MembershipPayment => "Membership payment",
+                PaymentServiceFeePayment => "Payment service fee payment",
+                BegunstigerPayment => "Begunstiger payment",
+                _ => throw new Exception("Unsupported payment type")
             };
         }
 
@@ -89,6 +105,7 @@ namespace Backend.Services.AccountingToolServices
                 EnrollmentPayment ep => BuildEnrollmentLine(ep),
                 MembershipPayment mp => BuildMembershipLine(mp),
                 PaymentServiceFeePayment mfp => BuildPaymentFeeLine(mfp),
+                BegunstigerPayment bp => BuildBegunstigerLine(bp),
                 _ => throw new Exception("Unsupported payment type")
             };
         }
@@ -112,7 +129,7 @@ namespace Backend.Services.AccountingToolServices
             {
                 GLAccount = _db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = "Lidmaatschap",
-                VATCode = "0",
+                VATCode = _db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0",
                 AmountDC = payment.Price
             };
         }
@@ -124,7 +141,20 @@ namespace Backend.Services.AccountingToolServices
             {
                 GLAccount = _db.Settings.Where(s => s.Name == "PaymentServiceFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} fee",
-                VATCode = "0",
+                VATCode = _db.Settings.Where(s => s.Name == "PaymentServiceFeeVATCode").Select(s => s.Value).FirstOrDefault() ?? "21",
+                AmountDC = payment.Price
+            };
+        }
+
+        private object BuildBegunstigerLine(BegunstigerPayment payment)
+        {
+            return new
+            {
+                GLAccount = _db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault(),
+                Description = "Begunstiger",
+                VATCode = _db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0",
+                CostCenter = _db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault(),
+                CostUnit = _db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault(),
                 AmountDC = payment.Price
             };
         }
@@ -144,7 +174,7 @@ namespace Backend.Services.AccountingToolServices
         {
             var division = Division;
 
-            var yourRef = $"{(payment is EnrollmentPayment ? "Enrollment payment" : "Membership payment")}-{payment.Id}";
+            var yourRef = $"{GetYourRefPrefix(payment)}-{payment.Id}";
 
             var url = $"{division}/salesentry/SalesEntries?$filter=YourRef eq '{yourRef}'";
 

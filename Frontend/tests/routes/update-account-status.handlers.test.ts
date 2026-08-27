@@ -4,7 +4,7 @@ import {
   fetchYearlyMailinglists,
   handleSaveYearlyMailinglists,
   handleYearlyMailinglistToggle,
-} from "~/routes/update-studies.handlers";
+} from "~/routes/update-account-status.handlers";
 
 const { getMembersByIdMailinglists, putMembersByIdMailinglists } = vi.hoisted(
   () => ({

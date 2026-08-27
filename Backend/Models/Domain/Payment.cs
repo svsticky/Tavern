@@ -98,3 +98,11 @@ public class PaymentServiceFeePayment : Payment
 {
 
 }
+
+/// <summary>
+/// Represents a payment made for a "Begunstiger" (benefactor) fee. This class inherits from the Payment base class and does not add any additional properties, as all relevant information is already captured in the base Payment class. Begunstiger payments are a distinct payment type from membership payments so that a begunstiger cannot pay the (cheaper) regular membership fee through the membership payment endpoint instead of their own fee, and because the fee is due again every board term rather than following the regular membership expiration window.
+/// </summary>
+public class BegunstigerPayment : Payment
+{
+
+}

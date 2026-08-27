@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
@@ -20,6 +21,8 @@ import {
   handleAddEnrollment,
   handleDeleteEnrollment,
   handleDeleteMember,
+  handleMarkBegunstigerFeeAsPaid,
+  handleMarkMembershipAsPaid,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
   loadMemberData,
@@ -49,6 +52,10 @@ export default function EditMemberPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isMarkPaidModalOpen, setIsMarkPaidModalOpen] = useState(false);
+  const [markingPaid, setMarkingPaid] = useState(false);
+  const [hasPaidMembership, setHasPaidMembership] = useState(true);
+  const [isBegunstiger, setIsBegunstiger] = useState(false);
   const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
     null,
   );
@@ -143,6 +150,8 @@ export default function EditMemberPage() {
       setEnrollments,
       setAvailableStudies,
       setProfilePictureSrc,
+      setHasPaidMembership,
+      setIsBegunstiger,
       setLoading,
     });
     return () => {
@@ -300,7 +309,76 @@ export default function EditMemberPage() {
                 }
               />
             </Tile>
+            {!hasPaidMembership && (
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <CircleAlert className="w-5 h-5 shrink-0" />
+                  <span className="text-sm font-medium">
+                    {isBegunstiger
+                      ? t("begunstiger_fee_unpaid")
+                      : t("membership_fee_unpaid")}
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="border-amber-300 text-amber-800 hover:bg-amber-100 whitespace-nowrap"
+                  onClick={() => setIsMarkPaidModalOpen(true)}
+                  disabled={markingPaid}
+                >
+                  {isBegunstiger
+                    ? t("mark_begunstiger_fee_as_paid")
+                    : t("mark_membership_as_paid")}
+                </Button>
+              </div>
+            )}
           </section>
+
+          <Modal
+            isOpen={isMarkPaidModalOpen}
+            onClose={() => setIsMarkPaidModalOpen(false)}
+            title={
+              isBegunstiger
+                ? t("mark_begunstiger_fee_as_paid")
+                : t("mark_membership_as_paid")
+            }
+          >
+            <div className="flex flex-col gap-4">
+              <p className="text-slate-700">
+                {isBegunstiger
+                  ? t("are_you_sure_mark_begunstiger_fee_as_paid")
+                  : t("are_you_sure_mark_membership_as_paid")}
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsMarkPaidModalOpen(false)}
+                  disabled={markingPaid}
+                >
+                  {t("cancel")}
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    const markAsPaid = isBegunstiger
+                      ? handleMarkBegunstigerFeeAsPaid
+                      : handleMarkMembershipAsPaid;
+                    markAsPaid(memberId, setMarkingPaid, () =>
+                      setHasPaidMembership(true),
+                    );
+                    setIsMarkPaidModalOpen(false);
+                  }}
+                  disabled={markingPaid}
+                >
+                  {markingPaid
+                    ? t("marking_as_paid")
+                    : isBegunstiger
+                      ? t("mark_begunstiger_fee_as_paid")
+                      : t("mark_membership_as_paid")}
+                </Button>
+              </div>
+            </div>
+          </Modal>
 
           {/* Notities (Admin Only) */}
           <section>
