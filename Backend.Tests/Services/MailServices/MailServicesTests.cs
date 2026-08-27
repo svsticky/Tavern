@@ -191,6 +191,106 @@ public class MailServicesTests : IDisposable
     }
 
     [Fact]
+    public async Task SendEnrollmentPromotionEmail_SenderNotConfigured_SkipsSend()
+    {
+        // Arrange - no "ActivityUpdateEmailSender" setting
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Alice",
+            LastName = "Doe",
+            Email = "alice@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s1",
+            PhoneNumber = "1",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "Enschede"
+        };
+        var activity = new Activity
+        {
+            Id = 1,
+            Name = "Fancy Event",
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Enschede",
+            AllowedAudience = TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+        var enrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = member.Id,
+            Price = 0,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = member,
+            Activity = activity
+        };
+
+        // Act
+        await mailService.SendEnrollmentPromotionEmail(enrollment);
+
+        // Assert
+        Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
+    public async Task SendEnrollmentPromotionEmail_UnsupportedLanguage_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "ActivityUpdateEmailSender", Value = "sender@example.com" });
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Alice",
+            LastName = "Doe",
+            Email = "alice@example.com",
+            PreferredLanguage = (Language)99,
+            StudentNumber = "s1",
+            PhoneNumber = "1",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "Enschede"
+        };
+        var activity = new Activity
+        {
+            Id = 1,
+            Name = "Fancy Event",
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Enschede",
+            AllowedAudience = TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+        var enrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = member.Id,
+            Price = 0,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = member,
+            Activity = activity
+        };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendEnrollmentPromotionEmail(enrollment));
+    }
+
+    [Fact]
     public async Task SendOutstandingPaymentMails_Success_SendsEmails()
     {
         // Arrange
@@ -252,6 +352,76 @@ public class MailServicesTests : IDisposable
         Assert.Equal("Outstanding payments for activities", mailService.LastSubject);
         Assert.Contains("Dear Alice", mailService.LastHtmlContent);
         Assert.Contains("Fancy Event: €10", mailService.LastHtmlContent);
+    }
+
+    [Fact]
+    public async Task SendOutstandingPaymentMails_SenderNotConfigured_SkipsSend()
+    {
+        // Arrange - no "FinancialEmailSender" setting
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+        _paymentMock.GetAllUnpaidEnrollments().Returns(new List<EnrollmentBalance>());
+
+        // Act
+        await mailService.SendOutstandingPaymentMails();
+
+        // Assert
+        Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
+    public async Task SendOutstandingPaymentMails_UnsupportedLanguage_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "FinancialEmailSender", Value = "finance@example.com" });
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Alice",
+            LastName = "Doe",
+            Email = "alice@example.com",
+            PreferredLanguage = (Language)99,
+            StudentNumber = "s1",
+            PhoneNumber = "1",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "Enschede"
+        };
+        var activity = new Activity
+        {
+            Id = 1,
+            Name = "Fancy Event",
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Enschede",
+            AllowedAudience = TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+        var enrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = member.Id,
+            Price = 10,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = member,
+            Activity = activity
+        };
+
+        var balances = new List<EnrollmentBalance>
+        {
+            new EnrollmentBalance { Enrollment = enrollment, Balance = 10 }
+        };
+        _paymentMock.GetAllUnpaidEnrollments().Returns(balances);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendOutstandingPaymentMails());
     }
 
     [Fact]
@@ -349,6 +519,86 @@ public class MailServicesTests : IDisposable
     }
 
     [Fact]
+    public async Task SendStudyStatusUpdateMails_NoStudyHistory_UnsupportedLanguage_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Carl",
+            LastName = "Wheezer",
+            Email = "carl@example.com",
+            PreferredLanguage = (Language)99,
+            Begunstiger = false,
+            StudentNumber = "s3",
+            PhoneNumber = "3",
+            Street = "Retroville",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Retroville"
+        };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendStudyStatusUpdateMails());
+    }
+
+    [Fact]
+    public async Task SendStudyStatusUpdateMails_OutstandingDuration_UnsupportedLanguage_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Erin",
+            LastName = "Hanson",
+            Email = "erin@example.com",
+            PreferredLanguage = (Language)99,
+            StudentNumber = "s5",
+            PhoneNumber = "5",
+            Street = "Main St",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Enschede"
+        };
+
+        var study = new Study
+        {
+            Id = 1,
+            Title = "Computer Science",
+            NominalDurationYears = 3
+        };
+
+        var studyEnrollment = new StudyEnrollment
+        {
+            Id = 1,
+            MemberId = member.Id,
+            StudyId = 1,
+            EnrollmentDate = DateTime.Now.AddYears(-4),
+            Status = StudyStatus.Enrolled,
+            Study = study
+        };
+
+        member.StudyEnrollments = new List<StudyEnrollment> { studyEnrollment };
+        _db.Members.Add(member);
+        _db.Studies.Add(study);
+        _db.StudyEnrollments.Add(studyEnrollment);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendStudyStatusUpdateMails());
+    }
+
+    [Fact]
     public async Task SendStudyStatusUpdateMails_BegunstigerWithNoStudyHistory_DoesNotSendMail()
     {
         // Arrange
@@ -379,6 +629,93 @@ public class MailServicesTests : IDisposable
 
         // Assert
         Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
+    public async Task SendStudyStatusUpdateMails_NoSenderConfigured_SkipsSend()
+    {
+        // Arrange - no "MainBoardMail" setting
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Carl",
+            LastName = "Wheezer",
+            Email = "carl@example.com",
+            PreferredLanguage = Language.EN,
+            Begunstiger = false,
+            StudentNumber = "s3",
+            PhoneNumber = "3",
+            Street = "Retroville",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Retroville"
+        };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act
+        await mailService.SendStudyStatusUpdateMails();
+
+        // Assert
+        Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
+    public async Task SendStudyStatusUpdateMails_MemberWithoutActiveStudy_SendsCheckProgressMail()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Erin",
+            LastName = "Hanson",
+            Email = "erin@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s5",
+            PhoneNumber = "5",
+            Street = "Main St",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Enschede"
+        };
+
+        var study = new Study
+        {
+            Id = 1,
+            Title = "Computer Science",
+            NominalDurationYears = 3
+        };
+
+        // Dropped out recently, so this doesn't fall into the "outstanding duration" bucket either
+        var studyEnrollment = new StudyEnrollment
+        {
+            Id = 1,
+            MemberId = member.Id,
+            StudyId = 1,
+            EnrollmentDate = DateTime.Now.AddMonths(-1),
+            Status = StudyStatus.DroppedOut,
+            Study = study
+        };
+
+        member.StudyEnrollments = new List<StudyEnrollment> { studyEnrollment };
+        _db.Members.Add(member);
+        _db.Studies.Add(study);
+        _db.StudyEnrollments.Add(studyEnrollment);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act
+        await mailService.SendStudyStatusUpdateMails();
+
+        // Assert
+        Assert.Equal("erin@example.com", mailService.LastTo?[0].Mail);
+        Assert.Equal("Check membership and study progress", mailService.LastSubject);
+        Assert.Contains("Dear Erin", mailService.LastHtmlContent);
     }
 
     [Fact]

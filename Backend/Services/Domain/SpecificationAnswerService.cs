@@ -11,18 +11,15 @@ namespace Backend.Services.Domain;
 /// </summary>
 public class SpecificationAnswerService(
         PostgresDbContext db,
-        IPermissionService permissionService,
         ILogger<SpecificationAnswerService> logger
 ) : ISpecificationAnswerService
 {
     /// <inheritdoc />
-    public async Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
+    public async Task PatchSpecificationAnswersAsync(uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
     {
-        logger.LogInformation("Patching specification answer {AnswerId} for member {MemberId} by user {UserId}.", answerId, fromUserId, userId);
-        if (userId != fromUserId)
-        {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
-        }
+        logger.LogInformation("Patching specification answer {AnswerId} by user {UserId}.", answerId, userId);
+
+        var answer = GetAnswerOrThrow(answerId);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -34,8 +31,7 @@ public class SpecificationAnswerService(
             || op.path.Equals("/question", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException("Cannot modify Id, EnrollmentId or QuestionId fields.");
 
-        var answer = GetAnswerOrThrow(answerId);
-        SpecificationAnswerValidator.ValidateOwnership(answer, fromUserId);
+        SpecificationAnswerValidator.ValidateOwnership(answer, userId);
         SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer);
         SpecificationAnswerValidator.ValidatePatchOperations(patchDoc);
 

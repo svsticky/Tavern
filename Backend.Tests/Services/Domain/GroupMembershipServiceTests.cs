@@ -128,6 +128,30 @@ public class GroupMembershipServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetGroupMemberships_FilterByOtherMemberId_RequiresBoard()
+    {
+        // Arrange
+        var m1 = CreateTestMember(Guid.NewGuid(), "m1@example.com");
+        var g1 = CreateTestGroup(1, "Group 1");
+
+        _db.Members.Add(m1);
+        _db.Groups.Add(g1);
+
+        var gm1 = new GroupMembership { Id = 1, Member = m1, Group = g1, MembershipYear = 2024 };
+        _db.GroupMemberships.Add(gm1);
+        await _db.SaveChangesAsync();
+
+        var dto = new GetGroupMembershipsDTO { MemberId = m1.Id };
+
+        // Act - _userId is different from m1.Id, so this must go through the board check
+        var result = await _service.GetGroupMemberships(dto, _userId, CancellationToken.None);
+
+        // Assert
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        Assert.Single(result);
+    }
+
+    [Fact]
     public async Task GetGroupMembership_FoundAndAuthorized_ReturnsDto()
     {
         // Arrange
@@ -226,6 +250,52 @@ public class GroupMembershipServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateGroupMembership_NoRoleAlias_SavesToDb()
+    {
+        // Arrange - RoleAliasId is optional; this exercises the null-alias branch of EnsureRoleAliasExists
+        var m = CreateTestMember(Guid.NewGuid());
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostGroupMembershipDTO
+        {
+            MemberId = m.Id,
+            GroupId = g.Id,
+            MembershipYear = 2024,
+            RoleAliasId = null
+        };
+
+        // Act
+        var result = await _service.CreateGroupMembership(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.Null(result.RoleAliasId);
+    }
+
+    [Fact]
+    public async Task CreateGroupMembership_MemberWithoutAuthSystemId_RollsBackTransaction()
+    {
+        // Arrange
+        var m = CreateTestMember(Guid.NewGuid());
+        m.AuthSystemUserId = null;
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+        await _db.SaveChangesAsync();
+
+        var dto = new PostGroupMembershipDTO { MemberId = m.Id, GroupId = g.Id, MembershipYear = 2024 };
+
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() =>
+            _service.CreateGroupMembership(dto, _userId, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        Assert.Empty(await _db.GroupMemberships.ToListAsync());
+    }
+
+    [Fact]
     public async Task DeleteGroupMembership_RemovesFromDbAndSyncsAuth()
     {
         // Arrange
@@ -246,6 +316,28 @@ public class GroupMembershipServiceTests : IDisposable
         var deleted = await _db.GroupMemberships.FindAsync(5u);
         Assert.Null(deleted);
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
+    public async Task DeleteGroupMembership_MemberWithoutAuthSystemId_RollsBackTransaction()
+    {
+        // Arrange
+        var m = CreateTestMember(Guid.NewGuid());
+        m.AuthSystemUserId = null;
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+
+        var gm = new GroupMembership { Id = 5, Member = m, Group = g, MembershipYear = 2024 };
+        _db.GroupMemberships.Add(gm);
+        await _db.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.DeleteGroupMembership(5, _userId, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        Assert.NotNull(await _db.GroupMemberships.FindAsync(5u));
     }
 
     [Fact]

@@ -146,6 +146,45 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetAvailableMailinglistsAsync_ApiKeyConfigured_ConfiguresHttpClient()
+    {
+        // Arrange
+        using var db = CreateEnabledDb();
+        db.Settings.Add(new Setting { Name = "MailchimpApiKey", Value = "abc123-us1" });
+        db.SaveChanges();
+
+        var httpClient = new HttpClient(_httpHandler);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, httpClient, db);
+        SetupAvailableListsHandler();
+
+        // Act
+        await service.GetAvailableMailinglistsAsync(CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new Uri("https://us1.api.mailchimp.com/3.0/"), httpClient.BaseAddress);
+        Assert.NotNull(httpClient.DefaultRequestHeaders.Authorization);
+        Assert.Equal("Basic", httpClient.DefaultRequestHeaders.Authorization!.Scheme);
+    }
+
+    [Fact]
+    public async Task GetMemberMailinglistsAsync_ServiceDisabled_ReturnsEmpty()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+
+        bool httpCalled = false;
+        _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
+
+        // Act
+        var result = await service.GetMemberMailinglistsAsync("someone@example.com", CancellationToken.None);
+
+        // Assert
+        Assert.Empty(result);
+        Assert.False(httpCalled);
+    }
+
+    [Fact]
     public async Task GetMemberMailinglistsAsync_NotFound_ReturnsAllUnsubscribed()
     {
         // Arrange
@@ -300,6 +339,23 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteMemberAsync_ServiceDisabled_DoesNothing()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+
+        bool httpCalled = false;
+        _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
+
+        // Act
+        await service.DeleteMemberAsync("test@example.com", CancellationToken.None);
+
+        // Assert
+        Assert.False(httpCalled);
+    }
+
+    [Fact]
     public async Task DeleteMemberAsync_ServiceEnabled_SendsDeleteRequest()
     {
         // Arrange
@@ -332,6 +388,23 @@ public class MailChimpSubscriptionServiceTests : IDisposable
 
         // Act & Assert (should not throw)
         await service.DeleteMemberAsync("test@example.com", CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task MigrateEmailAsync_ServiceDisabled_DoesNothing()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+
+        bool httpCalled = false;
+        _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
+
+        // Act
+        await service.MigrateEmailAsync("old@example.com", "new@example.com", CancellationToken.None);
+
+        // Assert
+        Assert.False(httpCalled);
     }
 
     [Fact]

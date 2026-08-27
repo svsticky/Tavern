@@ -46,7 +46,7 @@ public class SpecificationAnswersControllerTests
         uint answerId = 123;
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
 
-        _serviceMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
+        _serviceMock.PatchSpecificationAnswersAsync(answerId, patchDoc, _userId)
             .Returns(Task.CompletedTask);
 
         // Act
@@ -54,7 +54,7 @@ public class SpecificationAnswersControllerTests
 
         // Assert
         Assert.IsType<NoContentResult>(result);
-        await _serviceMock.Received(1).PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId);
+        await _serviceMock.Received(1).PatchSpecificationAnswersAsync(answerId, patchDoc, _userId);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public class SpecificationAnswersControllerTests
         uint answerId = 123;
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
 
-        _serviceMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
+        _serviceMock.PatchSpecificationAnswersAsync(answerId, patchDoc, _userId)
             .Throws(new UnauthorizedAccessException());
 
         // Act & Assert
@@ -78,7 +78,7 @@ public class SpecificationAnswersControllerTests
         uint answerId = 123;
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
 
-        _serviceMock.PatchSpecificationAnswersAsync(_userId, answerId, patchDoc, _userId)
+        _serviceMock.PatchSpecificationAnswersAsync(answerId, patchDoc, _userId)
             .Throws(new Exception("Invalid patch operation"));
 
         // Act & Assert

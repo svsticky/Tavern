@@ -37,16 +37,33 @@ public class PaymentSyncService(
 
     private async Task StartSyncPaymentsLoop(CancellationToken stoppingToken)
     {
-        if (stoppingToken.IsCancellationRequested) return;
-        await SyncPayments();
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
+
+        // Run immediately on startup before the first 10-minute tick
+        await ExecuteSyncSafely();
 
         try
         {
-            await Task.Delay(600000, stoppingToken).ContinueWith(_ => StartSyncPaymentsLoop(stoppingToken), stoppingToken);
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                await ExecuteSyncSafely();
+            }
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException)
         {
-            // Stop loop
+            // Graceful shutdown requested
+        }
+    }
+
+    private async Task ExecuteSyncSafely()
+    {
+        try
+        {
+            await SyncPayments();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Fout tijdens het synchroniseren van betalingen.");
         }
     }
 

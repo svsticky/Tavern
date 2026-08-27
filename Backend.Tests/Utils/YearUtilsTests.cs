@@ -123,6 +123,38 @@ public class FinancialYearUtilsTests
     }
 
     [Fact]
+    public void GetCurrentFinancialYear_MonthAfterTargetMonth_ReturnsCurrentYear()
+    {
+        YearUtils.FinancialYearStartDate = "03-01";
+        try
+        {
+            // April is strictly after the March target month (not just on the boundary day)
+            var april = new DateTime(2026, 4, 15, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(2026u, YearUtils.GetCurrentFinancialYear(april));
+        }
+        finally
+        {
+            YearUtils.FinancialYearStartDate = "08-01";
+        }
+    }
+
+    [Fact]
+    public void GetYearForDate_MonthAfterTargetMonth_ReturnsNextYear()
+    {
+        // October is strictly after the August target month (not just on the boundary day)
+        var october = new DateTime(2026, 10, 15, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(2027u, YearUtils.GetYearForDate(october, "08-01"));
+    }
+
+    [Fact]
+    public void GetYearForDate_MonthBeforeTargetMonth_ReturnsCurrentYear()
+    {
+        // May is strictly before the August target month
+        var may = new DateTime(2026, 5, 15, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(2026u, YearUtils.GetYearForDate(may, "08-01"));
+    }
+
+    [Fact]
     public void GetCommitteeYear_ReturnsValidYear()
     {
         var committeeYear = YearUtils.GetCommitteeYear();

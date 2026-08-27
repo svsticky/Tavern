@@ -28,7 +28,6 @@ public class ActivityService : IActivityService
     private readonly ILogger<ActivityService> _logger;
 
     private readonly string[] _restrictedForEveryonePaths = new[] { "/id", "/posterFileName", "/posterPath", };
-    private readonly string[] _restrictedPaths = new[] { "/vatRate", "/gLAccountId", "/costCenterId", "/costUnitId", "/paymentDeadline", "/showInKoala", "/enrollOpenDate", "/showOnWebsite", "/paymentDeadline", "/enrollOpenDate" };
 
     /// <summary>
     /// Initializes a new instance of the ActivityService class with the specified database context, storage service, file compressor, permission service, enrollment service, mail service, and logger. The constructor sets up the necessary dependencies for managing activities, including database access for activity data, storage service for handling activity posters, file compressor for optimizing poster files, permission service for enforcing access control on activity operations, enrollment service for managing enrollments related to activities, mail service for sending notifications about activity-related events, and logging for monitoring activity management operations and troubleshooting any issues that may arise.
@@ -224,7 +223,7 @@ public class ActivityService : IActivityService
             if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
                 throw new UnauthorizedAccessException("Only board members can edit past activities.");
 
-            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer || patchDoc.Operations.Any(op => _restrictedPaths.Contains(op.path, StringComparer.OrdinalIgnoreCase)))
+            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer || patchDoc.Operations.Any(op => !Activity.AllowedFields.Contains(op.path)))
                 throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
         }
 
@@ -389,6 +388,12 @@ public class ActivityService : IActivityService
 
             if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer)
                 throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
+
+            // Non-board organizers can't change these fields via PUT either. Silently keep them as
+            // they are instead of rejecting the request when they differ - comparing and rejecting
+            // would let someone guess a hidden value (e.g. VatRate) and learn whether they guessed
+            // right from whether the request succeeds or fails.
+            PreserveFieldsOutsideAllowedFields(activity, dto);
         }
 
         ActivityValidator.ValidateRequest(dto, userId, _permissionService);
@@ -529,7 +534,7 @@ public class ActivityService : IActivityService
     /// <inheritdoc />
     public async Task<(byte[] Content, string FileName)> GetEnrollmentsCsv(Guid userId, uint activityId, CancellationToken ct)
     {
-        // Only board members or members of the organizer group can download the enrollments CSV
+        // Only board members can download the enrollments CSV
         _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
         // Get user preferred language for CSV header
@@ -676,6 +681,28 @@ public class ActivityService : IActivityService
         var compressed = await _fileCompressor.CompressFileAsync(poster);
         activity.PosterPath = await _storageService.SaveFileAsync(compressed.Stream, compressed.ContentType, "posters");
         activity.PosterFileName = poster.FileName;
+    }
+
+    /// <summary>
+    /// Since PUT replaces the whole activity rather than applying discrete patch operations, field-level
+    /// restrictions can't be enforced by inspecting operation paths like PatchActivity does. Rejecting the
+    /// request whenever one of these fields differs from its current value would let a non-board organizer
+    /// guess a hidden value (e.g. VatRate) and learn whether the guess was correct from whether the request
+    /// succeeds - so instead, these fields are silently reset to their current value on the DTO before it's
+    /// applied, regardless of what was submitted for them.
+    ///
+    /// PaymentDeadline isn't included: <see cref="ApplyUpdateDto"/> never copies it onto the activity in
+    /// the first place, so PUT already can't change it either way.
+    /// </summary>
+    private static void PreserveFieldsOutsideAllowedFields(Activity activity, PutActivityDTO dto)
+    {
+        dto.VatRate = activity.VatRate;
+        dto.GLAccountId = activity.GLAccountId;
+        dto.CostCenterId = activity.CostCenterId;
+        dto.CostUnitId = activity.CostUnitId;
+        dto.ShowInKoala = activity.ShowInKoala;
+        dto.ShowOnWebsite = activity.ShowOnWebsite;
+        dto.EnrollOpenDate = activity.EnrollOpenDate;
     }
 
     private static void ApplyUpdateDto(Activity activity, PutActivityDTO dto)

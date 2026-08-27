@@ -29,7 +29,7 @@ public static class EnrollmentValidator
         if (activity.Enrollments.Any(e => e.MemberId == member.Id))
             throw new ArgumentException("Member is already enrolled (or on waiting list).");
 
-        if (activity.IsAdultOnly && member.DateOfBirth.Date >= activity.DateTimeStart.Date)
+        if (activity.IsAdultOnly && member.DateOfBirth.AddYears(18).Date > activity.DateTimeStart.Date)
             throw new ArgumentException("Member does not meet the age requirement for this activity.");
 
         ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoardMember);

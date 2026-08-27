@@ -20,7 +20,6 @@ namespace Backend.Tests.Services.Domain;
 public class SpecificationAnswerServiceTests : IDisposable
 {
     private readonly DbContextOptions<PostgresDbContext> _dbOptions;
-    private readonly IPermissionService _permissionService;
     private readonly SpecificationAnswerService _service;
     private readonly PostgresDbContext _db;
 
@@ -34,10 +33,8 @@ public class SpecificationAnswerServiceTests : IDisposable
         _db = new PostgresDbContext(_dbOptions);
         _db.Database.EnsureCreated();
 
-        _permissionService = Substitute.For<IPermissionService>();
         _service = new SpecificationAnswerService(
             _db,
-            _permissionService,
             NullLogger<SpecificationAnswerService>.Instance
         );
     }
@@ -100,35 +97,17 @@ public class SpecificationAnswerServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task PatchSpecificationAnswersAsync_OtherUserNotBoard_ThrowsUnauthorized()
-    {
-        // Arrange
-        var memberId = Guid.NewGuid();
-        var otherUserId = Guid.NewGuid();
-        var answer = CreateTestAnswer(1, memberId, "Old Answer");
-        _db.SpecificationAnswers.Add(answer);
-        await _db.SaveChangesAsync();
-
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(otherUserId))
-            .Do(x => throw new UnauthorizedAccessException());
-
-        var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
-        patchDoc.Replace(a => a.Answer, "New Answer");
-
-        // Act & Assert
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _service.PatchSpecificationAnswersAsync(memberId, 1, patchDoc, otherUserId));
-    }
-
-    [Fact]
     public async Task PatchSpecificationAnswersAsync_PatchDocNull_ThrowsArgumentException()
     {
         // Arrange
         var memberId = Guid.NewGuid();
+        var answer = CreateTestAnswer(1, memberId, "Old Answer");
+        _db.SpecificationAnswers.Add(answer);
+        await _db.SaveChangesAsync();
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.PatchSpecificationAnswersAsync(memberId, 1, null!, memberId));
+            _service.PatchSpecificationAnswersAsync(1, null!, memberId));
     }
 
     [Fact]
@@ -136,6 +115,10 @@ public class SpecificationAnswerServiceTests : IDisposable
     {
         // Arrange
         var memberId = Guid.NewGuid();
+        var answer = CreateTestAnswer(1, memberId, "Old Answer");
+        _db.SpecificationAnswers.Add(answer);
+        await _db.SaveChangesAsync();
+
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>(
             new List<Operation<SpecificationAnswer>>
             {
@@ -146,7 +129,7 @@ public class SpecificationAnswerServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.PatchSpecificationAnswersAsync(memberId, 1, patchDoc, memberId));
+            _service.PatchSpecificationAnswersAsync(1, patchDoc, memberId));
     }
 
     [Fact]
@@ -159,7 +142,7 @@ public class SpecificationAnswerServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _service.PatchSpecificationAnswersAsync(memberId, 999, patchDoc, memberId));
+            _service.PatchSpecificationAnswersAsync(999, patchDoc, memberId));
     }
 
     [Fact]
@@ -174,9 +157,9 @@ public class SpecificationAnswerServiceTests : IDisposable
         var patchDoc = new JsonPatchDocument<SpecificationAnswer>();
         patchDoc.Replace(a => a.Answer, "New Answer");
 
-        // Act & Assert (fromUserId is Guid.NewGuid(), different from answer.MemberId)
+        // Act & Assert (acting user is a new Guid, different from answer.MemberId)
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _service.PatchSpecificationAnswersAsync(Guid.NewGuid(), 1, patchDoc, Guid.NewGuid()));
+            _service.PatchSpecificationAnswersAsync(1, patchDoc, Guid.NewGuid()));
     }
 
     [Fact]
@@ -194,7 +177,7 @@ public class SpecificationAnswerServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.PatchSpecificationAnswersAsync(memberId, 1, patchDoc, memberId));
+            _service.PatchSpecificationAnswersAsync(1, patchDoc, memberId));
     }
 
     [Fact]
@@ -216,7 +199,7 @@ public class SpecificationAnswerServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.PatchSpecificationAnswersAsync(memberId, 1, patchDoc, memberId));
+            _service.PatchSpecificationAnswersAsync(1, patchDoc, memberId));
     }
 
     [Fact]
@@ -232,7 +215,7 @@ public class SpecificationAnswerServiceTests : IDisposable
         patchDoc.Replace(a => a.Answer, "New Answer");
 
         // Act
-        await _service.PatchSpecificationAnswersAsync(memberId, 1, patchDoc, memberId);
+        await _service.PatchSpecificationAnswersAsync(1, patchDoc, memberId);
 
         // Assert
         var updated = await _db.SpecificationAnswers.FindAsync(1u);

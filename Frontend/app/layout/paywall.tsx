@@ -106,18 +106,18 @@ export default function PaywallLayout() {
             err,
           ),
         );
+    }
 
-      if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
-        console.warn(
-          "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
-        );
+    if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
+      console.warn(
+        "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
+      );
 
-        // Patch member to force refresh the payment status in keycloak.
-        patchMembersById({
-          path: { id: tokenParsed.UserId },
-          body: [] as any,
-        });
-      }
+      // Patch member to force refresh the payment status in keycloak.
+      patchMembersById({
+        path: { id: tokenParsed.UserId },
+        body: [] as any,
+      });
     }
 
     // Members who are neither a begunstiger nor have ever done a study aren't eligible to pay

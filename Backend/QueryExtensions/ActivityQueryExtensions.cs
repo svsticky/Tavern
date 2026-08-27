@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
+using System.Globalization;
 
 namespace Backend.QueryExtensions;
 
@@ -47,8 +48,8 @@ public static class ActivityQueryExtensions
         if (dto.Year.HasValue)
         {
             var parts = YearUtils.CommitteeCreationDate.Split('-');
-            int month = int.Parse(parts[0]);
-            int day = int.Parse(parts[1]);
+            int month = int.Parse(parts[0], CultureInfo.InvariantCulture);
+            int day = int.Parse(parts[1], CultureInfo.InvariantCulture);
 
             uint selectedYear = dto.Year.Value;
 

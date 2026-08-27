@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -282,6 +283,32 @@ public class RoleAliasServiceTests : IDisposable
         Assert.Equal("New Name", updated.Name);
 
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
+    public async Task PatchRoleAlias_ResultsInInvalidState_RollsBackTransaction()
+    {
+        // Arrange
+        var role = new Role { Id = 1, Name = "Role" };
+        _db.Roles.Add(role);
+
+        var alias = new RoleAlias { Id = 21, Name = "Old Name", RoleId = 1, Role = role };
+        _db.RoleAliases.Add(alias);
+        await _db.SaveChangesAsync();
+
+        // Name is [Required(AllowEmptyStrings = false)], so replacing it with an empty string
+        // fails StateValidator.Validate and should roll back instead of persisting.
+        var patchDoc = new JsonPatchDocument<RoleAlias>();
+        patchDoc.Replace(ra => ra.Name, "");
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            _service.PatchRoleAlias(21u, patchDoc, _userId, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        var unchanged = await _db.RoleAliases.FindAsync(21u);
+        Assert.NotNull(unchanged);
+        Assert.Equal("Old Name", unchanged.Name);
     }
 
     [Fact]

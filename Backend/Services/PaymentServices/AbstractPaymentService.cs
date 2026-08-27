@@ -154,7 +154,10 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
 
     private static void MarkPaymentPaid(Payment payment, GetPaymentResponse result)
     {
-        payment.PaidAt = result.PaidAt;
+        if (payment.PaidAt == null)
+        {
+            payment.PaidAt = result.PaidAt;
+        }
     }
 
     private void QueueAuthenticationSystemSyncIfNeeded(Payment payment)
@@ -189,10 +192,12 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
             TaskType = payment switch
             {
                 MembershipPayment => AccountingToolTaskType.MembershipPayment,
-                PaymentServiceFeePayment => AccountingToolTaskType.PaymentServiceFeePayment,
+                EnrollmentPayment => AccountingToolTaskType.EnrollmentPayment,
                 BegunstigerPayment => AccountingToolTaskType.BegunstigerPayment,
-                _ => AccountingToolTaskType.EnrollmentPayment
-            }
+                PaymentServiceFeePayment => AccountingToolTaskType.PaymentServiceFeePayment,
+                _ => throw new Exception("Unknown payment type")
+            },
+            CreatedAt = DateTimeOffset.UtcNow
         });
     }
 }

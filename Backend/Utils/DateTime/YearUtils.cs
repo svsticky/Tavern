@@ -1,4 +1,5 @@
 using Backend.Database;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace Backend.Utils.DateTime;
@@ -130,7 +131,7 @@ public static class YearUtils
     /// </summary>
     public static uint GetBoardYear(PostgresDbContext db)
     {
-        uint boardGroupId = uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1");
+        uint boardGroupId = uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1", CultureInfo.InvariantCulture);
         return db.GroupMemberships
             .Where(gm => gm.GroupId == boardGroupId)
             .Max(gm => (uint?)gm.MembershipYear) ?? GetYearForDate(System.DateTime.UtcNow, CommitteeCreationDate);

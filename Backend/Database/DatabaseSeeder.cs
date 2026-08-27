@@ -4,6 +4,7 @@ using Backend.Services;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Backend.Database;
 
@@ -35,9 +36,9 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
 
         string candidateBoardGroupId = await EnsureSettingExists(db, "CandidateBoardGroupId", "2");
 
-        await EnsureGroupExists(db, "Board", GroupType.Committee, uint.Parse(boardGroupId));
+        await EnsureGroupExists(db, "Board", GroupType.Committee, uint.Parse(boardGroupId, CultureInfo.InvariantCulture));
 
-        await EnsureGroupExists(db, "Candidate Board", GroupType.Committee, uint.Parse(candidateBoardGroupId));
+        await EnsureGroupExists(db, "Candidate Board", GroupType.Committee, uint.Parse(candidateBoardGroupId, CultureInfo.InvariantCulture));
 
         await EnsureSettingExists(db, "PaymentProvider", "MOLLIE");
         await EnsureSettingExists(db, "MollieApiKey", "");
@@ -213,7 +214,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
     /// <returns>A task representing the asynchronous operation.</returns>
     private static async Task EnsureBoardAccountExists(PostgresDbContext db, AuthOutboxWorker authOutboxWorker, ICreateNewBoardService createNewBoardService, ILogger<DatabaseSeeder> logger)
     {
-        uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value);
+        uint boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))!.Value, CultureInfo.InvariantCulture);
         string? backupEmail = Environment.GetEnvironmentVariable("BACKUP_ACCOUNT_EMAIL");
 
         using var transaction = await db.Database.BeginTransactionAsync();
@@ -286,7 +287,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
             bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == maxBoardYear);
             if (!hasBoardMembers)
             {
-                var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value);
+                var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value, CultureInfo.InvariantCulture);
                 var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == maxBoardYear - 1).ToListAsync();
 
                 if (candidateBoardMembershipsLastYear.Any())
@@ -342,7 +343,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
                 {
                     PaymentServiceId = "",
                     PaymentIntentUrl = "",
-                    Price = decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50"),
+                    Price = decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50", CultureInfo.InvariantCulture),
                     PaidAt = DateTime.UtcNow,
                     MemberId = backupMember.Id,
                     ManuallyMarkedAsPaid = true

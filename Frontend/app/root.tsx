@@ -36,7 +36,7 @@ client.setConfig({
         Cookies.set("access_token", token, {
           path: "/",
           secure: true,
-          sameSite: "none",
+          sameSite: "lax",
           domain: `.${window.location.hostname}`,
         });
         return token;

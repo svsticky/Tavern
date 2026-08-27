@@ -17,6 +17,7 @@ public class CreateNewBoardServiceTests : IDisposable
     private readonly PostgresDbContext _db;
     private readonly AuthOutboxWorker _authOutboxWorkerMock;
     private readonly IServiceScopeFactory _serviceScopeFactoryMock;
+    private readonly IPermissionService _permissionServiceMock;
     private readonly CreateNewBoardService _service;
 
     public CreateNewBoardServiceTests()
@@ -41,11 +42,11 @@ public class CreateNewBoardServiceTests : IDisposable
         var loggerMock = Substitute.For<ILogger<AuthOutboxWorker>>();
         _authOutboxWorkerMock = Substitute.For<AuthOutboxWorker>(serviceProviderMock, loggerMock);
 
-        var permissionServiceMock = Substitute.For<IPermissionService>();
+        _permissionServiceMock = Substitute.For<IPermissionService>();
 
         serviceProviderMock.GetService(typeof(PostgresDbContext)).Returns(_db);
         serviceProviderMock.GetService(typeof(AuthOutboxWorker)).Returns(_authOutboxWorkerMock);
-        serviceProviderMock.GetService(typeof(IPermissionService)).Returns(permissionServiceMock);
+        serviceProviderMock.GetService(typeof(IPermissionService)).Returns(_permissionServiceMock);
 
         _service = new CreateNewBoardService(_serviceScopeFactoryMock, NullLogger<CreateNewBoardService>.Instance);
     }
@@ -72,6 +73,81 @@ public class CreateNewBoardServiceTests : IDisposable
     {
         _db.Database.EnsureDeleted();
         _db.Dispose();
+    }
+
+    [Fact]
+    public async Task PromoteCandidateBoardToBoardAsync_WithUserId_EnsuresBoardMember()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var boardGroupId = 10u;
+        var candidateBoardGroupId = 20u;
+        var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+        var lastYear = currentYear - 1;
+
+        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
+
+        var candidate = Guid.NewGuid();
+        _db.Members.Add(CreateTestMember(candidate, Guid.NewGuid(), "s901"));
+        _db.GroupMemberships.Add(new GroupMembership
+        {
+            GroupId = candidateBoardGroupId,
+            MemberId = candidate,
+            MembershipYear = lastYear
+        });
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _service.PromoteCandidateBoardToBoardAsync(userId);
+
+        // Assert
+        _permissionServiceMock.Received(1).EnsureBoardMember(userId);
+    }
+
+    [Fact]
+    public async Task PromoteCandidateBoardToBoardAsync_NoCandidates_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var boardGroupId = 10u;
+        var candidateBoardGroupId = 20u;
+
+        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
+        await _db.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.PromoteCandidateBoardToBoardAsync());
+    }
+
+    [Fact]
+    public async Task PromoteCandidateBoardToBoardAsync_CandidateWithoutAuthSystemId_SkipsSyncForThatMember()
+    {
+        // Arrange
+        var boardGroupId = 10u;
+        var candidateBoardGroupId = 20u;
+        var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+        var lastYear = currentYear - 1;
+
+        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
+
+        // Candidate not yet linked to the auth system
+        var candidate = Guid.NewGuid();
+        _db.Members.Add(CreateTestMember(candidate, null, "s901"));
+        _db.GroupMemberships.Add(new GroupMembership
+        {
+            GroupId = candidateBoardGroupId,
+            MemberId = candidate,
+            MembershipYear = lastYear
+        });
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _service.PromoteCandidateBoardToBoardAsync();
+
+        // Assert
+        _authOutboxWorkerMock.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
     }
 
     [Fact]

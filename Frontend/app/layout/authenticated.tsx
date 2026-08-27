@@ -93,7 +93,7 @@ export default function AuthenticatedLayout() {
             Cookies.set("access_token", freshToken, {
               path: "/",
               secure: true,
-              sameSite: "none",
+              sameSite: "lax",
               domain: `.${window.location.hostname}`,
             });
 

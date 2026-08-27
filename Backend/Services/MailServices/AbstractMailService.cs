@@ -5,6 +5,7 @@ using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Backend.Services.MailServices;
@@ -74,7 +75,7 @@ public abstract class AbstractMailService
                 string roleId = setting.Name.Replace("ROLEMAILMAP_", "");
                 string email = setting.Value;
 
-                _roleMailMap.Add(uint.Parse(roleId), email);
+                _roleMailMap.Add(uint.Parse(roleId, CultureInfo.InvariantCulture), email);
             }
         }
     }
@@ -244,7 +245,7 @@ public abstract class AbstractMailService
         }
 
         var membersWithoutActiveStudy = potentialMembers
-            .Where(m => m.StudyEnrollments.Count > 0 && !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled))
+            .Where(m => m.StudyEnrollments.Count > 0 && !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled) && m.StudyEnrollments.Any())
             .ToList();
 
         foreach (var member in membersWithoutActiveStudy)
@@ -304,8 +305,8 @@ public abstract class AbstractMailService
     /// <exception cref="UnauthorizedAccessException">Thrown when the user does not have permission to send emails.</exception>
     protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
-        int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
-        int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
+        int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value, CultureInfo.InvariantCulture)).FirstOrDefault();
+        int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value, CultureInfo.InvariantCulture)).FirstOrDefault();
 
         Role? role = await _db.GroupMemberships
             .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == YearUtils.GetBoardYear(_db))
@@ -336,19 +337,19 @@ public abstract class AbstractMailService
     /// <exception cref="InvalidOperationException">Thrown when the activity is not found.</exception>
     protected async Task<MailRecipient[]> GetRecipientsFromActivity(uint activityId, bool includeWaitingList, CancellationToken ct)
     {
-        MailRecipient[] resultRecipients = Array.Empty<MailRecipient>();
-
         Activity? activity = await _db.Activities.Where(a => a.Id == activityId).Include(a => a.Enrollments.Where(e => includeWaitingList || !e.IsOnWaitingList)).ThenInclude(e => e.Member).FirstOrDefaultAsync(ct);
         if (activity == null)
         {
             throw new InvalidOperationException("Activity not found");
         }
 
+        var resultRecipients = new List<MailRecipient>(activity.Enrollments.Count);
+
         foreach (var enrollment in activity.Enrollments)
         {
-            resultRecipients = resultRecipients.Append(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" }).ToArray();
+            resultRecipients.Add(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" });
         }
-        return resultRecipients;
+        return resultRecipients.ToArray();
     }
 
     /// <summary>

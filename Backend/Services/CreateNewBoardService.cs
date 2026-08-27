@@ -3,6 +3,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Backend.Services;
 
@@ -26,8 +27,8 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory, ILo
             permissionService.EnsureBoardMember(userId.Value);
         }
 
-        var boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))?.Value ?? "1");
-        var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))?.Value ?? "2");
+        var boardGroupId = uint.Parse((await db.Settings.FindAsync("BoardGroupId"))?.Value ?? "1", CultureInfo.InvariantCulture);
+        var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))?.Value ?? "2", CultureInfo.InvariantCulture);
 
         var maxBoardYear = await db.GroupMemberships
             .Where(gm => gm.GroupId == boardGroupId)

@@ -453,6 +453,70 @@ public class ActivityServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchActivity_NonBoardPastActivity_ThrowsUnauthorizedAccessException()
+    {
+        var activity = CreateActivity("A1");
+        activity.DateTimeEnd = DateTime.UtcNow.AddDays(-1);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.Name, "New name");
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PatchActivity_OrganizerChangesRestrictedField_ThrowsUnauthorizedAccessException()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.VatRate, 21u);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PatchActivity_OrganizerChangesAllowedField_Succeeds()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.Name, "Updated by organizer");
+
+        await _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.Equal("Updated by organizer", saved?.Name);
+    }
+
+    [Fact]
     public async Task PatchActivity_Valid_AppliesPatchAndUpdatesPricesAndWaitingList()
     {
         var activity = CreateActivity("A1");
@@ -633,6 +697,176 @@ public class ActivityServiceTests : IDisposable
         var q2 = saved.SpecificationQuestions.First(q => q.Id != 100);
         Assert.Equal("New Q2 Dutch", q2.QuestionDutch);
         Assert.Equal(QuestionType.Boolean, q2.Type);
+    }
+
+    [Fact]
+    public async Task UpdateActivity_PromotesWaitingList_SendsEmails()
+    {
+        var activity = CreateActivity("A1");
+        activity.ParticipantLimit = 2;
+        activity.AllowedAudience = TargetAudience.All;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var promoted = new List<Enrollment>
+        {
+            new Enrollment { MemberId = Guid.NewGuid(), ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow }
+        };
+        _enrollmentService.PromoteFromWaitingList(activity.Id, Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IEnumerable<Enrollment>>(promoted));
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var dto = new PutActivityDTO
+        {
+            Name = activity.Name,
+            Price = activity.Price,
+            DutchDescription = activity.DutchDescription,
+            EnglishDescription = activity.EnglishDescription,
+            DateTimeStart = activity.DateTimeStart,
+            DateTimeEnd = activity.DateTimeEnd,
+            Location = activity.Location,
+            ShowInKoala = activity.ShowInKoala,
+            ShowOnWebsite = activity.ShowOnWebsite,
+            IsEnrollable = activity.IsEnrollable,
+            AreParticipantsVisible = activity.AreParticipantsVisible,
+            IsAdultOnly = activity.IsAdultOnly,
+            IsWeeklyDrinks = activity.IsWeeklyDrinks,
+            AllowedAudience = activity.AllowedAudience,
+            ParticipantLimit = 5,
+        };
+
+        await _service.UpdateActivity(_userId, activity.Id, dto);
+
+        await _mailService.Received(1).SendEnrollmentPromotionEmail(promoted[0]);
+    }
+
+    [Fact]
+    public async Task UpdateActivity_NonBoardPastActivity_ThrowsUnauthorizedAccessException()
+    {
+        var activity = CreateActivity("A1");
+        activity.DateTimeEnd = DateTime.UtcNow.AddDays(-1);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+
+        var dto = new PutActivityDTO
+        {
+            Name = activity.Name,
+            Price = activity.Price,
+            DutchDescription = activity.DutchDescription,
+            EnglishDescription = activity.EnglishDescription,
+            DateTimeStart = activity.DateTimeStart,
+            DateTimeEnd = activity.DateTimeEnd,
+            Location = activity.Location,
+            ShowInKoala = activity.ShowInKoala,
+            ShowOnWebsite = activity.ShowOnWebsite,
+            IsEnrollable = activity.IsEnrollable,
+            AreParticipantsVisible = activity.AreParticipantsVisible,
+            IsAdultOnly = activity.IsAdultOnly,
+            IsWeeklyDrinks = activity.IsWeeklyDrinks,
+            AllowedAudience = activity.AllowedAudience,
+        };
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.UpdateActivity(_userId, activity.Id, dto));
+    }
+
+    [Fact]
+    public async Task UpdateActivity_OrganizerChangesRestrictedField_SilentlyIgnoresChange()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.ShowOnWebsite = false;
+        activity.OrganizerId = 10;
+        activity.VatRate = 21;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        var dto = new PutActivityDTO
+        {
+            Name = "Updated by organizer",
+            Price = activity.Price,
+            DutchDescription = activity.DutchDescription,
+            EnglishDescription = activity.EnglishDescription,
+            DateTimeStart = activity.DateTimeStart,
+            DateTimeEnd = activity.DateTimeEnd,
+            Location = activity.Location,
+            OrganizerId = activity.OrganizerId,
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = activity.IsEnrollable,
+            AreParticipantsVisible = activity.AreParticipantsVisible,
+            IsAdultOnly = activity.IsAdultOnly,
+            IsWeeklyDrinks = activity.IsWeeklyDrinks,
+            AllowedAudience = activity.AllowedAudience,
+            // An organizer isn't allowed to touch VatRate - only board members can. Rejecting the
+            // request based on this guess would let them learn the real VatRate from whether the
+            // request succeeds, so it must be silently ignored instead of rejected.
+            VatRate = 9,
+        };
+
+        await _service.UpdateActivity(_userId, activity.Id, dto);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.Equal("Updated by organizer", saved?.Name);
+        Assert.Equal((uint?)21, saved?.VatRate);
+    }
+
+    [Fact]
+    public async Task UpdateActivity_OrganizerChangesOnlyAllowedFields_Succeeds()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.ShowOnWebsite = false;
+        activity.OrganizerId = 10;
+        activity.VatRate = 21;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        var dto = new PutActivityDTO
+        {
+            Name = "Updated by organizer",
+            Price = activity.Price,
+            DutchDescription = activity.DutchDescription,
+            EnglishDescription = activity.EnglishDescription,
+            DateTimeStart = activity.DateTimeStart,
+            DateTimeEnd = activity.DateTimeEnd,
+            Location = activity.Location,
+            OrganizerId = activity.OrganizerId,
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = activity.IsEnrollable,
+            AreParticipantsVisible = activity.AreParticipantsVisible,
+            IsAdultOnly = activity.IsAdultOnly,
+            IsWeeklyDrinks = activity.IsWeeklyDrinks,
+            AllowedAudience = activity.AllowedAudience,
+            VatRate = activity.VatRate,
+            GLAccountId = activity.GLAccountId,
+            CostCenterId = activity.CostCenterId,
+            CostUnitId = activity.CostUnitId,
+            PaymentDeadline = activity.PaymentDeadline,
+        };
+
+        await _service.UpdateActivity(_userId, activity.Id, dto);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.Equal("Updated by organizer", saved?.Name);
     }
 
     [Fact]

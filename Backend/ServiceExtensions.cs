@@ -102,9 +102,11 @@ internal static class ServiceExtensions
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
                             ValidateIssuer = true,
-                            ValidateAudience = false,
+                            ValidateAudience = true,
                             ValidateLifetime = true,
-                            ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
+                            ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm"),
+                            ValidAudience = "tavern"
+
                         };
                     });
 
@@ -272,7 +274,6 @@ internal static class ServiceExtensions
         services.AddScoped<IMemberService, MemberService>();
         services.AddScoped<IMailinglistCurationService, MailinglistCurationService>();
         services.AddScoped<IPaymentService, PaymentService>();
-        services.AddScoped<IPaymentWebhookService, PaymentWebhookService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IProfilePictureService, ProfilePictureService>();
         services.AddScoped<IRoleAliasService, RoleAliasService>();
@@ -295,6 +296,7 @@ internal static class ServiceExtensions
         services.AddHostedService(sp => sp.GetRequiredService<AuthOutboxWorker>());
         services.AddHostedService<AccountingToolOutboxWorker>();
         services.AddHostedService<MembershipExpirationSyncService>();
+        services.AddHostedService<YearSettingsRefreshWorker>();
         services.AddSingleton<MailSubscriptionOutboxWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
 

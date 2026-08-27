@@ -30,6 +30,7 @@ public class MollieService(PostgresDbContext db, ILogger<MollieService> logger, 
                 "cancelled" => PaymentStatus.Failed,
                 "failed" => PaymentStatus.Failed,
                 "expired" => PaymentStatus.Failed,
+                "authorized" => PaymentStatus.Pending,
                 _ => throw new Exception($"Unknown payment status: {response.Status}")
             },
             response.PaidAt

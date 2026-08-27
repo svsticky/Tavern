@@ -294,6 +294,37 @@ public class MailSubscriptionOutboxWorkerTests
     }
 
     [Fact]
+    public async Task TryProcessNextTaskAsync_UnsupportedTaskType_ReschedulesWithBackoff()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var task = new MailSubscriptionOutboxTask
+        {
+            TaskType = (MailSubscriptionOutboxTaskType)99,
+            Email = "unsupported@example.com",
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow,
+            RetryCount = 0
+        };
+        db.MailSubscriptionOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableMailSubscriptionOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        var updatedTasks = await db.MailSubscriptionOutboxTasks.ToListAsync();
+        Assert.Single(updatedTasks);
+        Assert.Equal(1, updatedTasks[0].RetryCount);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_Disabled_ReturnsImmediately()
     {
         // Arrange
@@ -309,14 +340,41 @@ public class MailSubscriptionOutboxWorkerTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_NoSettingConfigured_SkipsProcessingAndDelays()
+    {
+        // Arrange - no "MailSubscriptionService" setting row, so the worker should loop without
+        // ever trying to process a task
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var provider = CreateServiceProvider(db);
+        var worker = new MailSubscriptionOutboxWorker(provider, _logger);
+
+        // Act
+        var cts = new CancellationTokenSource();
+        var startTask = worker.StartAsync(cts.Token);
+
+        // Give the loop a moment to run through at least one "disabled" iteration
+        await Task.Delay(100);
+
+        cts.Cancel();
+        await worker.StopAsync(CancellationToken.None);
+        await startTask;
+
+        // Assert
+        await _mailSubscriptionService.DidNotReceiveWithAnyArgs().UpdateMemberSubscriptionsAsync(default!, default!, default);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_Enabled_ProcessesTasksAndDelays()
     {
-        // Arrange
+        // Arrange - "MailSubscriptionService" is read from the Settings table, not an env var
         Environment.SetEnvironmentVariable("MAIL_SUBSCRIPTION_SERVICE", "True");
         try
         {
             using var db = new PostgresDbContext(_dbOptions);
             db.Database.EnsureCreated();
+            db.Settings.Add(new Setting { Name = "MailSubscriptionService", Value = "MailChimp" });
+            await db.SaveChangesAsync();
             var provider = CreateServiceProvider(db);
             var worker = new MailSubscriptionOutboxWorker(provider, _logger);
 

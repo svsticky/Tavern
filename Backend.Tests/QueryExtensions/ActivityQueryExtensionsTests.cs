@@ -148,4 +148,75 @@ public class ActivityQueryExtensionsTests
         Assert.Single(result);
         Assert.Equal(2u, result[0].Id);
     }
+
+    [Fact]
+    public void Filter_ByUserId_OnlyShowsActivitiesTheUserIsEnrolledIn()
+    {
+        var memberId = Guid.NewGuid();
+        var activities = GetTestActivities();
+        activities[0].Enrollments = new List<Enrollment>();
+        activities[1].Enrollments = new List<Enrollment>
+        {
+            new() { ActivityId = 2, MemberId = memberId, Price = 0, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false }
+        };
+        activities[2].Enrollments = new List<Enrollment>
+        {
+            // On the waiting list - shouldn't count as an enrollment for this filter
+            new() { ActivityId = 3, MemberId = memberId, Price = 0, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = true }
+        };
+
+        var dto = new GetActivitiesDTO { IncludePast = true, UserId = memberId };
+        var result = activities.AsQueryable().Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(2u, result[0].Id);
+    }
+
+    [Fact]
+    public void ApplyPaging_NoPageOrPageSize_ReturnsAllUnpaginated()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO();
+
+        var result = query.ApplyPaging(dto).ToList();
+
+        Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public void ApplyPaging_WithPageAndPageSize_ReturnsCorrectSlice()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO { Page = 1, PageSize = 2 };
+
+        var result = query.ApplyPaging(dto).ToList();
+
+        // Ordered descending by DateTimeStart: Activity 2 (+5d), Activity 3 (+2d), Activity 1 (-10d)
+        Assert.Equal(2, result.Count);
+        Assert.Equal(2u, result[0].Id);
+        Assert.Equal(3u, result[1].Id);
+    }
+
+    [Fact]
+    public void ApplyPaging_SecondPage_SkipsFirstPage()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO { Page = 2, PageSize = 2 };
+
+        var result = query.ApplyPaging(dto).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(1u, result[0].Id);
+    }
+
+    [Fact]
+    public void ApplyPaging_PageWithoutPageSize_DefaultsToFiftyPerPage()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO { Page = 1 };
+
+        var result = query.ApplyPaging(dto).ToList();
+
+        Assert.Equal(3, result.Count);
+    }
 }

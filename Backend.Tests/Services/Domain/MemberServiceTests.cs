@@ -291,12 +291,17 @@ public class MemberServiceTests : IDisposable
             PostalCode = "1",
             City = "C",
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(1),
-            PreferredLanguage = Language.NL
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             _service.CreateMember(dto, _userId, CancellationToken.None));
+        Assert.Equal("Date of birth must be in the past.", ex.Message);
     }
 
     [Fact]
@@ -316,12 +321,17 @@ public class MemberServiceTests : IDisposable
             City = "C",
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-17), // 17 years old
             ParentPhoneNumber = null,
-            PreferredLanguage = Language.NL
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             _service.CreateMember(dto, _userId, CancellationToken.None));
+        Assert.Equal("Parent phone number required for minors.", ex.Message);
     }
 
     [Fact]
@@ -366,6 +376,38 @@ public class MemberServiceTests : IDisposable
             "a@b.com",
             Arg.Is<IEnumerable<string>>(ids => ids.SequenceEqual(new[] { "id_news" })),
             _db);
+    }
+
+    [Fact]
+    public async Task CreateMember_BegunstigerAsBoardMember_Succeeds()
+    {
+        // Arrange
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "123456",
+            FirstName = "A",
+            LastName = "B",
+            Email = "begunstiger@b.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            Begunstiger = true,
+            PreferredLanguage = Language.NL
+        };
+
+        // Act
+        var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Members.FindAsync(result.Id);
+        Assert.NotNull(saved);
+        Assert.True(saved.Begunstiger);
     }
 
     [Fact]
@@ -457,6 +499,14 @@ public class MemberServiceTests : IDisposable
         var saved = await _db.Members.FindAsync(result.Id);
         Assert.NotNull(saved);
         Assert.Equal("board-created-null-studies@b.com", saved.Email);
+    }
+
+    [Fact]
+    public async Task DeleteMember_NotFound_ThrowsKeyNotFoundException()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _service.DeleteMember(Guid.NewGuid(), _userId, CancellationToken.None));
     }
 
     [Fact]
@@ -787,10 +837,10 @@ public class MemberServiceTests : IDisposable
         var dto = new MemberUpdateDTO
         {
             StudentNumber = member.StudentNumber,
-            FirstName = "NewName",
+            FirstName = member.FirstName,
             LastName = member.LastName,
             Email = member.Email,
-            PhoneNumber = member.PhoneNumber,
+            PhoneNumber = "0698765432",
             Street = member.Street,
             HouseNumber = member.HouseNumber,
             PostalCode = member.PostalCode,
@@ -806,8 +856,84 @@ public class MemberServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
-        Assert.Equal("NewName", updated.FirstName);
+        Assert.Equal("0698765432", updated.PhoneNumber);
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task UpdateMember_BoardMemberUpdatesSomeoneElse_AppliesUpdate()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var boardUserId = Guid.NewGuid();
+        _permissionService.IsBoardOrCandidateBoardMember(boardUserId).Returns(true);
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = member.StudentNumber,
+            FirstName = "Updated By Board",
+            LastName = member.LastName,
+            Email = member.Email,
+            PhoneNumber = member.PhoneNumber,
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act
+        await _service.UpdateMember(member.Id, dto, boardUserId, CancellationToken.None);
+
+        // Assert
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(boardUserId);
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("Updated By Board", updated.FirstName);
+    }
+
+    [Fact]
+    public async Task UpdateMember_NonBoardChangesRestrictedField_SilentlyIgnoresChange()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = member.StudentNumber,
+            // A member isn't allowed to change their own name - only board members can. Rejecting
+            // the request based on this guess would let them learn the real value from whether the
+            // request succeeds, so it must be silently ignored instead of rejected.
+            FirstName = "NewName",
+            LastName = member.LastName,
+            Email = member.Email,
+            PhoneNumber = "0698765432",
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act
+        await _service.UpdateMember(_userId, dto, _userId, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(_userId);
+        Assert.NotNull(updated);
+        Assert.Equal("Test", updated.FirstName);
+        Assert.Equal("0698765432", updated.PhoneNumber);
     }
 
     [Fact]
@@ -817,6 +943,10 @@ public class MemberServiceTests : IDisposable
         var member = CreateTestMember(_userId);
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
+
+        // Only board members can change StudentNumber - use a board member here so the invalid
+        // value actually reaches validation, instead of being silently ignored.
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
 
         var dto = new MemberUpdateDTO
         {

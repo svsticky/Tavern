@@ -352,6 +352,70 @@ public class AuthOutboxWorkerTests
     }
 
     [Fact]
+    public async Task TryProcessNextTaskAsync_SendActivationEmailTask_InvokesService()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var authUserId = Guid.NewGuid();
+        var task = new AuthOutboxTask
+        {
+            TaskType = AuthTaskType.SendActivationEmail,
+            AuthSystemUserId = authUserId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow
+        };
+        db.AuthOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableAuthOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        await _authService.Received(1).SendActivationEmail(authUserId);
+
+        var tasks = await db.AuthOutboxTasks.ToListAsync();
+        Assert.Empty(tasks); // Removed
+    }
+
+    [Fact]
+    public async Task TryProcessNextTaskAsync_UnknownTaskType_ReschedulesWithBackoff()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var authUserId = Guid.NewGuid();
+        var task = new AuthOutboxTask
+        {
+            TaskType = (AuthTaskType)99,
+            AuthSystemUserId = authUserId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow,
+            RetryCount = 0
+        };
+        db.AuthOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableAuthOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        var updatedTasks = await db.AuthOutboxTasks.ToListAsync();
+        Assert.Single(updatedTasks);
+        Assert.Equal(1, updatedTasks[0].RetryCount);
+    }
+
+    [Fact]
     public async Task TryProcessNextTaskAsync_TaskFails_ReschedulesWithBackoff()
     {
         // Arrange

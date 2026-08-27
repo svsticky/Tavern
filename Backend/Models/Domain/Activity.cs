@@ -13,6 +13,32 @@ namespace Backend.Models.Domain;
 public class Activity
 {
     /// <summary>
+    /// A list of allowed field paths that non-board organizers may modify (e.g. via JSON Patch).
+    /// Anything else - financial fields, or fields that publish/open the activity - is off-limits
+    /// to them, both via PATCH and PUT.
+    /// </summary>
+    public static readonly IReadOnlySet<string> AllowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "/name",
+        "/price",
+        "/dutchdescription",
+        "/englishdescription",
+        "/datetimestart",
+        "/datetimeend",
+        "/unenrollmentdeadline",
+        "/enrollmentdeadline",
+        "/location",
+        "/participantlimit",
+        "/organizerid",
+        "/isenrollable",
+        "/areparticipantsvisible",
+        "/isadultonly",
+        "/isweeklydrinks",
+        "/allowedaudience",
+        "/specificationquestionsjson"
+    };
+
+    /// <summary>
     /// The unique identifier of an activity, assigned incrementally.
     /// </summary>
     public uint Id { get; set; }

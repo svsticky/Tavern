@@ -264,12 +264,9 @@ public class EnrollmentService : IEnrollmentService
         _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", memberId, activityId, userId);
         ArgumentNullException.ThrowIfNull(patchDoc);
 
-        if (patchDoc.Operations.Any(op => op.path.Equals("/activity", StringComparison.OrdinalIgnoreCase)
-            || op.path.Equals("/activityid", StringComparison.OrdinalIgnoreCase)
-            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase)
-            || op.path.Equals("/memberid", StringComparison.OrdinalIgnoreCase)))
+        if (patchDoc.Operations.Any(op => !Enrollment.AllowedFields.Contains(op.path)))
         {
-            throw new ArgumentException("Cannot change ActivityId or MemberId.");
+            throw new ArgumentException("Cannot change ActivityId, MemberId, Price, RegisteredOn or IsOnWaitingList.");
         }
 
         // Get enrollment
@@ -302,7 +299,10 @@ public class EnrollmentService : IEnrollmentService
     {
         var next = await _db.Enrollments
             .Include(e => e.Member)
-                .ThenInclude(se => se.StudyEnrollments)
+                .ThenInclude(m => m.StudyEnrollments)
+                    .ThenInclude(se => se.Study)
+            .Include(e => e.Member)
+                .ThenInclude(m => m.GroupMemberships)
             .Include(e => e.Activity)
             .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
             .OrderBy(e => e.RegisteredOn)
@@ -312,7 +312,7 @@ public class EnrollmentService : IEnrollmentService
             .Where(e => TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
             .Take(numberToPromote);
 
-        foreach (var enrollment in next)
+        foreach (var enrollment in toPromote)
         {
             enrollment.IsOnWaitingList = false;
         }

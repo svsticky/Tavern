@@ -473,6 +473,39 @@ public class GroupServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task UploadGroupPicture_GroupNotFound_ThrowsException()
+    {
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() =>
+            _service.UploadGroupPicture(999, _userId, null));
+        Assert.Equal("Group not found", ex.Message);
+    }
+
+    [Fact]
+    public async Task UploadGroupPicture_SaveFails_RollsBackTransaction()
+    {
+        // Arrange
+        var group = new Group { Id = 1, Name = "Group", Type = GroupType.Committee, GroupPicturePath = "old.webp", GroupPictureFileName = "old.png" };
+        _db.Groups.Add(group);
+        await _db.SaveChangesAsync();
+
+        var formFile = Substitute.For<IFormFile>();
+        formFile.FileName.Returns("new.png");
+        formFile.ContentType.Returns("image/png");
+
+        _fileCompressor.CompressFileAsync(formFile)
+            .Returns(Task.FromException<(Stream Stream, string ContentType)>(new Exception("Compression failed")));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _service.UploadGroupPicture(1, _userId, formFile));
+
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Groups.FindAsync(1u);
+        Assert.NotNull(updated);
+        Assert.Equal("old.webp", updated.GroupPicturePath); // Unchanged - rolled back
+    }
+
+    [Fact]
     public async Task GetBoardGroupId_Found_ReturnsValue()
     {
         // Arrange

@@ -757,7 +757,7 @@ public class EnrollmentServiceTests : IDisposable
     public async Task PatchEnrollment_NotFound_ThrowsKeyNotFoundException()
     {
         var patchDoc = new JsonPatchDocument<Enrollment>();
-        patchDoc.Replace(e => e.Price, 20);
+        patchDoc.Replace(e => e.SpecificationAnswers, new List<SpecificationAnswer>());
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _service.PatchEnrollment(1u, Guid.NewGuid(), patchDoc, _userId, CancellationToken.None));
@@ -781,7 +781,7 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
 
         var patchDoc = new JsonPatchDocument<Enrollment>();
-        patchDoc.Replace(e => e.Price, 20);
+        patchDoc.Replace(e => e.SpecificationAnswers, new List<SpecificationAnswer>());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _service.PatchEnrollment(activity.Id, member.Id, patchDoc, member.Id, CancellationToken.None));
@@ -805,10 +805,20 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(member1.Id).Returns(false);
 
         var patchDoc = new JsonPatchDocument<Enrollment>();
-        patchDoc.Replace(e => e.Price, 20);
+        patchDoc.Replace(e => e.SpecificationAnswers, new List<SpecificationAnswer>());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _service.PatchEnrollment(activity.Id, member2.Id, patchDoc, member1.Id, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PatchEnrollment_RestrictedField_ThrowsArgumentException()
+    {
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.Price, 20);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.PatchEnrollment(1u, Guid.NewGuid(), patchDoc, _userId, CancellationToken.None));
     }
 
     [Fact]
@@ -828,13 +838,14 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
 
         var patchDoc = new JsonPatchDocument<Enrollment>();
-        patchDoc.Replace(e => e.Price, 20);
+        patchDoc.Replace(e => e.SpecificationAnswers, new List<SpecificationAnswer>());
 
         await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, member.Id, CancellationToken.None);
 
         _db.ChangeTracker.Clear();
-        var updated = await _db.Enrollments.FirstAsync(e => e.MemberId == member.Id);
-        Assert.Equal(20, updated.Price);
+        var updated = await _db.Enrollments.Include(e => e.SpecificationAnswers).FirstAsync(e => e.MemberId == member.Id);
+        Assert.Empty(updated.SpecificationAnswers);
+        Assert.Equal(10, updated.Price);
     }
 
     [Fact]
@@ -861,7 +872,11 @@ public class EnrollmentServiceTests : IDisposable
         await _db.SaveChangesAsync();
         _db.ChangeTracker.Clear();
         var list = await _db.Enrollments.Where(e => e.ActivityId == activity.Id).ToListAsync();
-        Assert.All(list, e => Assert.False(e.IsOnWaitingList));
+
+        // Only the single promoted enrollment (member1, earliest RegisteredOn) should leave the
+        // waiting list - member2's enrollment was not promoted and should remain on it.
+        Assert.False(list.Single(e => e.MemberId == member1.Id).IsOnWaitingList);
+        Assert.True(list.Single(e => e.MemberId == member2.Id).IsOnWaitingList);
     }
 
     [Fact]

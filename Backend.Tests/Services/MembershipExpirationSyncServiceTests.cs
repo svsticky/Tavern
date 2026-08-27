@@ -358,4 +358,25 @@ public class MembershipExpirationSyncServiceTests
         await service.StopAsync(CancellationToken.None);
         await startTask;
     }
+
+    [Fact]
+    public async Task ExecuteAsync_RunsLoopAndStopsGracefullyAfterStartupDelay()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var provider = CreateServiceProvider(db);
+        var service = new MembershipExpirationSyncService(provider, _logger);
+
+        // Act - let the fixed 5s startup delay elapse so the loop body actually runs once,
+        // then cancel so the subsequent 24h Task.Delay is interrupted and the loop exits via break.
+        var cts = new CancellationTokenSource();
+        var startTask = service.StartAsync(cts.Token);
+
+        await Task.Delay(5500);
+
+        cts.Cancel();
+        await service.StopAsync(CancellationToken.None);
+        await startTask;
+    }
 }

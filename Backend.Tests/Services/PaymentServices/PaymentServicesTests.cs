@@ -284,4 +284,120 @@ public class PaymentServicesTests : IDisposable
         Assert.Equal(3u, accountingTask.PaymentId);
         Assert.Equal(AccountingToolTaskType.BegunstigerPayment, accountingTask.TaskType);
     }
+
+    [Fact]
+    public async Task HandleWebhookAsync_PendingStatus_DoesNothing()
+    {
+        // Arrange
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 4,
+            PaymentServiceId = "tr_pending",
+            PaymentIntentUrl = "url",
+            Price = 10
+        };
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_pending", "pending");
+        _mollieClientMock.GetPaymentAsync("tr_pending").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_pending");
+
+        // Assert
+        var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 4);
+        Assert.Null(payment.PaidAt);
+        Assert.Empty(await _db.AuthOutboxTasks.ToListAsync());
+        Assert.Empty(await _db.AccountingToolOutboxTasks.ToListAsync());
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_NoAccountingConfigured_DoesNotQueueAccountingTask()
+    {
+        // Arrange - no "AccountingService" setting row means IsUsingAccountingTool is false
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Sam",
+            LastName = "Klein",
+            Email = "sam@example.com",
+            StudentNumber = "s11",
+            PhoneNumber = "11",
+            Street = "St",
+            HouseNumber = "11",
+            PostalCode = "11",
+            City = "Enschede",
+            AuthSystemUserId = Guid.NewGuid()
+        };
+
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 5,
+            PaymentServiceId = "tr_no_accounting",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var paidTime = DateTimeOffset.UtcNow;
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_no_accounting", "paid", paidTime);
+        _mollieClientMock.GetPaymentAsync("tr_no_accounting").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_no_accounting");
+
+        // Assert
+        var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 5);
+        Assert.NotNull(payment.PaidAt);
+        Assert.Empty(await _db.AccountingToolOutboxTasks.ToListAsync());
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_MemberWithoutAuthSystemUserId_SkipsAuthSyncButStillMarksPaid()
+    {
+        // Arrange - a member whose AuthOutboxTask.Create task hasn't completed yet shouldn't block the
+        // payment from being marked as paid; AuthOutboxWorker queues a catch-up Sync task once linked.
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Robin",
+            LastName = "de Boer",
+            Email = "robin@example.com",
+            StudentNumber = "s12",
+            PhoneNumber = "12",
+            Street = "St",
+            HouseNumber = "12",
+            PostalCode = "12",
+            City = "Enschede",
+            AuthSystemUserId = null
+        };
+
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 6,
+            PaymentServiceId = "tr_unlinked_member",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var paidTime = DateTimeOffset.UtcNow;
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_unlinked_member", "paid", paidTime);
+        _mollieClientMock.GetPaymentAsync("tr_unlinked_member").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_unlinked_member");
+
+        // Assert
+        var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 6);
+        Assert.NotNull(payment.PaidAt);
+        Assert.Empty(await _db.AuthOutboxTasks.ToListAsync());
+    }
 }

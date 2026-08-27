@@ -271,21 +271,19 @@ namespace Backend.Services.Domain
 
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
-            if (member.Id != userId
-                || member.Email != dto.Email
-                || member.Id != userId
-                || dto.StudentNumber != member.StudentNumber
-                || dto.FirstName != member.FirstName
-                || dto.LastName != member.LastName
-                || dto.DateOfBirth != member.DateOfBirth
-                || dto.Notes != member.Notes
-                || dto.Gratie != member.Gratie
-                || dto.LidVanVerdienste != member.LidVanVerdienste
-                || dto.EreLid != member.EreLid
-                || dto.Begunstiger != member.Begunstiger
-                || dto.Suspended != member.Suspended)
+            if (member.Id != userId)
+            {
+                // Only board members may edit someone else's profile at all
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            }
+            else if (!permissionService.IsBoardOrCandidateBoardMember(userId))
+            {
+                // Some settings a member should not be able to edit themselves. Silently keep them as
+                // they are instead of rejecting the request when they differ - comparing and rejecting
+                // would let someone guess a hidden value (e.g. the admin-only Notes field) and learn
+                // whether they guessed right from whether the request succeeds or fails.
+                PreserveFieldsOutsideAllowedFields(member, dto);
+            }
 
             try
             {
@@ -479,11 +477,19 @@ namespace Backend.Services.Domain
             db.BegunstigerPayments.RemoveRange(existingBegunstigerPayments);
 
             db.Members.Remove(existingMember);
-            authOutboxWorker.EnqueueTask(
-                AuthTaskType.Delete,
-                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet."),
-                db
-            );
+            if (db.AuthOutboxTasks.Any(t => t.AuthSystemUserId == existingMember.Id && t.TaskType == AuthTaskType.Create))
+            {
+                db.AuthOutboxTasks.RemoveRange(db.AuthOutboxTasks.Where(t => t.AuthSystemUserId == existingMember.AuthSystemUserId));
+                db.AuthOutboxTasks.RemoveRange(db.AuthOutboxTasks.Where(t => t.AuthSystemUserId == existingMember.Id && t.TaskType == AuthTaskType.Create));
+            }
+            else
+            {
+                authOutboxWorker.EnqueueTask(
+                    AuthTaskType.Delete,
+                    existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet."),
+                    db
+                );
+            }
         }
 
         private static Member BuildMember(PostMemberDTO dto)
@@ -508,6 +514,29 @@ namespace Backend.Services.Domain
             };
         }
 
+        /// <summary>
+        /// Since PUT replaces the whole member rather than applying discrete patch operations, field-level
+        /// restrictions can't be enforced by inspecting operation paths like PatchMember does. Rejecting the
+        /// request whenever one of these fields differs from its current value would let a member guess a
+        /// hidden value (e.g. the admin-only Notes field) and learn whether the guess was correct from
+        /// whether the request succeeds - so instead, these fields are silently reset to their current
+        /// value on the DTO before it's applied, regardless of what was submitted for them.
+        /// </summary>
+        private static void PreserveFieldsOutsideAllowedFields(Member member, MemberUpdateDTO dto)
+        {
+            dto.Email = member.Email;
+            dto.StudentNumber = member.StudentNumber;
+            dto.FirstName = member.FirstName;
+            dto.LastName = member.LastName;
+            dto.DateOfBirth = member.DateOfBirth;
+            dto.Notes = member.Notes;
+            dto.Gratie = member.Gratie;
+            dto.LidVanVerdienste = member.LidVanVerdienste;
+            dto.EreLid = member.EreLid;
+            dto.Begunstiger = member.Begunstiger;
+            dto.Suspended = member.Suspended;
+        }
+
         private static void ApplyMemberUpdate(Member member, MemberUpdateDTO dto)
         {
             member.StudentNumber = dto.StudentNumber;
@@ -521,6 +550,13 @@ namespace Backend.Services.Domain
             member.DateOfBirth = dto.DateOfBirth;
             member.ParentPhoneNumber = dto.ParentPhoneNumber;
             member.PreferredLanguage = dto.PreferredLanguage;
+            member.Email = dto.Email;
+            member.Notes = dto.Notes;
+            member.Gratie = dto.Gratie;
+            member.LidVanVerdienste = dto.LidVanVerdienste;
+            member.EreLid = dto.EreLid;
+            member.Begunstiger = dto.Begunstiger;
+            member.Suspended = dto.Suspended;
         }
 
         private void AddStudyEnrollments(Guid memberId, IEnumerable<PostStudyEnrollmentDTO> studyEnrollments)

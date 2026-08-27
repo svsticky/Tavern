@@ -396,4 +396,111 @@ public class KeycloakAPIServiceTests : IDisposable
         var updated = await _db.Members.FirstAsync(m => m.Id == member.Id);
         Assert.Equal("neweve@example.com", updated.Email);
     }
+
+    [Fact]
+    public async Task GetServiceAccountToken_Failure_ThrowsException()
+    {
+        // Arrange
+        _tokenHandler.SendAsyncFunc = (req) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent("invalid_client")
+        });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Frank",
+            LastName = "Miller",
+            Email = "frank@example.com",
+            StudentNumber = "s5555555",
+            PhoneNumber = "+31600000000",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "Enschede"
+        };
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() => _service.CreateUser(member));
+        Assert.Contains("Keycloak Auth Failed", ex.Message);
+    }
+
+    [Fact]
+    public async Task CreateUser_Failure_ThrowsException()
+    {
+        // Arrange
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Grace",
+            LastName = "Hopper",
+            Email = "grace@example.com",
+            StudentNumber = "s6666666",
+            PhoneNumber = "+31600000000",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "Enschede"
+        };
+
+        _adminHandler.SendAsyncFunc = (req) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("invalid user")
+        });
+
+        // Act & Assert
+        await Assert.ThrowsAsync<HttpRequestException>(() => _service.CreateUser(member));
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_Success_CompletesSuccessfully()
+    {
+        // Arrange
+        var keycloakId = Guid.NewGuid();
+
+        _adminHandler.SendAsyncFunc = (req) =>
+        {
+            Assert.Equal(HttpMethod.Put, req.Method);
+            Assert.EndsWith($"users/{keycloakId}/execute-actions-email", req.RequestUri?.AbsolutePath);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));
+        };
+
+        // Act
+        await _service.SendActivationEmail(keycloakId);
+
+        // Assert
+        // Verified by handler returning success
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_Failure_ThrowsException()
+    {
+        // Arrange
+        var keycloakId = Guid.NewGuid();
+
+        _adminHandler.SendAsyncFunc = (req) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("cannot send email")
+        });
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() => _service.SendActivationEmail(keycloakId));
+        Assert.Contains("Keycloak Email Failed", ex.Message);
+    }
+
+    [Fact]
+    public async Task GetEmail_Failure_ThrowsException()
+    {
+        // Arrange
+        var keycloakId = Guid.NewGuid();
+
+        _adminHandler.SendAsyncFunc = (req) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)
+        {
+            Content = new StringContent("user not found")
+        });
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() => _service.GetEmail(keycloakId));
+        Assert.Contains("Keycloak User Fetch Failed", ex.Message);
+    }
 }

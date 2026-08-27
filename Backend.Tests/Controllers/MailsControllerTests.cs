@@ -188,6 +188,25 @@ public class MailsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task PostNormalMail_EmptyRecipients_SkipsSend()
+    {
+        // Arrange - no board/member setup needed: an empty recipient list short-circuits before
+        // sender resolution is ever attempted.
+        var dto = new PostMailDTO
+        {
+            Recipients = Array.Empty<MailRecipient>(),
+            Subject = "Sub",
+            HtmlContent = "Content"
+        };
+
+        // Act
+        var result = await _controller.PostNormalMail(dto, CancellationToken.None);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
     public async Task PostNormalMail_Error_ThrowsException()
     {
         // Arrange
