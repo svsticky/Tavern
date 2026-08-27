@@ -14,6 +14,7 @@ import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
@@ -78,6 +79,7 @@ export default function SettingsPage() {
   }, []);
 
   const [isPromotingBoard, setIsPromotingBoard] = useState(false);
+  const [confirmModal, confirm] = useConfirm();
 
   const requiredFieldMissing =
     !settings.BoardGroupId ||
@@ -97,7 +99,7 @@ export default function SettingsPage() {
   const currentRoleMappings = getCurrentRoleMappings(settings);
 
   const handlePromoteBoard = async () => {
-    if (!confirm(t("are_you_sure_promote_board"))) {
+    if (!(await confirm(t("are_you_sure_promote_board")))) {
       return;
     }
     try {
@@ -927,6 +929,7 @@ export default function SettingsPage() {
           </div>
         </Form>
       </div>
+      {confirmModal}
     </div>
   );
 }

@@ -16,8 +16,8 @@ import BorderedTile from "~/components/Tiles/BorderedTile";
 import DataTableTile, { type Column } from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
-import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useAuth } from "~/context/AuthContext";
@@ -43,7 +43,7 @@ export default function UpdateAccountStatus() {
   const authService = useAuth();
   const [loading, setLoading] = useState(true);
   const [memberId, setMemberId] = useState<string | null>(null);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [confirmModal, confirm] = useConfirm();
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
   const [selectedStartDate, setSelectedStartDate] = useState<string>("");
   const [startDatesRaw, setStartDatesRaw] = useState<string>("");
@@ -394,7 +394,23 @@ export default function UpdateAccountStatus() {
           <Button
             variant="secondary"
             className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-medium px-5 py-2.5 rounded-lg border-none shadow-sm hover:shadow transition-all flex items-center gap-2 shrink-0 self-stretch sm:self-auto justify-center"
-            onClick={() => setIsDeleteModalOpen(true)}
+            onClick={async () => {
+              if (
+                !(await confirm(
+                  t(
+                    "are_you_sure_delete_own_account",
+                    "Weet je zeker dat je je account wilt verwijderen? Lopen de studie-inschrijvingen worden verwijderd en je persoonsgegevens worden geanonimiseerd.",
+                  ),
+                  {
+                    title: t("delete_account", "Account Verwijderen"),
+                    confirmLabel: t("delete", "Definitief Verwijderen"),
+                  },
+                ))
+              ) {
+                return;
+              }
+              handleDeleteAccount();
+            }}
             disabled={loading}
           >
             <Trash2 className="w-4 h-4" />
@@ -402,48 +418,7 @@ export default function UpdateAccountStatus() {
           </Button>
         </div>
       </div>
-
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title={t("delete_account", "Account Verwijderen")}
-      >
-        <div className="flex flex-col gap-5 p-1">
-          <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-100 rounded-xl text-red-700 text-sm">
-            <AlertTriangle className="w-5 h-5 shrink-0" />
-            <span>
-              {t(
-                "are_you_sure_delete_own_account",
-                "Weet je zeker dat je je account wilt verwijderen? Lopen de studie-inschrijvingen worden verwijderd en je persoonsgegevens worden geanonimiseerd.",
-              )}
-            </span>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-2">
-            <Button
-              variant="secondary"
-              onClick={() => setIsDeleteModalOpen(false)}
-              disabled={loading}
-              className="px-4 py-2"
-            >
-              {t("cancel", "Annuleren")}
-            </Button>
-            <Button
-              variant="primary"
-              className="bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border-transparent px-5 py-2 flex items-center gap-2 shadow-sm"
-              onClick={handleDeleteAccount}
-              disabled={loading}
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>
-                {loading
-                  ? t("deleting", "Verwijderen...")
-                  : t("delete", "Definitief Verwijderen")}
-              </span>
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {confirmModal}
     </>
   );
 }

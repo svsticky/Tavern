@@ -6,6 +6,7 @@ import type { MemberMailinglistDto, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
@@ -39,6 +40,7 @@ export default function ChangeAccountForm({
   const [saving, setSaving] = useState(false);
   const [loadingMailingLists, setLoadingMailingLists] = useState(false);
   const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
+  const [confirmModal, confirm] = useConfirm();
 
   const [mailingLists, setMailingLists] = useState<MemberMailinglistDto[]>([]);
   const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
@@ -335,7 +337,7 @@ export default function ChangeAccountForm({
         className="w-full"
         type="button"
         onClick={async () => {
-          if (!window.confirm(t("delete_account_confirmation"))) {
+          if (!(await confirm(t("delete_account_confirmation")))) {
             return;
           }
 
@@ -359,6 +361,7 @@ export default function ChangeAccountForm({
       >
         {t("delete_account")}
       </Button>
+      {confirmModal}
     </Form>
   );
 }

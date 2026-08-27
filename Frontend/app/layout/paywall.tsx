@@ -11,6 +11,7 @@ import {
   postPaymentsMembership,
 } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -31,6 +32,7 @@ export default function PaywallLayout() {
   );
   const [isBegunstiger, setIsBegunstiger] = useState(false);
   const [mainBoardMail, setMainBoardMail] = useState<string | null>(null);
+  const [confirmModal, confirm] = useConfirm();
 
   useEffect(() => {
     const loadToken = async () => {
@@ -58,7 +60,7 @@ export default function PaywallLayout() {
 
   const deleteAccount = async () => {
     if (!tokenParsed || !authService) return;
-    if (!window.confirm(i18n.t("delete_account_confirmation"))) {
+    if (!(await confirm(i18n.t("delete_account_confirmation")))) {
       return;
     }
 
@@ -163,6 +165,7 @@ export default function PaywallLayout() {
       <Button variant="danger" onClick={deleteAccount}>
         {i18n.t("delete_account")}
       </Button>
+      {confirmModal}
     </>
   );
 

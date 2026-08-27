@@ -299,11 +299,13 @@ describe("UpdateAccountStatus", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Account Verwijderen/ }),
     );
-    const cancelButton = await screen.findByText("Annuleren");
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
     fireEvent.click(cancelButton);
 
     await waitFor(() =>
-      expect(screen.queryByText("Annuleren")).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole("button", { name: "cancel" }),
+      ).not.toBeInTheDocument(),
     );
   });
 

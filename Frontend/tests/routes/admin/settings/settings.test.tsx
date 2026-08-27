@@ -343,7 +343,6 @@ describe("SettingsPage", () => {
 
   it("promotes the board when confirmed", async () => {
     postGroupsPromoteBoard.mockResolvedValue({});
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     renderWithProviders(<SettingsPage />);
 
@@ -352,13 +351,15 @@ describe("SettingsPage", () => {
     });
     fireEvent.click(promoteButton);
 
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
+
     await waitFor(() => expect(postGroupsPromoteBoard).toHaveBeenCalled());
-    confirmSpy.mockRestore();
   });
 
   it("does not promote the board when the confirmation is cancelled", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-
     renderWithProviders(<SettingsPage />);
 
     const promoteButton = await screen.findByRole("button", {
@@ -366,13 +367,14 @@ describe("SettingsPage", () => {
     });
     fireEvent.click(promoteButton);
 
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
+    fireEvent.click(cancelButton);
+
     expect(postGroupsPromoteBoard).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it("shows an error toast when promoting the board fails", async () => {
     postGroupsPromoteBoard.mockRejectedValue(new Error("boom"));
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
@@ -384,8 +386,12 @@ describe("SettingsPage", () => {
     });
     fireEvent.click(promoteButton);
 
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
+
     await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    confirmSpy.mockRestore();
     consoleError.mockRestore();
   });
 

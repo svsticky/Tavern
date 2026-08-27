@@ -150,10 +150,12 @@ describe("EditMemberPage", () => {
     expect(deleteButtons.length).toBeGreaterThan(1);
     fireEvent.click(deleteButtons[deleteButtons.length - 1]);
 
-    expect(handleDeleteMember).toHaveBeenCalledWith(
-      "m1",
-      expect.any(Function),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(handleDeleteMember).toHaveBeenCalledWith(
+        "m1",
+        expect.any(Function),
+        expect.any(Function),
+      ),
     );
   });
 
@@ -193,10 +195,12 @@ describe("EditMemberPage", () => {
     expect(confirmButtons.length).toBeGreaterThan(1);
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
-    expect(handleMarkMembershipAsPaid).toHaveBeenCalledWith(
-      "m1",
-      expect.any(Function),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(handleMarkMembershipAsPaid).toHaveBeenCalledWith(
+        "m1",
+        expect.any(Function),
+        expect.any(Function),
+      ),
     );
     await waitFor(() =>
       expect(
@@ -242,10 +246,12 @@ describe("EditMemberPage", () => {
     });
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
-    expect(handleMarkBegunstigerFeeAsPaid).toHaveBeenCalledWith(
-      "m1",
-      expect.any(Function),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(handleMarkBegunstigerFeeAsPaid).toHaveBeenCalledWith(
+        "m1",
+        expect.any(Function),
+        expect.any(Function),
+      ),
     );
     expect(handleMarkMembershipAsPaid).not.toHaveBeenCalled();
   });
