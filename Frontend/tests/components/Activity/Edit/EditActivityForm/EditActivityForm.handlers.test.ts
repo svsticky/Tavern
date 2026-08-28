@@ -239,7 +239,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: false,
+      canEditStructural: false,
+      canManageFinances: false,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -263,7 +264,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -284,7 +286,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: false,
+      canEditStructural: false,
+      canManageFinances: false,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -310,7 +313,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -333,7 +337,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -351,7 +356,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -369,7 +375,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving,
       isEdit: false,
@@ -406,7 +413,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e,
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -434,7 +442,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -469,7 +478,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -491,7 +501,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -512,7 +523,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,

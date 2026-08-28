@@ -394,6 +394,29 @@ namespace Backend.Migrations
                     b.ToTable("GroupMemberships");
                 });
 
+            modelBuilder.Entity("Backend.Models.Domain.GroupPermission", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("GroupId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("PermissionKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId", "PermissionKey")
+                        .IsUnique();
+
+                    b.ToTable("GroupPermissions");
+                });
+
             modelBuilder.Entity("Backend.Models.Domain.MailSubscriptionOutboxTask", b =>
                 {
                     b.Property<long>("Id")
@@ -731,6 +754,29 @@ namespace Backend.Migrations
                     b.ToTable("RoleAliases");
                 });
 
+            modelBuilder.Entity("Backend.Models.Domain.RolePermission", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("PermissionKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("RoleId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId", "PermissionKey")
+                        .IsUnique();
+
+                    b.ToTable("RolePermissions");
+                });
+
             modelBuilder.Entity("Backend.Models.Domain.Setting", b =>
                 {
                     b.Property<string>("Name")
@@ -992,6 +1038,17 @@ namespace Backend.Migrations
                     b.Navigation("RoleAlias");
                 });
 
+            modelBuilder.Entity("Backend.Models.Domain.GroupPermission", b =>
+                {
+                    b.HasOne("Backend.Models.Domain.Group", "Group")
+                        .WithMany("GroupPermissions")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
+                });
+
             modelBuilder.Entity("Backend.Models.Domain.Payment", b =>
                 {
                     b.HasOne("Backend.Models.Domain.Member", "Member")
@@ -1006,6 +1063,17 @@ namespace Backend.Migrations
                 {
                     b.HasOne("Backend.Models.Domain.Role", "Role")
                         .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Backend.Models.Domain.RolePermission", b =>
+                {
+                    b.HasOne("Backend.Models.Domain.Role", "Role")
+                        .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1095,6 +1163,8 @@ namespace Backend.Migrations
             modelBuilder.Entity("Backend.Models.Domain.Group", b =>
                 {
                     b.Navigation("GroupMemberships");
+
+                    b.Navigation("GroupPermissions");
                 });
 
             modelBuilder.Entity("Backend.Models.Domain.Member", b =>
@@ -1106,6 +1176,11 @@ namespace Backend.Migrations
                     b.Navigation("GroupMemberships");
 
                     b.Navigation("StudyEnrollments");
+                });
+
+            modelBuilder.Entity("Backend.Models.Domain.Role", b =>
+                {
+                    b.Navigation("RolePermissions");
                 });
 
             modelBuilder.Entity("Backend.Models.Domain.SpecificationQuestion", b =>

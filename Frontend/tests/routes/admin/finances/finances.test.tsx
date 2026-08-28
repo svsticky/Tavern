@@ -6,7 +6,23 @@ import type {
   EnrollmentBalance,
   Member,
 } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import type { TokenParsed } from "~/types/TokenParsed";
+
+const boardAuthService = createMockAuthService({
+  getTokenParsed: vi.fn(
+    async () =>
+      ({
+        locale: "en",
+        UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
+        access_level: "member",
+        given_name: "Board",
+        family_name: "Member",
+        name: "Board Member",
+        is_admin: true,
+      }) satisfies TokenParsed,
+  ),
+});
 
 const {
   loadFinancesData,
@@ -189,7 +205,7 @@ describe("Finances (admin)", () => {
       unpaidBalances: [unpaidBalance()],
     });
 
-    renderWithProviders(<Finances />);
+    renderWithProviders(<Finances />, { authService: boardAuthService });
 
     expect(await screen.findByText("Feest")).toBeInTheDocument();
     // "Jane Doe" appears both in the unpaid-activities breakdown and the overdue-payment
@@ -212,7 +228,7 @@ describe("Finances (admin)", () => {
       membersWithOverduePayment: [{ member, enrollments: [unpaidBalance()] }],
     });
 
-    renderWithProviders(<Finances />);
+    renderWithProviders(<Finances />, { authService: boardAuthService });
 
     const whatsappButton = await screen.findByText("WhatsApp");
     fireEvent.click(whatsappButton);
@@ -252,7 +268,7 @@ describe("Finances (admin)", () => {
   });
 
   it("enables export only once both dates are filled and calls the export handler", async () => {
-    renderWithProviders(<Finances />);
+    renderWithProviders(<Finances />, { authService: boardAuthService });
     await waitFor(() => expect(loadFinancesData).toHaveBeenCalled());
 
     const exportButton = screen.getByText("export").closest("button");

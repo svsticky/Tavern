@@ -7,7 +7,7 @@ import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMa
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
 import {
@@ -64,6 +64,10 @@ export default function ActivityFormPage() {
   }, [authService]);
 
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const canEditStructural =
+    isBoard || hasPermission(tokenParsed, "EditAllActivities");
+  const canManageFinances =
+    isBoard || hasPermission(tokenParsed, "ManageFinances");
 
   useEffect(() => {
     if (!tokenParsed) return;
@@ -93,7 +97,12 @@ export default function ActivityFormPage() {
         )}
       >
         <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
-          <EditActivityForm activity={activity} id={id} isBoard={isBoard} />
+          <EditActivityForm
+            activity={activity}
+            id={id}
+            canEditStructural={canEditStructural}
+            canManageFinances={canManageFinances}
+          />
         </div>
 
         {isBoard && isEdit && activity && (
