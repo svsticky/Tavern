@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
@@ -37,7 +38,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<RoleAlias> CreateRoleAlias(PostRoleAliasDTO dto, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ManageRoles);
             logger.LogInformation("Creating role alias for role {RoleId} by user {UserId}.", dto.RoleId, userId);
 
             var role = await db.Roles.FindAsync(dto.RoleId, ct);
@@ -62,7 +63,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task DeleteRoleAlias(uint id, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ManageRoles);
             logger.LogInformation("Deleting role alias {RoleAliasId} by user {UserId}.", id, userId);
 
             var roleAlias = await GetRoleAliasOrThrow(id, ct);
@@ -80,7 +81,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task PatchRoleAlias(uint id, JsonPatchDocument<RoleAlias> patchDoc, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ManageRoles);
             logger.LogInformation("Patching role alias {RoleAliasId} by user {UserId}.", id, userId);
 
             if (patchDoc == null)
@@ -108,7 +109,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task UpdateRoleAlias(uint id, RoleAliasUpdateDTO dto, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ManageRoles);
             logger.LogInformation("Updating role alias {RoleAliasId} by user {UserId}.", id, userId);
 
             var roleAlias = await GetRoleAliasOrThrow(id, ct);

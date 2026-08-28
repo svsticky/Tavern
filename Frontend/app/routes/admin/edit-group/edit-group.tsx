@@ -118,8 +118,12 @@ export default function EditGroupPage() {
   const canManageGroupPermissions =
     isBoardOrCandidateBoard(tokenParsed) ||
     hasPermission(tokenParsed, "ManageGroupPermissions");
+  const canManageRoles =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ManageRoles");
 
-  const { committeeCreationDate, boardGroupId } = useApp();
+  const { committeeCreationDate, boardGroupId, candidateBoardGroupId } =
+    useApp();
 
   const maxYear = getCommitteeYear(committeeCreationDate);
 
@@ -128,6 +132,8 @@ export default function EditGroupPage() {
   );
 
   const isBoardGroup = boardGroupId === id;
+  const isBoardOrCandidateBoardGroup =
+    id !== null && (id === boardGroupId || id === candidateBoardGroupId);
 
   const yearsSince2007 = Array.from(
     { length: maxYear - 2007 + 1 },
@@ -333,6 +339,7 @@ export default function EditGroupPage() {
                   note={t("group_permissions_note")}
                   onLoad={loadGroupPermissions}
                   onSave={saveGroupPermissions}
+                  allKnownPermissionsGranted={isBoardOrCandidateBoardGroup}
                 />
               </BorderedTile>
             </section>
@@ -340,13 +347,15 @@ export default function EditGroupPage() {
 
           <section>
             <FormHeader title={t("group_enrollments")}>
-              <Button
-                variant="secondary"
-                onClick={() => setAddRoleModalIsOpen(true)}
-                type="button"
-              >
-                {t("add_role")}
-              </Button>
+              {canManageRoles && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setAddRoleModalIsOpen(true)}
+                  type="button"
+                >
+                  {t("add_role")}
+                </Button>
+              )}
             </FormHeader>
             <BorderedTile>
               <DataTableTile

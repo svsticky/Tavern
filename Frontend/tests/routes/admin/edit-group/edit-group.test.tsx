@@ -1,7 +1,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import { useEffect } from "react";
 import { Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
+import { useApp } from "~/context/AppContext";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -107,6 +109,30 @@ function renderPage(id = 1, authService = createMockAuthService()) {
     </Routes>,
     { route: `/admin/groups/${id}`, authService },
   );
+}
+
+// EditGroupPage reads boardGroupId from AppContext; in the real app it's populated by the
+// authenticated layout further up the tree. This sets it directly on the same AppProvider
+// instance so the board-group permission-lock behavior can be exercised.
+function renderPageAsBoardGroup(
+  id: number,
+  authService: ReturnType<typeof createMockAuthService>,
+) {
+  function Wrapper() {
+    const { setBoardGroupId } = useApp();
+    useEffect(() => {
+      setBoardGroupId(id);
+    }, [setBoardGroupId, id]);
+    return (
+      <Routes>
+        <Route path="/admin/groups/:id" element={<EditGroupPage />} />
+      </Routes>
+    );
+  }
+  return renderWithProviders(<Wrapper />, {
+    route: `/admin/groups/${id}`,
+    authService,
+  });
 }
 
 function enrollment(
@@ -263,7 +289,7 @@ describe("EditGroupPage", () => {
   });
 
   it("creates a role alias via the add-role modal", async () => {
-    renderPage(1);
+    renderPage(1, boardAuthService);
 
     const addRoleButton = await screen.findByText("add_role");
     fireEvent.click(addRoleButton);
@@ -457,7 +483,7 @@ describe("EditGroupPage", () => {
   });
 
   it("closes the add-role modal after creating a parent role", async () => {
-    renderPage(1);
+    renderPage(1, boardAuthService);
 
     await screen.findByText("Jane Doe");
     fireEvent.click(screen.getByText("add_role"));
@@ -473,6 +499,13 @@ describe("EditGroupPage", () => {
 
     await screen.findByText("Jane Doe");
     expect(screen.queryByText("permissions")).not.toBeInTheDocument();
+  });
+
+  it("hides the add_role button without ManageRoles", async () => {
+    renderPage(1);
+
+    await screen.findByText("Jane Doe");
+    expect(screen.queryByText("add_role")).not.toBeInTheDocument();
   });
 
   it("loads and saves group permissions for a board member", async () => {
@@ -494,6 +527,30 @@ describe("EditGroupPage", () => {
       expect(putGroupsByIdPermissions).toHaveBeenCalledWith({
         path: { id: 1 },
         body: ["ManageGroups"],
+      }),
+    );
+  });
+
+  it("locks all known permissions on for the board group and excludes them from the save payload", async () => {
+    getGroupsByIdPermissions.mockResolvedValue({ data: [] });
+    putGroupsByIdPermissions.mockResolvedValue({});
+
+    renderPageAsBoardGroup(1, boardAuthService);
+
+    await screen.findByText("Jane Doe");
+    const checkbox = await screen.findByLabelText("Manage Groups");
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toBeDisabled();
+    expect(
+      screen.getByText("all_permissions_granted_note"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("save_permissions"));
+
+    await waitFor(() =>
+      expect(putGroupsByIdPermissions).toHaveBeenCalledWith({
+        path: { id: 1 },
+        body: [],
       }),
     );
   });

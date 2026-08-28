@@ -1,14 +1,18 @@
 import { t } from "i18next";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, XIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import {
+  deleteRolealiasesById,
   deleteRolesById,
+  getRolealiases,
   getRoles,
   getRolesByIdPermissions,
+  postRolealiases,
   postRoles,
   putRolesByIdPermissions,
   type Role,
+  type RoleAlias,
 } from "~/api";
 import PermissionChecklist from "~/components/Permissions/PermissionChecklist";
 import BorderedTile from "~/components/Tiles/BorderedTile";
@@ -59,6 +63,65 @@ export default function RolesPage() {
   const [newRoleName, setNewRoleName] = useState("");
   const [creating, setCreating] = useState(false);
   const [permissionsRole, setPermissionsRole] = useState<Role | null>(null);
+
+  const [aliasesRole, setAliasesRole] = useState<Role | null>(null);
+  const [aliasesLoading, setAliasesLoading] = useState(true);
+  const [aliases, setAliases] = useState<RoleAlias[]>([]);
+  const [newAliasName, setNewAliasName] = useState("");
+  const [savingAlias, setSavingAlias] = useState(false);
+
+  const loadAliases = useCallback(async () => {
+    if (aliasesRole?.id === undefined) return;
+    try {
+      setAliasesLoading(true);
+      const response = await getRolealiases();
+      if (response.error) throw response.error;
+      setAliases(
+        (response.data ?? []).filter((a) => a.roleId === aliasesRole.id),
+      );
+    } catch (error) {
+      console.error("Error fetching role aliases:", error);
+      toast.error(appendErrorMessage(t("loading_failed"), error));
+    } finally {
+      setAliasesLoading(false);
+    }
+  }, [aliasesRole?.id]);
+
+  useEffect(() => {
+    if (aliasesRole !== null) loadAliases();
+  }, [aliasesRole, loadAliases]);
+
+  const addAlias = async () => {
+    if (aliasesRole?.id === undefined || newAliasName.trim() === "") return;
+    setSavingAlias(true);
+    try {
+      const response = await postRolealiases({
+        body: { name: newAliasName.trim(), roleId: aliasesRole.id },
+      });
+      if (response.error) throw response.error;
+      setNewAliasName("");
+      await loadAliases();
+    } catch (error) {
+      console.error("Error creating role alias:", error);
+      toast.error(appendErrorMessage(t("save_failed"), error));
+    } finally {
+      setSavingAlias(false);
+    }
+  };
+
+  const removeAlias = async (alias: RoleAlias) => {
+    if (alias.id === undefined) return;
+    try {
+      const response = await deleteRolealiasesById({
+        path: { id: alias.id },
+      });
+      if (response.error) throw response.error;
+      await loadAliases();
+    } catch (error) {
+      console.error("Error deleting role alias:", error);
+      toast.error(appendErrorMessage(t("save_failed"), error));
+    }
+  };
 
   const loadRolePermissions = useCallback(async () => {
     const response = await getRolesByIdPermissions({
@@ -135,6 +198,18 @@ export default function RolesPage() {
       className: "w-full sm:w-px whitespace-nowrap text-right",
       render: (role) => (
         <div className="flex justify-end gap-2">
+          {canManageRoles && (
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAliasesRole(role);
+              }}
+            >
+              {t("manage_aliases")}
+            </Button>
+          )}
           {canManageRolePermissions && (
             <Button
               variant="secondary"
@@ -228,6 +303,72 @@ export default function RolesPage() {
             onSave={saveRolePermissions}
           />
         )}
+      </Modal>
+
+      <Modal
+        title={`${t("manage_aliases")}: ${aliasesRole?.name ?? ""}`}
+        isOpen={aliasesRole !== null}
+        onClose={() => setAliasesRole(null)}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-gray-500 italic">
+            {t("role_aliases_note")}
+          </p>
+
+          {aliasesLoading ? (
+            t("loading")
+          ) : (
+            <>
+              {aliases.length > 0 && (
+                <ul className="flex flex-col gap-1">
+                  {aliases.map((alias) => (
+                    <li
+                      key={alias.id}
+                      className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2 py-1 text-sm"
+                    >
+                      <span className="break-all">{alias.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeAlias(alias)}
+                        className="shrink-0 text-gray-400 hover:text-red-600 hover:cursor-pointer"
+                        aria-label={t("remove")}
+                      >
+                        <XIcon size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label={null}
+                    placeholder={t("role_alias_placeholder")}
+                    value={newAliasName}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNewAliasName(e.target.value)
+                    }
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addAlias();
+                      }
+                    }}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={addAlias}
+                  disabled={savingAlias || newAliasName.trim() === ""}
+                >
+                  {savingAlias ? t("saving") : t("add")}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
       </Modal>
     </div>
   );

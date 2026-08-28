@@ -25,15 +25,23 @@ const humanize = (permission: Permission) =>
  * by a load/save pair of async callbacks operating on the full raw string[] of granted keys -
  * used for both the group-permission editor and the role-permission editor, the only difference
  * being which endpoints `onLoad`/`onSave` call and which note is shown for the known-permission half.
+ *
+ * When `allKnownPermissionsGranted` is set (the (candidate) board group always has every
+ * permission unconditionally, regardless of what's stored), the 12 known checkboxes render as
+ * checked and locked - editing them would be misleading since board status already grants them
+ * independently of any stored grant. Custom permissions stay fully editable, since other
+ * applications don't know about Tavern's board concept.
  */
 export default function PermissionChecklist({
   onLoad,
   onSave,
   note,
+  allKnownPermissionsGranted = false,
 }: {
   onLoad: () => Promise<string[]>;
   onSave: (permissions: string[]) => Promise<void>;
   note?: string;
+  allKnownPermissionsGranted?: boolean;
 }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -99,7 +107,10 @@ export default function PermissionChecklist({
   const save = async () => {
     setSaving(true);
     try {
-      await onSave([...Array.from(selected), ...customPermissions]);
+      const knownToSave = allKnownPermissionsGranted
+        ? []
+        : Array.from(selected);
+      await onSave([...knownToSave, ...customPermissions]);
       toast.success(t("save_permissions"));
     } catch (error) {
       console.error("Error saving permissions:", error);
@@ -114,12 +125,18 @@ export default function PermissionChecklist({
   return (
     <div className="flex flex-col gap-3">
       {note && <p className="text-xs text-gray-500 italic">{note}</p>}
+      {allKnownPermissionsGranted && (
+        <p className="text-xs text-gray-500 italic">
+          {t("all_permissions_granted_note")}
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {ALL_PERMISSIONS.map((permission) => (
           <Checkbox
             key={permission}
             label={humanize(permission)}
-            checked={selected.has(permission)}
+            checked={allKnownPermissionsGranted || selected.has(permission)}
+            disabled={allKnownPermissionsGranted}
             onChange={() => toggle(permission)}
           />
         ))}
