@@ -225,21 +225,36 @@ describe("EditActivityForm", () => {
 
   it("does not show a delete button for a non-board user", () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={false} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(screen.queryByText("delete")).not.toBeInTheDocument();
   });
 
   it("does not show a delete button when creating a new activity", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
     expect(screen.queryByText("delete")).not.toBeInTheDocument();
   });
 
   it("shows a delete button for a board member editing an activity, and deletes on confirm", async () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
 
     fireEvent.click(screen.getByText("delete"));
@@ -260,7 +275,12 @@ describe("EditActivityForm", () => {
 
   it("closes the delete modal on cancel without deleting", async () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
 
     fireEvent.click(screen.getByText("delete"));

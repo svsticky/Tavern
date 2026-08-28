@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
@@ -107,7 +108,7 @@ public class RoleAliasServiceTests : IDisposable
     {
         // Arrange
         var dto = new PostRoleAliasDTO { Name = "Alias", RoleId = 1 };
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageRoles))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -140,7 +141,7 @@ public class RoleAliasServiceTests : IDisposable
         var result = await _service.CreateRoleAlias(dto, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         Assert.True(result.Id > 0);
         Assert.Equal("Alias 5", result.Name);
         Assert.Equal(5u, result.RoleId);
@@ -200,7 +201,7 @@ public class RoleAliasServiceTests : IDisposable
         await _service.DeleteRoleAlias(15u, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         var deleted = await _db.RoleAliases.FindAsync(15u);
         Assert.Null(deleted);
 
@@ -277,7 +278,7 @@ public class RoleAliasServiceTests : IDisposable
         await _service.PatchRoleAlias(20u, patchDoc, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         var updated = await _db.RoleAliases.FindAsync(20u);
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated.Name);
@@ -357,7 +358,7 @@ public class RoleAliasServiceTests : IDisposable
         await _service.UpdateRoleAlias(30u, dto, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         var updated = await _db.RoleAliases.FindAsync(30u);
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated.Name);
