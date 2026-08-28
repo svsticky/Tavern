@@ -189,11 +189,11 @@ namespace Backend.Controllers
             var userId = GetUserId();
             var member = await memberService.GetMember(id, userId, cancellationToken);
             if (member == null || string.IsNullOrEmpty(member.ProfilePicturePath))
-                return NotFound("Member or profile picture not found.");
+                return NotFound();
 
             var file = await profilePictureService.GetProfilePictureByPath(member.ProfilePicturePath);
             if (file == null)
-                return NotFound("File is no longer present on the server.");
+                return NotFound();
 
             return File(file.Value.Stream, file.Value.ContentType);
         }

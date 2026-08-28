@@ -387,8 +387,7 @@ public class ExternalLinksControllerTests
         var result = await _controller.GetIcon(1, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("External link or icon not found.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -415,8 +414,7 @@ public class ExternalLinksControllerTests
         var result = await _controller.GetIcon(1, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("File is no longer present on the server.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]

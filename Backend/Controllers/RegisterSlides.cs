@@ -138,13 +138,13 @@ public class RegisterSlidesController(IRegisterSlideService registerSlideService
         var slide = await registerSlideService.GetRegisterSlide(id, ct);
         if (slide == null || string.IsNullOrEmpty(slide.ImagePath))
         {
-            return NotFound("Register slide or image not found.");
+            return NotFound();
         }
 
         var file = await registerSlideService.GetRegisterSlideImageFile(slide.ImagePath);
         if (file == null)
         {
-            return NotFound("File is no longer present on the server.");
+            return NotFound();
         }
 
         return File(file.Stream, file.ContentType);
