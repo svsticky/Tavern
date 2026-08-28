@@ -1,14 +1,17 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import type {
-  GroupMembershipResponseDto,
-  MemberResponseDto,
-  RoleAlias,
+import {
+  type GroupMembershipResponseDto,
+  getGroupsByIdPermissions,
+  type MemberResponseDto,
+  putGroupsByIdPermissions,
+  type RoleAlias,
 } from "~/api";
 import SearchMemberOverlay from "~/components/Member/SearchMemberOverlay";
+import PermissionChecklist from "~/components/Permissions/PermissionChecklist";
 import CreateRoleOverlay from "~/components/Roles/CreateRoleOverlay/CreateRoleOverlay";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
@@ -22,7 +25,10 @@ import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useApp } from "~/context/AppContext";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   type EditGroupFormData,
   handleAddGroupEnrollment,
@@ -68,6 +74,23 @@ export default function EditGroupPage() {
     useState(false);
   const [addRoleModalIsOpen, setAddRoleModalIsOpen] = useState(false);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
+
+  const loadGroupPermissions = useCallback(async () => {
+    const response = await getGroupsByIdPermissions({ path: { id: id! } });
+    if (response.error) throw response.error;
+    return response.data ?? [];
+  }, [id]);
+
+  const saveGroupPermissions = useCallback(
+    async (permissions: string[]) => {
+      const response = await putGroupsByIdPermissions({
+        path: { id: id! },
+        body: permissions,
+      });
+      if (response.error) throw response.error;
+    },
+    [id],
+  );
   const [loadingChangeRole, setLoadingChangeRole] = useState(false);
 
   const [formData, setFormData] = useState<EditGroupFormData>({
@@ -79,7 +102,28 @@ export default function EditGroupPage() {
   });
 
   const navigate = useNavigate();
-  const { committeeCreationDate, boardGroupId } = useApp();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authService.getTokenParsed().then((token) => {
+      if (!cancelled) setTokenParsed(token);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const canManageGroupPermissions =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ManageGroupPermissions");
+  const canManageRoles =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ManageRoles");
+
+  const { committeeCreationDate, boardGroupId, candidateBoardGroupId } =
+    useApp();
 
   const maxYear = getCommitteeYear(committeeCreationDate);
 
@@ -88,6 +132,8 @@ export default function EditGroupPage() {
   );
 
   const isBoardGroup = boardGroupId === id;
+  const isBoardOrCandidateBoardGroup =
+    id !== null && (id === boardGroupId || id === candidateBoardGroupId);
 
   const yearsSince2007 = Array.from(
     { length: maxYear - 2007 + 1 },
@@ -285,15 +331,31 @@ export default function EditGroupPage() {
             {saving ? t("saving") : t("save")}
           </Button>
 
+          {canManageGroupPermissions && id !== null && (
+            <section>
+              <FormHeader title={t("permissions")} />
+              <BorderedTile>
+                <PermissionChecklist
+                  note={t("group_permissions_note")}
+                  onLoad={loadGroupPermissions}
+                  onSave={saveGroupPermissions}
+                  allKnownPermissionsGranted={isBoardOrCandidateBoardGroup}
+                />
+              </BorderedTile>
+            </section>
+          )}
+
           <section>
             <FormHeader title={t("group_enrollments")}>
-              <Button
-                variant="secondary"
-                onClick={() => setAddRoleModalIsOpen(true)}
-                type="button"
-              >
-                {t("add_role")}
-              </Button>
+              {canManageRoles && (
+                <Button
+                  variant="secondary"
+                  onClick={() => setAddRoleModalIsOpen(true)}
+                  type="button"
+                >
+                  {t("add_role")}
+                </Button>
+              )}
             </FormHeader>
             <BorderedTile>
               <DataTableTile

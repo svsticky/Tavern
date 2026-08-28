@@ -4,7 +4,31 @@ import { Outlet, useNavigate } from "react-router";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
+
+/**
+ * Permissions that unlock at least one page under `/admin/*`. Individual pages narrow
+ * further from here - this is only the outer "can this user see the admin section at all" gate.
+ */
+const ADMIN_PERMISSIONS = [
+  "ViewMembers",
+  "ManageMembers",
+  "ManageGroups",
+  "ManageRoles",
+  "ManageGroupPermissions",
+  "ManageRolePermissions",
+  "ViewFinances",
+  "ManageFinances",
+  "EditAllActivities",
+  "EditActivityForGroup",
+  "EditAnnouncements",
+  "ViewPastActivities",
+] as const;
+
+const hasAnyAdminPermission = (tokenParsed: TokenParsed | null): boolean =>
+  ADMIN_PERMISSIONS.some((permission) =>
+    hasPermission(tokenParsed, permission),
+  );
 
 /**
  * A security-first layout wrapper for administrative and board-level routes.
@@ -46,7 +70,10 @@ export default function AdminLayout() {
     ) {
       return;
     }
-    if (!isBoardOrCandidateBoard(tokenParsed)) {
+    if (
+      !isBoardOrCandidateBoard(tokenParsed) &&
+      !hasAnyAdminPermission(tokenParsed)
+    ) {
       navigate("/");
       return;
     }

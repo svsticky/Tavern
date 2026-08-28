@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
@@ -40,7 +41,7 @@ public class GroupMembershipService : IGroupMembershipService
 
         if (dto.GroupId != null)
         {
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            _permissionService.EnsurePermission(userId, Permission.ViewMembers);
             query = query.Where(gm => gm.GroupId == dto.GroupId);
         }
 
@@ -53,29 +54,30 @@ public class GroupMembershipService : IGroupMembershipService
         {
             if (dto.MemberId != userId)
             {
-                _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                _permissionService.EnsurePermission(userId, Permission.ViewMembers);
             }
             query = query.Where(gm => gm.MemberId == dto.MemberId);
         }
 
         return await query
-            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers)))
             .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<GroupMembershipResponseDTO?> GetGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
+        bool hasViewMembers = _permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers);
+
         var result = await _db.GroupMemberships
             .Where(cm => cm.Id == id)
-            .Select(GroupMembershipResponseDTO.ToDto(userId, _permissionService.IsBoardOrCandidateBoardMember(userId)))
+            .Select(GroupMembershipResponseDTO.ToDto(userId, hasViewMembers))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (result == null)
             return null;
 
-        if (!_permissionService.IsBoardOrCandidateBoardMember(userId)
-            && result.MemberId != userId)
+        if (!hasViewMembers && result.MemberId != userId)
         {
             throw new UnauthorizedAccessException();
         }
@@ -86,7 +88,7 @@ public class GroupMembershipService : IGroupMembershipService
     /// <inheritdoc />
     public async Task<GroupMembership> CreateGroupMembership(PostGroupMembershipDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Creating group membership for member {MemberId} in group {GroupId} by user {UserId}.", dto.MemberId, dto.GroupId, userId);
 
         var member = await GetMemberOrThrow(dto.MemberId, cancellationToken);
@@ -127,7 +129,7 @@ public class GroupMembershipService : IGroupMembershipService
     /// <inheritdoc />
     public async Task DeleteGroupMembership(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Deleting group membership {MembershipId} by user {UserId}.", id, userId);
 
         var membership = await _db.GroupMemberships
@@ -159,7 +161,7 @@ public class GroupMembershipService : IGroupMembershipService
     /// <inheritdoc />
     public async Task PatchGroupMembership(uint id, Guid userId, JsonPatchDocument<GroupMembership> patchDoc, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Patching group membership {MembershipId} by user {UserId}.", id, userId);
 
         if (patchDoc == null)
@@ -217,7 +219,7 @@ public class GroupMembershipService : IGroupMembershipService
     /// <inheritdoc />
     public async Task UpdateGroupMembership(uint id, Guid userId, GroupMembershipUpdateDTO dto, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Updating group membership {MembershipId} by user {UserId}.", id, userId);
 
         var membership = await _db.GroupMemberships

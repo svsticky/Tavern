@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
@@ -53,7 +54,7 @@ public class AnnouncementService : IAnnouncementService
     /// <inheritdoc />
     public async Task<Announcement> CreateAnnouncement(Guid userId, PostAnnouncementDTO dto, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.EditAnnouncements);
         _logger.LogInformation("Creating announcement by user {UserId}.", userId);
 
         var announcement = BuildAnnouncement(userId, dto);
@@ -70,7 +71,7 @@ public class AnnouncementService : IAnnouncementService
     /// <inheritdoc />
     public async Task DeleteAnnouncement(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.EditAnnouncements);
         _logger.LogInformation("Deleting announcement {AnnouncementId} by user {UserId}.", id, userId);
 
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);
@@ -82,7 +83,7 @@ public class AnnouncementService : IAnnouncementService
     /// <inheritdoc />
     public async Task PatchAnnouncement(uint id, JsonPatchDocument<Announcement> patchDoc, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.EditAnnouncements);
         _logger.LogInformation("Patching announcement {AnnouncementId} by user {UserId}.", id, userId);
 
         ArgumentNullException.ThrowIfNull(patchDoc);
@@ -104,7 +105,7 @@ public class AnnouncementService : IAnnouncementService
     /// <inheritdoc />
     public async Task UpdateAnnouncement(uint id, UpdateAnnouncementDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.EditAnnouncements);
         _logger.LogInformation("Updating announcement {AnnouncementId} by user {UserId}.", id, userId);
 
         var announcement = await GetAnnouncementOrThrow(id, cancellationToken);

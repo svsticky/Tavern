@@ -15,9 +15,16 @@ vi.mock("~/routes/edit-activity/edit-activity.handlers", () => ({
 }));
 
 vi.mock("~/components/Activity/Edit/EditActivityForm/EditActivityForm", () => ({
-  default: ({ isBoard, id }: { isBoard: boolean; id?: string }) => (
+  default: ({
+    canEditStructural,
+    id,
+  }: {
+    canEditStructural: boolean;
+    canManageFinances: boolean;
+    id?: string;
+  }) => (
     <div>
-      edit-activity-form-{isBoard ? "board" : "member"}-{id ?? "new"}
+      edit-activity-form-{canEditStructural ? "board" : "member"}-{id ?? "new"}
     </div>
   ),
 }));

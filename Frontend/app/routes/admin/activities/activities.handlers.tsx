@@ -22,12 +22,13 @@ export const loadAdminActivities = async (
   setActivities: (activities: ActivityResponseDto[]) => void,
   page?: number,
   pageSize?: number,
+  includePast = true,
 ) => {
   try {
     setLoading(true);
     const response = await getActivities({
       query: {
-        IncludePast: true,
+        IncludePast: includePast,
         IncludeFuture: true,
         Year: year,
         Page: page,

@@ -5,6 +5,8 @@ using Backend.Utils.DateTime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Backend.Services.AuthServices;
 
@@ -48,15 +50,31 @@ public class KeycloakAPIService(
 
         bool emailChanged = !string.Equals(currentEmail, member.Email, StringComparison.OrdinalIgnoreCase);
 
-        var memberships = await db.GroupMemberships
+        var currentCommitteeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+
+        var membershipClaims = await db.GroupMemberships
             .Include(gm => gm.RoleAlias!.Role)
-            .Where(gm => gm.MemberId == member.Id && gm.Group.Active)
-            .Select(gm => $"{gm.MembershipYear}:{gm.Group.Id};{gm.Group.Name}:{(gm.RoleAlias != null ? gm.RoleAlias.Id : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Role.Name : "")};{(gm.RoleAlias != null ? gm.RoleAlias.Name : "")}")
+            .Where(gm => gm.MemberId == member.Id && gm.Group.Active && gm.MembershipYear == currentCommitteeYear)
+            .Select(gm => new GroupMembershipClaim
+            {
+                Id = gm.GroupId,
+                Name = gm.Group.Name,
+                Permissions = db.GroupPermissions.Where(gp => gp.GroupId == gm.GroupId).Select(gp => gp.PermissionKey).ToList(),
+                Role = gm.RoleAlias == null ? null : new RoleClaim
+                {
+                    Id = gm.RoleAlias.RoleId,
+                    Name = gm.RoleAlias.Role.Name,
+                    Alias = gm.RoleAlias.Name,
+                    Permissions = db.RolePermissions.Where(rp => rp.RoleId == gm.RoleAlias.RoleId).Select(rp => rp.PermissionKey).ToList()
+                }
+            })
             .ToListAsync();
+
+        var membershipsJson = JsonSerializer.Serialize(membershipClaims);
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray());
+        var updatedUser = MapToKeycloakUser(member, currentEmail, null, membershipsJson);
 
         var response = await client.PutAsJsonAsync($"users/{member.AuthSystemUserId}", updatedUser);
         response.EnsureSuccessStatusCode();
@@ -239,7 +257,31 @@ public class KeycloakAPIService(
             : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
     }
 
-    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
+    /// <summary>
+    /// A single group_memberships claim entry, matching the shape consumed by the frontend's group.util.ts.
+    /// Permission entries are raw string keys: either one of the 12 known Permission names, or an
+    /// arbitrary custom string for other applications sharing this Keycloak instance to interpret.
+    /// </summary>
+    private class GroupMembershipClaim
+    {
+        [JsonPropertyName("id")] public uint Id { get; set; }
+        [JsonPropertyName("name")] public string Name { get; set; } = "";
+        [JsonPropertyName("permissions")] public List<string> Permissions { get; set; } = new();
+        [JsonPropertyName("role")] public RoleClaim? Role { get; set; }
+    }
+
+    /// <summary>
+    /// The role portion of a group_memberships claim entry.
+    /// </summary>
+    private class RoleClaim
+    {
+        [JsonPropertyName("id")] public uint Id { get; set; }
+        [JsonPropertyName("name")] public string Name { get; set; } = "";
+        [JsonPropertyName("alias")] public string Alias { get; set; } = "";
+        [JsonPropertyName("permissions")] public List<string> Permissions { get; set; } = new();
+    }
+
+    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string? membershipsJson = null)
     {
         var boardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
         var candidateBoardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value;
@@ -263,7 +305,7 @@ public class KeycloakAPIService(
             attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
                 { "access_level", new List<string> { member.Suspended ? "suspended" : HasPaidMembership(member) ? "full" : "not_paid" } },
-                { "group_memberships", memberships?.ToList() ?? new List<string>() },
+                { "group_memberships", new List<string> { membershipsJson ?? "[]" } },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } },
                 { "email", new List<string> { currentEmail } },

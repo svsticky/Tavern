@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.PaymentServices;
 using Backend.Utils;
@@ -29,7 +30,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<List<MembershipPayment>> GetMembershipPayments(Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ViewFinances);
 
             return await db.MembershipPayments
                 .Include(p => p.Member)
@@ -39,7 +40,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<MembershipPayment?> GetMembershipPayment(uint id, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ViewFinances);
 
             return await db.MembershipPayments.FindAsync(id, ct);
         }
@@ -47,7 +48,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<List<EnrollmentPayment>> GetEnrollmentPayments(Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ViewFinances);
 
             return await db.EnrollmentPayments
                 .Include(p => p.Member)
@@ -58,7 +59,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<EnrollmentPayment?> GetEnrollmentPayment(uint id, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ViewFinances);
 
             return await db.EnrollmentPayments.FindAsync(id, ct);
         }
@@ -70,7 +71,7 @@ namespace Backend.Services.Domain
 
             if (dto.ManuallyMarkedAsPaid)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+                permissionService.EnsurePermission(userId ?? throw new UnauthorizedAccessException("Authentication required."), Permission.ManageFinances);
             }
 
             using var transaction = await db.Database.BeginTransactionAsync();
@@ -130,7 +131,7 @@ namespace Backend.Services.Domain
 
             if (userId != dto.MemberId)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+                permissionService.EnsurePermission(userId ?? throw new UnauthorizedAccessException("Authentication required."), Permission.ManageFinances);
             }
 
             using var transaction = await db.Database.BeginTransactionAsync();
@@ -182,7 +183,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ManageFinances);
 
             var startDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, "W. Europe Standard Time").Date.ToUniversalTime();
             var endDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, "W. Europe Standard Time").Date.ToUniversalTime();
@@ -220,7 +221,7 @@ namespace Backend.Services.Domain
                 dto.MemberId, dto.ActivityIds.Count, dto.ManuallyMarkedAsPaid);
             if (userId != dto.MemberId)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ManageFinances);
             }
 
             var member = await GetMemberOrThrow(dto.MemberId);
@@ -242,7 +243,7 @@ namespace Backend.Services.Domain
                 if (dto.ManuallyMarkedAsPaid)
                 {
                     // If payment is manually marked as paid, we can skip creating a payment service fee payment and create it directly in the database
-                    permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                    permissionService.EnsurePermission(userId, Permission.ManageFinances);
                     CreateEnrollmentPayments(dto.MemberId, enrollments, true);
 
                     await db.SaveChangesAsync();
@@ -304,7 +305,7 @@ namespace Backend.Services.Domain
         {
             if (allUsers)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ViewFinances);
             }
 
             if (allUsers)
@@ -320,7 +321,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public IEnumerable<EnrollmentBalance> GetOverpaid(Guid userId)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ViewFinances);
 
             return paymentValidationService.GetAllOverpaidEnrollments();
         }
@@ -330,7 +331,7 @@ namespace Backend.Services.Domain
         {
             if (fromUserId != userId)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ViewFinances);
             }
 
             var member = await db.Members

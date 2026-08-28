@@ -57,15 +57,18 @@ public class GroupMembershipResponseDTO
     /// Projects a GroupMembership entity into a GroupMembershipResponseDTO, including related member and group information, as well as role alias details. The method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information based on the user's role. This projection is used to transform the data from the GroupMembership model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
     /// </summary>
     /// <param name="userId">The ID of the user for whom to project the group membership.</param>
-    /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <param name="hasViewMembers">
+    /// A boolean indicating whether the requester has the ViewMembers permission (or is a (candidate) board
+    /// member, who always has it).
+    /// </param>
     /// <returns>An expression that projects a GroupMembership entity into a GroupMembershipResponseDTO.</returns>
-    public static Expression<Func<GroupMembership, GroupMembershipResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<GroupMembership, GroupMembershipResponseDTO>> ToDto(Guid userId, bool hasViewMembers)
     {
         return gm => new GroupMembershipResponseDTO
         {
             Id = gm.Id,
-            MemberId = isBoard || gm.MemberId == userId ? gm.MemberId : null,
-            MemberName = isBoard || gm.MemberId == userId
+            MemberId = hasViewMembers || gm.MemberId == userId ? gm.MemberId : null,
+            MemberName = hasViewMembers || gm.MemberId == userId
                 ? (gm.Member != null ? gm.Member.FirstName + " " + gm.Member.LastName : null)
                 : null,
             GroupId = gm.GroupId,

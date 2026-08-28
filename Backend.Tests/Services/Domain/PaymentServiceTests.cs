@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
@@ -150,7 +151,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.GetMembershipPayments(_userId, CancellationToken.None);
 
         Assert.Single(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewFinances, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -167,7 +168,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.GetMembershipPayment(payment.Id, _userId, CancellationToken.None);
 
         Assert.NotNull(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewFinances, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -184,7 +185,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.GetEnrollmentPayments(_userId, CancellationToken.None);
 
         Assert.Single(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewFinances, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -201,7 +202,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.GetEnrollmentPayment(payment.Id, _userId, CancellationToken.None);
 
         Assert.NotNull(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewFinances, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -444,7 +445,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.CreateMembershipPayment(dto, _userId);
 
         Assert.Null(result.CheckoutUrl);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageFinances, Arg.Any<uint?>());
         await _paymentService.DidNotReceive().CreatePaymentAsync(Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>());
 
         _db.ChangeTracker.Clear();
@@ -553,7 +554,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.CreateBegunstigerPayment(dto, _userId);
 
         Assert.Null(result.CheckoutUrl);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageFinances, Arg.Any<uint?>());
         await _paymentService.DidNotReceive().CreatePaymentAsync(Arg.Any<decimal>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string>());
 
         _db.ChangeTracker.Clear();
@@ -1220,7 +1221,7 @@ public class PaymentServiceTests : IDisposable
         var result = _service.GetUnpaid(_userId, true);
 
         Assert.Single(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewFinances, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -1294,6 +1295,6 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.GetMemberPaymentStatus(member.Id, differentUserId, CancellationToken.None);
 
         Assert.Equal(member.Id, result.MemberId);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(differentUserId);
+        _permissionService.Received(1).EnsurePermission(differentUserId, Permission.ViewFinances, Arg.Any<uint?>());
     }
 }

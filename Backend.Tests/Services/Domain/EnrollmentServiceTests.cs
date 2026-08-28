@@ -134,6 +134,7 @@ public class EnrollmentServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        _permissionService.HasPermissionOrBoard(_userId, Permission.ViewMembers, Arg.Any<uint?>()).Returns(true);
 
         var dto = new GetEnrollmentsDTO { FromMemberId = member.Id };
 

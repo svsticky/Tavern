@@ -9,7 +9,10 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
 /** The number of activities to fetch per page for infinite scrolling. */
@@ -32,6 +35,22 @@ const PAGE_SIZE = 15;
  */
 export default function Activities() {
   const navigate = useNavigate();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authService.getTokenParsed().then((token) => {
+      if (!cancelled) setTokenParsed(token);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const canViewPastActivities =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ViewPastActivities");
 
   const [loading, setLoading] = useState(false);
   const currentYear = getCommitteeYear();
@@ -63,12 +82,15 @@ export default function Activities() {
         },
         pageNum,
         PAGE_SIZE,
+        canViewPastActivities,
       );
     },
-    [],
+    [canViewPastActivities],
   );
 
   useEffect(() => {
+    if (!tokenParsed) return;
+
     let isCurrent = true;
 
     setPage(1);
@@ -86,12 +108,13 @@ export default function Activities() {
       },
       1,
       PAGE_SIZE,
+      canViewPastActivities,
     );
 
     return () => {
       isCurrent = false;
     };
-  }, [year]);
+  }, [year, tokenParsed, canViewPastActivities]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(

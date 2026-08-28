@@ -66,6 +66,7 @@ export default [
             ),
             route("admin/groups", "routes/admin/groups.tsx"),
             route("admin/groups/:id", "routes/admin/edit-group/edit-group.tsx"),
+            route("admin/roles", "routes/admin/roles/roles.tsx"),
             route("admin/settings", "routes/admin/settings/settings.tsx"),
           ]),
         ]),

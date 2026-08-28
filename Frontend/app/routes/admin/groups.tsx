@@ -12,7 +12,10 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { appendErrorMessage } from "~/util/error.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * An administrative management page for viewing, filtering, and creating association groups.
@@ -31,6 +34,22 @@ import { appendErrorMessage } from "~/util/error.util";
  */
 export default function Groups() {
   const navigate = useNavigate();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authService.getTokenParsed().then((token) => {
+      if (!cancelled) setTokenParsed(token);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const canManageGroups =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ManageGroups");
 
   const [loading, setLoading] = useState(true);
   const [groups, setGroups] = useState<GroupResponseDto[] | null>(null);
@@ -117,13 +136,15 @@ export default function Groups() {
         title={t("groups")}
         backTo="/"
         action={
-          <Button
-            variant="secondary"
-            onClick={() => setCreateGroupModalIsOpen(true)}
-            className="items-center px-3 py-1"
-          >
-            <PlusIcon className="w-5 h-5" />
-          </Button>
+          canManageGroups && (
+            <Button
+              variant="secondary"
+              onClick={() => setCreateGroupModalIsOpen(true)}
+              className="items-center px-3 py-1"
+            >
+              <PlusIcon className="w-5 h-5" />
+            </Button>
+          )
         }
       />
 
