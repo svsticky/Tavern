@@ -3,6 +3,7 @@ using System;
 using Backend.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(PostgresDbContext))]
-    partial class PostgresDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260823153545_AddMemberCalendarId")]
+    partial class AddMemberCalendarId
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -859,13 +862,6 @@ namespace Backend.Migrations
                     b.HasIndex("StudyId");
 
                     b.ToTable("StudyEnrollments");
-                });
-
-            modelBuilder.Entity("Backend.Models.Domain.BegunstigerPayment", b =>
-                {
-                    b.HasBaseType("Backend.Models.Domain.Payment");
-
-                    b.ToTable("BegunstigerPayments", (string)null);
                 });
 
             modelBuilder.Entity("Backend.Models.Domain.EnrollmentPayment", b =>

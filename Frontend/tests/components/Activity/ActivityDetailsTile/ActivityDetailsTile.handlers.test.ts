@@ -77,6 +77,15 @@ describe("handleAddToCalendar", () => {
     );
     openSpy.mockRestore();
   });
+
+  it("appends a disclaimer noting the copy is a one-time snapshot", () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    handleAddToCalendar(buildActivity());
+
+    const url = openSpy.mock.calls[0][0] as string;
+    expect(decodeURIComponent(url)).toContain("calendar_copy_disclaimer");
+    openSpy.mockRestore();
+  });
 });
 
 describe("handleEnrollment", () => {

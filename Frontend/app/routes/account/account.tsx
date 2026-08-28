@@ -2,6 +2,7 @@ import { t } from "i18next";
 import { useEffect, useState } from "react";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
+import PersonalCalendarTile from "~/components/Account/PersonalCalendarTile/PersonalCalendarTile";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
@@ -58,6 +59,10 @@ export default function AccountPage() {
 
         {/* Right: Forms */}
         {member && <ChangeAccountForm member={member} />}
+      </div>
+
+      <div className="mt-12">
+        <PersonalCalendarTile />
       </div>
     </>
   );

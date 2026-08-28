@@ -268,6 +268,7 @@ internal static class ServiceExtensions
     {
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IAnnouncementService, AnnouncementService>();
+        services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<IEnrollmentService, EnrollmentService>();
         services.AddScoped<IGroupMembershipService, GroupMembershipService>();
         services.AddScoped<IGroupService, GroupService>();
