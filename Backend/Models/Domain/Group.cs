@@ -56,6 +56,11 @@ public class Group
     [JsonIgnore] public virtual ICollection<GroupMembership> GroupMemberships { get; set; }
 
     /// <summary>
+    /// The permissions granted directly to this Group.
+    /// </summary>
+    [JsonIgnore] public virtual ICollection<GroupPermission> GroupPermissions { get; set; }
+
+    /// <summary>
     /// The type of the Group (E.G. Committee, Working Group).
     /// </summary>
     public GroupType Type { get; set; }

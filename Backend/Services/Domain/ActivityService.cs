@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.QueryExtensions;
 using Backend.Services.MailServices;
@@ -64,10 +65,13 @@ public class ActivityService : IActivityService
     public async Task<IEnumerable<ActivityResponseDTO>> GetActivities(Guid? userId, GetActivitiesDTO dto)
     {
         bool isBoard = userId.HasValue && _permissionService.IsBoardOrCandidateBoardMember(userId.Value);
+        bool hasViewFinances = userId.HasValue && _permissionService.HasPermissionOrBoard(userId.Value, Permission.ViewFinances);
+        bool hasViewMembers = userId.HasValue && _permissionService.HasPermissionOrBoard(userId.Value, Permission.ViewMembers);
 
-        // Only board members can see past activities or activities that are not shown in Koala/website
+        // Only board members or ViewPastActivities holders can see past activities; activities not
+        // shown in Koala/website are filtered separately below based on organizer/permission checks.
         if (dto.IncludePast && (!userId.HasValue || userId.Value != dto.UserId))
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+            _permissionService.EnsurePermission(userId ?? throw new UnauthorizedAccessException("Authentication required."), Permission.ViewPastActivities);
 
         var currentCommitteeYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
         var userGroupIds = userId.HasValue
@@ -86,13 +90,15 @@ public class ActivityService : IActivityService
             .ApplyPaging(dto)
             .ToListAsync();
 
-        return activities.Select(a => ActivityResponseDTO.ToDto(userId ?? Guid.Empty, isBoard).Compile()(a));
+        return activities.Select(a => ActivityResponseDTO.ToDto(userId ?? Guid.Empty, hasViewFinances, hasViewMembers, isBoard).Compile()(a));
     }
 
     /// <inheritdoc />
     public async Task<ActivityResponseDTO?> GetActivity(Guid userId, uint id)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool hasViewFinances = _permissionService.HasPermissionOrBoard(userId, Permission.ViewFinances);
+        bool hasViewMembers = _permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers);
 
         var activity = await _db.Activities
             .Include(a => a.SpecificationQuestions)
@@ -120,7 +126,7 @@ public class ActivityService : IActivityService
         if (!activity.ShowInKoala && !isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
             throw new UnauthorizedAccessException();
 
-        return ActivityResponseDTO.ToDto(userId, isBoard).Compile()(activity);
+        return ActivityResponseDTO.ToDto(userId, hasViewFinances, hasViewMembers, isBoard).Compile()(activity);
     }
 
     /// <inheritdoc />
@@ -216,14 +222,22 @@ public class ActivityService : IActivityService
             throw new UnauthorizedAccessException("You are not allowed to modify the id or poster properties of the activity.");
 
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
-        bool isOrganizer = activity.OrganizerId.HasValue && _permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value);
+        bool hasEditAll = _permissionService.HasPermission(userId, Permission.EditAllActivities);
 
-        if (!isBoard)
+        if (!isBoard && !hasEditAll)
         {
-            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
-                throw new UnauthorizedAccessException("Only board members can edit past activities.");
+            bool hasEditForGroup = activity.OrganizerId.HasValue && _permissionService.HasPermission(userId, Permission.EditActivityForGroup, activity.OrganizerId.Value);
+            bool hasManageFinances = _permissionService.HasPermission(userId, Permission.ManageFinances);
 
-            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer || patchDoc.Operations.Any(op => !Activity.AllowedFields.Contains(op.path)))
+            bool isOnline = activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null;
+            bool isPast = activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow;
+            bool canEditForGroup = !isPast && !isOnline && hasEditForGroup;
+
+            bool allOpsAuthorized = patchDoc.Operations.All(op =>
+                (canEditForGroup && Activity.AllowedFields.Contains(op.path)) ||
+                (hasManageFinances && Activity.FinanceAllowedFields.Contains(op.path)));
+
+            if (!allOpsAuthorized)
                 throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
         }
 
@@ -379,21 +393,26 @@ public class ActivityService : IActivityService
             throw new KeyNotFoundException();
 
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
-        bool isOrganizer = activity.OrganizerId.HasValue && _permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value);
+        bool hasEditAll = _permissionService.HasPermission(userId, Permission.EditAllActivities);
 
-        if (!isBoard)
+        if (!isBoard && !hasEditAll)
         {
-            if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
-                throw new UnauthorizedAccessException("Only board members can edit past activities.");
+            bool hasEditForGroup = activity.OrganizerId.HasValue && _permissionService.HasPermission(userId, Permission.EditActivityForGroup, activity.OrganizerId.Value);
+            bool hasManageFinances = _permissionService.HasPermission(userId, Permission.ManageFinances);
 
-            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer)
+            bool isOnline = activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null;
+            bool isPast = activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow;
+            bool canEditForGroup = !isPast && !isOnline && hasEditForGroup;
+
+            if (!canEditForGroup && !hasManageFinances)
                 throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
 
-            // Non-board organizers can't change these fields via PUT either. Silently keep them as
-            // they are instead of rejecting the request when they differ - comparing and rejecting
-            // would let someone guess a hidden value (e.g. VatRate) and learn whether they guessed
-            // right from whether the request succeeds or fails.
-            PreserveFieldsOutsideAllowedFields(activity, dto);
+            // Non-board, non-EditAllActivities organizers can't change these fields via PUT either
+            // (finance fields excepted for ManageFinances holders). Silently keep them as they are
+            // instead of rejecting the request when they differ - comparing and rejecting would let
+            // someone guess a hidden value (e.g. VatRate) and learn whether they guessed right from
+            // whether the request succeeds or fails.
+            PreserveFieldsOutsideAllowedFields(activity, dto, hasManageFinances, canEditForGroup);
         }
 
         ActivityValidator.ValidateRequest(dto, userId, _permissionService);
@@ -691,18 +710,47 @@ public class ActivityService : IActivityService
     /// succeeds - so instead, these fields are silently reset to their current value on the DTO before it's
     /// applied, regardless of what was submitted for them.
     ///
+    /// The finance fields are preserved unless the caller has ManageFinances; the remaining
+    /// organizer-editable fields are preserved unless the caller has EditActivityForGroup for this activity's
+    /// organizer group. The online/structural fields (ShowInKoala/ShowOnWebsite/EnrollOpenDate) are always
+    /// preserved here - they require board or EditAllActivities, which bypasses this method entirely.
+    ///
     /// PaymentDeadline isn't included: <see cref="ApplyUpdateDto"/> never copies it onto the activity in
     /// the first place, so PUT already can't change it either way.
     /// </summary>
-    private static void PreserveFieldsOutsideAllowedFields(Activity activity, PutActivityDTO dto)
+    private static void PreserveFieldsOutsideAllowedFields(Activity activity, PutActivityDTO dto, bool hasManageFinances, bool canEditForGroup)
     {
-        dto.VatRate = activity.VatRate;
-        dto.GLAccountId = activity.GLAccountId;
-        dto.CostCenterId = activity.CostCenterId;
-        dto.CostUnitId = activity.CostUnitId;
+        if (!hasManageFinances)
+        {
+            dto.VatRate = activity.VatRate;
+            dto.GLAccountId = activity.GLAccountId;
+            dto.CostCenterId = activity.CostCenterId;
+            dto.CostUnitId = activity.CostUnitId;
+        }
+
         dto.ShowInKoala = activity.ShowInKoala;
         dto.ShowOnWebsite = activity.ShowOnWebsite;
         dto.EnrollOpenDate = activity.EnrollOpenDate;
+
+        if (!canEditForGroup)
+        {
+            dto.Name = activity.Name;
+            dto.Price = activity.Price;
+            dto.DutchDescription = activity.DutchDescription;
+            dto.EnglishDescription = activity.EnglishDescription;
+            dto.DateTimeStart = activity.DateTimeStart;
+            dto.DateTimeEnd = activity.DateTimeEnd;
+            dto.UnenrollmentDeadline = activity.UnenrollmentDeadline;
+            dto.EnrollmentDeadline = activity.EnrollmentDeadline;
+            dto.Location = activity.Location;
+            dto.ParticipantLimit = activity.ParticipantLimit;
+            dto.OrganizerId = activity.OrganizerId;
+            dto.IsEnrollable = activity.IsEnrollable;
+            dto.AreParticipantsVisible = activity.AreParticipantsVisible;
+            dto.IsAdultOnly = activity.IsAdultOnly;
+            dto.IsWeeklyDrinks = activity.IsWeeklyDrinks;
+            dto.AllowedAudience = activity.AllowedAudience;
+        }
     }
 
     private static void ApplyUpdateDto(Activity activity, PutActivityDTO dto)

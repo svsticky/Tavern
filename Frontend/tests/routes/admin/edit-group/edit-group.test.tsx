@@ -2,7 +2,35 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import type { TokenParsed } from "~/types/TokenParsed";
+
+const { getGroupsByIdPermissions, putGroupsByIdPermissions } = vi.hoisted(
+  () => ({
+    getGroupsByIdPermissions: vi.fn(),
+    putGroupsByIdPermissions: vi.fn(),
+  }),
+);
+
+vi.mock("~/api", () => ({
+  getGroupsByIdPermissions,
+  putGroupsByIdPermissions,
+}));
+
+const boardAuthService = createMockAuthService({
+  getTokenParsed: vi.fn(
+    async () =>
+      ({
+        locale: "en",
+        UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
+        access_level: "member",
+        given_name: "Board",
+        family_name: "Member",
+        name: "Board Member",
+        is_admin: true,
+      }) satisfies TokenParsed,
+  ),
+});
 
 const {
   loadGroupData,
@@ -72,12 +100,12 @@ vi.mock("~/components/Roles/CreateRoleOverlay/CreateRoleOverlay", () => ({
 
 import EditGroupPage from "~/routes/admin/edit-group/edit-group";
 
-function renderPage(id = 1) {
+function renderPage(id = 1, authService = createMockAuthService()) {
   return renderWithProviders(
     <Routes>
       <Route path="/admin/groups/:id" element={<EditGroupPage />} />
     </Routes>,
-    { route: `/admin/groups/${id}` },
+    { route: `/admin/groups/${id}`, authService },
   );
 }
 
@@ -437,6 +465,36 @@ describe("EditGroupPage", () => {
 
     await waitFor(() =>
       expect(screen.queryByText("create-parent-role")).not.toBeInTheDocument(),
+    );
+  });
+
+  it("hides the permissions section without ManageGroupPermissions", async () => {
+    renderPage(1);
+
+    await screen.findByText("Jane Doe");
+    expect(screen.queryByText("permissions")).not.toBeInTheDocument();
+  });
+
+  it("loads and saves group permissions for a board member", async () => {
+    getGroupsByIdPermissions.mockResolvedValue({ data: ["ManageGroups"] });
+    putGroupsByIdPermissions.mockResolvedValue({});
+
+    renderPage(1, boardAuthService);
+
+    await screen.findByText("Jane Doe");
+    expect(await screen.findByText("permissions")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Manage Groups")).toBeChecked();
+    expect(getGroupsByIdPermissions).toHaveBeenCalledWith({
+      path: { id: 1 },
+    });
+
+    fireEvent.click(screen.getByText("save_permissions"));
+
+    await waitFor(() =>
+      expect(putGroupsByIdPermissions).toHaveBeenCalledWith({
+        path: { id: 1 },
+        body: ["ManageGroups"],
+      }),
     );
   });
 });

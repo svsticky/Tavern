@@ -31,6 +31,10 @@ public class PostgresDbContext : DbContext
     public DbSet<GroupMembership> GroupMemberships { get; set; }
     /// <summary>Reference to the Roles relational table. </summary>
     public DbSet<Role> Roles { get; set; }
+    /// <summary>Reference to the GroupPermissions relational table. </summary>
+    public DbSet<GroupPermission> GroupPermissions { get; set; }
+    /// <summary>Reference to the RolePermissions relational table. </summary>
+    public DbSet<RolePermission> RolePermissions { get; set; }
     /// <summary>Reference to the Announcements relational table. </summary>
     public DbSet<Announcement> Announcements { get; set; }
     /// <summary>Reference to the RoleAliases relational table. </summary>
@@ -141,6 +145,28 @@ public class PostgresDbContext : DbContext
             entity.HasIndex(m => m.StudentNumber)
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
+        });
+
+        modelBuilder.Entity<GroupPermission>(entity =>
+        {
+            entity.HasIndex(gp => new { gp.GroupId, gp.PermissionKey })
+                .IsUnique();
+
+            entity.HasOne(gp => gp.Group)
+                .WithMany(g => g.GroupPermissions)
+                .HasForeignKey(gp => gp.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RolePermission>(entity =>
+        {
+            entity.HasIndex(rp => new { rp.RoleId, rp.PermissionKey })
+                .IsUnique();
+
+            entity.HasOne(rp => rp.Role)
+                .WithMany(r => r.RolePermissions)
+                .HasForeignKey(rp => rp.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

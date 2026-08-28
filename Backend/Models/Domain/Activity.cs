@@ -39,6 +39,21 @@ public class Activity
     };
 
     /// <summary>
+    /// A list of allowed field paths that a member with the ManageFinances permission (but not the board and
+    /// not otherwise authorized to edit this activity) may modify, independent of the online/timing/organizer
+    /// restrictions that apply to <see cref="AllowedFields"/>.
+    /// </summary>
+    public static readonly IReadOnlySet<string> FinanceAllowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "/vatrate",
+        "/glaccountid",
+        "/costcenterid",
+        "/costunitid",
+        "/paymentdeadline",
+        "/isopenforpayment"
+    };
+
+    /// <summary>
     /// The unique identifier of an activity, assigned incrementally.
     /// </summary>
     public uint Id { get; set; }

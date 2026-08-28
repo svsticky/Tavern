@@ -70,6 +70,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      false,
     );
   });
 
@@ -154,6 +155,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      false,
     );
   });
 
@@ -209,6 +211,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       2,
       15,
+      false,
     );
   });
 

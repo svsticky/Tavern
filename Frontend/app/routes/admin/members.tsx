@@ -12,8 +12,11 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { useAuth } from "~/context/AuthContext";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { appendErrorMessage } from "~/util/error.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 
 /** The number of members to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 20;
@@ -36,7 +39,23 @@ const PAGE_SIZE = 20;
  */
 export default function Members() {
   const navigate = useNavigate();
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    authService.getTokenParsed().then((token) => {
+      if (!cancelled) setTokenParsed(token);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const canManageMembers =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ManageMembers");
   const [members, setMembers] = useState<MemberResponseDto[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -179,13 +198,15 @@ export default function Members() {
         title={t("members")}
         backTo="/"
         action={
-          <Button
-            variant="secondary"
-            onClick={() => navigate("/admin/members/create-member")}
-            className="items-center px-3 py-1"
-          >
-            <PlusIcon className="w-5 h-5" />
-          </Button>
+          canManageMembers && (
+            <Button
+              variant="secondary"
+              onClick={() => navigate("/admin/members/create-member")}
+              className="items-center px-3 py-1"
+            >
+              <PlusIcon className="w-5 h-5" />
+            </Button>
+          )
         }
       />
 

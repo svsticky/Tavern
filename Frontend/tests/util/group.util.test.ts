@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
 import type { ActivityResponseDto } from "~/api/types.gen";
-import type { TokenParsed } from "~/types/TokenParsed";
-import { getCommitteeYear } from "~/util/date.util";
+import type { Permission } from "~/types/Permission";
+import type { GroupMembershipClaim, TokenParsed } from "~/types/TokenParsed";
 import {
   canEditActivity,
+  getGroupIdsWithPermission,
+  hasPermission,
   isBoardOrCandidateBoard,
   isInGroupWithId,
-  isInGroupWithName,
 } from "~/util/group.util";
 
 function membershipEntry(
-  year: number,
-  groupId: number,
-  groupName: string,
-  roleId: number,
-  roleName: string,
-) {
-  return `${year}:${groupId};${groupName}:${roleId};${roleName}`;
+  id: number,
+  name: string,
+  permissions: Permission[] = [],
+  role: GroupMembershipClaim["role"] = null,
+): GroupMembershipClaim {
+  return { id, name, permissions, role };
 }
 
 function buildToken(overrides: Partial<TokenParsed> = {}): TokenParsed {
@@ -31,61 +31,13 @@ function buildToken(overrides: Partial<TokenParsed> = {}): TokenParsed {
   };
 }
 
-describe("isInGroupWithName", () => {
-  const year = getCommitteeYear();
-
-  it("returns false when there are no group memberships", () => {
-    expect(isInGroupWithName(buildToken(), "Web")).toBe(false);
-  });
-
-  it("matches by group name for the current committee year by default", () => {
-    const token = buildToken({
-      group_memberships: [membershipEntry(year, 1, "Web", 2, "Chair")],
-    });
-    expect(isInGroupWithName(token, "Web")).toBe(true);
-  });
-
-  it("does not match a different group name", () => {
-    const token = buildToken({
-      group_memberships: [membershipEntry(year, 1, "Web", 2, "Chair")],
-    });
-    expect(isInGroupWithName(token, "Finance")).toBe(false);
-  });
-
-  it("matches by role when a role is specified", () => {
-    const token = buildToken({
-      group_memberships: [membershipEntry(year, 1, "Web", 2, "Chair")],
-    });
-    expect(isInGroupWithName(token, "Web", "Chair")).toBe(true);
-    expect(isInGroupWithName(token, "Web", "Secretary")).toBe(false);
-  });
-
-  it("respects an explicit year override", () => {
-    const token = buildToken({
-      group_memberships: [membershipEntry(year - 1, 1, "Web", 2, "Chair")],
-    });
-    expect(isInGroupWithName(token, "Web", undefined, year - 1)).toBe(true);
-    expect(isInGroupWithName(token, "Web")).toBe(false);
-  });
-});
-
 describe("isInGroupWithId", () => {
-  const year = getCommitteeYear();
-
-  it("matches by group id for the current committee year", () => {
+  it("matches by group id", () => {
     const token = buildToken({
-      group_memberships: [membershipEntry(year, 42, "Web", 2, "Chair")],
+      group_memberships: [membershipEntry(42, "Web")],
     });
     expect(isInGroupWithId(token, 42)).toBe(true);
     expect(isInGroupWithId(token, 99)).toBe(false);
-  });
-
-  it("matches by role id when specified", () => {
-    const token = buildToken({
-      group_memberships: [membershipEntry(year, 42, "Web", 2, "Chair")],
-    });
-    expect(isInGroupWithId(token, 42, "2")).toBe(true);
-    expect(isInGroupWithId(token, 42, "3")).toBe(false);
   });
 
   it("returns false when there are no group memberships", () => {
@@ -107,9 +59,84 @@ describe("isBoardOrCandidateBoard", () => {
   });
 });
 
-describe("canEditActivity", () => {
-  const year = getCommitteeYear();
+describe("hasPermission", () => {
+  it("always returns true for board/candidate board members", () => {
+    const token = buildToken({ is_admin: true });
+    expect(hasPermission(token, "ManageMembers")).toBe(true);
+  });
 
+  it("returns false when the token has no memberships", () => {
+    expect(hasPermission(buildToken(), "ViewMembers")).toBe(false);
+  });
+
+  it("matches a permission granted directly to a group", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(1, "Web", ["ViewMembers"])],
+    });
+    expect(hasPermission(token, "ViewMembers")).toBe(true);
+    expect(hasPermission(token, "ManageMembers")).toBe(false);
+  });
+
+  it("matches a permission granted to the member's role", () => {
+    const token = buildToken({
+      group_memberships: [
+        membershipEntry(1, "Web", [], {
+          id: 5,
+          name: "Chair",
+          alias: "Voorzitter",
+          permissions: ["ViewFinances"],
+        }),
+      ],
+    });
+    expect(hasPermission(token, "ViewFinances")).toBe(true);
+  });
+
+  it("for the group-scoped EditActivityForGroup, only matches the specified group", () => {
+    const token = buildToken({
+      group_memberships: [
+        membershipEntry(1, "Web", ["EditActivityForGroup"]),
+        membershipEntry(2, "Finance"),
+      ],
+    });
+    expect(hasPermission(token, "EditActivityForGroup", 1)).toBe(true);
+    expect(hasPermission(token, "EditActivityForGroup", 2)).toBe(false);
+  });
+
+  it("for global-effect permissions, ignores which group granted it", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(1, "Web", ["ManageMembers"])],
+    });
+    expect(hasPermission(token, "ManageMembers", 999)).toBe(true);
+  });
+});
+
+describe("getGroupIdsWithPermission", () => {
+  it("returns the ids of every group granting the permission, directly or via role", () => {
+    const token = buildToken({
+      group_memberships: [
+        membershipEntry(1, "Web", ["EditActivityForGroup"]),
+        membershipEntry(2, "Finance", [], {
+          id: 5,
+          name: "Chair",
+          alias: "Voorzitter",
+          permissions: ["EditActivityForGroup"],
+        }),
+        membershipEntry(3, "Board"),
+      ],
+    });
+    expect(
+      getGroupIdsWithPermission(token, "EditActivityForGroup").sort(),
+    ).toEqual([1, 2]);
+  });
+
+  it("returns an empty array when the token has no memberships", () => {
+    expect(getGroupIdsWithPermission(buildToken(), "ManageMembers")).toEqual(
+      [],
+    );
+  });
+});
+
+describe("canEditActivity", () => {
   function buildActivity(
     overrides: Partial<ActivityResponseDto> = {},
   ): ActivityResponseDto {
@@ -130,11 +157,27 @@ describe("canEditActivity", () => {
     expect(canEditActivity(buildActivity(), token)).toBe(true);
   });
 
-  it("allows an organizer in the organizing group to edit before the activity has started", () => {
+  it("allows an EditAllActivities holder to edit any activity", () => {
     const token = buildToken({
-      group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
+      group_memberships: [membershipEntry(1, "Board", ["EditAllActivities"])],
+    });
+    expect(canEditActivity(buildActivity({ showOnWebsite: true }), token)).toBe(
+      true,
+    );
+  });
+
+  it("allows a member with EditActivityForGroup for the organizing group to edit before it has started", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(7, "Web", ["EditActivityForGroup"])],
     });
     expect(canEditActivity(buildActivity(), token)).toBe(true);
+  });
+
+  it("disallows a member with EditActivityForGroup for a different group", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(9, "Web", ["EditActivityForGroup"])],
+    });
+    expect(canEditActivity(buildActivity(), token)).toBe(false);
   });
 
   it("disallows a non-organizer, non-board member from editing", () => {
@@ -144,7 +187,7 @@ describe("canEditActivity", () => {
 
   it("disallows editing once the activity has been published to the website", () => {
     const token = buildToken({
-      group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
+      group_memberships: [membershipEntry(7, "Web", ["EditActivityForGroup"])],
     });
     expect(canEditActivity(buildActivity({ showOnWebsite: true }), token)).toBe(
       false,
@@ -153,7 +196,7 @@ describe("canEditActivity", () => {
 
   it("disallows editing once the activity has already started", () => {
     const token = buildToken({
-      group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
+      group_memberships: [membershipEntry(7, "Web", ["EditActivityForGroup"])],
     });
     expect(
       canEditActivity(

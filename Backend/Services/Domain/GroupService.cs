@@ -1,7 +1,9 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
+using Backend.Utils.DateTime;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -19,6 +21,7 @@ public class GroupService : IGroupService
     private readonly IFileCompressService _fileCompressService;
     private readonly IStorageService _storageService;
     private readonly IMemoryCache _memoryCache;
+    private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly ILogger<GroupService> _logger;
 
     /// <summary>
@@ -29,6 +32,7 @@ public class GroupService : IGroupService
     /// <param name="fileCompressService">The file compression service.</param>
     /// <param name="storageService">The storage service.</param>
     /// <param name="memoryCache">The memory cache service.</param>
+    /// <param name="authOutboxWorker">The authentication outbox worker.</param>
     /// <param name="logger">The logger.</param>
     public GroupService(
         PostgresDbContext db,
@@ -36,6 +40,7 @@ public class GroupService : IGroupService
         IFileCompressService fileCompressService,
         IStorageService storageService,
         IMemoryCache memoryCache,
+        AuthOutboxWorker authOutboxWorker,
         ILogger<GroupService> logger)
     {
         _db = db;
@@ -43,6 +48,7 @@ public class GroupService : IGroupService
         _fileCompressService = fileCompressService;
         _storageService = storageService;
         _memoryCache = memoryCache;
+        _authOutboxWorker = authOutboxWorker;
         _logger = logger;
     }
 
@@ -51,7 +57,7 @@ public class GroupService : IGroupService
     {
         if (dto.MembershipYear == null || dto.IncludeInactive)
         {
-            _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         }
 
         bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
@@ -78,7 +84,7 @@ public class GroupService : IGroupService
     /// <inheritdoc />
     public async Task<Group> CreateGroup(PostGroupDTO dto, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Creating group {GroupName} by user {UserId}.", dto.Name, userId);
 
         GroupValidator.ValidateName(dto.Name);
@@ -148,7 +154,7 @@ public class GroupService : IGroupService
     /// <inheritdoc />
     public async Task DeleteGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Deleting group {GroupId} by user {UserId}.", id, userId);
 
         var group = await GetGroupOrThrow(id, cancellationToken);
@@ -166,7 +172,7 @@ public class GroupService : IGroupService
     /// <inheritdoc />
     public async Task PatchGroup(uint id, Guid userId, JsonPatchDocument<Group> patchDoc, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Patching group {GroupId} by user {UserId}.", id, userId);
 
         if (patchDoc == null)
@@ -189,7 +195,7 @@ public class GroupService : IGroupService
     /// <inheritdoc />
     public async Task UpdateGroup(uint id, Guid userId, GroupUpdateDTO dto, CancellationToken cancellationToken)
     {
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
         _logger.LogInformation("Updating group {GroupId} by user {UserId}.", id, userId);
 
         GroupValidator.ValidateName(dto.Name);
@@ -211,7 +217,7 @@ public class GroupService : IGroupService
         var group = await GetGroupOrThrow(groupId, default, "Group not found");
         _logger.LogInformation("Uploading group picture for group {GroupId} by user {UserId}.", groupId, userId);
 
-        _permissionService.EnsureBoardOrCandidateBoardMember(userId);
+        _permissionService.EnsurePermission(userId, Permission.ManageGroups);
 
         ValidateGroupPicture(image);
 
@@ -269,6 +275,66 @@ public class GroupService : IGroupService
             throw new KeyNotFoundException("CandidateBoardGroupId setting is missing or invalid.");
 
         return candidateBoardGroupId;
+    }
+
+    /// <inheritdoc />
+    public async Task<List<string>> GetGroupPermissions(uint id, CancellationToken cancellationToken)
+    {
+        await GetGroupOrThrow(id, cancellationToken);
+
+        return await _db.GroupPermissions
+            .Where(gp => gp.GroupId == id)
+            .Select(gp => gp.PermissionKey)
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task SetGroupPermissions(uint id, List<string> permissions, Guid userId, CancellationToken cancellationToken)
+    {
+        _permissionService.EnsurePermission(userId, Permission.ManageGroupPermissions);
+        _logger.LogInformation("Setting permissions for group {GroupId} by user {UserId}.", id, userId);
+
+        await GetGroupOrThrow(id, cancellationToken);
+
+        var distinctPermissions = permissions.Where(p => !string.IsNullOrWhiteSpace(p)).Distinct().ToList();
+        PermissionValidator.ValidateCustomPermissions(distinctPermissions);
+
+        using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            var existing = await _db.GroupPermissions.Where(gp => gp.GroupId == id).ToListAsync(cancellationToken);
+            _db.GroupPermissions.RemoveRange(existing);
+
+            foreach (var permission in distinctPermissions)
+            {
+                _db.GroupPermissions.Add(new GroupPermission { GroupId = id, PermissionKey = permission });
+            }
+
+            var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+            var affectedMembers = await _db.GroupMemberships
+                .Where(gm => gm.GroupId == id && gm.MembershipYear == currentYear)
+                .Select(gm => gm.Member.AuthSystemUserId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+
+            foreach (var authSystemId in affectedMembers)
+            {
+                if (authSystemId.HasValue)
+                {
+                    _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, authSystemId.Value, _db);
+                }
+            }
+
+            await _db.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            _logger.LogError(ex, "Failed setting permissions for group {GroupId}.", id);
+            throw;
+        }
     }
 
     private async Task<Group> GetGroupOrThrow(uint groupId, CancellationToken cancellationToken, string errorMessage = "")

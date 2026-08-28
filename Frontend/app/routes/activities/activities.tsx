@@ -9,8 +9,11 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getCommitteeYear } from "~/util/date.util";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import {
+  getGroupIdsWithPermission,
+  hasPermission,
+  isBoardOrCandidateBoard,
+} from "~/util/group.util";
 import {
   copyWeekOverview,
   downloadPosters,
@@ -79,11 +82,10 @@ export default function ActivitiesPage() {
 
   if (!tokenParsed) return null;
 
-  const isInGroup =
+  const canCreateActivity =
     isBoardOrCandidateBoard(tokenParsed) ||
-    (tokenParsed?.group_memberships ?? []).filter(
-      (g) => g.split(":")[0] === getCommitteeYear().toString(),
-    ).length > 0;
+    hasPermission(tokenParsed, "EditAllActivities") ||
+    getGroupIdsWithPermission(tokenParsed, "EditActivityForGroup").length > 0;
 
   return (
     <>
@@ -92,7 +94,7 @@ export default function ActivitiesPage() {
           title={t("activities")}
           action={
             <div className="flex items-center gap-2">
-              {isInGroup && (
+              {canCreateActivity && (
                 <Button
                   variant="secondary"
                   onClick={() => handleCreateActivityClick(navigate)}

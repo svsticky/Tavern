@@ -41,21 +41,32 @@ public class EnrollmentResponseDTO
     /// Projects an Enrollment entity into an EnrollmentResponseDTO, including related member information, specification answers, and optionally the associated activity. The method takes a user ID, a boolean indicating whether the requester is a board member, and an optional boolean to include activity information, allowing it to conditionally include certain information based on the user's role and the context of the request. This projection is used to transform the data from the Enrollment model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
     /// </summary>
     /// <param name="userId">The ID of the user for whom to project the enrollment.</param>
-    /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <param name="hasViewMembers">
+    /// A boolean indicating whether the requester has the ViewMembers permission (or is a (candidate) board
+    /// member, who always has it).
+    /// </param>
+    /// <param name="hasViewFinances">
+    /// A boolean indicating whether the requester has the ViewFinances permission (or is a (candidate) board
+    /// member, who always has it).
+    /// </param>
+    /// <param name="isBoardOrCandidateBoard">
+    /// A boolean indicating whether the requester is a (candidate) board member. Forwarded into the nested
+    /// member projection, where it gates the Notes field.
+    /// </param>
     /// <param name="includeActivity">A boolean indicating whether to include activity information.</param>
     /// <returns>An expression that projects an Enrollment entity into an EnrollmentResponseDTO.</returns>
-    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeActivity = true)
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool hasViewMembers, bool hasViewFinances, bool isBoardOrCandidateBoard, bool includeActivity = true)
     {
         return e => new EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
-            Member = e.Member != null && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
-                        ? MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member)
+            Member = e.Member != null && (hasViewMembers || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+                        ? MemberResponseDTO.ToDto(userId, hasViewMembers, isBoardOrCandidateBoard).Compile()(e.Member)
                         : null,
             SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
-                .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
+                .Where(sa => hasViewMembers || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
                 .Select(sa => SpecificationAnswerResponseDTO.ToDto().Compile()(sa)).ToList(),
-            Price = isBoard ? e.Price : null,
+            Price = hasViewFinances ? e.Price : null,
             Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO
             {
                 Id = e.Activity.Id,
@@ -86,7 +97,7 @@ public class EnrollmentResponseDTO
                 CostUnitId = e.Activity.CostUnitId,
                 Enrollments = new List<EnrollmentResponseDTO>(),
                 SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
-                PaymentDeadline = isBoard ? e.Activity.PaymentDeadline : default,
+                PaymentDeadline = hasViewFinances ? e.Activity.PaymentDeadline : default,
                 IsOpenForPayment = e.Activity.IsOpenForPayment
             } : null!
         };
