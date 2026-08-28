@@ -167,6 +167,36 @@ describe("PermissionChecklist", () => {
     expect(screen.getByText("add").closest("button")).toBeDisabled();
   });
 
+  it("locks all known permissions on when allKnownPermissionsGranted is set", async () => {
+    const onLoad = vi.fn(async () => ["CustomOne"]);
+    const onSave = vi.fn(async () => {});
+
+    render(
+      <PermissionChecklist
+        onLoad={onLoad}
+        onSave={onSave}
+        allKnownPermissionsGranted
+      />,
+    );
+
+    const checkbox = await screen.findByLabelText("Manage Groups");
+    expect(checkbox).toBeChecked();
+    expect(checkbox).toBeDisabled();
+
+    // Clicking a disabled checkbox is a no-op in the browser; assert the toggle handler
+    // itself doesn't flip it off even if invoked directly.
+    fireEvent.click(checkbox);
+    expect(checkbox).toBeChecked();
+
+    expect(
+      screen.getByText("all_permissions_granted_note"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("save_permissions"));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith(["CustomOne"]));
+  });
+
   it("stops allowing custom permissions once the count cap is reached", async () => {
     const existing = Array.from(
       { length: MAX_CUSTOM_PERMISSION_COUNT },

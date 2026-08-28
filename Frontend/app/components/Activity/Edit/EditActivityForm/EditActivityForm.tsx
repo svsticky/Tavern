@@ -411,7 +411,7 @@ export default function EditActivityForm({
               {saving ? t("saving") : isEdit ? t("save") : t("create_activity")}
             </Button>
 
-            {isBoard && isEdit && activity && (
+            {canEditStructural && isEdit && activity && (
               <Button
                 type="button"
                 variant="danger"
