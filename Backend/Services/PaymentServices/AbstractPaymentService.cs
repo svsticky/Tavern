@@ -165,20 +165,12 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
         // Only membership and begunstiger payments change the member's overall paid-access status,
         // so only those need to trigger a re-sync of their access level in the auth system.
         if (payment is not (MembershipPayment or BegunstigerPayment)) return;
-
-        if (payment.Member?.AuthSystemUserId == null)
-        {
-            // The member isn't linked to the auth system yet (their AuthOutboxTask.Create task hasn't completed).
-            // Don't let that block marking the payment as paid; AuthOutboxWorker queues a catch-up Sync task
-            // once the member does get linked.
-            _logger.LogWarning("Member {MemberId} does not have an authentication system ID yet. Skipping auth sync for payment {PaymentId}.", payment.MemberId, payment.Id);
-            return;
-        }
+        if (payment.Member == null) return;
 
         _db.AuthOutboxTasks.Add(new AuthOutboxTask
         {
             TaskType = AuthTaskType.Sync,
-            AuthSystemUserId = payment.Member.AuthSystemUserId.Value
+            AuthSystemUserId = payment.Member.Id
         });
     }
 

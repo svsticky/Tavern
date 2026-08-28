@@ -104,7 +104,7 @@ public class MembershipExpirationSyncService(
             .Where(m => m.AuthSystemUserId != null && !m.Begunstiger)
             .Select(m => new
             {
-                AuthSystemUserId = m.AuthSystemUserId!.Value,
+                MemberId = m.Id,
                 HasStudy = m.StudyEnrollments.Any(),
                 StudyAnchor = m.StudyEnrollments
                     .OrderBy(se => se.EnrollmentDate)
@@ -119,15 +119,15 @@ public class MembershipExpirationSyncService(
             .ToListAsync();
 
         var anchoredCandidates = candidates
-            .Select(c => new { c.AuthSystemUserId, Anchor = c.HasStudy ? c.StudyAnchor : c.PaymentAnchor })
+            .Select(c => new { c.MemberId, Anchor = c.HasStudy ? c.StudyAnchor : c.PaymentAnchor })
             .Where(c => c.Anchor != null)
             .ToList();
 
-        List<Guid> authSystemUserIds;
+        List<Guid> memberIds;
         if (daysMissed > _maxCatchUpDays)
         {
             logger.LogWarning("Membership expiration sync last ran {Days} days ago; resyncing every eligible member once instead of reconstructing individual missed days.", daysMissed);
-            authSystemUserIds = anchoredCandidates.Select(c => c.AuthSystemUserId).ToList();
+            memberIds = anchoredCandidates.Select(c => c.MemberId).ToList();
         }
         else
         {
@@ -137,17 +137,17 @@ public class MembershipExpirationSyncService(
                 missedMonthDays.Add((date.Month, date.Day));
             }
 
-            authSystemUserIds = anchoredCandidates
+            memberIds = anchoredCandidates
                 .Where(c => missedMonthDays.Contains((c.Anchor!.Value.Month, c.Anchor.Value.Day)))
-                .Select(c => c.AuthSystemUserId)
+                .Select(c => c.MemberId)
                 .ToList();
         }
 
-        logger.LogInformation("Re-syncing auth access level for {Count} members to account for time-based membership expiration.", authSystemUserIds.Count);
+        logger.LogInformation("Re-syncing auth access level for {Count} members to account for time-based membership expiration.", memberIds.Count);
 
-        foreach (var authSystemUserId in authSystemUserIds)
+        foreach (var memberId in memberIds)
         {
-            authOutboxWorker.EnqueueTask(AuthTaskType.Sync, authSystemUserId, db);
+            authOutboxWorker.EnqueueTask(AuthTaskType.Sync, memberId, db);
         }
 
         await UpsertLastRunSetting(db, today);

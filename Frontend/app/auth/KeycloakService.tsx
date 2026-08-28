@@ -17,7 +17,7 @@ export class KeycloakAuthService implements IAuthService {
   constructor() {
     this.keycloak = new Keycloak({
       url: getEnv("KeycloakUrl") ?? "https://localhost:8085/",
-      realm: getEnv("KeycloakRealm") ?? "master",
+      realm: getEnv("KeycloakRealm") ?? "tavern",
       clientId: getEnv("KeycloakClientId") ?? "react",
     });
   }

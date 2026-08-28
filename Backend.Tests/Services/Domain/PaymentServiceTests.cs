@@ -318,7 +318,7 @@ public class PaymentServiceTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.CreateMembershipPayment(dto, null));
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -454,7 +454,7 @@ public class PaymentServiceTests : IDisposable
         Assert.Equal("", payment.PaymentServiceId);
         Assert.True(payment.ManuallyMarkedAsPaid);
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -563,7 +563,7 @@ public class PaymentServiceTests : IDisposable
         Assert.Equal("", payment.PaymentServiceId);
         Assert.True(payment.ManuallyMarkedAsPaid);
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -623,7 +623,7 @@ public class PaymentServiceTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _service.CreateBegunstigerPayment(dto, member.Id));
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]

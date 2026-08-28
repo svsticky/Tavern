@@ -28,6 +28,11 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - tavern-net
 
@@ -44,6 +49,7 @@ services:
   localstack:
     image: localstack/localstack:3.0
     container_name: tavern-localstack
+    restart: unless-stopped
     ports:
       - "4566:4566"
     environment:
@@ -78,13 +84,13 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.1
     container_name: tavern-keycloak
+    restart: unless-stopped
     command: start-dev --import-realm --features=preview
     env_file:
       - ./devcontainer.env
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_IMPORT_OVERWRITE: "true"
       webhookUrl: "http://devcontainer:8080/members/webhook/refresh-email"
       webhookSecret: kdfsjf*DFf9A
       KC_DB: postgres
@@ -100,8 +106,10 @@ services:
     networks:
       - tavern-net
     depends_on:
-      - db
-      - mailpit
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
 volumes:
   postgres-data:
 

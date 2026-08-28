@@ -10,6 +10,12 @@
         "DOTNET_ENVIRONMENT": "Development"
     },
 
+    // Keycloak only imports realm-export.json the first time it sees the realm - later edits
+    // to client config (e.g. protocol mappers) are otherwise silently ignored on rebuild since
+    // the realm already exists in the persistent postgres-data volume. Re-syncs client config
+    // via the Admin REST API on every start; backgrounded so it doesn't delay the editor.
+    "postStartCommand": "bash .devcontainer/keycloak-setup/sync-realm.sh > /tmp/keycloak-sync.log 2>&1 &",
+
     "features": {
         "ghcr.io/devcontainers/features/node:2.1.0": {
             "version": "22"

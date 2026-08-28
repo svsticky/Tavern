@@ -800,7 +800,7 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
         Assert.Equal("New Street", updated.Street);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
     }
 
@@ -1007,7 +1007,7 @@ public class MemberServiceTests : IDisposable
         await _service.RefreshEmail(authUserId, CancellationToken.None);
 
         // Assert
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, authUserId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, member.Id, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.Received(1).EnqueueMigrateEmailTask(member.Email, "new-email@example.com", _db);
     }
 
@@ -1653,7 +1653,7 @@ public class MemberServiceTests : IDisposable
 
         // Assert
         Assert.Equal(ActivationEmailStatus.Sent, status);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.SendActivationEmail, member.AuthSystemUserId!.Value, _db);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.SendActivationEmail, member.Id, _db);
 
         var updated = await _db.Members.FindAsync(member.Id);
         Assert.NotNull(updated!.ActivationEmailSentAt);

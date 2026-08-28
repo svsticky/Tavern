@@ -235,7 +235,7 @@ public class GroupMembershipServiceTests : IDisposable
         Assert.NotNull(saved);
         Assert.Equal(m.Id, saved.MemberId);
         Assert.Equal(g.Id, saved.GroupId);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -275,9 +275,10 @@ public class GroupMembershipServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateGroupMembership_MemberWithoutAuthSystemId_RollsBackTransaction()
+    public async Task CreateGroupMembership_MemberWithoutAuthSystemId_StillSavesAndQueuesSync()
     {
-        // Arrange
+        // Arrange - AuthOutboxWorker resolves the auth-system user itself (creating one first if
+        // needed), so a member not linked yet no longer blocks the group membership from being saved.
         var m = CreateTestMember(Guid.NewGuid());
         m.AuthSystemUserId = null;
         var g = CreateTestGroup(1);
@@ -287,12 +288,14 @@ public class GroupMembershipServiceTests : IDisposable
 
         var dto = new PostGroupMembershipDTO { MemberId = m.Id, GroupId = g.Id, MembershipYear = 2024 };
 
-        // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() =>
-            _service.CreateGroupMembership(dto, _userId, CancellationToken.None));
+        // Act
+        var result = await _service.CreateGroupMembership(dto, _userId, CancellationToken.None);
 
+        // Assert
+        Assert.NotNull(result);
         _db.ChangeTracker.Clear();
-        Assert.Empty(await _db.GroupMemberships.ToListAsync());
+        Assert.NotEmpty(await _db.GroupMemberships.ToListAsync());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -315,13 +318,14 @@ public class GroupMembershipServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var deleted = await _db.GroupMemberships.FindAsync(5u);
         Assert.Null(deleted);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
-    public async Task DeleteGroupMembership_MemberWithoutAuthSystemId_RollsBackTransaction()
+    public async Task DeleteGroupMembership_MemberWithoutAuthSystemId_StillDeletesAndQueuesSync()
     {
-        // Arrange
+        // Arrange - AuthOutboxWorker resolves the auth-system user itself (creating one first if
+        // needed), so a member not linked yet no longer blocks the deletion.
         var m = CreateTestMember(Guid.NewGuid());
         m.AuthSystemUserId = null;
         var g = CreateTestGroup(1);
@@ -332,12 +336,13 @@ public class GroupMembershipServiceTests : IDisposable
         _db.GroupMemberships.Add(gm);
         await _db.SaveChangesAsync();
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.DeleteGroupMembership(5, _userId, CancellationToken.None));
+        // Act
+        await _service.DeleteGroupMembership(5, _userId, CancellationToken.None);
 
+        // Assert
         _db.ChangeTracker.Clear();
-        Assert.NotNull(await _db.GroupMemberships.FindAsync(5u));
+        Assert.Null(await _db.GroupMemberships.FindAsync(5u));
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -397,7 +402,7 @@ public class GroupMembershipServiceTests : IDisposable
         var updated = await _db.GroupMemberships.FindAsync(10u);
         Assert.NotNull(updated);
         Assert.Equal(2025u, updated.MembershipYear);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -426,7 +431,7 @@ public class GroupMembershipServiceTests : IDisposable
         var updated = await _db.GroupMemberships.FindAsync(10u);
         Assert.NotNull(updated);
         Assert.Equal(r2.Id, updated.RoleAliasId);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, m.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]

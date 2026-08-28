@@ -11,8 +11,7 @@ namespace Backend.Services;
 /// Service for promoting candidate board members to actual board members at the start of a new financial year. This service checks if the promotion has already been done for the current year to avoid duplicate promotions. If not, it retrieves the candidate board members from the previous year and creates new board memberships for them in the current year, while also enqueuing messages to update their group memberships in the auth system.
 /// </summary>
 /// <param name="serviceScopeFactory">The service scope factory for creating service scopes.</param>
-/// <param name="logger">The logger used to warn about members that can't be auth-synced yet.</param>
-public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory, ILogger<CreateNewBoardService> logger) : ICreateNewBoardService
+public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : ICreateNewBoardService
 {
     /// <inheritdoc />
     public async Task PromoteCandidateBoardToBoardAsync(Guid? userId = null)
@@ -72,12 +71,12 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory, ILo
                     MembershipYear = currentYear
                 });
 
-                EnqueueAuthSyncOrWarn(candidate.Member, authOutboxWorker, db);
+                EnqueueAuthSync(candidate.Member, authOutboxWorker, db);
             }
 
             foreach (var oldMember in oldBoardMembers)
             {
-                EnqueueAuthSyncOrWarn(oldMember.Member, authOutboxWorker, db);
+                EnqueueAuthSync(oldMember.Member, authOutboxWorker, db);
             }
 
             // Reset Gratie and Begunstiger status for all active members upon board rotation.
@@ -90,7 +89,7 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory, ILo
                 m.Gratie = false;
                 m.Begunstiger = false;
 
-                EnqueueAuthSyncOrWarn(m, authOutboxWorker, db);
+                EnqueueAuthSync(m, authOutboxWorker, db);
             }
 
             // Stamps when the board last rotated, so begunstiger fees (which are due again every
@@ -117,19 +116,13 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory, ILo
     }
 
     /// <summary>
-    /// Queues an auth-system sync for a member using their AuthSystemUserId (not their local Member.Id,
-    /// which AuthOutboxTask.Sync tasks can't resolve). The member isn't linked to the auth system yet
-    /// in some cases; don't let that block the board rotation, AuthOutboxWorker queues a catch-up Sync
-    /// task once they do get linked.
+    /// Queues an auth-system sync for a member, if there is one. AuthOutboxWorker resolves the member's
+    /// auth-system user ID itself, creating one first if the member isn't linked yet.
     /// </summary>
-    private void EnqueueAuthSyncOrWarn(Member? member, AuthOutboxWorker authOutboxWorker, PostgresDbContext db)
+    private void EnqueueAuthSync(Member? member, AuthOutboxWorker authOutboxWorker, PostgresDbContext db)
     {
-        if (member?.AuthSystemUserId == null)
-        {
-            logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Skipping board-rotation auth sync.", member?.Id);
-            return;
-        }
+        if (member == null) return;
 
-        authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
+        authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
     }
 }

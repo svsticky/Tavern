@@ -127,6 +127,16 @@ public class KeycloakAPIService(
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.DeleteAsync($"users/{keycloakId}");
+
+        // Deleting is retried on failure (e.g. AuthOutboxWorker retrying after the auth-system
+        // deletion succeeded but a later step in the same task failed). Treat "already gone" as
+        // success rather than throwing, so a retry doesn't get stuck failing forever.
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            logger.LogInformation("Keycloak user {KeycloakId} was already deleted.", keycloakId);
+            return;
+        }
+
         response.EnsureSuccessStatusCode();
     }
 

@@ -124,22 +124,13 @@ public class PaymentSyncService(
                     {
                         if (fullPayment.Member != null)
                         {
-                            if (fullPayment.Member.AuthSystemUserId == null)
+                            db.AuthOutboxTasks.Add(new AuthOutboxTask
                             {
-                                // The member isn't linked to the auth system yet. Don't let that block marking the
-                                // payment as paid; AuthOutboxWorker queues a catch-up Sync task once they do get linked.
-                                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking payment {PaymentId} paid without queuing an auth sync.", fullPayment.Member.Id, payment.Id);
-                            }
-                            else
-                            {
-                                db.AuthOutboxTasks.Add(new AuthOutboxTask
-                                {
-                                    AuthSystemUserId = fullPayment.Member.AuthSystemUserId.Value,
-                                    TaskType = AuthTaskType.Sync,
-                                    CreatedAt = DateTimeOffset.UtcNow,
-                                    NextAttemptAt = DateTimeOffset.UtcNow
-                                });
-                            }
+                                AuthSystemUserId = fullPayment.Member.Id,
+                                TaskType = AuthTaskType.Sync,
+                                CreatedAt = DateTimeOffset.UtcNow,
+                                NextAttemptAt = DateTimeOffset.UtcNow
+                            });
                         }
                         payment.PaidAt = paymentResponse.PaidAt;
 

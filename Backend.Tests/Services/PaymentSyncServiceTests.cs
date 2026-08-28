@@ -137,7 +137,7 @@ public class PaymentSyncServiceTests
 
         var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Single(outboxTasks);
-        Assert.Equal(member.AuthSystemUserId, outboxTasks[0].AuthSystemUserId);
+        Assert.Equal(member.Id, outboxTasks[0].AuthSystemUserId);
         Assert.Equal(AuthTaskType.Sync, outboxTasks[0].TaskType);
 
         var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
@@ -227,7 +227,7 @@ public class PaymentSyncServiceTests
 
         var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Single(outboxTasks);
-        Assert.Equal(member.AuthSystemUserId, outboxTasks[0].AuthSystemUserId);
+        Assert.Equal(member.Id, outboxTasks[0].AuthSystemUserId);
         Assert.Equal(AuthTaskType.Sync, outboxTasks[0].TaskType);
 
         var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
@@ -279,7 +279,7 @@ public class PaymentSyncServiceTests
     }
 
     [Fact]
-    public async Task SyncPayments_MembershipPaymentPaidButNoAuthSystemUserId_StillMarksPaidWithoutAuthSync()
+    public async Task SyncPayments_MembershipPaymentPaidButNoAuthSystemUserId_StillMarksPaidAndQueuesSync()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
@@ -315,7 +315,9 @@ public class PaymentSyncServiceTests
         Assert.Equal(now, updatedPayment.PaidAt); // Payment status must not be blocked by a missing auth link
 
         var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
-        Assert.Empty(outboxTasks); // No auth sync queued since there's no AuthSystemUserId yet
+        var outboxTask = Assert.Single(outboxTasks); // AuthOutboxWorker resolves/creates the auth-system user itself
+        Assert.Equal(member.Id, outboxTask.AuthSystemUserId);
+        Assert.Equal(AuthTaskType.Sync, outboxTask.TaskType);
 
         var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
         Assert.Single(accountingTasks);
