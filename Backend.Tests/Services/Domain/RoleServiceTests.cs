@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
+using Backend.Services;
 using Backend.Services.Domain;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
@@ -23,6 +25,7 @@ public class RoleServiceTests : IDisposable
     private readonly DbContextOptions<PostgresDbContext> _dbOptions;
     private readonly IPermissionService _permissionService;
     private readonly PostgresDbContext _db;
+    private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly RoleService _service;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -37,9 +40,11 @@ public class RoleServiceTests : IDisposable
         _db.Database.EnsureCreated();
 
         _permissionService = Substitute.For<IPermissionService>();
+        _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, null);
         _service = new RoleService(
             _db,
             _permissionService,
+            _authOutboxWorker,
             NullLogger<RoleService>.Instance
         );
     }
@@ -97,7 +102,7 @@ public class RoleServiceTests : IDisposable
     {
         // Arrange
         var dto = new PostRoleDTO { Name = "Admin" };
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageRoles))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -115,7 +120,7 @@ public class RoleServiceTests : IDisposable
         var result = await _service.CreateRole(dto, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         Assert.True(result.Id > 0);
         Assert.Equal("New Role", result.Name);
 
@@ -128,7 +133,7 @@ public class RoleServiceTests : IDisposable
     public async Task DeleteRole_UserNotBoard_ThrowsUnauthorized()
     {
         // Arrange
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageRoles))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -156,7 +161,7 @@ public class RoleServiceTests : IDisposable
         await _service.DeleteRole(15u, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         var deleted = await _db.Roles.FindAsync(15u);
         Assert.Null(deleted);
     }
@@ -213,7 +218,7 @@ public class RoleServiceTests : IDisposable
         await _service.PatchRole(20u, patchDoc, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         var updated = await _db.Roles.FindAsync(20u);
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated.Name);
@@ -244,9 +249,82 @@ public class RoleServiceTests : IDisposable
         await _service.UpdateRole(30u, dto, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRoles);
         var updated = await _db.Roles.FindAsync(30u);
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated.Name);
+    }
+
+    [Fact]
+    public async Task GetRolePermissions_NoPermissionsGranted_ReturnsEmptyList()
+    {
+        var role = new Role { Id = 40, Name = "Empty" };
+        _db.Roles.Add(role);
+        await _db.SaveChangesAsync();
+
+        var result = await _service.GetRolePermissions(40u, CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetRolePermissions_ReturnsGrantedPermissionKeys()
+    {
+        var role = new Role { Id = 41, Name = "WithPerms" };
+        _db.Roles.Add(role);
+        _db.RolePermissions.Add(new RolePermission { RoleId = 41, PermissionKey = "ViewMembers" });
+        _db.RolePermissions.Add(new RolePermission { RoleId = 41, PermissionKey = "CanApproveBudget" });
+        await _db.SaveChangesAsync();
+
+        var result = await _service.GetRolePermissions(41u, CancellationToken.None);
+
+        Assert.Equal(new[] { "CanApproveBudget", "ViewMembers" }, result.OrderBy(p => p));
+    }
+
+    [Fact]
+    public async Task SetRolePermissions_ValidKnownAndCustomKeys_ReplacesPermissions()
+    {
+        var role = new Role { Id = 42, Name = "Target" };
+        _db.Roles.Add(role);
+        _db.RolePermissions.Add(new RolePermission { RoleId = 42, PermissionKey = "ManageMembers" });
+        await _db.SaveChangesAsync();
+
+        await _service.SetRolePermissions(
+            42u,
+            new List<string> { "ViewMembers", "CanApproveBudget" },
+            _userId,
+            CancellationToken.None);
+
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageRolePermissions);
+        var stored = _db.RolePermissions.Where(rp => rp.RoleId == 42).Select(rp => rp.PermissionKey).OrderBy(p => p);
+        Assert.Equal(new[] { "CanApproveBudget", "ViewMembers" }, stored);
+    }
+
+    [Fact]
+    public async Task SetRolePermissions_TooManyCustomPermissions_ThrowsArgumentException()
+    {
+        var role = new Role { Id = 43, Name = "TooMany" };
+        _db.Roles.Add(role);
+        await _db.SaveChangesAsync();
+
+        var tooMany = Enumerable.Range(0, Backend.Validators.PermissionValidator.MaxCustomPermissionCount + 1)
+            .Select(i => $"Custom{i}")
+            .ToList();
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.SetRolePermissions(43u, tooMany, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SetRolePermissions_CustomPermissionTooLong_ThrowsArgumentException()
+    {
+        var role = new Role { Id = 44, Name = "TooLong" };
+        _db.Roles.Add(role);
+        await _db.SaveChangesAsync();
+
+        var tooLong = new string('a', Backend.Validators.PermissionValidator.MaxCustomPermissionLength + 1);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.SetRolePermissions(44u, new List<string> { tooLong }, _userId, CancellationToken.None));
     }
 }

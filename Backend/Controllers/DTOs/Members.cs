@@ -160,43 +160,50 @@ public class MemberResponseDTO
     /// Projects a Member entity into a MemberResponseDTO, including conditional logic to determine which fields to include based on whether the requester is a board member or the member themselves. The method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information such as personal details, study enrollments, and group memberships based on the user's role. This projection is used to transform the data from the Member model into a format that is suitable for API responses, ensuring that sensitive information is only included when appropriate while still providing relevant details about the member when necessary. The inclusion of related entities like study enrollments and group memberships further enriches the response with contextual information about the member's involvement in various activities and groups within the system.
     /// </summary>
     /// <param name="userId">The ID of the user for whom to project the member information.</param>
-    /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <param name="hasViewMembers">
+    /// A boolean indicating whether the requester has the ViewMembers permission (or is a (candidate) board
+    /// member, who always has it).
+    /// </param>
+    /// <param name="isBoardOrCandidateBoard">
+    /// A boolean indicating whether the requester is a (candidate) board member. Used only for the Notes
+    /// field, which stays visible to the board only regardless of ViewMembers.
+    /// </param>
     /// <returns>An expression that projects a Member entity into a MemberResponseDTO.</returns>
-    public static Expression<Func<Member, MemberResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<Member, MemberResponseDTO>> ToDto(Guid userId, bool hasViewMembers, bool isBoardOrCandidateBoard)
     {
         return m => new MemberResponseDTO
         {
             Id = m.Id,
-            StudentNumber = isBoard || userId == m.Id ? m.StudentNumber : null,
+            StudentNumber = hasViewMembers || userId == m.Id ? m.StudentNumber : null,
             FirstName = m.FirstName,
             LastName = m.LastName,
-            Email = isBoard || userId == m.Id ? m.Email : null,
-            PhoneNumber = isBoard || userId == m.Id ? m.PhoneNumber : null,
-            Street = isBoard || userId == m.Id ? m.Street : null,
-            HouseNumber = isBoard || userId == m.Id ? m.HouseNumber : null,
-            PostalCode = isBoard || userId == m.Id ? m.PostalCode : null,
-            City = isBoard || userId == m.Id ? m.City : null,
-            DateOfBirth = isBoard || userId == m.Id ? m.DateOfBirth : null,
-            ParentPhoneNumber = isBoard || userId == m.Id ? m.ParentPhoneNumber : null,
-            Notes = isBoard ? m.Notes : null,
-            RegisteredOn = isBoard || userId == m.Id ? m.RegisteredOn : null,
-            PreferredLanguage = isBoard || userId == m.Id ? m.PreferredLanguage : null,
+            Email = hasViewMembers || userId == m.Id ? m.Email : null,
+            PhoneNumber = hasViewMembers || userId == m.Id ? m.PhoneNumber : null,
+            Street = hasViewMembers || userId == m.Id ? m.Street : null,
+            HouseNumber = hasViewMembers || userId == m.Id ? m.HouseNumber : null,
+            PostalCode = hasViewMembers || userId == m.Id ? m.PostalCode : null,
+            City = hasViewMembers || userId == m.Id ? m.City : null,
+            DateOfBirth = hasViewMembers || userId == m.Id ? m.DateOfBirth : null,
+            ParentPhoneNumber = hasViewMembers || userId == m.Id ? m.ParentPhoneNumber : null,
+            Notes = isBoardOrCandidateBoard ? m.Notes : null,
+            RegisteredOn = hasViewMembers || userId == m.Id ? m.RegisteredOn : null,
+            PreferredLanguage = hasViewMembers || userId == m.Id ? m.PreferredLanguage : null,
             ProfilePicturePath = m.ProfilePicturePath,
-            StudyEnrollments = isBoard || userId == m.Id
+            StudyEnrollments = hasViewMembers || userId == m.Id
                 ? m.StudyEnrollments
                     .AsQueryable()
                     .Select(StudyEnrollmentResponseDTO.ToDto())
                     .ToList()
                 : null,
-            Suspended = isBoard || userId == m.Id ? m.Suspended : (bool?)null,
-            Gratie = isBoard || userId == m.Id ? m.Gratie : (bool?)null,
-            LidVanVerdienste = isBoard || userId == m.Id ? m.LidVanVerdienste : (bool?)null,
-            EreLid = isBoard || userId == m.Id ? m.EreLid : (bool?)null,
-            Begunstiger = isBoard || userId == m.Id ? m.Begunstiger : (bool?)null,
-            GroupMemberships = isBoard || userId == m.Id
+            Suspended = hasViewMembers || userId == m.Id ? m.Suspended : (bool?)null,
+            Gratie = hasViewMembers || userId == m.Id ? m.Gratie : (bool?)null,
+            LidVanVerdienste = hasViewMembers || userId == m.Id ? m.LidVanVerdienste : (bool?)null,
+            EreLid = hasViewMembers || userId == m.Id ? m.EreLid : (bool?)null,
+            Begunstiger = hasViewMembers || userId == m.Id ? m.Begunstiger : (bool?)null,
+            GroupMemberships = hasViewMembers || userId == m.Id
                 ? m.GroupMemberships
                     .AsQueryable()
-                    .Select(GroupMembershipResponseDTO.ToDto(userId, isBoard))
+                    .Select(GroupMembershipResponseDTO.ToDto(userId, hasViewMembers))
                     .ToList()
                 : null
         };

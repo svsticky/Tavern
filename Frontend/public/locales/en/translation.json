@@ -619,5 +619,19 @@
   "copy_calendar_link": "Copy calendar link",
   "reset_calendar_link": "Reset calendar link",
   "calendar_link_reset": "Calendar link reset. Update your calendar app with the new link.",
-  "calendar_link_reset_failed": "Could not reset the calendar link"
+  "calendar_link_reset_failed": "Could not reset the calendar link",
+  "roles": "Roles",
+  "create_role": "Create role",
+  "role_name": "Role name",
+  "no_roles_found": "No roles found",
+  "manage_permissions": "Manage permissions",
+  "permissions": "Permissions",
+  "save_permissions": "Save permissions",
+  "delete_role": "Delete role",
+  "group_permissions_note": "These permissions apply to every member of this group.",
+  "role_permissions_note": "Most of these permissions apply to everyone holding this role, in any group. \"Edit activities for group\" is the one exception: it only applies to the specific group(s) where the role is held.",
+  "custom_permissions": "Custom permissions",
+  "custom_permissions_note": "Free-form permission strings for other applications sharing this login to read - Tavern itself ignores these.",
+  "custom_permission_placeholder": "e.g. CanApproveBudget",
+  "custom_permissions_limit_reached": "Maximum number of custom permissions reached."
 }

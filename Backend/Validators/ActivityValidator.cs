@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Newtonsoft.Json;
 
@@ -23,15 +24,19 @@ public static class ActivityValidator
         ValidateDeadlines(dto.DateTimeEnd, dto.EnrollmentDeadline, dto.UnenrollmentDeadline);
         ValidatePosterIfProvided(dto.Poster);
 
-        // Only board members can create activities that are shown in Koala/website or have enrollment/payment options, to prevent abuse of these features
+        bool hasEditForGroup = dto.OrganizerId.HasValue && permissionService.HasPermission(userId, Permission.EditActivityForGroup, dto.OrganizerId.Value);
+
+        // Only board members (or EditAllActivities holders) can create activities that are shown in
+        // Koala/website or have enrollment/payment options, to prevent abuse of these features.
+        // Otherwise, creating an activity requires EditActivityForGroup for the organizing group
+        // (or EditAllActivities/board), mirroring the same permissions PatchActivity/UpdateActivity use.
         if (dto.ShowInKoala
                 || dto.ShowOnWebsite
                 || dto.PaymentDeadline != null
                 || dto.EnrollOpenDate != null
-                || dto.OrganizerId == null
-                || !permissionService.IsInGroupInCurrentYear(userId, dto.OrganizerId.Value)
+                || !hasEditForGroup
             )
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.EditAllActivities);
     }
 
     /// <summary>

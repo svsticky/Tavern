@@ -13,7 +13,10 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   handleMarkAsPaid,
   handlePaymentsExport,
@@ -41,6 +44,23 @@ import {
  * @component
  */
 export default function Finances() {
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    authService.getTokenParsed().then((token) => {
+      if (!cancelled) setTokenParsed(token);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authService]);
+
+  const canManageFinances =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "ManageFinances");
+
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [totalUnpaid, setTotalUnpaid] = useState(0);
@@ -112,37 +132,45 @@ export default function Finances() {
     <>
       <div className="flex flex-col lg:flex-row lg:items-center lg:items-start justify-between gap-3">
         <PageHeader title={t("finances")} backTo="/" />
-        <Input
-          type="date"
-          label={t("start_date")}
-          name="start_date"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setExportStartDate(e.target.value)
-          }
-        />
-        <Input
-          type="date"
-          label={t("end_date")}
-          name="end_date"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setExportEndDate(e.target.value)
-          }
-        />
-        <div className="w-full sm:w-auto">
-          <Button
-            variant="secondary"
-            className="w-full mb-4"
-            disabled={
-              exportStartDate === "" || exportEndDate === "" || exporting
-            }
-            onClick={() =>
-              handlePaymentsExport(exportStartDate, exportEndDate, setExporting)
-            }
-          >
-            {t("export")}
-            {exporting && "..."}
-          </Button>
-        </div>
+        {canManageFinances && (
+          <>
+            <Input
+              type="date"
+              label={t("start_date")}
+              name="start_date"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setExportStartDate(e.target.value)
+              }
+            />
+            <Input
+              type="date"
+              label={t("end_date")}
+              name="end_date"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setExportEndDate(e.target.value)
+              }
+            />
+            <div className="w-full sm:w-auto">
+              <Button
+                variant="secondary"
+                className="w-full mb-4"
+                disabled={
+                  exportStartDate === "" || exportEndDate === "" || exporting
+                }
+                onClick={() =>
+                  handlePaymentsExport(
+                    exportStartDate,
+                    exportEndDate,
+                    setExporting,
+                  )
+                }
+              >
+                {t("export")}
+                {exporting && "..."}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
       <div className="flex flex-col gap-4 w-full">
         <div className="flex flex-col sm:flex-row gap-4 w-full">
@@ -293,31 +321,33 @@ export default function Finances() {
                             </span>
                           </div>
 
-                          <div className="w-full sm:w-auto">
-                            <Button
-                              variant="primary"
-                              className="w-full sm:w-auto"
-                              onClick={() =>
-                                handleMarkAsPaid({
-                                  member,
-                                  enrollments:
-                                    memberWithOverduePayment.enrollments,
-                                  setLoading,
-                                  refreshUnpaid: () =>
-                                    refreshUnpaidPayments({
-                                      setUnpaidBalances,
-                                      setTotalUnpaid,
-                                      setOpenPayments,
-                                      setUnpaidActivities,
-                                      setMembersWithOverduePayment,
-                                    }),
-                                })
-                              }
-                              disabled={loading}
-                            >
-                              {t("mark_as_paid")}
-                            </Button>
-                          </div>
+                          {canManageFinances && (
+                            <div className="w-full sm:w-auto">
+                              <Button
+                                variant="primary"
+                                className="w-full sm:w-auto"
+                                onClick={() =>
+                                  handleMarkAsPaid({
+                                    member,
+                                    enrollments:
+                                      memberWithOverduePayment.enrollments,
+                                    setLoading,
+                                    refreshUnpaid: () =>
+                                      refreshUnpaidPayments({
+                                        setUnpaidBalances,
+                                        setTotalUnpaid,
+                                        setOpenPayments,
+                                        setUnpaidActivities,
+                                        setMembersWithOverduePayment,
+                                      }),
+                                  })
+                                }
+                                disabled={loading}
+                              >
+                                {t("mark_as_paid")}
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       );
                     },
@@ -379,18 +409,20 @@ export default function Finances() {
                       {member.firstName} {member.lastName}
                     </div>
 
-                    <div className="mt-3 sm:mt-0 row-start-3 sm:row-start-1 sm:col-start-2">
-                      <Button
-                        variant="secondary"
-                        className="flex flex-row items-center justify-center gap-2 w-full sm:w-auto"
-                        onClick={() =>
-                          handleWhatsAppClick(memberWithOverduePayment)
-                        }
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        WhatsApp
-                      </Button>
-                    </div>
+                    {canManageFinances && (
+                      <div className="mt-3 sm:mt-0 row-start-3 sm:row-start-1 sm:col-start-2">
+                        <Button
+                          variant="secondary"
+                          className="flex flex-row items-center justify-center gap-2 w-full sm:w-auto"
+                          onClick={() =>
+                            handleWhatsAppClick(memberWithOverduePayment)
+                          }
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          WhatsApp
+                        </Button>
+                      </div>
+                    )}
 
                     <div className="flex flex-col gap-2 mt-2 sm:col-start-1">
                       {memberWithOverduePayment.enrollments.map(
