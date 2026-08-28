@@ -17,6 +17,7 @@ public class RegistrationDocumentsController(IRegistrationDocumentService servic
     /// Retrieves all registration documents in display order.
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<RegistrationDocumentResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<RegistrationDocumentResponseDTO>>> GetRegistrationDocuments(CancellationToken ct)
@@ -46,7 +47,6 @@ public class RegistrationDocumentsController(IRegistrationDocumentService servic
     [ProducesResponseType(typeof(RegistrationDocumentResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-    [AllowAnonymous]
     public async Task<ActionResult<RegistrationDocumentResponseDTO>> PostRegistrationDocument(PostRegistrationDocumentDTO dto, CancellationToken ct)
     {
         var result = await service.CreateRegistrationDocument(dto, GetUserId(), ct);
