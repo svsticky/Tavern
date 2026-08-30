@@ -19,6 +19,7 @@ services:
 
   db:
     image: postgres:17
+    container_name: tavern-db
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data/
@@ -61,6 +62,7 @@ services:
 
   ngrok:
     image: ngrok/ngrok:latest
+    container_name: tavern-ngrok
     restart: unless-stopped
     entrypoint:
       - /bin/sh
