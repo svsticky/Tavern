@@ -1,11 +1,18 @@
 import { t } from "i18next";
-import { CalendarDaysIcon, DownloadIcon, PlusIcon } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDaysIcon,
+  DownloadIcon,
+  PlusIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
+import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
+import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -69,6 +76,7 @@ export default function ActivitiesPage() {
 
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const [calendarTileOpen, setCalendarTileOpen] = useState(false);
   useEffect(() => {
     if (!tokenParsed) return;
     loadActivities({
@@ -104,6 +112,15 @@ export default function ActivitiesPage() {
             </div>
           }
         />
+        <Button
+          variant="secondary"
+          onClick={() => setCalendarTileOpen(true)}
+          className="text-xs px-3 py-1"
+          title={t("personal_calendar")}
+        >
+          <CalendarClock size={20} className="mr-1" />
+          {t("personal_calendar")}
+        </Button>
         {isBoard && (
           <>
             <Button
@@ -134,6 +151,15 @@ export default function ActivitiesPage() {
           </>
         )}
       </div>
+
+      <Modal
+        isOpen={calendarTileOpen}
+        onClose={() => setCalendarTileOpen(false)}
+        title={t("personal_calendar")}
+      >
+        <PersonalCalendarTile />
+      </Modal>
+
       {loading ? (
         t("loading")
       ) : activities.length === 0 ? (

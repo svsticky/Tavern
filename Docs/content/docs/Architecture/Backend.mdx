@@ -114,6 +114,26 @@ By writing a record of the sync request into the database in the *same* transact
 
 ---
 
+## Personal Calendar Feeds (iCalendar)
+
+Each member has a private iCalendar feed of the activities they are enrolled in, built by `CalendarService` and served at
+`GET /calendars/{calendarId}`. Because calendar applications cannot authenticate, that endpoint is anonymous and guarded
+solely by `Member.CalendarId` — an unguessable random GUID that acts as a bearer secret, is never exposed through any
+other endpoint, and can be regenerated via `POST /calendars/me/rotate` to revoke a leaked URL. Three details are easy
+to get wrong when touching this code: the route must also answer `HEAD`, since ASP.NET Core does not route `HEAD` to
+`[HttpGet]` actions and clients probe subscriptions that way; the feed is served inline as `text/calendar` rather than
+as a download, because the URL is a live subscription and not a file; and every activity is currently emitted as a
+timed UTC event, since whole-day events (`VALUE=DATE`) are not implemented yet.
+
+Whole-day support is pending because an activity's wall clock cannot be recovered reliably today. The frontend
+converts the entered `datetime-local` value using the *browser's* timezone, so a `00:00`–`23:59` activity only round-trips
+back to `00:00`–`23:59` when its creator happened to be on the association's clock. The `AssociationTimeZone` environment
+variable (`Europe/Amsterdam` by default) is the intended anchor for that conversion: once the frontend anchors entry to it
+as well, anything reasoning about the *day* or *time-of-day* a member entered must go through it rather than reading the
+UTC value directly.
+
+---
+
 ## Payment Lifecycle & Webhook Synchronization
 
 Tavern integrates with payment providers via `AbstractPaymentService`:

@@ -19,12 +19,20 @@ import {
 /**
  * Generates a Google Calendar event link and opens it in a new browser tab.
  *
+ * The event is a one-time copy of the activity as it is known right now: Google Calendar receives a
+ * snapshot, not a live link, so later changes to the activity are never reflected in the copy. A
+ * disclaimer stating when the copy was made is therefore appended to the description, and members who
+ * want an always-current calendar should subscribe to their personal feed instead.
+ *
  * @param activity - The activity object containing name, description, location, and date details.
  */
 export const handleAddToCalendar = (activity: ActivityResponseDto) => {
   const title = encodeURIComponent(activity.name || "Activiteit");
+  const disclaimer = t("calendar_copy_disclaimer", {
+    datetime: new Date().toISOString(),
+  });
   const description = encodeURIComponent(
-    formatForGoogleCalendar(activity.dutchDescription) || "",
+    `${formatForGoogleCalendar(activity.dutchDescription) || ""}\n\n[${disclaimer}]`,
   );
   const location = encodeURIComponent(activity.location || "TBA");
 

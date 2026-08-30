@@ -34,6 +34,7 @@ services:
       - VITE_LOGO_URL=${LOGO_URL}
       - VITE_MAIL_SERVICE=${MAIL_SERVICE}
       - VITE_ACCOUNTING_ENABLED=${ACCOUNTING_ENABLED}
+      - VITE_AssociationTimeZone=${AssociationTimeZone:-Europe/Amsterdam}
 
   tavern-docs:
     build:

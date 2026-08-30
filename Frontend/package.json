@@ -7,7 +7,7 @@
     "dev": "react-router dev --host --watch",
     "start": "react-router-serve ./build/server/index.js",
     "typecheck": "react-router typegen && tsc",
-    "openapi-ts": "NODE_TLS_REJECT_UNAUTHORIZED=0 npx openapi-ts",
+    "openapi-ts": "npx openapi-ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

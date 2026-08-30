@@ -29,7 +29,6 @@
   "add_study": "Add study",
   "add_study_enrollment": "Add study enrollment",
   "add_success": "Add success",
-  "add_to_calendar": "Add to calendar",
   "adding": "Adding",
   "address": "Address",
   "all": "All",
@@ -490,7 +489,7 @@
   "error_updating_mailing_list": "Failed to update mailing list",
   "mailing_list_deleted": "Mailing list removed",
   "error_deleting_mailing_list": "Failed to remove mailing list",
-  "delete_mailing_list_confirmation": "Remove this mailing list from Tavern? Members' actual subscriptions at the provider are not affected.",
+  "delete_mailing_list_confirmation": "Remove this mailing list from Koala? Members' actual subscriptions at the provider are not affected.",
   "yearly_mail_subscriptions": "Yearly mailing list preferences",
   "save_mailing_list_preferences": "Save mailing list preferences",
   "mailing_list_preferences_saved": "Mailing list preferences saved",
@@ -593,5 +592,15 @@
   "number": "Number",
   "date_and_time": "Date and Time",
   "multiple_choice": "Multiple Choice",
-  "delete_account_instead_of_paying": "Delete Account Instead of Paying"
+  "delete_account_instead_of_paying": "Delete Account Instead of Paying",
+  "copy_once_to_calendar": "Copy once to calendar",
+  "calendar_copy_disclaimer": "Data about this activity has been added as a one-time copy from what was known on {{datetime}}, and as such could be outdated.",
+  "personal_calendar": "Personal activity calendar",
+  "personal_calendar_explanation": "Subscribe to your enrolled activities through this link in your calendar app to keep the activities you are enrolled in up to date automatically.",
+  "personal_calendar_secret_warning": "Keep this link secret: anyone who has it can see which activities you are enrolled in. Reset it if you have shared it by accident.",
+  "personal_calendar_scope_warning": "Koala only knows about activities in Koala, and not those managed by external platforms (like external activities managed by pretix). Remember to add those activities to your calendar yourself.",
+  "copy_calendar_link": "Copy calendar link",
+  "reset_calendar_link": "Reset calendar link",
+  "calendar_link_reset": "Calendar link reset. Update your calendar app with the new link.",
+  "calendar_link_reset_failed": "Could not reset the calendar link"
 }

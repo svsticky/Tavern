@@ -74,6 +74,32 @@ public class ActivityValidatorTests
     }
 
     [Fact]
+    public void ValidateRequest_EndEqualToStart_ThrowsArgumentException()
+    {
+        // A zero-duration activity has no meaningful representation in a calendar feed, so it is rejected
+        // outright rather than published as an instantaneous event.
+        var moment = DateTimeOffset.UtcNow;
+        var dto = new TestActivityDTO
+        {
+            Name = "Drinks",
+            DutchDescription = "NL Desc",
+            EnglishDescription = "EN Desc",
+            Location = "Tavern",
+            DateTimeStart = moment,
+            DateTimeEnd = moment,
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = false,
+            AreParticipantsVisible = false,
+            IsAdultOnly = false,
+            IsWeeklyDrinks = false
+        };
+
+        var exception = Assert.Throws<ArgumentException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
+        Assert.Equal("Activity cannot end before it starts.", exception.Message);
+    }
+
+    [Fact]
     public void ValidateRequest_ShowInKoala_ChecksBoardPermission()
     {
         var dto = new TestActivityDTO

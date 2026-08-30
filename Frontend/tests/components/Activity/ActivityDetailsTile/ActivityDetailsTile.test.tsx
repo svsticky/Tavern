@@ -184,7 +184,7 @@ describe("ActivityDetailsTile", () => {
 
   it("calls handleAddToCalendar when the calendar button is clicked", async () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
-    fireEvent.click(await screen.findByText("add_to_calendar"));
+    fireEvent.click(await screen.findByText("copy_once_to_calendar"));
     expect(handleAddToCalendar).toHaveBeenCalled();
   });
 
@@ -280,7 +280,9 @@ describe("ActivityDetailsTile", () => {
         })}
       />,
     );
-    expect(await screen.findByText("add_to_calendar")).toBeInTheDocument();
+    expect(
+      await screen.findByText("copy_once_to_calendar"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
   });
 });

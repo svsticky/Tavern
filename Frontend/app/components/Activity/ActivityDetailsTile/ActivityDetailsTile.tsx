@@ -375,7 +375,7 @@ export default function ActivityDetailsTile({
           >
             <div className="flex items-center gap-2">
               <Calendar size={18} />
-              {t("add_to_calendar")}
+              {t("copy_once_to_calendar")}
             </div>
           </Button>
         </div>

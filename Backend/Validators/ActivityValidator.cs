@@ -94,14 +94,14 @@ public static class ActivityValidator
     }
 
     /// <summary>
-    /// Validates that the end date and time of an activity is not before the start date and time. If the end date and time is before the start date and time, this method throws an ArgumentException indicating that the activity cannot end before it starts. This validation ensures that the time range specified for an activity is logical and prevents the creation of activities with invalid time ranges within the system.
+    /// Validates that the end date and time of an activity lies strictly after the start date and time. If the end date and time is before or equal to the start date and time, this method throws an ArgumentException indicating that the activity cannot end before it starts. Requiring a strictly positive duration also keeps zero-length activities out of exported calendar feeds, where an event without a duration cannot be rendered meaningfully. This validation ensures that the time range specified for an activity is logical and prevents the creation of activities with invalid time ranges within the system.
     /// </summary>
     /// <param name="start">The start date and time of the activity.</param>
     /// <param name="end">The end date and time of the activity.</param>
-    /// <exception cref="ArgumentException">Thrown when the end date and time is before the start date and time.</exception>
+    /// <exception cref="ArgumentException">Thrown when the end date and time is not after the start date and time.</exception>
     public static void ValidateTimeRange(DateTimeOffset start, DateTimeOffset end)
     {
-        if (end < start)
+        if (end <= start)
             throw new ArgumentException("Activity cannot end before it starts.");
     }
 
