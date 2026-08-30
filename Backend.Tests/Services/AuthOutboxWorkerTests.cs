@@ -180,7 +180,7 @@ public class AuthOutboxWorkerTests
         var tasks = await db.AuthOutboxTasks.ToListAsync();
         var queuedTask = Assert.Single(tasks); // Create task removed, catch-up Sync task queued
         Assert.Equal(AuthTaskType.Sync, queuedTask.TaskType);
-        Assert.Equal(newAuthId, queuedTask.AuthSystemUserId);
+        Assert.Equal(memberId, queuedTask.AuthSystemUserId); // Sync tasks carry the member's local ID
     }
 
     [Fact]
@@ -224,11 +224,15 @@ public class AuthOutboxWorkerTests
         using var db = new PostgresDbContext(_dbOptions);
         db.Database.EnsureCreated();
 
+        var memberId = Guid.NewGuid();
         var authUserId = Guid.NewGuid();
+        var member = CreateTestMember(memberId, authUserId);
+        db.Members.Add(member);
+
         var task = new AuthOutboxTask
         {
             TaskType = AuthTaskType.Sync,
-            AuthSystemUserId = authUserId,
+            AuthSystemUserId = memberId,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow
         };
@@ -247,6 +251,51 @@ public class AuthOutboxWorkerTests
 
         var tasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Empty(tasks); // Removed
+    }
+
+    [Fact]
+    public async Task TryProcessNextTaskAsync_SyncTask_MemberNotLinkedYet_CreatesInsteadOfFailing()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var memberId = Guid.NewGuid();
+        var member = CreateTestMember(memberId); // no AuthSystemUserId yet
+        db.Members.Add(member);
+
+        var task = new AuthOutboxTask
+        {
+            TaskType = AuthTaskType.Sync,
+            AuthSystemUserId = memberId,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow
+        };
+        db.AuthOutboxTasks.Add(task);
+        await db.SaveChangesAsync();
+
+        var newAuthId = Guid.NewGuid();
+        _authService.CreateUser(Arg.Any<Member>()).Returns(Task.FromResult<Guid?>(newAuthId));
+
+        var provider = CreateServiceProvider(db);
+        var worker = new TestableAuthOutboxWorker(provider, _logger);
+
+        // Act
+        var result = await worker.PublicTryProcessNextTaskAsync(CancellationToken.None);
+
+        // Assert
+        Assert.True(result);
+        await _authService.Received(1).CreateUser(Arg.Is<Member>(m => m.Id == memberId));
+        await _authService.DidNotReceiveWithAnyArgs().SyncMember(default);
+
+        var updatedMember = await db.Members.FindAsync(memberId);
+        Assert.NotNull(updatedMember);
+        Assert.Equal(newAuthId, updatedMember.AuthSystemUserId);
+
+        var tasks = await db.AuthOutboxTasks.ToListAsync();
+        var queuedTask = Assert.Single(tasks); // Sync task removed, catch-up Sync task queued
+        Assert.Equal(AuthTaskType.Sync, queuedTask.TaskType);
+        Assert.Equal(memberId, queuedTask.AuthSystemUserId);
     }
 
     [Fact]
@@ -326,11 +375,15 @@ public class AuthOutboxWorkerTests
         using var db = new PostgresDbContext(_dbOptions);
         db.Database.EnsureCreated();
 
+        var memberId = Guid.NewGuid();
         var authUserId = Guid.NewGuid();
+        var member = CreateTestMember(memberId, authUserId);
+        db.Members.Add(member);
+
         var task = new AuthOutboxTask
         {
             TaskType = AuthTaskType.RefreshEmail,
-            AuthSystemUserId = authUserId,
+            AuthSystemUserId = memberId,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow
         };
@@ -358,11 +411,15 @@ public class AuthOutboxWorkerTests
         using var db = new PostgresDbContext(_dbOptions);
         db.Database.EnsureCreated();
 
+        var memberId = Guid.NewGuid();
         var authUserId = Guid.NewGuid();
+        var member = CreateTestMember(memberId, authUserId);
+        db.Members.Add(member);
+
         var task = new AuthOutboxTask
         {
             TaskType = AuthTaskType.SendActivationEmail,
-            AuthSystemUserId = authUserId,
+            AuthSystemUserId = memberId,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow
         };

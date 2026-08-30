@@ -138,13 +138,13 @@ public class ExternalLinksController(IExternalLinkService externalLinkService) :
         var link = await externalLinkService.GetExternalLink(id, ct);
         if (link == null || string.IsNullOrEmpty(link.IconPath))
         {
-            return NotFound("External link or icon not found.");
+            return NotFound();
         }
 
         var file = await externalLinkService.GetExternalLinkIconFile(link.IconPath);
         if (file == null)
         {
-            return NotFound("File is no longer present on the server.");
+            return NotFound();
         }
 
         return File(file.Stream, file.ContentType);

@@ -69,7 +69,7 @@ namespace Backend.Services.Domain
 
             await ExecuteInTransaction(ct, async () =>
             {
-                var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
+                var affectedMembers = await GetAffectedMemberIds(id, ct);
 
                 db.RoleAliases.Remove(roleAlias);
                 QueueSyncTasks(affectedMembers);
@@ -98,7 +98,7 @@ namespace Backend.Services.Domain
 
                 StateValidator.Validate(roleAlias);
 
-                var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
+                var affectedMembers = await GetAffectedMemberIds(id, ct);
                 QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
@@ -120,7 +120,7 @@ namespace Backend.Services.Domain
 
                 StateValidator.Validate(roleAlias);
 
-                var affectedMembers = await GetAffectedMemberAuthSystemIds(id, ct);
+                var affectedMembers = await GetAffectedMemberIds(id, ct);
                 QueueSyncTasks(affectedMembers);
 
                 await db.SaveChangesAsync(ct);
@@ -133,23 +133,20 @@ namespace Backend.Services.Domain
             return roleAlias ?? throw new Exception("Role alias not found");
         }
 
-        private async Task<List<Guid?>> GetAffectedMemberAuthSystemIds(uint roleAliasId, CancellationToken ct)
+        private async Task<List<Guid>> GetAffectedMemberIds(uint roleAliasId, CancellationToken ct)
         {
             return await db.GroupMemberships
                 .Where(gm => gm.RoleAliasId == roleAliasId)
-                .Select(gm => gm.Member.AuthSystemUserId)
+                .Select(gm => gm.MemberId)
                 .Distinct()
                 .ToListAsync(ct);
         }
 
-        private void QueueSyncTasks(IEnumerable<Guid?> authSystemIds)
+        private void QueueSyncTasks(IEnumerable<Guid> memberIds)
         {
-            foreach (var authSystemId in authSystemIds)
+            foreach (var memberId in memberIds)
             {
-                if (authSystemId.HasValue)
-                {
-                    authOutboxWorker.EnqueueTask(AuthTaskType.Sync, authSystemId.Value, db);
-                }
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, memberId, db);
             }
         }
 

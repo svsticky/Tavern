@@ -109,7 +109,7 @@ public class GroupMembershipService : IGroupMembershipService
 
             var entry = _db.GroupMemberships.Add(membership);
 
-            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new Exception("Member does not have a authentication system ID."), _db);
+            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, _db);
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -143,7 +143,7 @@ public class GroupMembershipService : IGroupMembershipService
         {
             _db.GroupMemberships.Remove(membership);
 
-            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.Member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."), _db);
+            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -192,14 +192,14 @@ public class GroupMembershipService : IGroupMembershipService
 
             await _db.SaveChangesAsync(cancellationToken);
 
-            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.Member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."), _db);
+            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
 
             if (oldMemberId != membership.MemberId)
             {
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.AuthSystemUserId ?? throw new InvalidOperationException("Old member does not have a authentication system ID."), _db);
+                    _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.Id, _db);
                 }
             }
 
@@ -239,14 +239,14 @@ public class GroupMembershipService : IGroupMembershipService
 
             StateValidator.Validate(membership);
 
-            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.Member.AuthSystemUserId ?? throw new InvalidOperationException("User not synced in the authsystem yet."), _db);
+            _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
 
             if (oldMemberId != membership.MemberId)
             {
                 var oldMember = await _db.Members.FindAsync(oldMemberId);
                 if (oldMember != null)
                 {
-                    _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.AuthSystemUserId ?? throw new InvalidOperationException("Old member does not have a authentication system ID."), _db);
+                    _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.Id, _db);
                 }
             }
 

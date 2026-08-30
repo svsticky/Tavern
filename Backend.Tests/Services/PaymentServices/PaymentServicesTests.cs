@@ -218,7 +218,7 @@ public class PaymentServicesTests : IDisposable
         // Verify Auth System Sync Outbox task was added for MembershipPayment
         var authTask = await _db.AuthOutboxTasks.SingleAsync();
         Assert.Equal(AuthTaskType.Sync, authTask.TaskType);
-        Assert.Equal(member.AuthSystemUserId, authTask.AuthSystemUserId);
+        Assert.Equal(member.Id, authTask.AuthSystemUserId);
 
         // Verify Accounting Tool Outbox tasks were added
         var accountingTasks = await _db.AccountingToolOutboxTasks.ToListAsync();
@@ -278,7 +278,7 @@ public class PaymentServicesTests : IDisposable
 
         var authTask = await _db.AuthOutboxTasks.SingleAsync();
         Assert.Equal(AuthTaskType.Sync, authTask.TaskType);
-        Assert.Equal(member.AuthSystemUserId, authTask.AuthSystemUserId);
+        Assert.Equal(member.Id, authTask.AuthSystemUserId);
 
         var accountingTask = await _db.AccountingToolOutboxTasks.SingleAsync();
         Assert.Equal(3u, accountingTask.PaymentId);
@@ -357,10 +357,11 @@ public class PaymentServicesTests : IDisposable
     }
 
     [Fact]
-    public async Task HandleWebhookAsync_MemberWithoutAuthSystemUserId_SkipsAuthSyncButStillMarksPaid()
+    public async Task HandleWebhookAsync_MemberWithoutAuthSystemUserId_StillMarksPaidAndQueuesSync()
     {
         // Arrange - a member whose AuthOutboxTask.Create task hasn't completed yet shouldn't block the
-        // payment from being marked as paid; AuthOutboxWorker queues a catch-up Sync task once linked.
+        // payment from being marked as paid; AuthOutboxWorker resolves the member and creates the auth
+        // user (then a follow-up Sync) once it processes the queued Sync task.
         var member = new Member
         {
             Id = Guid.NewGuid(),
@@ -398,6 +399,8 @@ public class PaymentServicesTests : IDisposable
         // Assert
         var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 6);
         Assert.NotNull(payment.PaidAt);
-        Assert.Empty(await _db.AuthOutboxTasks.ToListAsync());
+        var authTask = await _db.AuthOutboxTasks.SingleAsync();
+        Assert.Equal(AuthTaskType.Sync, authTask.TaskType);
+        Assert.Equal(member.Id, authTask.AuthSystemUserId);
     }
 }

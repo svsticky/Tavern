@@ -248,7 +248,7 @@ namespace Backend.Services.Domain
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
-                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -290,7 +290,7 @@ namespace Backend.Services.Domain
                 ApplyMemberUpdate(member, dto);
                 StateValidator.Validate(member);
 
-                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -338,8 +338,8 @@ namespace Backend.Services.Domain
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             try
             {
-                authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
-                var newMail = await authService.GetEmail(member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
+                authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id, db);
+                var newMail = await authService.GetEmail(id);
                 mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newMail, db);
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -412,7 +412,7 @@ namespace Backend.Services.Domain
             }
 
             member.ActivationEmailSentAt = DateTimeOffset.UtcNow;
-            authOutboxWorker.EnqueueTask(AuthTaskType.SendActivationEmail, member.AuthSystemUserId.Value, db);
+            authOutboxWorker.EnqueueTask(AuthTaskType.SendActivationEmail, member.Id, db);
             await db.SaveChangesAsync(cancellationToken);
 
             logger.LogInformation("Queued activation email for member {MemberId}.", id);

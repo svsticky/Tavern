@@ -204,7 +204,7 @@ public class RoleAliasServiceTests : IDisposable
         var deleted = await _db.RoleAliases.FindAsync(15u);
         Assert.Null(deleted);
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -282,7 +282,7 @@ public class RoleAliasServiceTests : IDisposable
         Assert.NotNull(updated);
         Assert.Equal("New Name", updated.Name);
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -363,6 +363,6 @@ public class RoleAliasServiceTests : IDisposable
         Assert.Equal("New Name", updated.Name);
         Assert.Equal(2u, updated.RoleId);
 
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
     }
 }

@@ -92,7 +92,7 @@ namespace Backend.Services.Domain
                     StateValidator.Validate(manualPayment);
 
                     db.MembershipPayments.Add(manualPayment);
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -150,7 +150,7 @@ namespace Backend.Services.Domain
                     StateValidator.Validate(manualPayment);
 
                     db.BegunstigerPayments.Add(manualPayment);
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -423,7 +423,7 @@ namespace Backend.Services.Domain
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidMembership(memberId);
@@ -456,7 +456,7 @@ namespace Backend.Services.Domain
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidBegunstigerFee(memberId);
@@ -605,16 +605,9 @@ namespace Backend.Services.Domain
         /// linked to the auth system yet in some cases; don't let that block marking the payment as paid,
         /// AuthOutboxWorker queues a catch-up Sync task once they do get linked.
         /// </summary>
-        private void EnqueueAuthSyncOrWarnForPaidMembership(Member member)
+        private void EnqueueAuthSyncForPaidMembership(Member member)
         {
-            if (member.AuthSystemUserId == null)
-            {
-                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking membership payment paid without queuing an auth sync.", member.Id);
-            }
-            else
-            {
-                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
-            }
+            authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
         }
 
         private static PostPaymentResponse ToCheckoutResponse(string checkoutUrl)

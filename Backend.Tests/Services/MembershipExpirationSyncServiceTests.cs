@@ -191,9 +191,9 @@ public class MembershipExpirationSyncServiceTests
         await service.PublicSyncExpiringMemberships();
 
         // Assert
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, matchingAuthId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, nonMatchingAuthId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, begunstigerAuthId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, matchingMember.Id, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, nonMatchingMember.Id, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, begunstigerMember.Id, Arg.Any<PostgresDbContext>());
         _authOutboxWorker.Received(1).EnqueueTask(Arg.Any<AuthTaskType>(), Arg.Any<Guid>(), Arg.Any<PostgresDbContext>());
 
         var lastRun = await db.Settings.FindAsync("MembershipExpirationSyncLastRunAt");
@@ -230,8 +230,8 @@ public class MembershipExpirationSyncServiceTests
         await service.PublicSyncExpiringMemberships();
 
         // Assert
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, paidAuthId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, neverPaidAuthId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, paidMember.Id, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, neverPaidMember.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -268,8 +268,8 @@ public class MembershipExpirationSyncServiceTests
         await service.PublicSyncExpiringMemberships();
 
         // Assert
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, withinGapAuthId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, outsideGapAuthId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, withinGapMember.Id, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, outsideGapMember.Id, Arg.Any<PostgresDbContext>());
 
         var lastRun = await db.Settings.FindAsync("MembershipExpirationSyncLastRunAt");
         Assert.Equal(_today.UtcDateTime.Date, DateTimeOffset.Parse(lastRun!.Value).UtcDateTime.Date);
@@ -338,8 +338,8 @@ public class MembershipExpirationSyncServiceTests
         await service.PublicSyncExpiringMemberships();
 
         // Assert
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, farAnchorAuthId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, noAnchorAuthId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, farAnchorMember.Id, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.DidNotReceive().EnqueueTask(AuthTaskType.Sync, noAnchorMember.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]

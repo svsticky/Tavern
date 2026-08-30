@@ -216,8 +216,7 @@ public class GroupsControllerTests
         var result = await _controller.GetGroupPicture(1, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("Group or group picture not found.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -232,8 +231,7 @@ public class GroupsControllerTests
         var result = await _controller.GetGroupPicture(1, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("File is no longer present on the server.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]

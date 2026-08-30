@@ -137,11 +137,11 @@ public class GroupsController(IGroupService groupService) : ControllerBase
     {
         var group = await groupService.GetGroup(id, cancellationToken);
         if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
-            return NotFound("Group or group picture not found.");
+            return NotFound();
 
         var file = await groupService.GetGroupPictureFile(group.GroupPicturePath);
         if (file == null)
-            return NotFound("File is no longer present on the server.");
+            return NotFound();
 
         return File(file.Stream, file.ContentType);
     }
