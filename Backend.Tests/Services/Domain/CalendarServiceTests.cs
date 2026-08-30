@@ -213,60 +213,6 @@ public class CalendarServiceTests : IDisposable
     }
 
     [Fact]
-    public void BuildCalendar_WholeDayActivityInSummer_UsesLocalDateAndExclusiveEnd()
-    {
-        // Local midnight to 23:59 on 1 June. Read as UTC this would start on 31 May, which is exactly the
-        // off-by-one-day bug the upstream fix was about.
-        var activity = BuildActivity(1,
-            new DateTimeOffset(2026, 6, 1, 0, 0, 0, SummerOffset),
-            new DateTimeOffset(2026, 6, 1, 23, 59, 0, SummerOffset));
-
-        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
-
-        Assert.Contains("DTSTART;VALUE=DATE:20260601", ics);
-        Assert.Contains("DTEND;VALUE=DATE:20260602", ics);
-    }
-
-    [Fact]
-    public void BuildCalendar_WholeDayActivityInWinter_UsesLocalDate()
-    {
-        var activity = BuildActivity(1,
-            new DateTimeOffset(2026, 1, 15, 0, 0, 0, WinterOffset),
-            new DateTimeOffset(2026, 1, 15, 23, 59, 0, WinterOffset));
-
-        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
-
-        Assert.Contains("DTSTART;VALUE=DATE:20260115", ics);
-        Assert.Contains("DTEND;VALUE=DATE:20260116", ics);
-    }
-
-    [Fact]
-    public void BuildCalendar_MultiDayWholeDayActivity_SpansAllDays()
-    {
-        var activity = BuildActivity(1,
-            new DateTimeOffset(2026, 6, 1, 0, 0, 0, SummerOffset),
-            new DateTimeOffset(2026, 6, 3, 23, 59, 0, SummerOffset));
-
-        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
-
-        Assert.Contains("DTSTART;VALUE=DATE:20260601", ics);
-        Assert.Contains("DTEND;VALUE=DATE:20260604", ics);
-    }
-
-    [Fact]
-    public void BuildCalendar_MidnightToMidnight_IsNotTreatedAsWholeDay()
-    {
-        // Only 00:00 to 23:59 counts as whole-day, so this stays a timed event.
-        var activity = BuildActivity(1,
-            new DateTimeOffset(2026, 6, 1, 0, 0, 0, SummerOffset),
-            new DateTimeOffset(2026, 6, 2, 0, 0, 0, SummerOffset));
-
-        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
-
-        Assert.DoesNotContain("VALUE=DATE", ics);
-    }
-
-    [Fact]
     public void BuildCalendar_WaitingListEnrollment_IsPrefixedAndTentative()
     {
         var activity = BuildActivity(1,

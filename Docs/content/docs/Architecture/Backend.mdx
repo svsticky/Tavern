@@ -122,17 +122,15 @@ solely by `Member.CalendarId` — an unguessable random GUID that acts as a bear
 other endpoint, and can be regenerated via `POST /calendars/me/rotate` to revoke a leaked URL. Three details are easy
 to get wrong when touching this code: the route must also answer `HEAD`, since ASP.NET Core does not route `HEAD` to
 `[HttpGet]` actions and clients probe subscriptions that way; the feed is served inline as `text/calendar` rather than
-as a download, because the URL is a live subscription and not a file; and whole-day events are detected by converting
-to the association's timezone first (local `00:00`–`23:59`) and emitted as `VALUE=DATE` with an exclusive `DTEND`,
-because activity timestamps are persisted as UTC instants and reading the date straight off the UTC value shifts it a
-day for half the year.
+as a download, because the URL is a live subscription and not a file; and every activity is currently emitted as a
+timed UTC event, since whole-day events (`VALUE=DATE`) are not implemented yet.
 
-The association's timezone is configured once through the `AssociationTimeZone` environment variable
-(`Europe/Amsterdam` by default), and both halves of the stack agree on it: the frontend enters and displays every
-activity time on that clock regardless of where the member's browser is, sending offset-marked timestamps such as
-`2026-06-01T00:00:00+02:00`, and the backend converts the stored UTC instant back to it to recognise the whole-day
-marking. Anything that needs to reason about the *day* or *time-of-day* a member entered must go through that
-conversion rather than reading the UTC value directly.
+Whole-day support is pending because an activity's wall clock cannot be recovered reliably today. The frontend
+converts the entered `datetime-local` value using the *browser's* timezone, so a `00:00`–`23:59` activity only round-trips
+back to `00:00`–`23:59` when its creator happened to be on the association's clock. The `AssociationTimeZone` environment
+variable (`Europe/Amsterdam` by default) is the intended anchor for that conversion: once the frontend anchors entry to it
+as well, anything reasoning about the *day* or *time-of-day* a member entered must go through it rather than reading the
+UTC value directly.
 
 ---
 
