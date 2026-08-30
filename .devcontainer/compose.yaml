@@ -75,7 +75,7 @@ services:
     ports:
       - "4040:4040" 
     environment:
-      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
+      - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN:-}
     networks:
       - tavern-net
     depends_on:
