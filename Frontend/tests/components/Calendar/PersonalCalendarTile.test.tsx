@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import PersonalCalendarTile from "~/components/Account/PersonalCalendarTile/PersonalCalendarTile";
+import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
 
 const { getCalendarsMe, postCalendarsMeRotate } = vi.hoisted(() => ({
   getCalendarsMe: vi.fn(),

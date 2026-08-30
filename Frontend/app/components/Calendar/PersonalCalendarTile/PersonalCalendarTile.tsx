@@ -31,7 +31,6 @@ export default function PersonalCalendarTile() {
 
   return (
     <BorderedTile
-      title={t("personal_calendar")}
       subtitle={t("personal_calendar_explanation")}
       icon={CalendarClock}
     >

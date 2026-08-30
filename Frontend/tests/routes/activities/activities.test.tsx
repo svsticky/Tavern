@@ -18,6 +18,13 @@ vi.mock("~/routes/activities/activities.handlers", () => ({
   handleCreateActivityClick: vi.fn(),
 }));
 
+vi.mock(
+  "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile",
+  () => ({
+    default: () => <div>personal-calendar-tile</div>,
+  }),
+);
+
 vi.mock("~/components/Activity/ActivityTile/ActivityTile", () => ({
   default: ({ activity }: { activity: ActivityResponseDto }) => (
     <div>activity-tile-{activity.id}</div>
@@ -162,5 +169,32 @@ describe("ActivitiesPage", () => {
     expect(createButton).toBeTruthy();
     fireEvent.click(createButton!);
     expect(handleCreateActivityClick).toHaveBeenCalled();
+  });
+  it("offers the personal calendar to any member, not just the board", async () => {
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    expect(await screen.findByText("personal_calendar")).toBeInTheDocument();
+  });
+
+  it("opens the personal calendar tile in a modal when the button is clicked", async () => {
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    expect(
+      screen.queryByText("personal-calendar-tile"),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(await screen.findByText("personal_calendar"));
+
+    expect(
+      await screen.findByText("personal-calendar-tile"),
+    ).toBeInTheDocument();
   });
 });
