@@ -19,6 +19,7 @@ services:
 
   db:
     image: postgres:17
+    container_name: tavern-db
     restart: unless-stopped
     volumes:
       - postgres-data:/var/lib/postgresql/data/
@@ -27,7 +28,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_DB: postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -41,8 +42,8 @@ services:
     container_name: tavern-mailpit
     restart: unless-stopped
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
     networks:
       - tavern-net
 
@@ -51,7 +52,7 @@ services:
     container_name: tavern-localstack
     restart: unless-stopped
     ports:
-      - "4566:4566"
+      - "127.0.0.1:4566:4566"
     environment:
       - SERVICES=s3
     volumes:
@@ -61,6 +62,7 @@ services:
 
   ngrok:
     image: ngrok/ngrok:latest
+    container_name: tavern-ngrok
     restart: unless-stopped
     entrypoint:
       - /bin/sh
@@ -73,7 +75,7 @@ services:
           exec ngrok http devcontainer:8080
         fi
     ports:
-      - "4040:4040" 
+      - "127.0.0.1:4040:4040" 
     environment:
       - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN}
     networks:
@@ -102,7 +104,7 @@ services:
       - ./keycloak-themes:/opt/keycloak/themes
       - ./keycloak-plugins:/opt/keycloak/providers
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     networks:
       - tavern-net
     depends_on:
