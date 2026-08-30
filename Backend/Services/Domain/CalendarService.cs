@@ -165,24 +165,26 @@ public class CalendarService : ICalendarService
     }
 
     /// <summary>
-    /// Determines the start and end of an activity as they should appear in the feed. Activities that run from
-    /// local midnight to local 23:59 are emitted as whole-day events so that calendar clients render them in the
-    /// all-day row rather than as a block spanning the entire day.
+    /// Determines the start and end of an activity as they should appear in the feed.
     /// </summary>
     /// <param name="activity">The activity to convert.</param>
     /// <returns>The start and end of the activity in iCalendar form.</returns>
     private static (CalDateTime Start, CalDateTime End) ToCalendarRange(Activity activity)
     {
-        DateTimeOffset localStart = TimeZoneInfo.ConvertTime(activity.DateTimeStart, _associationTimeZone);
-        DateTimeOffset localEnd = TimeZoneInfo.ConvertTime(activity.DateTimeEnd, _associationTimeZone);
-
-        if (localStart.TimeOfDay == TimeSpan.Zero && localEnd.TimeOfDay == _wholeDayEndTime)
-        {
-            // The end of a whole-day event is exclusive, so it points at the day after the final day. Deliberately
-            // no conversion to UTC here: a whole-day event is a date, and converting it would shift that date.
-            return (new CalDateTime(DateOnly.FromDateTime(localStart.Date)),
-                    new CalDateTime(DateOnly.FromDateTime(localEnd.Date).AddDays(1)));
-        }
+        // DateTimeOffset localStart = TimeZoneInfo.ConvertTime(activity.DateTimeStart, _associationTimeZone);
+        // DateTimeOffset localEnd = TimeZoneInfo.ConvertTime(activity.DateTimeEnd, _associationTimeZone);
+        //
+        // TODO this whole-day recogniziton implementation, if uncommented, breaks when an activity has been created in another timezone/daylight-saving-time!
+        // This creates inconsistencies in recognizing whole-day events.
+        // Left out for now, so this is not a bug, just a lacking feature.
+        //
+        // if (localStart.TimeOfDay == TimeSpan.Zero && localEnd.TimeOfDay == _wholeDayEndTime)
+        // {
+        //     // The end of a whole-day event is exclusive, so it points at the day after the final day. Deliberately
+        //     // no conversion to UTC here: a whole-day event is a date, and converting it would shift that date.
+        //     return (new CalDateTime(DateOnly.FromDateTime(localStart.Date)),
+        //             new CalDateTime(DateOnly.FromDateTime(localEnd.Date).AddDays(1)));
+        // }
 
         return (new CalDateTime(activity.DateTimeStart.UtcDateTime, "UTC", true),
                 new CalDateTime(activity.DateTimeEnd.UtcDateTime, "UTC", true));
