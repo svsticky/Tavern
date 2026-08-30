@@ -5,6 +5,7 @@
     "dockerComposeFile": "compose.yaml",
     "service": "devcontainer",
     "workspaceFolder": "/workspaces",
+    "shutdownAction": "stopCompose",
 
     "remoteEnv": {
         "DOTNET_ENVIRONMENT": "Development"
