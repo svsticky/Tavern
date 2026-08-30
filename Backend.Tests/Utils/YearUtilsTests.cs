@@ -9,9 +9,9 @@ public class FinancialYearUtilsTests
     {
         // July 31, 2026 12:00:00 UTC
         var utcNow = new DateTime(2026, 7, 31, 12, 0, 0, DateTimeKind.Utc);
-        
+
         var financialYear = YearUtils.GetCurrentFinancialYear(utcNow);
-        
+
         Assert.Equal(2026u, financialYear);
     }
 
@@ -20,9 +20,9 @@ public class FinancialYearUtilsTests
     {
         // August 1, 2026 12:00:00 UTC
         var utcNow = new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
-        
+
         var financialYear = YearUtils.GetCurrentFinancialYear(utcNow);
-        
+
         Assert.Equal(2027u, financialYear);
     }
 
@@ -30,7 +30,7 @@ public class FinancialYearUtilsTests
     public void GetCurrentFinancialYear_Parameterless_ReturnsValidYear()
     {
         var financialYear = YearUtils.GetCurrentFinancialYear();
-        
+
         // Assert it returned something sane (e.g. current year or next year)
         var currentYear = (uint)DateTime.UtcNow.Year;
         Assert.True(financialYear == currentYear || financialYear == currentYear + 1);

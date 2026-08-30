@@ -86,6 +86,9 @@ export default function Finances() {
   )
     return t("failed_fetching");
 
+  const deviceLocale =
+    typeof navigator !== "undefined" ? navigator.language : undefined;
+
   return (
     <>
       <div className="flex flex-col lg:flex-row lg:items-center lg:items-start justify-between gap-3">
@@ -130,7 +133,7 @@ export default function Finances() {
             className="flex-1"
           >
             <p className="text-2xl font-bold text-slate-800">
-              {totalUnpaid.toLocaleString(undefined, {
+              {totalUnpaid.toLocaleString(deviceLocale, {
                 style: "currency",
                 currency: "EUR",
               })}

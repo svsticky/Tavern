@@ -19,7 +19,7 @@ public class PermissionServiceTests : IDisposable
         var options = new DbContextOptionsBuilder<PostgresDbContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .Options;
-        
+
         _db = new PostgresDbContext(options);
         _db.Database.EnsureCreated();
 
@@ -288,7 +288,7 @@ public class PermissionServiceTests : IDisposable
         _db.SaveChanges();
 
         var exception = Record.Exception(() => _service.EnsureBoardMember(memberId));
-        
+
         Assert.Null(exception);
     }
 
@@ -343,7 +343,7 @@ public class PermissionServiceTests : IDisposable
         _db.SaveChanges();
 
         var exception = Record.Exception(() => _service.EnsureBoardOrCandidateBoardMember(memberId));
-        
+
         Assert.Null(exception);
     }
 }

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  calculateAge,
   formatDate,
   formatDateOnly,
   formatForInput,
@@ -7,6 +8,7 @@ import {
   getFinancialYear,
   getGlobalCommitteeCreationDate,
   getGlobalFinancialYearStartDate,
+  parseInputAsAssociationTime,
   setGlobalCommitteeCreationDate,
   setGlobalFinancialYearStartDate,
 } from "~/util/date.util";
@@ -46,14 +48,24 @@ describe("formatDate", () => {
 });
 
 describe("formatForInput", () => {
-  it("formats an ISO string as YYYY-MM-DDTHH:mm in local time", () => {
-    const isoString = "2026-03-05T14:30:00.000Z";
-    const expected = (() => {
-      const d = new Date(isoString);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    })();
-    expect(formatForInput(isoString)).toBe(expected);
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("formats an ISO string as YYYY-MM-DDTHH:mm in the default Europe/Amsterdam timezone", () => {
+    // 10:00Z in January is CET (UTC+1): 11:00 local, same calendar day.
+    expect(formatForInput("2026-01-15T10:00:00.000Z")).toBe("2026-01-15T11:00");
+  });
+
+  it("rolls over to the next calendar day when the timezone offset pushes past midnight", () => {
+    // 23:30Z in March (pre-DST, UTC+1) becomes 00:30 the next day in Amsterdam.
+    expect(formatForInput("2026-03-05T23:30:00.000Z")).toBe("2026-03-06T00:30");
+  });
+
+  it("uses the AssociationTimeZone env var instead of the default when set", () => {
+    vi.stubEnv("AssociationTimeZone", "America/New_York");
+    // 10:00Z in January is EST (UTC-5): 05:00 local.
+    expect(formatForInput("2026-01-15T10:00:00.000Z")).toBe("2026-01-15T05:00");
   });
 
   it("returns an empty string for undefined input", () => {
@@ -66,17 +78,111 @@ describe("formatForInput", () => {
 });
 
 describe("formatDateOnly", () => {
-  it("formats an ISO string as YYYY-MM-DD in local time", () => {
-    const isoString = "2026-03-05T14:30:00.000Z";
-    const d = new Date(isoString);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const expected = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    expect(formatDateOnly(isoString)).toBe(expected);
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("formats an ISO string as YYYY-MM-DD in the default Europe/Amsterdam timezone", () => {
+    expect(formatDateOnly("2026-01-15T10:00:00.000Z")).toBe("2026-01-15");
+  });
+
+  it("rolls over to the next calendar day when the timezone offset pushes past midnight", () => {
+    expect(formatDateOnly("2026-03-05T23:30:00.000Z")).toBe("2026-03-06");
+  });
+
+  it("uses the AssociationTimeZone env var instead of the default when set", () => {
+    vi.stubEnv("AssociationTimeZone", "America/New_York");
+    // 01:00Z in January is still 2026-01-14, 20:00 EST.
+    expect(formatDateOnly("2026-01-15T01:00:00.000Z")).toBe("2026-01-14");
   });
 
   it("returns an empty string for undefined or invalid input", () => {
     expect(formatDateOnly(undefined)).toBe("");
     expect(formatDateOnly("not-a-date")).toBe("");
+  });
+});
+
+describe("parseInputAsAssociationTime", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("interprets a datetime-local value as wall-clock time in the default Europe/Amsterdam timezone", () => {
+    // 11:00 in Amsterdam (CET, UTC+1) in January is 10:00Z.
+    const result = parseInputAsAssociationTime("2026-01-15T11:00");
+    expect(result.toISOString()).toBe("2026-01-15T10:00:00.000Z");
+  });
+
+  it("interprets a date-only value as midnight wall-clock time in the association timezone", () => {
+    const result = parseInputAsAssociationTime("2026-01-15");
+    expect(result.toISOString()).toBe("2026-01-14T23:00:00.000Z");
+  });
+
+  it("uses the AssociationTimeZone env var instead of the default when set", () => {
+    vi.stubEnv("AssociationTimeZone", "America/New_York");
+    // 05:00 in New York (EST, UTC-5) in January is 10:00Z.
+    const result = parseInputAsAssociationTime("2026-01-15T05:00");
+    expect(result.toISOString()).toBe("2026-01-15T10:00:00.000Z");
+  });
+
+  it("round-trips with formatForInput", () => {
+    const isoString = "2026-03-05T23:30:00.000Z";
+    const inputValue = formatForInput(isoString);
+    expect(parseInputAsAssociationTime(inputValue).toISOString()).toBe(
+      isoString,
+    );
+  });
+
+  it("returns an invalid date for undefined or malformed input", () => {
+    expect(parseInputAsAssociationTime(undefined).getTime()).toBeNaN();
+    expect(parseInputAsAssociationTime("").getTime()).toBeNaN();
+    expect(parseInputAsAssociationTime("not-a-date").getTime()).toBeNaN();
+  });
+});
+
+describe("calculateAge", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllEnvs();
+  });
+
+  it("returns null for empty or invalid input", () => {
+    expect(calculateAge(undefined)).toBeNull();
+    expect(calculateAge("")).toBeNull();
+    expect(calculateAge("not-a-date")).toBeNull();
+  });
+
+  it("calculates age in the default Europe/Amsterdam timezone, adjusting for a birthday not yet reached this year", () => {
+    vi.setSystemTime(new Date("2026-08-15T10:00:00Z"));
+    expect(calculateAge("1990-08-15")).toBe(36); // birthday is today
+    expect(calculateAge("1990-08-14")).toBe(36); // birthday already passed
+    expect(calculateAge("1990-08-16")).toBe(35); // birthday not yet reached
+  });
+
+  it("resolves the association's calendar day rather than the raw UTC day at a UTC-midnight boundary", () => {
+    // 22:30 UTC on Aug 14 is already 00:30 on Aug 15 in Europe/Amsterdam (CEST, UTC+2).
+    // A naive UTC-day comparison would say the Aug 15 birthday hasn't arrived yet (age 35).
+    vi.setSystemTime(new Date("2026-08-14T22:30:00Z"));
+    expect(calculateAge("1990-08-15")).toBe(36);
+  });
+
+  it("uses the AssociationTimeZone env var instead of the default when set", () => {
+    // 1990-08-15T00:00Z (the birth instant) is 1990-08-14 20:00 in America/New_York
+    // (EDT, UTC-4) - the negative offset rolls the birthday back a calendar day there.
+    vi.setSystemTime(new Date("2026-08-14T12:00:00Z"));
+
+    // In the default Europe/Amsterdam (UTC+2), the birthday stays on the 15th, which
+    // today (the 14th) hasn't reached yet, so age is one less.
+    expect(calculateAge("1990-08-15")).toBe(35);
+
+    // In America/New_York, both "today" and the birthday land on the 14th, so the
+    // birthday counts as already reached and age is a full year higher.
+    vi.stubEnv("AssociationTimeZone", "America/New_York");
+    expect(calculateAge("1990-08-15")).toBe(36);
   });
 });
 

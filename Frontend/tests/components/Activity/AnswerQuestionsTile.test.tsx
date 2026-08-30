@@ -199,7 +199,7 @@ describe("AnswerQuestionsTile", () => {
     expect(onChange).toHaveBeenCalledWith(1, "42");
   });
 
-  it("calls onChange with the entered value for a Date question", async () => {
+  it("calls onChange with an association-timezone ISO string for a Date question", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => enToken),
     });
@@ -219,10 +219,35 @@ describe("AnswerQuestionsTile", () => {
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "2026-08-01" } });
 
-    expect(onChange).toHaveBeenCalledWith(1, "2026-08-01");
+    // Midnight on 2026-08-01 in Europe/Amsterdam (CEST, UTC+2) is 2026-07-31T22:00Z,
+    // regardless of the entering device's own timezone.
+    expect(onChange).toHaveBeenCalledWith(1, "2026-07-31T22:00:00.000Z");
   });
 
-  it("calls onChange with the entered value for a DateTime question", async () => {
+  it("clears the answer when a Date question's value is emptied", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    const onChange = vi.fn();
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[question({ type: "Date" })]}
+        answers={{ 1: "2026-07-31T22:00:00.000Z" }}
+        onChange={onChange}
+      />,
+      { authService },
+    );
+
+    await screen.findByText("Question");
+    const input = document.querySelector(
+      'input[type="date"]',
+    ) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "" } });
+
+    expect(onChange).toHaveBeenCalledWith(1, "");
+  });
+
+  it("calls onChange with an association-timezone ISO string for a DateTime question", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => enToken),
     });
@@ -242,7 +267,9 @@ describe("AnswerQuestionsTile", () => {
     ) as HTMLInputElement;
     fireEvent.change(input, { target: { value: "2026-08-01T15:30" } });
 
-    expect(onChange).toHaveBeenCalledWith(1, "2026-08-01T15:30");
+    // 15:30 on 2026-08-01 in Europe/Amsterdam (CEST, UTC+2) is 13:30Z, regardless
+    // of the entering device's own timezone.
+    expect(onChange).toHaveBeenCalledWith(1, "2026-08-01T13:30:00.000Z");
   });
 
   it("calls onChange with the selected value for a MultipleChoice question", async () => {

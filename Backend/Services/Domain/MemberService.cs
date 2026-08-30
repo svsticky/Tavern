@@ -99,7 +99,11 @@ namespace Backend.Services.Domain
             }
 
             // Check if member is a minor and if so, require parent phone number
-            if (dto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) &&
+            string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+            DateTime todayInTimeZone = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).Date;
+
+            if (dto.DateOfBirth.AddYears(18).Date > todayInTimeZone &&
                 string.IsNullOrEmpty(dto.ParentPhoneNumber))
             {
                 throw new ArgumentException("Parent phone number required for minors.");

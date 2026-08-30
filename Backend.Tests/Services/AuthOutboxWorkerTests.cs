@@ -501,7 +501,7 @@ public class AuthOutboxWorkerTests
 
         // Assert
         Assert.True(result); // Processed a task
-        
+
         var updatedTasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Single(updatedTasks);
         Assert.Equal(2, updatedTasks[0].RetryCount); // Retry count incremented
@@ -520,9 +520,9 @@ public class AuthOutboxWorkerTests
         // Act
         var cts = new CancellationTokenSource();
         var startTask = worker.StartAsync(cts.Token);
-        
+
         await Task.Delay(100);
-        
+
         cts.Cancel();
         await worker.StopAsync(CancellationToken.None);
         await startTask;

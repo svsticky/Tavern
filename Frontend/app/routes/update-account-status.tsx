@@ -21,6 +21,7 @@ import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useAuth } from "~/context/AuthContext";
+import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import {
   handleAddEnrollment,
@@ -208,7 +209,7 @@ export default function UpdateAccountStatus() {
     },
     {
       header: t("start_date"),
-      render: (item) => new Date(item.enrollmentDate).toLocaleDateString(),
+      render: (item) => formatDate(new Date(item.enrollmentDate), "dateOnly"),
     },
     {
       header: t("status"),

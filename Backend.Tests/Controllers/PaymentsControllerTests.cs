@@ -380,7 +380,7 @@ public class PaymentsControllerTests
 
         // Act & Assert
         Assert.Throws<UnauthorizedAccessException>(() => _controller.GetUnpaid(false));
-}
+    }
 
     [Fact]
     public void GetUnpaid_Exception_ThrowsException()
@@ -390,7 +390,7 @@ public class PaymentsControllerTests
 
         // Act & Assert
         Assert.Throws<Exception>(() => _controller.GetUnpaid(false));
-}
+    }
 
     [Fact]
     public void GetOverpaid_Success_ReturnsOk()
@@ -428,7 +428,7 @@ public class PaymentsControllerTests
 
         // Act & Assert
         Assert.Throws<UnauthorizedAccessException>(() => _controller.GetOverpaid());
-}
+    }
 
     [Fact]
     public void GetOverpaid_Exception_ThrowsException()
@@ -438,7 +438,7 @@ public class PaymentsControllerTests
 
         // Act & Assert
         Assert.Throws<Exception>(() => _controller.GetOverpaid());
-}
+    }
 
     [Fact]
     public async Task GetMemberPaymentStatus_Success_ReturnsOk()

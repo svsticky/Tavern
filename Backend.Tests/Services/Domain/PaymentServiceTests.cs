@@ -95,7 +95,7 @@ public class PaymentServiceTests : IDisposable
         // itself override it.
         _paymentValidationService.HasDoneOrDoingStudy(Arg.Any<Guid>()).Returns(true);
         _paymentService = Substitute.For<AbstractPaymentService>(_db, NullLogger<AbstractPaymentService>.Instance);
-        
+
         var serviceProvider = Substitute.For<IServiceProvider>();
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(serviceProvider, NullLogger<AuthOutboxWorker>.Instance);
 

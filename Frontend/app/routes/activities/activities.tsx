@@ -88,14 +88,16 @@ export default function ActivitiesPage() {
   if (!tokenParsed) return null;
 
   const isInGroup =
-    isBoardOrCandidateBoard(tokenParsed) ||
+    isBoard ||
     (tokenParsed?.group_memberships ?? []).filter(
       (g) => g.split(":")[0] === getCommitteeYear().toString(),
     ).length > 0;
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row lg:items-center lg:items-start justify-between gap-3">
+      <div
+        className={`flex flex-col ${isBoard ? " 2xl:flex-row 2xl:items-start 2xl:gap-3" : "md:flex-row md:items-start md:gap-3"} justify-between gap-0 `}
+      >
         <PageHeader
           title={t("activities")}
           action={
@@ -112,44 +114,48 @@ export default function ActivitiesPage() {
             </div>
           }
         />
-        <Button
-          variant="secondary"
-          onClick={() => setCalendarTileOpen(true)}
-          className="text-xs px-3 py-1"
-          title={t("personal_calendar")}
+        <div
+          className={`flex flex-col ${isBoard ? " 2xl:flex-row 2xl:items-start" : "md:flex-row md:items-start"} justify-between gap-3`}
         >
-          <CalendarClock size={20} className="mr-1" />
-          {t("personal_calendar")}
-        </Button>
-        {isBoard && (
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => downloadPosters(activities, token ?? "")}
-              className="text-xs px-3 py-1"
-              title="Download Koala Posters"
-            >
-              <DownloadIcon size={20} className="mr-1" />
-              {t("download_posters")}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => copyWeekOverview("NL", activities)}
-              className="text-xs px-3 py-1"
-            >
-              <CalendarDaysIcon size={20} className="mr-1" />
-              {t("copy")} {t("weekoverview").toLowerCase()} NL
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => copyWeekOverview("EN", activities)}
-              className="text-xs px-3 py-1 mb-4"
-            >
-              <CalendarDaysIcon size={20} className="mr-1" />
-              {t("copy")} {t("weekoverview").toLowerCase()} EN
-            </Button>
-          </>
-        )}
+          <Button
+            variant="secondary"
+            onClick={() => setCalendarTileOpen(true)}
+            className={`text-xs px-3 py-1 ${!isBoard ? "mb-4" : ""}`}
+            title={t("personal_calendar")}
+          >
+            <CalendarClock size={20} className="mr-1" />
+            {t("personal_calendar")}
+          </Button>
+          {isBoard && (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => downloadPosters(activities, token ?? "")}
+                className="text-xs px-3 py-1"
+                title="Download Koala Posters"
+              >
+                <DownloadIcon size={20} className="mr-1" />
+                {t("download_posters")}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => copyWeekOverview("NL", activities)}
+                className="text-xs px-3 py-1"
+              >
+                <CalendarDaysIcon size={20} className="mr-1" />
+                {t("copy")} {t("weekoverview").toLowerCase()} NL
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => copyWeekOverview("EN", activities)}
+                className="text-xs px-3 py-1 mb-4"
+              >
+                <CalendarDaysIcon size={20} className="mr-1" />
+                {t("copy")} {t("weekoverview").toLowerCase()} EN
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
       <Modal

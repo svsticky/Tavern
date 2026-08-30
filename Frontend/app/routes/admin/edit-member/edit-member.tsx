@@ -17,6 +17,7 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { formatDate } from "~/util/date.util";
 import {
   handleAddEnrollment,
   handleDeleteEnrollment,
@@ -92,7 +93,7 @@ export default function EditMemberPage() {
     },
     {
       header: t("start_date"),
-      render: (item) => new Date(item.enrollmentDate).toLocaleDateString(),
+      render: (item) => formatDate(new Date(item.enrollmentDate), "dateOnly"),
     },
     {
       header: t("status"),

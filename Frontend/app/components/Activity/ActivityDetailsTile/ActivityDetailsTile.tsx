@@ -101,27 +101,13 @@ export default function ActivityDetailsTile({
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
 
-  const startDateString = startDate.toLocaleDateString("nl-NL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const startDateString = formatDate(startDate, "dateOnly");
 
-  const startTimeString = startDate.toLocaleTimeString("nl-NL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const startTimeString = formatDate(startDate, "timeOnly");
 
-  const endDateString = endDate.toLocaleDateString("nl-NL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const endDateString = formatDate(endDate, "dateOnly");
 
-  const endTimeString = endDate.toLocaleTimeString("nl-NL", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const endTimeString = formatDate(endDate, "timeOnly");
 
   const inTargetAudience = isMemberInTargetAudience(
     member,

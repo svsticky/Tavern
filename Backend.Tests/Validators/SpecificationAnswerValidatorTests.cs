@@ -38,7 +38,7 @@ public class SpecificationAnswerValidatorTests
         var answer = CreateAnswer(memberId: userId);
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateOwnership(answer, userId));
-        
+
         Assert.Null(exception);
     }
 
@@ -49,9 +49,9 @@ public class SpecificationAnswerValidatorTests
         var otherUserId = Guid.NewGuid();
         var answer = CreateAnswer(memberId: userId);
 
-        var exception = Assert.Throws<UnauthorizedAccessException>(() => 
+        var exception = Assert.Throws<UnauthorizedAccessException>(() =>
             SpecificationAnswerValidator.ValidateOwnership(answer, otherUserId));
-        
+
         Assert.Equal("Users can only modify their own specification answers.", exception.Message);
     }
 
@@ -62,7 +62,7 @@ public class SpecificationAnswerValidatorTests
         answer.Question.Activity.EnrollmentDeadline = null;
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer));
-        
+
         Assert.Null(exception);
     }
 
@@ -73,7 +73,7 @@ public class SpecificationAnswerValidatorTests
         answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer));
-        
+
         Assert.Null(exception);
     }
 
@@ -83,9 +83,9 @@ public class SpecificationAnswerValidatorTests
         var answer = CreateAnswer();
         answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => 
+        var exception = Assert.Throws<InvalidOperationException>(() =>
             SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer));
-        
+
         Assert.Equal("Cannot modify specification answers after the enrollment deadline.", exception.Message);
     }
 
@@ -101,7 +101,7 @@ public class SpecificationAnswerValidatorTests
         );
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidatePatchOperations(patchDoc));
-        
+
         Assert.Null(exception);
     }
 
@@ -117,9 +117,9 @@ public class SpecificationAnswerValidatorTests
             new DefaultContractResolver()
         );
 
-        var exception = Assert.Throws<InvalidOperationException>(() => 
+        var exception = Assert.Throws<InvalidOperationException>(() =>
             SpecificationAnswerValidator.ValidatePatchOperations(patchDoc));
-        
+
         Assert.Equal("Only the 'answer' field can be modified.", exception.Message);
     }
 
@@ -138,7 +138,7 @@ public class SpecificationAnswerValidatorTests
         );
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidatePatchedAnswer(answer, patchDoc));
-        
+
         Assert.Null(exception);
     }
 
@@ -171,7 +171,7 @@ public class SpecificationAnswerValidatorTests
         );
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidatePatchedAnswer(answer, patchDoc));
-        
+
         Assert.Null(exception);
     }
 }

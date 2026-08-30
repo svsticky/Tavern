@@ -184,8 +184,10 @@ namespace Backend.Services.Domain
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-            var startDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, "W. Europe Standard Time").Date.ToUniversalTime();
-            var endDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, "W. Europe Standard Time").Date.ToUniversalTime();
+            string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+
+            var startDateInTimeZone = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, timezoneId).Date.ToUniversalTime();
+            var endDateInTimeZone = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, timezoneId).Date.ToUniversalTime();
 
             var enrollmentPayments = await db.EnrollmentPayments
                 .Include(p => p.Activity)
@@ -205,9 +207,9 @@ namespace Backend.Services.Domain
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var csv = BuildExportCsv(startDateInNL, endDateInNL, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
-            logger.LogInformation("Exported payments CSV for period {StartDateInNL} - {EndDateInNL}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
-                startDateInNL, endDateInNL, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
+            var csv = BuildExportCsv(startDateInTimeZone, endDateInTimeZone, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
+            logger.LogInformation("Exported payments CSV for period {StartDateInTimeZone} - {EndDateInTimeZone}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
+                startDateInTimeZone, endDateInTimeZone, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
 
             var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);

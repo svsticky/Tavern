@@ -183,7 +183,7 @@ public class ExternalLinksControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostExternalLink(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PostExternalLink_Error_ThrowsException()
@@ -203,7 +203,7 @@ public class ExternalLinksControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostExternalLink(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutExternalLink_Success_ReturnsNoContent()
@@ -246,7 +246,7 @@ public class ExternalLinksControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutExternalLink(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutExternalLink_Forbidden_ThrowsUnauthorizedAccessException()
@@ -266,7 +266,7 @@ public class ExternalLinksControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutExternalLink(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutExternalLink_Error_ThrowsException()
@@ -286,7 +286,7 @@ public class ExternalLinksControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutExternalLink(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task DeleteExternalLink_Success_ReturnsNoContent()

@@ -1179,7 +1179,7 @@ public class MemberServiceTests : IDisposable
         // Arrange
         var study = new Study { Id = 10, Title = "Master Study", NominalDurationYears = 2, Type = StudyType.Master };
         _db.Studies.Add(study);
-        
+
         var existing = CreateTestMember(Guid.NewGuid(), "dup@example.com");
         _db.Members.Add(existing);
         await _db.SaveChangesAsync();
@@ -1329,7 +1329,7 @@ public class MemberServiceTests : IDisposable
         // Arrange
         var existing = CreateTestMember(Guid.NewGuid(), "dup5@example.com");
         _db.Members.Add(existing);
-        
+
         var payment = new MembershipPayment
         {
             MemberId = existing.Id,
@@ -1434,7 +1434,7 @@ public class MemberServiceTests : IDisposable
         // Arrange
         var existing = CreateTestMember(Guid.NewGuid(), "dup6@example.com");
         _db.Members.Add(existing);
-        
+
         var payment = new MembershipPayment
         {
             MemberId = existing.Id,

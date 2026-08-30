@@ -311,7 +311,8 @@ public class ExternalLinkServiceTests : IDisposable
         object? cachedVal = (cachedBytes, "image/webp");
 
         _memoryCache.TryGetValue("ext-link-icon-path.webp", out Arg.Any<object?>())
-            .Returns(x => {
+            .Returns(x =>
+            {
                 x[1] = cachedVal;
                 return true;
             });

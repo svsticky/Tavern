@@ -1,8 +1,11 @@
+import { getEnv } from "./config.utils";
+
 type DateFormatType =
   | "fullDateTime"
   | "shortDate"
   | "monthShort"
   | "timeOnly"
+  | "dateOnly"
   | "defaultDate";
 
 /**
@@ -14,10 +17,19 @@ type DateFormatType =
 export function formatDate(date: Date, format: DateFormatType): string {
   const deviceLocale =
     typeof navigator !== "undefined" ? navigator.language : undefined;
+  const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
 
   switch (format) {
+    case "dateOnly":
+      return date.toLocaleDateString(deviceLocale, {
+        timeZone: timeZone,
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
     case "fullDateTime":
       return date.toLocaleDateString(deviceLocale, {
+        timeZone: timeZone,
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -27,15 +39,18 @@ export function formatDate(date: Date, format: DateFormatType): string {
       });
     case "shortDate":
       return date.toLocaleDateString(deviceLocale, {
+        timeZone: timeZone,
         day: "numeric",
         month: "short",
       });
     case "monthShort":
       return date.toLocaleDateString(deviceLocale, {
+        timeZone: timeZone,
         month: "short",
       });
     case "timeOnly":
       return date.toLocaleTimeString(deviceLocale, {
+        timeZone: timeZone,
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
@@ -46,43 +61,135 @@ export function formatDate(date: Date, format: DateFormatType): string {
 }
 
 /**
- * Formats an ISO date string to a local format compatible with HTML `datetime-local` inputs (YYYY-MM-DDTHH:mm).
+ * Reads the year/month/day/hour/minute/second that a given instant renders as
+ * in a specific timezone, via `Intl.DateTimeFormat` (no external tz library needed).
+ */
+function getDateTimePartsInTimeZone(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+  const parts = formatter.formatToParts(date);
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value ?? 0);
+
+  return {
+    year: get("year"),
+    month: get("month"),
+    day: get("day"),
+    hour: get("hour"),
+    minute: get("minute"),
+    second: get("second"),
+  };
+}
+
+/**
+ * Formats an ISO date string for HTML `datetime-local` inputs (YYYY-MM-DDTHH:mm),
+ * rendered in the association's configured timezone so it matches what `formatDate` displays.
  *
  * @param isoString - The ISO date string (e.g. from the API in UTC).
- * @returns A string in the local time format "YYYY-MM-DDTHH:mm".
+ * @returns A string in the format "YYYY-MM-DDTHH:mm".
  */
 export function formatForInput(isoString?: string): string {
   if (!isoString) return "";
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) return "";
 
+  const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
+  const { year, month, day, hour, minute } = getDateTimePartsInTimeZone(
+    date,
+    timeZone,
+  );
   const pad = (num: number) => String(num).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
 
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  return `${year}-${pad(month)}-${pad(day)}T${pad(hour)}:${pad(minute)}`;
 }
 
 /**
- * Formats an ISO date string to a local date-only format compatible with HTML `date` inputs (YYYY-MM-DD).
+ * Formats an ISO date string for HTML `date` inputs (YYYY-MM-DD), rendered in the
+ * association's configured timezone so it matches what `formatDate` displays.
  *
  * @param isoString - The ISO date string (e.g. from the API in UTC).
- * @returns A string in the local date format "YYYY-MM-DD".
+ * @returns A string in the format "YYYY-MM-DD".
  */
 export function formatDateOnly(isoString?: string): string {
   if (!isoString) return "";
   const date = new Date(isoString);
   if (Number.isNaN(date.getTime())) return "";
 
+  const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
+  const { year, month, day } = getDateTimePartsInTimeZone(date, timeZone);
   const pad = (num: number) => String(num).padStart(2, "0");
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
 
-  return `${year}-${month}-${day}`;
+  return `${year}-${pad(month)}-${pad(day)}`;
+}
+
+/**
+ * Converts the value of an HTML `date` or `datetime-local` input back into a UTC
+ * instant, interpreting the wall-clock value as being in the association's configured
+ * timezone. This is the inverse of `formatForInput`/`formatDateOnly`.
+ *
+ * @param value - The raw input value, e.g. "2026-08-01T10:00" or "2026-08-01".
+ * @returns The corresponding Date, or an invalid Date if `value` is empty/malformed.
+ */
+export function parseInputAsAssociationTime(value?: string): Date {
+  if (!value) return new Date(Number.NaN);
+
+  const [datePart, timePart] = value.split("T");
+  const [year, month, day] = (datePart ?? "").split("-").map(Number);
+  const [hour, minute] = (timePart ?? "00:00").split(":").map(Number);
+  if ([year, month, day, hour, minute].some(Number.isNaN)) {
+    return new Date(Number.NaN);
+  }
+
+  const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
+
+  // Treat the wall-clock value as if it were UTC, then measure how far that guess
+  // drifts once rendered in the target timezone, and correct the guess by that drift.
+  const guess = Date.UTC(year, month - 1, day, hour, minute);
+  const rendered = getDateTimePartsInTimeZone(new Date(guess), timeZone);
+  const renderedAsUtc = Date.UTC(
+    rendered.year,
+    rendered.month - 1,
+    rendered.day,
+    rendered.hour,
+    rendered.minute,
+    rendered.second,
+  );
+
+  return new Date(guess - (renderedAsUtc - guess));
+}
+
+/**
+ * Calculates the age in whole years for a given birth date, based on what "today" and the
+ * birth date render as in the association's configured timezone (so the result doesn't
+ * depend on the browser's own timezone).
+ *
+ * @param birthDateString - The birth date, e.g. "1990-05-15" or a full ISO string.
+ * @returns The age in whole years, or null if `birthDateString` is empty/malformed.
+ */
+export function calculateAge(birthDateString?: string): number | null {
+  if (!birthDateString) return null;
+  const birthDate = new Date(birthDateString);
+  if (Number.isNaN(birthDate.getTime())) return null;
+
+  const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
+  const today = getDateTimePartsInTimeZone(new Date(), timeZone);
+  const birth = getDateTimePartsInTimeZone(birthDate, timeZone);
+
+  let age = today.year - birth.year;
+  const monthDiff = today.month - birth.month;
+  if (monthDiff < 0 || (monthDiff === 0 && today.day < birth.day)) {
+    age--;
+  }
+
+  return age;
 }
 
 let globalFinancialYearStartDate: string | null = null;
@@ -146,7 +253,7 @@ const getYearForDate = (date: Date, startDateStr?: string | null): number => {
 
   try {
     const formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone: "Europe/Amsterdam",
+      timeZone: getEnv("AssociationTimeZone") || "Europe/Amsterdam",
       year: "numeric",
       month: "numeric",
       day: "numeric",

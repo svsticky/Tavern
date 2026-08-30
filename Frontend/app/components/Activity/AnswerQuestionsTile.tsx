@@ -3,7 +3,11 @@ import { useEffect, useState } from "react";
 import type { GetSpecificationQuestionResponseDto } from "~/api";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { formatForInput } from "~/util/date.util";
+import {
+  formatDateOnly,
+  formatForInput,
+  parseInputAsAssociationTime,
+} from "~/util/date.util";
 import Tile from "../Tiles/Tile";
 import Input from "../UI/Input";
 import Select from "../UI/Select";
@@ -112,10 +116,14 @@ export default function AnswerQuestionsTile({
           <Input
             type="date"
             className="input"
-            value={value}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onChange(id, e.target.value)
-            }
+            value={formatDateOnly(value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              const raw = e.target.value;
+              onChange(
+                id,
+                raw ? parseInputAsAssociationTime(raw).toISOString() : "",
+              );
+            }}
             disabled={disabled}
             required={q.isMandatory}
           />
@@ -127,9 +135,13 @@ export default function AnswerQuestionsTile({
             type="datetime-local"
             className="input"
             value={formatForInput(value)}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              onChange(id, e.target.value)
-            }
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              const raw = e.target.value;
+              onChange(
+                id,
+                raw ? parseInputAsAssociationTime(raw).toISOString() : "",
+              );
+            }}
             disabled={disabled}
             required={q.isMandatory}
           />

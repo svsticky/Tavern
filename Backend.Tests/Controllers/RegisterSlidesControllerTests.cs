@@ -165,7 +165,7 @@ public class RegisterSlidesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegisterSlide(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PostRegisterSlide_Error_ThrowsException()
@@ -182,7 +182,7 @@ public class RegisterSlidesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostRegisterSlide(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutRegisterSlide_Success_ReturnsNoContent()
@@ -215,7 +215,7 @@ public class RegisterSlidesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutRegisterSlide(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutRegisterSlide_Forbidden_ThrowsUnauthorizedAccessException()
@@ -230,7 +230,7 @@ public class RegisterSlidesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRegisterSlide(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutRegisterSlide_Error_ThrowsException()
@@ -245,7 +245,7 @@ public class RegisterSlidesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutRegisterSlide(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task DeleteRegisterSlide_Success_ReturnsNoContent()

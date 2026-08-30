@@ -355,7 +355,7 @@ public class InheritdocFilterTests : IDisposable
     {
         var filter = new InheritdocSchemaFilter(_tempXmlPath);
         var schema = new OpenApiSchema { Description = "" };
-        
+
         schema.Properties.Add("special_system_name", new OpenApiSchema { Description = "Existing Desc" });
         schema.Properties.Add("CAMELCASEPROPERTY", new OpenApiSchema { Description = "" });
 

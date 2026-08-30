@@ -193,7 +193,7 @@ public class ActivityValidatorTests
     public void ParseCreateQuestions_ValidJson_ReturnsParsedList()
     {
         var json = "[{\"QuestionDutch\":\"Vraag\",\"QuestionEnglish\":\"Question\",\"Type\":0,\"IsMandatory\":true,\"IsPublic\":true}]";
-        
+
         var result = ActivityValidator.ParseCreateQuestions(json);
 
         Assert.Single(result);
@@ -223,7 +223,7 @@ public class ActivityValidatorTests
     public void ParseUpdateQuestions_ValidJson_ReturnsParsedList()
     {
         var json = "[{\"Id\":1,\"QuestionDutch\":\"Vraag\",\"QuestionEnglish\":\"Question\",\"Type\":1,\"IsMandatory\":false,\"IsPublic\":false}]";
-        
+
         var result = ActivityValidator.ParseUpdateQuestions(json);
 
         Assert.Single(result);
@@ -298,7 +298,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.ShowOnWebsite = true;
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
@@ -311,7 +311,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.PaymentDeadline = DateTimeOffset.UtcNow.AddDays(1);
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
@@ -324,7 +324,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.EnrollOpenDate = DateTimeOffset.UtcNow.AddDays(-1);
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
@@ -349,7 +349,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.OrganizerId = 1;
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(false);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());

@@ -18,7 +18,7 @@ public class ExtensionValidatorTests
         file.ContentType.Returns(contentType);
 
         var exception = Record.Exception(() => ExtensionValidator.ValidatePosterExtension(file));
-        
+
         Assert.Null(exception);
     }
 
@@ -33,7 +33,7 @@ public class ExtensionValidatorTests
         file.ContentType.Returns(contentType);
 
         var exception = Assert.Throws<ArgumentException>(() => ExtensionValidator.ValidatePosterExtension(file));
-        
+
         Assert.Equal("Invalid file extension.", exception.Message);
     }
 
@@ -47,7 +47,7 @@ public class ExtensionValidatorTests
         file.ContentType.Returns(contentType);
 
         var exception = Record.Exception(() => ExtensionValidator.ValidateProfilePictureExtension(file));
-        
+
         Assert.Null(exception);
     }
 
@@ -61,7 +61,7 @@ public class ExtensionValidatorTests
         file.ContentType.Returns(contentType);
 
         var exception = Assert.Throws<ArgumentException>(() => ExtensionValidator.ValidateProfilePictureExtension(file));
-        
+
         Assert.Equal("Invalid profile picture extension.", exception.Message);
     }
 }

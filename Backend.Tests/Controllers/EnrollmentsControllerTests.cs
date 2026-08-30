@@ -104,7 +104,7 @@ public class EnrollmentsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.GetEnrollments(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task GetEnrollment_Found_ReturnsOk()

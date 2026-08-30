@@ -241,7 +241,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostMember(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task DeleteMember_Success_ReturnsNoContent()
@@ -378,7 +378,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutMember_NotFound_ThrowsKeyNotFoundException()
@@ -403,7 +403,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutMember_Exception_ThrowsException()
@@ -428,7 +428,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task GetProfilePicture_GroupOrPathNotFound_ReturnsNotFound()
@@ -467,7 +467,7 @@ public class MembersControllerTests
         var targetId = Guid.NewGuid();
         var member = new MemberResponseDTO { Id = targetId, ProfilePicturePath = "some/path.png" };
         _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
-        
+
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
         _profilePictureServiceMock.GetProfilePictureByPath("some/path.png").Returns(Task.FromResult<(Stream Stream, string ContentType)?>((stream, "image/png")));
 

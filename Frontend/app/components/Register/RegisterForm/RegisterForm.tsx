@@ -6,6 +6,7 @@ import type {
   RegistrationDocumentResponseDto,
   Study,
 } from "~/api";
+import { calculateAge } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import Button from "../../UI/Button";
@@ -142,22 +143,8 @@ export default function RegisterForm({ className }: { className?: string }) {
   }, [startDateOptions, selectedStartDate]);
 
   const isFormValid = useMemo(() => {
-    const birthDateValue = new Date(formData.birthDate);
-    let isAdult = false;
-
-    if (birthDateValue && !Number.isNaN(birthDateValue.getTime())) {
-      const today = new Date();
-      let age = today.getFullYear() - birthDateValue.getFullYear();
-      const monthDiff = today.getMonth() - birthDateValue.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDateValue.getDate())
-      ) {
-        age--;
-      }
-      isAdult = age >= 18;
-    }
+    const age = calculateAge(formData.birthDate);
+    const isAdult = age !== null && age >= 18;
 
     const allFieldsFilled = Object.entries(formData).every(([key, value]) => {
       if (key === "parentPhone" && isAdult) {

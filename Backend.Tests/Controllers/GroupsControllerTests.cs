@@ -240,7 +240,7 @@ public class GroupsControllerTests
         // Arrange
         var group = new GroupResponseDTO { Id = 1, GroupPicturePath = "some/path.png", Name = "Committee", Active = true, Type = GroupType.Committee };
         _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
-        
+
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
         var fileResultDto = new FileResultDto { Stream = stream, ContentType = "image/png" };
         _serviceMock.GetGroupPictureFile("some/path.png").Returns(fileResultDto);

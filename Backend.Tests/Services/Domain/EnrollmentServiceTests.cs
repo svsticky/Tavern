@@ -334,7 +334,7 @@ public class EnrollmentServiceTests : IDisposable
         member.DateOfBirth = DateTime.UtcNow.AddYears(1);
         var activity = CreateActivity("Adult Activity");
         activity.IsAdultOnly = true;
-        
+
         _db.Members.Add(member);
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
@@ -352,7 +352,7 @@ public class EnrollmentServiceTests : IDisposable
         var member = CreateMember("1234567");
         var activity = CreateActivity("Secret Activity");
         activity.ShowInKoala = false;
-        
+
         _db.Members.Add(member);
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
@@ -381,7 +381,7 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
 
         var dto = new PostEnrollmentDTO { MemberId = member.Id, ActivityId = activity.Id };
-        
+
         var result = await _service.CreateEnrollment(dto, member.Id, CancellationToken.None);
 
         Assert.NotNull(result);
@@ -407,7 +407,7 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
 
         var dto = new PostEnrollmentDTO { MemberId = member.Id, ActivityId = activity.Id };
-        
+
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _service.CreateEnrollment(dto, member.Id, CancellationToken.None));
     }
@@ -427,7 +427,7 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
 
         var dto = new PostEnrollmentDTO { MemberId = member.Id, ActivityId = activity.Id };
-        
+
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _service.CreateEnrollment(dto, member.Id, CancellationToken.None));
     }
@@ -447,7 +447,7 @@ public class EnrollmentServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
 
         var dto = new PostEnrollmentDTO { MemberId = member.Id, ActivityId = activity.Id };
-        
+
         var result = await _service.CreateEnrollment(dto, _userId, CancellationToken.None);
 
         Assert.NotNull(result);

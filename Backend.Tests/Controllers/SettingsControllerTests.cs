@@ -204,7 +204,7 @@ public class SettingsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.DeleteSetting("ToDelete", CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task DeleteSetting_Unauthorized_ThrowsUnauthorizedAccessException()

@@ -29,7 +29,11 @@ public static class EnrollmentValidator
         if (activity.Enrollments.Any(e => e.MemberId == member.Id))
             throw new ArgumentException("Member is already enrolled (or on waiting list).");
 
-        if (activity.IsAdultOnly && member.DateOfBirth.AddYears(18).Date > activity.DateTimeStart.Date)
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        DateTime activityStartDateInTimeZone = TimeZoneInfo.ConvertTime(activity.DateTimeStart, tz).Date;
+
+        if (activity.IsAdultOnly && member.DateOfBirth.AddYears(18).Date > activityStartDateInTimeZone)
             throw new ArgumentException("Member does not meet the age requirement for this activity.");
 
         ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoardMember);

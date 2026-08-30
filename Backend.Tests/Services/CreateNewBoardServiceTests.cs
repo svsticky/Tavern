@@ -26,7 +26,7 @@ public class CreateNewBoardServiceTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
-        
+
         _db = new PostgresDbContext(options);
         _db.Database.EnsureCreated();
 
@@ -161,7 +161,7 @@ public class CreateNewBoardServiceTests : IDisposable
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
         _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
-        
+
         // maxBoardYear will be committeeYear + 1. targetYear becomes committeeYear + 2.
         var candidateId = Guid.NewGuid();
         var candidateAuthSystemUserId = Guid.NewGuid();

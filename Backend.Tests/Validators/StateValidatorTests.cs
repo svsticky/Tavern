@@ -25,9 +25,9 @@ public class StateValidatorTests
     public void Validate_ValidObject_DoesNotThrow()
     {
         var model = new TestModel { Name = "John Doe", Age = 30 };
-        
+
         var exception = Record.Exception(() => StateValidator.Validate(model));
-        
+
         Assert.Null(exception);
     }
 
@@ -35,9 +35,9 @@ public class StateValidatorTests
     public void Validate_InvalidObject_ThrowsValidationExceptionWithErrors()
     {
         var model = new TestModel { Name = null, Age = 150 };
-        
+
         var exception = Assert.Throws<ValidationException>(() => StateValidator.Validate(model));
-        
+
         Assert.Contains("Name is required.", exception.Message);
         Assert.Contains("Age must be between 1 and 100.", exception.Message);
     }

@@ -179,7 +179,7 @@ public class MailsControllerTests : IDisposable
             Subject = "Sub",
             HtmlContent = "Content"
         };
-        
+
         _permissionServiceMock.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 
@@ -245,7 +245,7 @@ public class MailsControllerTests : IDisposable
             Enrollments = new List<Enrollment>(),
             SpecificationQuestions = new List<SpecificationQuestion>()
         };
-        
+
         var participant = new Member
         {
             Id = Guid.NewGuid(),
@@ -319,7 +319,7 @@ public class MailsControllerTests : IDisposable
             HtmlContent = "Body",
             ActivityId = 1
         };
-        
+
         _permissionServiceMock.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 

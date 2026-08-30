@@ -373,7 +373,7 @@ public class AccountingToolOutboxWorkerTests
 
         // Assert
         Assert.True(result);
-        
+
         var updatedTasks = await db.AccountingToolOutboxTasks.ToListAsync();
         Assert.Single(updatedTasks);
         Assert.Equal(2, updatedTasks[0].RetryCount); // RetryCount incremented
