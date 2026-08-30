@@ -514,6 +514,28 @@ export default function SettingsPage() {
                 }
               />
               <Input
+                label={t("membership_cost_center")}
+                value={settings.MembershipCostCenter || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MembershipCostCenter",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("membership_cost_unit")}
+                value={settings.MembershipCostUnit || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MembershipCostUnit",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
                 label={t("activity_gl_account")}
                 value={settings.ActivityGLAccount || ""}
                 onChange={(e) =>
@@ -530,6 +552,28 @@ export default function SettingsPage() {
                 onChange={(e) =>
                   handleSettingsChange(
                     "PaymentServiceFeeGLAccount",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("payment_service_fee_cost_center")}
+                value={settings.PaymentServiceFeeCostCenter || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "PaymentServiceFeeCostCenter",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+              <Input
+                label={t("payment_service_fee_cost_unit")}
+                value={settings.PaymentServiceFeeCostUnit || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "PaymentServiceFeeCostUnit",
                     e.target.value,
                     setSettings,
                   )

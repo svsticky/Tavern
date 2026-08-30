@@ -675,6 +675,11 @@ namespace Backend.Services.Domain
         }
 
 
+        /// <summary>
+        /// Cost centers/units are optional; a whitespace-only value is treated the same as "not set".
+        /// </summary>
+        private static string BlankIfWhitespace(string? value) => string.IsNullOrWhiteSpace(value) ? "" : value;
+
         private StringBuilder BuildExportCsv(
     DateTime startDateInNL,
     DateTime endDateInNL,
@@ -693,13 +698,15 @@ namespace Backend.Services.Domain
             // Header line
             csv.AppendLine(CsvUtils.FormatLine("factuurdatum", invoiceDate, periodLabel, paymentsCondition, paymentServiceRelationalCode));
 
+            var activityGLAccountFallback = db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
+
             foreach (var p in enrollmentPayments)
             {
-                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
+                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? activityGLAccountFallback;
                 var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
                 var activityName = p.Activity?.Name ?? "Unknown Activity";
-                var costCenter = p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter ?? "";
-                var costUnit = p.Activity?.CostUnitId ?? "";
+                var costCenter = BlankIfWhitespace(p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter);
+                var costUnit = BlankIfWhitespace(p.Activity?.CostUnitId);
                 var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 
@@ -707,26 +714,30 @@ namespace Backend.Services.Domain
                 csv.AppendLine(CsvUtils.FormatLine("", glAccount, description, vatCode, price, costCenter, costUnit));
             }
 
+            var membershipGLAccount = db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault() ?? "8000";
+            var membershipVatCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+            var membershipCostCenter = BlankIfWhitespace(db.Settings.Where(s => s.Name == "MembershipCostCenter").Select(s => s.Value).FirstOrDefault());
+            var membershipCostUnit = BlankIfWhitespace(db.Settings.Where(s => s.Name == "MembershipCostUnit").Select(s => s.Value).FirstOrDefault());
+
             foreach (var p in membershipPayments)
             {
-                var glAccount = db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault() ?? "8000";
                 var description = "Lidmaatschap";
-                var vatCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
                 var price = p.Price;
 
-                csv.AppendLine(CsvUtils.FormatLine("", glAccount, description, vatCode, price, "", ""));
+                csv.AppendLine(CsvUtils.FormatLine("", membershipGLAccount, description, membershipVatCode, price, membershipCostCenter, membershipCostUnit));
             }
+
+            var begunstigerGLAccount = db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault() ?? "";
+            var begunstigerVatCode = db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+            var begunstigerCostCenter = BlankIfWhitespace(db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault());
+            var begunstigerCostUnit = BlankIfWhitespace(db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault());
 
             foreach (var p in begunstigerPayments)
             {
-                var glAccount = db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault() ?? "";
                 var description = "Begunstiger";
-                var vatCode = db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
-                var costCenter = db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault() ?? "";
-                var costUnit = db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault() ?? "";
                 var price = p.Price;
 
-                csv.AppendLine(CsvUtils.FormatLine("", glAccount, description, vatCode, price, costCenter, costUnit));
+                csv.AppendLine(CsvUtils.FormatLine("", begunstigerGLAccount, description, begunstigerVatCode, price, begunstigerCostCenter, begunstigerCostUnit));
             }
 
             var groupedFees = paymentServiceFeePayments
@@ -739,7 +750,8 @@ namespace Backend.Services.Domain
                 });
 
             var paymentServiceFeeGLAccount = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeGLAccount")?.Value ?? "5007";
-            var paymentServiceFeeCostCenter = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value ?? "TRX";
+            var paymentServiceFeeCostCenter = BlankIfWhitespace(db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value);
+            var paymentServiceFeeCostUnit = BlankIfWhitespace(db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostUnit")?.Value ?? "TRX");
             var feeVatCode = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeVATCode")?.Value ?? "21";
 
             foreach (var group in groupedFees)
@@ -747,7 +759,7 @@ namespace Backend.Services.Domain
                 var description = $"Transaction costs {group.UnitPrice:N2} x {group.Count}";
                 var totalPrice = group.TotalPrice;
 
-                csv.AppendLine(CsvUtils.FormatLine("", paymentServiceFeeGLAccount, description, feeVatCode, totalPrice, paymentServiceFeeCostCenter, "", ""));
+                csv.AppendLine(CsvUtils.FormatLine("", paymentServiceFeeGLAccount, description, feeVatCode, totalPrice, paymentServiceFeeCostCenter, paymentServiceFeeCostUnit));
             }
 
             return csv;

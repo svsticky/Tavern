@@ -69,7 +69,13 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
 
         await EnsureSettingExists(db, "PaymentServiceFeeCostUnit", "TRX");
 
+        await EnsureSettingExists(db, "PaymentServiceFeeCostCenter", "");
+
         await EnsureSettingExists(db, "MembershipGLAccount", "8000");
+
+        await EnsureSettingExists(db, "MembershipCostCenter", "");
+
+        await EnsureSettingExists(db, "MembershipCostUnit", "");
 
         await EnsureSettingExists(db, "ActivityGLAccount", "7001");
 
@@ -85,7 +91,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
 
         await EnsureSettingExists(db, "BegunstigerPrice", "10.00");
 
-        await EnsureSettingExists(db, "BegunstigerGLAccount", "");
+        await EnsureSettingExists(db, "BegunstigerGLAccount", "8000");
 
         await EnsureSettingExists(db, "BegunstigerCostCenter", "");
 
