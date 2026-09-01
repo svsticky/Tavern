@@ -175,7 +175,10 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         ConfigureHttpClient();
 
         var emailHash = CalculateMd5Hash(email);
-        var response = await _httpClient.DeleteAsync($"lists/{ListKey}/members/{emailHash}", ct);
+        var response = await _httpClient.PostAsync(
+            $"lists/{ListKey}/members/{emailHash}/actions/delete-permanent",
+            null,
+            ct);
 
         if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
         {

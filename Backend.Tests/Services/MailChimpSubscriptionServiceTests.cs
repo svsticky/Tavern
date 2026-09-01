@@ -280,7 +280,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateMemberSubscriptionsAsync_EmptySelection_ArchivesMember()
+    public async Task UpdateMemberSubscriptionsAsync_EmptySelection_DeletesMemberPermanently()
     {
         // Arrange
         using var db = CreateEnabledDb();
@@ -298,9 +298,9 @@ public class MailChimpSubscriptionServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(receivedRequest);
-        Assert.Equal(HttpMethod.Delete, receivedRequest.Method);
+        Assert.Equal(HttpMethod.Post, receivedRequest.Method);
         // MD5 of "test@example.com" is "55502f40dc8b7c769880b10874abc9d0"
-        Assert.Contains("lists/test_list_123/members/55502f40dc8b7c769880b10874abc9d0", receivedRequest.RequestUri!.ToString());
+        Assert.Contains("lists/test_list_123/members/55502f40dc8b7c769880b10874abc9d0/actions/delete-permanent", receivedRequest.RequestUri!.ToString());
     }
 
     [Fact]
@@ -356,7 +356,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task DeleteMemberAsync_ServiceEnabled_SendsDeleteRequest()
+    public async Task DeleteMemberAsync_ServiceEnabled_SendsDeletePermanentRequest()
     {
         // Arrange
         using var db = CreateEnabledDb();
@@ -374,8 +374,8 @@ public class MailChimpSubscriptionServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(receivedRequest);
-        Assert.Equal(HttpMethod.Delete, receivedRequest.Method);
-        Assert.Contains("lists/test_list_123/members/55502f40dc8b7c769880b10874abc9d0", receivedRequest.RequestUri!.ToString());
+        Assert.Equal(HttpMethod.Post, receivedRequest.Method);
+        Assert.Contains("lists/test_list_123/members/55502f40dc8b7c769880b10874abc9d0/actions/delete-permanent", receivedRequest.RequestUri!.ToString());
     }
 
     [Fact]
@@ -408,7 +408,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task MigrateEmailAsync_FetchesOldSubscriptions_PushesToNewEmail_ArchivesOld()
+    public async Task MigrateEmailAsync_FetchesOldSubscriptions_PushesToNewEmail_DeletesOldPermanently()
     {
         // Arrange
         using var db = CreateEnabledDb();
@@ -418,7 +418,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
         var oldHash = "bf25d950bde50b8e13f413bb4eb0b1dd";
 
         var putRequests = new List<HttpRequestMessage>();
-        var deleteRequests = new List<HttpRequestMessage>();
+        var deletePermanentRequests = new List<HttpRequestMessage>();
 
         _httpHandler.SendAsyncFunc = (req, ct) =>
         {
@@ -448,9 +448,9 @@ public class MailChimpSubscriptionServiceTests : IDisposable
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
             }
 
-            if (req.Method == HttpMethod.Delete)
+            if (req.Method == HttpMethod.Post && path.EndsWith($"members/{oldHash}/actions/delete-permanent"))
             {
-                deleteRequests.Add(req);
+                deletePermanentRequests.Add(req);
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
             }
 
@@ -465,7 +465,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
         var putContent = await putRequests[0].Content!.ReadAsStringAsync();
         Assert.Contains("new@example.com", putContent);
 
-        Assert.Single(deleteRequests);
-        Assert.Contains($"members/{oldHash}", deleteRequests[0].RequestUri!.ToString());
+        Assert.Single(deletePermanentRequests);
+        Assert.Contains($"members/{oldHash}/actions/delete-permanent", deletePermanentRequests[0].RequestUri!.ToString());
     }
 }
