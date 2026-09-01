@@ -264,7 +264,12 @@ public class EnrollmentService : IEnrollmentService
         _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", memberId, activityId, userId);
         ArgumentNullException.ThrowIfNull(patchDoc);
 
-        if (patchDoc.Operations.Any(op => !Enrollment.AllowedFields.Contains(op.path)))
+        // Determine if activity enrollments can be changed
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
+        // Board members can patch any field (e.g. moving someone off the waiting list); everyone else
+        // is restricted to Enrollment.AllowedFields.
+        if (!isBoardMember && patchDoc.Operations.Any(op => !Enrollment.AllowedFields.Contains(op.path)))
         {
             throw new ArgumentException("Cannot change ActivityId, MemberId, Price, RegisteredOn or IsOnWaitingList.");
         }
@@ -275,9 +280,6 @@ public class EnrollmentService : IEnrollmentService
 
         if (enrollment == null)
             throw new KeyNotFoundException();
-
-        // Determine if activity enrollments can be changed
-        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         if (!isBoardMember)
         {

@@ -455,200 +455,203 @@ export default function SettingsPage() {
             />
           </FormSection>
 
-          {getEnv("ACCOUNTING_ENABLED")?.toLowerCase() === "true" && (
-            <FormSection title={t("accounting")} columns={2}>
-              <Select
-                label={t("accounting_service")}
-                value={settings.AccountingService || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "AccountingService",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-                options={[
-                  { value: "", label: t("none") },
-                  { value: "EXACT", label: "Exact Online" },
-                ]}
-              />
-              <div />
+          <FormSection title={t("accounting")} columns={2}>
+            {getEnv("ACCOUNTING_ENABLED")?.toLowerCase() === "true" && (
+              <>
+                <Select
+                  label={t("accounting_service")}
+                  value={settings.AccountingService || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "AccountingService",
+                      e.target.value,
+                      setSettings,
+                    )
+                  }
+                  options={[
+                    { value: "", label: t("none") },
+                    { value: "EXACT", label: "Exact Online" },
+                  ]}
+                />
+                <div />
 
-              {(settings.AccountingService || "").toUpperCase() === "EXACT" && (
-                <>
-                  <Input
-                    label={t("exact_division")}
-                    value={settings.ExactDivision || ""}
-                    onChange={(e) =>
-                      handleSettingsChange(
-                        "ExactDivision",
-                        e.target.value,
-                        setSettings,
-                      )
-                    }
-                  />
-                  <Input
-                    label={t("exact_access_token")}
-                    type="password"
-                    value={settings.ExactAccessToken || ""}
-                    onChange={(e) =>
-                      handleSettingsChange(
-                        "ExactAccessToken",
-                        e.target.value,
-                        setSettings,
-                      )
-                    }
-                  />
-                </>
-              )}
+                {(settings.AccountingService || "").toUpperCase() ===
+                  "EXACT" && (
+                  <>
+                    <Input
+                      label={t("exact_division")}
+                      value={settings.ExactDivision || ""}
+                      onChange={(e) =>
+                        handleSettingsChange(
+                          "ExactDivision",
+                          e.target.value,
+                          setSettings,
+                        )
+                      }
+                    />
+                    <Input
+                      label={t("exact_access_token")}
+                      type="password"
+                      value={settings.ExactAccessToken || ""}
+                      onChange={(e) =>
+                        handleSettingsChange(
+                          "ExactAccessToken",
+                          e.target.value,
+                          setSettings,
+                        )
+                      }
+                    />
+                  </>
+                )}
+              </>
+            )}
 
-              <Input
-                label={t("membership_gl_account")}
-                value={settings.MembershipGLAccount || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "MembershipGLAccount",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("membership_cost_center")}
-                value={settings.MembershipCostCenter || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "MembershipCostCenter",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("membership_cost_unit")}
-                value={settings.MembershipCostUnit || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "MembershipCostUnit",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("activity_gl_account")}
-                value={settings.ActivityGLAccount || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "ActivityGLAccount",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("payment_service_fee_gl_account")}
-                value={settings.PaymentServiceFeeGLAccount || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "PaymentServiceFeeGLAccount",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("payment_service_fee_cost_center")}
-                value={settings.PaymentServiceFeeCostCenter || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "PaymentServiceFeeCostCenter",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("payment_service_fee_cost_unit")}
-                value={settings.PaymentServiceFeeCostUnit || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "PaymentServiceFeeCostUnit",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("begunstiger_gl_account")}
-                value={settings.BegunstigerGLAccount || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "BegunstigerGLAccount",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("begunstiger_cost_center")}
-                value={settings.BegunstigerCostCenter || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "BegunstigerCostCenter",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("begunstiger_cost_unit")}
-                value={settings.BegunstigerCostUnit || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "BegunstigerCostUnit",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("begunstiger_vat_code")}
-                type="number"
-                step="1"
-                value={settings.BegunstigerVATCode || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "BegunstigerVATCode",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("payment_service_relation_code")}
-                value={settings.PaymentServiceRelationCode || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "PaymentServiceRelationCode",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-              <Input
-                label={t("payment_service_payments_condition")}
-                value={settings.PaymentServicePaymentsCondition || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "PaymentServicePaymentsCondition",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-            </FormSection>
-          )}
+            <Input
+              label={t("membership_gl_account")}
+              value={settings.MembershipGLAccount || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MembershipGLAccount",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("membership_cost_center")}
+              value={settings.MembershipCostCenter || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MembershipCostCenter",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("membership_cost_unit")}
+              value={settings.MembershipCostUnit || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MembershipCostUnit",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("activity_gl_account")}
+              value={settings.ActivityGLAccount || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "ActivityGLAccount",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("payment_service_fee_gl_account")}
+              value={settings.PaymentServiceFeeGLAccount || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "PaymentServiceFeeGLAccount",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("payment_service_fee_cost_center")}
+              value={settings.PaymentServiceFeeCostCenter || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "PaymentServiceFeeCostCenter",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("payment_service_fee_cost_unit")}
+              value={settings.PaymentServiceFeeCostUnit || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "PaymentServiceFeeCostUnit",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("begunstiger_gl_account")}
+              value={settings.BegunstigerGLAccount || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BegunstigerGLAccount",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("begunstiger_cost_center")}
+              value={settings.BegunstigerCostCenter || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BegunstigerCostCenter",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("begunstiger_cost_unit")}
+              value={settings.BegunstigerCostUnit || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BegunstigerCostUnit",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("begunstiger_vat_code")}
+              type="number"
+              step="1"
+              value={settings.BegunstigerVATCode || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "BegunstigerVATCode",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("payment_service_relation_code")}
+              value={settings.PaymentServiceRelationCode || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "PaymentServiceRelationCode",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+            <Input
+              label={t("payment_service_payments_condition")}
+              value={settings.PaymentServicePaymentsCondition || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "PaymentServicePaymentsCondition",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+            />
+          </FormSection>
 
           <FormSection title={t("mail_settings")} columns={2}>
             <Input

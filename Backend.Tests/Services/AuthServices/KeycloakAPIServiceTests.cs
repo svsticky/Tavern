@@ -32,6 +32,7 @@ public class KeycloakAPIServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly PostgresDbContext _db;
+    private readonly PermissionService _permissionService;
     private readonly MailSubscriptionOutboxWorker _mailWorker;
     private readonly IPaymentValidationService _paymentMock;
     private readonly IHttpClientFactory _clientFactoryMock;
@@ -58,6 +59,7 @@ public class KeycloakAPIServiceTests : IDisposable
         _db = new PostgresDbContext(dbOptions);
         _db.Database.EnsureCreated();
 
+        _permissionService = new PermissionService(_db, NullLogger<PermissionService>.Instance);
         _mailWorker = new MailSubscriptionOutboxWorker(null!, NullLogger<MailSubscriptionOutboxWorker>.Instance);
         _paymentMock = Substitute.For<IPaymentValidationService>();
 
@@ -76,6 +78,7 @@ public class KeycloakAPIServiceTests : IDisposable
 
         _service = new KeycloakAPIService(
             _db,
+            _permissionService,
             _mailWorker,
             _clientFactoryMock,
             _paymentMock,

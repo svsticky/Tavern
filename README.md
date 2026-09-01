@@ -201,5 +201,5 @@ docker compose up -d --build
 ## Architecture & Documentation
 
 For a detailed deep dive into the system's architecture, APIs, or docs:
-* **Main Branch Documentation:** [docs.tavern.svsticky.nl](https://docs.tavern.svsticky.nl)
-* **Development Branch Documentation:** [docs.tavern.dev.svsticky.nl](https://docs.tavern.dev.svsticky.nl)
+* **Main Branch Documentation:** [docs.tavern.svsticky.nl](https://docs.koala.svsticky.nl)
+* **Development Branch Documentation:** [docs.tavern.dev.svsticky.nl](https://docs.koala.dev.svsticky.nl)

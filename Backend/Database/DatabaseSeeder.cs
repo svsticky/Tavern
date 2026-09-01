@@ -211,7 +211,16 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
     }
 
     /// <summary>
-    /// Ensures that a backup board account exists in the database and stays in good repair. This method checks if there are any existing board members in the group specified by the "BoardGroupId" setting. If a backup member already exists (matched by the "BACKUP_ACCOUNT_EMAIL" env var) but is currently missing board rights for the current year or a study enrollment - e.g. because a board rotation or manual edit reset it, or because it was created before study enrollments were required - it is repaired in place rather than silently failing to re-create a duplicate. Only when no such member exists yet, and there are no other board members to fall back on, is a brand new backup member created with board rights, a study enrollment, and a paid membership. The method ensures the database state remains consistent through the use of transactions.
+    /// Ensures that a backup board account exists in the database and stays in good repair, but only for
+    /// associations whose board group has never had a single real member, in any year. As soon as any real
+    /// board member has ever existed - even in a past year, even if the board is currently empty - the
+    /// backup account is left alone entirely: no creation, no repair, no board rights granted. If a backup
+    /// member already exists (matched by the "BACKUP_ACCOUNT_EMAIL" env var) but is currently missing board
+    /// rights for the current year or a study enrollment - e.g. because it was created before study
+    /// enrollments were required - it is repaired in place rather than silently failing to re-create a
+    /// duplicate. Only when no such member exists yet, and the board group has truly never had a real
+    /// member, is a brand new backup member created with board rights, a study enrollment, and a paid
+    /// membership. The method ensures the database state remains consistent through the use of transactions.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="authOutboxWorker">The authentication outbox worker.</param>
@@ -235,6 +244,18 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
             if (!string.IsNullOrEmpty(backupEmail) && existingBackupMember == null)
             {
                 logger.LogInformation("BACKUP_ACCOUNT_EMAIL is set to {BackupEmail} but no member with that email exists yet - it will be created if there are no other board members.", backupEmail);
+            }
+
+            // The backup account is purely a fallback for a board group that has never had a single real
+            // member. As soon as any real board member has ever existed - in any year, even in the past -
+            // never create or touch the backup account again.
+            bool hasEverHadRealBoardMember = await db.GroupMemberships.AnyAsync(gm =>
+                gm.GroupId == boardGroupId &&
+                (existingBackupMember == null || gm.MemberId != existingBackupMember.Id));
+
+            if (hasEverHadRealBoardMember)
+            {
+                return;
             }
 
             if (existingBackupMember != null)
@@ -261,11 +282,11 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
                 bool hasStudy = await db.StudyEnrollments.AnyAsync(se => se.MemberId == existingBackupMember.Id);
                 if (!hasStudy)
                 {
-                    var backupStudy = await EnsureBackupStudyExists(db);
+                    var repairStudy = await EnsureBackupStudyExists(db);
                     db.StudyEnrollments.Add(new StudyEnrollment
                     {
                         MemberId = existingBackupMember.Id,
-                        Study = backupStudy,
+                        Study = repairStudy,
                         EnrollmentDate = DateTimeOffset.UtcNow,
                         Status = StudyStatus.Enrolled
                     });
@@ -290,80 +311,76 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
                 return;
             }
 
-            bool hasBoardMembers = await db.GroupMemberships.AnyAsync(gm => gm.GroupId == boardGroupId && gm.MembershipYear == maxBoardYear);
-            if (!hasBoardMembers)
+            var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value, CultureInfo.InvariantCulture);
+            var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == maxBoardYear - 1).ToListAsync();
+
+            if (candidateBoardMembershipsLastYear.Any())
             {
-                var candidateBoardGroupId = uint.Parse((await db.Settings.FindAsync("CandidateBoardGroupId"))!.Value, CultureInfo.InvariantCulture);
-                var candidateBoardMembershipsLastYear = await db.GroupMemberships.Where(gm => gm.GroupId == candidateBoardGroupId && gm.MembershipYear == maxBoardYear - 1).ToListAsync();
+                await createNewBoardService.PromoteCandidateBoardToBoardAsync();
+                return;
+            }
 
-                if (candidateBoardMembershipsLastYear.Any())
-                {
-                    await createNewBoardService.PromoteCandidateBoardToBoardAsync();
-                    return;
-                }
+            if (string.IsNullOrEmpty(backupEmail))
+            {
+                return;
+            }
 
-                if (string.IsNullOrEmpty(backupEmail))
-                {
-                    return;
-                }
+            var backupMember = new Member
+            {
+                Id = Guid.NewGuid(),
+                PhoneNumber = "0600000000",
+                StudentNumber = "BackupMember",
+                Street = "Street",
+                HouseNumber = "1",
+                PostalCode = "1234AB",
+                City = "City",
+                FirstName = "Backup",
+                LastName = "Account",
+                Email = backupEmail
+            };
 
-                var backupMember = new Member
-                {
-                    Id = Guid.NewGuid(),
-                    PhoneNumber = "0600000000",
-                    StudentNumber = "BackupMember",
-                    Street = "Street",
-                    HouseNumber = "1",
-                    PostalCode = "1234AB",
-                    City = "City",
-                    FirstName = "Backup",
-                    LastName = "Account",
-                    Email = backupEmail
-                };
+            db.Members.Add(backupMember);
 
-                db.Members.Add(backupMember);
+            db.GroupMemberships.Add(new GroupMembership
+            {
+                GroupId = boardGroupId,
+                MemberId = backupMember.Id,
+                RoleAliasId = null,
+                MembershipYear = maxBoardYear
+            });
 
-                db.GroupMemberships.Add(new GroupMembership
-                {
-                    GroupId = boardGroupId,
-                    MemberId = backupMember.Id,
-                    RoleAliasId = null,
-                    MembershipYear = maxBoardYear
-                });
+            // The paywall only allows paying membership - and therefore only grants access -
+            // to members who are a begunstiger or have (had) a study enrollment. Give the backup
+            // account a study enrollment too, so it isn't locked out of the app it needs to administer.
+            var backupStudy = await EnsureBackupStudyExists(db);
+            db.StudyEnrollments.Add(new StudyEnrollment
+            {
+                MemberId = backupMember.Id,
+                Study = backupStudy,
+                EnrollmentDate = DateTimeOffset.UtcNow,
+                Status = StudyStatus.Enrolled
+            });
 
-                // The paywall only allows paying membership - and therefore only grants access -
-                // to members who are a begunstiger or have (had) a study enrollment. Give the backup
-                // account a study enrollment too, so it isn't locked out of the app it needs to administer.
-                var backupStudy = await EnsureBackupStudyExists(db);
-                db.StudyEnrollments.Add(new StudyEnrollment
-                {
-                    MemberId = backupMember.Id,
-                    Study = backupStudy,
-                    EnrollmentDate = DateTimeOffset.UtcNow,
-                    Status = StudyStatus.Enrolled
-                });
+            authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id, db);
 
-                authOutboxWorker.EnqueueTask(AuthTaskType.Create, backupMember.Id, db);
+            db.MembershipPayments.Add(new MembershipPayment
+            {
+                PaymentServiceId = "",
+                PaymentIntentUrl = "",
+                Price = decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50", CultureInfo.InvariantCulture),
+                PaidAt = DateTime.UtcNow,
+                MemberId = backupMember.Id,
+                ManuallyMarkedAsPaid = true
+            });
 
-                db.MembershipPayments.Add(new MembershipPayment
-                {
-                    PaymentServiceId = "",
-                    PaymentIntentUrl = "",
-                    Price = decimal.Parse(db.Settings.Find("MembershipPrice")?.Value ?? "7.50", CultureInfo.InvariantCulture),
-                    PaidAt = DateTime.UtcNow,
-                    MemberId = backupMember.Id,
-                    ManuallyMarkedAsPaid = true
-                });
+            await db.SaveChangesAsync();
 
-                await db.SaveChangesAsync();
-
-                await db.Database.ExecuteSqlRawAsync($@"
+            await db.Database.ExecuteSqlRawAsync($@"
                     SELECT setval(pg_get_serial_sequence('""GroupMemberships""', 'Id'),
                     COALESCE((SELECT MAX(""Id"") FROM ""GroupMemberships""), 1));
                 ");
 
-                await transaction.CommitAsync();
-            }
+            await transaction.CommitAsync();
         }
         catch (Exception ex)
         {

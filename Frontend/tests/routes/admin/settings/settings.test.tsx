@@ -318,18 +318,29 @@ describe("SettingsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not render the accounting section unless ACCOUNTING_ENABLED is true", async () => {
+  it("always renders the accounting section, with GL/cost fields, regardless of ACCOUNTING_ENABLED", async () => {
     renderWithProviders(<SettingsPage />);
     await screen.findByText("studies-datatable");
-    expect(screen.queryByText("accounting")).not.toBeInTheDocument();
+    expect(screen.getByText("accounting")).toBeInTheDocument();
+    expect(screen.getByLabelText("membership_gl_account")).toBeInTheDocument();
   });
 
-  it("renders the accounting section when ACCOUNTING_ENABLED is true", async () => {
+  it("does not render the Exact Online connector fields unless ACCOUNTING_ENABLED is true", async () => {
+    renderWithProviders(<SettingsPage />);
+    await screen.findByText("studies-datatable");
+    expect(
+      screen.queryByLabelText("accounting_service"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the Exact Online connector field when ACCOUNTING_ENABLED is true", async () => {
     getEnv.mockReturnValue("true");
 
     renderWithProviders(<SettingsPage />);
 
-    expect(await screen.findByText("accounting")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("accounting_service"),
+    ).toBeInTheDocument();
   });
 
   it("shows Exact fields only when AccountingService is EXACT", async () => {

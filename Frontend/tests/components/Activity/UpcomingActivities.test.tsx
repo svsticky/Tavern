@@ -86,7 +86,7 @@ describe("UpcomingActivities", () => {
     act(() => trigger(100));
 
     const grid = container.querySelector(".grid");
-    expect(grid).toHaveStyle({ gridTemplateColumns: "1fr" });
+    expect(grid).toHaveStyle({ gridTemplateColumns: "minmax(0, 1fr)" });
   });
 
   it("lays out side-by-side columns when the container is wide enough", () => {

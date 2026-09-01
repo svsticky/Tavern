@@ -9,9 +9,10 @@ import {
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Markdown from "react-markdown";
-import type {
-  ActivityResponseDto,
-  SpecificationAnswerResponseDto,
+import {
+  type ActivityResponseDto,
+  getGroupsById,
+  type SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
@@ -33,6 +34,26 @@ import {
   handleUpdateEnrollment,
 } from "./ActivityDetailsTile.handlers";
 import InfoItem from "./InfoItem";
+
+/**
+ * Renders the organizing group's logo, falling back to the same placeholder used
+ * for a member's own group memberships on the home page if the group has no logo
+ * (or it fails to load).
+ */
+function OrganizerIcon({ groupId }: { groupId: number }) {
+  const [imageUrl, setImageUrl] = useState(
+    `${getEnv("ApiUrl")}/groups/${groupId}/group-picture`,
+  );
+
+  return (
+    <img
+      src={imageUrl}
+      onError={() => setImageUrl("/profile-picture.svg")}
+      alt=""
+      className="w-8 h-8 object-contain"
+    />
+  );
+}
 
 const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
   const mapped: Record<number, string> = {};
@@ -94,6 +115,28 @@ export default function ActivityDetailsTile({
   const [posterStatus, setPosterStatus] = useState<
     "loading" | "loaded" | "error"
   >("loading");
+  const [organizerName, setOrganizerName] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!activity.organizerId) {
+      setOrganizerName(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadOrganizer = async () => {
+      const response = await getGroupsById({
+        path: { id: activity.organizerId! },
+      });
+      if (!cancelled) {
+        setOrganizerName(response.data?.name ?? null);
+      }
+    };
+    loadOrganizer();
+    return () => {
+      cancelled = true;
+    };
+  }, [activity.organizerId]);
 
   const posterUrl = `${getEnv("ApiUrl")}/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;
@@ -254,6 +297,13 @@ export default function ActivityDetailsTile({
             label={t("location")}
             value={activity.location || ""}
           />
+          {organizerName && activity.organizerId && (
+            <InfoItem
+              icon={<OrganizerIcon groupId={activity.organizerId} />}
+              label={t("organizer")}
+              value={organizerName}
+            />
+          )}
           <InfoItem
             icon={<Clock size={18} />}
             label={t("unenrollment_deadline")}

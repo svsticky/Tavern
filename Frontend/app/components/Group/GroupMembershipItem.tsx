@@ -28,7 +28,7 @@ export default function GroupMembershipItem({
           src={imageUrl}
           onError={() => setImageUrl(fallbackUrl)}
           alt={`${groupMembership.memberName} Icon`}
-          className="h-full m-auto"
+          className="w-full h-full object-contain"
         />
       </div>
 

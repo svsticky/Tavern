@@ -23,8 +23,8 @@ import { appendErrorMessage } from "~/util/error.util";
 export type EditGroupFormData = {
   Name: string;
   Type: string;
-  GLAccountId: string;
-  CostUnitId: string;
+  DefaultGLAccount: string;
+  DefaultCostCenter: string;
   Active: boolean;
 };
 
@@ -71,8 +71,8 @@ export const loadGroupData = async ({
       Name: groupResponse.data.name,
       Type: groupResponse.data.type,
       Active: groupResponse.data.active,
-      GLAccountId: groupResponse.data.glAccountId ?? "",
-      CostUnitId: groupResponse.data.costUnitId ?? "",
+      DefaultGLAccount: groupResponse.data.glAccountId ?? "",
+      DefaultCostCenter: groupResponse.data.costUnitId ?? "",
     });
 
     const roleAliasesResponse = await getRolealiases();

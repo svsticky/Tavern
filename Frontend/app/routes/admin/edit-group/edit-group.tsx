@@ -73,8 +73,8 @@ export default function EditGroupPage() {
   const [formData, setFormData] = useState<EditGroupFormData>({
     Name: "",
     Type: "",
-    GLAccountId: "",
-    CostUnitId: "",
+    DefaultGLAccount: "",
+    DefaultCostCenter: "",
     Active: false,
   });
 
@@ -213,7 +213,7 @@ export default function EditGroupPage() {
                 src={groupPictureSrc || "/profile-picture.svg"}
                 className={
                   groupPictureSrc && groupPictureSrc !== "/profile-picture.svg"
-                    ? "w-full h-full object-cover"
+                    ? "w-full h-full object-contain"
                     : "w-2/3 h-2/3 opacity-80"
                 }
                 alt="Profile"
@@ -245,6 +245,7 @@ export default function EditGroupPage() {
             <Select
               label={t("group_type")}
               value={formData.Type}
+              key="Type"
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
                 setFormData({ ...formData, Type: e.target.value })
               }
@@ -256,22 +257,23 @@ export default function EditGroupPage() {
             />
             <Input
               label={t("gl_account_id")}
-              value={formData.GLAccountId}
+              value={formData.DefaultGLAccount}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFormData({ ...formData, GLAccountId: e.target.value })
+                setFormData({ ...formData, DefaultGLAccount: e.target.value })
               }
             />
             <Input
               label={t("cost_unit_id")}
-              value={formData.CostUnitId}
+              value={formData.DefaultCostCenter}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFormData({ ...formData, CostUnitId: e.target.value })
+                setFormData({ ...formData, DefaultCostCenter: e.target.value })
               }
             />
             <Input
               label={t("active")}
               type="checkbox"
               checked={formData.Active}
+              key="Active"
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, Active: e.target.checked })
               }
@@ -300,6 +302,7 @@ export default function EditGroupPage() {
                 data={loadingMemberships ? [] : enrollments}
                 columns={enrollmentColumns}
                 emptyText={t("no_enrollments_found")}
+                mobileActionsPosition="top"
               />
             </BorderedTile>
           </section>

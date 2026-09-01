@@ -2,8 +2,14 @@ import { t } from "i18next";
 import { CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
+import type {
+  GroupMembershipResponseDto,
+  Study,
+  StudyEnrollmentResponseDto,
+  StudyStatus,
+} from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
+import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
@@ -62,6 +68,9 @@ export default function EditMemberPage() {
   const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>(
     [],
   );
+  const [groupMemberships, setGroupMemberships] = useState<
+    GroupMembershipResponseDto[]
+  >([]);
   const [availableStudies, setAvailableStudies] = useState<Study[]>([]);
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
   const [email, setEmail] = useState("");
@@ -148,6 +157,7 @@ export default function EditMemberPage() {
       setFormData,
       setEmail,
       setEnrollments,
+      setGroupMemberships,
       setAvailableStudies,
       setProfilePictureSrc,
       setHasPaidMembership,
@@ -401,6 +411,14 @@ export default function EditMemberPage() {
               {t("delete")}
             </Button>
           </div>
+
+          <section>
+            <FormHeader title={t("group_memberships")} />
+            <GroupMembershipOverview
+              groupMemberships={groupMemberships}
+              emptyText={t("no_group_memberships")}
+            />
+          </section>
 
           <section>
             <FormHeader title={t("study_enrollments")} />

@@ -76,7 +76,7 @@ export default function UpcomingActivities({
         className="grid gap-5 justify-start transition-all duration-300"
         style={{
           gridTemplateColumns: isStacked
-            ? "1fr"
+            ? "minmax(0, 1fr)"
             : `repeat(${columnCount}, minmax(${TILE_MIN_WIDTH}px, 400px))`,
         }}
       >

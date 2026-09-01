@@ -370,7 +370,7 @@ describe("EditGroupPage", () => {
 
     const img = await screen.findByAltText("Profile");
     expect(img).toHaveAttribute("src", "blob:group-picture");
-    expect(img.className).toContain("object-cover");
+    expect(img.className).toContain("object-contain");
   });
 
   it("shows a saving label on the save button while saving", async () => {

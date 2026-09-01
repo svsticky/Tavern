@@ -23,12 +23,15 @@ export interface Column<T> {
  * @property {Column<T>[]} columns - An array of column definitions.
  * @property {string} [emptyText] - Message to display when the data array is empty.
  * @property {(item: T) => void} [onRowClick] - Optional callback triggered when a row is clicked.
+ * @property {"top" | "bottom"} [mobileActionsPosition] - Where non-string ("mobile action") column
+ *   headers render on small screens relative to the row list. Defaults to "bottom".
  */
 interface DataTableProps<T> {
   data: T[];
   columns: Column<T>[];
   emptyText?: string;
   onRowClick?: (item: T) => void;
+  mobileActionsPosition?: "top" | "bottom";
 }
 
 /**
@@ -47,13 +50,28 @@ export default function DataTableTile<T>({
   columns,
   emptyText,
   onRowClick,
+  mobileActionsPosition = "bottom",
 }: DataTableProps<T>) {
   const mobileHeaderActions = columns.filter(
     (column) => typeof column.header !== "string" && column.header != null,
   );
 
+  const mobileActionsBlock = mobileHeaderActions.length > 0 && (
+    <div
+      className={`lg:hidden flex flex-col gap-2 w-full ${mobileActionsPosition === "top" ? "mb-2" : "mt-2"}`}
+    >
+      {mobileHeaderActions.map((column, index) => (
+        <div key={index} className="w-full [&>*]:w-full [&_button]:w-full">
+          {column.header}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="w-full overflow-x-auto">
+      {mobileActionsPosition === "top" && mobileActionsBlock}
+
       <table className="w-full min-w-full border-collapse block lg:table">
         <thead className="hidden lg:table-header-group">
           <tr className="border-b border-slate-100 text-slate-400 text-sm font-medium">
@@ -114,15 +132,7 @@ export default function DataTableTile<T>({
         </tbody>
       </table>
 
-      {mobileHeaderActions.length > 0 && (
-        <div className="lg:hidden mt-2 flex flex-col gap-2 w-full">
-          {mobileHeaderActions.map((column, index) => (
-            <div key={index} className="w-full [&>*]:w-full [&_button]:w-full">
-              {column.header}
-            </div>
-          ))}
-        </div>
-      )}
+      {mobileActionsPosition === "bottom" && mobileActionsBlock}
 
       {data.length === 0 && emptyText !== "" && (
         <div className="p-8 text-center text-slate-400">

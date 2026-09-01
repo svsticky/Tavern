@@ -57,7 +57,7 @@ public static class ActivityQueryExtensions
                 ? selectedYear - 1
                 : selectedYear;
 
-            var creationThreshold = new DateTime((int)creationYear, month, day);
+            var creationThreshold = new DateTime((int)creationYear, month, day).Date;
             var nextCreationThreshold = creationThreshold.AddYears(1);
 
             query = query.Where(a =>

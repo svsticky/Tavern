@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import {
@@ -11,6 +11,13 @@ import {
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+
+const { getGroupsById } = vi.hoisted(() => ({ getGroupsById: vi.fn() }));
+
+vi.mock("~/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/api")>()),
+  getGroupsById,
+}));
 
 vi.mock(
   "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers",
@@ -35,6 +42,11 @@ vi.mock("~/components/Activity/AnswerQuestionsTile", () => ({
   ),
 }));
 
+// Relative to whenever the test actually runs, rather than a fixed date, so
+// enrollment-window checks (canEnroll/canUnenroll default to activity.dateTimeEnd)
+// don't start failing once that fixed date is in the past.
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 function buildActivity(
   overrides: Partial<ActivityResponseDto> = {},
 ): ActivityResponseDto {
@@ -43,8 +55,10 @@ function buildActivity(
     name: "Party",
     price: 0,
     location: "Enschede",
-    dateTimeStart: "2026-09-01T10:00:00Z",
-    dateTimeEnd: "2026-09-01T12:00:00Z",
+    dateTimeStart: new Date(Date.now() + ONE_DAY_MS).toISOString(),
+    dateTimeEnd: new Date(
+      Date.now() + ONE_DAY_MS + 2 * 60 * 60 * 1000,
+    ).toISOString(),
     dutchDescription: "Beschrijving",
     englishDescription: "Description",
     enrollments: [],
@@ -65,6 +79,10 @@ const memberToken: TokenParsed = {
 };
 
 describe("ActivityDetailsTile", () => {
+  beforeEach(() => {
+    getGroupsById.mockReset();
+  });
+
   it("shows the no-poster placeholder when there is no poster", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => memberToken),
@@ -284,5 +302,42 @@ describe("ActivityDetailsTile", () => {
       await screen.findByText("copy_once_to_calendar"),
     ).toBeInTheDocument();
     expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+  });
+
+  it("shows the organizer's name and logo when the activity has an organizer", async () => {
+    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
+    const { container } = renderWithProviders(
+      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+    );
+
+    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
+    expect(await screen.findByText("organizer")).toBeInTheDocument();
+    expect(screen.getByText("BaCo")).toBeInTheDocument();
+    // Decorative logo (alt="") - not exposed via role "img", so query the DOM directly.
+    expect(container.querySelector("img")).toHaveAttribute(
+      "src",
+      expect.stringContaining("/groups/5/group-picture"),
+    );
+  });
+
+  it("does not show an organizer info item when the activity has no organizer", async () => {
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
+
+    await screen.findByText("copy_once_to_calendar");
+    expect(getGroupsById).not.toHaveBeenCalled();
+    expect(screen.queryByText("organizer")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the default avatar when the organizer's logo fails to load", async () => {
+    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
+    const { container } = renderWithProviders(
+      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+    );
+
+    await screen.findByText("BaCo");
+    const logo = container.querySelector("img")!;
+    fireEvent.error(logo);
+
+    expect(logo).toHaveAttribute("src", "/profile-picture.svg");
   });
 });

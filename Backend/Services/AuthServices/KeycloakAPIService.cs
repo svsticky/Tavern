@@ -1,7 +1,6 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils.DateTime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
@@ -13,6 +12,7 @@ namespace Backend.Services.AuthServices;
 /// </summary>
 public class KeycloakAPIService(
     PostgresDbContext db,
+    IPermissionService permissionService,
     MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
@@ -264,17 +264,6 @@ public class KeycloakAPIService(
 
     private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null, string? legacyBcryptHash = null)
     {
-        var boardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
-        var candidateBoardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value;
-        uint boardGroupId = string.IsNullOrEmpty(boardGroupIdStr) ? 0 : uint.Parse(boardGroupIdStr);
-        uint candidateBoardGroupId = string.IsNullOrEmpty(candidateBoardGroupIdStr) ? 0 : uint.Parse(candidateBoardGroupIdStr);
-        uint currentBoardYear = YearUtils.GetBoardYear(db);
-
-        bool isAdmin = db.GroupMemberships.Any(gm =>
-            gm.MemberId == member.Id &&
-            gm.MembershipYear == currentBoardYear &&
-            (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId));
-
         var attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
                 { "access_level", new List<string> { member.Suspended ? "suspended" : HasPaidMembership(member) ? "full" : "not_paid" } },
@@ -282,7 +271,7 @@ public class KeycloakAPIService(
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } },
                 { "email", new List<string> { currentEmail } },
-                { "is_admin", new List<string> { isAdmin.ToString().ToLower() } },
+                { "is_admin", new List<string> { permissionService.IsBoardOrCandidateBoardMember(member.Id).ToString().ToLowerInvariant() } },
                 { "full_name", new List<string> { $"{member.FirstName} {member.LastName}" } },
                 { "birthday", new List<string> { member.DateOfBirth.ToString("yyyy-MM-dd") } }
         };

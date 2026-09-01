@@ -317,10 +317,11 @@ internal static class ServiceExtensions
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-        var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
         var recurringJobOptions = new RecurringJobOptions
         {
-            TimeZone = amsterdamTimeZone
+            TimeZone = tz
         };
 
         recurringJobManager.AddOrUpdate<AbstractMailService>(
