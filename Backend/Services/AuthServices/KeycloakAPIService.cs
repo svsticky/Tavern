@@ -46,6 +46,19 @@ public class KeycloakAPIService(
 
         string currentEmail = currentKeycloakUser.GetProperty("email").GetString()!;
 
+        // Preserve the legacy_bcrypt_hash attribute across syncs. It's set on migrated members by
+        // the Koala import and cleared by the custom BCrypt authenticator once they log in with
+        // their old password - but this method replaces the whole attributes object on every sync,
+        // so without carrying it forward here it gets silently destroyed before the member ever
+        // gets a chance to log in with it.
+        string? legacyBcryptHash = null;
+        if (currentKeycloakUser.TryGetProperty("attributes", out var existingAttributes) &&
+            existingAttributes.TryGetProperty("legacy_bcrypt_hash", out var legacyBcryptHashValues) &&
+            legacyBcryptHashValues.GetArrayLength() > 0)
+        {
+            legacyBcryptHash = legacyBcryptHashValues[0].GetString();
+        }
+
         bool emailChanged = !string.Equals(currentEmail, member.Email, StringComparison.OrdinalIgnoreCase);
 
         var memberships = await db.GroupMemberships
@@ -56,7 +69,7 @@ public class KeycloakAPIService(
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray());
+        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray(), legacyBcryptHash);
 
         var response = await client.PutAsJsonAsync($"users/{member.AuthSystemUserId}", updatedUser);
         response.EnsureSuccessStatusCode();
@@ -249,7 +262,7 @@ public class KeycloakAPIService(
             : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
     }
 
-    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
+    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null, string? legacyBcryptHash = null)
     {
         var boardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
         var candidateBoardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value;
@@ -262,15 +275,7 @@ public class KeycloakAPIService(
             gm.MembershipYear == currentBoardYear &&
             (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId));
 
-        return new
-        {
-            username = member.Email,
-            email = currentEmail,
-            firstName = member.FirstName,
-            lastName = member.LastName,
-            enabled = true,
-            emailVerified = emailVerified,
-            attributes = new Dictionary<string, List<string>> {
+        var attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
                 { "access_level", new List<string> { member.Suspended ? "suspended" : HasPaidMembership(member) ? "full" : "not_paid" } },
                 { "group_memberships", memberships?.ToList() ?? new List<string>() },
@@ -280,7 +285,22 @@ public class KeycloakAPIService(
                 { "is_admin", new List<string> { isAdmin.ToString().ToLower() } },
                 { "full_name", new List<string> { $"{member.FirstName} {member.LastName}" } },
                 { "birthday", new List<string> { member.DateOfBirth.ToString("yyyy-MM-dd") } }
-            }
+        };
+
+        if (!string.IsNullOrEmpty(legacyBcryptHash))
+        {
+            attributes["legacy_bcrypt_hash"] = new List<string> { legacyBcryptHash };
+        }
+
+        return new
+        {
+            username = member.Email,
+            email = currentEmail,
+            firstName = member.FirstName,
+            lastName = member.LastName,
+            enabled = true,
+            emailVerified = emailVerified,
+            attributes
         };
     }
 }
