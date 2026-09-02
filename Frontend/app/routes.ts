@@ -79,4 +79,5 @@ export default [
     route("logout", "routes/auth/logout.tsx"),
   ]),
   route("register", "routes/register.tsx"),
+  route("sign_in", "routes/home/home.tsx", { id: "sign-in" }),
 ] satisfies RouteConfig;
