@@ -103,6 +103,14 @@ public class PostgresDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(p => p.ActivityId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Backs the correlated "sum of paid amounts per enrollment" subquery used by
+            // GetAllUnpaidEnrollments/GetUnpaidEnrollmentsForMember/GetAllOverpaidEnrollments, which
+            // filters on ActivityId + MemberId + PaidAt for every enrollment. Without this composite
+            // index, Postgres falls back to the single-column ActivityId/MemberId FK indexes (or a
+            // scan), so those queries slow down linearly with the whole EnrollmentPayments history.
+            entity.HasIndex(p => new { p.ActivityId, p.MemberId })
+                .HasFilter("\"PaidAt\" IS NOT NULL");
         });
 
         modelBuilder.Entity<BegunstigerPayment>(entity =>

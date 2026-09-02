@@ -10,12 +10,14 @@ import { renderWithProviders } from "~/testUtils";
 
 const {
   loadFinancesData,
+  loadExpiredActivities,
   handleMarkAsPaid,
   handlePaymentsExport,
   handleWhatsAppClick,
   refreshUnpaidPayments,
 } = vi.hoisted(() => ({
   loadFinancesData: vi.fn(),
+  loadExpiredActivities: vi.fn(),
   handleMarkAsPaid: vi.fn(),
   handlePaymentsExport: vi.fn(),
   handleWhatsAppClick: vi.fn(),
@@ -24,6 +26,7 @@ const {
 
 vi.mock("~/routes/admin/finances/finances.handlers", () => ({
   loadFinancesData,
+  loadExpiredActivities,
   handleMarkAsPaid,
   handlePaymentsExport,
   handleWhatsAppClick,
@@ -72,7 +75,6 @@ function loadWith(overrides: {
   loadFinancesData.mockImplementation(
     async ({
       setLoading,
-      setExpiredActivities,
       setTotalUnpaid,
       setOpenPayments,
       setUnpaidActivities,
@@ -80,7 +82,6 @@ function loadWith(overrides: {
       setUnpaidBalances,
       setOverpaidBalances,
     }: any) => {
-      setExpiredActivities(overrides.expiredActivities ?? []);
       setTotalUnpaid(overrides.totalUnpaid ?? 0);
       setOpenPayments(overrides.openPayments ?? 0);
       setUnpaidActivities(overrides.unpaidActivities ?? []);
@@ -88,6 +89,13 @@ function loadWith(overrides: {
       setUnpaidBalances(overrides.unpaidBalances ?? []);
       setOverpaidBalances(overrides.overpaidBalances ?? []);
       setLoading(false);
+    },
+  );
+
+  loadExpiredActivities.mockImplementation(
+    async ({ setLoadingExpiredActivities, setExpiredActivities }: any) => {
+      setExpiredActivities(overrides.expiredActivities ?? []);
+      setLoadingExpiredActivities(false);
     },
   );
 }

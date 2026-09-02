@@ -12,11 +12,13 @@ import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { formatDate } from "~/util/date.util";
+import Select from "~/components/UI/Select";
+import { formatDate, getCommitteeYear } from "~/util/date.util";
 import {
   handleMarkAsPaid,
   handlePaymentsExport,
   handleWhatsAppClick,
+  loadExpiredActivities,
   loadFinancesData,
   refreshUnpaidPayments,
 } from "./finances.handlers";
@@ -43,9 +45,18 @@ export default function Finances() {
   const [exporting, setExporting] = useState(false);
   const [totalUnpaid, setTotalUnpaid] = useState(0);
   const [openPayments, setOpenPayments] = useState(0);
+  const currentYear = getCommitteeYear();
+  const [expiredActivitiesYear, setExpiredActivitiesYear] =
+    useState(currentYear);
+  const [loadingExpiredActivities, setLoadingExpiredActivities] =
+    useState(true);
   const [expiredActivities, setExpiredActivities] = useState<
     ActivityResponseDto[] | null
   >(null);
+  const expiredActivitiesYears = Array.from(
+    { length: 10 },
+    (_, i) => currentYear - i,
+  );
   const [unpaidActivities, setUnpaidActivities] = useState<Activity[] | null>(
     null,
   );
@@ -64,7 +75,6 @@ export default function Finances() {
   useEffect(() => {
     loadFinancesData({
       setLoading,
-      setExpiredActivities,
       setUnpaidBalances,
       setTotalUnpaid,
       setOpenPayments,
@@ -74,7 +84,16 @@ export default function Finances() {
     });
   }, []);
 
-  if (loading) return t("loading");
+  useEffect(() => {
+    loadExpiredActivities({
+      year: expiredActivitiesYear,
+      setLoadingExpiredActivities,
+      setExpiredActivities,
+    });
+  }, [expiredActivitiesYear]);
+
+  if (loading || (loadingExpiredActivities && expiredActivities === null))
+    return t("loading");
 
   if (
     totalUnpaid === null ||
@@ -181,37 +200,62 @@ export default function Finances() {
           title={t("expired_activities")}
           subtitle={t("expired_activities_subtitle")}
         >
-          {expiredActivities.map((activity) => (
-            <Tile
-              className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
-              key={activity.id}
-            >
-              <div className="flex flex-col gap-1">
-                <span className="text-slate-700 font-medium">
-                  {activity.name}
-                </span>
-                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
-                  <span>
-                    {formatDate(new Date(activity.dateTimeEnd), "fullDateTime")}
-                  </span>
-                  <span className="hidden md:inline">•</span>
-                  <span>
-                    {activity.enrollments.length} {t("participants")}
-                  </span>
-                  <span className="hidden md:inline">•</span>
-                  <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
-                </div>
-              </div>
+          <div className="w-full sm:w-auto self-end">
+            <Select
+              options={expiredActivitiesYears.map((y) => ({
+                label: `${y - 1}/${y}`,
+                value: y,
+              }))}
+              label={t("year")}
+              style={{ minWidth: "150px" }}
+              value={expiredActivitiesYear}
+              onChange={(e) => setExpiredActivitiesYear(Number(e.target.value))}
+            />
+          </div>
 
-              <Button
-                variant="primary"
-                className="w-full md:w-auto"
-                href={`/activities/${activity.id}`}
+          {loadingExpiredActivities && (
+            <span className="text-sm text-slate-400">{t("loading")}</span>
+          )}
+
+          {!loadingExpiredActivities && expiredActivities.length === 0 && (
+            <span className="text-sm text-slate-400">{t("no_data")}</span>
+          )}
+
+          {!loadingExpiredActivities &&
+            expiredActivities.map((activity) => (
+              <Tile
+                className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
+                key={activity.id}
               >
-                {t("go_to_activity")}
-              </Button>
-            </Tile>
-          ))}
+                <div className="flex flex-col gap-1">
+                  <span className="text-slate-700 font-medium">
+                    {activity.name}
+                  </span>
+                  <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
+                    <span>
+                      {formatDate(
+                        new Date(activity.dateTimeEnd),
+                        "fullDateTime",
+                      )}
+                    </span>
+                    <span className="hidden md:inline">•</span>
+                    <span>
+                      {activity.enrollments.length} {t("participants")}
+                    </span>
+                    <span className="hidden md:inline">•</span>
+                    <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="primary"
+                  className="w-full md:w-auto"
+                  href={`/activities/${activity.id}`}
+                >
+                  {t("go_to_activity")}
+                </Button>
+              </Tile>
+            ))}
         </BorderedTile>
 
         <BorderedTile
