@@ -122,7 +122,7 @@ public class Member
     /// </summary>
     [StringLength(10)]
     [Required(AllowEmptyStrings = false)]
-    [RegularExpression(@"^[1-9][0-9]*\s?([a-zA-Z]|[a-zA-Z]{1,3}bis)?$", ErrorMessage = "Invalid house number format.")]
+    [RegularExpression(@"^[1-9][0-9]*(?:[\s-]?[a-zA-Z0-9]{1,3})?$", ErrorMessage = "Invalid house number format.")]
     public required string HouseNumber { get; set; }
 
     /// <summary>
