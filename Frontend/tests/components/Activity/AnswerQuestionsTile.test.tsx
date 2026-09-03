@@ -272,6 +272,49 @@ describe("AnswerQuestionsTile", () => {
     expect(onChange).toHaveBeenCalledWith(1, "2026-08-01T13:30:00.000Z");
   });
 
+  it("shows a blank placeholder as selected for an unanswered MultipleChoice question", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[question({ type: "MultipleChoice", options: ["A", "B"] })]}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    const select = (await screen.findByRole(
+      "combobox",
+    )) as HTMLSelectElement;
+
+    // A real answer must never be implied until the user picks one -
+    // otherwise it can look chosen (see the enrollment bug this guards
+    // against) while the underlying answer state stays empty.
+    expect(select.value).toBe("");
+  });
+
+  it("selects the stored option for an already-answered MultipleChoice question", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[question({ type: "MultipleChoice", options: ["A", "B"] })]}
+        answers={{ 1: "B" }}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    const select = (await screen.findByRole(
+      "combobox",
+    )) as HTMLSelectElement;
+
+    expect(select.value).toBe("B");
+  });
+
   it("calls onChange with the selected value for a MultipleChoice question", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => enToken),

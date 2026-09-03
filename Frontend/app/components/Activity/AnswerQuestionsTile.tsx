@@ -155,7 +155,10 @@ export default function AnswerQuestionsTile({
             className="input"
             value={value}
             onChange={(e) => onChange(id, e.target.value)}
-            options={options.map((opt) => ({ label: opt, value: opt }))}
+            options={[
+              { label: t("select_option"), value: "" },
+              ...options.map((opt) => ({ label: opt, value: opt })),
+            ]}
             required={q.isMandatory}
           />
         );
