@@ -29,6 +29,7 @@ public class StudiesController(IStudyService studyService) : ControllerBase
     /// <summary>
     /// Retrieves a list of all academic studies available in the system. The GetStudies endpoint is accessible to all users, including anonymous guests, to allow for public browsing of the study catalog. This endpoint provides a comprehensive overview of the different academic programs supported by the organization, serving as a foundational data source for registration forms and informational displays.
     /// </summary>
+    /// <param name="dto">The filter criteria, e.g. whether to include inactive studies.</param>
     /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
     /// <returns>A collection of all study entities.</returns>
     [HttpGet]
@@ -37,9 +38,9 @@ public class StudiesController(IStudyService studyService) : ControllerBase
     [ProducesResponseType(typeof(IEnumerable<Study>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IEnumerable<Study>>> GetStudies(CancellationToken ct)
+    public async Task<ActionResult<IEnumerable<Study>>> GetStudies([FromQuery] GetStudyDTO dto, CancellationToken ct)
     {
-        return Ok(await studyService.GetStudies(ct));
+        return Ok(await studyService.GetStudies(dto, ct));
     }
 
     // GET: studies/{id}

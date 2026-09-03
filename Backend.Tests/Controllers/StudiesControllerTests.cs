@@ -44,10 +44,10 @@ public class StudiesControllerTests
     {
         // Arrange
         var list = new List<Study> { new Study { Id = 1, Title = "Computer Science", NominalDurationYears = 3, Type = StudyType.Bachelor } };
-        _serviceMock.GetStudies(Arg.Any<CancellationToken>()).Returns(list);
+        _serviceMock.GetStudies(Arg.Any<GetStudyDTO>(), Arg.Any<CancellationToken>()).Returns(list);
 
         // Act
-        var result = await _controller.GetStudies(CancellationToken.None);
+        var result = await _controller.GetStudies(new GetStudyDTO(), CancellationToken.None);
 
         // Assert
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
@@ -59,10 +59,10 @@ public class StudiesControllerTests
     public async Task GetStudies_Exception_ThrowsException()
     {
         // Arrange
-        _serviceMock.GetStudies(Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetStudies(Arg.Any<GetStudyDTO>(), Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.GetStudies(CancellationToken.None));
+        await Assert.ThrowsAsync<Exception>(() => _controller.GetStudies(new GetStudyDTO(), CancellationToken.None));
     }
 
     [Fact]
@@ -225,7 +225,7 @@ public class StudiesControllerTests
     public async Task PutStudy_Success_ReturnsNoContent()
     {
         // Arrange
-        var dto = new StudyUpdateDTO { Title = "Updated", NominalDurationYears = 3, Type = StudyType.Bachelor };
+        var dto = new StudyUpdateDTO { Title = "Updated", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = true };
 
         // Act
         var result = await _controller.PutStudy(1, dto, CancellationToken.None);
@@ -239,7 +239,7 @@ public class StudiesControllerTests
     public async Task PutStudy_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        var dto = new StudyUpdateDTO { Title = "Updated", NominalDurationYears = 3, Type = StudyType.Bachelor };
+        var dto = new StudyUpdateDTO { Title = "Updated", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = true };
         _serviceMock.UpdateStudy(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act & Assert
@@ -250,7 +250,7 @@ public class StudiesControllerTests
     public async Task PutStudy_Exception_ThrowsException()
     {
         // Arrange
-        var dto = new StudyUpdateDTO { Title = "Updated", NominalDurationYears = 3, Type = StudyType.Bachelor };
+        var dto = new StudyUpdateDTO { Title = "Updated", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = true };
         _serviceMock.UpdateStudy(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act & Assert

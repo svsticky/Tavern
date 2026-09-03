@@ -1902,6 +1902,11 @@ export type Study = {
     nominalDurationYears?: number;
     type?: StudyType;
     /**
+     * Status of the study. Inactive studies are hidden from the public registration form,
+     * but are preserved in the database for historical records and statistics.
+     */
+    active?: boolean;
+    /**
      * The enrollments associated with this study.
      */
     enrollments?: Array<StudyEnrollment>;
@@ -1995,6 +2000,7 @@ export type StudyUpdateDto = {
      */
     nominalDurationYears: number;
     type: StudyType;
+    active: boolean;
 };
 
 /**
@@ -6930,7 +6936,12 @@ export type PatchSpecificationanswersByAnswerIdResponse = PatchSpecificationansw
 export type GetStudiesData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Indicates whether to include inactive studies in the retrieved study data. If set to true, both active and inactive studies will be included in the response; if set to false, only active studies will be included.
+         */
+        IncludeInactive?: boolean;
+    };
     url: '/studies';
 };
 

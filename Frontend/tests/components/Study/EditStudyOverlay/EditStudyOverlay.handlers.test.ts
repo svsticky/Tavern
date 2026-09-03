@@ -39,7 +39,7 @@ describe("handleStudySubmit", () => {
   it("does nothing when required fields are missing", async () => {
     await handleStudySubmit({
       e: makeEvent(),
-      formData: { title: "", type: "Bachelor" },
+      formData: { title: "", type: "Bachelor", active: true },
       setLoading: vi.fn(),
       onComplete: vi.fn(),
     });
@@ -58,6 +58,7 @@ describe("handleStudySubmit", () => {
         title: "Computer Science",
         type: "Bachelor",
         nominalDurationYears: 3,
+        active: true,
       },
       setLoading: vi.fn(),
       onComplete,
@@ -88,6 +89,7 @@ describe("handleStudySubmit", () => {
         title: "New title",
         type: "Master",
         nominalDurationYears: 2,
+        active: false,
       },
       study,
       setLoading: vi.fn(),
@@ -96,7 +98,12 @@ describe("handleStudySubmit", () => {
 
     expect(putStudiesById).toHaveBeenCalledWith({
       path: { id: 5 },
-      body: { title: "New title", type: "Master", nominalDurationYears: 2 },
+      body: {
+        title: "New title",
+        type: "Master",
+        nominalDurationYears: 2,
+        active: false,
+      },
     });
     await vi.waitFor(() =>
       expect(onComplete).toHaveBeenCalledWith(
@@ -117,6 +124,7 @@ describe("handleStudySubmit", () => {
         title: "X",
         type: "Bachelor",
         nominalDurationYears: 3,
+        active: true,
       },
       setLoading: vi.fn(),
       onComplete: vi.fn(),

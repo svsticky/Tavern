@@ -50,6 +50,12 @@ public class Study
     public StudyType Type { get; set; }
 
     /// <summary>
+    /// Status of the study. Inactive studies are hidden from the public registration form,
+    /// but are preserved in the database for historical records and statistics.
+    /// </summary>
+    public bool Active { get; set; } = true;
+
+    /// <summary>
     /// The enrollments associated with this study.
     /// </summary>
     [JsonIgnore] public virtual ICollection<StudyEnrollment> Enrollments { get; set; }

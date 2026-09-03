@@ -59,11 +59,59 @@ public class StudyServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        var result = await _service.GetStudies(CancellationToken.None);
+        var result = await _service.GetStudies(new GetStudyDTO(), CancellationToken.None);
 
         // Assert
         Assert.Equal(2, result.Count);
         Assert.Contains(result, s => s.Title == "CS");
+    }
+
+    [Fact]
+    public async Task GetStudies_ExcludesInactiveStudiesByDefault()
+    {
+        // Arrange
+        _db.Studies.Add(new Study { Id = 1, Title = "Active Study", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = true });
+        _db.Studies.Add(new Study { Id = 2, Title = "Inactive Study", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = false });
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetStudies(new GetStudyDTO(), CancellationToken.None);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Active Study", result.Single().Title);
+    }
+
+    [Fact]
+    public async Task GetStudies_IncludeInactive_ReturnsInactiveStudies()
+    {
+        // Arrange
+        _db.Studies.Add(new Study { Id = 1, Title = "Active Study", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = true });
+        _db.Studies.Add(new Study { Id = 2, Title = "Inactive Study", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = false });
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetStudies(new GetStudyDTO { IncludeInactive = true }, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task GetStudies_OrdersBachelorsFirstThenMastersThenByTitle()
+    {
+        // Arrange
+        _db.Studies.Add(new Study { Id = 1, Title = "Zoology", NominalDurationYears = 2, Type = StudyType.Master });
+        _db.Studies.Add(new Study { Id = 2, Title = "Astronomy", NominalDurationYears = 1, Type = StudyType.Master });
+        _db.Studies.Add(new Study { Id = 3, Title = "Biology", NominalDurationYears = 3, Type = StudyType.Bachelor });
+        _db.Studies.Add(new Study { Id = 4, Title = "Anthropology", NominalDurationYears = 3, Type = StudyType.Bachelor });
+        await _db.SaveChangesAsync();
+
+        // Act
+        var result = await _service.GetStudies(new GetStudyDTO(), CancellationToken.None);
+
+        // Assert
+        Assert.Equal(new[] { "Anthropology", "Biology", "Astronomy", "Zoology" }, result.Select(s => s.Title));
     }
 
     [Fact]
@@ -223,7 +271,7 @@ public class StudyServiceTests : IDisposable
     public async Task UpdateStudy_StudyNotFound_ThrowsException()
     {
         // Arrange
-        var dto = new StudyUpdateDTO { Title = "CS", NominalDurationYears = 3, Type = StudyType.Bachelor };
+        var dto = new StudyUpdateDTO { Title = "CS", NominalDurationYears = 3, Type = StudyType.Bachelor, Active = true };
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() =>
@@ -238,7 +286,7 @@ public class StudyServiceTests : IDisposable
         _db.Studies.Add(study);
         await _db.SaveChangesAsync();
 
-        var dto = new StudyUpdateDTO { Title = "New Title", NominalDurationYears = 4, Type = StudyType.Master };
+        var dto = new StudyUpdateDTO { Title = "New Title", NominalDurationYears = 4, Type = StudyType.Master, Active = false };
 
         // Act
         await _service.UpdateStudy(30u, dto, _userId, CancellationToken.None);
@@ -249,6 +297,7 @@ public class StudyServiceTests : IDisposable
         Assert.NotNull(updated);
         Assert.Equal("New Title", updated.Title);
         Assert.Equal(4u, updated.NominalDurationYears);
+        Assert.False(updated.Active);
         Assert.Equal(StudyType.Master, updated.Type);
     }
 }

@@ -40,6 +40,10 @@ export default function ManageStudiesDatatable() {
       render: (item: Study) => `${item.nominalDurationYears} ${t("years")}`,
     },
     {
+      header: t("active"),
+      render: (item: Study) => (item.active ? t("yes") : t("no")),
+    },
+    {
       header: (
         <div className="flex justify-end">
           <Button

@@ -21,6 +21,7 @@ type EditStudyFormData = {
   title: string;
   type: string;
   nominalDurationYears?: number;
+  active: boolean;
 };
 
 /**
@@ -70,6 +71,7 @@ export const handleStudySubmit = async ({
               title: formData.title,
               type: formData.type as StudyType,
               nominalDurationYears: formData.nominalDurationYears ?? 0,
+              active: formData.active,
             },
           })
         : await postStudies({
@@ -91,6 +93,7 @@ export const handleStudySubmit = async ({
         title: formData.title,
         type: formData.type as StudyType,
         nominalDurationYears: formData.nominalDurationYears,
+        active: formData.active,
         id: study ? study.id : (response.data as any).id,
       });
     } catch (error) {

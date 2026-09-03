@@ -19,7 +19,9 @@ export const fetchStudies = async (
   const fetchStudiesAction = async () => {
     try {
       setLoading(true);
-      const response = await getStudies();
+      const response = await getStudies({
+        query: { IncludeInactive: true },
+      });
 
       if (response.error || !response.data) {
         throw response.error ?? new Error("Failed to fetch studies");

@@ -18,9 +18,13 @@ namespace Backend.Services.Domain
         ) : IStudyService
     {
         /// <inheritdoc />
-        public async Task<List<Study>> GetStudies(CancellationToken ct)
+        public async Task<List<Study>> GetStudies(GetStudyDTO dto, CancellationToken ct)
         {
-            return await db.Studies.ToListAsync(ct);
+            return await db.Studies
+                .Where(s => dto.IncludeInactive || s.Active)
+                .OrderBy(s => s.Type)
+                .ThenBy(s => s.Title)
+                .ToListAsync(ct);
         }
 
         /// <inheritdoc />
@@ -105,6 +109,7 @@ namespace Backend.Services.Domain
             study.Title = dto.Title;
             study.NominalDurationYears = dto.NominalDurationYears;
             study.Type = dto.Type;
+            study.Active = dto.Active;
         }
 
         private async Task<Study> GetStudyOrThrow(uint id, CancellationToken ct)
