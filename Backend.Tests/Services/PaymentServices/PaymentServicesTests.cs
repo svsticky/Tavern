@@ -74,7 +74,7 @@ public class PaymentServicesTests : IDisposable
     [InlineData("paid", PaymentStatus.Paid)]
     [InlineData("open", PaymentStatus.Pending)]
     [InlineData("pending", PaymentStatus.Pending)]
-    [InlineData("cancelled", PaymentStatus.Failed)]
+    [InlineData("canceled", PaymentStatus.Failed)]
     [InlineData("failed", PaymentStatus.Failed)]
     [InlineData("expired", PaymentStatus.Failed)]
     public async Task GetPaymentAsync_MapsStatusCorrectly(string mollieStatus, PaymentStatus expectedStatus)

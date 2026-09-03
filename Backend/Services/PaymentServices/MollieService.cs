@@ -5,6 +5,7 @@ using Mollie.Api.Client.Abstract;
 using Mollie.Api.Models;
 using Mollie.Api.Models.Payment.Request;
 using Mollie.Api.Models.Payment.Response;
+using MolliePaymentStatus = Mollie.Api.Models.Payment.PaymentStatus;
 
 namespace Backend.Services.PaymentServices;
 
@@ -24,13 +25,13 @@ public class MollieService(PostgresDbContext db, ILogger<MollieService> logger, 
             response.Id,
             response.Status switch
             {
-                "paid" => PaymentStatus.Paid,
-                "open" => PaymentStatus.Pending,
-                "pending" => PaymentStatus.Pending,
-                "cancelled" => PaymentStatus.Failed,
-                "failed" => PaymentStatus.Failed,
-                "expired" => PaymentStatus.Failed,
-                "authorized" => PaymentStatus.Pending,
+                MolliePaymentStatus.Paid => PaymentStatus.Paid,
+                MolliePaymentStatus.Open => PaymentStatus.Pending,
+                MolliePaymentStatus.Pending => PaymentStatus.Pending,
+                MolliePaymentStatus.Canceled => PaymentStatus.Failed,
+                MolliePaymentStatus.Failed => PaymentStatus.Failed,
+                MolliePaymentStatus.Expired => PaymentStatus.Failed,
+                MolliePaymentStatus.Authorized => PaymentStatus.Pending,
                 _ => throw new Exception($"Unknown payment status: {response.Status}")
             },
             response.PaidAt
