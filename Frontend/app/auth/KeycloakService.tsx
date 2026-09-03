@@ -59,7 +59,13 @@ export class KeycloakAuthService implements IAuthService {
   }
 
   public isAuthenticated(): boolean {
-    return this.keycloak.authenticated ?? !!this.keycloak.token;
+    if (!(this.keycloak.authenticated ?? !!this.keycloak.token)) return false;
+
+    // keycloak-js leaves `authenticated` set to true even once the token has
+    // expired and can no longer be refreshed (e.g. the SSO session ended
+    // server-side) - without this check, callers would keep treating a dead
+    // session as a live one until an API call happened to 401.
+    return !this.keycloak.isTokenExpired();
   }
 
   public isReady(): boolean {
@@ -73,6 +79,10 @@ export class KeycloakAuthService implements IAuthService {
       await this.keycloak.updateToken(30);
     } catch (error) {
       console.error("Failed to refresh token", error);
+      // The refresh failed, so the token we're holding is stale/expired -
+      // returning it anyway would send a doomed request instead of letting
+      // the caller recognize the session is over.
+      return null;
     }
 
     return this.keycloak.token;
@@ -85,6 +95,7 @@ export class KeycloakAuthService implements IAuthService {
       await this.keycloak.updateToken(30);
     } catch (error) {
       console.error("Failed to refresh token", error);
+      return null;
     }
 
     return this.keycloak.tokenParsed as TokenParsed;

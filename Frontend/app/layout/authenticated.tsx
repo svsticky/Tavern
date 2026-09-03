@@ -1,6 +1,6 @@
 import Cookies from "js-cookie";
 import { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { client } from "~/api/client.gen";
 import { getMembersById, getSettingsById } from "~/api/sdk.gen";
 import { useApp } from "~/context/AppContext";
@@ -29,9 +29,12 @@ import {
 export default function AuthenticatedLayout() {
   const authService = useAuth();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-  const navigate = useNavigate();
+  const location = useLocation();
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: navigate needed because token has to be refreshed when navigated
+  // This should re-run on every navigation, not just on mount, so a session that
+  // expires mid-browsing gets caught proactively instead of only surfacing once some
+  // page's own API call happens to 401.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: location.key is intentionally unread - it's only there to retrigger this effect on navigation.
   useEffect(() => {
     if (!authService.isReady()) return;
 
@@ -66,7 +69,7 @@ export default function AuthenticatedLayout() {
         window.clearTimeout(retryTimer);
       }
     };
-  }, [authService, navigate]);
+  }, [authService, location.key]);
 
   const {
     boardGroupId,
