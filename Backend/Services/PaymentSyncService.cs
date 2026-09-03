@@ -134,6 +134,11 @@ public class PaymentSyncService(
                         }
                         payment.PaidAt = paymentResponse.PaidAt;
 
+                        if (fullPayment is MembershipPayment && fullPayment.Member != null)
+                        {
+                            await paymentService.TryQueueActivationEmailAsync(fullPayment.Member.Id);
+                        }
+
                         db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                         {
                             PaymentId = payment.Id,

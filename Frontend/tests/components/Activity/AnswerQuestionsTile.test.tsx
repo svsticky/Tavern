@@ -285,9 +285,7 @@ describe("AnswerQuestionsTile", () => {
       { authService },
     );
 
-    const select = (await screen.findByRole(
-      "combobox",
-    )) as HTMLSelectElement;
+    const select = (await screen.findByRole("combobox")) as HTMLSelectElement;
 
     // A real answer must never be implied until the user picks one -
     // otherwise it can look chosen (see the enrollment bug this guards
@@ -308,9 +306,7 @@ describe("AnswerQuestionsTile", () => {
       { authService },
     );
 
-    const select = (await screen.findByRole(
-      "combobox",
-    )) as HTMLSelectElement;
+    const select = (await screen.findByRole("combobox")) as HTMLSelectElement;
 
     expect(select.value).toBe("B");
   });

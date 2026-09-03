@@ -7,7 +7,7 @@ export type ClientOptions = {
 /**
  * The outcome of a M:Backend.Interfaces.IMemberService.SendActivationEmail(System.Guid,System.Threading.CancellationToken) call.
  */
-export type ActivationEmailStatus = 'Sent' | 'AlreadySent' | 'Pending';
+export type ActivationEmailStatus = 'Sent' | 'AlreadySent' | 'Pending' | 'PaymentRequired';
 
 /**
  * Represents an activity that members can enroll in. An activity has various properties such as name, price, description, location, and enrollment deadlines. It also has relationships with other entities such as enrollments and specification questions. This entity is used to manage and organize activities within the system, allowing members to view and enroll in activities based on their preferences and eligibility.

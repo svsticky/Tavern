@@ -52,8 +52,8 @@ describe("hasAllMandatoryAnswers", () => {
   });
 
   it("skips questions with no id", () => {
-    expect(
-      hasAllMandatoryAnswers([question({ id: undefined })], {}),
-    ).toBe(true);
+    expect(hasAllMandatoryAnswers([question({ id: undefined })], {})).toBe(
+      true,
+    );
   });
 });

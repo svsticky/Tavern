@@ -11,6 +11,7 @@ export default [
       layout("layout/navbar.tsx", [
         layout("layout/paywall.tsx", [
           index("routes/home/home.tsx"),
+          route("sign_in", "routes/home/home.tsx", { id: "sign-in" }),
           route("announcements", "routes/announcements/announcements.tsx"),
           route("activities", "routes/activities/activities.tsx"),
           route("activities/create", "routes/edit-activity/edit-activity.tsx", {
@@ -79,5 +80,4 @@ export default [
     route("logout", "routes/auth/logout.tsx"),
   ]),
   route("register", "routes/register.tsx"),
-  route("sign_in", "routes/home/home.tsx", { id: "sign-in" }),
 ] satisfies RouteConfig;

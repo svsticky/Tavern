@@ -408,6 +408,26 @@ namespace Backend.Services.Domain
                 return ActivationEmailStatus.AlreadySent;
             }
 
+            if (!paymentValidationService.HasEverPaidMembershipPayment(member.Id))
+            {
+                var unpaidMembershipPayments = await db.MembershipPayments
+                    .Where(p => p.MemberId == member.Id && p.PaidAt == null)
+                    .ToListAsync(cancellationToken);
+
+                var liveStatuses = new List<PaymentStatus>();
+                foreach (var payment in unpaidMembershipPayments)
+                {
+                    liveStatuses.Add((await paymentService.GetPaymentAsync(payment.PaymentServiceId)).Status);
+                }
+
+                if (liveStatuses.Count > 0 && !liveStatuses.Contains(PaymentStatus.Paid))
+                {
+                    return liveStatuses.Contains(PaymentStatus.Pending)
+                        ? ActivationEmailStatus.Pending
+                        : ActivationEmailStatus.PaymentRequired;
+                }
+            }
+
             if (member.AuthSystemUserId == null)
             {
                 // Not linked to the auth system yet (their AuthOutboxTask.Create task is still pending).
@@ -415,9 +435,13 @@ namespace Backend.Services.Domain
                 return ActivationEmailStatus.Pending;
             }
 
-            member.ActivationEmailSentAt = DateTimeOffset.UtcNow;
-            authOutboxWorker.EnqueueTask(AuthTaskType.SendActivationEmail, member.Id, db);
+            var queued = await paymentService.TryQueueActivationEmailAsync(member.Id);
             await db.SaveChangesAsync(cancellationToken);
+
+            if (!queued)
+            {
+                return ActivationEmailStatus.AlreadySent;
+            }
 
             logger.LogInformation("Queued activation email for member {MemberId}.", id);
             return ActivationEmailStatus.Sent;

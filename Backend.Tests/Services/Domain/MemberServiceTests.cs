@@ -1648,15 +1648,32 @@ public class MemberServiceTests : IDisposable
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(true);
+
         // Act
         var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
 
         // Assert
         Assert.Equal(ActivationEmailStatus.Sent, status);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.SendActivationEmail, member.Id, _db);
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
+    }
 
-        var updated = await _db.Members.FindAsync(member.Id);
-        Assert.NotNull(updated!.ActivationEmailSentAt);
+    [Fact]
+    public async Task SendActivationEmail_LostRaceToQueueEmail_ReturnsAlreadySent()
+    {
+        // Arrange - the webhook or PaymentSyncService claimed it for this member first (see
+        // AbstractPaymentService.TryQueueActivationEmailAsync's atomic check-and-set).
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(false);
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.AlreadySent, status);
     }
 
     [Fact]
@@ -1702,5 +1719,122 @@ public class MemberServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _service.SendActivationEmail(Guid.NewGuid(), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentCancelledAtMollie_ReturnsPaymentRequired()
+    {
+        // Arrange - simulates a member redirected back from Mollie after cancelling: Mollie's
+        // redirect fires regardless of outcome, so a MembershipPayment row exists but was never paid,
+        // and Mollie's own live status for it is definitively Failed (cancelled/expired/failed).
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_cancelled",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_cancelled")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_cancelled", PaymentStatus.Failed, null)));
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.PaymentRequired, status);
+        _authOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
+
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.Null(updated!.ActivationEmailSentAt);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentStillPendingAtMollie_ReturnsPendingForRetry()
+    {
+        // Arrange - the payment hasn't resolved yet at Mollie (e.g. a bank transfer still settling).
+        // This must not be treated the same as a failed payment: the caller should retry rather than
+        // tell the member to register again.
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_pending",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_pending")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_pending", PaymentStatus.Pending, null)));
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Pending, status);
+        _authOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentPaidAtMollieButNotLocallyYet_QueuesEmailWithoutWaitingForSync()
+    {
+        // Arrange - the local record isn't marked paid yet (the webhook hasn't landed, or previously
+        // failed to process, as happened with the Mollie status-spelling bug), but Mollie's live status
+        // is already Paid. Activation should proceed immediately rather than making the member wait for
+        // the webhook retry or the next PaymentSyncService pass to mark PaidAt locally - those still
+        // own catching up PaidAt/Sync/Accounting, this only needs to know it's safe to send the email.
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_actually_paid",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_actually_paid")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_actually_paid", PaymentStatus.Paid, DateTimeOffset.UtcNow)));
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(true);
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Sent, status);
+        await _paymentService.DidNotReceiveWithAnyArgs().HandleWebhookAsync(default!);
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentPaid_QueuesEmail()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_paid",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m,
+            PaidAt = DateTimeOffset.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(true);
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Sent, status);
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
     }
 }

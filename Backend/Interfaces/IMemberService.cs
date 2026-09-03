@@ -22,7 +22,15 @@ namespace Backend.Interfaces
         /// <summary>
         /// The member isn't linked to the authentication system yet. The caller should retry shortly.
         /// </summary>
-        Pending
+        Pending,
+
+        /// <summary>
+        /// The member has one or more membership payment attempts on record and none of them succeeded
+        /// (e.g. cancelled or expired at the payment provider). Mollie redirects the browser back to the
+        /// app regardless of the payment's actual outcome, so reaching this endpoint is not proof of
+        /// payment - the caller should not treat this as a working account and should not retry.
+        /// </summary>
+        PaymentRequired
     }
 
     /// <summary>
