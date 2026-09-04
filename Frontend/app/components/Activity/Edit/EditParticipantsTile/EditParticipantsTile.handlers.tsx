@@ -97,6 +97,7 @@ export const handleEnrollParticipant = async ({
         activity: enrollment.data.activity,
         isOnWaitingList: enrollment.data.isOnWaitingList,
         price: enrollment.data.price,
+        registeredOn: enrollment.data.registeredOn,
       });
       setActivity({ ...activity });
       setIsSearchOpen(false);

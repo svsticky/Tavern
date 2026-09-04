@@ -8,6 +8,7 @@ import {
   addQuestion,
   handleActivityFormChange,
   handleActivitySubmit,
+  handleDeleteActivity,
   loadGroups,
   removeQuestion,
   updateQuestion,
@@ -17,11 +18,13 @@ const {
   postActivities,
   patchActivitiesById,
   postActivitiesByIdPoster,
+  deleteActivitiesById,
   getGroups,
 } = vi.hoisted(() => ({
   postActivities: vi.fn(),
   patchActivitiesById: vi.fn(),
   postActivitiesByIdPoster: vi.fn(),
+  deleteActivitiesById: vi.fn(),
   getGroups: vi.fn(),
 }));
 
@@ -29,6 +32,7 @@ vi.mock("~/api", () => ({
   postActivities,
   patchActivitiesById,
   postActivitiesByIdPoster,
+  deleteActivitiesById,
   getGroups,
 }));
 
@@ -518,5 +522,30 @@ describe("handleActivitySubmit", () => {
 
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
     consoleError.mockRestore();
+  });
+});
+
+describe("handleDeleteActivity", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("calls onSuccess after a successful delete", async () => {
+    deleteActivitiesById.mockResolvedValue({});
+    const onSuccess = vi.fn();
+
+    await handleDeleteActivity(5, onSuccess);
+
+    expect(deleteActivitiesById).toHaveBeenCalledWith({ path: { id: 5 } });
+    await vi.waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+
+  it("does not call onSuccess when delete fails", async () => {
+    deleteActivitiesById.mockResolvedValue({ error: true, message: "bad" });
+    const onSuccess = vi.fn();
+
+    await handleDeleteActivity(5, onSuccess);
+
+    expect(onSuccess).not.toHaveBeenCalled();
   });
 });

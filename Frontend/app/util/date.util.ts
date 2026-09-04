@@ -3,9 +3,11 @@ import { getEnv } from "./config.utils";
 type DateFormatType =
   | "fullDateTime"
   | "shortDate"
+  | "shortDateWithWeekday"
   | "monthShort"
   | "timeOnly"
   | "dateOnly"
+  | "weekdayDate"
   | "defaultDate";
 
 /**
@@ -20,6 +22,14 @@ export function formatDate(date: Date, format: DateFormatType): string {
   const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
 
   switch (format) {
+    case "weekdayDate": {
+      return date.toLocaleDateString(deviceLocale, {
+        timeZone,
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      });
+    }
     case "dateOnly":
       return date.toLocaleDateString(deviceLocale, {
         timeZone: timeZone,
@@ -40,6 +50,13 @@ export function formatDate(date: Date, format: DateFormatType): string {
     case "shortDate":
       return date.toLocaleDateString(deviceLocale, {
         timeZone: timeZone,
+        day: "numeric",
+        month: "short",
+      });
+    case "shortDateWithWeekday":
+      return date.toLocaleDateString(deviceLocale, {
+        timeZone,
+        weekday: "short",
         day: "numeric",
         month: "short",
       });
@@ -87,6 +104,27 @@ function getDateTimePartsInTimeZone(date: Date, timeZone: string) {
     minute: get("minute"),
     second: get("second"),
   };
+}
+
+/**
+ * Checks whether two instants fall on the same calendar day in the association's configured
+ * timezone. Unlike comparing `Date#toDateString()` directly, this doesn't depend on the
+ * viewer's own browser timezone, so it agrees with what `formatDate` actually renders.
+ *
+ * @param a - The first instant.
+ * @param b - The second instant.
+ * @returns Whether `a` and `b` render as the same day in the association's timezone.
+ */
+export function isSameDayInAssociationTimeZone(a: Date, b: Date): boolean {
+  const timeZone = getEnv("AssociationTimeZone") || "Europe/Amsterdam";
+  const partsA = getDateTimePartsInTimeZone(a, timeZone);
+  const partsB = getDateTimePartsInTimeZone(b, timeZone);
+
+  return (
+    partsA.year === partsB.year &&
+    partsA.month === partsB.month &&
+    partsA.day === partsB.day
+  );
 }
 
 /**

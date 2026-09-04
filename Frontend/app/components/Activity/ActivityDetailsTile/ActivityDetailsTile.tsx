@@ -144,11 +144,11 @@ export default function ActivityDetailsTile({
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
 
-  const startDateString = formatDate(startDate, "dateOnly");
+  const startDateString = formatDate(startDate, "weekdayDate");
 
   const startTimeString = formatDate(startDate, "timeOnly");
 
-  const endDateString = formatDate(endDate, "dateOnly");
+  const endDateString = formatDate(endDate, "weekdayDate");
 
   const endTimeString = formatDate(endDate, "timeOnly");
 

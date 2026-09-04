@@ -9,7 +9,7 @@ import {
   putEnrollmentsByActivityIdByMemberId,
 } from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
-import { formatDate } from "~/util/date.util";
+import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import {
   formatForGoogleCalendar,
@@ -332,11 +332,15 @@ export const handleCopyForWhatsapp = async (
 ) => {
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
+  const startDateTime = `${formatDate(startDate, "weekdayDate")} ${formatDate(startDate, "timeOnly")}`;
+  const endDateTime = isSameDayInAssociationTimeZone(startDate, endDate)
+    ? formatDate(endDate, "timeOnly")
+    : `${formatDate(endDate, "weekdayDate")} ${formatDate(endDate, "timeOnly")}`;
 
   const text =
     lang === "NL"
-      ? `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}`
-      : `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
+      ? `*${activity.name} | ${startDateTime} - ${endDateTime} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}`
+      : `*${activity.name} | ${startDateTime} - ${endDateTime} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
 
   toast.promise(navigator.clipboard.writeText(text), {
     loading: t("copying"),
