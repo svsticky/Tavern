@@ -3,6 +3,7 @@ import type React from "react";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
+  deleteActivitiesById,
   type GetSpecificationQuestionResponseDto,
   type GroupResponseDto,
   getGroups,
@@ -467,5 +468,33 @@ export const handleActivitySubmit = async ({
         isEdit ? t("activity_update_failed") : t("activity_creation_failed"),
         error,
       ),
+  });
+};
+
+/**
+ * Deletes an activity, then navigates away on success.
+ *
+ * @async
+ * @param {number} activityId - The ID of the activity to delete.
+ * @param {() => void} onSuccess - Callback invoked once the activity has been deleted.
+ */
+export const handleDeleteActivity = async (
+  activityId: number,
+  onSuccess: () => void,
+) => {
+  const deleteProcess = async () => {
+    const response = await deleteActivitiesById({ path: { id: activityId } });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to delete activity");
+    }
+
+    onSuccess();
+  };
+
+  toast.promise(deleteProcess(), {
+    loading: t("deleting"),
+    success: t("delete_success"),
+    error: (error) => appendErrorMessage(t("delete_error"), error),
   });
 };

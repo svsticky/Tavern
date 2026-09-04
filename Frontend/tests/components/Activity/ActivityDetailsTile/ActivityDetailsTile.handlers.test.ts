@@ -8,6 +8,8 @@ import {
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { createMockAuthService } from "~/testUtils";
+import { formatDate } from "~/util/date.util";
+import { capitalizeFirst } from "~/util/string.util";
 
 const {
   postEnrollments,
@@ -417,6 +419,38 @@ describe("handleCopyForWhatsapp", () => {
 
     await vi.waitFor(() =>
       expect(navigator.clipboard.writeText).toHaveBeenCalled(),
+    );
+  });
+
+  it("only includes the end time (not a repeated date) when start and end are on the same day", async () => {
+    const activity = buildActivity({
+      dateTimeStart: "2026-08-01T10:00:00Z",
+      dateTimeEnd: "2026-08-01T12:00:00Z",
+    });
+
+    await handleCopyForWhatsapp(activity, "EN" as any);
+
+    const start = new Date(activity.dateTimeStart);
+    const end = new Date(activity.dateTimeEnd);
+    const expectedRange = `${capitalizeFirst(formatDate(start, "weekdayDate"))} ${formatDate(start, "timeOnly")} - ${formatDate(end, "timeOnly")}`;
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(expectedRange),
+    );
+  });
+
+  it("includes the full end date when start and end are on different days", async () => {
+    const activity = buildActivity({
+      dateTimeStart: "2026-08-01T10:00:00Z",
+      dateTimeEnd: "2026-08-03T12:00:00Z",
+    });
+
+    await handleCopyForWhatsapp(activity, "EN" as any);
+
+    const start = new Date(activity.dateTimeStart);
+    const end = new Date(activity.dateTimeEnd);
+    const expectedRange = `${capitalizeFirst(formatDate(start, "weekdayDate"))} ${formatDate(start, "timeOnly")} - ${capitalizeFirst(formatDate(end, "weekdayDate"))} ${formatDate(end, "timeOnly")}`;
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(expectedRange),
     );
   });
 });

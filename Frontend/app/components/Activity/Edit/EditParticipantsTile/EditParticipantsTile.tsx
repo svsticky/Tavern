@@ -55,8 +55,15 @@ export default function EditParticipantsTile({
 
   const enrollments =
     activity.enrollments.filter((e) => !e.isOnWaitingList) ?? [];
-  const waitingList =
-    activity.enrollments.filter((e) => e.isOnWaitingList) ?? [];
+  // Earliest-registered first, so waitingList[0] is genuinely next in line to be promoted.
+  const waitingList = (
+    activity.enrollments.filter((e) => e.isOnWaitingList) ?? []
+  )
+    .slice()
+    .sort(
+      (a, b) =>
+        new Date(a.registeredOn).getTime() - new Date(b.registeredOn).getTime(),
+    );
 
   return (
     <div className="lg:col-span-1 space-y-6">

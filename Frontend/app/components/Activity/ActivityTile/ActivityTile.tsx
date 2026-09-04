@@ -1,5 +1,6 @@
 import {
   Calendar,
+  FileEditIcon,
   ImageIcon,
   MapPin,
   PencilIcon,
@@ -12,8 +13,9 @@ import type { ActivityResponseDto } from "~/api";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
-import { formatDate } from "~/util/date.util";
+import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { canEditActivity } from "~/util/group.util";
+import { capitalizeFirst } from "~/util/string.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
@@ -103,6 +105,14 @@ export default function ActivityTile({
           </button>
         )}
 
+        {/* Draft indicator */}
+        {canEdit && !activity.showInKoala && (
+          <span className="absolute left-2 top-2 z-20 inline-flex items-center gap-1 rounded-full bg-amber-100/90 px-2 py-1 text-xs font-semibold text-amber-700 shadow-sm backdrop-blur-sm">
+            <FileEditIcon size={12} />
+            {t("draft")}
+          </span>
+        )}
+
         {/* Poster image */}
         <div className="relative aspect-[1/1.414] w-full overflow-hidden bg-gray-100">
           {/* Status states (Loading, No poster, Error) - ongewijzigd */}
@@ -154,12 +164,13 @@ export default function ActivityTile({
           <div className="mt-0 flex flex-col text-[14px] text-gray-500">
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <Calendar size={12} />
-              {startDate.getDate()} {formatDate(startDate, "monthShort")} •{" "}
+              {capitalizeFirst(formatDate(startDate, "shortDateWithWeekday"))} •{" "}
               {formatDate(startDate, "timeOnly")}
               {" - "}
-              {startDate.toDateString() !== endDate.toDateString() && (
+              {!isSameDayInAssociationTimeZone(startDate, endDate) && (
                 <>
-                  {endDate.getDate()} {formatDate(endDate, "monthShort")} •{" "}
+                  {capitalizeFirst(formatDate(endDate, "shortDateWithWeekday"))}{" "}
+                  •{" "}
                 </>
               )}
               {formatDate(endDate, "timeOnly")}

@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type {
@@ -12,6 +13,7 @@ import BorderedTile from "../../../Tiles/BorderedTile";
 import { NoContentTile } from "../../../Tiles/NoContentTile";
 import Button from "../../../UI/Button";
 import Checkbox from "../../../UI/Checkbox";
+import { useConfirm } from "../../../UI/ConfirmModal/useConfirm";
 import Form from "../../../UI/Form/Form";
 import { FormHeader } from "../../../UI/Form/FormHeader";
 import { FormSection } from "../../../UI/Form/FormSection";
@@ -25,6 +27,7 @@ import {
   formatForInput,
   handleActivityFormChange,
   handleActivitySubmit,
+  handleDeleteActivity,
   loadGroups,
   removeQuestion,
   updateQuestion,
@@ -69,6 +72,7 @@ export default function EditActivityForm({
 }) {
   const navigate = useNavigate();
   const { pathname } = window.location;
+  const [confirmModal, confirm] = useConfirm();
 
   const isEdit = !!id;
   const audienceMask = parseAudience(activity?.allowedAudience);
@@ -391,15 +395,45 @@ export default function EditActivityForm({
             )}
           </FormSection>
 
-          <Button
-            type="submit"
-            disabled={saving || !formValid}
-            className="w-full"
-          >
-            {saving ? t("saving") : isEdit ? t("save") : t("create_activity")}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              type="submit"
+              disabled={saving || !formValid}
+              className="w-full"
+            >
+              {saving ? t("saving") : isEdit ? t("save") : t("create_activity")}
+            </Button>
+
+            {isBoard && isEdit && activity && (
+              <Button
+                type="button"
+                variant="danger"
+                className="w-full sm:w-auto flex items-center justify-center gap-2"
+                onClick={async () => {
+                  if (
+                    !(await confirm(t("are_you_sure_delete_activity"), {
+                      title: t("delete"),
+                      confirmLabel: t("delete"),
+                    }))
+                  ) {
+                    return;
+                  }
+                  handleDeleteActivity(activity.id, () =>
+                    navigate(
+                      `${pathname.startsWith("/admin") ? "/admin" : ""}/activities`,
+                    ),
+                  );
+                }}
+              >
+                <Trash2Icon size={18} />
+                {t("delete")}
+              </Button>
+            )}
+          </div>
         </Form>
       </BorderedTile>
+
+      {confirmModal}
     </div>
   );
 }

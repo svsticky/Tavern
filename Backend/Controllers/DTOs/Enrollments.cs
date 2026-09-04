@@ -25,6 +25,9 @@ public class EnrollmentResponseDTO
     /// <inheritdoc cref="Models.Domain.Enrollment.IsOnWaitingList"/>
     public required bool IsOnWaitingList { get; set; }
 
+    /// <inheritdoc cref="Models.Domain.Enrollment.RegisteredOn"/>
+    public required DateTime RegisteredOn { get; set; }
+
     /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
     public required MemberResponseDTO? Member { get; set; }
 
@@ -49,6 +52,7 @@ public class EnrollmentResponseDTO
         return e => new EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
+            RegisteredOn = e.RegisteredOn,
             Member = e.Member != null && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
                         ? MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member)
                         : null,

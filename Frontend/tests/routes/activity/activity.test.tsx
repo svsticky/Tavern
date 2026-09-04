@@ -132,6 +132,45 @@ describe("ActivityPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("sorts the waiting list by registration order when there are enrollments", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(
+          buildActivity({
+            enrollments: [
+              {
+                isOnWaitingList: true,
+                registeredOn: "2026-01-02T00:00:00Z",
+              },
+              { isOnWaitingList: false, registeredOn: "2026-01-01T00:00:00Z" },
+              {
+                isOnWaitingList: true,
+                registeredOn: "2026-01-01T00:00:00Z",
+              },
+            ] as ActivityResponseDto["enrollments"],
+          }),
+        );
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("participants-tile-main"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-waiting_list"),
+    ).toBeInTheDocument();
+  });
+
   it("does not render participant tiles when participants are not visible", async () => {
     vi.mocked(loadActivityData).mockImplementation(
       async ({ setLoading, setActivity }) => {

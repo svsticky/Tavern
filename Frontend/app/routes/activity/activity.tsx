@@ -119,8 +119,16 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
               enrollments={
                 !activity.areParticipantsVisible
                   ? []
-                  : (activity.enrollments.filter((e) => e.isOnWaitingList) ??
-                    [])
+                  : (
+                      activity.enrollments.filter((e) => e.isOnWaitingList) ??
+                      []
+                    )
+                      .slice()
+                      .sort(
+                        (a, b) =>
+                          new Date(a.registeredOn).getTime() -
+                          new Date(b.registeredOn).getTime(),
+                      )
               }
             />
           </>

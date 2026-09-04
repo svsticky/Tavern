@@ -22,6 +22,7 @@ import { hasAllMandatoryAnswers } from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { capitalizeFirst } from "~/util/string.util";
 import { isMemberInTargetAudience } from "~/util/targetaudience.util";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
@@ -144,11 +145,11 @@ export default function ActivityDetailsTile({
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
 
-  const startDateString = formatDate(startDate, "dateOnly");
+  const startDateString = capitalizeFirst(formatDate(startDate, "weekdayDate"));
 
   const startTimeString = formatDate(startDate, "timeOnly");
 
-  const endDateString = formatDate(endDate, "dateOnly");
+  const endDateString = capitalizeFirst(formatDate(endDate, "weekdayDate"));
 
   const endTimeString = formatDate(endDate, "timeOnly");
 

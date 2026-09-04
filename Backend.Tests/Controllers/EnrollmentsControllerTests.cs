@@ -50,6 +50,7 @@ public class EnrollmentsControllerTests
             new EnrollmentResponseDTO
             {
                 IsOnWaitingList = false,
+                RegisteredOn = DateTime.UtcNow,
                 Activity = new Backend.Controllers.DTOs.ActivityResponseDTO
                 {
                     Id = 1,
@@ -114,6 +115,7 @@ public class EnrollmentsControllerTests
         var response = new EnrollmentResponseDTO
         {
             IsOnWaitingList = false,
+            RegisteredOn = DateTime.UtcNow,
             Activity = new Backend.Controllers.DTOs.ActivityResponseDTO
             {
                 Id = 2,
@@ -190,6 +192,7 @@ public class EnrollmentsControllerTests
         var created = new EnrollmentResponseDTO
         {
             IsOnWaitingList = false,
+            RegisteredOn = DateTime.UtcNow,
             Activity = new Backend.Controllers.DTOs.ActivityResponseDTO
             {
                 Id = 1,

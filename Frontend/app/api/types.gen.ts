@@ -423,6 +423,10 @@ export type EnrollmentResponseDto = {
      * If the enrollment is placed on a waiting list due to the associated activity being fully booked, this field indicates the position of the enrollment on the waiting list.
      */
     isOnWaitingList: boolean;
+    /**
+     * The date and time at which the enrollment was placed.
+     */
+    registeredOn: string;
     member: MemberResponseDto;
     /**
      * The answers for the specification questions associated with this enrollment.
@@ -761,13 +765,13 @@ export type Language = 'NL' | 'EN';
  */
 export type MailRecipient = {
     /**
-     * The unique identifier of the mail recipient, assigned incrementally.
+     * The email address of the mail recipient. This property is required and is used to identify the recipient for email communications. It should be a valid email address format, and it serves as the primary means of contacting the recipient through email.
      */
-    mail?: string;
+    mail: string;
     /**
-     * The name of the recipient, which can be used for personalization in email communications. The Name property allows for a more personalized and engaging experience when sending emails, as it can be used to address the recipient directly in the email content, making the communication feel more tailored and relevant to the individual recipient. This can help improve engagement and response rates for email campaigns or notifications sent to recipients.
+     * The recipient's first name, shown in mail clients as the sender/recipient name (e.g. in the From/To headers). Mails never address recipients by last name, so this holds the first name only.
      */
-    name?: string;
+    name: string;
 };
 
 /**
@@ -2000,6 +2004,9 @@ export type StudyUpdateDto = {
      */
     nominalDurationYears: number;
     type: StudyType;
+    /**
+     * Status of the study. Inactive studies are hidden from the public registration form, but are preserved in the database for historical records and statistics.
+     */
     active: boolean;
 };
 

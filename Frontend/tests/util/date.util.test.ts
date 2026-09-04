@@ -8,6 +8,7 @@ import {
   getFinancialYear,
   getGlobalCommitteeCreationDate,
   getGlobalFinancialYearStartDate,
+  isSameDayInAssociationTimeZone,
   parseInputAsAssociationTime,
   setGlobalCommitteeCreationDate,
   setGlobalFinancialYearStartDate,
@@ -28,6 +29,13 @@ describe("formatDate", () => {
     const result = formatDate(date, "shortDate");
     expect(result).not.toMatch(/2026/);
     expect(result).not.toMatch(/:/);
+  });
+
+  it("formats shortDateWithWeekday with a weekday abbreviation, day, and month, but no year or time", () => {
+    const result = formatDate(date, "shortDateWithWeekday");
+    expect(result).not.toMatch(/2026/);
+    expect(result).not.toMatch(/:/);
+    expect(result).toMatch(/5/);
   });
 
   it("formats monthShort as just the month", () => {
@@ -250,5 +258,40 @@ describe("getCommitteeYear / getFinancialYear", () => {
 
     Intl.DateTimeFormat = originalDateTimeFormat;
     consoleError.mockRestore();
+  });
+});
+
+describe("isSameDayInAssociationTimeZone", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("returns true for two instants on the same calendar day", () => {
+    expect(
+      isSameDayInAssociationTimeZone(
+        new Date("2026-03-12T08:00:00Z"),
+        new Date("2026-03-12T20:00:00Z"),
+      ),
+    ).toBe(true);
+  });
+
+  it("returns false for instants on different calendar days", () => {
+    expect(
+      isSameDayInAssociationTimeZone(
+        new Date("2026-03-12T08:00:00Z"),
+        new Date("2026-03-13T08:00:00Z"),
+      ),
+    ).toBe(false);
+  });
+
+  it("compares in the association timezone rather than the local one", () => {
+    vi.stubEnv("AssociationTimeZone", "Pacific/Kiritimati");
+    // 23:30 UTC on the 12th is already 12:30 on the 13th in UTC+14.
+    expect(
+      isSameDayInAssociationTimeZone(
+        new Date("2026-03-12T23:30:00Z"),
+        new Date("2026-03-13T01:30:00Z"),
+      ),
+    ).toBe(true);
   });
 });
