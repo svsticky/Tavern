@@ -57,6 +57,17 @@ public class MembershipExpirationSyncServiceTests
             }
             return (Task)method.Invoke(this, null)!;
         }
+
+        public Task PublicExecuteAsync(CancellationToken stoppingToken)
+        {
+            var method = typeof(MembershipExpirationSyncService)
+                .GetMethod("ExecuteAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method == null)
+            {
+                throw new InvalidOperationException("ExecuteAsync method not found");
+            }
+            return (Task)method.Invoke(this, [stoppingToken])!;
+        }
     }
 
     private static Member CreateTestMember(Guid? authSystemUserId, bool begunstiger, string studentNumber)
@@ -348,15 +359,16 @@ public class MembershipExpirationSyncServiceTests
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
         var provider = CreateServiceProvider(db);
-        var service = new MembershipExpirationSyncService(provider, _logger);
+        var service = new TestableMembershipExpirationSyncService(provider, _logger);
 
-        // Act
+        // Act - invoke ExecuteAsync directly with an already-canceled token, rather than racing
+        // StartAsync/StopAsync against a real 5-second timer, so the "cancels immediately" path
+        // (Task.Delay(5000, token) throwing TaskCanceledException) is hit deterministically instead
+        // of depending on wall-clock timing that varies across machines and runtime versions.
         var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately so Task.Delay(5000, token) throws TaskCanceledException and exits instantly
+        cts.Cancel();
 
-        var startTask = service.StartAsync(cts.Token);
-        await service.StopAsync(CancellationToken.None);
-        await startTask;
+        await service.PublicExecuteAsync(cts.Token);
     }
 
     [Fact]
