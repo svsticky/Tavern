@@ -710,18 +710,6 @@ export default function SettingsPage() {
                   }
                 />
                 <Input
-                  label={t("mailgun_public_key")}
-                  type="password"
-                  value={settings.MailgunPublicKey || ""}
-                  onChange={(e) =>
-                    handleSettingsChange(
-                      "MailgunPublicKey",
-                      e.target.value,
-                      setSettings,
-                    )
-                  }
-                />
-                <Input
                   label={t("mailgun_api_base_url")}
                   value={settings.MailgunApiBaseUrl || ""}
                   onChange={(e) =>
@@ -790,6 +778,18 @@ export default function SettingsPage() {
                     handleSettingsChange(
                       "SmtpStartTls",
                       e.target.checked ? "true" : "false",
+                      setSettings,
+                    )
+                  }
+                />
+                <Input
+                  label={t("smtp_max_batch_size")}
+                  type="number"
+                  value={settings.SmtpMaxBatchSize || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "SmtpMaxBatchSize",
+                      e.target.value,
                       setSettings,
                     )
                   }

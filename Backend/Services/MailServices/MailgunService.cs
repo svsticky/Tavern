@@ -1,8 +1,9 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
-using Mailgun;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace Backend.Services.MailServices;
 
@@ -15,10 +16,10 @@ public class MailgunService(
     IPaymentValidationService paymentValidationService,
     IPermissionService permissionService,
     ILogger<MailgunService> logger,
-    ILogger<AbstractMailService> baseLogger) : AbstractMailService(db, paymentValidationService, permissionService, baseLogger)
+    ILogger<AbstractMailService> baseLogger,
+    IHttpClientFactory httpClientFactory) : AbstractMailService(db, paymentValidationService, permissionService, baseLogger)
 {
     private string PrivateKey => _db.Settings.Find("MailgunToken")?.Value ?? "";
-    private string PublicKey => _db.Settings.Find("MailgunPublicKey")?.Value ?? "";
     private string ApiBaseUrl => _db.Settings.Find("MailgunApiBaseUrl")?.Value ?? "";
 
     /// <summary>
@@ -31,40 +32,57 @@ public class MailgunService(
     /// <param name="ct">The cancellation token.</param>
     protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
-        logger.LogInformation("Sending Mailgun email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);
-        using var client = new MailgunClient(ApiBaseUrl, PrivateKey, PublicKey);
-
-        MailgunMessage message = CreateMessage(from, to, subject, htmlContent);
-
-        await client.SendMessageAsync(message);
-        logger.LogInformation("Mailgun email sent successfully to {RecipientCount} recipients.", to.Length);
-    }
-
-    private MailgunMessage CreateMessage(MailRecipient from, MailRecipient[] to, string subject, string htmlContent)
-    {
-        var message = new MailgunMessage(from.Mail.Split("@")[1])
+        if (to.Length == 0)
         {
-            From = new MailgunAddress(from.Mail, from.Name),
-            Subject = subject,
-            HTML = htmlContent,
-            Text = StripHtml(htmlContent),
-            TestMode = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"
-        };
-
-        // A single recipient goes in To so their mail client shows who the mail was sent to; multiple
-        // recipients (e.g. an activity mail to a whole group) go in Bcc so they don't see each other's address.
-        if (to.Length == 1)
-        {
-            message.To.Add(new MailgunAddress(to[0].Mail, to[0].Name));
+            return;
         }
-        else
+
+        logger.LogInformation("Sending Mailgun email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);
+
+        var domain = from.Mail.Split("@")[1];
+        var baseUrl = ApiBaseUrl.TrimEnd('/');
+        var endpoint = $"{baseUrl}/{domain}/messages";
+        var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+
+        var httpClient = httpClientFactory.CreateClient();
+        var authBytes = Encoding.ASCII.GetBytes($"api:{PrivateKey}");
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
+
+        var fromFormatted = string.IsNullOrWhiteSpace(from.Name) ? from.Mail : $"{from.Name} <{from.Mail}>";
+
+        foreach (var recipient in to)
         {
-            foreach (var recipient in to)
+            using var formData = new MultipartFormDataContent();
+
+            var recipientName = recipient.Name ?? "";
+            var personalizedHtml = htmlContent.Replace("%name%", recipientName);
+            var personalizedSubject = subject.Replace("%name%", recipientName);
+
+            var toFormatted = string.IsNullOrWhiteSpace(recipient.Name)
+                ? recipient.Mail
+                : $"{recipient.Name} <{recipient.Mail}>";
+
+            formData.Add(new StringContent(fromFormatted), "from");
+            formData.Add(new StringContent(toFormatted), "to");
+            formData.Add(new StringContent(personalizedSubject), "subject");
+            formData.Add(new StringContent(personalizedHtml), "html");
+            formData.Add(new StringContent(StripHtml(personalizedHtml)), "text");
+
+            if (isDevelopment)
             {
-                message.BCC.Add(new MailgunAddress(recipient.Mail, recipient.Name));
+                formData.Add(new StringContent("true"), "o:testmode");
+            }
+
+            var response = await httpClient.PostAsync(endpoint, formData, ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorBody = await response.Content.ReadAsStringAsync(ct);
+                logger.LogError("Mailgun API error ({StatusCode}) for {Recipient}: {ErrorBody}",
+                    response.StatusCode, recipient.Mail, errorBody);
+                response.EnsureSuccessStatusCode();
             }
         }
 
-        return message;
+        logger.LogInformation("Mailgun email sent successfully to {RecipientCount} recipients.", to.Length);
     }
 }

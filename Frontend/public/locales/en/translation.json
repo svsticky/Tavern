@@ -276,6 +276,7 @@
   "payment_service_payments_condition": "Payment service payments condition",
   "payment_service_relation_code": "Payment service relation code",
   "smtp_host": "SMTP host",
+  "smtp_max_batch_size": "SMTP max recipients per batch",
   "smtp_pass": "SMTP password",
   "smtp_port": "SMTP port",
   "smtp_starttls": "SMTP StartTLS",

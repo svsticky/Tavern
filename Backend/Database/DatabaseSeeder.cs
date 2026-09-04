@@ -45,7 +45,6 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
 
         await EnsureSettingExists(db, "MailService", "SMTP");
         await EnsureSettingExists(db, "MailgunToken", "");
-        await EnsureSettingExists(db, "MailgunPublicKey", "");
         await EnsureSettingExists(db, "MailgunApiBaseUrl", "");
 
         bool useMailpit = environment.IsDevelopment();
@@ -54,6 +53,7 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
         await EnsureSettingExists(db, "SmtpStartTls", useMailpit ? "false" : "true");
         await EnsureSettingExists(db, "SmtpUser", "");
         await EnsureSettingExists(db, "SmtpPass", "");
+        await EnsureSettingExists(db, "SmtpMaxBatchSize", "");
 
         await EnsureSettingExists(db, "AccountingService", "");
         await EnsureSettingExists(db, "ExactAccessToken", "");

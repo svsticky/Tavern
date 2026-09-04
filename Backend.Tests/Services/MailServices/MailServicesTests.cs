@@ -772,12 +772,16 @@ public class MailServicesTests : IDisposable
         Environment.SetEnvironmentVariable("MAILGUN_PUBLIC_KEY", "mock_key");
         Environment.SetEnvironmentVariable("MAILGUN_API_BASE_URL", "http://127.0.0.1:54321");
 
+        var httpClientFactoryMock = Substitute.For<IHttpClientFactory>();
+        httpClientFactoryMock.CreateClient(Arg.Any<string>()).Returns(_ => new HttpClient());
+
         var mailgunService = new MailgunService(
             _db,
             _paymentMock,
             _permissionMock,
             NullLogger<MailgunService>.Instance,
-            NullLogger<AbstractMailService>.Instance
+            NullLogger<AbstractMailService>.Instance,
+            httpClientFactoryMock
         );
 
         var from = new MailRecipient { Mail = "from@example.com", Name = "From" };

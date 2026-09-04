@@ -6,12 +6,12 @@ namespace Backend.Models;
 public class MailRecipient
 {
     /// <summary>
-    /// The unique identifier of the mail recipient, assigned incrementally.
+    /// The email address of the mail recipient. This property is required and is used to identify the recipient for email communications. It should be a valid email address format, and it serves as the primary means of contacting the recipient through email.
     /// </summary>
-    public string Mail { get; set; } = null!;
+    public required string Mail { get; set; }
 
     /// <summary>
-    /// The name of the recipient, which can be used for personalization in email communications. The Name property allows for a more personalized and engaging experience when sending emails, as it can be used to address the recipient directly in the email content, making the communication feel more tailored and relevant to the individual recipient. This can help improve engagement and response rates for email campaigns or notifications sent to recipients.
+    /// The recipient's first name, shown in mail clients as the sender/recipient name (e.g. in the From/To headers). Mails never address recipients by last name, so this holds the first name only.
     /// </summary>
-    public string Name { get; set; } = null!;
+    public required string Name { get; set; }
 }

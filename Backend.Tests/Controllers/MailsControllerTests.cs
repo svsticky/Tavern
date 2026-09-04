@@ -157,7 +157,7 @@ public class MailsControllerTests : IDisposable
         await SetupDatabaseForSending();
         var dto = new PostMailDTO
         {
-            Recipients = new[] { new MailRecipient { Mail = "test@example.com", Name = "Test User" } },
+            Recipients = new[] { new MailRecipient { Mail = "test@example.com", Name = "Test" } },
             Subject = "Test Subject",
             HtmlContent = "<h1>Test Body</h1>"
         };

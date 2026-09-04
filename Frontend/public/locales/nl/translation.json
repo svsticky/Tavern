@@ -277,6 +277,7 @@
   "payment_service_payments_condition": "Betaalservice betalingsvoorwaarde",
   "payment_service_relation_code": "Betaalservice relatiecode",
   "smtp_host": "SMTP host",
+  "smtp_max_batch_size": "SMTP max. ontvangers per batch",
   "smtp_pass": "SMTP wachtwoord",
   "smtp_port": "SMTP poort",
   "smtp_starttls": "SMTP StartTLS",

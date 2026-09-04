@@ -13,7 +13,7 @@ namespace Backend.Services.MailServices;
 /// <summary>
 /// Provides shared mail-sending workflow and recipient resolution logic.
 /// </summary>
-public abstract class AbstractMailService
+public abstract partial class AbstractMailService
 {
     /// <summary>
     /// Sends a composed email through the underlying provider implementation.
@@ -196,7 +196,7 @@ public abstract class AbstractMailService
                 ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
             });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
     }
 
@@ -241,7 +241,7 @@ public abstract class AbstractMailService
                 ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
             });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
 
         var membersWithoutActiveStudy = potentialMembers
@@ -265,7 +265,7 @@ public abstract class AbstractMailService
                 ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
             });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
 
         var membersWithOutstandingStudies = potentialMembers
@@ -292,17 +292,17 @@ public abstract class AbstractMailService
                 ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
             });
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
         }
     }
 
     /// <summary>
-    /// Retrieves the sender information, including email address and name, for the specified user ID by checking their group memberships and associated roles. The method ensures that the user has the necessary permissions to send emails by verifying their membership in either the board group or candidate board group for the current financial year. If the user is authorized, their email address is determined based on their role using a predefined mapping, and their full name is constructed from their first and last name. If the user does not have permission to send emails or if their information cannot be retrieved, appropriate exceptions are thrown or null is returned.
+    /// Retrieves the sender information, including email address and name, for the specified user ID by checking their group memberships and associated roles. Their email address is determined by their role, using the predefined ROLEMAILMAP setting for that role; if the user has no role this year, or their role has no ROLEMAILMAP entry configured, the main board mailbox (MainBoardMail setting) is used as the sender instead. Their full name is constructed from their first and last name. Callers are responsible for verifying the user is allowed to send mail at all (e.g. via <see cref="IPermissionService.EnsureBoardOrCandidateBoardMember"/>) before calling this - it no longer performs that check itself.
     /// </summary>
     /// <param name="userId">The ID of the user for whom to retrieve sender information.</param>
     /// <param name="ct">The cancellation token for the asynchronous operation.</param>
     /// <returns>The mail recipient information for the sender, or null if not found.</returns>
-    /// <exception cref="UnauthorizedAccessException">Thrown when the user does not have permission to send emails.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when neither the role's mail address nor the MainBoardMail fallback is configured.</exception>
     protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
         int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value, CultureInfo.InvariantCulture)).FirstOrDefault();
@@ -313,18 +313,24 @@ public abstract class AbstractMailService
             .Select(gm => gm.RoleAlias != null ? gm.RoleAlias.Role : null)
             .FirstOrDefaultAsync(ct);
 
-        if (role == null)
-        {
-            throw new UnauthorizedAccessException("User does not have permission to send mails");
-        }
-
         Member? sender = await _db.Members.FindAsync(userId, ct);
         if (sender == null)
         {
             return null;
         }
 
-        return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
+        string? senderMail = role != null && _roleMailMap.TryGetValue(role.Id, out var roleMail)
+            ? roleMail
+            : _db.Settings.Where(s => s.Name == "MainBoardMail").Select(s => s.Value).FirstOrDefault();
+
+        if (string.IsNullOrEmpty(senderMail))
+        {
+            throw new InvalidOperationException(role == null
+                ? "User has no role this year, and no fallback MainBoardMail setting is configured."
+                : $"No mail address configured for role '{role.Name}' (missing setting ROLEMAILMAP_{role.Id}), and no fallback MainBoardMail setting is configured either.");
+        }
+
+        return new MailRecipient { Mail = senderMail, Name = sender.FirstName };
     }
 
     /// <summary>
@@ -347,7 +353,7 @@ public abstract class AbstractMailService
 
         foreach (var enrollment in activity.Enrollments)
         {
-            resultRecipients.Add(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" });
+            resultRecipients.Add(new MailRecipient { Mail = enrollment.Member.Email, Name = enrollment.Member.FirstName });
         }
         return resultRecipients.ToArray();
     }
