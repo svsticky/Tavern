@@ -96,9 +96,7 @@ export default function ActivitiesPage() {
 
   return (
     <>
-      <div
-        className="flex flex-col md:flex-row md:items-start md:gap-3 justify-between gap-0"
-      >
+      <div className="flex flex-col md:flex-row md:items-start md:gap-3 justify-between gap-0">
         <PageHeader
           title={t("activities")}
           action={
@@ -110,7 +108,9 @@ export default function ActivitiesPage() {
                 title={t("personal_calendar")}
               >
                 <CalendarClock size={20} className="mr-1" />
-                <span className="hidden md:inline-block">{t("personal_calendar")}</span>
+                <span className="hidden md:inline-block">
+                  {t("personal_calendar")}
+                </span>
               </Button>
               {isInGroup && (
                 <Button
@@ -121,7 +121,9 @@ export default function ActivitiesPage() {
                   <PlusIcon className="w-5 h-5" />
                 </Button>
               )}
-              {isBoard && <BoardDropdown activities={activities} token={token!} />}
+              {isBoard && (
+                <BoardDropdown activities={activities} token={token!} />
+              )}
             </div>
           }
         />
@@ -155,8 +157,8 @@ export default function ActivitiesPage() {
 }
 
 interface BoardDropdownProps {
-  activities: ActivityResponseDto[],
-  token: string
+  activities: ActivityResponseDto[];
+  token: string;
 }
 
 function BoardDropdown({ activities, token }: BoardDropdownProps) {
@@ -172,7 +174,9 @@ function BoardDropdown({ activities, token }: BoardDropdownProps) {
         <MenuIcon className="w-5 h-5" />
       </Button>
 
-      <ul className={`${isOpen ? "flex" : "hidden"} flex-col gap-4 right-0 top-9 absolute w-max bg-white border border-gray-200 rounded-lg p-4 z-100`}>
+      <ul
+        className={`${isOpen ? "flex" : "hidden"} flex-col gap-4 right-0 top-9 absolute w-max bg-white border border-gray-200 rounded-lg p-4 z-100`}
+      >
         <Button
           variant="secondary"
           onClick={() => downloadPosters(activities, token ?? "")}
