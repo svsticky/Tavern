@@ -5,6 +5,7 @@ import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/Activ
 import {
   handleAddToCalendar,
   handleCopyForWhatsapp,
+  handleDownloadIcs,
   handleEnrollment,
   handleUnenrollment,
   handleUpdateEnrollment,
@@ -24,6 +25,7 @@ vi.mock(
   () => ({
     handleAddToCalendar: vi.fn(),
     handleCopyForWhatsapp: vi.fn(),
+    handleDownloadIcs: vi.fn(),
     handleEnrollment: vi.fn(),
     handleUnenrollment: vi.fn(),
     handleUpdateEnrollment: vi.fn(),
@@ -339,5 +341,17 @@ describe("ActivityDetailsTile", () => {
     fireEvent.error(logo);
 
     expect(logo).toHaveAttribute("src", "/profile-picture.svg");
+  });
+
+  it("triggers handleDownloadIcs when clicking the download .ics button", async () => {
+    const activity = buildActivity();
+    renderWithProviders(<ActivityDetailsTile activity={activity} />);
+
+    const downloadBtn = await screen.findByRole("button", {
+      name: /download_ics/i,
+    });
+    fireEvent.click(downloadBtn);
+
+    expect(handleDownloadIcs).toHaveBeenCalledWith(activity, false);
   });
 });

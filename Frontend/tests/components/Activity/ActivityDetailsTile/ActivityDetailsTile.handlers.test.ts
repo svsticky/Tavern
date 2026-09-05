@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import {
+  escapeIcsText,
+  generateIcsContent,
   handleAddToCalendar,
   handleCopyForWhatsapp,
+  handleDownloadIcs,
   handleEnrollment,
   handleUnenrollment,
   handleUpdateEnrollment,
@@ -87,6 +90,95 @@ describe("handleAddToCalendar", () => {
     const url = openSpy.mock.calls[0][0] as string;
     expect(decodeURIComponent(url)).toContain("calendar_copy_disclaimer");
     openSpy.mockRestore();
+  });
+});
+
+describe("escapeIcsText", () => {
+  it("escapes backslashes, semicolons, commas, and newlines", () => {
+    const input = "Hello; World, this \\ is\na\r\ntest";
+    expect(escapeIcsText(input)).toBe(
+      "Hello\\; World\\, this \\\\ is\\na\\ntest",
+    );
+  });
+});
+
+describe("generateIcsContent", () => {
+  it("generates a valid RFC 5545 iCalendar string", () => {
+    const fixedNow = new Date("2026-09-01T12:00:00Z");
+    const activity = buildActivity({
+      id: 42,
+      name: "Sticky BBQ",
+      location: "Sticky Room, Buys Ballot",
+      dateTimeStart: "2026-09-10T17:00:00Z",
+      dateTimeEnd: "2026-09-10T22:00:00Z",
+      dutchDescription: "Gezellige BBQ!",
+      englishDescription: "Fun BBQ!",
+    });
+
+    const ics = generateIcsContent(activity, true, fixedNow);
+
+    expect(ics).toContain("BEGIN:VCALENDAR");
+    expect(ics).toContain("VERSION:2.0");
+    expect(ics).toContain("PRODID:-//Study association Sticky//Tavern//EN");
+    expect(ics).toContain("BEGIN:VEVENT");
+    expect(ics).toContain("UID:activity-42@tavern.svsticky.nl");
+    expect(ics).toContain("DTSTAMP:20260901T120000Z");
+    expect(ics).toContain("DTSTART:20260910T170000Z");
+    expect(ics).toContain("DTEND:20260910T220000Z");
+    expect(ics).toContain("SUMMARY:Sticky BBQ");
+    expect(ics).toContain("LOCATION:Sticky Room\\, Buys Ballot");
+    expect(ics).toContain("Gezellige BBQ!");
+    expect(ics).toContain("END:VEVENT");
+    expect(ics).toContain("END:VCALENDAR");
+  });
+
+  it("uses the English description when isDutch is false", () => {
+    const fixedNow = new Date("2026-09-01T12:00:00Z");
+    const activity = buildActivity({
+      dutchDescription: "Nederlands",
+      englishDescription: "English text",
+    });
+
+    const ics = generateIcsContent(activity, false, fixedNow);
+    expect(ics).toContain("English text");
+  });
+});
+
+describe("handleDownloadIcs", () => {
+  it("creates an anchor and downloads the .ics file", () => {
+    const createObjectURLMock = vi
+      .fn()
+      .mockReturnValue("blob:http://localhost/mock-uuid");
+    const revokeObjectURLMock = vi.fn();
+    window.URL.createObjectURL = createObjectURLMock;
+    window.URL.revokeObjectURL = revokeObjectURLMock;
+
+    const clickSpy = vi.fn();
+    const appendChildSpy = vi
+      .spyOn(document.body, "appendChild")
+      .mockImplementation((node) => {
+        if (node instanceof HTMLAnchorElement) {
+          node.click = clickSpy;
+        }
+        return node;
+      });
+    const removeChildSpy = vi
+      .spyOn(document.body, "removeChild")
+      .mockImplementation((node) => node);
+
+    const activity = buildActivity({ name: "Lan Party 2026" });
+    handleDownloadIcs(activity, true);
+
+    expect(createObjectURLMock).toHaveBeenCalled();
+    expect(appendChildSpy).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(removeChildSpy).toHaveBeenCalled();
+    expect(revokeObjectURLMock).toHaveBeenCalledWith(
+      "blob:http://localhost/mock-uuid",
+    );
+
+    appendChildSpy.mockRestore();
+    removeChildSpy.mockRestore();
   });
 });
 
