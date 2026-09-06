@@ -10,6 +10,7 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasEnrollmentOpened } from "~/util/activity.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
@@ -106,7 +107,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
 
       <div className="space-y-6 w-full">
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
-        {activity.areParticipantsVisible && (
+        {hasEnrollmentOpened(activity) && activity.areParticipantsVisible && (
           <>
             <ActivityParticipantsTile
               enrollments={
