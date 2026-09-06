@@ -43,6 +43,59 @@ import {
   updateQuestion,
 } from "./EditActivityForm.handlers";
 
+const AUDIENCE_CHECKBOXES = [
+  { bit: 1, labelKey: "year_1" },
+  { bit: 2, labelKey: "year_2" },
+  { bit: 4, labelKey: "year_3_plus" },
+  { bit: 8, labelKey: "masters" },
+  { bit: 16, labelKey: "gratie" },
+  { bit: 64, labelKey: "begunstiger" },
+  { bit: 32, labelKey: "active_members" },
+] as const;
+
+interface DraftRestoredBannerProps {
+  draftTimestamp: string | null;
+  onDiscard: () => void;
+}
+
+function DraftRestoredBanner({
+  draftTimestamp,
+  onDiscard,
+}: DraftRestoredBannerProps) {
+  return (
+    <div
+      role="alert"
+      className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl text-amber-900 dark:text-amber-200"
+    >
+      <div className="flex items-start sm:items-center gap-3">
+        <RotateCcwIcon className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5 sm:mt-0" />
+        <div>
+          <p className="font-semibold text-sm">
+            {t("draft_restored")}
+            {draftTimestamp && (
+              <span className="font-normal text-xs text-amber-700 dark:text-amber-300 ml-1.5">
+                ({draftTimestamp})
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-amber-700 dark:text-amber-300/90 mt-0.5">
+            {t("draft_restored_description")}
+          </p>
+        </div>
+      </div>
+      <Button
+        type="button"
+        variant="secondary"
+        className="shrink-0 text-xs py-1.5 px-3 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50"
+        onClick={onDiscard}
+      >
+        <Trash2Icon size={14} className="mr-1 inline text-red-500" />
+        {t("discard_draft")}
+      </Button>
+    </div>
+  );
+}
+
 /**
  * A comprehensive form component used to either create a new association activity
  * or edit an existing one.
@@ -90,9 +143,7 @@ export default function EditActivityForm({
   const [draft, setDraft] = useState<ActivityDraft | null>(() =>
     isCreate ? loadActivityDraft() : null,
   );
-  const [draftRestored, setDraftRestored] = useState<boolean>(
-    () => isCreate && !!loadActivityDraft(),
-  );
+  const [draftRestored, setDraftRestored] = useState<boolean>(() => !!draft);
   const [draftKey, setDraftKey] = useState<number>(0);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
@@ -110,8 +161,7 @@ export default function EditActivityForm({
   const [groups, setGroups] = useState<GroupResponseDto[]>([]);
   const [formValid, setFormValid] = useState<boolean>(() => {
     if (isEdit || activity) return true;
-    const initialDraft = loadActivityDraft();
-    return isActivityDraftValid(initialDraft);
+    return isActivityDraftValid(draft);
   });
   const [questions, setQuestions] = useState<
     Partial<GetSpecificationQuestionResponseDto>[]
@@ -119,11 +169,8 @@ export default function EditActivityForm({
     if (activity?.specificationQuestions) {
       return activity.specificationQuestions;
     }
-    if (isCreate) {
-      const initialDraft = loadActivityDraft();
-      if (initialDraft?.specificationQuestions) {
-        return initialDraft.specificationQuestions;
-      }
+    if (draft?.specificationQuestions) {
+      return draft.specificationQuestions;
     }
     return [];
   });
@@ -227,36 +274,10 @@ export default function EditActivityForm({
     <div>
       <BorderedTile>
         {draftRestored && (
-          <div
-            role="alert"
-            className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl text-amber-900 dark:text-amber-200"
-          >
-            <div className="flex items-start sm:items-center gap-3">
-              <RotateCcwIcon className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5 sm:mt-0" />
-              <div>
-                <p className="font-semibold text-sm">
-                  {t("draft_restored")}
-                  {draftTimestamp && (
-                    <span className="font-normal text-xs text-amber-700 dark:text-amber-300 ml-1.5">
-                      ({draftTimestamp})
-                    </span>
-                  )}
-                </p>
-                <p className="text-xs text-amber-700 dark:text-amber-300/90 mt-0.5">
-                  {t("draft_restored_description")}
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              className="shrink-0 text-xs py-1.5 px-3 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50"
-              onClick={handleDiscardDraft}
-            >
-              <Trash2Icon size={14} className="mr-1 inline text-red-500" />
-              {t("discard_draft")}
-            </Button>
-          </div>
+          <DraftRestoredBanner
+            draftTimestamp={draftTimestamp}
+            onDiscard={handleDiscardDraft}
+          />
         )}
 
         <Form
@@ -375,62 +396,17 @@ export default function EditActivityForm({
             <div>
               <FormHeader title={t("target_audience")} border />
               <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl mt-4">
-                <Checkbox
-                  label={t("year_1")}
-                  name="AudienceBit"
-                  value="1"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 1) : true
-                  }
-                />
-                <Checkbox
-                  label={t("year_2")}
-                  name="AudienceBit"
-                  value="2"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 2) : true
-                  }
-                />
-                <Checkbox
-                  label={t("year_3_plus")}
-                  name="AudienceBit"
-                  value="4"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 4) : true
-                  }
-                />
-                <Checkbox
-                  label={t("masters")}
-                  name="AudienceBit"
-                  value="8"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 8) : true
-                  }
-                />
-                <Checkbox
-                  label={t("gratie")}
-                  name="AudienceBit"
-                  value="16"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 16) : true
-                  }
-                />
-                <Checkbox
-                  label={t("begunstiger")}
-                  name="AudienceBit"
-                  value="64"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 64) : true
-                  }
-                />
-                <Checkbox
-                  label={t("active_members")}
-                  name="AudienceBit"
-                  value="32"
-                  defaultChecked={
-                    hasAudienceSource ? !!(audienceMask & 32) : true
-                  }
-                />
+                {AUDIENCE_CHECKBOXES.map(({ bit, labelKey }) => (
+                  <Checkbox
+                    key={bit}
+                    label={t(labelKey)}
+                    name="AudienceBit"
+                    value={String(bit)}
+                    defaultChecked={
+                      hasAudienceSource ? !!(audienceMask & bit) : true
+                    }
+                  />
+                ))}
               </div>
             </div>
             <div>

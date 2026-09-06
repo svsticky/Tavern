@@ -65,9 +65,11 @@ describe("activityDraft.util", () => {
       expect(isDraftNotEmpty({ organizerId: "2" })).toBe(true);
       expect(isDraftNotEmpty({ price: "5.00" })).toBe(true);
       expect(isDraftNotEmpty({ participantLimit: "30" })).toBe(true);
+      expect(isDraftNotEmpty({ vatRate: "21" })).toBe(true);
       expect(isDraftNotEmpty({ glAccountId: "1234" })).toBe(true);
       expect(isDraftNotEmpty({ costUnitId: "5678" })).toBe(true);
       expect(isDraftNotEmpty({ costCenterId: "9012" })).toBe(true);
+      expect(isDraftNotEmpty({ paymentDeadline: "2026-10-01" })).toBe(true);
       expect(
         isDraftNotEmpty({
           specificationQuestions: [

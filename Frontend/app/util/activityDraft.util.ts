@@ -54,9 +54,11 @@ export function isDraftNotEmpty(draft: ActivityDraft | null): boolean {
       draft.organizerId ||
       draft.price ||
       draft.participantLimit ||
+      draft.vatRate?.trim() ||
       draft.glAccountId?.trim() ||
       draft.costUnitId?.trim() ||
       draft.costCenterId?.trim() ||
+      draft.paymentDeadline ||
       (draft.specificationQuestions && draft.specificationQuestions.length > 0),
   );
 }
