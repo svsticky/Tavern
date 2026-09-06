@@ -9,6 +9,7 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { hasEnrollmentOpened } from "~/util/activity.util";
 import { canEditActivity } from "~/util/group.util";
 import type { Route } from "./+types/activity";
 import {
@@ -104,32 +105,24 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
 
       <div className="space-y-6 w-full">
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
-        {activity.areParticipantsVisible && (
+        {hasEnrollmentOpened(activity) && activity.areParticipantsVisible && (
           <>
             <ActivityParticipantsTile
               enrollments={
-                !activity.areParticipantsVisible
-                  ? []
-                  : (activity.enrollments.filter((e) => !e.isOnWaitingList) ??
-                    [])
+                activity.enrollments.filter((e) => !e.isOnWaitingList) ?? []
               }
             />
             <ActivityParticipantsTile
               title={t("waiting_list")}
-              enrollments={
-                !activity.areParticipantsVisible
-                  ? []
-                  : (
-                      activity.enrollments.filter((e) => e.isOnWaitingList) ??
-                      []
-                    )
-                      .slice()
-                      .sort(
-                        (a, b) =>
-                          new Date(a.registeredOn).getTime() -
-                          new Date(b.registeredOn).getTime(),
-                      )
-              }
+              enrollments={(
+                activity.enrollments.filter((e) => e.isOnWaitingList) ?? []
+              )
+                .slice()
+                .sort(
+                  (a, b) =>
+                    new Date(a.registeredOn).getTime() -
+                    new Date(b.registeredOn).getTime(),
+                )}
             />
           </>
         )}

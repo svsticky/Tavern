@@ -12,6 +12,10 @@ import { Link, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  getActivityEnrollmentStatus,
+  hasEnrollmentOpened,
+} from "~/util/activity.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { canEditActivity } from "~/util/group.util";
@@ -71,6 +75,7 @@ export default function ActivityTile({
   }, [authService]);
 
   const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
+  const { canEnroll } = getActivityEnrollmentStatus(activity);
 
   const navigate = useNavigate();
 
@@ -181,12 +186,14 @@ export default function ActivityTile({
               <span className="min-w-0 truncate">{activity.location}</span>
             </div>
 
-            <div className="mt-1 flex items-center gap-1.5">
-              <UsersRound size={12} />
-              {activity.participantLimit
-                ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
-                : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
-            </div>
+            {hasEnrollmentOpened(activity) && (
+              <div className="mt-1 flex items-center gap-1.5">
+                <UsersRound size={12} />
+                {activity.participantLimit && canEnroll
+                  ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
+                  : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
+              </div>
+            )}
           </div>
         </div>
       </Tile>

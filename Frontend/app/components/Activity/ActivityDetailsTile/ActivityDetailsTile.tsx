@@ -17,7 +17,10 @@ import {
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getActivityEnrollmentStatus } from "~/util/activity.util";
+import {
+  getActivityEnrollmentStatus,
+  hasEnrollmentOpened,
+} from "~/util/activity.util";
 import { hasAllMandatoryAnswers } from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
@@ -305,35 +308,39 @@ export default function ActivityDetailsTile({
               value={organizerName}
             />
           )}
-          <InfoItem
-            icon={<Clock size={18} />}
-            label={t("unenrollment_deadline")}
-            value={
-              activity.unenrollmentDeadline
-                ? formatDate(
-                    new Date(activity.unenrollmentDeadline),
-                    "fullDateTime",
-                  )
-                : t("none")
-            }
-          />
-          <InfoItem
-            icon={<Clock size={18} />}
-            label={t("enrollment_deadline")}
-            value={
-              activity.enrollmentDeadline
-                ? formatDate(
-                    new Date(activity.enrollmentDeadline),
-                    "fullDateTime",
-                  )
-                : t("none")
-            }
-          />
-          <InfoItem
-            icon={<Users size={18} />}
-            label={t("participants")}
-            value={`${activity.enrollments.filter((e) => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ""}`}
-          />
+          {hasEnrollmentOpened(activity) && (
+            <>
+              <InfoItem
+                icon={<Clock size={18} />}
+                label={t("unenrollment_deadline")}
+                value={
+                  activity.unenrollmentDeadline
+                    ? formatDate(
+                        new Date(activity.unenrollmentDeadline),
+                        "fullDateTime",
+                      )
+                    : t("none")
+                }
+              />
+              <InfoItem
+                icon={<Clock size={18} />}
+                label={t("enrollment_deadline")}
+                value={
+                  activity.enrollmentDeadline
+                    ? formatDate(
+                        new Date(activity.enrollmentDeadline),
+                        "fullDateTime",
+                      )
+                    : t("none")
+                }
+              />
+              <InfoItem
+                icon={<Users size={18} />}
+                label={t("participants")}
+                value={`${activity.enrollments.filter((e) => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ""}`}
+              />
+            </>
+          )}
         </div>
 
         {(isEnrolled || canEnroll) && (
