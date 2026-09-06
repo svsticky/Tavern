@@ -26,9 +26,11 @@ namespace Backend.Services.Domain
         IMailSubscriptionService mailSubscriptionService,
         IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
-        ILogger<MemberService> logger
+        ILogger<MemberService> logger,
+        IEnumerable<IMailSyncOutboxWorker>? mailSyncWorkers = null
     ) : IMemberService
     {
+        private readonly IEnumerable<IMailSyncOutboxWorker> _mailSyncWorkers = mailSyncWorkers ?? [];
         /// <inheritdoc />
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
@@ -173,6 +175,13 @@ namespace Backend.Services.Domain
                 var oldEmail = member.Email;
 
                 mailSubscriptionOutboxWorker.EnqueueDeleteTask(oldEmail, db);
+                foreach (var worker in _mailSyncWorkers)
+                {
+                    if (!ReferenceEquals(worker, mailSubscriptionOutboxWorker))
+                    {
+                        worker.EnqueueDeleteMail(oldEmail, db);
+                    }
+                }
                 member.FirstName = "Deleted";
                 member.LastName = "Member";
                 member.Email = $"deleted-{member.Id}@deleted.local";
@@ -345,6 +354,13 @@ namespace Backend.Services.Domain
                 authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id, db);
                 var newMail = await authService.GetEmail(id);
                 mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newMail, db);
+                foreach (var worker in _mailSyncWorkers)
+                {
+                    if (!ReferenceEquals(worker, mailSubscriptionOutboxWorker))
+                    {
+                        worker.EnqueueSyncMail(member.Email, newMail, db);
+                    }
+                }
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
             }

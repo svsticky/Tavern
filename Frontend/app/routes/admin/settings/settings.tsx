@@ -397,35 +397,6 @@ export default function SettingsPage() {
             title={t("financial_and_payments", "Financiën & Betalingen")}
             columns={2}
           >
-            <Select
-              label={t("payment_provider")}
-              value={settings.PaymentProvider}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "PaymentProvider",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-              options={[{ value: "MOLLIE", label: "Mollie" }]}
-            />
-            {settings.PaymentProvider.toUpperCase() === "MOLLIE" ? (
-              <Input
-                label={t("mollie_api_key")}
-                type="password"
-                value={settings.MollieApiKey || ""}
-                onChange={(e) =>
-                  handleSettingsChange(
-                    "MollieApiKey",
-                    e.target.value,
-                    setSettings,
-                  )
-                }
-              />
-            ) : (
-              <div />
-            )}
-
             <Input
               label={t("payment_service_fee")}
               type="number"
@@ -456,56 +427,6 @@ export default function SettingsPage() {
           </FormSection>
 
           <FormSection title={t("accounting")} columns={2}>
-            {getEnv("ACCOUNTING_ENABLED")?.toLowerCase() === "true" && (
-              <>
-                <Select
-                  label={t("accounting_service")}
-                  value={settings.AccountingService || ""}
-                  onChange={(e) =>
-                    handleSettingsChange(
-                      "AccountingService",
-                      e.target.value,
-                      setSettings,
-                    )
-                  }
-                  options={[
-                    { value: "", label: t("none") },
-                    { value: "EXACT", label: "Exact Online" },
-                  ]}
-                />
-                <div />
-
-                {(settings.AccountingService || "").toUpperCase() ===
-                  "EXACT" && (
-                  <>
-                    <Input
-                      label={t("exact_division")}
-                      value={settings.ExactDivision || ""}
-                      onChange={(e) =>
-                        handleSettingsChange(
-                          "ExactDivision",
-                          e.target.value,
-                          setSettings,
-                        )
-                      }
-                    />
-                    <Input
-                      label={t("exact_access_token")}
-                      type="password"
-                      value={settings.ExactAccessToken || ""}
-                      onChange={(e) =>
-                        handleSettingsChange(
-                          "ExactAccessToken",
-                          e.target.value,
-                          setSettings,
-                        )
-                      }
-                    />
-                  </>
-                )}
-              </>
-            )}
-
             <Input
               label={t("membership_gl_account")}
               value={settings.MembershipGLAccount || ""}
@@ -653,6 +574,181 @@ export default function SettingsPage() {
             />
           </FormSection>
 
+          <FormSection
+            title={t("external_services")}
+            columns={2}
+          >
+            <div className="col-span-1 md:col-span-2">
+              <Checkbox
+                label={t("enable_outline")}
+                checked={settings.OutlineEnabled === "true"}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleSettingsChange(
+                    "OutlineEnabled",
+                    e.target.checked ? "true" : "false",
+                    setSettings,
+                  )
+                }
+              />
+            </div>
+            {settings.OutlineEnabled === "true" && (
+              <>
+                <Input
+                  label={t("outline_api_url")}
+                  placeholder="https://wiki.svsticky.nl"
+                  value={settings.OutlineApiUrl || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "OutlineApiUrl",
+                      e.target.value.trim(),
+                      setSettings,
+                    )
+                  }
+                  required
+                />
+                <Input
+                  label={t("outline_api_key")}
+                  type="password"
+                  value={settings.OutlineApiKey || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "OutlineApiKey",
+                      e.target.value.trim(),
+                      setSettings,
+                    )
+                  }
+                  required
+                />
+              </>
+            )}
+
+            <Select
+              label={t("payment_provider")}
+              value={settings.PaymentProvider || "MOLLIE"}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "PaymentProvider",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+              options={[{ value: "MOLLIE", label: "Mollie" }]}
+            />
+            {(settings.PaymentProvider || "").toUpperCase() === "MOLLIE" ? (
+              <Input
+                label={t("mollie_api_key")}
+                type="password"
+                value={settings.MollieApiKey || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MollieApiKey",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+            ) : (
+              <div />
+            )}
+
+            <Select
+              label={t("mail_subscription_service")}
+              value={settings.MailSubscriptionService || ""}
+              onChange={(e) =>
+                handleSettingsChange(
+                  "MailSubscriptionService",
+                  e.target.value,
+                  setSettings,
+                )
+              }
+              options={[
+                { value: "", label: t("none") },
+                { value: "MAILCHIMP", label: "Mailchimp" },
+              ]}
+            />
+            {(settings.MailSubscriptionService || "").toUpperCase() ===
+            "MAILCHIMP" ? (
+              <Input
+                label={t("mailchimp_list_key")}
+                value={settings.MailchimpListKey || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MailchimpListKey",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+            ) : (
+              <div />
+            )}
+            {(settings.MailSubscriptionService || "").toUpperCase() ===
+              "MAILCHIMP" && (
+              <Input
+                label={t("mailchimp_api_key")}
+                type="password"
+                value={settings.MailchimpApiKey || ""}
+                onChange={(e) =>
+                  handleSettingsChange(
+                    "MailchimpApiKey",
+                    e.target.value,
+                    setSettings,
+                  )
+                }
+              />
+            )}
+
+            {getEnv("ACCOUNTING_ENABLED")?.toLowerCase() === "true" && (
+              <>
+                <Select
+                  label={t("accounting_service")}
+                  value={settings.AccountingService || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "AccountingService",
+                      e.target.value,
+                      setSettings,
+                    )
+                  }
+                  options={[
+                    { value: "", label: t("none") },
+                    { value: "EXACT", label: "Exact Online" },
+                  ]}
+                />
+                <div />
+
+                {(settings.AccountingService || "").toUpperCase() ===
+                  "EXACT" && (
+                  <>
+                    <Input
+                      label={t("exact_division")}
+                      value={settings.ExactDivision || ""}
+                      onChange={(e) =>
+                        handleSettingsChange(
+                          "ExactDivision",
+                          e.target.value,
+                          setSettings,
+                        )
+                      }
+                    />
+                    <Input
+                      label={t("exact_access_token")}
+                      type="password"
+                      value={settings.ExactAccessToken || ""}
+                      onChange={(e) =>
+                        handleSettingsChange(
+                          "ExactAccessToken",
+                          e.target.value,
+                          setSettings,
+                        )
+                      }
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </FormSection>
+
           <FormSection title={t("mail_settings")} columns={2}>
             <Input
               label={t("yearly_mail_send_date")}
@@ -679,21 +775,7 @@ export default function SettingsPage() {
                 { value: "MAILGUN", label: "Mailgun" },
               ]}
             />
-            <Select
-              label={t("mail_subscription_service")}
-              value={settings.MailSubscriptionService || ""}
-              onChange={(e) =>
-                handleSettingsChange(
-                  "MailSubscriptionService",
-                  e.target.value,
-                  setSettings,
-                )
-              }
-              options={[
-                { value: "", label: t("none") },
-                { value: "MAILCHIMP", label: "Mailchimp" },
-              ]}
-            />
+            <div />
 
             {(settings.MailService || "SMTP").toUpperCase() === "MAILGUN" && (
               <>
@@ -789,35 +871,6 @@ export default function SettingsPage() {
                   onChange={(e) =>
                     handleSettingsChange(
                       "SmtpMaxBatchSize",
-                      e.target.value,
-                      setSettings,
-                    )
-                  }
-                />
-              </>
-            )}
-
-            {(settings.MailSubscriptionService || "").toUpperCase() ===
-              "MAILCHIMP" && (
-              <>
-                <Input
-                  label={t("mailchimp_list_key")}
-                  value={settings.MailchimpListKey || ""}
-                  onChange={(e) =>
-                    handleSettingsChange(
-                      "MailchimpListKey",
-                      e.target.value,
-                      setSettings,
-                    )
-                  }
-                />
-                <Input
-                  label={t("mailchimp_api_key")}
-                  type="password"
-                  value={settings.MailchimpApiKey || ""}
-                  onChange={(e) =>
-                    handleSettingsChange(
-                      "MailchimpApiKey",
                       e.target.value,
                       setSettings,
                     )

@@ -11,7 +11,7 @@ namespace Backend.Services;
 /// </summary>
 public class MailSubscriptionOutboxWorker(
     IServiceProvider serviceProvider,
-    ILogger<MailSubscriptionOutboxWorker> logger) : BackgroundService
+    ILogger<MailSubscriptionOutboxWorker> logger) : BackgroundService, IMailSyncOutboxWorker
 {
 
     /// <summary>
@@ -79,6 +79,18 @@ public class MailSubscriptionOutboxWorker(
         db.MailSubscriptionOutboxTasks.Add(task);
         db.SaveChanges();
         logger.LogInformation("Enqueued mail subscription email migration task from {OldEmail} to {NewEmail}.", oldEmail, newEmail);
+    }
+
+    /// <inheritdoc />
+    public virtual void EnqueueSyncMail(string oldEmail, string newEmail, PostgresDbContext db)
+    {
+        EnqueueMigrateEmailTask(oldEmail, newEmail, db);
+    }
+
+    /// <inheritdoc />
+    public virtual void EnqueueDeleteMail(string email, PostgresDbContext db)
+    {
+        EnqueueDeleteTask(email, db);
     }
 
     /// <summary>
