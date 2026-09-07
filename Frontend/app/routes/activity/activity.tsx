@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
@@ -9,7 +10,12 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { canEditActivity } from "~/util/group.util";
+import { downloadActivityEnrollmentsCsv } from "~/util/activityCsv.util";
+import {
+  canEditActivity,
+  isBoardOrCandidateBoard,
+  isInGroupWithId,
+} from "~/util/group.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
@@ -77,6 +83,14 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
     setCanEdit(canEditActivity(activity, tokenParsed));
   }, [activity, tokenParsed]);
 
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const isOrganizer = Boolean(
+    activity?.organizerId &&
+      tokenParsed !== null &&
+      isInGroupWithId(tokenParsed, activity.organizerId),
+  );
+  const canExport = isBoard || isOrganizer;
+
   if (loading || !tokenParsed) return t("loading");
 
   if (activity == null) return t("failed_fetching");
@@ -112,6 +126,19 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
                   ? []
                   : (activity.enrollments.filter((e) => !e.isOnWaitingList) ??
                     [])
+              }
+              onExportCsv={
+                canExport
+                  ? () => {
+                      downloadActivityEnrollmentsCsv(
+                        activity,
+                        (tokenParsed?.locale || "nl")
+                          .toLowerCase()
+                          .startsWith("nl"),
+                      );
+                      toast.success(t("csv_exported"));
+                    }
+                  : undefined
               }
             />
             <ActivityParticipantsTile

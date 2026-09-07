@@ -615,5 +615,7 @@
   "copy_calendar_link": "Kopieer agendalink",
   "reset_calendar_link": "Reset agendalink",
   "calendar_link_reset": "Agendalink gereset. Werk je agenda-app bij met de nieuwe link.",
-  "calendar_link_reset_failed": "Kon de agendalink niet resetten"
+  "calendar_link_reset_failed": "Kon de agendalink niet resetten",
+  "export_csv": "Exporteer CSV",
+  "csv_exported": "CSV succesvol geëxporteerd"
 }

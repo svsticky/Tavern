@@ -615,5 +615,7 @@
   "copy_calendar_link": "Copy calendar link",
   "reset_calendar_link": "Reset calendar link",
   "calendar_link_reset": "Calendar link reset. Update your calendar app with the new link.",
-  "calendar_link_reset_failed": "Could not reset the calendar link"
+  "calendar_link_reset_failed": "Could not reset the calendar link",
+  "export_csv": "Export CSV",
+  "csv_exported": "CSV exported successfully"
 }
