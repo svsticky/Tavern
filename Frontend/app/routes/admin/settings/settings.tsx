@@ -574,10 +574,7 @@ export default function SettingsPage() {
             />
           </FormSection>
 
-          <FormSection
-            title={t("external_services")}
-            columns={2}
-          >
+          <FormSection title={t("external_services")} columns={2}>
             <div className="col-span-1 md:col-span-2">
               <Checkbox
                 label={t("enable_outline")}
