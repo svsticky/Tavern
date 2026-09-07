@@ -189,7 +189,7 @@ export default function EditActivityForm({
     }
 
     loadGroups(setLoading, setGroups);
-  }, [isEdit, activity, draft]);
+  }, [isEdit, draft]);
 
   const triggerAutoSave = useCallback(
     (formEl?: HTMLFormElement | null) => {

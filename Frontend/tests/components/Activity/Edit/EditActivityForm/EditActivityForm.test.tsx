@@ -240,12 +240,7 @@ describe("EditActivityForm", () => {
     });
 
     renderWithProviders(
-      <EditActivityForm
-        activity={null}
-        id={undefined}
-        canEditStructural={false}
-        canManageFinances={false}
-      />,
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -268,8 +263,7 @@ describe("EditActivityForm", () => {
       <EditActivityForm
         activity={buildActivity({ name: "Actual Activity" })}
         id="42"
-        canEditStructural={false}
-        canManageFinances={false}
+        isBoard={true}
       />,
     );
 
@@ -285,12 +279,7 @@ describe("EditActivityForm", () => {
     });
 
     renderWithProviders(
-      <EditActivityForm
-        activity={null}
-        id={undefined}
-        canEditStructural={false}
-        canManageFinances={false}
-      />,
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -319,12 +308,7 @@ describe("EditActivityForm", () => {
     });
 
     renderWithProviders(
-      <EditActivityForm
-        activity={null}
-        id={undefined}
-        canEditStructural={false}
-        canManageFinances={false}
-      />,
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
     );
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -343,12 +327,7 @@ describe("EditActivityForm", () => {
     vi.useFakeTimers();
 
     renderWithProviders(
-      <EditActivityForm
-        activity={null}
-        id={undefined}
-        canEditStructural={false}
-        canManageFinances={false}
-      />,
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
     );
 
     expect(loadActivityDraft()).toBeNull();
@@ -369,12 +348,7 @@ describe("EditActivityForm", () => {
 
   it("flushes draft save on beforeunload", () => {
     renderWithProviders(
-      <EditActivityForm
-        activity={null}
-        id={undefined}
-        canEditStructural={false}
-        canManageFinances={false}
-      />,
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
     );
 
     const nameInput = screen.getByLabelText(/^name/);

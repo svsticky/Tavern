@@ -355,8 +355,7 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      canEditStructural: true,
-      canManageFinances: true,
+      isBoard: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
