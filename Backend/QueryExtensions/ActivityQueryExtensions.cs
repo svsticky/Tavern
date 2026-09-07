@@ -30,10 +30,15 @@ public static class ActivityQueryExtensions
 
         if (!isLoggedIn)
         {
-            query = query.Where(a => a.ShowOnWebsite && a.DateTimeEnd >= now);
+            query = query.Where(a => a.ShowOnWebsite && a.DateTimeEnd >= now && !a.IsArchived);
 
             return query;
         }
+
+        if (dto.IsArchived.HasValue)
+            query = query.Where(a => a.IsArchived == dto.IsArchived.Value);
+        else
+            query = query.Where(a => !a.IsArchived);
 
         query = query.Where(a => isBoard
                                 || a.ShowInKoala

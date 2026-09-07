@@ -70,6 +70,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      false,
     );
   });
 
@@ -154,6 +155,26 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      false,
+    );
+  });
+
+  it("reloads activities when the status selector changes to archived", async () => {
+    renderWithProviders(<Activities />);
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
+
+    const statusSelect = screen.getByLabelText("status");
+    fireEvent.change(statusSelect, { target: { value: "archived" } });
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2));
+    expect(loadAdminActivities).toHaveBeenLastCalledWith(
+      expect.any(Number),
+      expect.any(Function),
+      expect.any(Function),
+      1,
+      15,
+      true,
     );
   });
 
@@ -209,6 +230,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       2,
       15,
+      false,
     );
   });
 

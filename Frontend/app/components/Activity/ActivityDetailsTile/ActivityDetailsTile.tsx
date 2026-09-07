@@ -1,5 +1,6 @@
 import { t } from "i18next";
 import {
+  Archive,
   Calendar,
   Clock,
   Image as ImageIcon,
@@ -345,6 +346,20 @@ export default function ActivityDetailsTile({
             }
             disabled={submitting || !canUnenroll}
           />
+        )}
+
+        {activity.isArchived && (
+          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-stone-300 bg-stone-100 text-stone-800 shadow-2xs">
+            <Archive size={20} className="text-stone-600 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">
+                {t("archived_activity_badge")}
+              </span>
+              <span className="text-xs text-stone-600">
+                {t("archived_activity_notice")}
+              </span>
+            </div>
+          </div>
         )}
 
         {/* Actions */}

@@ -22,6 +22,7 @@ export const loadAdminActivities = async (
   setActivities: (activities: ActivityResponseDto[]) => void,
   page?: number,
   pageSize?: number,
+  isArchived = false,
 ) => {
   try {
     setLoading(true);
@@ -32,6 +33,7 @@ export const loadAdminActivities = async (
         Year: year,
         Page: page,
         PageSize: pageSize,
+        IsArchived: isArchived,
       },
     });
 
