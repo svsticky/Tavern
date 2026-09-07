@@ -22,13 +22,11 @@ import ParticipantTile from "./ParticipantTile";
 export default function ActivityParticipantsTile({
   title,
   enrollments,
-  isAdmin,
   onExportCsv,
   onExportPdf,
 }: {
   title?: string;
   enrollments: EnrollmentResponseDto[];
-  isAdmin?: boolean;
   onExportCsv?: () => void;
   onExportPdf?: () => void;
 }) {
@@ -71,11 +69,7 @@ export default function ActivityParticipantsTile({
 
       <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
         {enrollments.map((enrollment, idx) => (
-          <ParticipantTile
-            key={idx}
-            enrollment={enrollment}
-            isAdmin={isAdmin}
-          />
+          <ParticipantTile key={idx} enrollment={enrollment} />
         ))}
       </div>
     </Tile>
