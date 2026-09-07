@@ -172,7 +172,10 @@ public abstract partial class AbstractMailService
 
         if (unpaidEnrollmentBalances.Count() == 0) return;
 
+        var notRecentlyMailedCutoff = DateTimeOffset.Now.AddHours(-24);
+
         var memberEnrollmentBalances = unpaidEnrollmentBalances
+            .Where(ueb => ueb.Enrollment.Member.OutstandingPaymentMailSentAt == null || ueb.Enrollment.Member.OutstandingPaymentMailSentAt < notRecentlyMailedCutoff)
             .GroupBy(ueb => ueb.Enrollment.Member)
             .ToDictionary(g => g.Key, g => g.ToArray());
 
@@ -197,7 +200,21 @@ public abstract partial class AbstractMailService
             });
 
             await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await MarkOutstandingPaymentMailSent(member.Id, CancellationToken.None);
         }
+    }
+
+    /// <summary>
+    /// Records that the outstanding-payment mail was just sent to the given member, committing it to the
+    /// database immediately (rather than relying on a later <c>SaveChangesAsync</c>) so that a Hangfire retry
+    /// of <see cref="SendOutstandingPaymentMails"/> within the next 24 hours sees it and skips re-mailing them.
+    /// </summary>
+    private async Task MarkOutstandingPaymentMailSent(Guid memberId, CancellationToken ct)
+    {
+        var now = DateTimeOffset.Now;
+        await _db.Members
+            .Where(m => m.Id == memberId)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.OutstandingPaymentMailSentAt, now), ct);
     }
 
     /// <summary>
@@ -214,10 +231,14 @@ public abstract partial class AbstractMailService
             return;
         }
 
+        var notRecentlyMailedCutoff = DateTimeOffset.Now.AddHours(-24);
+
         var potentialMembers = _db.Members
             .Include(m => m.StudyEnrollments)
             .ThenInclude(se => se.Study)
             .Where(m => !m.IsDeleted)
+            .ToList()
+            .Where(m => m.StudyStatusMailSentAt == null || m.StudyStatusMailSentAt < notRecentlyMailedCutoff)
             .ToList();
 
         var membersWithNoStudyHistory = potentialMembers
@@ -242,6 +263,7 @@ public abstract partial class AbstractMailService
             });
 
             await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await MarkStudyStatusMailSent(member.Id, CancellationToken.None);
         }
 
         var membersWithoutActiveStudy = potentialMembers
@@ -266,6 +288,7 @@ public abstract partial class AbstractMailService
             });
 
             await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await MarkStudyStatusMailSent(member.Id, CancellationToken.None);
         }
 
         var membersWithOutstandingStudies = potentialMembers
@@ -293,7 +316,21 @@ public abstract partial class AbstractMailService
             });
 
             await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+            await MarkStudyStatusMailSent(member.Id, CancellationToken.None);
         }
+    }
+
+    /// <summary>
+    /// Records that the annual study-status mail was just sent to the given member, committing it to the
+    /// database immediately (rather than relying on a later <c>SaveChangesAsync</c>) so that a Hangfire retry
+    /// of <see cref="SendStudyStatusUpdateMails"/> within the next 24 hours sees it and skips re-mailing them.
+    /// </summary>
+    private async Task MarkStudyStatusMailSent(Guid memberId, CancellationToken ct)
+    {
+        var now = DateTimeOffset.Now;
+        await _db.Members
+            .Where(m => m.Id == memberId)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.StudyStatusMailSentAt, now), ct);
     }
 
     /// <summary>

@@ -313,6 +313,9 @@ public class MailServicesTests : IDisposable
             PostalCode = "1",
             City = "Enschede"
         };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
         var activity = new Activity
         {
             Id = 1,
@@ -352,6 +355,131 @@ public class MailServicesTests : IDisposable
         Assert.Equal("Outstanding payments for activities", mailService.LastSubject);
         Assert.Contains("Dear Alice", mailService.LastHtmlContent);
         Assert.Contains("Fancy Event: €10", mailService.LastHtmlContent);
+
+        var persistedMember = await _db.Members.AsNoTracking().FirstAsync(m => m.Id == member.Id);
+        Assert.NotNull(persistedMember.OutstandingPaymentMailSentAt);
+    }
+
+    [Fact]
+    public async Task SendOutstandingPaymentMails_RetryAfterRecentSend_DoesNotResendToAlreadyMailedMember()
+    {
+        // Arrange - mirrors a Hangfire retry re-running the whole job shortly after a prior attempt
+        // already mailed this member; they should not be mailed a second time.
+        _db.Settings.Add(new Setting { Name = "FinancialEmailSender", Value = "finance@example.com" });
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Alice",
+            LastName = "Doe",
+            Email = "alice@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s1",
+            PhoneNumber = "1",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "Enschede",
+            OutstandingPaymentMailSentAt = DateTimeOffset.Now.AddHours(-1)
+        };
+        var activity = new Activity
+        {
+            Id = 1,
+            Name = "Fancy Event",
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Enschede",
+            AllowedAudience = TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+        var enrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = member.Id,
+            Price = 10,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = member,
+            Activity = activity
+        };
+
+        var balances = new List<EnrollmentBalance>
+        {
+            new EnrollmentBalance { Enrollment = enrollment, Balance = 10 }
+        };
+        _paymentMock.GetAllUnpaidEnrollments().Returns(balances);
+
+        // Act
+        await mailService.SendOutstandingPaymentMails();
+
+        // Assert
+        Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
+    public async Task SendOutstandingPaymentMails_PreviousSendOlderThan24Hours_ResendsMail()
+    {
+        // Arrange - a member mailed more than 24 hours ago (e.g. last week's run) should still be
+        // eligible again, so the idempotency guard must not skip everyone forever.
+        _db.Settings.Add(new Setting { Name = "FinancialEmailSender", Value = "finance@example.com" });
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Alice",
+            LastName = "Doe",
+            Email = "alice@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s1",
+            PhoneNumber = "1",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "Enschede",
+            OutstandingPaymentMailSentAt = DateTimeOffset.Now.AddHours(-25)
+        };
+        var activity = new Activity
+        {
+            Id = 1,
+            Name = "Fancy Event",
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Enschede",
+            AllowedAudience = TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+        var enrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = member.Id,
+            Price = 10,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = member,
+            Activity = activity
+        };
+
+        var balances = new List<EnrollmentBalance>
+        {
+            new EnrollmentBalance { Enrollment = enrollment, Balance = 10 }
+        };
+        _paymentMock.GetAllUnpaidEnrollments().Returns(balances);
+
+        // Act
+        await mailService.SendOutstandingPaymentMails();
+
+        // Assert
+        Assert.Equal("alice@example.com", mailService.LastTo?[0].Mail);
     }
 
     [Fact]
@@ -480,6 +608,119 @@ public class MailServicesTests : IDisposable
         Assert.Equal("example.com", mailService.LastTo?[0].Mail.Split('@')[1]);
         Assert.Equal("Controleer lidmaatschap en studievoortgang", mailService.LastSubject);
         Assert.Contains("Beste Bob", mailService.LastHtmlContent);
+
+        var persistedMember = await _db.Members.AsNoTracking().FirstAsync(m => m.Id == member.Id);
+        Assert.NotNull(persistedMember.StudyStatusMailSentAt);
+    }
+
+    [Fact]
+    public async Task SendStudyStatusUpdateMails_RetryAfterRecentSend_DoesNotResendToAlreadyMailedMember()
+    {
+        // Arrange - mirrors a Hangfire retry re-running the whole job shortly after a prior attempt
+        // already mailed this member; they should not be mailed a second time.
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Bob",
+            LastName = "Sponge",
+            Email = "bob@example.com",
+            PreferredLanguage = Language.NL,
+            StudentNumber = "s2",
+            PhoneNumber = "2",
+            Street = "Ocean",
+            HouseNumber = "124",
+            PostalCode = "1234",
+            City = "Bikini Bottom",
+            StudyStatusMailSentAt = DateTimeOffset.Now.AddHours(-1)
+        };
+
+        var study = new Study
+        {
+            Id = 1,
+            Title = "Computer Science",
+            NominalDurationYears = 3
+        };
+
+        var studyEnrollment = new StudyEnrollment
+        {
+            Id = 1,
+            MemberId = member.Id,
+            StudyId = 1,
+            EnrollmentDate = DateTime.Now.AddYears(-4), // 4 years ago is greater than nominal 3 years
+            Status = StudyStatus.Enrolled,
+            Study = study
+        };
+
+        member.StudyEnrollments = new List<StudyEnrollment> { studyEnrollment };
+        _db.Members.Add(member);
+        _db.Studies.Add(study);
+        _db.StudyEnrollments.Add(studyEnrollment);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act
+        await mailService.SendStudyStatusUpdateMails();
+
+        // Assert
+        Assert.Null(mailService.LastTo);
+    }
+
+    [Fact]
+    public async Task SendStudyStatusUpdateMails_PreviousSendOlderThan24Hours_ResendsMail()
+    {
+        // Arrange - a member mailed more than 24 hours ago (e.g. last year's run) should still be
+        // eligible again, so the idempotency guard must not skip everyone forever.
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Bob",
+            LastName = "Sponge",
+            Email = "bob@example.com",
+            PreferredLanguage = Language.NL,
+            StudentNumber = "s2",
+            PhoneNumber = "2",
+            Street = "Ocean",
+            HouseNumber = "124",
+            PostalCode = "1234",
+            City = "Bikini Bottom",
+            StudyStatusMailSentAt = DateTimeOffset.Now.AddHours(-25)
+        };
+
+        var study = new Study
+        {
+            Id = 1,
+            Title = "Computer Science",
+            NominalDurationYears = 3
+        };
+
+        var studyEnrollment = new StudyEnrollment
+        {
+            Id = 1,
+            MemberId = member.Id,
+            StudyId = 1,
+            EnrollmentDate = DateTime.Now.AddYears(-4), // 4 years ago is greater than nominal 3 years
+            Status = StudyStatus.Enrolled,
+            Study = study
+        };
+
+        member.StudyEnrollments = new List<StudyEnrollment> { studyEnrollment };
+        _db.Members.Add(member);
+        _db.Studies.Add(study);
+        _db.StudyEnrollments.Add(studyEnrollment);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
+
+        // Act
+        await mailService.SendStudyStatusUpdateMails();
+
+        // Assert
+        Assert.Equal("bob@example.com", mailService.LastTo?[0].Mail);
     }
 
     [Fact]

@@ -70,6 +70,25 @@ public class Member
     public DateTimeOffset? ActivationEmailSentAt { get; set; }
 
     /// <summary>
+    /// When the annual study-status update email was last sent to this member, if ever. Used to make
+    /// sending it idempotent across retries of the yearly Hangfire job: a run only mails members whose
+    /// value is null or older than 24 hours, so a Hangfire retry after a partial failure never re-mails
+    /// someone already notified earlier in the same run. A 24-hour window (rather than "same calendar
+    /// year") is used deliberately so that changing the configured send date to re-trigger the job later
+    /// in the same year is not silently skipped for everyone.
+    /// </summary>
+    public DateTimeOffset? StudyStatusMailSentAt { get; set; }
+
+    /// <summary>
+    /// When the outstanding-payment reminder email was last sent to this member, if ever. Used to make
+    /// sending it idempotent across retries of the weekly Hangfire job: a run only mails members whose
+    /// value is null or older than 24 hours, so a Hangfire retry after a partial failure never re-mails
+    /// someone already notified earlier in the same run, while still allowing next week's run to mail
+    /// them again if their balance is still outstanding.
+    /// </summary>
+    public DateTimeOffset? OutstandingPaymentMailSentAt { get; set; }
+
+    /// <summary>
     /// The student number of the member.
     /// </summary>
     [Required(AllowEmptyStrings = false)]
