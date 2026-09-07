@@ -2,6 +2,7 @@ import React from "react";
 import { Outlet } from "react-router";
 import type { IAuthService } from "~/auth/IAuthService";
 import { KeycloakAuthService } from "~/auth/KeycloakService";
+import { AdminModeProvider } from "~/context/AdminModeContext";
 import { getEnv } from "~/util/config.utils";
 
 let activeAuthService: IAuthService | null = null;
@@ -39,7 +40,9 @@ export default function AuthServiceLayout() {
 
   return (
     <Provider>
-      <Outlet />
+      <AdminModeProvider>
+        <Outlet />
+      </AdminModeProvider>
     </Provider>
   );
 }

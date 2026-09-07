@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router";
+import AdminModeToggle from "~/components/UI/AdminModeToggle";
 import {
   handleClickOutside,
   handleOptionClick,
@@ -121,7 +122,7 @@ export default function ProfileDropdown({
                 }
               }}
               className={`
-                block text-left px-2 py-2.5 text-sm cursor-pointer
+                block text-left px-2 py-2.5 text-sm cursor-pointe
                 ${
                   compact
                     ? "text-white rounded-lg hover:bg-(--board-primary-light)"
@@ -132,6 +133,16 @@ export default function ProfileDropdown({
               {option.label}
             </NavLink>
           ))}
+          <div
+            className={`border-t empty:hidden ${
+              compact ? "border-white/10" : "border-gray-100"
+            }`}
+          >
+            <AdminModeToggle
+              variant="dropdown"
+              className={compact ? "[&>span]:text-white/80" : ""}
+            />
+          </div>
         </div>
       )}
     </div>
