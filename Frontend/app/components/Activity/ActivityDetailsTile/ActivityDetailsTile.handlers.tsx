@@ -79,7 +79,7 @@ export const generateIcsContent = (
     fallback: Date,
   ) => {
     const d = dateStr ? new Date(dateStr) : fallback;
-    return isNaN(d.getTime())
+    return Number.isNaN(d.getTime())
       ? fallback.toISOString().replace(/-|:|\.\d+/g, "")
       : d.toISOString().replace(/-|:|\.\d+/g, "");
   };

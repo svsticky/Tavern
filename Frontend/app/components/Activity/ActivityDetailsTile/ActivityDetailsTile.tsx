@@ -1,4 +1,3 @@
-import { t } from "i18next";
 import {
   Calendar,
   Clock,
@@ -9,6 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import {
   type ActivityResponseDto,
@@ -98,6 +98,8 @@ export default function ActivityDetailsTile({
     React.SetStateAction<ActivityResponseDto | null>
   >;
 }) {
+  const { t, i18n } = useTranslation();
+  const isDutch = i18n.language.startsWith("nl");
   const authService = useAuth();
   const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
