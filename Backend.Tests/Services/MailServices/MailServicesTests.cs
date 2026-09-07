@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +27,13 @@ public class MockAbstractMailService : AbstractMailService
     public MailRecipient[]? LastTo { get; private set; }
     public string? LastSubject { get; private set; }
     public string? LastHtmlContent { get; private set; }
+    public List<string> SentToEmails { get; } = new();
+
+    /// <summary>
+    /// When set, recipients whose mail address satisfies this predicate make SendEmailCoreAsync throw,
+    /// so tests can simulate a single bad recipient in an otherwise-successful batch.
+    /// </summary>
+    public Func<string, bool>? FailFor { get; set; }
 
     public MockAbstractMailService(
         PostgresDbContext db,
@@ -41,6 +49,13 @@ public class MockAbstractMailService : AbstractMailService
         LastTo = to;
         LastSubject = subject;
         LastHtmlContent = htmlContent;
+        SentToEmails.AddRange(to.Select(r => r.Mail));
+
+        if (FailFor != null && to.Any(r => FailFor(r.Mail)))
+        {
+            throw new InvalidOperationException($"Simulated send failure for {to[0].Mail}");
+        }
+
         return Task.CompletedTask;
     }
 
@@ -483,6 +498,94 @@ public class MailServicesTests : IDisposable
     }
 
     [Fact]
+    public async Task SendOutstandingPaymentMails_OneMemberFails_StillMailsRemainingMembers()
+    {
+        // Arrange - a bad recipient (e.g. a rejected address) must not abort the rest of the batch;
+        // everyone else on the list should still be mailed.
+        _db.Settings.Add(new Setting { Name = "FinancialEmailSender", Value = "finance@example.com" });
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance)
+        {
+            FailFor = email => email == "alice@example.com"
+        };
+
+        var failingMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Alice",
+            LastName = "Doe",
+            Email = "alice@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s1",
+            PhoneNumber = "1",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "Enschede"
+        };
+        var okMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Bram",
+            LastName = "Doe",
+            Email = "bram@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s2",
+            PhoneNumber = "2",
+            Street = "St",
+            HouseNumber = "2",
+            PostalCode = "1",
+            City = "Enschede"
+        };
+        var activity = new Activity
+        {
+            Id = 1,
+            Name = "Fancy Event",
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Enschede",
+            AllowedAudience = TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+        var failingEnrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = failingMember.Id,
+            Price = 10,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = failingMember,
+            Activity = activity
+        };
+        var okEnrollment = new Enrollment
+        {
+            ActivityId = 1,
+            MemberId = okMember.Id,
+            Price = 10,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false,
+            Member = okMember,
+            Activity = activity
+        };
+
+        var balances = new List<EnrollmentBalance>
+        {
+            new EnrollmentBalance { Enrollment = failingEnrollment, Balance = 10 },
+            new EnrollmentBalance { Enrollment = okEnrollment, Balance = 10 }
+        };
+        _paymentMock.GetAllUnpaidEnrollments().Returns(balances);
+
+        // Act & Assert
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => mailService.SendOutstandingPaymentMails());
+        Assert.Single(aggregate.InnerExceptions);
+        Assert.Contains("bram@example.com", mailService.SentToEmails);
+        Assert.Contains("alice@example.com", mailService.SentToEmails);
+    }
+
+    [Fact]
     public async Task SendOutstandingPaymentMails_SenderNotConfigured_SkipsSend()
     {
         // Arrange - no "FinancialEmailSender" setting
@@ -548,8 +651,10 @@ public class MailServicesTests : IDisposable
         };
         _paymentMock.GetAllUnpaidEnrollments().Returns(balances);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendOutstandingPaymentMails());
+        // Act & Assert - the batch still throws overall (so Hangfire surfaces/retries the failure), but
+        // as an AggregateException, since a single bad recipient must not abort the rest of the batch.
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => mailService.SendOutstandingPaymentMails());
+        Assert.IsType<InvalidOperationException>(Assert.Single(aggregate.InnerExceptions));
     }
 
     [Fact]
@@ -724,6 +829,62 @@ public class MailServicesTests : IDisposable
     }
 
     [Fact]
+    public async Task SendStudyStatusUpdateMails_OneMemberFails_StillMailsRemainingMembers()
+    {
+        // Arrange - a bad recipient (e.g. a rejected address) must not abort the rest of the batch;
+        // everyone else on the list should still be mailed.
+        _db.Settings.Add(new Setting { Name = "MainBoardMail", Value = "board@example.com" });
+
+        var failingMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Carl",
+            LastName = "Winslow",
+            Email = "carl@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s3",
+            PhoneNumber = "3",
+            Street = "Main St",
+            HouseNumber = "1",
+            PostalCode = "1234",
+            City = "Chicago"
+        };
+        var okMember = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Dana",
+            LastName = "Scully",
+            Email = "dana@example.com",
+            PreferredLanguage = Language.EN,
+            StudentNumber = "s4",
+            PhoneNumber = "4",
+            Street = "Main St",
+            HouseNumber = "2",
+            PostalCode = "1234",
+            City = "Chicago"
+        };
+        _db.Members.Add(failingMember);
+        _db.Members.Add(okMember);
+        await _db.SaveChangesAsync();
+
+        var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance)
+        {
+            FailFor = email => email == "carl@example.com"
+        };
+
+        // Act & Assert
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => mailService.SendStudyStatusUpdateMails());
+        Assert.Single(aggregate.InnerExceptions);
+        Assert.Contains("carl@example.com", mailService.SentToEmails);
+        Assert.Contains("dana@example.com", mailService.SentToEmails);
+
+        var persistedOkMember = await _db.Members.AsNoTracking().FirstAsync(m => m.Id == okMember.Id);
+        Assert.NotNull(persistedOkMember.StudyStatusMailSentAt);
+        var persistedFailingMember = await _db.Members.AsNoTracking().FirstAsync(m => m.Id == failingMember.Id);
+        Assert.Null(persistedFailingMember.StudyStatusMailSentAt);
+    }
+
+    [Fact]
     public async Task SendStudyStatusUpdateMails_MemberWithNoStudyHistory_SendsNeverStudiedMail()
     {
         // Arrange
@@ -785,8 +946,10 @@ public class MailServicesTests : IDisposable
 
         var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendStudyStatusUpdateMails());
+        // Act & Assert - the batch still throws overall (so Hangfire surfaces/retries the failure), but
+        // as an AggregateException, since a single bad recipient must not abort the rest of the batch.
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => mailService.SendStudyStatusUpdateMails());
+        Assert.IsType<InvalidOperationException>(Assert.Single(aggregate.InnerExceptions));
     }
 
     [Fact]
@@ -835,8 +998,10 @@ public class MailServicesTests : IDisposable
 
         var mailService = new MockAbstractMailService(_db, _paymentMock, _permissionMock, NullLogger<AbstractMailService>.Instance);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => mailService.SendStudyStatusUpdateMails());
+        // Act & Assert - the batch still throws overall (so Hangfire surfaces/retries the failure), but
+        // as an AggregateException, since a single bad recipient must not abort the rest of the batch.
+        var aggregate = await Assert.ThrowsAsync<AggregateException>(() => mailService.SendStudyStatusUpdateMails());
+        Assert.IsType<InvalidOperationException>(Assert.Single(aggregate.InnerExceptions));
     }
 
     [Fact]
