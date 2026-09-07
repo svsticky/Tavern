@@ -77,6 +77,8 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+import { ThemeProvider } from "./context/ThemeContext";
+
 const getDocumentLanguage = () =>
   (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
@@ -210,11 +212,13 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
-      <FaviconHandler />
-      {isClient && <Toaster position="bottom-right" />}
-      <Outlet />
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <FaviconHandler />
+        {isClient && <Toaster position="bottom-right" />}
+        <Outlet />
+      </AppProvider>
+    </ThemeProvider>
   );
 }
 

@@ -48,10 +48,10 @@ export default function PersonalCalendarTile() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-slate-400">{t("loading")}</p>
+          <p className="text-sm text-gray-400">{t("loading")}</p>
         ) : url ? (
           <>
-            <code className="block w-full overflow-x-auto rounded-xl bg-slate-50 border border-slate-200 p-3 text-xs text-slate-600">
+            <code className="block w-full overflow-x-auto rounded-xl bg-gray-50 border border-gray-200 p-3 text-xs text-gray-600">
               {url}
             </code>
 
@@ -76,7 +76,7 @@ export default function PersonalCalendarTile() {
             </div>
           </>
         ) : (
-          <p className="text-sm text-slate-400">{t("loading_failed")}</p>
+          <p className="text-sm text-gray-400">{t("loading_failed")}</p>
         )}
       </div>
     </BorderedTile>

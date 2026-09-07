@@ -19,9 +19,11 @@ import GroupMembershipItem from "./GroupMembershipItem";
 export default function GroupMembershipOverview({
   groupMemberships,
   emptyText,
+  isClickable,
 }: {
   groupMemberships: GroupMembershipResponseDto[];
   emptyText?: string;
+  isClickable?: boolean;
 }) {
   if (groupMemberships.length === 0) {
     return <NoContentTile text={emptyText ?? t("no_group_enrollments")} />;
@@ -40,6 +42,7 @@ export default function GroupMembershipOverview({
           key={groupMembership.id}
           groupMembership={groupMembership}
           fallbackUrl={fallbackUrl}
+          isClickable={isClickable}
         />
       ))}
     </ListTile>

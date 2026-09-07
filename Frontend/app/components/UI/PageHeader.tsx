@@ -27,8 +27,8 @@ export const PageHeader = ({
   action?: React.ReactNode;
 }) => {
   return (
-    <div className="mb-4 flex flex-row flex-wrap justify-between items-center w-full gap-x-4 gap-y-2">
-      <div className="flex flex-col items-start">
+    <div className="mb-4 flex flex-row justify-between items-center w-full gap-x-4 gap-y-2">
+      <div className="flex flex-col items-start min-w-0 flex-1">
         {(backTo || onBack) && (
           <Button
             showArrow
@@ -40,14 +40,15 @@ export const PageHeader = ({
             {t("back")}
           </Button>
         )}
-        <h1 className="text-2xl font-bold leading-tight">{title}</h1>
+        <h1
+          className="text-2xl font-bold leading-tight truncate w-full"
+          title={title}
+        >
+          {title}
+        </h1>
       </div>
 
-      {action && (
-        <div className="flex-grow sm:flex-grow-0 flex justify-end">
-          {action}
-        </div>
-      )}
+      {action && <div className="shrink-0 flex justify-end">{action}</div>}
     </div>
   );
 };

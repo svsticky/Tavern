@@ -134,7 +134,7 @@ public class ProjectionsTests
             Member = member
         };
 
-        var dto = GroupMembershipResponseDTO.ToDto(_userId, isBoard: true).Compile()(membership);
+        var dto = GroupMembershipResponseDTO.ToDto(_userId, hasViewMembers: true).Compile()(membership);
 
         Assert.Equal(1u, dto.GroupId);
         Assert.Equal(member.Id, dto.MemberId);
@@ -158,7 +158,7 @@ public class ProjectionsTests
             }
         };
 
-        var dto = MemberResponseDTO.ToDto(_userId, isBoard: true).Compile()(member);
+        var dto = MemberResponseDTO.ToDto(_userId, hasViewMembers: true, isBoardOrCandidateBoard: true).Compile()(member);
 
         Assert.Equal(member.Id, dto.Id);
         Assert.Equal("Alice", dto.FirstName);
@@ -200,7 +200,7 @@ public class ProjectionsTests
             }
         };
 
-        var dto = EnrollmentResponseDTO.ToDto(_userId, isBoard: true, includeActivity: true).Compile()(enrollment);
+        var dto = EnrollmentResponseDTO.ToDto(_userId, hasViewMembers: true, hasViewFinances: true, isBoardOrCandidateBoard: true, includeActivity: true).Compile()(enrollment);
 
         Assert.NotNull(dto.Activity);
         Assert.Equal(1u, dto.Activity.Id);
@@ -227,7 +227,7 @@ public class ProjectionsTests
             SpecificationQuestions = new List<SpecificationQuestion>()
         };
 
-        var dto = ActivityResponseDTO.ToDto(_userId, isBoard: true).Compile()(activity);
+        var dto = ActivityResponseDTO.ToDto(_userId, hasViewFinances: true, hasViewMembers: true, isBoardOrCandidateBoard: true).Compile()(activity);
 
         Assert.Equal(2u, dto.Id);
         Assert.Equal("Party", dto.Name);
@@ -258,8 +258,8 @@ public class ProjectionsTests
             CostUnitId = "CU123"
         };
 
-        var boardDto = ActivityResponseDTO.ToDto(_userId, isBoard: true).Compile()(activity);
-        var nonBoardDto = ActivityResponseDTO.ToDto(_userId, isBoard: false).Compile()(activity);
+        var boardDto = ActivityResponseDTO.ToDto(_userId, hasViewFinances: true, hasViewMembers: true, isBoardOrCandidateBoard: true).Compile()(activity);
+        var nonBoardDto = ActivityResponseDTO.ToDto(_userId, hasViewFinances: false, hasViewMembers: false, isBoardOrCandidateBoard: false).Compile()(activity);
 
         Assert.Equal(21u, boardDto.VatRate);
         Assert.Equal("GL123", boardDto.GLAccountId);

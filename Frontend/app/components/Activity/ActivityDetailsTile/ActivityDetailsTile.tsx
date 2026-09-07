@@ -1,35 +1,46 @@
-import { t } from "i18next";
 import {
+  Archive,
+  ArchiveRestore,
   Calendar,
   Clock,
+  Copy,
+  Download,
   Image as ImageIcon,
   MapPin,
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
+import { useNavigate } from "react-router";
 import {
   type ActivityResponseDto,
   getGroupsById,
+  patchActivitiesById,
   type SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getActivityEnrollmentStatus } from "~/util/activity.util";
+import {
+  getActivityEnrollmentStatus,
+  hasEnrollmentOpened,
+} from "~/util/activity.util";
 import { hasAllMandatoryAnswers } from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import { capitalizeFirst } from "~/util/string.util";
 import { isMemberInTargetAudience } from "~/util/targetaudience.util";
 import BorderedTile from "../../Tiles/BorderedTile";
 import Button from "../../UI/Button";
+import { useConfirm } from "../../UI/ConfirmModal/useConfirm";
 import AnswerQuestionsTile from "../AnswerQuestionsTile";
 import {
   handleAddToCalendar,
   handleCopyForWhatsapp,
+  handleDownloadIcs,
   handleEnrollment,
   handleUnenrollment,
   handleUpdateEnrollment,
@@ -96,6 +107,9 @@ export default function ActivityDetailsTile({
     React.SetStateAction<ActivityResponseDto | null>
   >;
 }) {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const [confirmModal, confirm] = useConfirm();
   const authService = useAuth();
   const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
@@ -164,6 +178,30 @@ export default function ActivityDetailsTile({
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
+  const waitingListEnrollments = (activity.enrollments || []).filter(
+    (e) => e.isOnWaitingList,
+  );
+  const waitingIndex = tokenParsed
+    ? waitingListEnrollments.findIndex(
+        (e) => e.member?.id === tokenParsed.UserId,
+      )
+    : -1;
+  const waitingPosition = waitingIndex !== -1 ? waitingIndex + 1 : null;
+  const aheadCount = waitingIndex !== -1 ? waitingIndex : null;
+
+  const canClone =
+    isBoard ||
+    (tokenParsed
+      ? hasPermission(tokenParsed, "EditAllActivities") ||
+        (activity.organizerId
+          ? hasPermission(
+              tokenParsed,
+              "EditActivityForGroup",
+              activity.organizerId,
+            )
+          : false)
+      : false);
+
   useEffect(() => {
     setAnswers(toAnswerMap(currentEnrollment?.specificationAnswers));
   }, [currentEnrollment?.specificationAnswers]);
@@ -179,11 +217,20 @@ export default function ActivityDetailsTile({
     action(authService, activity, setActivity, answers, setSubmitting);
   };
 
+  const isDutch = (
+    i18n.language ||
+    member?.preferredLanguage ||
+    tokenParsed?.locale ||
+    "nl"
+  )
+    .toLowerCase()
+    .startsWith("nl");
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       {/* Poster Column */}
       <div className="lg:col-span-5 lg:sticky lg:top-8">
-        <div className="relative w-full aspect-[1/1.414] bg-slate-100 rounded-3xl shadow-lg border border-slate-100 overflow-hidden">
+        <div className="relative w-full aspect-[1/1.414] bg-gray-100 rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Loading */}
           {posterStatus === "loading" && hasPoster && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -194,9 +241,9 @@ export default function ActivityDetailsTile({
 
           {/* No poster */}
           {!hasPoster && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-200">
-              <ImageIcon className="text-slate-400 mb-2" size={48} />
-              <span className="text-slate-400 text-sm font-medium">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200">
+              <ImageIcon className="text-gray-400 mb-2" size={48} />
+              <span className="text-gray-400 text-sm font-medium">
                 {t("no_poster")}
               </span>
             </div>
@@ -204,9 +251,9 @@ export default function ActivityDetailsTile({
 
           {/* Error fallback */}
           {posterStatus === "error" && hasPoster && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-200">
-              <ImageIcon className="text-slate-400 mb-2" size={48} />
-              <span className="text-slate-400 text-sm font-medium">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-200">
+              <ImageIcon className="text-gray-400 mb-2" size={48} />
+              <span className="text-gray-400 text-sm font-medium">
                 {t("no_poster")}
               </span>
             </div>
@@ -220,7 +267,7 @@ export default function ActivityDetailsTile({
               onLoad={() => setPosterStatus("loaded")}
               onError={() => setPosterStatus("error")}
               crossOrigin="use-credentials"
-              className={`w-full h-full object-cover transition-opacity duration-500 ${
+              className={`w-full h-full object-cover transition-all duration-500 hover:scale-105 ${
                 posterStatus === "loading" ? "opacity-0" : "opacity-100"
               }`}
               loading="lazy"
@@ -229,13 +276,13 @@ export default function ActivityDetailsTile({
         </div>
       </div>
 
-      {/* Info Column */}
+      {/* Details Column */}
       <div className="lg:col-span-7 flex flex-col gap-6">
-        <section>
-          <h1 className="text-4xl font-black text-slate-900 mt-4 mb-2 tracking-tight">
+        <section className="space-y-1">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             {activity.name}
           </h1>
-          <p className="text-2xl font-semibold text-slate-800">
+          <p className="text-lg font-semibold text-(--board-primary)">
             {activity.price === 0 || activity.price == null
               ? t("free")
               : `€ ${activity.price.toFixed(2)}`}
@@ -244,7 +291,7 @@ export default function ActivityDetailsTile({
 
         <BorderedTile>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-            <h3 className="font-bold text-slate-900">{t("description")}</h3>
+            <h3 className="font-bold text-gray-900">{t("description")}</h3>
 
             {isBoard && (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -278,7 +325,7 @@ export default function ActivityDetailsTile({
             "
           >
             <Markdown>
-              {tokenParsed?.locale === "NL"
+              {isDutch
                 ? activity.dutchDescription || t("no_description_available_nl")
                 : activity.englishDescription ||
                   t("no_description_available_en")}
@@ -305,35 +352,39 @@ export default function ActivityDetailsTile({
               value={organizerName}
             />
           )}
-          <InfoItem
-            icon={<Clock size={18} />}
-            label={t("unenrollment_deadline")}
-            value={
-              activity.unenrollmentDeadline
-                ? formatDate(
-                    new Date(activity.unenrollmentDeadline),
-                    "fullDateTime",
-                  )
-                : t("none")
-            }
-          />
-          <InfoItem
-            icon={<Clock size={18} />}
-            label={t("enrollment_deadline")}
-            value={
-              activity.enrollmentDeadline
-                ? formatDate(
-                    new Date(activity.enrollmentDeadline),
-                    "fullDateTime",
-                  )
-                : t("none")
-            }
-          />
-          <InfoItem
-            icon={<Users size={18} />}
-            label={t("participants")}
-            value={`${activity.enrollments.filter((e) => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ""}`}
-          />
+          {hasEnrollmentOpened(activity) && (
+            <>
+              <InfoItem
+                icon={<Clock size={18} />}
+                label={t("unenrollment_deadline")}
+                value={
+                  activity.unenrollmentDeadline
+                    ? formatDate(
+                        new Date(activity.unenrollmentDeadline),
+                        "fullDateTime",
+                      )
+                    : t("none")
+                }
+              />
+              <InfoItem
+                icon={<Clock size={18} />}
+                label={t("enrollment_deadline")}
+                value={
+                  activity.enrollmentDeadline
+                    ? formatDate(
+                        new Date(activity.enrollmentDeadline),
+                        "fullDateTime",
+                      )
+                    : t("none")
+                }
+              />
+              <InfoItem
+                icon={<Users size={18} />}
+                label={t("participants")}
+                value={`${activity.enrollments.filter((e) => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ""}`}
+              />
+            </>
+          )}
         </div>
 
         {(isEnrolled || canEnroll) && (
@@ -347,8 +398,46 @@ export default function ActivityDetailsTile({
           />
         )}
 
+        {/* Archived Status Indicator */}
+        {activity.isArchived && (
+          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-stone-300 bg-stone-100 text-stone-800 shadow-2xs">
+            <Archive size={20} className="text-stone-600 shrink-0" />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">
+                {t("archived_activity_badge")}
+              </span>
+              <span className="text-xs text-stone-600">
+                {t("archived_activity_notice")}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Waiting List Position Indicator */}
+        {currentEnrollment?.isOnWaitingList && waitingPosition !== null && (
+          <div className="flex items-center gap-3 p-3.5 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 shadow-2xs">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-200/80 text-amber-800 shrink-0 font-bold text-sm">
+              #{waitingPosition}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">
+                {t("waiting_list_position", { position: waitingPosition })}
+              </span>
+              <span className="text-xs text-amber-700">
+                {aheadCount === 0
+                  ? isDutch
+                    ? "Je bent de eerstvolgende zodra er een plek vrijkomt!"
+                    : "You are next in line if a spot opens up!"
+                  : aheadCount === 1
+                    ? t("waiting_list_ahead", { count: aheadCount })
+                    : t("waiting_list_ahead_plural", { count: aheadCount })}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
-        <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
+        <div className="flex flex-col gap-3 pt-4 border-t border-gray-200">
           {isEnrolled
             ? canUnenroll && (
                 <div className="flex flex-col gap-3">
@@ -408,15 +497,97 @@ export default function ActivityDetailsTile({
           <Button
             variant="secondary"
             className="w-full sm:w-auto"
-            onClick={() => handleAddToCalendar(activity)}
+            onClick={() => handleAddToCalendar(activity, isDutch)}
           >
             <div className="flex items-center gap-2">
               <Calendar size={18} />
-              {t("copy_once_to_calendar")}
+              {t("add_to_google_calendar")}
             </div>
           </Button>
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => handleDownloadIcs(activity, isDutch)}
+          >
+            <div className="flex items-center gap-2">
+              <Download size={18} />
+              {t("download_ics")}
+            </div>
+          </Button>
+          {canClone && (
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={() =>
+                navigate(`/activities/create?cloneFrom=${activity.id}`)
+              }
+            >
+              <div className="flex items-center gap-2">
+                <Copy size={18} />
+                {t("clone_activity")}
+              </div>
+            </Button>
+          )}
+          {isBoard && (
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto"
+              onClick={async () => {
+                const confirmed = await confirm(
+                  activity.isArchived
+                    ? t("confirm_unarchive_activity")
+                    : t("confirm_archive_activity"),
+                  {
+                    title: activity.isArchived
+                      ? t("unarchive_activity")
+                      : t("archive_activity"),
+                    variant: "secondary",
+                  },
+                );
+                if (!confirmed) return;
+
+                const nextArchived = !activity.isArchived;
+                const res = await patchActivitiesById({
+                  path: { id: activity.id },
+                  body: [
+                    {
+                      op: "replace",
+                      path: "/isarchived",
+                      value: nextArchived,
+                    },
+                  ],
+                });
+                if (res.error) {
+                  toast.error(t("failed_updating"));
+                  return;
+                }
+                if (setActivity) {
+                  setActivity((prev) =>
+                    prev ? { ...prev, isArchived: nextArchived } : prev,
+                  );
+                }
+                toast.success(
+                  nextArchived
+                    ? t("activity_archived")
+                    : t("activity_unarchived"),
+                );
+              }}
+            >
+              <div className="flex items-center gap-2">
+                {activity.isArchived ? (
+                  <ArchiveRestore size={18} />
+                ) : (
+                  <Archive size={18} />
+                )}
+                {activity.isArchived
+                  ? t("unarchive_activity")
+                  : t("archive_activity")}
+              </div>
+            </Button>
+          )}
         </div>
       </div>
+      {confirmModal}
     </div>
   );
 }

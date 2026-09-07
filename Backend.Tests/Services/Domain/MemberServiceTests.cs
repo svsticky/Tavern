@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
@@ -129,7 +130,7 @@ public class MemberServiceTests : IDisposable
 
         // Assert
         Assert.NotEmpty(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewMembers, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -214,7 +215,7 @@ public class MemberServiceTests : IDisposable
             PreferredLanguage = Language.NL
         };
 
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -403,7 +404,7 @@ public class MemberServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>());
         _db.ChangeTracker.Clear();
         var saved = await _db.Members.FindAsync(result.Id);
         Assert.NotNull(saved);
@@ -456,6 +457,7 @@ public class MemberServiceTests : IDisposable
         };
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        _permissionService.HasPermissionOrBoard(_userId, Permission.ManageMembers, Arg.Any<uint?>()).Returns(true);
 
         // Act
         var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
@@ -489,6 +491,7 @@ public class MemberServiceTests : IDisposable
         };
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        _permissionService.HasPermissionOrBoard(_userId, Permission.ManageMembers, Arg.Any<uint?>()).Returns(true);
 
         // Act
         var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
@@ -720,7 +723,7 @@ public class MemberServiceTests : IDisposable
             new DefaultContractResolver()
         );
 
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -746,7 +749,7 @@ public class MemberServiceTests : IDisposable
             new DefaultContractResolver()
         );
 
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -773,8 +776,8 @@ public class MemberServiceTests : IDisposable
         // Act
         await _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None);
 
-        // Assert - no board check should have been required for the member's own allowed-field edit.
-        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        // Assert - no elevated check should have been required for the member's own allowed-field edit.
+        _permissionService.DidNotReceive().EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>());
         _db.ChangeTracker.Clear();
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
@@ -870,6 +873,7 @@ public class MemberServiceTests : IDisposable
 
         var boardUserId = Guid.NewGuid();
         _permissionService.IsBoardOrCandidateBoardMember(boardUserId).Returns(true);
+        _permissionService.HasPermissionOrBoard(boardUserId, Permission.ManageMembers, Arg.Any<uint?>()).Returns(true);
 
         var dto = new MemberUpdateDTO
         {
@@ -890,7 +894,7 @@ public class MemberServiceTests : IDisposable
         await _service.UpdateMember(member.Id, dto, boardUserId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(boardUserId);
+        _permissionService.Received(1).EnsurePermission(boardUserId, Permission.ManageMembers, Arg.Any<uint?>());
         _db.ChangeTracker.Clear();
         var updated = await _db.Members.FindAsync(member.Id);
         Assert.NotNull(updated);
@@ -947,6 +951,7 @@ public class MemberServiceTests : IDisposable
         // Only board members can change StudentNumber - use a board member here so the invalid
         // value actually reaches validation, instead of being silently ignored.
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        _permissionService.HasPermissionOrBoard(_userId, Permission.ManageMembers, Arg.Any<uint?>()).Returns(true);
 
         var dto = new MemberUpdateDTO
         {
@@ -1506,7 +1511,7 @@ public class MemberServiceTests : IDisposable
         // Assert
         var single = Assert.Single(result);
         Assert.Equal("id_news", single.Id);
-        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.DidNotReceive().EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -1518,7 +1523,7 @@ public class MemberServiceTests : IDisposable
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageMembers, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert

@@ -13,14 +13,15 @@ function buildActivity(
     name: "Party",
     price: 0,
     location: "Enschede",
-    dateTimeStart: "2026-08-01T10:00:00Z",
-    dateTimeEnd: "2026-08-01T12:00:00Z",
+    dateTimeStart: "2099-08-01T10:00:00Z",
+    dateTimeEnd: "2099-08-01T12:00:00Z",
     posterFileName: null,
     showInKoala: false,
     showOnWebsite: false,
     organizerId: 7,
     participantLimit: null,
     enrollments: [],
+    isEnrollable: true,
     ...overrides,
   } as ActivityResponseDto;
 }
@@ -93,6 +94,40 @@ describe("ActivityTile", () => {
       />,
     );
     expect(screen.getByText("8 places_available")).toBeInTheDocument();
+  });
+
+  it("shows participant count instead of places available when enrollment has closed", () => {
+    renderWithProviders(
+      <ActivityTile
+        activity={buildActivity({
+          participantLimit: 10,
+          dateTimeStart: "2020-01-01T10:00:00Z",
+          dateTimeEnd: "2020-01-01T12:00:00Z",
+          enrollments: [
+            { isOnWaitingList: false },
+            { isOnWaitingList: false },
+          ] as ActivityResponseDto["enrollments"],
+        })}
+      />,
+    );
+    expect(screen.getByText("2 participants")).toBeInTheDocument();
+    expect(screen.queryByText("places_available")).not.toBeInTheDocument();
+  });
+
+  it("does not show participant count or places available when enrollment has not opened", () => {
+    renderWithProviders(
+      <ActivityTile
+        activity={buildActivity({
+          isEnrollable: false,
+          enrollOpenDate: undefined,
+          enrollments: [
+            { isOnWaitingList: false },
+          ] as ActivityResponseDto["enrollments"],
+        })}
+      />,
+    );
+    expect(screen.queryByText("1 participants")).not.toBeInTheDocument();
+    expect(screen.queryByText("participants")).not.toBeInTheDocument();
   });
 
   it("does not show the edit button for a non-board, non-organizer user", async () => {

@@ -219,4 +219,60 @@ public class ActivityQueryExtensionsTests
 
         Assert.Equal(3, result.Count);
     }
+
+    [Fact]
+    public void Filter_ExcludesArchivedActivitiesByDefault()
+    {
+        var activities = GetTestActivities();
+        activities[1].IsArchived = true;
+        var query = activities.AsQueryable();
+        var dto = new GetActivitiesDTO { IncludePast = true };
+
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Equal(2, result.Count);
+        Assert.DoesNotContain(result, a => a.Id == 2);
+    }
+
+    [Fact]
+    public void Filter_WhenIsArchivedTrue_ReturnsOnlyArchivedActivities()
+    {
+        var activities = GetTestActivities();
+        activities[1].IsArchived = true;
+        var query = activities.AsQueryable();
+        var dto = new GetActivitiesDTO { IncludePast = true, IsArchived = true };
+
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(2u, result[0].Id);
+    }
+
+    [Fact]
+    public void Filter_WhenIsArchivedFalse_ReturnsOnlyNonArchivedActivities()
+    {
+        var activities = GetTestActivities();
+        activities[1].IsArchived = true;
+        var query = activities.AsQueryable();
+        var dto = new GetActivitiesDTO { IncludePast = true, IsArchived = false };
+
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Equal(2, result.Count);
+        Assert.DoesNotContain(result, a => a.Id == 2);
+    }
+
+    [Fact]
+    public void Filter_WhenNotLoggedIn_ExcludesArchivedActivities()
+    {
+        var activities = GetTestActivities();
+        activities[1].IsArchived = true;
+        var query = activities.AsQueryable();
+        var dto = new GetActivitiesDTO();
+
+        var result = query.Filter(dto, isBoard: false, userGroupIds: new uint[] { }, isLoggedIn: false).ToList();
+
+        Assert.Empty(result);
+    }
 }
+

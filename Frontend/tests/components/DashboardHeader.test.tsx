@@ -264,4 +264,35 @@ describe("DashboardHeader", () => {
     expect(await screen.findByText("Party")).toBeInTheDocument();
     fireEvent.click(screen.getByText("view_details"));
   });
+
+  it("polls for payment confirmation when returning from payment checkout", async () => {
+    window.history.pushState({}, "", "/?paymentReturn=activity");
+    const replaceStateSpy = vi.spyOn(window.history, "replaceState");
+
+    // First attempt still has unpaid, second attempt has 0 unpaid
+    getPaymentsUnpaid
+      .mockResolvedValueOnce({
+        data: [{ balance: 10, enrollment: { activityId: 1 } }],
+      })
+      .mockResolvedValueOnce({
+        data: [],
+      });
+    getEnrollments.mockResolvedValue({ data: [] });
+
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+
+    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+
+    await waitFor(
+      () => {
+        expect(getPaymentsUnpaid).toHaveBeenCalledTimes(2);
+      },
+      { timeout: 3500 },
+    );
+
+    expect(replaceStateSpy).toHaveBeenCalled();
+    window.history.pushState({}, "", "/");
+  });
 });

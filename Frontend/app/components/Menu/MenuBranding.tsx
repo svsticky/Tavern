@@ -12,7 +12,7 @@ import { getEnv } from "~/util/config.utils";
  * @param {string} [props.homepage] - Route path for the branding link.
  */
 export default function MenuBranding({
-  icon = getEnv("LOGO_URL"),
+  icon,
   title = "Sticky",
   homepage = "/",
 }: {
@@ -20,13 +20,15 @@ export default function MenuBranding({
   title?: string;
   homepage?: string;
 }) {
+  const logoSrc = icon || getEnv("LOGO_URL") || "/logo.svg";
+
   return (
     <NavLink
       to={homepage}
       className="flex items-center gap-x-3 text-xl font-semibold text-white no-underline"
     >
-      <img src={icon} alt="Logo" className="h-10 w-auto" />
-      <p className="text-2xl font-bold my-0">{title}</p>
+      <img src={logoSrc} alt="Logo" className="h-10 w-auto" />
+      {title ? <p className="text-2xl font-bold my-0">{title}</p> : null}
     </NavLink>
   );
 }

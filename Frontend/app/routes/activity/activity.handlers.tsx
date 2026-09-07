@@ -1,7 +1,11 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivitiesById } from "~/api";
+import {
+  type ActivityResponseDto,
+  deleteActivitiesById,
+  getActivitiesById,
+} from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
 /**
@@ -66,4 +70,55 @@ export const handleEditActivityClick = (
   navigate(
     `${pathname.startsWith("/admin") ? "/admin" : ""}/activities/edit/${activityId}`,
   );
+};
+
+/**
+ * Deletes a specific activity by its ID after user confirmation, then navigates back to the activity listing.
+ *
+ * @async
+ * @param {number} activityId - The unique identifier of the activity to delete.
+ * @param {NavigateFunction} navigate - React Router navigation function.
+ * @param {string} pathname - The current URL path to detect context.
+ * @param {(message: string, options?: { title?: string; confirmLabel?: string; cancelLabel?: string; variant?: "primary" | "secondary" | "danger" }) => Promise<boolean>} confirm - Modal confirmation function.
+ */
+export const handleDeleteActivity = async (
+  activityId: number,
+  navigate: NavigateFunction,
+  pathname: string,
+  confirm: (
+    message: string,
+    options?: {
+      title?: string;
+      confirmLabel?: string;
+      cancelLabel?: string;
+      variant?: "primary" | "secondary" | "danger";
+    },
+  ) => Promise<boolean>,
+) => {
+  if (
+    !(await confirm(t("delete_activity_confirmation"), {
+      title: t("delete_activity"),
+      variant: "danger",
+    }))
+  ) {
+    return;
+  }
+
+  const deleteProcess = async () => {
+    const response = await deleteActivitiesById({
+      path: { id: activityId },
+    });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to delete activity");
+    }
+
+    navigate(getActivityBackPath(pathname));
+  };
+
+  toast.promise(deleteProcess(), {
+    loading: t("deleting"),
+    success: t("activity_deleted_successfully"),
+    error: (error) => appendErrorMessage(t("failed_to_delete_activity"), error),
+  });
 };

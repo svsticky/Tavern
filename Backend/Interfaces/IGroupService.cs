@@ -90,4 +90,21 @@ public interface IGroupService
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The candidate board group ID.</returns>
     Task<uint> GetCandidateBoardGroupId(CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Retrieves the permissions granted to a group.
+    /// </summary>
+    /// <param name="id">The group ID.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The permissions granted to the group.</returns>
+    Task<List<string>> GetGroupPermissions(uint id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Replaces the permissions granted to a group.
+    /// </summary>
+    /// <param name="id">The group ID.</param>
+    /// <param name="permissions">The full set of permissions the group should have.</param>
+    /// <param name="userId">The ID of the user updating the permissions.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    Task SetGroupPermissions(uint id, List<string> permissions, Guid userId, CancellationToken cancellationToken);
 }

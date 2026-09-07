@@ -15,6 +15,7 @@ using Xunit;
 
 namespace Backend.Tests.Services;
 
+[Collection("NonParallelEnvironment")]
 public class AccountingToolOutboxWorkerTests
 {
     private readonly DbContextOptions<PostgresDbContext> _dbOptions;

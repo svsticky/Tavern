@@ -3,6 +3,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Hangfire;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services.Domain;
 
@@ -15,6 +16,7 @@ public class SettingsService : ISettingsService
     private readonly IPermissionService _permissionService;
     private readonly ILogger<SettingsService> _logger;
     private readonly IRecurringJobManager _recurringJobManager;
+    private readonly IEnumerable<IAdminStatusUpdateOutboxWorker> _adminStatusWorkers;
     private readonly string[] _openSettings = new[]
     {
         "boardgroupid",
@@ -39,12 +41,19 @@ public class SettingsService : ISettingsService
     /// <param name="permissionService">The permission service used to enforce authorization.</param>
     /// <param name="logger">The logger used for logging operations.</param>
     /// <param name="recurringJobManager">The Hangfire recurring job manager.</param>
-    public SettingsService(PostgresDbContext db, IPermissionService permissionService, ILogger<SettingsService> logger, IRecurringJobManager recurringJobManager)
+    /// <param name="adminStatusWorkers">Optional workers for updating admin status across external services.</param>
+    public SettingsService(
+        PostgresDbContext db,
+        IPermissionService permissionService,
+        ILogger<SettingsService> logger,
+        IRecurringJobManager recurringJobManager,
+        IEnumerable<IAdminStatusUpdateOutboxWorker>? adminStatusWorkers = null)
     {
         _db = db;
         _permissionService = permissionService;
         _logger = logger;
         _recurringJobManager = recurringJobManager;
+        _adminStatusWorkers = adminStatusWorkers ?? [];
     }
 
     /// <inheritdoc />
@@ -90,6 +99,11 @@ public class SettingsService : ISettingsService
         {
             Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = value;
         }
+        else if (name.Equals("BoardGroupId", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("CandidateBoardGroupId", StringComparison.OrdinalIgnoreCase))
+        {
+            await SyncBoardGroupAdminStatusesAsync(ct);
+        }
 
         return setting;
     }
@@ -111,6 +125,11 @@ public class SettingsService : ISettingsService
         else if (name.Equals("CommitteeCreationDate", StringComparison.OrdinalIgnoreCase))
         {
             Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = value;
+        }
+        else if (name.Equals("BoardGroupId", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("CandidateBoardGroupId", StringComparison.OrdinalIgnoreCase))
+        {
+            await SyncBoardGroupAdminStatusesAsync(ct);
         }
     }
 
@@ -158,6 +177,42 @@ public class SettingsService : ISettingsService
         else if (name.Equals("CommitteeCreationDate", StringComparison.OrdinalIgnoreCase))
         {
             Backend.Utils.DateTime.YearUtils.CommitteeCreationDate = setting.Value;
+        }
+        else if (name.Equals("BoardGroupId", StringComparison.OrdinalIgnoreCase) ||
+                 name.Equals("CandidateBoardGroupId", StringComparison.OrdinalIgnoreCase))
+        {
+            await SyncBoardGroupAdminStatusesAsync(ct);
+        }
+    }
+
+    private async Task SyncBoardGroupAdminStatusesAsync(CancellationToken ct)
+    {
+        if (!_adminStatusWorkers.Any()) return;
+
+        var currentBoardYear = Backend.Utils.DateTime.YearUtils.GetBoardYear(_db);
+        var boardGroupIdStr = _db.Settings.Find("BoardGroupId")?.Value;
+        var candidateBoardGroupIdStr = _db.Settings.Find("CandidateBoardGroupId")?.Value;
+
+        var groupIds = new List<uint>();
+        if (uint.TryParse(boardGroupIdStr, out var bgId)) groupIds.Add(bgId);
+        if (uint.TryParse(candidateBoardGroupIdStr, out var cbgId)) groupIds.Add(cbgId);
+
+        if (groupIds.Count == 0) return;
+
+        var membersToSync = await _db.GroupMemberships
+            .Where(gm => groupIds.Contains(gm.GroupId) && gm.MembershipYear == currentBoardYear)
+            .Include(gm => gm.Member)
+            .Select(gm => new { gm.MemberId, gm.Member.Email })
+            .Distinct()
+            .ToListAsync(ct);
+
+        foreach (var item in membersToSync)
+        {
+            bool isAdmin = _permissionService.IsBoardOrCandidateBoardMember(item.MemberId);
+            foreach (var worker in _adminStatusWorkers)
+            {
+                worker.EnqueueAdminStatusUpdate(item.Email, isAdmin, _db);
+            }
         }
     }
 

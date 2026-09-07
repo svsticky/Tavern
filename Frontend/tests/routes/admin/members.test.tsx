@@ -3,7 +3,23 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MemberResponseDto } from "~/api";
 import Members from "~/routes/admin/members";
-import { renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import type { TokenParsed } from "~/types/TokenParsed";
+
+const boardAuthService = createMockAuthService({
+  getTokenParsed: vi.fn(
+    async () =>
+      ({
+        locale: "en",
+        UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
+        access_level: "member",
+        given_name: "Board",
+        family_name: "Member",
+        name: "Board Member",
+        is_admin: true,
+      }) satisfies TokenParsed,
+  ),
+});
 
 // The component debounces its initial fetch by 300ms; under full-suite parallel load the
 // default 1000ms async-query timeout can be too tight, so give these queries more headroom.
@@ -146,7 +162,7 @@ describe("Members", () => {
 
   it("navigates to create-member when the plus button is clicked", async () => {
     getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+    renderWithProviders(<Members />, { authService: boardAuthService });
 
     await screen.findByText("no_data");
     const plusButton = document
@@ -154,5 +170,34 @@ describe("Members", () => {
       ?.closest("button");
     expect(plusButton).toBeTruthy();
     fireEvent.click(plusButton!);
+  });
+
+  it("renders honorary and merit badges in the table", async () => {
+    getMembers.mockResolvedValue({
+      data: [
+        {
+          id: "m-1",
+          firstName: "Arthur",
+          lastName: "Dent",
+          email: "arthur@example.com",
+          phoneNumber: "0612345678",
+          ereLid: true,
+        },
+        {
+          id: "m-2",
+          firstName: "Ford",
+          lastName: "Prefect",
+          email: "ford@example.com",
+          phoneNumber: "0612345679",
+          lidVanVerdienste: true,
+        },
+      ],
+    });
+    renderWithProviders(<Members />);
+
+    expect(await screen.findByText("Arthur Dent")).toBeInTheDocument();
+    expect(screen.getByText("ere_lid")).toBeInTheDocument();
+    expect(screen.getByText("Ford Prefect")).toBeInTheDocument();
+    expect(screen.getByText("lid_van_verdienste")).toBeInTheDocument();
   });
 });

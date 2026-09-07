@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import DashboardPage from "~/routes/home/home";
 import { loadHomePageData } from "~/routes/home/home.handlers";
@@ -111,5 +111,51 @@ describe("DashboardPage", () => {
     expect(screen.getByText("enrollment-overview")).toBeInTheDocument();
     expect(screen.getByText("group-membership-overview")).toBeInTheDocument();
     expect(screen.getAllByText("show_all").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("button", { name: /personalise_dashboard/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the personalise dashboard modal when clicking customise button", async () => {
+    vi.mocked(loadHomePageData).mockImplementation(async ({ setLoading }) => {
+      setLoading(false);
+    });
+    const authService = createMockAuthService({
+      isReady: vi.fn(() => true),
+      getTokenParsed: vi.fn(async () => token),
+      isAuthenticated: vi.fn(() => true),
+    });
+    renderWithProviders(<DashboardPage />, { authService });
+
+    const personaliseBtn = await screen.findByRole("button", {
+      name: /personalise_dashboard/i,
+    });
+    fireEvent.click(personaliseBtn);
+
+    expect(await screen.findByText("main_content")).toBeInTheDocument();
+  });
+
+  it("renders empty state when all widgets are disabled", async () => {
+    localStorage.setItem(
+      `tavern_dashboard_widgets_${token.UserId}`,
+      JSON.stringify([
+        { id: "announcements", visible: false, column: "main", order: 0 },
+        { id: "upcoming_activities", visible: false, column: "main", order: 1 },
+        { id: "my_enrollments", visible: false, column: "sidebar", order: 0 },
+        { id: "my_groups", visible: false, column: "sidebar", order: 1 },
+      ]),
+    );
+
+    vi.mocked(loadHomePageData).mockImplementation(async ({ setLoading }) => {
+      setLoading(false);
+    });
+    const authService = createMockAuthService({
+      isReady: vi.fn(() => true),
+      getTokenParsed: vi.fn(async () => token),
+      isAuthenticated: vi.fn(() => true),
+    });
+    renderWithProviders(<DashboardPage />, { authService });
+
+    expect(await screen.findByText("no_widgets_enabled")).toBeInTheDocument();
   });
 });

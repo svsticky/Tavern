@@ -13,6 +13,10 @@ import {
   removeQuestion,
   updateQuestion,
 } from "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers";
+import {
+  loadActivityDraft,
+  saveActivityDraft,
+} from "~/util/activityDraft.util";
 
 const {
   postActivities,
@@ -238,7 +242,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: false,
+      canEditStructural: false,
+      canManageFinances: false,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -262,7 +267,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -283,7 +289,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: false,
+      canEditStructural: false,
+      canManageFinances: false,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -309,7 +316,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -332,7 +340,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -344,13 +353,34 @@ describe("handleActivitySubmit", () => {
     expect(navigate).toHaveBeenCalledWith("/activities/99");
   });
 
+  it("clears activity draft from storage on successful creation", async () => {
+    postActivities.mockResolvedValue({ data: { id: 100 } });
+    saveActivityDraft({ name: "Incomplete party" });
+    expect(loadActivityDraft()).not.toBeNull();
+
+    await handleActivitySubmit({
+      e: buildFormEvent(baseFields),
+      canEditStructural: true,
+      canManageFinances: true,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate: vi.fn(),
+    });
+
+    expect(loadActivityDraft()).toBeNull();
+  });
+
   it("prefixes the admin path when submitting from the admin section", async () => {
     patchActivitiesById.mockResolvedValue({});
     const navigate = vi.fn();
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -368,7 +398,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving,
       isEdit: false,
@@ -405,7 +436,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e,
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,
@@ -433,7 +465,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -468,7 +501,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -490,7 +524,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: true,
@@ -511,7 +546,8 @@ describe("handleActivitySubmit", () => {
 
     await handleActivitySubmit({
       e: buildFormEvent(baseFields),
-      isBoard: true,
+      canEditStructural: true,
+      canManageFinances: true,
       questions: [],
       setSaving: vi.fn(),
       isEdit: false,

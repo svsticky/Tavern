@@ -9,7 +9,7 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   handleCreateAnnouncementClick,
   loadAnnouncements,
@@ -57,7 +57,9 @@ export default function AnnouncementsPage() {
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const canCreate =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "EditAnnouncements");
 
   useEffect(() => {
     if (tokenParsed) {
@@ -74,7 +76,7 @@ export default function AnnouncementsPage() {
         <PageHeader
           title={t("announcements")}
           action={
-            isBoard && (
+            canCreate && (
               <Button
                 variant="secondary"
                 onClick={() => handleCreateAnnouncementClick(navigate)}

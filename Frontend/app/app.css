@@ -2,12 +2,14 @@
 
 @plugin "@tailwindcss/typography";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-:root{
+:root {
   --board-primary-light: #f98f55;
   --board-primary: #fa6b20;
   --board-primary-dark: #ca5617;
@@ -15,8 +17,80 @@
 
 html,
 body {
-  @apply bg-white;
+  @apply bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200;
   a:not([class]) {
     @apply text-(--board-primary) underline decoration-transparent transition-colors hover:text-(--board-primary-light) hover:decoration-current hover:cursor-pointer;
   }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.dark .bg-white {
+  background-color: #1e293b;
+  color: #f8fafc;
+}
+
+.dark .bg-slate-50,
+.dark .bg-gray-50 {
+  background-color: #0f172a;
+}
+
+.dark .bg-slate-100,
+.dark .bg-gray-100 {
+  background-color: #334155;
+}
+
+.dark .bg-slate-200,
+.dark .bg-gray-200 {
+  background-color: #1e293b;
+}
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: #334155;
+}
+
+.dark .border-slate-100,
+.dark .border-slate-200,
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: #334155;
+}
+
+.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #334155;
+}
+
+.dark .text-slate-900,
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: #f8fafc;
+}
+
+.dark .text-slate-700,
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: #cbd5e1;
+}
+
+.dark .text-slate-500,
+.dark .text-gray-500,
+.dark .text-slate-400,
+.dark .text-gray-400 {
+  color: #94a3b8;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
 }

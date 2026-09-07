@@ -223,6 +223,10 @@ export type ActivityResponseDto = {
      */
     isWeeklyDrinks: boolean;
     /**
+     * Whether the activity is archived.
+     */
+    isArchived?: boolean;
+    /**
      * The VAT rate applicable to the activity.
      */
     vatRate?: number | null;
@@ -607,6 +611,10 @@ export type Group = {
      * The members associated with this Group.
      */
     groupMemberships?: Array<GroupMembership>;
+    /**
+     * The permissions granted directly to this Group.
+     */
+    groupPermissions?: Array<GroupPermission>;
     type?: GroupType;
     /**
      * The default GL account for the group, used for financial transactions.
@@ -702,6 +710,28 @@ export type GroupMembershipUpdateDto = {
      * The member associated with this membership.
      */
     roleAliasId?: number | null;
+};
+
+/**
+ * Grants a permission to every member of a Group, regardless of their role within it. The
+ * permission key is either the string name of one of the 12 known Backend.Models.Permission
+ * values, or an arbitrary custom string for other applications sharing this Keycloak instance to
+ * interpret via the group_memberships claim - Tavern's own backend only ever evaluates the 12 known ones.
+ */
+export type GroupPermission = {
+    /**
+     * The unique identifier of a group permission, assigned incrementally.
+     */
+    id?: number;
+    /**
+     * The id of the group this permission is granted to.
+     */
+    groupId?: number;
+    group?: Group;
+    /**
+     * The permission key granted to the group - a known Permission's name, or a custom string.
+     */
+    permissionKey?: string;
 };
 
 /**
@@ -1746,6 +1776,10 @@ export type Role = {
      * The name of the role.
      */
     name: string;
+    /**
+     * The permissions granted to this role.
+     */
+    rolePermissions?: Array<RolePermission>;
 };
 
 /**
@@ -1779,6 +1813,29 @@ export type RoleAliasUpdateDto = {
      * The id of the role that this alias belongs to.
      */
     roleId?: number;
+};
+
+/**
+ * Grants a permission to every member currently holding a Role, wherever they hold it. Global to the
+ * Role - not scoped to any particular group. The permission key is either the string name of one of
+ * the 12 known Backend.Models.Permission values, or an arbitrary custom string for other
+ * applications sharing this Keycloak instance to interpret via the group_memberships claim - Tavern's
+ * own backend only ever evaluates the 12 known ones.
+ */
+export type RolePermission = {
+    /**
+     * The unique identifier of a role permission, assigned incrementally.
+     */
+    id?: number;
+    /**
+     * The id of the role this permission is granted to.
+     */
+    roleId?: number;
+    role?: Role;
+    /**
+     * The permission key granted to the role - a known Permission's name, or a custom string.
+     */
+    permissionKey?: string;
 };
 
 /**
@@ -2079,6 +2136,10 @@ export type GetActivitiesData = {
          * The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
          */
         UserId?: string;
+        /**
+         * Indicates whether to filter activities by their archived status.
+         */
+        IsArchived?: boolean;
     };
     url: '/activities';
 };
@@ -4189,6 +4250,85 @@ export type PostGroupsPromoteBoardResponses = {
      */
     200: unknown;
 };
+
+export type GetGroupsByIdPermissionsData = {
+    body?: never;
+    path: {
+        /**
+         * The unique identifier of the group.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/groups/{id}/permissions';
+};
+
+export type GetGroupsByIdPermissionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetGroupsByIdPermissionsError = GetGroupsByIdPermissionsErrors[keyof GetGroupsByIdPermissionsErrors];
+
+export type GetGroupsByIdPermissionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<string>;
+};
+
+export type GetGroupsByIdPermissionsResponse = GetGroupsByIdPermissionsResponses[keyof GetGroupsByIdPermissionsResponses];
+
+export type PutGroupsByIdPermissionsData = {
+    /**
+     * The full set of permission keys the group should have.
+     */
+    body?: Array<string>;
+    path: {
+        /**
+         * The unique identifier of the group.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/groups/{id}/permissions';
+};
+
+export type PutGroupsByIdPermissionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type PutGroupsByIdPermissionsError = PutGroupsByIdPermissionsErrors[keyof PutGroupsByIdPermissionsErrors];
+
+export type PutGroupsByIdPermissionsResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutGroupsByIdPermissionsResponse = PutGroupsByIdPermissionsResponses[keyof PutGroupsByIdPermissionsResponses];
 
 export type GetMailinglistsData = {
     body?: never;
@@ -6643,6 +6783,85 @@ export type PutRolesByIdResponses = {
 };
 
 export type PutRolesByIdResponse = PutRolesByIdResponses[keyof PutRolesByIdResponses];
+
+export type GetRolesByIdPermissionsData = {
+    body?: never;
+    path: {
+        /**
+         * The unique identifier of the role.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/roles/{id}/permissions';
+};
+
+export type GetRolesByIdPermissionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetRolesByIdPermissionsError = GetRolesByIdPermissionsErrors[keyof GetRolesByIdPermissionsErrors];
+
+export type GetRolesByIdPermissionsResponses = {
+    /**
+     * OK
+     */
+    200: Array<string>;
+};
+
+export type GetRolesByIdPermissionsResponse = GetRolesByIdPermissionsResponses[keyof GetRolesByIdPermissionsResponses];
+
+export type PutRolesByIdPermissionsData = {
+    /**
+     * The full set of permission keys the role should have.
+     */
+    body?: Array<string>;
+    path: {
+        /**
+         * The unique identifier of the role.
+         */
+        id: number;
+    };
+    query?: never;
+    url: '/roles/{id}/permissions';
+};
+
+export type PutRolesByIdPermissionsErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponseDto;
+    /**
+     * Forbidden
+     */
+    403: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type PutRolesByIdPermissionsError = PutRolesByIdPermissionsErrors[keyof PutRolesByIdPermissionsErrors];
+
+export type PutRolesByIdPermissionsResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type PutRolesByIdPermissionsResponse = PutRolesByIdPermissionsResponses[keyof PutRolesByIdPermissionsResponses];
 
 export type GetSettingsData = {
     body?: never;

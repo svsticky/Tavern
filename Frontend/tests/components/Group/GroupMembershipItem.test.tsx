@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
 import GroupMembershipItem from "~/components/Group/GroupMembershipItem";
@@ -37,5 +38,32 @@ describe("GroupMembershipItem", () => {
     fireEvent.error(img);
 
     expect(img).toHaveAttribute("src", "/fallback.svg");
+  });
+
+  it("renders a link to /admin/groups/:id when isClickable is true", () => {
+    render(
+      <MemoryRouter>
+        <GroupMembershipItem
+          groupMembership={membership}
+          fallbackUrl="/fallback.svg"
+          isClickable={true}
+        />
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/admin/groups/2");
+  });
+
+  it("does not render a link when isClickable is false", () => {
+    render(
+      <GroupMembershipItem
+        groupMembership={membership}
+        fallbackUrl="/fallback.svg"
+        isClickable={false}
+      />,
+    );
+
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });

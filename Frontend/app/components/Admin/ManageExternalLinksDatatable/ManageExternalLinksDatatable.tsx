@@ -136,8 +136,8 @@ export default function ManageExternalLinksDatatable() {
 
   return (
     <BorderedTile noPadding>
-      <div className="flex justify-between items-center p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
-        <span className="text-sm text-slate-500 italic">
+      <div className="flex justify-between items-center p-4 border-b border-gray-100 bg-gray-50/50 rounded-t-xl">
+        <span className="text-sm text-gray-500 italic">
           {t("drag_to_reorder")}
         </span>
         <Button
@@ -151,9 +151,9 @@ export default function ManageExternalLinksDatatable() {
 
       <div className="p-4 flex flex-col gap-3">
         {loading ? (
-          <div className="text-center text-slate-500 py-6">{t("loading")}</div>
+          <div className="text-center text-gray-500 py-6">{t("loading")}</div>
         ) : links.length === 0 ? (
-          <div className="text-center text-slate-500 py-6">
+          <div className="text-center text-gray-500 py-6">
             {t("no_external_links")}
           </div>
         ) : (
@@ -166,13 +166,13 @@ export default function ManageExternalLinksDatatable() {
               onDragEnd={handleDragEnd}
               onDragOver={(e) => e.preventDefault()}
               className={cn(
-                "flex items-center gap-4 p-3 bg-white border border-slate-200 rounded-xl transition-all duration-200 select-none",
+                "flex items-center gap-4 p-3 bg-white border border-gray-200 rounded-xl transition-all duration-200 select-none",
                 draggedIndex === index
                   ? "opacity-40 border-dashed border-(--board-primary) bg-[color-mix(in_srgb,var(--board-primary),white_95%)] scale-[0.98]"
-                  : "hover:border-(--board-primary) hover:shadow-sm",
+                  : "hover:border-(--board-primary) hover:shadow-xs",
               )}
             >
-              <div className="text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing p-1">
+              <div className="text-gray-400 hover:text-gray-700 cursor-grab active:cursor-grabbing p-1">
                 <GripVertical className="w-5 h-5 flex-shrink-0" />
               </div>
 
@@ -193,11 +193,11 @@ export default function ManageExternalLinksDatatable() {
               )}
 
               <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-slate-800 truncate">
+                <h4 className="font-semibold text-gray-800 truncate">
                   {isDutch ? item.titleDutch : item.titleEnglish}
                 </h4>
-                <p className="text-xs text-slate-500 truncate">{item.url}</p>
-                <p className="text-xs text-slate-400 truncate">
+                <p className="text-xs text-gray-500 truncate">{item.url}</p>
+                <p className="text-xs text-gray-400 truncate">
                   {isDutch ? item.descriptionDutch : item.descriptionEnglish}
                 </p>
               </div>

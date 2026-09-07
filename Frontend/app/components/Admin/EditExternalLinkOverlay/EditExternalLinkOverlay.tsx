@@ -96,7 +96,7 @@ export default function EditExternalLinkOverlay({
       />
 
       <div className="w-full flex flex-col gap-1">
-        <label className="text-sm font-semibold text-slate-800">
+        <label className="text-sm font-semibold text-gray-800">
           {t("icon")}
         </label>
         <input
@@ -114,7 +114,7 @@ export default function EditExternalLinkOverlay({
         )}
       </div>
 
-      <div className="flex gap-4 w-full pt-4 border-t border-slate-100">
+      <div className="flex gap-4 w-full pt-4 border-t border-gray-200">
         <Button
           variant="primary"
           className="flex-1"

@@ -51,7 +51,16 @@ vi.mock("react-hot-toast", () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),
-    promise: vi.fn((p) => p.catch(() => {})),
+    promise: vi.fn((p, opts: any) =>
+      p
+        .then((res: any) => {
+          if (typeof opts?.success === "function") opts.success(res);
+          return res;
+        })
+        .catch((err: any) => {
+          if (typeof opts?.error === "function") opts.error(err);
+        }),
+    ),
   },
 }));
 

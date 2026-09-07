@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
@@ -38,5 +39,26 @@ describe("GroupMembershipOverview", () => {
       .map((el) => el.textContent);
     expect(names[0]).toContain("Newer Group");
     expect(names[1]).toContain("Older Group");
+  });
+
+  it("renders links when isClickable is true", () => {
+    render(
+      <MemoryRouter>
+        <GroupMembershipOverview
+          groupMemberships={[
+            membership({
+              id: 1,
+              groupId: 10,
+              groupName: "Board",
+              membershipYear: 2026,
+            }),
+          ]}
+          isClickable={true}
+        />
+      </MemoryRouter>,
+    );
+
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/admin/groups/10");
   });
 });

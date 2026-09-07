@@ -1,13 +1,13 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router";
+import { useLocation, useParams, useSearchParams } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
 import {
@@ -38,6 +38,8 @@ export default function ActivityFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
   const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
+  const cloneFromId = searchParams.get("cloneFrom");
 
   const authService = useAuth();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
@@ -64,16 +66,21 @@ export default function ActivityFormPage() {
   }, [authService]);
 
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const canEditStructural =
+    isBoard || hasPermission(tokenParsed, "EditAllActivities");
+  const canManageFinances =
+    isBoard || hasPermission(tokenParsed, "ManageFinances");
 
   useEffect(() => {
     if (!tokenParsed) return;
     loadEditActivityData({
       isEdit,
       id,
+      cloneFromId,
       setActivity: (next) => setActivity(next),
       setLoading,
     });
-  }, [id, isEdit, tokenParsed]);
+  }, [id, isEdit, cloneFromId, tokenParsed]);
 
   if (loading) return t("loading");
 
@@ -82,7 +89,13 @@ export default function ActivityFormPage() {
   return (
     <div className="">
       <PageHeader
-        title={isEdit ? t("edit_activity") : t("create_activity")}
+        title={
+          isEdit
+            ? t("edit_activity")
+            : cloneFromId
+              ? t("clone_activity")
+              : t("create_activity")
+        }
         backTo={getEditActivityBackPath(pathname, isEdit, id)}
       />
 
@@ -93,7 +106,13 @@ export default function ActivityFormPage() {
         )}
       >
         <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
-          <EditActivityForm activity={activity} id={id} isBoard={isBoard} />
+          <EditActivityForm
+            activity={activity}
+            id={id}
+            canEditStructural={canEditStructural}
+            canManageFinances={canManageFinances}
+            isBoard={isBoard}
+          />
         </div>
 
         {isBoard && isEdit && activity && (

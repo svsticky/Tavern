@@ -4,6 +4,7 @@ import type { ActivityResponseDto } from "~/api";
 import ActivityPage from "~/routes/activity/activity";
 import {
   getActivityBackPath,
+  handleDeleteActivity,
   handleEditActivityClick,
   loadActivityData,
 } from "~/routes/activity/activity.handlers";
@@ -14,6 +15,7 @@ vi.mock("~/routes/activity/activity.handlers", () => ({
   loadActivityData: vi.fn(),
   getActivityBackPath: vi.fn(() => "/activities"),
   handleEditActivityClick: vi.fn(),
+  handleDeleteActivity: vi.fn(),
 }));
 
 vi.mock(
@@ -47,6 +49,7 @@ function buildActivity(
   return {
     id: 1,
     name: "Party",
+    isEnrollable: true,
     enrollments: [],
     areParticipantsVisible: true,
     ...overrides,
@@ -130,6 +133,77 @@ describe("ActivityPage", () => {
     expect(
       screen.getByText("participants-tile-waiting_list"),
     ).toBeInTheDocument();
+  });
+
+  it("does not render participant tiles when enrollment has not opened even if areParticipantsVisible is true", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(
+          buildActivity({
+            isEnrollable: false,
+            enrollOpenDate: undefined,
+            areParticipantsVisible: true,
+          }),
+        );
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("activity-details-tile"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("participants-tile-main"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("participants-tile-waiting_list"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders participant tiles when enrollment has closed after closing date if areParticipantsVisible is true", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(
+          buildActivity({
+            isEnrollable: true,
+            enrollmentDeadline: "2020-01-01T00:00:00Z",
+            areParticipantsVisible: true,
+            enrollments: [
+              {
+                id: 1,
+                memberId: "m1",
+                isOnWaitingList: false,
+                registeredOn: "2020-01-01T00:00:00Z",
+              } as any,
+            ],
+          }),
+        );
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("activity-details-tile"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("participants-tile-main")).toBeInTheDocument();
   });
 
   it("sorts the waiting list by registration order when there are enrollments", async () => {
@@ -249,5 +323,68 @@ describe("ActivityPage", () => {
     fireEvent.click(editButton!);
     expect(handleEditActivityClick).toHaveBeenCalled();
     expect(getActivityBackPath).toHaveBeenCalled();
+  });
+
+  it("does not show a delete button for a non-board member", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: false,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    expect(
+      document.querySelector("svg.lucide-trash-2"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows and wires up a delete button for a board member", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    await waitFor(() =>
+      expect(document.querySelector("svg.lucide-trash-2")).toBeTruthy(),
+    );
+    const deleteButton = document
+      .querySelector("svg.lucide-trash-2")
+      ?.closest("button");
+    expect(deleteButton).toBeTruthy();
+    fireEvent.click(deleteButton!);
+    expect(handleDeleteActivity).toHaveBeenCalledWith(
+      1,
+      expect.any(Function),
+      expect.any(String),
+      expect.any(Function),
+    );
   });
 });

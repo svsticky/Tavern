@@ -5,6 +5,7 @@ import { type ActivityResponseDto, getActivities } from "~/api";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
 import { generateA3Pdf } from "~/util/pdf.util";
+export type ActivityFilter = "all" | "enrolled" | "history";
 
 /**
  * Arguments for the loadActivities handler.
@@ -12,10 +13,12 @@ import { generateA3Pdf } from "~/util/pdf.util";
 type LoadActivitiesArgs = {
   setLoading: (loading: boolean) => void;
   setActivities: (activities: ActivityResponseDto[]) => void;
+  filter?: ActivityFilter;
+  userId?: string;
 };
 
 /**
- * Fetches the list of current and future activities from the API.
+ * Fetches the list of activities from the API based on the selected filter.
  *
  * @async
  * @param {LoadActivitiesArgs} args - Configuration and state setter functions.
@@ -23,20 +26,48 @@ type LoadActivitiesArgs = {
 export const loadActivities = async ({
   setLoading,
   setActivities,
+  filter = "all",
+  userId,
 }: LoadActivitiesArgs) => {
   try {
     setLoading(true);
+
+    const query: {
+      IncludePast?: boolean;
+      IncludeFuture?: boolean;
+      UserId?: string;
+    } = {
+      IncludePast: false,
+      IncludeFuture: true,
+    };
+
+    if (filter === "enrolled" && userId) {
+      query.UserId = userId;
+      query.IncludePast = false;
+      query.IncludeFuture = true;
+    } else if (filter === "history" && userId) {
+      query.UserId = userId;
+      query.IncludePast = true;
+      query.IncludeFuture = false;
+    }
+
     const activitiesResponse = await getActivities({
-      query: {
-        IncludePast: false,
-        IncludeFuture: true,
-      },
+      query,
     });
 
     if (activitiesResponse.error || !activitiesResponse.data)
       throw new Error("Failed to load activities");
 
-    setActivities(activitiesResponse.data as ActivityResponseDto[]);
+    const data = [...(activitiesResponse.data as ActivityResponseDto[])];
+    if (filter === "history") {
+      data.sort(
+        (a, b) =>
+          new Date(b.dateTimeStart).getTime() -
+          new Date(a.dateTimeStart).getTime(),
+      );
+    }
+
+    setActivities(data);
   } catch (error) {
     console.error("Error while loading data:", error);
     toast.error(appendErrorMessage(t("loading_failed"), error));

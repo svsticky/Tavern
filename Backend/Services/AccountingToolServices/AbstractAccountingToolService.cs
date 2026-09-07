@@ -29,6 +29,8 @@ public abstract class AbstractAccountingToolService(
     /// <returns>The unique identifier of the synchronized record, or Guid.Empty if disabled.</returns>
     public virtual async Task<Guid> SyncPaymentAsync(Payment payment, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(payment);
+
         var isEnvDisabled = string.Equals(Environment.GetEnvironmentVariable("ACCOUNTING_ENABLED"), "false", StringComparison.OrdinalIgnoreCase);
         var isDbConfigured = !string.IsNullOrWhiteSpace(_db.Settings.FirstOrDefault(s => s.Name == "AccountingService")?.Value);
 

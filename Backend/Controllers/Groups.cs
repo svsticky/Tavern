@@ -238,4 +238,46 @@ public class GroupsController(IGroupService groupService) : ControllerBase
         await groupService.UpdateGroup(id, userId, groupDto, cancellationToken);
         return NoContent();
     }
+
+    // GET: groups/{id}/permissions
+    /// <summary>
+    /// Retrieves the permissions currently granted to a group.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>The permissions granted to the group.</returns>
+    [HttpGet("{id}/permissions")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(IEnumerable<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<string>>> GetGroupPermissions(uint id, CancellationToken cancellationToken)
+    {
+        return Ok(await groupService.GetGroupPermissions(id, cancellationToken));
+    }
+
+    // PUT: groups/{id}/permissions
+    /// <summary>
+    /// Replaces the full set of permissions granted to a group. Each entry is either the string name
+    /// of one of the 12 known permissions, or an arbitrary custom string for other applications
+    /// sharing this Keycloak instance to interpret - Tavern's own backend only evaluates the known ones.
+    /// </summary>
+    /// <param name="id">The unique identifier of the group.</param>
+    /// <param name="permissions">The full set of permission keys the group should have.</param>
+    /// <param name="cancellationToken">The cancellation token to monitor for request cancellation.</param>
+    /// <returns>A 204 No Content status upon a successful update.</returns>
+    [HttpPut("{id}/permissions")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult> SetGroupPermissions(uint id, [FromBody] List<string> permissions, CancellationToken cancellationToken)
+    {
+        var userId = GetUserId();
+        await groupService.SetGroupPermissions(id, permissions, userId, cancellationToken);
+        return NoContent();
+    }
 }

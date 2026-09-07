@@ -17,8 +17,14 @@ vi.mock("react-hot-toast", () => ({
   default: Object.assign(vi.fn(), {
     success: vi.fn(),
     error: vi.fn(),
-    promise: vi.fn((p: Promise<unknown>) => {
-      p.catch(() => {});
+    promise: vi.fn((p: Promise<unknown>, opts: any) => {
+      p.then(
+        (data) =>
+          typeof opts?.success === "function"
+            ? opts.success(data)
+            : opts?.success,
+        (err) => opts?.error?.(err),
+      ).catch(() => {});
       return p;
     }),
   }),
@@ -87,5 +93,31 @@ describe("PersonalCalendarTile", () => {
       expect(screen.getByText("loading_failed")).toBeInTheDocument(),
     );
     expect(screen.queryByText("copy_calendar_link")).not.toBeInTheDocument();
+  });
+
+  it("handles copy failure gracefully", async () => {
+    getCalendarsMe.mockResolvedValue({ data: { url: FEED_URL } });
+    (navigator.clipboard.writeText as any).mockRejectedValue(
+      new Error("clipboard denied"),
+    );
+
+    render(<PersonalCalendarTile />);
+    await screen.findByText(FEED_URL);
+    await userEvent.click(screen.getByText("copy_calendar_link"));
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(FEED_URL);
+  });
+
+  it("handles rotate failure gracefully", async () => {
+    getCalendarsMe.mockResolvedValue({ data: { url: FEED_URL } });
+    postCalendarsMeRotate.mockResolvedValue({
+      error: new Error("rotate failed"),
+    });
+
+    render(<PersonalCalendarTile />);
+    await screen.findByText(FEED_URL);
+    await userEvent.click(screen.getByText("reset_calendar_link"));
+
+    expect(postCalendarsMeRotate).toHaveBeenCalled();
   });
 });

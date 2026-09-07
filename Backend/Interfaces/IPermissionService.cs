@@ -1,3 +1,4 @@
+using Backend.Models;
 using Backend.Models.Domain;
 
 namespace Backend.Interfaces;
@@ -102,4 +103,41 @@ public interface IPermissionService
     /// <param name="userId">The user ID to authorize.</param>
     public void EnsureBoardOrCandidateBoardMember(Guid userId);
 
+    /// <summary>
+    /// Checks whether a member has a given permission, either granted directly to a Group they belong to in
+    /// the current committee year, or granted to the Role they hold within such a membership. Does not
+    /// consider board/candidate-board status - see <see cref="HasPermissionOrBoard"/> for that.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <param name="permission">The permission to check.</param>
+    /// <param name="groupId">
+    /// For the group-scoped <see cref="Permission.EditActivityForGroup"/>, restricts the check to this group.
+    /// Ignored for every other (global-effect) permission.
+    /// </param>
+    bool HasPermission(Guid memberId, Permission permission, uint? groupId = null);
+
+    /// <summary>
+    /// Checks whether a member has a given permission, or is a (candidate) board member (who always has
+    /// every permission).
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <param name="permission">The permission to check.</param>
+    /// <param name="groupId">See <see cref="HasPermission"/>.</param>
+    bool HasPermissionOrBoard(Guid memberId, Permission permission, uint? groupId = null);
+
+    /// <summary>
+    /// Ensures the user has a given permission (or is a (candidate) board member) and throws when not authorized.
+    /// </summary>
+    /// <param name="userId">The user ID to authorize.</param>
+    /// <param name="permission">The permission to require.</param>
+    /// <param name="groupId">See <see cref="HasPermission"/>.</param>
+    void EnsurePermission(Guid userId, Permission permission, uint? groupId = null);
+
+    /// <summary>
+    /// Gets the IDs of every group in which the member currently holds the given permission (via a direct
+    /// group grant or via their role in that group), in the current committee year.
+    /// </summary>
+    /// <param name="memberId">The member user ID.</param>
+    /// <param name="permission">The permission to check.</param>
+    IEnumerable<uint> GetGroupIdsWithPermission(Guid memberId, Permission permission);
 }

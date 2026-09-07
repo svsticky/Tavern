@@ -43,10 +43,16 @@ vi.mock("react-hot-toast", () => ({
   default: {
     success: vi.fn(),
     error: vi.fn(),
-    // Some handlers chain `.finally()` off the return value of toast.promise(), which would
-    // otherwise create a second, unhandled rejection branch beyond the one we catch here -
-    // return the already-caught promise so any further chaining stays safe.
-    promise: vi.fn((p) => p.catch(() => {})),
+    promise: vi.fn((p, opts: any) =>
+      p
+        .then((res: any) => {
+          if (typeof opts?.success === "function") opts.success(res);
+          return res;
+        })
+        .catch((err: any) => {
+          if (typeof opts?.error === "function") opts.error(err);
+        }),
+    ),
   },
 }));
 

@@ -1,18 +1,35 @@
 import { t } from "i18next";
-import { PencilIcon } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Copy,
+  PencilIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
-import type { ActivityResponseDto } from "~/api";
+import { type ActivityResponseDto, patchActivitiesById } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 import Button from "~/components/UI/Button";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { canEditActivity } from "~/util/group.util";
+import { hasEnrollmentOpened } from "~/util/activity.util";
+import { downloadActivityEnrollmentsCsv } from "~/util/activityCsv.util";
+import {
+  canEditActivity,
+  hasPermission,
+  isBoardOrCandidateBoard,
+  isInGroupWithId,
+} from "~/util/group.util";
+import { generateParticipantChecklistPdf } from "~/util/pdf.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
+  handleDeleteActivity,
   handleEditActivityClick,
   loadActivityData,
 } from "./activity.handlers";
@@ -37,6 +54,7 @@ import {
  */
 export default function ActivityPage({ params }: Route.LoaderArgs) {
   const authService = useAuth();
+  const [confirmModal, confirm] = useConfirm();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
   const [canEdit, setCanEdit] = useState(false);
   const navigate = useNavigate();
@@ -77,8 +95,15 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
     setCanEdit(canEditActivity(activity, tokenParsed));
   }, [activity, tokenParsed]);
 
-  if (loading || !tokenParsed) return t("loading");
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const isOrganizer =
+    !!activity?.organizerId &&
+    tokenParsed !== null &&
+    (isInGroupWithId(tokenParsed, activity.organizerId) ||
+      hasPermission(tokenParsed, "EditActivityForGroup", activity.organizerId));
+  const canExport = isBoard || isOrganizer;
 
+  if (loading || !tokenParsed) return t("loading");
   if (activity == null) return t("failed_fetching");
 
   return (
@@ -87,53 +112,167 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         title={activity.name}
         backTo={getActivityBackPath(pathname)}
         action={
-          canEdit &&
-          activity && (
-            <Button
-              onClick={() =>
-                handleEditActivityClick(navigate, pathname, activity.id)
-              }
-              variant="secondary"
-              className="flex items-center px-2"
-            >
-              <PencilIcon size={18} />
-            </Button>
+          activity &&
+          (canEdit || isBoard) && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() =>
+                  navigate(`/activities/create?cloneFrom=${activity.id}`)
+                }
+                variant="secondary"
+                className="flex items-center px-2"
+                aria-label={t("clone_activity")}
+              >
+                <Copy size={18} />
+              </Button>
+              {isBoard && (
+                <Button
+                  onClick={async () => {
+                    const confirmed = await confirm(
+                      activity.isArchived
+                        ? t("confirm_unarchive_activity")
+                        : t("confirm_archive_activity"),
+                      {
+                        title: activity.isArchived
+                          ? t("unarchive_activity")
+                          : t("archive_activity"),
+                        variant: "secondary",
+                      },
+                    );
+                    if (!confirmed) return;
+
+                    const nextArchived = !activity.isArchived;
+                    const res = await patchActivitiesById({
+                      path: { id: activity.id },
+                      body: [
+                        {
+                          op: "replace",
+                          path: "/isarchived",
+                          value: nextArchived,
+                        },
+                      ],
+                    });
+                    if (res.error) {
+                      toast.error(t("failed_updating"));
+                      return;
+                    }
+                    setActivity((prev) =>
+                      prev ? { ...prev, isArchived: nextArchived } : prev,
+                    );
+                    toast.success(
+                      nextArchived
+                        ? t("activity_archived")
+                        : t("activity_unarchived"),
+                    );
+                  }}
+                  variant="secondary"
+                  className="flex items-center px-2"
+                  aria-label={
+                    activity.isArchived
+                      ? t("unarchive_activity")
+                      : t("archive_activity")
+                  }
+                >
+                  {activity.isArchived ? (
+                    <ArchiveRestore size={18} />
+                  ) : (
+                    <Archive size={18} />
+                  )}
+                </Button>
+              )}
+              {canEdit && (
+                <Button
+                  onClick={() =>
+                    handleEditActivityClick(navigate, pathname, activity.id)
+                  }
+                  variant="secondary"
+                  className="flex items-center px-2"
+                  aria-label={t("edit")}
+                >
+                  <PencilIcon size={18} />
+                </Button>
+              )}
+              {isBoard && (
+                <Button
+                  onClick={() =>
+                    handleDeleteActivity(
+                      activity.id,
+                      navigate,
+                      pathname,
+                      confirm,
+                    )
+                  }
+                  variant="danger"
+                  className="flex items-center px-2"
+                  aria-label={t("delete_activity")}
+                >
+                  <Trash2Icon size={18} />
+                </Button>
+              )}
+            </div>
           )
         }
       />
 
       <div className="space-y-6 w-full">
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
-        {activity.areParticipantsVisible && (
-          <>
-            <ActivityParticipantsTile
-              enrollments={
-                !activity.areParticipantsVisible
-                  ? []
-                  : (activity.enrollments.filter((e) => !e.isOnWaitingList) ??
-                    [])
-              }
-            />
-            <ActivityParticipantsTile
-              title={t("waiting_list")}
-              enrollments={
-                !activity.areParticipantsVisible
-                  ? []
-                  : (
-                      activity.enrollments.filter((e) => e.isOnWaitingList) ??
-                      []
-                    )
-                      .slice()
-                      .sort(
-                        (a, b) =>
-                          new Date(a.registeredOn).getTime() -
-                          new Date(b.registeredOn).getTime(),
+        {hasEnrollmentOpened(activity) &&
+          (activity.areParticipantsVisible || isBoard) && (
+            <>
+              <ActivityParticipantsTile
+                enrollments={
+                  activity.enrollments.filter((e) => !e.isOnWaitingList) ?? []
+                }
+                isAdmin={isBoard}
+                onExportCsv={
+                  canExport
+                    ? () => {
+                        downloadActivityEnrollmentsCsv(
+                          activity,
+                          (tokenParsed?.locale || "nl")
+                            .toLowerCase()
+                            .startsWith("nl"),
+                        );
+                        toast.success(t("csv_exported"));
+                      }
+                    : undefined
+                }
+                onExportPdf={
+                  canExport
+                    ? () => {
+                        generateParticipantChecklistPdf(
+                          activity,
+                          (tokenParsed?.locale || "nl")
+                            .toLowerCase()
+                            .startsWith("nl"),
+                        );
+                        toast.success(t("pdf_exported"));
+                      }
+                    : undefined
+                }
+              />
+              <ActivityParticipantsTile
+                title={t("waiting_list")}
+                enrollments={
+                  !activity.areParticipantsVisible
+                    ? []
+                    : (
+                        activity.enrollments.filter((e) => e.isOnWaitingList) ??
+                        []
                       )
-              }
-            />
-          </>
-        )}
+                        .slice()
+                        .sort(
+                          (a, b) =>
+                            new Date(a.registeredOn).getTime() -
+                            new Date(b.registeredOn).getTime(),
+                        )
+                }
+                isAdmin={isBoard}
+              />
+            </>
+          )}
       </div>
+      {confirmModal}
     </div>
   );
 }

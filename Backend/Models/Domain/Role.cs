@@ -21,4 +21,9 @@ public class Role
     [StringLength(100)]
     [Required(AllowEmptyStrings = false)]
     public string Name { get; set; }
+
+    /// <summary>
+    /// The permissions granted to this role.
+    /// </summary>
+    [Newtonsoft.Json.JsonIgnore] public virtual ICollection<RolePermission> RolePermissions { get; set; }
 }

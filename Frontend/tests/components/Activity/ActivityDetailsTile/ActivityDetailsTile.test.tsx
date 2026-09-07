@@ -1,10 +1,12 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import i18next from "i18next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import {
   handleAddToCalendar,
   handleCopyForWhatsapp,
+  handleDownloadIcs,
   handleEnrollment,
   handleUnenrollment,
   handleUpdateEnrollment,
@@ -24,6 +26,7 @@ vi.mock(
   () => ({
     handleAddToCalendar: vi.fn(),
     handleCopyForWhatsapp: vi.fn(),
+    handleDownloadIcs: vi.fn(),
     handleEnrollment: vi.fn(),
     handleUnenrollment: vi.fn(),
     handleUpdateEnrollment: vi.fn(),
@@ -118,23 +121,28 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("shows the English description for an English-locale user", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
+    await i18next.changeLanguage("en");
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
     expect(await screen.findByText("Description")).toBeInTheDocument();
   });
 
   it("shows the Dutch description for a Dutch-locale user", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({ ...memberToken, locale: "NL" })),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
+    await i18next.changeLanguage("nl");
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
     expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
+  });
+
+  it("updates the activity description immediately after changing language", async () => {
+    await act(async () => {
+      await i18next.changeLanguage("nl");
+    });
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
+    expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
+
+    await act(async () => {
+      await i18next.changeLanguage("en");
+    });
+    expect(await screen.findByText("Description")).toBeInTheDocument();
   });
 
   it("shows a sign-in button when the user can enroll and is not enrolled", async () => {
@@ -202,7 +210,7 @@ describe("ActivityDetailsTile", () => {
 
   it("calls handleAddToCalendar when the calendar button is clicked", async () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
-    fireEvent.click(await screen.findByText("copy_once_to_calendar"));
+    fireEvent.click(await screen.findByText("add_to_google_calendar"));
     expect(handleAddToCalendar).toHaveBeenCalled();
   });
 
@@ -289,7 +297,7 @@ describe("ActivityDetailsTile", () => {
     fireEvent.click(await screen.findByText("answer-questions-tile"));
   });
 
-  it("does not show enroll/unenroll actions when neither can enroll nor unenroll", async () => {
+  it("does not show enroll/unenroll actions or participant details when enrollment has not opened", async () => {
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -299,9 +307,34 @@ describe("ActivityDetailsTile", () => {
       />,
     );
     expect(
-      await screen.findByText("copy_once_to_calendar"),
+      await screen.findByText("add_to_google_calendar"),
     ).toBeInTheDocument();
     expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.queryByText("participants")).not.toBeInTheDocument();
+    expect(screen.queryByText("enrollment_deadline")).not.toBeInTheDocument();
+    expect(screen.queryByText("unenrollment_deadline")).not.toBeInTheDocument();
+  });
+
+  it("shows participant details and deadlines when enrollment has closed after closing date", async () => {
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          enrollmentDeadline: "2020-01-01T00:00:00Z",
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          dateTimeStart: "2020-01-02T00:00:00Z",
+          dateTimeEnd: "2020-01-02T02:00:00Z",
+          enrollments: [
+            { id: 1, memberId: "m1", isOnWaitingList: false } as any,
+          ],
+        })}
+      />,
+    );
+    expect(
+      await screen.findByText("add_to_google_calendar"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.getByText("participants")).toBeInTheDocument();
   });
 
   it("shows the organizer's name and logo when the activity has an organizer", async () => {
@@ -323,7 +356,7 @@ describe("ActivityDetailsTile", () => {
   it("does not show an organizer info item when the activity has no organizer", async () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
 
-    await screen.findByText("copy_once_to_calendar");
+    await screen.findByText("add_to_google_calendar");
     expect(getGroupsById).not.toHaveBeenCalled();
     expect(screen.queryByText("organizer")).not.toBeInTheDocument();
   });
@@ -339,5 +372,68 @@ describe("ActivityDetailsTile", () => {
     fireEvent.error(logo);
 
     expect(logo).toHaveAttribute("src", "/profile-picture.svg");
+  });
+
+  it("triggers handleDownloadIcs when clicking the download .ics button", async () => {
+    const activity = buildActivity();
+    renderWithProviders(<ActivityDetailsTile activity={activity} />);
+
+    const downloadBtn = await screen.findByRole("button", {
+      name: /download_ics/i,
+    });
+    fireEvent.click(downloadBtn);
+
+    expect(handleDownloadIcs).toHaveBeenCalledWith(activity, false);
+  });
+
+  it("displays waiting list position indicator when user is on the waiting list", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    const activity = buildActivity({
+      enrollments: [
+        {
+          isOnWaitingList: true,
+          registeredOn: "2026-01-01T00:00:00Z",
+          member: {
+            id: memberToken.UserId,
+            firstName: "Test",
+            lastName: "User",
+          } as any,
+          activity: null!,
+        },
+      ],
+    });
+
+    renderWithProviders(<ActivityDetailsTile activity={activity} />, {
+      authService,
+    });
+
+    expect(
+      await screen.findByText(/waiting_list_position/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText("#1")).toBeInTheDocument();
+  });
+
+  it("does not render export buttons in ActivityDetailsTile (delegated to participants tile)", async () => {
+    const boardToken: TokenParsed = {
+      ...memberToken,
+      is_admin: true,
+    };
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => boardToken),
+    });
+    const activity = buildActivity();
+
+    renderWithProviders(<ActivityDetailsTile activity={activity} />, {
+      authService,
+    });
+
+    expect(
+      screen.queryByRole("button", { name: /export_csv/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /export_pdf/i }),
+    ).not.toBeInTheDocument();
   });
 });

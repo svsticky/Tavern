@@ -28,14 +28,14 @@ export default function InfoItem({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-1 w-9 h-9 shrink-0 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 font-bold">
+      <div className="mt-1 w-9 h-9 shrink-0 flex items-center justify-center bg-gray-50 rounded-lg text-gray-400 font-bold">
         {icon}
       </div>
       <div>
-        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider leading-none mb-1">
+        <p className="text-[10px] uppercase font-bold text-gray-400 tracking-wider leading-none mb-1">
           {label}
         </p>
-        <p className="text-slate-700 font-semibold leading-tight">{value}</p>
+        <p className="text-gray-700 font-semibold leading-tight">{value}</p>
       </div>
     </div>
   );

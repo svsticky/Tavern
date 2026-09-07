@@ -1,7 +1,11 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivities } from "~/api";
+import {
+  type ActivityResponseDto,
+  deleteActivitiesById,
+  getActivities,
+} from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
 /**
@@ -22,16 +26,19 @@ export const loadAdminActivities = async (
   setActivities: (activities: ActivityResponseDto[]) => void,
   page?: number,
   pageSize?: number,
+  includePast = true,
+  isArchived = false,
 ) => {
   try {
     setLoading(true);
     const response = await getActivities({
       query: {
-        IncludePast: true,
+        IncludePast: includePast,
         IncludeFuture: true,
         Year: year,
         Page: page,
         PageSize: pageSize,
+        IsArchived: isArchived,
       },
     });
 
@@ -62,4 +69,53 @@ export const handleViewActivity = (
   activityId: number,
 ) => {
   navigate(`/admin/activities/${activityId}`);
+};
+
+/**
+ * Deletes an activity from the administrative overview after user confirmation.
+ *
+ * @async
+ * @param {number} activityId - The unique identifier of the activity to delete.
+ * @param {(message: string, options?: { title?: string; confirmLabel?: string; cancelLabel?: string; variant?: "primary" | "secondary" | "danger" }) => Promise<boolean>} confirm - Modal confirmation function.
+ * @param {() => void} onSuccess - Callback invoked after the activity is deleted successfully.
+ */
+export const handleDeleteAdminActivity = async (
+  activityId: number,
+  confirm: (
+    message: string,
+    options?: {
+      title?: string;
+      confirmLabel?: string;
+      cancelLabel?: string;
+      variant?: "primary" | "secondary" | "danger";
+    },
+  ) => Promise<boolean>,
+  onSuccess: () => void,
+) => {
+  if (
+    !(await confirm(t("delete_activity_confirmation"), {
+      title: t("delete_activity"),
+      variant: "danger",
+    }))
+  ) {
+    return;
+  }
+
+  const deleteProcess = async () => {
+    const response = await deleteActivitiesById({
+      path: { id: activityId },
+    });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to delete activity");
+    }
+
+    onSuccess();
+  };
+
+  toast.promise(deleteProcess(), {
+    loading: t("deleting"),
+    success: t("activity_deleted_successfully"),
+    error: (error) => appendErrorMessage(t("failed_to_delete_activity"), error),
+  });
 };

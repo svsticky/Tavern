@@ -41,6 +41,13 @@ describe("ProfileDropdown", () => {
     );
   });
 
+  it("renders a gold ring around the avatar when isHonoraryOrMerit is true", () => {
+    renderDropdown({ isHonoraryOrMerit: true });
+    expect(screen.getByAltText("Jane Doe avatar")).toHaveClass(
+      "ring-amber-400",
+    );
+  });
+
   it("does not show options until the toggle button is clicked", () => {
     renderDropdown();
     expect(screen.queryByText("Account")).not.toBeInTheDocument();
@@ -48,10 +55,11 @@ describe("ProfileDropdown", () => {
 
   it("opens the dropdown when the button is clicked and closes it on a second click", () => {
     renderDropdown();
-    fireEvent.click(screen.getByRole("button"));
+    const trigger = screen.getByRole("button", { name: /Jane Doe/i });
+    fireEvent.click(trigger);
     expect(screen.getByText("Account")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(trigger);
     expect(screen.queryByText("Account")).not.toBeInTheDocument();
   });
 
@@ -60,7 +68,7 @@ describe("ProfileDropdown", () => {
     const onClose = vi.fn();
     renderDropdown({ onOptionSelect, onClose });
 
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
     fireEvent.click(screen.getByText("Account"));
 
     expect(onOptionSelect).toHaveBeenCalledWith({
@@ -76,7 +84,7 @@ describe("ProfileDropdown", () => {
     const onClose = vi.fn();
     renderDropdown({ onOptionSelect, onClose });
 
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
     fireEvent.click(screen.getByText("Account"), { ctrlKey: true });
 
     expect(onOptionSelect).not.toHaveBeenCalled();
@@ -85,7 +93,7 @@ describe("ProfileDropdown", () => {
 
   it("closes the dropdown when clicking outside of it", () => {
     renderDropdown();
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
     expect(screen.getByText("Account")).toBeInTheDocument();
 
     fireEvent.mouseDown(document.body);
@@ -100,7 +108,7 @@ describe("ProfileDropdown", () => {
     renderDropdown({ context });
 
     expect(screen.getByText("Account")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button"));
+    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
     expect(screen.getByText("Account")).toBeInTheDocument();
   });
 });

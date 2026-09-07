@@ -2,7 +2,23 @@ import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupResponseDto } from "~/api";
 import Groups from "~/routes/admin/groups";
-import { renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import type { TokenParsed } from "~/types/TokenParsed";
+
+const boardAuthService = createMockAuthService({
+  getTokenParsed: vi.fn(
+    async () =>
+      ({
+        locale: "en",
+        UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
+        access_level: "member",
+        given_name: "Board",
+        family_name: "Member",
+        name: "Board Member",
+        is_admin: true,
+      }) satisfies TokenParsed,
+  ),
+});
 
 const { getGroups } = vi.hoisted(() => ({
   getGroups: vi.fn(),
@@ -85,7 +101,7 @@ describe("Groups", () => {
 
   it("opens the create-group modal when the plus button is clicked", async () => {
     getGroups.mockResolvedValue({ data: [] });
-    renderWithProviders(<Groups />);
+    renderWithProviders(<Groups />, { authService: boardAuthService });
 
     await screen.findByText("loading");
     const plusButton = document

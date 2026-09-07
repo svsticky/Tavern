@@ -3,15 +3,18 @@ import {
   CalendarDays,
   LayoutDashboard,
   SquareArrowOutUpRight,
+  User,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router";
 import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
+import { useAdminMode } from "~/context/AdminModeContext";
+import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
  * A primary layout component that provides the main navigation structure for the application.
@@ -48,7 +51,32 @@ export default function NavBarLayout() {
     };
   }, [authService]);
 
+  const { isAdminUser, setIsAdminUser, adminMode, toggleAdminMode } =
+    useAdminMode();
+
+  useEffect(() => {
+    setIsAdminUser(Boolean(tokenParsed?.is_admin));
+  }, [tokenParsed, setIsAdminUser]);
+
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const canSeeActivitiesAdmin =
+    isBoard ||
+    hasPermission(tokenParsed, "EditAllActivities") ||
+    hasPermission(tokenParsed, "EditActivityForGroup");
+  const canSeeMembersAdmin =
+    isBoard ||
+    hasPermission(tokenParsed, "ViewMembers") ||
+    hasPermission(tokenParsed, "ManageMembers");
+  const canSeeGroupsAdmin =
+    isBoard || hasPermission(tokenParsed, "ManageGroups");
+  const canSeeRolesAdmin =
+    isBoard ||
+    hasPermission(tokenParsed, "ManageRoles") ||
+    hasPermission(tokenParsed, "ManageRolePermissions");
+  const canSeeFinancesAdmin =
+    isBoard ||
+    hasPermission(tokenParsed, "ViewFinances") ||
+    hasPermission(tokenParsed, "ManageFinances");
 
   const [imgSrc, setImgSrc] = useState<string>("/profile-picture.svg");
 
@@ -98,7 +126,7 @@ export default function NavBarLayout() {
     avatarUrl: imgSrc,
     options: [
       { label: t("account"), href: "/account" },
-      ...(isBoard
+      ...(canSeeActivitiesAdmin
         ? [
             {
               label: `${t("all_activities")}`,
@@ -106,7 +134,7 @@ export default function NavBarLayout() {
             },
           ]
         : []),
-      ...(isBoard
+      ...(canSeeMembersAdmin
         ? [
             {
               label: `${t("members")}`,
@@ -114,8 +142,13 @@ export default function NavBarLayout() {
             },
           ]
         : []),
-      ...(isBoard ? [{ label: `${t("groups")}`, href: "/admin/groups" }] : []),
-      ...(isBoard
+      ...(canSeeGroupsAdmin
+        ? [{ label: `${t("groups")}`, href: "/admin/groups" }]
+        : []),
+      ...(canSeeRolesAdmin
+        ? [{ label: `${t("roles")}`, href: "/admin/roles" }]
+        : []),
+      ...(canSeeFinancesAdmin
         ? [
             {
               label: `${t("finances")}`,
@@ -162,6 +195,9 @@ export default function NavBarLayout() {
     },
   ];
 
+  const { member } = useApp();
+  const isHonoraryOrMerit = Boolean(member?.ereLid || member?.lidVanVerdienste);
+
   return (
     <div className="min-w-[320px]">
       <NavBar
@@ -176,10 +212,30 @@ export default function NavBarLayout() {
           username={profileOptions.username}
           avatarUrl={profileOptions.avatarUrl}
           options={profileOptions.options}
+          isHonoraryOrMerit={isHonoraryOrMerit}
+          userId={member?.id}
         />
       </NavBar>
+      {isAdminUser && !adminMode && (
+        <aside
+          aria-label={t("member_mode_active")}
+          className="bg-amber-500 text-white px-[5%] sm:px-[10%] py-2 text-xs sm:text-sm font-medium flex items-center justify-between shadow-xs"
+        >
+          <div className="flex items-center gap-2">
+            <User size={16} className="shrink-0" />
+            <span>{t("member_view_banner_text")}</span>
+          </div>
+          <button
+            type="button"
+            onClick={toggleAdminMode}
+            className="bg-white text-amber-900 px-3 py-1 rounded-md font-semibold text-xs hover:bg-amber-50 transition-colors cursor-pointer shrink-0 ml-3"
+          >
+            {t("switch_to_admin_mode")}
+          </button>
+        </aside>
+      )}
       <main className="px-[5%] sm:px-[10%] py-5">
-        <Outlet />
+        <Outlet key={adminMode ? "admin" : "member"} />
       </main>
     </div>
   );

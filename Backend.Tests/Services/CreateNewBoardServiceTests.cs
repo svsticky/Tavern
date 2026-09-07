@@ -16,6 +16,7 @@ public class CreateNewBoardServiceTests : IDisposable
 {
     private readonly PostgresDbContext _db;
     private readonly AuthOutboxWorker _authOutboxWorkerMock;
+    private readonly IAdminStatusUpdateOutboxWorker _adminStatusWorkerMock;
     private readonly IServiceScopeFactory _serviceScopeFactoryMock;
     private readonly IPermissionService _permissionServiceMock;
     private readonly CreateNewBoardService _service;
@@ -42,11 +43,13 @@ public class CreateNewBoardServiceTests : IDisposable
         var loggerMock = Substitute.For<ILogger<AuthOutboxWorker>>();
         _authOutboxWorkerMock = Substitute.For<AuthOutboxWorker>(serviceProviderMock, loggerMock);
 
+        _adminStatusWorkerMock = Substitute.For<IAdminStatusUpdateOutboxWorker>();
         _permissionServiceMock = Substitute.For<IPermissionService>();
 
         serviceProviderMock.GetService(typeof(PostgresDbContext)).Returns(_db);
         serviceProviderMock.GetService(typeof(AuthOutboxWorker)).Returns(_authOutboxWorkerMock);
         serviceProviderMock.GetService(typeof(IPermissionService)).Returns(_permissionServiceMock);
+        serviceProviderMock.GetService(typeof(IEnumerable<IAdminStatusUpdateOutboxWorker>)).Returns(new[] { _adminStatusWorkerMock });
 
         _service = new CreateNewBoardService(_serviceScopeFactoryMock);
     }

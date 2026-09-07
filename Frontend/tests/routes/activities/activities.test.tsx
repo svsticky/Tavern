@@ -140,15 +140,33 @@ describe("ActivitiesPage", () => {
     });
     renderWithProviders(<ActivitiesPage />, { authService });
 
-    const downloadButton = await screen.findByText("download_posters");
+    const menuButton = await screen.findByLabelText("Board Actions");
+    expect(menuButton).toBeInTheDocument();
+
+    // Initially closed
+    expect(screen.queryByText("download_posters")).not.toBeInTheDocument();
+
+    // Open dropdown
+    fireEvent.click(menuButton);
+    const downloadButton = screen.getByText("download_posters");
     fireEvent.click(downloadButton);
     expect(downloadPosters).toHaveBeenCalledWith([], "tok");
 
+    // Open dropdown again for copy NL
+    fireEvent.click(menuButton);
     fireEvent.click(screen.getByText(/copy.*NL/));
     expect(copyWeekOverview).toHaveBeenCalledWith("NL", []);
 
+    // Open dropdown again for copy EN
+    fireEvent.click(menuButton);
     fireEvent.click(screen.getByText(/copy.*EN/));
     expect(copyWeekOverview).toHaveBeenCalledWith("EN", []);
+
+    // Verify outside click closes dropdown
+    fireEvent.click(menuButton);
+    expect(screen.getByText("download_posters")).toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByText("download_posters")).not.toBeInTheDocument();
   });
 
   it("shows a create-activity button for a group member and wires it up", async () => {
@@ -196,5 +214,63 @@ describe("ActivitiesPage", () => {
     expect(
       await screen.findByText("personal-calendar-tile"),
     ).toBeInTheDocument();
+  });
+
+  it("renders filter tabs and allows switching to enrolled history", async () => {
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
+
+    const historyBtn = await screen.findByRole("button", {
+      name: /enrolled_history|enrolled history/i,
+    });
+    expect(historyBtn).toBeInTheDocument();
+
+    fireEvent.click(historyBtn);
+
+    await waitFor(() =>
+      expect(loadActivities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: "history",
+          userId: memberToken.UserId,
+        }),
+      ),
+    );
+  });
+
+  it("filters activities based on the search query", async () => {
+    vi.mocked(loadActivities).mockImplementation(
+      async ({ setLoading, setActivities }) => {
+        setActivities([
+          { id: 1, name: "Pizza Night", location: "Sticky Room" } as any,
+          { id: 2, name: "Lan Party", location: "Main Hall" } as any,
+        ]);
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    expect(await screen.findByText("activity-tile-1")).toBeInTheDocument();
+    expect(screen.getByText("activity-tile-2")).toBeInTheDocument();
+
+    const searchInput = screen.getByRole("textbox", {
+      name: /search_activities/i,
+    });
+    fireEvent.change(searchInput, { target: { value: "pizza" } });
+
+    expect(screen.getByText("activity-tile-1")).toBeInTheDocument();
+    expect(screen.queryByText("activity-tile-2")).not.toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "nonexistent" } });
+    expect(screen.queryByText("activity-tile-1")).not.toBeInTheDocument();
+    expect(screen.getByText("no_activities_found")).toBeInTheDocument();
   });
 });

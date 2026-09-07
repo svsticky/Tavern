@@ -2,19 +2,29 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import {
   getActivityBackPath,
+  handleDeleteActivity,
   handleEditActivityClick,
   loadActivityData,
 } from "~/routes/activity/activity.handlers";
 
-const { getActivitiesById } = vi.hoisted(() => ({
+const { getActivitiesById, deleteActivitiesById } = vi.hoisted(() => ({
   getActivitiesById: vi.fn(),
+  deleteActivitiesById: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ getActivitiesById }));
+vi.mock("~/api", () => ({ getActivitiesById, deleteActivitiesById }));
 
 const toastErrorFn = vi.fn();
+const toastPromiseFn = vi.fn();
 vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
+  default: {
+    error: (...args: unknown[]) => toastErrorFn(...args),
+    promise: (promise: Promise<unknown>, opts: any) => {
+      toastPromiseFn(promise, opts);
+      promise.catch(() => {});
+      return promise;
+    },
+  },
 }));
 
 describe("loadActivityData", () => {
@@ -79,5 +89,77 @@ describe("handleEditActivityClick", () => {
     const navigate = vi.fn();
     handleEditActivityClick(navigate, "/activities/5", 5);
     expect(navigate).toHaveBeenCalledWith("/activities/edit/5");
+  });
+});
+
+describe("handleDeleteActivity", () => {
+  it("does nothing when confirmation is rejected", async () => {
+    const confirm = vi.fn().mockResolvedValue(false);
+    const navigate = vi.fn();
+
+    await handleDeleteActivity(5, navigate, "/activities/5", confirm);
+
+    expect(confirm).toHaveBeenCalled();
+    expect(deleteActivitiesById).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("deletes the activity and navigates to the back path on confirmation", async () => {
+    const confirm = vi.fn().mockResolvedValue(true);
+    const navigate = vi.fn();
+    deleteActivitiesById.mockResolvedValue({ error: null });
+
+    await handleDeleteActivity(5, navigate, "/activities/5", confirm);
+
+    expect(confirm).toHaveBeenCalled();
+    await vi.waitFor(() =>
+      expect(deleteActivitiesById).toHaveBeenCalledWith({ path: { id: 5 } }),
+    );
+    expect(navigate).toHaveBeenCalledWith("/activities");
+    expect(toastPromiseFn).toHaveBeenCalledWith(
+      expect.any(Promise),
+      expect.objectContaining({
+        loading: "deleting",
+        success: "activity_deleted_successfully",
+        error: expect.any(Function),
+      }),
+    );
+  });
+
+  it("navigates to the admin path when in admin context", async () => {
+    const confirm = vi.fn().mockResolvedValue(true);
+    const navigate = vi.fn();
+    deleteActivitiesById.mockResolvedValue({ error: null });
+
+    await handleDeleteActivity(5, navigate, "/admin/activities/5", confirm);
+
+    await vi.waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("/admin/activities"),
+    );
+  });
+
+  it("shows an error toast when delete API fails", async () => {
+    const confirm = vi.fn().mockResolvedValue(true);
+    const navigate = vi.fn();
+    deleteActivitiesById.mockResolvedValue({ error: "permission denied" });
+
+    await handleDeleteActivity(5, navigate, "/activities/5", confirm);
+
+    await vi.waitFor(() =>
+      expect(deleteActivitiesById).toHaveBeenCalledWith({ path: { id: 5 } }),
+    );
+    expect(navigate).not.toHaveBeenCalled();
+    expect(toastPromiseFn).toHaveBeenCalledWith(
+      expect.any(Promise),
+      expect.objectContaining({
+        loading: "deleting",
+        success: "activity_deleted_successfully",
+        error: expect.any(Function),
+      }),
+    );
+    const opts = toastPromiseFn.mock.calls[0][1];
+    expect(opts.error("permission denied")).toBe(
+      "failed_to_delete_activity: permission denied",
+    );
   });
 });

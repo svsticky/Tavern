@@ -174,7 +174,7 @@ public class ActivityServiceTests : IDisposable
     public async Task GetActivities_NonBoardIncludesPast_ThrowsUnauthorizedAccessException()
     {
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId)).Do(_ => throw new UnauthorizedAccessException());
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ViewPastActivities, Arg.Any<uint?>())).Do(_ => throw new UnauthorizedAccessException());
 
         var dto = new GetActivitiesDTO { IncludePast = true };
 
@@ -505,6 +505,7 @@ public class ActivityServiceTests : IDisposable
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
 
         var patchDoc = new JsonPatchDocument<Activity>();
         patchDoc.Replace(a => a.Name, "Updated by organizer");
@@ -514,6 +515,48 @@ public class ActivityServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var saved = await _db.Activities.FindAsync(activity.Id);
         Assert.Equal("Updated by organizer", saved?.Name);
+    }
+
+    [Fact]
+    public async Task PatchActivity_OrganizerTriesToArchive_ThrowsUnauthorizedAccessException()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.IsArchived, true);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PatchActivity_BoardArchivesActivity_Succeeds()
+    {
+        var activity = CreateActivity("A1");
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.IsArchived, true);
+
+        await _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.True(saved?.IsArchived);
     }
 
     [Fact]
@@ -789,6 +832,7 @@ public class ActivityServiceTests : IDisposable
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
 
         var dto = new PutActivityDTO
         {
@@ -837,6 +881,7 @@ public class ActivityServiceTests : IDisposable
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
 
         var dto = new PutActivityDTO
         {

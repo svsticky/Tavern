@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EnrollmentResponseDto } from "~/api/types.gen";
 import ParticipantTile from "~/components/Activity/ActivityParticipantsTile/ParticipantTile";
@@ -89,5 +90,74 @@ describe("ParticipantTile", () => {
 
       expect(screen.getByText("Answer B")).toBeInTheDocument();
     });
+  });
+
+  it("renders gold border and ere_lid badge for honorary members", () => {
+    const { container } = render(
+      <ParticipantTile
+        enrollment={buildEnrollment({
+          member: {
+            firstName: "Bob",
+            lastName: "Jones",
+            ereLid: true,
+          } as any,
+        })}
+      />,
+    );
+    expect(screen.getByText("ere_lid")).toBeInTheDocument();
+    expect(container.querySelector(".border-amber-400")).toBeInTheDocument();
+  });
+
+  it("renders gold border and lid_van_verdienste badge for members of merit", () => {
+    const { container } = render(
+      <ParticipantTile
+        enrollment={buildEnrollment({
+          member: {
+            firstName: "Carol",
+            lastName: "Williams",
+            lidVanVerdienste: true,
+          } as any,
+        })}
+      />,
+    );
+    expect(screen.getByText("lid_van_verdienste")).toBeInTheDocument();
+    expect(container.querySelector(".border-amber-400")).toBeInTheDocument();
+  });
+
+  it("does not render link or hover effect for regular members", () => {
+    const { container } = render(
+      <ParticipantTile
+        enrollment={buildEnrollment({
+          member: {
+            id: "123",
+            firstName: "Dave",
+            lastName: "Miller",
+          } as any,
+        })}
+        isAdmin={false}
+      />,
+    );
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(container.querySelector(".cursor-default")).toBeInTheDocument();
+    expect(container.querySelector(".cursor-pointer")).not.toBeInTheDocument();
+  });
+
+  it("renders a link to the admin member details page for admins", () => {
+    render(
+      <MemoryRouter>
+        <ParticipantTile
+          enrollment={buildEnrollment({
+            member: {
+              id: "456",
+              firstName: "Admin",
+              lastName: "User",
+            } as any,
+          })}
+          isAdmin={true}
+        />
+      </MemoryRouter>,
+    );
+    const link = screen.getByRole("link");
+    expect(link).toHaveAttribute("href", "/admin/members/456");
   });
 });

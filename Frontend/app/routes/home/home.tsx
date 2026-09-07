@@ -1,4 +1,6 @@
+import { SlidersHorizontal } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
 import type {
   ActivityResponseDto,
@@ -8,11 +10,20 @@ import type {
 import ActivityEnrollmentOverview from "~/components/Activity/ActivityEnrollmentOverview";
 import UpcomingActivities from "~/components/Activity/UpcomingActivities";
 import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
+import PersonaliseDashboardModal from "~/components/Dashboard/PersonaliseDashboardModal";
 import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import Button from "~/components/UI/Button";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  type DashboardWidgetConfig,
+  type DashboardWidgetId,
+  DEFAULT_DASHBOARD_WIDGETS,
+  loadDashboardWidgetConfig,
+  resetDashboardWidgetConfig,
+  saveDashboardWidgetConfig,
+} from "~/util/dashboardWidgets";
 import { loadHomePageData } from "./home.handlers";
 
 /**
@@ -28,8 +39,8 @@ import { loadHomePageData } from "./home.handlers";
  * Features:
  * - **Contextual Loading**: Displays a skeleton-style loading state while coordinating multiple API requests.
  * - **Auth Integration**: Deeply integrates with auth service to filter data based on the user's `UserId`.
- * - **Responsive Layout**: Uses a grid system that transitions from a single-column mobile view to a
- *   split main/sidebar layout on larger screens.
+ * - **Personalization**: Allows users to configure which widgets appear on their dashboard and reorder them.
+ * - **Responsive Layout**: Uses a dynamic grid system adapting based on visible main and sidebar widgets.
  *
  * @page
  * @component
@@ -63,6 +74,29 @@ export default function DashboardPage() {
     GroupMembershipResponseDto[]
   >([]);
 
+  const [widgets, setWidgets] = useState<DashboardWidgetConfig[]>(
+    DEFAULT_DASHBOARD_WIDGETS.map((w) => ({ ...w })),
+  );
+  const [isPersonaliseModalOpen, setIsPersonaliseModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (tokenParsed?.UserId) {
+      setWidgets(loadDashboardWidgetConfig(tokenParsed.UserId));
+    }
+  }, [tokenParsed?.UserId]);
+
+  const handleSaveWidgets = (updated: DashboardWidgetConfig[]) => {
+    setWidgets(updated);
+    saveDashboardWidgetConfig(updated, tokenParsed?.UserId);
+    toast.success(t("widgets_saved"));
+  };
+
+  const handleResetWidgets = () => {
+    const reset = resetDashboardWidgetConfig(tokenParsed?.UserId);
+    setWidgets(reset);
+    toast.success(t("widgets_saved"));
+  };
+
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (authenticated === null || tokenParsed === null) {
@@ -86,6 +120,81 @@ export default function DashboardPage() {
     return null;
   }
 
+  const visibleMainWidgets = widgets
+    .filter((w) => w.column === "main" && w.visible)
+    .sort((a, b) => a.order - b.order);
+
+  const visibleSidebarWidgets = widgets
+    .filter((w) => w.column === "sidebar" && w.visible)
+    .sort((a, b) => a.order - b.order);
+
+  const hasAnyWidgets =
+    visibleMainWidgets.length > 0 || visibleSidebarWidgets.length > 0;
+
+  const renderWidget = (widgetId: DashboardWidgetId, inSidebar: boolean) => {
+    switch (widgetId) {
+      case "announcements":
+        return (
+          <div key="announcements" className="flex flex-col w-full gap-y-3">
+            <div className="flex w-full justify-between items-center">
+              <p className="font-semibold text-lg">
+                {t("latest_announcements")}
+              </p>
+              <Button
+                showArrow
+                className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
+                href="/announcements"
+              >
+                {t("show_all")}
+              </Button>
+            </div>
+            <AnnouncementsList
+              announcements={announcements.slice(0, inSidebar ? 1 : 2)}
+            />
+          </div>
+        );
+      case "upcoming_activities":
+        return (
+          <div
+            key="upcoming_activities"
+            className="flex flex-col w-full gap-y-3"
+          >
+            <div className="flex w-full justify-between items-center">
+              <p className="font-semibold text-lg">
+                {t("upcoming_activities")}
+              </p>
+              <Button
+                showArrow
+                className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
+                href="/activities"
+              >
+                {t("show_all")}
+              </Button>
+            </div>
+            <UpcomingActivities activities={activities} />
+          </div>
+        );
+      case "my_enrollments":
+        return (
+          <div key="my_enrollments" className="flex flex-col w-full gap-3">
+            <p className="text-md font-medium">{t("my_enrollments")}</p>
+            <ActivityEnrollmentOverview
+              enrolledActivities={enrolledActivities}
+            />
+          </div>
+        );
+      case "my_groups":
+        return (
+          <div key="my_groups" className="flex flex-col w-full gap-3">
+            <p className="text-md font-medium">{t("my_groups")}</p>
+            <GroupMembershipOverview groupMemberships={groupMemberships} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="flex flex-col items-center gap-5 max-w-8xl mx-auto w-full">
       {/* Dashboard Header */}
@@ -102,59 +211,68 @@ export default function DashboardPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
-          <div className="flex flex-col w-full gap-y-8 col-span-4 lg:col-span-3">
-            {/* Announcements */}
-            <div className="flex flex-col w-full gap-y-3">
-              <div className="flex w-full justify-between items-center">
-                <p className="font-semibold text-lg">
-                  {t("latest_announcements")}
-                </p>
-                <Button
-                  showArrow
-                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  href="/announcements"
-                >
-                  {t("show_all")}
-                </Button>
-              </div>
-              <AnnouncementsList announcements={announcements.slice(0, 2)} />
-            </div>
-
-            {/* Upcoming Activities */}
-            <div className="flex flex-col w-full gap-y-3">
-              {" "}
-              {/* Toegevoegd: flex flex-col en gap-y-3 */}
-              <div className="flex w-full justify-between items-center">
-                <p className="font-semibold text-lg">
-                  {t("upcoming_activities")}
-                </p>
-                <Button
-                  showArrow
-                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  href="/activities"
-                >
-                  {t("show_all")}
-                </Button>
-              </div>
-              <UpcomingActivities activities={activities} />
-            </div>
+        <div className="flex flex-col w-full gap-4">
+          <div className="flex justify-end w-full">
+            <Button
+              variant="secondary"
+              onClick={() => setIsPersonaliseModalOpen(true)}
+              className="flex items-center gap-2 text-xs"
+            >
+              <SlidersHorizontal size={14} />
+              {t("personalise_dashboard")}
+            </Button>
           </div>
 
-          {/* Enrollments and Committees */}
-          <div className="flex flex-col col-span-4 lg:col-span-1 gap-3">
-            <p className="text-md">{t("my_enrollments")}</p>
-            <ActivityEnrollmentOverview
-              enrolledActivities={enrolledActivities.filter(
-                (a) => new Date(a.dateTimeEnd) >= new Date(Date.now()),
+          {!hasAnyWidgets ? (
+            <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl w-full gap-3">
+              <SlidersHorizontal size={32} className="text-slate-400" />
+              <p className="text-slate-600 font-medium">
+                {t("no_widgets_enabled")}
+              </p>
+              <Button
+                variant="secondary"
+                onClick={() => setIsPersonaliseModalOpen(true)}
+              >
+                {t("personalise_dashboard")}
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
+              {visibleMainWidgets.length > 0 && (
+                <div
+                  className={`flex flex-col w-full gap-y-8 col-span-4 ${
+                    visibleSidebarWidgets.length > 0
+                      ? "lg:col-span-3"
+                      : "col-span-4"
+                  }`}
+                >
+                  {visibleMainWidgets.map((w) => renderWidget(w.id, false))}
+                </div>
               )}
-            />
 
-            <p className="text-md">{t("my_groups")}</p>
-            <GroupMembershipOverview groupMemberships={groupMemberships} />
-          </div>
+              {visibleSidebarWidgets.length > 0 && (
+                <div
+                  className={`flex flex-col col-span-4 gap-4 ${
+                    visibleMainWidgets.length > 0
+                      ? "lg:col-span-1"
+                      : "col-span-4"
+                  }`}
+                >
+                  {visibleSidebarWidgets.map((w) => renderWidget(w.id, true))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
+
+      <PersonaliseDashboardModal
+        isOpen={isPersonaliseModalOpen}
+        onClose={() => setIsPersonaliseModalOpen(false)}
+        widgets={widgets}
+        onSave={handleSaveWidgets}
+        onReset={handleResetWidgets}
+      />
     </div>
   );
 }

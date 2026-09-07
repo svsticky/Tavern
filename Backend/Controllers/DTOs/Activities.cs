@@ -172,6 +172,9 @@ public class ActivityResponseDTO
     /// <inheritdoc cref="Activity.IsWeeklyDrinks"/>
     public required bool IsWeeklyDrinks { get; set; }
 
+    /// <inheritdoc cref="Activity.IsArchived"/>
+    public bool IsArchived { get; set; } = false;
+
     /// <inheritdoc cref="Activity.VatRate"/>
     public uint? VatRate { get; set; }
 
@@ -200,9 +203,20 @@ public class ActivityResponseDTO
     /// Projects an Activity entity into an ActivityResponseDTO, including related enrollments and specification questions. The method takes a user ID and a boolean indicating whether the requester is a board member, allowing it to conditionally include certain information based on the user's role. This projection is used to transform the data from the Activity model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
     /// </summary>
     /// <param name="userId">The ID of the user for whom to project the activity.</param>
-    /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <param name="hasViewFinances">
+    /// A boolean indicating whether the requester has the ViewFinances permission (or is a (candidate) board
+    /// member, who always has it).
+    /// </param>
+    /// <param name="hasViewMembers">
+    /// A boolean indicating whether the requester has the ViewMembers permission (or is a (candidate) board
+    /// member, who always has it). Forwarded into nested enrollments.
+    /// </param>
+    /// <param name="isBoardOrCandidateBoard">
+    /// A boolean indicating whether the requester is a (candidate) board member. Forwarded into nested
+    /// enrollments' member projections, where it gates the Notes field.
+    /// </param>
     /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool hasViewFinances, bool hasViewMembers, bool isBoardOrCandidateBoard)
     {
         return a => new ActivityResponseDTO
         {
@@ -227,17 +241,18 @@ public class ActivityResponseDTO
             AreParticipantsVisible = a.AreParticipantsVisible,
             IsAdultOnly = a.IsAdultOnly,
             IsWeeklyDrinks = a.IsWeeklyDrinks,
+            IsArchived = a.IsArchived,
             AllowedAudience = a.AllowedAudience,
-            VatRate = isBoard ? a.VatRate : null,
-            GLAccountId = isBoard ? a.GLAccountId : null,
-            CostCenterId = isBoard ? a.CostCenterId : null,
-            CostUnitId = isBoard ? a.CostUnitId : null,
+            VatRate = hasViewFinances ? a.VatRate : null,
+            GLAccountId = hasViewFinances ? a.GLAccountId : null,
+            CostCenterId = hasViewFinances ? a.CostCenterId : null,
+            CostUnitId = hasViewFinances ? a.CostUnitId : null,
 
-            Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList(),
+            Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, hasViewMembers, hasViewFinances, isBoardOrCandidateBoard, false).Compile()(e)).ToList(),
 
             SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
 
-            PaymentDeadline = isBoard ? a.PaymentDeadline : default,
+            PaymentDeadline = hasViewFinances ? a.PaymentDeadline : default,
             IsOpenForPayment = a.IsOpenForPayment
         };
     }
@@ -296,4 +311,9 @@ public class GetActivitiesDTO
     /// The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
     /// </summary>
     public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// Indicates whether to filter activities by their archived status. If null (default), only non-archived activities are returned. If true, only archived activities are returned. If false, only non-archived activities are returned.
+    /// </summary>
+    public bool? IsArchived { get; set; }
 }

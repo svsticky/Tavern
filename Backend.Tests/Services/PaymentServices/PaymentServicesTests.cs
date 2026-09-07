@@ -18,15 +18,20 @@ using Xunit;
 
 namespace Backend.Tests.Services.PaymentServices;
 
+[Collection("NonParallelEnvironment")]
 public class PaymentServicesTests : IDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly PostgresDbContext _db;
     private readonly IPaymentClient _mollieClientMock;
     private readonly MollieService _service;
+    private readonly string? _originalAccountingEnabled;
 
     public PaymentServicesTests()
     {
+        _originalAccountingEnabled = Environment.GetEnvironmentVariable("ACCOUNTING_ENABLED");
+        Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", "true");
+
         _connection = new SqliteConnection("Filename=:memory:");
         _connection.Open();
 
@@ -45,6 +50,7 @@ public class PaymentServicesTests : IDisposable
     {
         _db.Dispose();
         _connection.Dispose();
+        Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", _originalAccountingEnabled);
         Environment.SetEnvironmentVariable("ACCOUNTING_SERVICE", null);
     }
 

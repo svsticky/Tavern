@@ -581,12 +581,13 @@
           "config": {
             "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
-            "multivalued": "true",
+            "multivalued": "false",
             "user.attribute": "group_memberships",
             "id.token.claim": "true",
             "lightweight.claim": "false",
             "access.token.claim": "true",
-            "jsonType.label": "String"
+            "claim.name": "group_memberships",
+            "jsonType.label": "JSON"
           }
         },
         {
@@ -776,13 +777,13 @@
           "config": {
             "introspection.token.claim": "true",
             "userinfo.token.claim": "true",
-            "multivalued": "true",
+            "multivalued": "false",
             "user.attribute": "group_memberships",
             "id.token.claim": "true",
             "lightweight.claim": "false",
             "access.token.claim": "true",
             "claim.name": "group_memberships",
-            "jsonType.label": "String"
+            "jsonType.label": "JSON"
           }
         },
         {

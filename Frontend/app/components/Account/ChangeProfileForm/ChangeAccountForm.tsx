@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { deleteMembersById, getMembersByIdMailinglists } from "~/api";
 import type { MemberMailinglistDto, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
+import AdminModeToggle from "~/components/UI/AdminModeToggle";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
 import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
@@ -11,6 +12,8 @@ import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
+import ThemeToggle from "~/components/UI/ThemeToggle";
+import { useAdminMode } from "~/context/AdminModeContext";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import { getEnv } from "~/util/config.utils";
@@ -37,6 +40,7 @@ export default function ChangeAccountForm({
 }) {
   const authService = useAuth();
   const { setMember } = useApp();
+  const { isAdminUser } = useAdminMode();
   const [saving, setSaving] = useState(false);
   const [loadingMailingLists, setLoadingMailingLists] = useState(false);
   const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
@@ -282,6 +286,21 @@ export default function ChangeAccountForm({
             </Button>
           </div>
         </div>
+
+        <div>
+          <FormHeader title={t("theme")} border={false} />
+          <ThemeToggle variant="segmented" />
+        </div>
+
+        {isAdminUser && (
+          <div className="md:col-span-2">
+            <FormHeader title={t("view_mode")} border={false} />
+            <AdminModeToggle variant="segmented" />
+          </div>
+        )}
+      </FormSection>
+
+      <FormSection columns={1}>
         <div>
           <FormHeader title={t("security")} border={false} />
           <div className="flex flex-col gap-2">

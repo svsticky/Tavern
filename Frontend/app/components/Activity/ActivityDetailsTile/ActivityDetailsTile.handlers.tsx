@@ -27,13 +27,19 @@ import { capitalizeFirst } from "~/util/string.util";
  *
  * @param activity - The activity object containing name, description, location, and date details.
  */
-export const handleAddToCalendar = (activity: ActivityResponseDto) => {
+export const handleAddToCalendar = (
+  activity: ActivityResponseDto,
+  isDutch: boolean = true,
+) => {
   const title = encodeURIComponent(activity.name || "Activiteit");
   const disclaimer = t("calendar_copy_disclaimer", {
     datetime: new Date().toISOString(),
   });
+  const descriptionText = isDutch
+    ? activity.dutchDescription || activity.englishDescription
+    : activity.englishDescription || activity.dutchDescription;
   const description = encodeURIComponent(
-    `${formatForGoogleCalendar(activity.dutchDescription) || ""}\n\n[${disclaimer}]`,
+    `${formatForGoogleCalendar(descriptionText) || ""}\n\n[${disclaimer}]`,
   );
   const location = encodeURIComponent(activity.location || "TBA");
 
@@ -48,6 +54,113 @@ export const handleAddToCalendar = (activity: ActivityResponseDto) => {
   const googleUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${description}&location=${location}&dates=${startTime}/${endTime}`;
 
   window.open(googleUrl, "_blank", "noreferrer");
+};
+
+/**
+ * Escapes characters in strings intended for iCalendar text fields according to RFC 5545.
+ * Special characters \ , ; and newline are escaped.
+ */
+export const escapeIcsText = (text: string): string => {
+  return text
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\r?\n/g, "\\n");
+};
+
+/**
+ * Generates RFC 5545 compliant iCalendar (.ics) content for a single activity.
+ *
+ * @param activity - The activity object.
+ * @param isDutch - Boolean flag indicating if Dutch description should be prioritized.
+ * @param now - Reference date for DTSTAMP and snapshot disclaimer.
+ */
+export const generateIcsContent = (
+  activity: ActivityResponseDto,
+  isDutch: boolean = true,
+  now: Date = new Date(),
+): string => {
+  const formatDateIcs = (
+    dateStr: string | undefined | null,
+    fallback: Date,
+  ) => {
+    const d = dateStr ? new Date(dateStr) : fallback;
+    return Number.isNaN(d.getTime())
+      ? fallback.toISOString().replace(/-|:|\.\d+/g, "")
+      : d.toISOString().replace(/-|:|\.\d+/g, "");
+  };
+
+  const dtStamp = now.toISOString().replace(/-|:|\.\d+/g, "");
+  const dtStart = formatDateIcs(activity.dateTimeStart, now);
+  const dtEnd = formatDateIcs(activity.dateTimeEnd, now);
+
+  const disclaimer = t("calendar_copy_disclaimer", {
+    datetime: now.toISOString(),
+  });
+  const descriptionText = isDutch
+    ? activity.dutchDescription || activity.englishDescription
+    : activity.englishDescription || activity.dutchDescription;
+  const fullDescription = `${descriptionText || ""}\n\n[${disclaimer}]`;
+
+  const summary = escapeIcsText(activity.name || "Activiteit");
+  const location = escapeIcsText(activity.location || "TBA");
+  const description = escapeIcsText(fullDescription);
+  const uid = `activity-${activity.id || "0"}@tavern.svsticky.nl`;
+
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Study association Sticky//Tavern//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${dtStamp}`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:${description}`,
+    `LOCATION:${location}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+};
+
+/**
+ * Generates an .ics file for the activity and triggers a browser download.
+ *
+ * @param activity - The activity object containing event details.
+ * @param isDutch - Boolean flag indicating language preference.
+ */
+export const handleDownloadIcs = (
+  activity: ActivityResponseDto,
+  isDutch: boolean = true,
+) => {
+  try {
+    const icsContent = generateIcsContent(activity, isDutch);
+    const blob = new Blob([icsContent], {
+      type: "text/calendar;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const safeName = (activity.name || "activity")
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]/gi, "_");
+    link.download = `${safeName}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success(t("calendar_file_downloaded"), {
+      icon: <Check className="text-primary-500" />,
+    });
+  } catch (error) {
+    console.error("Failed to download ICS file:", error);
+    toast.error(t("calendar_file_download_failed"), {
+      icon: <AlertTriangle className="text-red-500" />,
+    });
+  }
 };
 
 /**
