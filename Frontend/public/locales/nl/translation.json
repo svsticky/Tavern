@@ -615,5 +615,15 @@
   "copy_calendar_link": "Kopieer agendalink",
   "reset_calendar_link": "Reset agendalink",
   "calendar_link_reset": "Agendalink gereset. Werk je agenda-app bij met de nieuwe link.",
-  "calendar_link_reset_failed": "Kon de agendalink niet resetten"
+  "calendar_link_reset_failed": "Kon de agendalink niet resetten",
+  "admin_mode": "Admin-modus",
+  "member_mode": "Lid-weergave",
+  "view_mode": "Weergavemodus",
+  "member_mode_active": "Lid-weergave actief",
+  "admin_mode_active": "Admin-modus actief",
+  "switch_to_admin_mode": "Terug naar admin-modus",
+  "switch_to_member_mode": "Wissel naar lid-weergave",
+  "member_view_banner_text": "Lid-weergave actief: Je bekijkt Koala momenteel zoals ieder normaal lid.",
+  "admin_mode_description": "Volledige beheerdersrechten actief.",
+  "member_mode_description": "Beheerfuncties zijn verborgen. Je ziet de app zoals een normaal lid."
 }
