@@ -10,6 +10,7 @@ import {
 } from "~/routes/activities/activities.handlers";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { getCommitteeYear } from "~/util/date.util";
 
 vi.mock("~/routes/activities/activities.handlers", () => ({
   loadActivities: vi.fn(),
@@ -180,7 +181,7 @@ describe("ActivitiesPage", () => {
     expect(await screen.findByText("personal_calendar")).toBeInTheDocument();
   });
 
-  it("opens the personal calendar tile in a modal when the button is clicked", async () => {
+  it("opens and closes the personal calendar tile in a modal", async () => {
     const authService = createMockAuthService({
       getToken: vi.fn(async () => "tok"),
       getTokenParsed: vi.fn(async () => memberToken),
@@ -196,6 +197,26 @@ describe("ActivitiesPage", () => {
     expect(
       await screen.findByText("personal-calendar-tile"),
     ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+
+    expect(
+      screen.queryByText("personal-calendar-tile"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders create activity button for committee member in current committee year", async () => {
+    const committeeToken: TokenParsed = {
+      ...memberToken,
+      group_memberships: [`${getCommitteeYear()}:cie`],
+    };
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => committeeToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
   });
 
   it("renders filter tabs and allows switching to enrolled history", async () => {
