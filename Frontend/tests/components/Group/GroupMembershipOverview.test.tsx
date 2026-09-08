@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
@@ -38,5 +39,24 @@ describe("GroupMembershipOverview", () => {
       .map((el) => el.textContent);
     expect(names[0]).toContain("Newer Group");
     expect(names[1]).toContain("Older Group");
+  });
+
+  it("does not link memberships to their group by default", () => {
+    render(
+      <GroupMembershipOverview groupMemberships={[membership({ id: 1 })]} />,
+    );
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("links each membership to its group's admin page when linkToGroup is true", () => {
+    render(
+      <MemoryRouter>
+        <GroupMembershipOverview
+          groupMemberships={[membership({ id: 1, groupId: 5 })]}
+          linkToGroup
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/admin/groups/5");
   });
 });

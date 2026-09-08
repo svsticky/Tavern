@@ -233,7 +233,11 @@ public class ActivityResponseDTO
             CostCenterId = isBoard ? a.CostCenterId : null,
             CostUnitId = isBoard ? a.CostUnitId : null,
 
-            Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList(),
+            Enrollments = a.Enrollments
+                .OrderBy(e => e.Member.FirstName)
+                .ThenBy(e => e.Member.LastName)
+                .Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e))
+                .ToList(),
 
             SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
 

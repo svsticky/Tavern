@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
 import GroupMembershipItem from "~/components/Group/GroupMembershipItem";
@@ -37,5 +38,30 @@ describe("GroupMembershipItem", () => {
     fireEvent.error(img);
 
     expect(img).toHaveAttribute("src", "/fallback.svg");
+  });
+
+  it("does not render a link when linkToGroup is not set", () => {
+    render(
+      <GroupMembershipItem
+        groupMembership={membership}
+        fallbackUrl="/fallback.svg"
+      />,
+    );
+
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("links to the group's admin page when linkToGroup is true", () => {
+    render(
+      <MemoryRouter>
+        <GroupMembershipItem
+          groupMembership={membership}
+          fallbackUrl="/fallback.svg"
+          linkToGroup
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/admin/groups/2");
   });
 });

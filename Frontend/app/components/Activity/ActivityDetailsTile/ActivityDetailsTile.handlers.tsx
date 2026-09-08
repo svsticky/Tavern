@@ -104,11 +104,19 @@ export const handleEnrollment = async (
       }
 
       if (response.data) {
+        const questionPublicity = new Map(
+          activity.specificationQuestions.map((question) => [
+            question.id,
+            question.isPublic,
+          ]),
+        );
+
         const submittedAnswers = Object.entries(answers).map(
           ([questionId, answer]) => ({
             questionId: Number(questionId),
             answerId: 0,
             answer: String(answer),
+            isPublic: questionPublicity.get(Number(questionId)) ?? false,
           }),
         );
 
@@ -230,11 +238,19 @@ export const handleUpdateEnrollment = async (
         ]),
       );
 
+      const questionPublicity = new Map(
+        activity.specificationQuestions.map((question) => [
+          question.id,
+          question.isPublic,
+        ]),
+      );
+
       const updatedSpecificationAnswers = Object.entries(answers).map(
         ([questionId, answer]) => ({
           questionId: Number(questionId),
           answerId: existingAnswerIds.get(Number(questionId)) ?? 0,
           answer: String(answer),
+          isPublic: questionPublicity.get(Number(questionId)) ?? false,
         }),
       );
 

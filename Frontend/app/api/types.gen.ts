@@ -1846,6 +1846,10 @@ export type SpecificationAnswerResponseDto = {
      * The answer provided for the specification question. The content and format of this answer depend on the type of the associated specification question.
      */
     answer: string;
+    /**
+     * Whether the answers provided for this specification question are visible to other members who enrolled for the same activity.
+     */
+    isPublic: boolean;
 };
 
 /**

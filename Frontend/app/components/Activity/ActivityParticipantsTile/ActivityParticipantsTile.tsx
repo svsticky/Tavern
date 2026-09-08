@@ -13,21 +13,26 @@ import ParticipantTile from "./ParticipantTile";
  * @param {Object} props - The component props.
  * @param {string} [props.title] - Optional override for the section title. Defaults to the localized "participants" string.
  * @param {EnrollmentResponseDto[]} props.enrollments - An array of enrollment data objects to be displayed.
+ * @param {boolean} [props.isBoard] - Whether the current viewer is a board member; forwarded to each
+ *   `ParticipantTile` so it can link to the member's admin page.
  *
  * @example
  * ```tsx
  * <ActivityParticipantsTile
  *   title="Attendees"
  *   enrollments={activity.enrollments}
+ *   isBoard={isBoard}
  * />
  * ```
  */
 export default function ActivityParticipantsTile({
   title,
   enrollments,
+  isBoard,
 }: {
   title?: string;
   enrollments: EnrollmentResponseDto[];
+  isBoard?: boolean;
 }) {
   const count = enrollments.length;
 
@@ -44,7 +49,11 @@ export default function ActivityParticipantsTile({
 
       <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
         {enrollments.map((enrollment, idx) => (
-          <ParticipantTile key={idx} enrollment={enrollment} />
+          <ParticipantTile
+            key={idx}
+            enrollment={enrollment}
+            isBoard={isBoard}
+          />
         ))}
       </div>
     </Tile>

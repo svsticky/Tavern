@@ -283,7 +283,7 @@ public class KeycloakAPIService(
 
         return new
         {
-            username = member.Email,
+            username = currentEmail,
             email = currentEmail,
             firstName = member.FirstName,
             lastName = member.LastName,

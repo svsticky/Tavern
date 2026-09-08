@@ -82,7 +82,14 @@ public class ProjectionsTests
             Id = 1u,
             SpecificationQuestionId = 5u,
             MemberId = _userId,
-            Answer = "My Answer"
+            Answer = "My Answer",
+            Question = new SpecificationQuestion
+            {
+                Id = 5u,
+                QuestionDutch = "NL Q",
+                QuestionEnglish = "EN Q",
+                IsPublic = true
+            }
         };
 
         var dto = SpecificationAnswerResponseDTO.ToDto().Compile()(answer);
@@ -90,6 +97,7 @@ public class ProjectionsTests
         Assert.Equal(5u, dto.QuestionId);
         Assert.Equal(1u, dto.AnswerId);
         Assert.Equal("My Answer", dto.Answer);
+        Assert.True(dto.IsPublic);
     }
 
     [Fact]

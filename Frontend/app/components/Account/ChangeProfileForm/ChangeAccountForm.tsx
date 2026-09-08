@@ -305,7 +305,7 @@ export default function ChangeAccountForm({
             </div>
 
             <a
-              href={`${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/account/#/account-security/signing-in`}
+              href={`${getEnv("KeycloakUrl")}/realms/${getEnv("KeycloakRealm")}/account/account-security/signing-in`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-center text-gray-500 hover:text-gray-700 underline pt-1"

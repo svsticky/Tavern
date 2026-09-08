@@ -26,8 +26,10 @@ vi.mock(
 vi.mock(
   "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile",
   () => ({
-    default: ({ title }: { title?: string }) => (
-      <div>participants-tile-{title ?? "main"}</div>
+    default: ({ title, isBoard }: { title?: string; isBoard?: boolean }) => (
+      <div>
+        participants-tile-{title ?? "main"}-isBoard-{String(Boolean(isBoard))}
+      </div>
     ),
   }),
 );
@@ -126,9 +128,39 @@ describe("ActivityPage", () => {
     expect(
       await screen.findByText("activity-details-tile"),
     ).toBeInTheDocument();
-    expect(screen.getByText("participants-tile-main")).toBeInTheDocument();
     expect(
-      screen.getByText("participants-tile-waiting_list"),
+      screen.getByText("participants-tile-main-isBoard-false"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-waiting_list-isBoard-false"),
+    ).toBeInTheDocument();
+  });
+
+  it("forwards isBoard=true to the participant tiles for a board member", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("participants-tile-main-isBoard-true"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-waiting_list-isBoard-true"),
     ).toBeInTheDocument();
   });
 
@@ -164,10 +196,10 @@ describe("ActivityPage", () => {
     );
 
     expect(
-      await screen.findByText("participants-tile-main"),
+      await screen.findByText("participants-tile-main-isBoard-false"),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("participants-tile-waiting_list"),
+      screen.getByText("participants-tile-waiting_list-isBoard-false"),
     ).toBeInTheDocument();
   });
 

@@ -123,6 +123,30 @@ describe("EditMemberPage", () => {
     expect(screen.getByText("Computer Science")).toBeInTheDocument();
   });
 
+  it("links a group membership to the group's admin page", async () => {
+    loadMemberData.mockImplementation(
+      async ({ setFormData, setGroupMemberships, setLoading }: any) => {
+        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
+        setGroupMemberships([
+          {
+            id: 1,
+            groupId: 5,
+            groupName: "Board",
+            membershipYear: 2026,
+            roleAliasName: "Chair",
+            memberName: "Jane",
+          },
+        ]);
+        setLoading(false);
+      },
+    );
+
+    renderPage();
+
+    const groupLink = await screen.findByRole("link", { name: /Board/ });
+    expect(groupLink).toHaveAttribute("href", "/admin/groups/5");
+  });
+
   it("saves the member when the save button is clicked", async () => {
     renderPage();
 

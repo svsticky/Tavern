@@ -80,6 +80,7 @@ public class ActivityService : IActivityService
         // Filter activities based on the provided criteria and the user's permissions
         var activities = await _db.Activities
             .Include(a => a.Enrollments)
+                .ThenInclude(e => e.Member)
             .Include(a => a.SpecificationQuestions)
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds, userId.HasValue)

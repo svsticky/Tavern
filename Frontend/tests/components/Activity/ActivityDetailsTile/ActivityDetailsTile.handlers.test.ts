@@ -57,6 +57,7 @@ function buildActivity(
     dutchDescription: "Beschrijving",
     englishDescription: "Description",
     enrollments: [],
+    specificationQuestions: [],
     ...overrides,
   } as ActivityResponseDto;
 }
