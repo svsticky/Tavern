@@ -1,4 +1,6 @@
 using Backend.Controllers.DTOs;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
@@ -59,6 +61,15 @@ public class ExceptionHandlingMiddleware
             case ValidationException:
             case FormatException:
                 statusCode = StatusCodes.Status400BadRequest;
+                break;
+            case DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } pgEx }:
+                statusCode = StatusCodes.Status409Conflict;
+                message = pgEx.ConstraintName switch
+                {
+                    "IX_Members_Email" => "An account with this email address already exists.",
+                    "IX_Members_StudentNumber" => "An account with this student number already exists.",
+                    _ => "A record with the same value already exists."
+                };
                 break;
             default:
                 _logger.LogError(exception, "An unhandled exception occurred during request processing.");

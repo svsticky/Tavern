@@ -1,7 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { EnrollmentResponseDto } from "~/api";
 import EditParticipantTile from "~/components/Activity/Edit/EditParticipantsTile/EditParticipantTile/EditParticipantTile";
+
+function renderTile(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 const {
   patchEnrollmentsByActivityIdByMemberId,
@@ -46,7 +52,7 @@ describe("EditParticipantTile", () => {
   });
 
   it("renders the member's name and price", () => {
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -57,8 +63,35 @@ describe("EditParticipantTile", () => {
     expect(screen.getByDisplayValue("5.00")).toBeInTheDocument();
   });
 
+  it("links the member's name to their admin profile", () => {
+    renderTile(
+      <EditParticipantTile
+        activityId={1}
+        enrollment={buildEnrollment()}
+        onUnenroll={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Alice Smith")).toHaveAttribute(
+      "href",
+      "/admin/members/member-1",
+    );
+  });
+
+  it("renders the member's name as plain text when the member has no id", () => {
+    renderTile(
+      <EditParticipantTile
+        activityId={1}
+        enrollment={buildEnrollment({
+          member: { firstName: "Alice", lastName: "Smith" },
+        })}
+        onUnenroll={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Alice Smith")).not.toHaveAttribute("href");
+  });
+
   it("shows an empty price input when the enrollment has no price", () => {
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment({ price: undefined })}
@@ -70,7 +103,7 @@ describe("EditParticipantTile", () => {
 
   it("saves the price on blur", async () => {
     patchEnrollmentsByActivityIdByMemberId.mockResolvedValue({});
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -91,7 +124,7 @@ describe("EditParticipantTile", () => {
 
   it("saves the price on Enter and blurs the input", async () => {
     patchEnrollmentsByActivityIdByMemberId.mockResolvedValue({});
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -108,7 +141,7 @@ describe("EditParticipantTile", () => {
   });
 
   it("reverts to the previous price when the input is not a number", async () => {
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -125,7 +158,7 @@ describe("EditParticipantTile", () => {
 
   it("treats a blank input as a price of 0 on blur", async () => {
     patchEnrollmentsByActivityIdByMemberId.mockResolvedValue({});
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -146,7 +179,7 @@ describe("EditParticipantTile", () => {
   });
 
   it("ignores non-Enter key presses", () => {
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -161,7 +194,7 @@ describe("EditParticipantTile", () => {
   });
 
   it("reverts to an empty price when the input is not a number and there is no prior price", async () => {
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment({ price: undefined })}
@@ -180,7 +213,7 @@ describe("EditParticipantTile", () => {
     patchEnrollmentsByActivityIdByMemberId.mockResolvedValue({
       error: { title: "Boom" },
     });
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment({ price: undefined })}
@@ -201,7 +234,7 @@ describe("EditParticipantTile", () => {
     patchEnrollmentsByActivityIdByMemberId.mockResolvedValue({
       error: { title: "Boom" },
     });
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -221,7 +254,7 @@ describe("EditParticipantTile", () => {
   it("calls the unenroll API and onUnenroll when the unenroll button is clicked", async () => {
     deleteEnrollmentsByActivityIdByMemberId.mockResolvedValue({});
     const onUnenroll = vi.fn();
-    render(
+    renderTile(
       <EditParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}

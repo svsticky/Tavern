@@ -3,7 +3,7 @@ import type React from "react";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type Language, type PostMemberDto, postMembers } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
+import { getFriendlyErrorMessage } from "~/util/error.util";
 
 /**
  * Data structure representing the registration form fields for a new begunstiger.
@@ -117,6 +117,6 @@ export const handleCreateSubmit = async ({
   toast.promise(registerProcess(), {
     loading: t("registering"),
     success: t("registration_successful"),
-    error: (error) => appendErrorMessage(t("registration_failed"), error),
+    error: (error) => getFriendlyErrorMessage(t("registration_failed"), error),
   });
 };

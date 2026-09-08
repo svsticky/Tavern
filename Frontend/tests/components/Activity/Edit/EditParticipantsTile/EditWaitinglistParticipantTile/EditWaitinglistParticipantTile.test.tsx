@@ -1,7 +1,13 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { EnrollmentResponseDto } from "~/api";
 import EditWaitinglistParticipantTile from "~/components/Activity/Edit/EditParticipantsTile/EditWaitinglistParticipantTile/EditWaitinglistParticipantTile";
+
+function renderTile(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 const {
   deleteEnrollmentsByActivityIdByMemberId,
@@ -30,9 +36,12 @@ vi.mock("react-hot-toast", () => ({
   }),
 }));
 
-function buildEnrollment(): EnrollmentResponseDto {
+function buildEnrollment(
+  overrides: Partial<EnrollmentResponseDto> = {},
+): EnrollmentResponseDto {
   return {
     member: { id: "member-1", firstName: "Alice", lastName: "Smith" },
+    ...overrides,
   } as EnrollmentResponseDto;
 }
 
@@ -42,7 +51,7 @@ describe("EditWaitinglistParticipantTile", () => {
   });
 
   it("renders the member's name", () => {
-    render(
+    renderTile(
       <EditWaitinglistParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -53,10 +62,39 @@ describe("EditWaitinglistParticipantTile", () => {
     expect(screen.getByText("Alice Smith")).toBeInTheDocument();
   });
 
+  it("links the member's name to their admin profile", () => {
+    renderTile(
+      <EditWaitinglistParticipantTile
+        activityId={1}
+        enrollment={buildEnrollment()}
+        onUnenroll={vi.fn()}
+        onMoveToParticipants={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Alice Smith")).toHaveAttribute(
+      "href",
+      "/admin/members/member-1",
+    );
+  });
+
+  it("renders the member's name as plain text when the member has no id", () => {
+    renderTile(
+      <EditWaitinglistParticipantTile
+        activityId={1}
+        enrollment={buildEnrollment({
+          member: { firstName: "Alice", lastName: "Smith" },
+        })}
+        onUnenroll={vi.fn()}
+        onMoveToParticipants={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Alice Smith")).not.toHaveAttribute("href");
+  });
+
   it("calls the move-to-participants API and onMoveToParticipants when clicked", async () => {
     patchEnrollmentsByActivityIdByMemberId.mockResolvedValue({});
     const onMoveToParticipants = vi.fn();
-    render(
+    renderTile(
       <EditWaitinglistParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
@@ -72,7 +110,7 @@ describe("EditWaitinglistParticipantTile", () => {
   it("calls the unenroll API and onUnenroll when clicked", async () => {
     deleteEnrollmentsByActivityIdByMemberId.mockResolvedValue({});
     const onUnenroll = vi.fn();
-    render(
+    renderTile(
       <EditWaitinglistParticipantTile
         activityId={1}
         enrollment={buildEnrollment()}
