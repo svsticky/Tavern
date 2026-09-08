@@ -458,23 +458,23 @@ namespace Backend.Services.Domain
                 return;
 
             if ((await db.Settings.FindAsync("MastersShouldPayMembership"))?.Value != "1" && existingMember.StudyEnrollments.Any(se => se.Study.Type == StudyType.Master))
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if ((await db.Settings.FindAsync("GratieShouldPayMembership"))?.Value != "1" && existingMember.Gratie)
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if ((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1" && existingMember.EreLid)
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if ((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             // if ever enrolled for an activity, we don't want to delete the member, (can be an old begunstiger that isn't begunstiger anymore, we want to keep the history of their activity enrollments)
             if (existingMember.Enrollments.Any())
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if (paymentValidationService.HasEverPaidMembershipPayment(existingMember.Id) || paymentValidationService.HasEverPaidBegunstigerFee(existingMember.Id))
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             var existingMembershipPayments = await db.MembershipPayments
                 .Where(p => p.MemberId == existingMember.Id)
@@ -491,7 +491,7 @@ namespace Backend.Services.Domain
                 // Make sure there is no paid membership/begunstiger payment with the same email, if there is, we don't want to delete the member
                 if (paymentResponse.Status == PaymentStatus.Paid)
                 {
-                    throw new InvalidOperationException("Existing member with same email address found.");
+                    throw new InvalidOperationException("An account with this email address already exists.");
                 }
 
                 // If there is a pending payment, we cancel it to prevent the member from paying for a membership/fee they won't get

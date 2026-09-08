@@ -1,4 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import EditParticipantsTile from "~/components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
@@ -8,6 +10,10 @@ import {
   handleMoveToParticipants,
   handleUnenrollParticipant,
 } from "~/components/Activity/Edit/EditParticipantsTile/EditParticipantsTile.handlers";
+
+function renderTile(ui: ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 vi.mock(
   "~/components/Activity/Edit/EditParticipantsTile/EditParticipantsTile.handlers",
@@ -63,14 +69,14 @@ describe("EditParticipantsTile", () => {
   });
 
   it("shows a placeholder when there are no participants", () => {
-    render(
+    renderTile(
       <EditParticipantsTile activity={buildActivity()} setActivity={vi.fn()} />,
     );
     expect(screen.getByText("no_participants_yet")).toBeInTheDocument();
   });
 
   it("renders the participant count with the capacity limit", () => {
-    render(
+    renderTile(
       <EditParticipantsTile
         activity={buildActivity({
           participantLimit: 20,
@@ -86,13 +92,15 @@ describe("EditParticipantsTile", () => {
 
   it("calls handleDownloadEnrollments when the download button is clicked", () => {
     const activity = buildActivity();
-    render(<EditParticipantsTile activity={activity} setActivity={vi.fn()} />);
+    renderTile(
+      <EditParticipantsTile activity={activity} setActivity={vi.fn()} />,
+    );
     fireEvent.click(screen.getByText("download_enrollments"));
     expect(handleDownloadEnrollments).toHaveBeenCalledWith(activity);
   });
 
   it("renders enrolled participants and the waiting list separately", () => {
-    render(
+    renderTile(
       <EditParticipantsTile
         activity={buildActivity({
           enrollments: [
@@ -123,7 +131,9 @@ describe("EditParticipantsTile", () => {
         },
       ] as ActivityResponseDto["enrollments"],
     });
-    render(<EditParticipantsTile activity={activity} setActivity={vi.fn()} />);
+    renderTile(
+      <EditParticipantsTile activity={activity} setActivity={vi.fn()} />,
+    );
     fireEvent.click(screen.getByText("unenroll"));
     await vi.waitFor(() =>
       expect(handleUnenrollParticipant).toHaveBeenCalledWith(
@@ -143,7 +153,9 @@ describe("EditParticipantsTile", () => {
         },
       ] as ActivityResponseDto["enrollments"],
     });
-    render(<EditParticipantsTile activity={activity} setActivity={vi.fn()} />);
+    renderTile(
+      <EditParticipantsTile activity={activity} setActivity={vi.fn()} />,
+    );
     fireEvent.click(screen.getByText("move_to_participants"));
     await vi.waitFor(() =>
       expect(handleMoveToParticipants).toHaveBeenCalledWith(
@@ -163,7 +175,9 @@ describe("EditParticipantsTile", () => {
         },
       ] as ActivityResponseDto["enrollments"],
     });
-    render(<EditParticipantsTile activity={activity} setActivity={vi.fn()} />);
+    renderTile(
+      <EditParticipantsTile activity={activity} setActivity={vi.fn()} />,
+    );
     fireEvent.click(screen.getByText("unenroll"));
     await vi.waitFor(() =>
       expect(handleUnenrollParticipant).toHaveBeenCalledWith(
@@ -176,7 +190,9 @@ describe("EditParticipantsTile", () => {
 
   it("closes the search modal without enrolling when dismissed", () => {
     const activity = buildActivity();
-    render(<EditParticipantsTile activity={activity} setActivity={vi.fn()} />);
+    renderTile(
+      <EditParticipantsTile activity={activity} setActivity={vi.fn()} />,
+    );
 
     fireEvent.click(screen.getByText("enroll_member"));
     expect(screen.getByText("select-member")).toBeInTheDocument();
@@ -188,7 +204,9 @@ describe("EditParticipantsTile", () => {
 
   it("opens the search modal and calls handleEnrollParticipant on member selection", () => {
     const activity = buildActivity();
-    render(<EditParticipantsTile activity={activity} setActivity={vi.fn()} />);
+    renderTile(
+      <EditParticipantsTile activity={activity} setActivity={vi.fn()} />,
+    );
 
     fireEvent.click(screen.getByText("enroll_member"));
     fireEvent.click(screen.getByText("select-member"));

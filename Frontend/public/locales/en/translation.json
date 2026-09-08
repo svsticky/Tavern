@@ -359,6 +359,8 @@
   "registering": "Registering",
   "registration_failed": "Registration failed",
   "registration_successful": "Registration successful",
+  "email_already_registered": "This email address is already registered. Try logging in instead, or use a different email address.",
+  "student_number_already_registered": "This student number is already registered.",
   "remove": "Remove",
   "reset": "Reset",
   "role": "Role",

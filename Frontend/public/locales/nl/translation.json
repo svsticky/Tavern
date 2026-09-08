@@ -360,6 +360,8 @@
   "registering": "Registreren",
   "registration_failed": "Registratie mislukt",
   "registration_successful": "Registratie succesvol",
+  "email_already_registered": "Dit e-mailadres is al geregistreerd. Probeer in te loggen, of gebruik een ander e-mailadres.",
+  "student_number_already_registered": "Dit studentnummer is al geregistreerd.",
   "remove": "Verwijderen",
   "reset": "Resetten",
   "role": "Rol",
