@@ -69,6 +69,33 @@ describe("ActivityEnrollmentOverview", () => {
     // Now Past Activity should be visible
     expect(screen.getByText("Past Activity")).toBeInTheDocument();
     expect(screen.queryByText("Future Activity")).not.toBeInTheDocument();
+
+    // Click Upcoming tab back
+    const upcomingButton = screen.getByRole("button", { name: /upcoming/i });
+    fireEvent.click(upcomingButton);
+    expect(screen.getByText("Future Activity")).toBeInTheDocument();
+    expect(screen.queryByText("Past Activity")).not.toBeInTheDocument();
+  });
+
+  it("defaults to past tab when there are only past activities", () => {
+    const pastDate = new Date(Date.now() - 86400000).toISOString();
+
+    const activities: ActivityResponseDto[] = [
+      {
+        id: 1,
+        name: "Only Past Activity",
+        dateTimeStart: pastDate,
+        dateTimeEnd: pastDate,
+      } as ActivityResponseDto,
+    ];
+
+    render(
+      <MemoryRouter>
+        <ActivityEnrollmentOverview enrolledActivities={activities} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Only Past Activity")).toBeInTheDocument();
   });
 
   it("shows no_past_enrollments message when past tab is selected with no past activities", () => {

@@ -222,5 +222,61 @@ describe("ActivitiesPage", () => {
         }),
       ),
     );
+
+    const enrolledBtn = await screen.findByRole("button", {
+      name: /my_enrollments|my enrollments/i,
+    });
+    fireEvent.click(enrolledBtn);
+
+    await waitFor(() =>
+      expect(loadActivities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: "enrolled",
+          userId: memberToken.UserId,
+        }),
+      ),
+    );
+
+    const allBtn = await screen.findByRole("button", {
+      name: /all_activities|all activities/i,
+    });
+    fireEvent.click(allBtn);
+
+    await waitFor(() =>
+      expect(loadActivities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: "all",
+          userId: memberToken.UserId,
+        }),
+      ),
+    );
+  });
+
+  it("shows appropriate empty states when enrolled or history filters are empty", async () => {
+    vi.mocked(loadActivities).mockImplementation(
+      async ({ setLoading, setActivities }: any) => {
+        setActivities([]);
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    const historyBtn = await screen.findByRole("button", {
+      name: /enrolled_history|enrolled history/i,
+    });
+    fireEvent.click(historyBtn);
+    expect(
+      await screen.findByText("no_historical_activities"),
+    ).toBeInTheDocument();
+
+    const enrolledBtn = await screen.findByRole("button", {
+      name: /my_enrollments|my enrollments/i,
+    });
+    fireEvent.click(enrolledBtn);
+    expect(await screen.findByText("no_enrollments")).toBeInTheDocument();
   });
 });
