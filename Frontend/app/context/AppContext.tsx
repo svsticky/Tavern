@@ -33,7 +33,8 @@ interface AppContextType {
  * Internal context object for the application state.
  * Initialized as undefined to enforce the use of the Provider.
  */
-const AppContext = createContext<AppContextType | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
+export default AppContext;
 
 /**
  * Global State Provider that wraps the application.
