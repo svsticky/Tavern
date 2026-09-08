@@ -72,7 +72,7 @@ export const loadHomePageData = async ({
       getActivities({
         query: {
           UserId: userId,
-          IncludePast: false,
+          IncludePast: true,
           IncludeFuture: true,
         },
       }),

@@ -145,9 +145,7 @@ export default function DashboardPage() {
           <div className="flex flex-col col-span-4 lg:col-span-1 gap-3">
             <p className="text-md">{t("my_enrollments")}</p>
             <ActivityEnrollmentOverview
-              enrolledActivities={enrolledActivities.filter(
-                (a) => new Date(a.dateTimeEnd) >= new Date(Date.now()),
-              )}
+              enrolledActivities={enrolledActivities}
             />
 
             <p className="text-md">{t("my_groups")}</p>

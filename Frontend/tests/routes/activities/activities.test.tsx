@@ -197,4 +197,30 @@ describe("ActivitiesPage", () => {
       await screen.findByText("personal-calendar-tile"),
     ).toBeInTheDocument();
   });
+
+  it("renders filter tabs and allows switching to enrolled history", async () => {
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
+
+    const historyBtn = await screen.findByRole("button", {
+      name: /enrolled_history|enrolled history/i,
+    });
+    expect(historyBtn).toBeInTheDocument();
+
+    fireEvent.click(historyBtn);
+
+    await waitFor(() =>
+      expect(loadActivities).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filter: "history",
+          userId: memberToken.UserId,
+        }),
+      ),
+    );
+  });
 });
