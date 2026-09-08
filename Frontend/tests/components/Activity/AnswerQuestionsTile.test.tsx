@@ -1,8 +1,11 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { GetSpecificationQuestionResponseDto } from "~/api";
 import AnswerQuestionsTile from "~/components/Activity/AnswerQuestionsTile";
+import AppContext from "~/context/AppContext";
+import AuthContext from "~/context/AuthContext";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -84,6 +87,39 @@ describe("AnswerQuestionsTile", () => {
       { authService },
     );
     expect(await screen.findByText("Vraag")).toBeInTheDocument();
+  });
+
+  it("shows the English question when member preferredLanguage is EN even if token has Dutch locale", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({ ...enToken, locale: "NL" })),
+    });
+    render(
+      <MemoryRouter>
+        <AuthContext.Provider value={authService}>
+          <AppContext.Provider
+            value={{
+              member: { preferredLanguage: "EN" } as any,
+              setMember: vi.fn(),
+              boardGroupId: 1,
+              setBoardGroupId: vi.fn(),
+              candidateBoardGroupId: 2,
+              setCandidateBoardGroupId: vi.fn(),
+              financialYearStartDate: null,
+              setFinancialYearStartDate: vi.fn(),
+              committeeCreationDate: null,
+              setCommitteeCreationDate: vi.fn(),
+            }}
+          >
+            <AnswerQuestionsTile
+              questions={[question({})]}
+              answers={{}}
+              onChange={vi.fn()}
+            />
+          </AppContext.Provider>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText("Question")).toBeInTheDocument();
   });
 
   it("shows a required asterisk for mandatory questions", async () => {

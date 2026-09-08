@@ -47,3 +47,24 @@ export function getActivityEnrollmentStatus(
 
   return { canEnroll, canUnenroll };
 }
+
+/**
+ * Determines whether the user should be shown Dutch or English activity texts.
+ * Prioritizes the active member profile language, then fallback token claim or i18n language.
+ */
+export function isDutchLocale(
+  preferredLanguage?: string | null,
+  i18nLanguage?: string | null,
+  tokenLocale?: string | null,
+): boolean {
+  if (preferredLanguage) {
+    return preferredLanguage.toUpperCase() === "NL";
+  }
+  if (tokenLocale) {
+    return tokenLocale.toUpperCase() === "NL";
+  }
+  if (i18nLanguage) {
+    return i18nLanguage.toLowerCase().startsWith("nl");
+  }
+  return true;
+}
