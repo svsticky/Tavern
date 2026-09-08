@@ -1,11 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleProfilePictureUpload } from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
+import {
+  handleProfilePictureDelete,
+  handleProfilePictureUpload,
+} from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
 
-const { postProfilepictureByIdProfilePicture } = vi.hoisted(() => ({
+const {
+  deleteMembersByIdProfilePicture,
+  postProfilepictureByIdProfilePicture,
+} = vi.hoisted(() => ({
+  deleteMembersByIdProfilePicture: vi.fn(),
   postProfilepictureByIdProfilePicture: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ postProfilepictureByIdProfilePicture }));
+vi.mock("~/api", () => ({
+  deleteMembersByIdProfilePicture,
+  postProfilepictureByIdProfilePicture,
+}));
 
 vi.mock("react-hot-toast", () => ({
   // Mirror react-hot-toast's real behavior of internally handling the promise's rejection
@@ -69,6 +79,57 @@ describe("handleProfilePictureUpload", () => {
     const file = new File(["data"], "avatar.png", { type: "image/png" });
 
     await handleProfilePictureUpload(buildEvent(file), "user-1");
+
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
+    expect(reloadMock).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});
+
+describe("handleProfilePictureDelete", () => {
+  const reloadMock = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, "location", {
+      value: { reload: reloadMock },
+      writable: true,
+    });
+  });
+
+  it("calls deleteMembersByIdProfilePicture and onSuccess callback when provided", async () => {
+    deleteMembersByIdProfilePicture.mockResolvedValue({});
+    const onSuccess = vi.fn();
+
+    await handleProfilePictureDelete("user-1", onSuccess);
+
+    expect(deleteMembersByIdProfilePicture).toHaveBeenCalledWith({
+      path: { id: "user-1" },
+    });
+    await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+    expect(reloadMock).not.toHaveBeenCalled();
+  });
+
+  it("calls deleteMembersByIdProfilePicture and reloads page when no callback is provided", async () => {
+    deleteMembersByIdProfilePicture.mockResolvedValue({});
+
+    await handleProfilePictureDelete("user-1");
+
+    expect(deleteMembersByIdProfilePicture).toHaveBeenCalledWith({
+      path: { id: "user-1" },
+    });
+    await vi.waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("logs error and does not reload when deletion fails", async () => {
+    deleteMembersByIdProfilePicture.mockResolvedValue({
+      error: { title: "Cannot delete" },
+    });
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    await handleProfilePictureDelete("user-1");
 
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
     expect(reloadMock).not.toHaveBeenCalled();
