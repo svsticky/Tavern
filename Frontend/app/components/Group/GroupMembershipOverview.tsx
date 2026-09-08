@@ -14,14 +14,19 @@ import GroupMembershipItem from "./GroupMembershipItem";
  * @param {string} [props.emptyText] - Optional override for the empty-state message (defaults to the
  *   first-person "you are not enrolled" copy used on the home page; pass a third-person alternative when
  *   showing another member's memberships, e.g. on the admin edit-member page).
+ * @param {boolean} [props.linkToGroup] - When true, each item links to the group's admin page. Only
+ *   pass this on pages board members reach (e.g. the admin edit-member page) since `/admin/groups/:id`
+ *   is board-gated.
  * @returns {JSX.Element} A list of group memberships or a "No Content" state.
  */
 export default function GroupMembershipOverview({
   groupMemberships,
   emptyText,
+  linkToGroup,
 }: {
   groupMemberships: GroupMembershipResponseDto[];
   emptyText?: string;
+  linkToGroup?: boolean;
 }) {
   if (groupMemberships.length === 0) {
     return <NoContentTile text={emptyText ?? t("no_group_enrollments")} />;
@@ -40,6 +45,7 @@ export default function GroupMembershipOverview({
           key={groupMembership.id}
           groupMembership={groupMembership}
           fallbackUrl={fallbackUrl}
+          linkToGroup={linkToGroup}
         />
       ))}
     </ListTile>

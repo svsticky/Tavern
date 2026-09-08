@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { Route, Routes } from "react-router";
+import { Route, Routes, useParams } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
 import { renderWithProviders } from "~/testUtils";
@@ -72,10 +72,16 @@ vi.mock("~/components/Roles/CreateRoleOverlay/CreateRoleOverlay", () => ({
 
 import EditGroupPage from "~/routes/admin/edit-group/edit-group";
 
+function MemberPageStub() {
+  const { id } = useParams();
+  return <div>member-page-{id}</div>;
+}
+
 function renderPage(id = 1) {
   return renderWithProviders(
     <Routes>
       <Route path="/admin/groups/:id" element={<EditGroupPage />} />
+      <Route path="/admin/members/:id" element={<MemberPageStub />} />
     </Routes>,
     { route: `/admin/groups/${id}` },
   );
@@ -232,6 +238,27 @@ describe("EditGroupPage", () => {
       expect.any(Function),
       expect.any(Function),
     );
+  });
+
+  it("navigates to the member's admin page when a membership row is clicked", async () => {
+    renderPage(1);
+
+    const nameCell = await screen.findByText("Jane Doe");
+    fireEvent.click(nameCell.closest("tr") as HTMLElement);
+
+    expect(await screen.findByText("member-page-m1")).toBeInTheDocument();
+  });
+
+  it("does not navigate away when the role select inside a row is clicked", async () => {
+    renderPage(1);
+
+    await screen.findByText("Jane Doe");
+    const roleSelect = screen
+      .getAllByRole("combobox")
+      .find((el) => within(el).queryByText("Chair"));
+    fireEvent.click(roleSelect as HTMLSelectElement);
+
+    expect(screen.queryByText(/member-page-/)).not.toBeInTheDocument();
   });
 
   it("creates a role alias via the add-role modal", async () => {

@@ -106,6 +106,7 @@ export default function EditGroupPage() {
           value={
             typeof item.roleAliasId === "number" ? item.roleAliasId : "none"
           }
+          onClick={(e) => e.stopPropagation()}
           onChange={(e) =>
             handleUpdateGroupRole(
               item.id,
@@ -303,6 +304,9 @@ export default function EditGroupPage() {
                 columns={enrollmentColumns}
                 emptyText={t("no_enrollments_found")}
                 mobileActionsPosition="top"
+                onRowClick={(item) =>
+                  navigate(`/admin/members/${item.memberId}`)
+                }
               />
             </BorderedTile>
           </section>

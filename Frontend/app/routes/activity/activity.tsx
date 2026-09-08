@@ -9,8 +9,7 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { hasEnrollmentOpened } from "~/util/activity.util";
-import { canEditActivity } from "~/util/group.util";
+import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
@@ -82,6 +81,8 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
 
   if (activity == null) return t("failed_fetching");
 
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
+
   return (
     <div className="flex flex-col w-full">
       <PageHeader
@@ -111,6 +112,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
               enrollments={
                 activity.enrollments.filter((e) => !e.isOnWaitingList) ?? []
               }
+              isBoard={isBoard}
             />
             <ActivityParticipantsTile
               title={t("waiting_list")}
@@ -123,6 +125,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
                     new Date(a.registeredOn).getTime() -
                     new Date(b.registeredOn).getTime(),
                 )}
+                isBoard={isBoard}
             />
           </>
         )}
