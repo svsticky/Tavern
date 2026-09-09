@@ -18,6 +18,7 @@ import "./app.css";
 import { t } from "i18next";
 import Cookies from "js-cookie";
 import FaviconHandler from "./components/FavIconHandler";
+import StickyLoadingLogo from "./components/StickyLoadingLogo";
 import { AppProvider } from "./context/AppContext";
 import { getActiveAuthService } from "./layout/auth-service";
 import { getEnv } from "./util/config.utils";
@@ -206,7 +207,7 @@ export default function App() {
   }
 
   if (!i18nReady || !themeReady) {
-    return t("loading");
+    return <StickyLoadingLogo />;
   }
 
   return (

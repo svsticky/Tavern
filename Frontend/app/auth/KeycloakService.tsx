@@ -1,6 +1,6 @@
-import { t } from "i18next";
 import Keycloak from "keycloak-js";
 import React from "react";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import AuthContext from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
@@ -125,7 +125,7 @@ export class KeycloakAuthService implements IAuthService {
       };
     }, []);
 
-    if (!initialized) return <>{t("loading")}</>;
+    if (!initialized) return <StickyLoadingLogo />;
 
     return <AuthContext.Provider value={this}>{children}</AuthContext.Provider>;
   };

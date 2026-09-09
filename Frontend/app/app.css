@@ -5,6 +5,23 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --animate-sticky-buzz: sticky-buzz 1.6s ease-in-out infinite;
+}
+
+@keyframes sticky-buzz {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg) scale(1);
+  }
+  25% {
+    transform: translateY(-8px) rotate(4deg) scale(1.04);
+  }
+  50% {
+    transform: translateY(0) rotate(-2deg) scale(0.97);
+  }
+  75% {
+    transform: translateY(-5px) rotate(3deg) scale(1.02);
+  }
 }
 
 :root{
