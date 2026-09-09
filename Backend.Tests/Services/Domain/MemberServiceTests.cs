@@ -10,6 +10,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
@@ -35,10 +36,10 @@ public class MemberServiceTests : IDisposable
     private readonly AbstractPaymentService _paymentService;
     private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
-    private readonly IAuthService _authService;
     private readonly IMailSubscriptionService _mailSubscriptionService;
     private readonly IMailinglistCurationService _mailinglistCurationService;
     private readonly IMemoryCache _memoryCache;
+    private readonly List<INameChangedListener> _nameChangedListeners;
     private readonly MemberService _service;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -60,7 +61,6 @@ public class MemberServiceTests : IDisposable
         _paymentService = Substitute.For<AbstractPaymentService>(null, null);
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, NullLogger<AuthOutboxWorker>.Instance);
         _mailSubscriptionOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
-        _authService = Substitute.For<IAuthService>();
         _mailSubscriptionService = Substitute.For<IMailSubscriptionService>();
         _mailinglistCurationService = Substitute.For<IMailinglistCurationService>();
         _memoryCache = Substitute.For<IMemoryCache>();
@@ -72,6 +72,16 @@ public class MemberServiceTests : IDisposable
         _mailSubscriptionService.GetMemberMailinglistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new List<MemberMailinglistDto>());
 
+        // _mailSubscriptionService doubles as INameChangedListener/IMailChangedListener, matching
+        // production wiring - IsEnabled must be set through the specific interface cast.
+        ((INameChangedListener)_mailSubscriptionService).IsEnabled.Returns(true);
+        ((IMailChangedListener)_mailSubscriptionService).IsEnabled.Returns(true);
+
+        _nameChangedListeners = new List<INameChangedListener>
+        {
+            (INameChangedListener)_mailSubscriptionService
+        };
+
         _service = new MemberService(
             _db,
             _permissionService,
@@ -80,11 +90,11 @@ public class MemberServiceTests : IDisposable
             _paymentService,
             _authOutboxWorker,
             _mailSubscriptionOutboxWorker,
-            _authService,
             _mailSubscriptionService,
             _mailinglistCurationService,
             _memoryCache,
-            NullLogger<MemberService>.Instance
+            NullLogger<MemberService>.Instance,
+            _nameChangedListeners
         );
     }
 
@@ -372,10 +382,14 @@ public class MemberServiceTests : IDisposable
         Assert.NotNull(saved);
         Assert.Equal("a@b.com", saved.Email);
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Create, result.Id, Arg.Any<PostgresDbContext>());
+        // The member's name goes in the same call as the subscriptions update, so no separate
+        // name-changed notification is needed on creation.
         _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
             "a@b.com",
             Arg.Is<IEnumerable<string>>(ids => ids.SequenceEqual(new[] { "id_news" })),
-            _db);
+            _db,
+            "A",
+            "B");
     }
 
     [Fact]
@@ -802,6 +816,60 @@ public class MemberServiceTests : IDisposable
         Assert.Equal("New Street", updated.Street);
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
+        ((INameChangedListener)_mailSubscriptionService).DidNotReceiveWithAnyArgs().OnNameChanged(default!, default!);
+    }
+
+    [Fact]
+    public async Task PatchMember_NameChanged_NotifiesNameChangedListeners()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("replace", "/FirstName", null, "Changed")
+            },
+            new DefaultContractResolver()
+        );
+
+        // Act
+        await _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None);
+
+        // Assert - the general Sync trigger already covers pushing the name to Keycloak, so the
+        // name-changed notification only needs to reach the Mailchimp listener.
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
+        ((INameChangedListener)_mailSubscriptionService).Received(1).OnNameChanged(
+            Arg.Is<Member>(m => m.Id == member.Id && m.FirstName == "Changed"), _db);
+    }
+
+    [Fact]
+    public async Task PatchMember_EmailInPatch_ThrowsArgumentException()
+    {
+        // Arrange - Email is managed by Keycloak; not editable here even for a board member, since
+        // Sync always treats Keycloak's email as authoritative and would silently revert it anyway.
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("replace", "/Email", null, "changed@example.com")
+            },
+            new DefaultContractResolver()
+        );
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(_userId);
+        Assert.Equal(member.Email, updated!.Email);
+        ((IMailChangedListener)_mailSubscriptionService).DidNotReceiveWithAnyArgs().OnMailChanged(default!, default!, default!, default!);
     }
 
     [Fact]
@@ -861,6 +929,45 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateMember_BoardMemberSubmitsNewEmail_IsIgnored()
+    {
+        // Arrange - Email is managed by Keycloak; ApplyMemberUpdate never applies it, even for a
+        // board member, since Sync always treats Keycloak's email as authoritative and would
+        // silently revert it anyway.
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+        var originalEmail = member.Email;
+
+        var boardUserId = Guid.NewGuid();
+        _permissionService.IsBoardOrCandidateBoardMember(boardUserId).Returns(true);
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = member.StudentNumber,
+            FirstName = member.FirstName,
+            LastName = member.LastName,
+            Email = "changed@example.com",
+            PhoneNumber = member.PhoneNumber,
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act
+        await _service.UpdateMember(member.Id, dto, boardUserId, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.Equal(originalEmail, updated!.Email);
+        ((IMailChangedListener)_mailSubscriptionService).DidNotReceiveWithAnyArgs().OnMailChanged(default!, default!, default!, default!);
+    }
+
+    [Fact]
     public async Task UpdateMember_BoardMemberUpdatesSomeoneElse_AppliesUpdate()
     {
         // Arrange
@@ -895,6 +1002,8 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(member.Id);
         Assert.NotNull(updated);
         Assert.Equal("Updated By Board", updated.FirstName);
+        ((INameChangedListener)_mailSubscriptionService).Received(1).OnNameChanged(
+            Arg.Is<Member>(m => m.Id == member.Id && m.FirstName == "Updated By Board"), _db);
     }
 
     [Fact]
@@ -992,23 +1101,22 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RefreshEmail_ValidRequest_SyncsWithAuthSystem()
+    public async Task RefreshEmail_ValidRequest_EnqueuesRefreshEmailTask()
     {
-        // Arrange
+        // Arrange - this is called from an anonymous webhook Keycloak itself invokes on email
+        // change, so the actual Keycloak call and the DB/Mailchimp update are deferred to the
+        // outbox task (KeycloakAPIService.RefreshEmail), which retries with backoff on failure.
         var authUserId = Guid.NewGuid();
         var member = CreateTestMember(Guid.NewGuid());
         member.AuthSystemUserId = authUserId;
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
-        _authService.GetEmail(authUserId).Returns(Task.FromResult("new-email@example.com"));
-
         // Act
         await _service.RefreshEmail(authUserId, CancellationToken.None);
 
         // Assert
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, member.Id, Arg.Any<PostgresDbContext>());
-        _mailSubscriptionOutboxWorker.Received(1).EnqueueMigrateEmailTask(member.Email, "new-email@example.com", _db);
     }
 
     [Fact]
@@ -1548,10 +1656,14 @@ public class MemberServiceTests : IDisposable
 
         // Assert
         _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        // The member's name goes in the same call, so a first-time subscribe (which can be what
+        // creates the Mailchimp record) already carries it.
         _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
             "self@example.com",
             Arg.Is<IEnumerable<string>>(actual => actual.OrderBy(x => x).SequenceEqual(ids.OrderBy(x => x))),
-            _db);
+            _db,
+            "Test",
+            "User");
     }
 
     [Fact]
@@ -1602,7 +1714,9 @@ public class MemberServiceTests : IDisposable
             "self@example.com",
             Arg.Is<IEnumerable<string>>(actual =>
                 actual.OrderBy(x => x).SequenceEqual(new[] { "id_alumni", "id_uncurated" }.OrderBy(x => x))),
-            _db);
+            _db,
+            "Test",
+            "User");
     }
 
     [Fact]
@@ -1637,7 +1751,9 @@ public class MemberServiceTests : IDisposable
             "self@example.com",
             Arg.Is<IEnumerable<string>>(actual =>
                 actual.OrderBy(x => x).SequenceEqual(new[] { "id_news", "id_alumni", "id_uncurated" }.OrderBy(x => x))),
-            _db);
+            _db,
+            "Test",
+            "User");
     }
 
     [Fact]

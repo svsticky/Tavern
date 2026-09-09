@@ -9,6 +9,7 @@ using Backend.Services.Domain;
 using Backend.Services.FileCompressServices;
 using Backend.Services.MailServices;
 using Backend.Services.MailSubscriptionServices;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Services.StorageServices;
 using Hangfire;
@@ -53,7 +54,7 @@ internal static class ServiceExtensions
                             {
                                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
                                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
-                                var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
+                                var mailChangedListeners = context.HttpContext.RequestServices.GetRequiredService<IEnumerable<IMailChangedListener>>();
 
                                 var authIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
                                 var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)
@@ -72,8 +73,11 @@ internal static class ServiceExtensions
                                             using var transaction = await dbContext.Database.BeginTransactionAsync();
                                             try
                                             {
-                                                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newEmail, dbContext);
+                                                var oldEmail = member.Email;
                                                 member.Email = newEmail;
+
+                                                mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, newEmail, dbContext);
+
                                                 await dbContext.SaveChangesAsync();
                                                 logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
                                                 await transaction.CommitAsync();
@@ -287,6 +291,9 @@ internal static class ServiceExtensions
         services.AddScoped<IRegistrationDocumentService, RegistrationDocumentService>();
         services.AddScoped<IRegisterSlideService, RegisterSlideService>();
         services.AddScoped<IExternalLinkService, ExternalLinkService>();
+
+        services.AddScoped<INameChangedListener>(sp => sp.GetRequiredService<IMailSubscriptionService>());
+        services.AddScoped<IMailChangedListener>(sp => sp.GetRequiredService<IMailSubscriptionService>());
 
         return services;
     }

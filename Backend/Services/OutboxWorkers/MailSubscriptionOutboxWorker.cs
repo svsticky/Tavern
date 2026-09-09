@@ -4,7 +4,7 @@ using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
-namespace Backend.Services;
+namespace Backend.Services.OutboxWorkers;
 
 /// <summary>
 /// Background worker that processes queued mail subscription tasks.
@@ -15,18 +15,22 @@ public class MailSubscriptionOutboxWorker(
 {
 
     /// <summary>
-    /// Enqueues a task that replaces a member's mailing list subscriptions.
+    /// Enqueues a task that replaces a member's mailing list subscriptions, carrying the name along when known.
     /// </summary>
     /// <param name="email">The email address to process.</param>
     /// <param name="subscribedListIds">The IDs of the mailing lists the member should be subscribed to.</param>
     /// <param name="db">The database context used to persist the task.</param>
-    public virtual void EnqueueUpdateSubscriptionsTask(string email, IEnumerable<string> subscribedListIds, PostgresDbContext db)
+    /// <param name="firstName">The member's first name, when known.</param>
+    /// <param name="lastName">The member's last name, when known.</param>
+    public virtual void EnqueueUpdateSubscriptionsTask(string email, IEnumerable<string> subscribedListIds, PostgresDbContext db, string? firstName = null, string? lastName = null)
     {
         var task = new MailSubscriptionOutboxTask
         {
             TaskType = MailSubscriptionOutboxTaskType.UpdateSubscriptions,
             Email = email,
             SubscribedListIdsJson = JsonSerializer.Serialize(subscribedListIds.ToList()),
+            FirstName = firstName,
+            LastName = lastName,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow,
             RetryCount = 0
@@ -59,18 +63,23 @@ public class MailSubscriptionOutboxWorker(
     }
 
     /// <summary>
-    /// Enqueues a task that moves a member's mail subscriptions from an old email address to a new one.
+    /// Enqueues a task that moves a member's mail subscriptions from an old email address to a new
+    /// one, carrying the name along when known.
     /// </summary>
     /// <param name="oldEmail">The member's previous email address.</param>
     /// <param name="newEmail">The member's new email address.</param>
     /// <param name="db">The database context used to persist the task.</param>
-    public virtual void EnqueueMigrateEmailTask(string oldEmail, string newEmail, PostgresDbContext db)
+    /// <param name="firstName">The member's first name, when known.</param>
+    /// <param name="lastName">The member's last name, when known.</param>
+    public virtual void EnqueueMigrateEmailTask(string oldEmail, string newEmail, PostgresDbContext db, string? firstName = null, string? lastName = null)
     {
         var task = new MailSubscriptionOutboxTask
         {
             TaskType = MailSubscriptionOutboxTaskType.MigrateEmail,
             Email = newEmail,
             OldEmail = oldEmail,
+            FirstName = firstName,
+            LastName = lastName,
             CreatedAt = DateTimeOffset.UtcNow,
             NextAttemptAt = DateTimeOffset.UtcNow,
             RetryCount = 0
@@ -82,10 +91,31 @@ public class MailSubscriptionOutboxWorker(
     }
 
     /// <summary>
-    /// Executes the background worker, continuously processing mail subscription outbox tasks until the service is stopped. The worker retrieves tasks from the database, processes them using the mail subscription service, and handles any failures with retry logic and exponential backoff. The worker also includes logging for monitoring task processing and any errors that occur during execution.
+    /// Enqueues a task that updates a member's first/last name merge fields, without touching their subscriptions.
     /// </summary>
-    /// <param name="stoppingToken">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <param name="email">The email address to process.</param>
+    /// <param name="firstName">The member's first name.</param>
+    /// <param name="lastName">The member's last name.</param>
+    /// <param name="db">The database context used to persist the task.</param>
+    public virtual void EnqueueUpdateNameTask(string email, string firstName, string lastName, PostgresDbContext db)
+    {
+        var task = new MailSubscriptionOutboxTask
+        {
+            TaskType = MailSubscriptionOutboxTaskType.UpdateName,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            CreatedAt = DateTimeOffset.UtcNow,
+            NextAttemptAt = DateTimeOffset.UtcNow,
+            RetryCount = 0
+        };
+
+        db.MailSubscriptionOutboxTasks.Add(task);
+        db.SaveChanges();
+        logger.LogInformation("Enqueued mail subscription name update task for email {Email}.", email);
+    }
+
+    /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("Mailsubscription outbox worker started.");
@@ -115,11 +145,6 @@ public class MailSubscriptionOutboxWorker(
         logger.LogInformation("Mailsubscription outbox worker stopped.");
     }
 
-    /// <summary>
-    /// Tries to process the next mail subscription outbox task from the database. If a task is found, it is processed using the mail subscription service, and any failures are handled with retry logic and exponential backoff. The method returns true if a task was processed, or false if no tasks were available to process.
-    /// </summary>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task<bool> TryProcessNextTaskAsync(CancellationToken ct)
     {
         using var scope = serviceProvider.CreateScope();
@@ -151,13 +176,6 @@ public class MailSubscriptionOutboxWorker(
         return true;
     }
 
-    /// <summary>
-    /// Handles the processing of a mail subscription outbox task by calling the matching mail subscription service method based on the task's type. If the processing fails, an exception is thrown, which is caught and handled in the calling method to implement retry logic and exponential backoff for failed tasks.
-    /// </summary>
-    /// <param name="service">The mail subscription service.</param>
-    /// <param name="task">The mail subscription outbox task.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
     private async Task HandleTaskAsync(IMailSubscriptionService service, MailSubscriptionOutboxTask task, CancellationToken ct)
     {
         switch (task.TaskType)
@@ -166,24 +184,34 @@ public class MailSubscriptionOutboxWorker(
                 var subscribedListIds = string.IsNullOrEmpty(task.SubscribedListIdsJson)
                     ? []
                     : JsonSerializer.Deserialize<List<string>>(task.SubscribedListIdsJson) ?? [];
-                await service.UpdateMemberSubscriptionsAsync(task.Email, subscribedListIds, ct);
+                await service.UpdateMemberSubscriptionsAsync(task.Email, subscribedListIds, ct, task.FirstName, task.LastName);
                 break;
             case MailSubscriptionOutboxTaskType.Delete:
                 await service.DeleteMemberAsync(task.Email, ct);
                 break;
             case MailSubscriptionOutboxTaskType.MigrateEmail:
-                await service.MigrateEmailAsync(task.OldEmail ?? throw new InvalidOperationException("MigrateEmail task is missing OldEmail."), task.Email, ct);
+                if (task.OldEmail == null)
+                {
+                    // Always set by EnqueueMigrateEmailTask, so a missing value means a corrupted row - discard rather than retry forever.
+                    logger.LogError("MigrateEmail task {TaskId} for {Email} is missing OldEmail. Discarding.", task.Id, task.Email);
+                    return;
+                }
+                await service.MigrateEmailAsync(task.OldEmail, task.Email, ct, task.FirstName, task.LastName);
+                break;
+            case MailSubscriptionOutboxTaskType.UpdateName:
+                if (task.FirstName == null || task.LastName == null)
+                {
+                    // Same reasoning as MigrateEmail above.
+                    logger.LogError("UpdateName task {TaskId} for {Email} is missing FirstName/LastName. Discarding.", task.Id, task.Email);
+                    return;
+                }
+                await service.UpdateMemberNameAsync(task.Email, task.FirstName, task.LastName, ct);
                 break;
             default:
                 throw new NotSupportedException($"Unsupported mail subscription outbox task type '{task.TaskType}'.");
         }
     }
 
-    /// <summary>
-    /// Handles the failure of processing a mail subscription outbox task by logging the error, incrementing the retry count, and rescheduling the task with exponential backoff. The next scheduled time for the task is calculated based on the number of retries, with a maximum delay of 1 hour to prevent excessively long delays between retries. This method ensures that failed tasks are retried in a controlled manner while providing visibility into the failures through logging.
-    /// </summary>
-    /// <param name="task">The mail subscription outbox task.</param>
-    /// <param name="ex">The exception that occurred.</param>
     private void HandleFailure(MailSubscriptionOutboxTask task, Exception ex)
     {
         logger.LogError(ex, "Sync failed for {Email}. Retry count: {Retry}", task.Email, task.RetryCount);

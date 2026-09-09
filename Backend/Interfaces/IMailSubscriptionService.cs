@@ -17,8 +17,9 @@ public record MemberMailinglistDto(string Id, string Name, bool Subscribed);
 
 /// <summary>
 /// Defines the contract for a mail subscription service that manages mailing lists and member subscriptions against an external provider (such as Mailchimp). Implementations are the sole source of truth for which lists exist and which members are subscribed to them - no subscription state is mirrored locally.
+/// Also implements <see cref="INameChangedListener"/> and <see cref="IMailChangedListener"/>.
 /// </summary>
-public interface IMailSubscriptionService
+public interface IMailSubscriptionService : INameChangedListener, IMailChangedListener
 {
     /// <summary>
     /// Retrieves every mailing list currently available at the provider.
@@ -36,13 +37,16 @@ public interface IMailSubscriptionService
     Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct);
 
     /// <summary>
-    /// Replaces a member's mailing list subscriptions with the given set of list IDs.
+    /// Replaces a member's mailing list subscriptions with the given set of list IDs, pushing
+    /// their name to the same record in the same call when known.
     /// </summary>
     /// <param name="email">The email address of the member.</param>
     /// <param name="subscribedListIds">The IDs of the lists the member should be subscribed to.</param>
     /// <param name="ct">The cancellation token.</param>
+    /// <param name="firstName">The member's first name, when known.</param>
+    /// <param name="lastName">The member's last name, when known.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct);
+    Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? firstName = null, string? lastName = null);
 
     /// <summary>
     /// Removes a member from the mail subscription provider entirely.
@@ -53,11 +57,25 @@ public interface IMailSubscriptionService
     Task DeleteMemberAsync(string email, CancellationToken ct);
 
     /// <summary>
-    /// Moves a member's subscriptions from an old email address to a new one, archiving the old record.
+    /// Moves a member's subscriptions from an old email address to a new one, archiving the old
+    /// record and carrying the name over when known.
     /// </summary>
     /// <param name="oldEmail">The member's previous email address.</param>
     /// <param name="newEmail">The member's new email address.</param>
     /// <param name="ct">The cancellation token.</param>
+    /// <param name="firstName">The member's first name, when known.</param>
+    /// <param name="lastName">The member's last name, when known.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct);
+    Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct, string? firstName = null, string? lastName = null);
+
+    /// <summary>
+    /// Updates a member's first/last name merge fields, without touching their subscriptions. A
+    /// member who isn't currently known to the provider is left alone rather than created.
+    /// </summary>
+    /// <param name="email">The email address of the member.</param>
+    /// <param name="firstName">The member's first name.</param>
+    /// <param name="lastName">The member's last name.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task UpdateMemberNameAsync(string email, string firstName, string lastName, CancellationToken ct);
 }
