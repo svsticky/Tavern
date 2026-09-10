@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { PencilIcon } from "lucide-react";
+import { Copy, PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
@@ -91,15 +91,27 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         action={
           canEdit &&
           activity && (
-            <Button
-              onClick={() =>
-                handleEditActivityClick(navigate, pathname, activity.id)
-              }
-              variant="secondary"
-              className="flex items-center px-2"
-            >
-              <PencilIcon size={18} />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() =>
+                  navigate(`/activities/create?cloneFrom=${activity.id}`)
+                }
+                variant="secondary"
+                className="flex items-center px-2"
+                aria-label={t("clone_activity")}
+              >
+                <Copy size={18} />
+              </Button>
+              <Button
+                onClick={() =>
+                  handleEditActivityClick(navigate, pathname, activity.id)
+                }
+                variant="secondary"
+                className="flex items-center px-2"
+              >
+                <PencilIcon size={18} />
+              </Button>
+            </div>
           )
         }
       />
