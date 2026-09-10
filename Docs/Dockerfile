@@ -1,5 +1,5 @@
 # -- Generation dependencies with .net, nodejs and npm and all packages for documentation generation
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS generation-deps
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS generation-deps
 
 WORKDIR /app
 
