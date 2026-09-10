@@ -127,7 +127,8 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
                     new Date(a.registeredOn).getTime() -
                     new Date(b.registeredOn).getTime(),
                 )}
-                isBoard={isBoard}
+              isBoard={isBoard}
+              showCount={hasEnrollmentOpened(activity)}
             />
           </>
         )}
