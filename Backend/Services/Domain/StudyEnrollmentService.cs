@@ -21,7 +21,8 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<List<StudyEnrollmentResponseDTO>> GetStudyEnrollments(GetStudyEnrollmentsDTO dto, Guid userId, CancellationToken ct)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            if (dto.MemberId != userId)
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             return await db.StudyEnrollments
                 .AsQueryable()
