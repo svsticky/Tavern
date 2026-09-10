@@ -617,5 +617,15 @@
   "copy_calendar_link": "Copy calendar link",
   "reset_calendar_link": "Reset calendar link",
   "calendar_link_reset": "Calendar link reset. Update your calendar app with the new link.",
-  "calendar_link_reset_failed": "Could not reset the calendar link"
+  "calendar_link_reset_failed": "Could not reset the calendar link",
+  "admin_mode": "Admin mode",
+  "member_mode": "Member view",
+  "view_mode": "View mode",
+  "member_mode_active": "Member view active",
+  "admin_mode_active": "Admin mode active",
+  "switch_to_admin_mode": "Switch to admin mode",
+  "switch_to_member_mode": "Switch to member view",
+  "member_view_banner_text": "Member view active: You are currently viewing Koala as a regular member.",
+  "admin_mode_description": "Full administrator privileges active.",
+  "member_mode_description": "Administrative controls hidden. You see the app as a regular member."
 }
