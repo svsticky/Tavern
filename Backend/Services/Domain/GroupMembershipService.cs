@@ -17,20 +17,45 @@ public class GroupMembershipService : IGroupMembershipService
     private readonly IPermissionService _permissionService;
     private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly ILogger<GroupMembershipService> _logger;
+    private readonly IEnumerable<IAdminStatusUpdateOutboxWorker> _adminStatusWorkers;
 
     /// <summary>
-    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies. The constructor sets up the necessary services for managing group memberships, including database access, permission checks, integration with the authentication outbox worker for synchronizing membership changes with the configured auth system, and logging for monitoring group membership operations. This setup allows the GroupMembershipService to effectively handle creating, retrieving, updating, and deleting group memberships while ensuring that only authorized users can perform these actions and that any significant events are logged for auditing and debugging purposes.
+    /// Initializes a new instance of the GroupMembershipService class with the specified dependencies.
     /// </summary>
     /// <param name="db">The database context.</param>
     /// <param name="permissionService">The permission service.</param>
     /// <param name="authOutboxWorker">The authentication outbox worker.</param>
     /// <param name="logger">The logger.</param>
-    public GroupMembershipService(PostgresDbContext db, IPermissionService permissionService, AuthOutboxWorker authOutboxWorker, ILogger<GroupMembershipService> logger)
+    /// <param name="adminStatusWorkers">Optional workers for updating admin status across external services.</param>
+    public GroupMembershipService(
+        PostgresDbContext db,
+        IPermissionService permissionService,
+        AuthOutboxWorker authOutboxWorker,
+        ILogger<GroupMembershipService> logger,
+        IEnumerable<IAdminStatusUpdateOutboxWorker>? adminStatusWorkers = null)
     {
         _db = db;
         _permissionService = permissionService;
         _authOutboxWorker = authOutboxWorker;
         _logger = logger;
+        _adminStatusWorkers = adminStatusWorkers ?? [];
+    }
+
+    private void EnqueueAdminStatusSync(Guid memberId, string? email = null)
+    {
+        var memberEmail = email;
+        if (string.IsNullOrEmpty(memberEmail))
+        {
+            memberEmail = _db.Members.Find(memberId)?.Email;
+        }
+
+        if (string.IsNullOrEmpty(memberEmail)) return;
+
+        bool isAdmin = _permissionService.IsBoardOrCandidateBoardMember(memberId);
+        foreach (var worker in _adminStatusWorkers)
+        {
+            worker.EnqueueAdminStatusUpdate(memberEmail, isAdmin, _db);
+        }
     }
 
     /// <inheritdoc />
@@ -110,6 +135,7 @@ public class GroupMembershipService : IGroupMembershipService
             var entry = _db.GroupMemberships.Add(membership);
 
             _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, _db);
+            EnqueueAdminStatusSync(member.Id, member.Email);
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -144,6 +170,7 @@ public class GroupMembershipService : IGroupMembershipService
             _db.GroupMemberships.Remove(membership);
 
             _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
+            EnqueueAdminStatusSync(membership.MemberId, membership.Member?.Email);
 
             await _db.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
@@ -193,6 +220,7 @@ public class GroupMembershipService : IGroupMembershipService
             await _db.SaveChangesAsync(cancellationToken);
 
             _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
+            EnqueueAdminStatusSync(membership.MemberId);
 
             if (oldMemberId != membership.MemberId)
             {
@@ -200,6 +228,7 @@ public class GroupMembershipService : IGroupMembershipService
                 if (oldMember != null)
                 {
                     _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.Id, _db);
+                    EnqueueAdminStatusSync(oldMember.Id, oldMember.Email);
                 }
             }
 
@@ -240,6 +269,7 @@ public class GroupMembershipService : IGroupMembershipService
             StateValidator.Validate(membership);
 
             _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, membership.MemberId, _db);
+            EnqueueAdminStatusSync(membership.MemberId);
 
             if (oldMemberId != membership.MemberId)
             {
@@ -247,6 +277,7 @@ public class GroupMembershipService : IGroupMembershipService
                 if (oldMember != null)
                 {
                     _authOutboxWorker.EnqueueTask(AuthTaskType.Sync, oldMember.Id, _db);
+                    EnqueueAdminStatusSync(oldMember.Id, oldMember.Email);
                 }
             }
 

@@ -16,8 +16,10 @@ public class KeycloakAPIService(
     MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
-    ILogger<KeycloakAPIService> logger) : IAuthService
+    ILogger<KeycloakAPIService> logger,
+    IEnumerable<IMailSyncOutboxWorker>? mailSyncWorkers = null) : IAuthService
 {
+    private readonly IEnumerable<IMailSyncOutboxWorker> _mailSyncWorkers = mailSyncWorkers ?? (mailSubscriptionOutboxWorker != null ? [mailSubscriptionOutboxWorker] : []);
     private readonly string _keycloakUrl = Environment.GetEnvironmentVariable("KeycloakUrl")!;
     private readonly string _keycloakRealm = Environment.GetEnvironmentVariable("KeycloakRealm")!;
     private readonly string _keycloakBackendClientId = Environment.GetEnvironmentVariable("KeycloakBackendClientId")!;
@@ -79,7 +81,10 @@ public class KeycloakAPIService(
             using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, currentEmail, db);
+                foreach (var worker in _mailSyncWorkers)
+                {
+                    worker.EnqueueSyncMail(member.Email, currentEmail, db);
+                }
                 member.Email = currentEmail;
                 await db.SaveChangesAsync();
                 logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);

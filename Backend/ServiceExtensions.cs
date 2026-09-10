@@ -9,6 +9,7 @@ using Backend.Services.Domain;
 using Backend.Services.FileCompressServices;
 using Backend.Services.MailServices;
 using Backend.Services.MailSubscriptionServices;
+using Backend.Services.OutlineServices;
 using Backend.Services.PaymentServices;
 using Backend.Services.StorageServices;
 using Hangfire;
@@ -53,7 +54,7 @@ internal static class ServiceExtensions
                             {
                                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
                                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
-                                var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
+                                var mailSyncWorkers = context.HttpContext.RequestServices.GetServices<IMailSyncOutboxWorker>();
 
                                 var authIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
                                 var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)
@@ -72,7 +73,10 @@ internal static class ServiceExtensions
                                             using var transaction = await dbContext.Database.BeginTransactionAsync();
                                             try
                                             {
-                                                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newEmail, dbContext);
+                                                foreach (var worker in mailSyncWorkers)
+                                                {
+                                                    worker.EnqueueSyncMail(member.Email, newEmail, dbContext);
+                                                }
                                                 member.Email = newEmail;
                                                 await dbContext.SaveChangesAsync();
                                                 logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
@@ -260,6 +264,14 @@ internal static class ServiceExtensions
                 _ => sp.GetRequiredService<MailChimpSubscriptionService>()
             };
         });
+        services.AddScoped<IMailUpdateService>(sp => sp.GetRequiredService<MailChimpSubscriptionService>());
+
+        // Outline
+        services.AddHttpClient<OutlineService>();
+        services.AddScoped<IOutlineService, OutlineService>();
+        services.AddScoped<OutlineService>(sp => (OutlineService)sp.GetRequiredService<IOutlineService>());
+        services.AddScoped<IMailUpdateService>(sp => sp.GetRequiredService<IOutlineService>());
+        services.AddScoped<IAdminStatusUpdateService>(sp => sp.GetRequiredService<IOutlineService>());
 
         return services;
     }
@@ -300,6 +312,12 @@ internal static class ServiceExtensions
         services.AddHostedService<YearSettingsRefreshWorker>();
         services.AddSingleton<MailSubscriptionOutboxWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
+        services.AddSingleton<IMailSyncOutboxWorker>(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
+
+        services.AddSingleton<OutlineOutboxWorker>();
+        services.AddHostedService(sp => sp.GetRequiredService<OutlineOutboxWorker>());
+        services.AddSingleton<IMailSyncOutboxWorker>(sp => sp.GetRequiredService<OutlineOutboxWorker>());
+        services.AddSingleton<IAdminStatusUpdateOutboxWorker>(sp => sp.GetRequiredService<OutlineOutboxWorker>());
 
         services.AddScoped<IFileCompressService, FileCompressService>();
         services.AddScoped<IPaymentValidationService, PaymentValidationService>();
