@@ -690,13 +690,13 @@ namespace Backend.Services.Domain
         {
             var csv = new StringBuilder();
 
-            var invoiceDate = endDateInNL.AddDays(-1).ToString("dd-MM-yyyy");
-            var periodLabel = $"ideal - {startDateInNL:dd-MM-yyyy} / {endDateInNL:dd-MM-yyyy}";
+            var invoiceDate = endDateInNL.AddDays(-1).ToString("yyyy-MM-dd");
+            var periodLabel = $"ideal - {startDateInNL:yyyy-MM-dd} / {endDateInNL:yyyy-MM-dd}";
             var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
             var paymentServiceRelationalCode = db.Settings.Where(s => s.Name == "PaymentServiceRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
 
             // Header line
-            csv.AppendLine(CsvUtils.FormatLine("factuurdatum", invoiceDate, periodLabel, paymentsCondition, paymentServiceRelationalCode));
+            csv.AppendLine(CsvUtils.FormatLine("Factuurdatum", invoiceDate, periodLabel, paymentsCondition, paymentServiceRelationalCode));
 
             var activityGLAccountFallback = db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
 
