@@ -1,6 +1,10 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { ActivityResponseDto } from "~/api";
-import { getActivityEnrollmentStatus } from "~/util/activity.util";
+import {
+  getActivityEnrollmentStatus,
+  isDutchLocale,
+} from "~/util/activity.util";
 
 function buildActivity(
   overrides: Partial<ActivityResponseDto> = {},
@@ -86,5 +90,35 @@ describe("getActivityEnrollmentStatus", () => {
     });
     const status = getActivityEnrollmentStatus(activity, now);
     expect(status.canUnenroll).toBe(false);
+  });
+});
+
+describe("isDutchLocale", () => {
+  it("returns true when member preferredLanguage is NL", () => {
+    expect(isDutchLocale("NL")).toBe(true);
+  });
+
+  it("returns false when member preferredLanguage is EN", () => {
+    expect(isDutchLocale("EN")).toBe(false);
+  });
+
+  it("prioritizes member preferredLanguage over stale token locale", () => {
+    expect(isDutchLocale("EN", "nl", "NL")).toBe(false);
+    expect(isDutchLocale("NL", "en", "en")).toBe(true);
+  });
+
+  it("falls back to tokenLocale when member preferredLanguage is not set", () => {
+    expect(isDutchLocale(null, "en", "NL")).toBe(true);
+    expect(isDutchLocale(null, "nl", "en")).toBe(false);
+  });
+
+  it("falls back to i18n language when member preferredLanguage and tokenLocale are not set", () => {
+    expect(isDutchLocale(null, "nl", null)).toBe(true);
+    expect(isDutchLocale(null, "nl-NL", null)).toBe(true);
+    expect(isDutchLocale(null, "en", null)).toBe(false);
+  });
+
+  it("defaults to true when no language info is available", () => {
+    expect(isDutchLocale(null, null, null)).toBe(true);
   });
 });
