@@ -105,7 +105,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
 
       <div className="space-y-6 w-full">
         <ActivityDetailsTile activity={activity} setActivity={setActivity} />
-        {hasEnrollmentOpened(activity) && activity.areParticipantsVisible && (
+        {activity.areParticipantsVisible && (
           <>
             <ActivityParticipantsTile
               enrollments={

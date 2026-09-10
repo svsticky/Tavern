@@ -23,6 +23,7 @@ import { capitalizeFirst } from "~/util/string.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
+import { useDateRowHeight } from "./DateRowHeightGroup";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -89,14 +90,17 @@ export default function ActivityTile({
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
 
+  const { ref: dateTextRef, minHeight: dateRowMinHeight } =
+    useDateRowHeight();
+
   return (
     <Link
       to={`/activities/${activity.id}`}
-      className="no-underline text-inherit"
+      className="flex h-full flex-col no-underline text-inherit"
     >
       <Tile
         className={cn(
-          "group relative block w-60 cursor-pointer overflow-hidden p-0 transition-all hover:shadow-md",
+          "group relative flex w-60 flex-1 flex-col cursor-pointer overflow-hidden p-0 transition-all hover:shadow-md",
           className,
         )}
       >
@@ -119,7 +123,7 @@ export default function ActivityTile({
         )}
 
         {/* Poster image */}
-        <div className="relative aspect-[1/1.414] w-full overflow-hidden bg-gray-100">
+        <div className="relative aspect-[1/1.414] w-full shrink-0 overflow-hidden bg-gray-100">
           {/* Status states (Loading, No poster, Error) - ongewijzigd */}
           {status === "loading" && hasPoster && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -154,7 +158,7 @@ export default function ActivityTile({
         </div>
 
         {/* Activity details */}
-        <div className="rounded-b-2xl border border-t-0 border-gray-200 p-3 bg-white">
+        <div className="flex flex-1 flex-col rounded-b-2xl border border-t-0 border-gray-200 p-3 bg-white">
           <div className="mb-1 mt-1.5 flex w-full justify-between text-[18px] font-bold">
             <p className="min-w-0 truncate transition-colors duration-300 group-hover:text-(--board-primary)">
               {activity.name}
@@ -167,31 +171,44 @@ export default function ActivityTile({
           </div>
 
           <div className="mt-0 flex flex-col text-[14px] text-gray-500">
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <Calendar size={12} />
-              {capitalizeFirst(formatDate(startDate, "shortDateWithWeekday"))} •{" "}
-              {formatDate(startDate, "timeOnly")}
-              {" - "}
-              {!isSameDayInAssociationTimeZone(startDate, endDate) && (
-                <>
-                  {capitalizeFirst(formatDate(endDate, "shortDateWithWeekday"))}{" "}
-                  •{" "}
-                </>
-              )}
-              {formatDate(endDate, "timeOnly")}
+            <div
+              className="mt-1 flex items-start gap-1.5 leading-snug"
+              style={
+                dateRowMinHeight ? { minHeight: dateRowMinHeight } : undefined
+              }
+            >
+              <Calendar size={12} className="mt-[3px] shrink-0" />
+              <span ref={dateTextRef}>
+                {capitalizeFirst(
+                  formatDate(startDate, "shortDateWithWeekday"),
+                )}{" "}
+                • {formatDate(startDate, "timeOnly")}
+                {" - "}
+                {!isSameDayInAssociationTimeZone(startDate, endDate) && (
+                  <>
+                    {capitalizeFirst(
+                      formatDate(endDate, "shortDateWithWeekday"),
+                    )}{" "}
+                    •{" "}
+                  </>
+                )}
+                {formatDate(endDate, "timeOnly")}
+              </span>
             </div>
 
-            <div className="mt-1 flex items-center gap-1.5">
+            <div className="mt-1 flex h-5 items-center gap-1.5">
               <MapPin size={12} className="shrink-0" />
               <span className="min-w-0 truncate">{activity.location}</span>
             </div>
 
             {hasEnrollmentOpened(activity) && (
-              <div className="mt-1 flex items-center gap-1.5">
-                <UsersRound size={12} />
-                {activity.participantLimit && canEnroll
-                  ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
-                  : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
+              <div className="mt-1 flex h-5 items-center gap-1.5">
+                <UsersRound size={12} className="shrink-0" />
+                <span className="min-w-0 truncate">
+                  {activity.participantLimit && canEnroll
+                    ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
+                    : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
+                </span>
               </div>
             )}
           </div>
