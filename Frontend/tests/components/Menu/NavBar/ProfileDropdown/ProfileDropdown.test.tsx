@@ -103,4 +103,72 @@ describe("ProfileDropdown", () => {
     fireEvent.click(screen.getByRole("button"));
     expect(screen.getByText("Account")).toBeInTheDocument();
   });
+
+  it("loads primary frame from localStorage when userId is set", () => {
+    localStorage.setItem("profile_frame_user-123", "primary");
+    renderDropdown({ userId: "user-123" });
+    expect(screen.getByAltText("Jane Doe avatar")).toHaveClass("ring-white");
+    localStorage.removeItem("profile_frame_user-123");
+  });
+
+  it("loads gold frame from localStorage when userId is set and isHonoraryOrMerit is true", () => {
+    localStorage.setItem("profile_frame_user-123", "gold");
+    renderDropdown({ userId: "user-123", isHonoraryOrMerit: true });
+    expect(screen.getByAltText("Jane Doe avatar")).toHaveClass(
+      "ring-amber-400",
+    );
+    localStorage.removeItem("profile_frame_user-123");
+  });
+
+  it("updates frame in response to profile_frame_changed custom event", () => {
+    renderDropdown({ userId: "user-frame-sync" });
+    const avatar = screen.getByAltText("Jane Doe avatar");
+    expect(avatar).not.toHaveClass("ring-white");
+
+    fireEvent(
+      window,
+      new CustomEvent("profile_frame_changed", {
+        detail: { userId: "user-frame-sync", frame: "primary" },
+      }),
+    );
+    expect(avatar).toHaveClass("ring-white");
+
+    fireEvent(
+      window,
+      new CustomEvent("profile_frame_changed", {
+        detail: { userId: "other-user", frame: "gold" },
+      }),
+    );
+    expect(avatar).toHaveClass("ring-white");
+
+    fireEvent(
+      window,
+      new CustomEvent("profile_frame_changed", {
+        detail: { userId: "user-frame-sync", frame: "gold" },
+      }),
+    );
+    expect(avatar).toHaveClass("ring-amber-400");
+
+    fireEvent(
+      window,
+      new CustomEvent("profile_frame_changed", {
+        detail: { userId: "user-frame-sync", frame: "default" },
+      }),
+    );
+    expect(avatar).not.toHaveClass("ring-white");
+    expect(avatar).not.toHaveClass("ring-amber-400");
+  });
+
+  it("updates frame in response to profile_frame_changed event when userId is not set", () => {
+    renderDropdown();
+    const avatar = screen.getByAltText("Jane Doe avatar");
+
+    fireEvent(
+      window,
+      new CustomEvent("profile_frame_changed", {
+        detail: { frame: "primary" },
+      }),
+    );
+    expect(avatar).toHaveClass("ring-white");
+  });
 });

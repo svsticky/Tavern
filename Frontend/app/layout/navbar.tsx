@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router";
 import { getMembersByIdProfilePicture } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
+import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -162,6 +163,9 @@ export default function NavBarLayout() {
     },
   ];
 
+  const { member } = useApp();
+  const isHonoraryOrMerit = Boolean(member?.ereLid || member?.lidVanVerdienste);
+
   return (
     <div className="min-w-[320px]">
       <NavBar
@@ -176,6 +180,8 @@ export default function NavBarLayout() {
           username={profileOptions.username}
           avatarUrl={profileOptions.avatarUrl}
           options={profileOptions.options}
+          isHonoraryOrMerit={isHonoraryOrMerit}
+          userId={member?.id}
         />
       </NavBar>
       <main className="px-[5%] sm:px-[10%] py-5">
