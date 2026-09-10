@@ -49,6 +49,7 @@ function buildActivity(
   return {
     id: 1,
     name: "Party",
+    isEnrollable: true,
     enrollments: [],
     areParticipantsVisible: true,
     ...overrides,
@@ -161,6 +162,79 @@ describe("ActivityPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("participants-tile-waiting_list-isBoard-true"),
+    ).toBeInTheDocument();
+  });
+
+  it("still renders participant tiles when enrollment has not opened, as long as areParticipantsVisible is true", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(
+          buildActivity({
+            isEnrollable: false,
+            enrollOpenDate: undefined,
+            areParticipantsVisible: true,
+          }),
+        );
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("activity-details-tile"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-main-isBoard-false"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-waiting_list-isBoard-false"),
+    ).toBeInTheDocument();
+  });
+
+  it("renders participant tiles when enrollment has closed after closing date if areParticipantsVisible is true", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(
+          buildActivity({
+            isEnrollable: true,
+            enrollmentDeadline: "2020-01-01T00:00:00Z",
+            areParticipantsVisible: true,
+            enrollments: [
+              {
+                id: 1,
+                memberId: "m1",
+                isOnWaitingList: false,
+                registeredOn: "2020-01-01T00:00:00Z",
+              } as any,
+            ],
+          }),
+        );
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    expect(
+      await screen.findByText("activity-details-tile"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-main-isBoard-false"),
     ).toBeInTheDocument();
   });
 

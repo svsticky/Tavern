@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ActivityResponseDto } from "~/api";
 import { NoContentTile } from "../Tiles/NoContentTile";
 import ActivityTile from "./ActivityTile/ActivityTile";
+import { DateRowHeightGroup } from "./ActivityTile/DateRowHeightGroup";
 
 const TILE_MIN_WIDTH = 250;
 const GAP = 20; // px, matches gap-5
@@ -80,13 +81,15 @@ export default function UpcomingActivities({
             : `repeat(${columnCount}, minmax(${TILE_MIN_WIDTH}px, 400px))`,
         }}
       >
-        {displayActivities.map((activity) => (
-          <ActivityTile
-            key={activity.id}
-            activity={activity}
-            className="w-full max-w-[400px]"
-          />
-        ))}
+        <DateRowHeightGroup>
+          {displayActivities.map((activity) => (
+            <ActivityTile
+              key={activity.id}
+              activity={activity}
+              className="w-full max-w-[400px]"
+            />
+          ))}
+        </DateRowHeightGroup>
       </div>
     </div>
   );

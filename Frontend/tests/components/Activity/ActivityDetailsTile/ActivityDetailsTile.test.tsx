@@ -289,7 +289,7 @@ describe("ActivityDetailsTile", () => {
     fireEvent.click(await screen.findByText("answer-questions-tile"));
   });
 
-  it("does not show enroll/unenroll actions when neither can enroll nor unenroll", async () => {
+  it("does not show enroll/unenroll actions or participant details when enrollment has not opened", async () => {
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -302,6 +302,33 @@ describe("ActivityDetailsTile", () => {
       await screen.findByText("copy_once_to_calendar"),
     ).toBeInTheDocument();
     expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.queryByText("participants")).not.toBeInTheDocument();
+    expect(screen.queryByText("enrollment_deadline")).not.toBeInTheDocument();
+    expect(screen.queryByText("unenrollment_deadline")).not.toBeInTheDocument();
+  });
+
+  it("shows participant details and deadlines when enrollment has closed after closing date", async () => {
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          enrollmentDeadline: "2020-01-01T00:00:00Z",
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          dateTimeStart: "2020-01-02T00:00:00Z",
+          dateTimeEnd: "2020-01-02T02:00:00Z",
+          enrollments: [
+            { id: 1, memberId: "m1", isOnWaitingList: false } as any,
+          ],
+        })}
+      />,
+    );
+    expect(
+      await screen.findByText("copy_once_to_calendar"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.getByText("participants")).toBeInTheDocument();
+    expect(screen.getByText("enrollment_deadline")).toBeInTheDocument();
+    expect(screen.getByText("unenrollment_deadline")).toBeInTheDocument();
   });
 
   it("shows the organizer's name and logo when the activity has an organizer", async () => {
