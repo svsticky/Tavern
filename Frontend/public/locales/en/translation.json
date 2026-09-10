@@ -617,5 +617,16 @@
   "copy_calendar_link": "Copy calendar link",
   "reset_calendar_link": "Reset calendar link",
   "calendar_link_reset": "Calendar link reset. Update your calendar app with the new link.",
-  "calendar_link_reset_failed": "Could not reset the calendar link"
+  "calendar_link_reset_failed": "Could not reset the calendar link",
+  "archive_activity": "Archive activity",
+  "unarchive_activity": "Unarchive activity",
+  "activity_archived": "Activity archived",
+  "activity_unarchived": "Activity unarchived",
+  "confirm_archive_activity": "Are you sure you want to archive this activity? It will be hidden from the regular schedule.",
+  "confirm_unarchive_activity": "Are you sure you want to unarchive this activity?",
+  "archived_activity_badge": "Archived",
+  "archived_activity_notice": "This activity is archived and hidden from regular members.",
+  "active_activities": "Active activities",
+  "archived_activities": "Archived activities",
+  "no_archived_activities": "No archived activities found"
 }

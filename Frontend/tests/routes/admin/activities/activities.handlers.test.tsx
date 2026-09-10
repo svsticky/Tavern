@@ -40,11 +40,35 @@ describe("loadAdminActivities", () => {
         Year: 2024,
         Page: 2,
         PageSize: 15,
+        IsArchived: false,
       },
     });
     expect(setLoading).toHaveBeenNthCalledWith(1, true);
     expect(setActivities).toHaveBeenCalledWith(activities);
     expect(setLoading).toHaveBeenNthCalledWith(2, false);
+  });
+
+  it("fetches archived activities when isArchived is set to true", async () => {
+    const setLoading = vi.fn();
+    const setActivities = vi.fn();
+    const activities: ActivityResponseDto[] = [
+      { id: 2, name: "Gearchiveerd Feest" } as ActivityResponseDto,
+    ];
+    getActivities.mockResolvedValue({ data: activities });
+
+    await loadAdminActivities(2024, setLoading, setActivities, 1, 15, true);
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: {
+        IncludePast: true,
+        IncludeFuture: true,
+        Year: 2024,
+        Page: 1,
+        PageSize: 15,
+        IsArchived: true,
+      },
+    });
+    expect(setActivities).toHaveBeenCalledWith(activities);
   });
 
   it("shows an error toast and does not set activities when the response has an error", async () => {

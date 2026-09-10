@@ -175,6 +175,11 @@ public class Activity
     public bool IsWeeklyDrinks { get; set; } = false;
 
     /// <summary>
+    /// Whether the activity is archived.
+    /// </summary>
+    public bool IsArchived { get; set; } = false;
+
+    /// <summary>
     /// Bitflag representing which student years/levels are allowed to enroll.
     /// </summary>
     public TargetAudience AllowedAudience { get; set; }

@@ -617,5 +617,16 @@
   "copy_calendar_link": "Kopieer agendalink",
   "reset_calendar_link": "Reset agendalink",
   "calendar_link_reset": "Agendalink gereset. Werk je agenda-app bij met de nieuwe link.",
-  "calendar_link_reset_failed": "Kon de agendalink niet resetten"
+  "calendar_link_reset_failed": "Kon de agendalink niet resetten",
+  "archive_activity": "Activiteit archiveren",
+  "unarchive_activity": "Activiteit de-archiveren",
+  "activity_archived": "Activiteit gearchiveerd",
+  "activity_unarchived": "Activiteit gede-archiveerd",
+  "confirm_archive_activity": "Weet je zeker dat je deze activiteit wilt archiveren? Deze wordt verborgen voor het reguliere rooster.",
+  "confirm_unarchive_activity": "Weet je zeker dat je deze activiteit wilt de-archiveren?",
+  "archived_activity_badge": "Gearchiveerd",
+  "archived_activity_notice": "Deze activiteit is gearchiveerd en verborgen voor reguliere leden.",
+  "active_activities": "Actieve activiteiten",
+  "archived_activities": "Gearchiveerde activiteiten",
+  "no_archived_activities": "Geen gearchiveerde activiteiten gevonden"
 }

@@ -10,6 +10,21 @@ import {
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
+const { patchActivitiesById } = vi.hoisted(() => ({
+  patchActivitiesById: vi.fn(),
+}));
+
+vi.mock("~/api", () => ({
+  patchActivitiesById,
+}));
+
+vi.mock("react-hot-toast", () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
 vi.mock("~/routes/activity/activity.handlers", () => ({
   loadActivityData: vi.fn(),
   getActivityBackPath: vi.fn(() => "/activities"),
@@ -281,5 +296,81 @@ describe("ActivityPage", () => {
     fireEvent.click(editButton!);
     expect(handleEditActivityClick).toHaveBeenCalled();
     expect(getActivityBackPath).toHaveBeenCalled();
+  });
+
+  it("allows a board member to archive an activity and shows success toast", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity({ isArchived: false }));
+        setLoading(false);
+      },
+    );
+    patchActivitiesById.mockResolvedValue({ data: {} });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    const archiveBtn = screen.getByRole("button", { name: "archive_activity" });
+    fireEvent.click(archiveBtn);
+
+    expect(
+      await screen.findByText("confirm_archive_activity"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "confirm" }));
+
+    await waitFor(() => {
+      expect(patchActivitiesById).toHaveBeenCalledWith({
+        path: { id: 1 },
+        body: [
+          {
+            op: "replace",
+            path: "/isarchived",
+            value: true,
+          },
+        ],
+      });
+    });
+  });
+
+  it("does not archive if confirm is cancelled", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity({ isArchived: false }));
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    const archiveBtn = screen.getByRole("button", { name: "archive_activity" });
+    fireEvent.click(archiveBtn);
+
+    expect(
+      await screen.findByText("confirm_archive_activity"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "cancel" }));
+
+    expect(patchActivitiesById).not.toHaveBeenCalled();
   });
 });

@@ -1,12 +1,18 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import { getCommitteeYear } from "~/util/date.util";
 
-const { loadAdminActivities, handleViewActivity } = vi.hoisted(() => ({
-  loadAdminActivities: vi.fn(),
-  handleViewActivity: vi.fn(),
+const { loadAdminActivities, handleViewActivity, patchActivitiesById } =
+  vi.hoisted(() => ({
+    loadAdminActivities: vi.fn(),
+    handleViewActivity: vi.fn(),
+    patchActivitiesById: vi.fn(),
+  }));
+
+vi.mock("~/api", () => ({
+  patchActivitiesById,
 }));
 
 vi.mock("~/routes/admin/activities/activities.handlers", () => ({
@@ -70,6 +76,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      false,
     );
   });
 
@@ -154,6 +161,26 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      false,
+    );
+  });
+
+  it("reloads activities when the status selector changes to archived", async () => {
+    renderWithProviders(<Activities />);
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
+
+    const statusSelect = screen.getByLabelText("status");
+    fireEvent.change(statusSelect, { target: { value: "archived" } });
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2));
+    expect(loadAdminActivities).toHaveBeenLastCalledWith(
+      expect.any(Number),
+      expect.any(Function),
+      expect.any(Function),
+      1,
+      15,
+      true,
     );
   });
 
@@ -209,6 +236,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       2,
       15,
+      false,
     );
   });
 
@@ -318,5 +346,54 @@ describe("Activities (admin)", () => {
     renderWithProviders(<Activities />);
 
     expect(await screen.findByText("no_more_activities")).toBeInTheDocument();
+  });
+
+  it("allows board member to archive an activity from the table", async () => {
+    loadAdminActivities.mockImplementation(
+      async (_year, setLoading, setActivities) => {
+        setActivities([
+          makeActivity({ id: 99, name: "Archive Me", isArchived: false }),
+        ]);
+        setLoading(false);
+      },
+    );
+    patchActivitiesById.mockResolvedValue({ data: {} });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        locale: "en",
+        UserId: "00000000-0000-0000-0000-000000000000" as any,
+        access_level: "board",
+        is_admin: true,
+        given_name: "Board",
+        family_name: "Member",
+        name: "Board Member",
+      })),
+    });
+
+    renderWithProviders(<Activities />, { authService });
+
+    expect(await screen.findByText("Archive Me")).toBeInTheDocument();
+    const archiveBtn = await screen.findByRole("button", {
+      name: "archive_activity",
+    });
+    fireEvent.click(archiveBtn);
+
+    expect(
+      await screen.findByText("confirm_archive_activity"),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "confirm" }));
+
+    await waitFor(() => {
+      expect(patchActivitiesById).toHaveBeenCalledWith({
+        path: { id: 99 },
+        body: [
+          {
+            op: "replace",
+            path: "/isarchived",
+            value: true,
+          },
+        ],
+      });
+    });
   });
 });

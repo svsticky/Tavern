@@ -223,6 +223,10 @@ export type ActivityResponseDto = {
      */
     isWeeklyDrinks: boolean;
     /**
+     * Whether the activity is archived.
+     */
+    isArchived?: boolean;
+    /**
      * The VAT rate applicable to the activity.
      */
     vatRate?: number | null;
@@ -2083,6 +2087,10 @@ export type GetActivitiesData = {
          * The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
          */
         UserId?: string;
+        /**
+         * Indicates whether to filter activities by their archived status.
+         */
+        IsArchived?: boolean;
     };
     url: '/activities';
 };
