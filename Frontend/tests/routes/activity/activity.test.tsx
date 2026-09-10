@@ -165,7 +165,7 @@ describe("ActivityPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not render participant tiles when enrollment has not opened even if areParticipantsVisible is true", async () => {
+  it("still renders participant tiles when enrollment has not opened, as long as areParticipantsVisible is true", async () => {
     vi.mocked(loadActivityData).mockImplementation(
       async ({ setLoading, setActivity }) => {
         setActivity(
@@ -192,11 +192,11 @@ describe("ActivityPage", () => {
       await screen.findByText("activity-details-tile"),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText("participants-tile-main"),
-    ).not.toBeInTheDocument();
+      screen.getByText("participants-tile-main-isBoard-false"),
+    ).toBeInTheDocument();
     expect(
-      screen.queryByText("participants-tile-waiting_list"),
-    ).not.toBeInTheDocument();
+      screen.getByText("participants-tile-waiting_list-isBoard-false"),
+    ).toBeInTheDocument();
   });
 
   it("renders participant tiles when enrollment has closed after closing date if areParticipantsVisible is true", async () => {
