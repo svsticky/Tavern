@@ -269,7 +269,8 @@ export default function ActivityDetailsTile({
 
           <div
             className="prose prose-sm max-w-none
-              prose-p:!my-0.5
+              prose-p:!my-0
+              [&_p+p]:!mt-[1.375em]
               prose-ul:!my-0.5
               prose-ol:!my-0.5
               prose-li:!my-0
