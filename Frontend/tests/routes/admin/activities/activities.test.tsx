@@ -70,6 +70,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      "",
     );
   });
 
@@ -116,27 +117,52 @@ describe("Activities (admin)", () => {
     expect(await screen.findByText("free")).toBeInTheDocument();
   });
 
-  it("filters activities by search query (name or location)", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([
-          makeActivity({ id: 1, name: "Feest", location: "Kroeg" }),
-          makeActivity({ id: 2, name: "Borrel", location: "Kantine" }),
-        ]);
-        setLoading(false);
-      },
-    );
-
+  it("debounces the search input and triggers a server-side search", async () => {
     renderWithProviders(<Activities />);
 
-    expect(await screen.findByText("Feest")).toBeInTheDocument();
-    expect(screen.getByText("Borrel")).toBeInTheDocument();
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
 
     const searchInput = screen.getByPlaceholderText("search_activities");
     fireEvent.change(searchInput, { target: { value: "kantine" } });
 
-    expect(screen.queryByText("Feest")).not.toBeInTheDocument();
-    expect(screen.getByText("Borrel")).toBeInTheDocument();
+    // No extra request fires immediately - it's debounced.
+    expect(loadAdminActivities).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2), {
+      timeout: 1000,
+    });
+    expect(loadAdminActivities).toHaveBeenLastCalledWith(
+      expect.any(Number),
+      expect.any(Function),
+      expect.any(Function),
+      1,
+      15,
+      "kantine",
+    );
+  });
+
+  it("only issues one search request after rapid typing", async () => {
+    renderWithProviders(<Activities />);
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
+
+    const searchInput = screen.getByPlaceholderText("search_activities");
+    fireEvent.change(searchInput, { target: { value: "k" } });
+    fireEvent.change(searchInput, { target: { value: "kr" } });
+    fireEvent.change(searchInput, { target: { value: "kro" } });
+    fireEvent.change(searchInput, { target: { value: "kroeg" } });
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2), {
+      timeout: 1000,
+    });
+    expect(loadAdminActivities).toHaveBeenLastCalledWith(
+      expect.any(Number),
+      expect.any(Function),
+      expect.any(Function),
+      1,
+      15,
+      "kroeg",
+    );
   });
 
   it("reloads activities when the year selector changes", async () => {
@@ -154,6 +180,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       1,
       15,
+      "",
     );
   });
 
@@ -209,6 +236,7 @@ describe("Activities (admin)", () => {
       expect.any(Function),
       2,
       15,
+      "",
     );
   });
 
@@ -225,27 +253,6 @@ describe("Activities (admin)", () => {
     renderWithProviders(<Activities />);
 
     expect(await screen.findByText("👥 0")).toBeInTheDocument();
-  });
-
-  it("matches activities by location even without a matching name", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([
-          makeActivity({ id: 1, name: "Feest", location: "Kroeg" }),
-          makeActivity({ id: 2, name: "Borrel", location: undefined }),
-        ]);
-        setLoading(false);
-      },
-    );
-
-    renderWithProviders(<Activities />);
-
-    expect(await screen.findByText("Feest")).toBeInTheDocument();
-    const searchInput = screen.getByPlaceholderText("search_activities");
-    fireEvent.change(searchInput, { target: { value: "kroeg" } });
-
-    expect(screen.getByText("Feest")).toBeInTheDocument();
-    expect(screen.queryByText("Borrel")).not.toBeInTheDocument();
   });
 
   it("does not fetch the next page when the loader intersects but there are no more pages", async () => {

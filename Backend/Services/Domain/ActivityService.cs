@@ -82,6 +82,7 @@ public class ActivityService : IActivityService
             .Include(a => a.Enrollments)
                 .ThenInclude(e => e.Member)
             .Include(a => a.SpecificationQuestions)
+            .AsSplitQuery()
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds, userId.HasValue)
             .ApplyPaging(dto)

@@ -15,6 +15,9 @@ import { appendErrorMessage } from "~/util/error.util";
  * @param {number} year - The calendar year for which to retrieve activities.
  * @param {(loading: boolean) => void} setLoading - State setter to track the network request.
  * @param {(activities: ActivityResponseDto[]) => void} setActivities - State setter to store the retrieved activity list.
+ * @param {number} [page] - The page number to fetch.
+ * @param {number} [pageSize] - The number of activities to fetch per page.
+ * @param {string} [search] - A search term to filter activities by name or location, applied server-side.
  */
 export const loadAdminActivities = async (
   year: number,
@@ -22,6 +25,7 @@ export const loadAdminActivities = async (
   setActivities: (activities: ActivityResponseDto[]) => void,
   page?: number,
   pageSize?: number,
+  search?: string,
 ) => {
   try {
     setLoading(true);
@@ -32,6 +36,7 @@ export const loadAdminActivities = async (
         Year: year,
         Page: page,
         PageSize: pageSize,
+        Search: search || undefined,
       },
     });
 

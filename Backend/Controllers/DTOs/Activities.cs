@@ -300,4 +300,9 @@ public class GetActivitiesDTO
     /// The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
     /// </summary>
     public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
+    /// </summary>
+    public string? Search { get; set; }
 }

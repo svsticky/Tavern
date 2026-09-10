@@ -150,5 +150,16 @@ public class PostgresDbContext : DbContext
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
         });
+
+        modelBuilder.Entity<Activity>(entity =>
+        {
+            // Backs the DateTimeStart/DateTimeEnd range filters (IncludePast, IncludeFuture, Year) in
+            // ActivityQueryExtensions.Filter and the OrderBy(DateTimeStart)/OrderByDescending(DateTimeStart)
+            // used for listing and paging activities. Every activities list request hits at least one of
+            // these, so without an index Postgres falls back to a sequential scan that grows with the
+            // whole activity history.
+            entity.HasIndex(a => a.DateTimeStart);
+            entity.HasIndex(a => a.DateTimeEnd);
+        });
     }
 }
