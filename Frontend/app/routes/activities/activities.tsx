@@ -18,7 +18,9 @@ import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { cn } from "~/util/tailwind.util";
 import {
+  type ActivityFilter,
   copyWeekOverview,
   downloadPosters,
   handleCreateActivityClick,
@@ -77,13 +79,17 @@ export default function ActivitiesPage() {
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [calendarTileOpen, setCalendarTileOpen] = useState(false);
+  const [filter, setFilter] = useState<ActivityFilter>("all");
+
   useEffect(() => {
     if (!tokenParsed) return;
     loadActivities({
       setLoading,
       setActivities,
+      filter,
+      userId: tokenParsed.UserId,
     });
-  }, [tokenParsed]);
+  }, [tokenParsed, filter]);
 
   if (!tokenParsed) return null;
 
@@ -166,10 +172,58 @@ export default function ActivitiesPage() {
         <PersonalCalendarTile />
       </Modal>
 
+      {/* Activities Filter Tabs */}
+      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
+        <button
+          type="button"
+          onClick={() => setFilter("all")}
+          className={cn(
+            "px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all cursor-pointer whitespace-nowrap",
+            filter === "all"
+              ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+              : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
+          )}
+        >
+          {t("all_activities")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilter("enrolled")}
+          className={cn(
+            "px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all cursor-pointer whitespace-nowrap",
+            filter === "enrolled"
+              ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+              : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
+          )}
+        >
+          {t("my_enrollments")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilter("history")}
+          className={cn(
+            "px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-all cursor-pointer whitespace-nowrap",
+            filter === "history"
+              ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+              : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
+          )}
+        >
+          {t("enrolled_history")}
+        </button>
+      </div>
+
       {loading ? (
         t("loading")
       ) : activities.length === 0 ? (
-        <NoContentTile text={t("no_upcoming_activities")} />
+        <NoContentTile
+          text={
+            filter === "history"
+              ? t("no_historical_activities")
+              : filter === "enrolled"
+                ? t("no_enrollments")
+                : t("no_upcoming_activities")
+          }
+        />
       ) : (
         <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
           {activities.map((activity) => (
