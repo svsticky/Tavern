@@ -319,4 +319,42 @@ describe("Activities (admin)", () => {
 
     expect(await screen.findByText("no_more_activities")).toBeInTheDocument();
   });
+
+  it("separates published and unpublished activities into distinct sections with counts", async () => {
+    loadAdminActivities.mockImplementation(
+      async (_year, setLoading, setActivities) => {
+        setActivities([
+          makeActivity({ id: 1, name: "Published Gala", showInKoala: true }),
+          makeActivity({
+            id: 2,
+            name: "Draft Workshop",
+            showInKoala: false,
+            showOnWebsite: false,
+          }),
+        ]);
+        setLoading(false);
+      },
+    );
+
+    renderWithProviders(<Activities />);
+
+    expect(await screen.findByText("published_activities")).toBeInTheDocument();
+    expect(screen.getByText("unpublished_activities")).toBeInTheDocument();
+
+    expect(screen.getByText("Published Gala")).toBeInTheDocument();
+    expect(screen.getByText("Draft Workshop")).toBeInTheDocument();
+
+    const publishedSection = screen
+      .getByText("published_activities")
+      .closest("section");
+    const unpublishedSection = screen
+      .getByText("unpublished_activities")
+      .closest("section");
+
+    expect(publishedSection).toHaveTextContent("Published Gala");
+    expect(publishedSection).not.toHaveTextContent("Draft Workshop");
+
+    expect(unpublishedSection).toHaveTextContent("Draft Workshop");
+    expect(unpublishedSection).not.toHaveTextContent("Published Gala");
+  });
 });
