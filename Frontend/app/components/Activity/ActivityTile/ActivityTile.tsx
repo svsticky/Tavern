@@ -90,8 +90,7 @@ export default function ActivityTile({
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
 
-  const { ref: dateTextRef, minHeight: dateRowMinHeight } =
-    useDateRowHeight();
+  const { ref: dateTextRef, minHeight: dateRowMinHeight } = useDateRowHeight();
 
   return (
     <Link
@@ -179,9 +178,7 @@ export default function ActivityTile({
             >
               <Calendar size={12} className="mt-[3px] shrink-0" />
               <span ref={dateTextRef}>
-                {capitalizeFirst(
-                  formatDate(startDate, "shortDateWithWeekday"),
-                )}{" "}
+                {capitalizeFirst(formatDate(startDate, "shortDateWithWeekday"))}{" "}
                 • {formatDate(startDate, "timeOnly")}
                 {" - "}
                 {!isSameDayInAssociationTimeZone(startDate, endDate) && (

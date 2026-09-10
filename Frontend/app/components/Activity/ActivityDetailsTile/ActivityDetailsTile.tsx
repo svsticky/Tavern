@@ -358,71 +358,73 @@ export default function ActivityDetailsTile({
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-          {isEnrolled
-            ? (canUnenroll ? (
-                <div className="flex flex-col gap-3">
-                  {activity.specificationQuestions.length > 0 && (
-                    <Button
-                      variant="primary"
-                      className="w-full sm:w-auto"
-                      onClick={() => submitAnswers(handleUpdateEnrollment)}
-                      disabled={submitting}
-                    >
-                      {submitting ? t("saving") : t("update_answers")}
-                    </Button>
-                  )}
-
+          {isEnrolled ? (
+            canUnenroll ? (
+              <div className="flex flex-col gap-3">
+                {activity.specificationQuestions.length > 0 && (
                   <Button
-                    variant="danger"
+                    variant="primary"
                     className="w-full sm:w-auto"
-                    onClick={() =>
-                      handleUnenrollment(
-                        authService,
-                        activity,
-                        setActivity,
-                        setSubmitting,
-                      )
-                    }
-                    disabled={
-                      submitting ||
-                      (activity.unenrollmentDeadline
-                        ? new Date(Date.now()) >
-                          new Date(activity.unenrollmentDeadline)
-                        : false)
-                    }
+                    onClick={() => submitAnswers(handleUpdateEnrollment)}
+                    disabled={submitting}
                   >
-                    {currentEnrollment.isOnWaitingList
-                      ? t("leave_waitlist")
-                      : t("sign_out")}
-                    {submitting && "..."}
+                    {submitting ? t("saving") : t("update_answers")}
                   </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
-                  <CheckCircle2 size={18} className="shrink-0" />
-                  <span className="text-sm font-medium">
-                    {currentEnrollment.isOnWaitingList
-                      ? t("you_are_on_waiting_list")
-                      : t("you_are_enrolled")}
-                  </span>
-                </div>
-              ))
-            : canEnroll && (
+                )}
+
                 <Button
-                  variant="primary"
+                  variant="danger"
                   className="w-full sm:w-auto"
-                  onClick={() => submitAnswers(handleEnrollment)}
-                  disabled={submitting}
+                  onClick={() =>
+                    handleUnenrollment(
+                      authService,
+                      activity,
+                      setActivity,
+                      setSubmitting,
+                    )
+                  }
+                  disabled={
+                    submitting ||
+                    (activity.unenrollmentDeadline
+                      ? new Date(Date.now()) >
+                        new Date(activity.unenrollmentDeadline)
+                      : false)
+                  }
                 >
-                  {activity.participantLimit &&
-                  activity.participantLimit <=
-                    (activity.enrollments.length || 0) &&
-                  inTargetAudience
-                    ? t("sign_in_on_waitlist")
-                    : t("sign_in")}
+                  {currentEnrollment.isOnWaitingList
+                    ? t("leave_waitlist")
+                    : t("sign_out")}
                   {submitting && "..."}
                 </Button>
-              )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+                <CheckCircle2 size={18} className="shrink-0" />
+                <span className="text-sm font-medium">
+                  {currentEnrollment.isOnWaitingList
+                    ? t("you_are_on_waiting_list")
+                    : t("you_are_enrolled")}
+                </span>
+              </div>
+            )
+          ) : (
+            canEnroll && (
+              <Button
+                variant="primary"
+                className="w-full sm:w-auto"
+                onClick={() => submitAnswers(handleEnrollment)}
+                disabled={submitting}
+              >
+                {activity.participantLimit &&
+                activity.participantLimit <=
+                  (activity.enrollments.length || 0) &&
+                inTargetAudience
+                  ? t("sign_in_on_waitlist")
+                  : t("sign_in")}
+                {submitting && "..."}
+              </Button>
+            )
+          )}
           <Button
             variant="secondary"
             className="w-full sm:w-auto"

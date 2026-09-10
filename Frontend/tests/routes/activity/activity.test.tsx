@@ -233,7 +233,9 @@ describe("ActivityPage", () => {
     expect(
       await screen.findByText("activity-details-tile"),
     ).toBeInTheDocument();
-    expect(screen.getByText("participants-tile-main")).toBeInTheDocument();
+    expect(
+      screen.getByText("participants-tile-main-isBoard-false"),
+    ).toBeInTheDocument();
   });
 
   it("sorts the waiting list by registration order when there are enrollments", async () => {

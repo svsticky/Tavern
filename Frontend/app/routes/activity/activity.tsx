@@ -9,8 +9,8 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
 import { hasEnrollmentOpened } from "~/util/activity.util";
+import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
