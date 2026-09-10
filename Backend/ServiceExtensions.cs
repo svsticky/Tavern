@@ -171,6 +171,22 @@ internal static class ServiceExtensions
     {
         services.AddNpgsql<PostgresDbContext>(connectionString: connectionString);
 
+        var redisConnectionString = Environment.GetEnvironmentVariable("REDIS_CONNECTION_STRING");
+        if (!string.IsNullOrWhiteSpace(redisConnectionString))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = redisConnectionString;
+                options.InstanceName = "Tavern_";
+            });
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+        }
+
+        services.AddSingleton<ICacheService, CacheService>();
+
         if (!isGeneratingDocs)
         {
             services.AddHangfire(config => config
