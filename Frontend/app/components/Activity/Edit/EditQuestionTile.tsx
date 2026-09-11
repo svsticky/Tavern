@@ -16,7 +16,8 @@ import BorderedTile from "../../Tiles/BorderedTile";
  *   question type is set to 'MultipleChoice'.
  * - **Semicolon Parsing**: Automatically splits and trims string input into an array
  *   of options for multiple-choice questions.
- * - **Interactive Deletion**: Displays a floating "remove" button when the tile is hovered.
+ * - **Interactive Deletion**: Displays a floating "remove" button, always visible on
+ *   devices without real hover support (touch screens) and shown on hover otherwise.
  *
  * @component
  * @param {Object} props - The component props.
@@ -50,7 +51,7 @@ export default function EditQuestionTile({
       <button
         type="button"
         onClick={onRemove}
-        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-sm z-10 hover:cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-sm z-10 hover:cursor-pointer opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity"
       >
         ×
       </button>
