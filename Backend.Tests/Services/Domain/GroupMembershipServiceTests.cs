@@ -9,6 +9,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
 using Microsoft.Data.Sqlite;

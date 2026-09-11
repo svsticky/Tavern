@@ -3,6 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.QueryExtensions;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
@@ -22,11 +23,11 @@ namespace Backend.Services.Domain
         AbstractPaymentService paymentService,
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
-        IAuthService authService,
         IMailSubscriptionService mailSubscriptionService,
         IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
-        ILogger<MemberService> logger
+        ILogger<MemberService> logger,
+        IEnumerable<INameChangedListener> nameChangedListeners
     ) : IMemberService
     {
         /// <inheritdoc />
@@ -130,8 +131,8 @@ namespace Backend.Services.Domain
                 // Sync with the auth system
                 authOutboxWorker.EnqueueTask(AuthTaskType.Create, member.Id, db);
 
-                // Enqueue mail subscription update
-                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, dto.SubscribedMailinglistIds ?? [], db);
+                // Enqueue mail subscription update, including the name so a newly created record carries it.
+                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, dto.SubscribedMailinglistIds ?? [], db, member.FirstName, member.LastName);
 
                 await db.SaveChangesAsync(cancellationToken);
 
@@ -237,8 +238,6 @@ namespace Backend.Services.Domain
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
             // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
             bool hasUnauthorizedOperations = patchDoc.Operations.Any(op =>
                 !Member.AllowedFields.Contains(op.path) ||
@@ -247,12 +246,26 @@ namespace Backend.Services.Domain
             if (member.Id != userId || hasUnauthorizedOperations)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
+            // Email is managed by Keycloak, not editable here regardless of who's asking.
+            if (patchDoc.Operations.Any(op => string.Equals(op.path, "/Email", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Email cannot be changed here - it's managed by the authentication provider.");
+
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
+
             try
             {
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
+                // Always sync to Keycloak, not just when the name changed.
                 authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
+
+                if (member.FirstName != oldFirstName || member.LastName != oldLastName)
+                {
+                    nameChangedListeners.NotifyNameChanged(member, db);
+                }
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -289,12 +302,20 @@ namespace Backend.Services.Domain
                 PreserveFieldsOutsideAllowedFields(member, dto);
             }
 
+            var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
+
             try
             {
                 ApplyMemberUpdate(member, dto);
                 StateValidator.Validate(member);
 
+                // Always sync to Keycloak, not just when the name changed.
                 authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
+
+                if (member.FirstName != oldFirstName || member.LastName != oldLastName)
+                {
+                    nameChangedListeners.NotifyNameChanged(member, db);
+                }
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -335,25 +356,14 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task RefreshEmail(Guid id, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FirstOrDefaultAsync((member) => member.AuthSystemUserId == id);
+            var member = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == id, cancellationToken);
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id, db);
-                var newMail = await authService.GetEmail(id);
-                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newMail, db);
-                await db.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                logger.LogError(ex, "Failed updating member email {MemberId}.", id);
-                throw;
-            }
+            // Enqueued rather than done inline, so a transient Keycloak failure gets retried with
+            // backoff instead of failing the caller (this is called from an anonymous webhook Keycloak
+            // itself invokes on email change - there's no user waiting on a response to retry).
+            authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id, db);
         }
 
         /// <inheritdoc />
@@ -394,7 +404,22 @@ namespace Backend.Services.Domain
             var preserved = currentState.Where(l => l.Subscribed && !visibleIds.Contains(l.Id)).Select(l => l.Id);
             var finalSet = subscribedListIds.Union(preserved);
 
-            mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, finalSet, db);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                // Includes the name so a first-time subscribe - which can be what creates the Mailchimp record - carries it too.
+                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, finalSet, db, member.FirstName, member.LastName);
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed updating mailing list subscriptions for member {MemberId}.", id);
+                throw;
+            }
         }
 
         /// <inheritdoc />
@@ -552,7 +577,6 @@ namespace Backend.Services.Domain
         /// </summary>
         private static void PreserveFieldsOutsideAllowedFields(Member member, MemberUpdateDTO dto)
         {
-            dto.Email = member.Email;
             dto.StudentNumber = member.StudentNumber;
             dto.FirstName = member.FirstName;
             dto.LastName = member.LastName;
@@ -565,6 +589,9 @@ namespace Backend.Services.Domain
             dto.Suspended = member.Suspended;
         }
 
+        // Email is deliberately not applied here - Keycloak is the sole source of truth for it, and
+        // only ever changes locally by being pulled from there (RefreshEmail, SyncMember, token
+        // validation). Submitted DTO values are ignored, not validated against.
         private static void ApplyMemberUpdate(Member member, MemberUpdateDTO dto)
         {
             member.StudentNumber = dto.StudentNumber;
@@ -578,7 +605,6 @@ namespace Backend.Services.Domain
             member.DateOfBirth = dto.DateOfBirth;
             member.ParentPhoneNumber = dto.ParentPhoneNumber;
             member.PreferredLanguage = dto.PreferredLanguage;
-            member.Email = dto.Email;
             member.Notes = dto.Notes;
             member.Gratie = dto.Gratie;
             member.LidVanVerdienste = dto.LidVanVerdienste;
