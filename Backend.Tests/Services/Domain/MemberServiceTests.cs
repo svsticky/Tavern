@@ -553,6 +553,7 @@ public class MemberServiceTests : IDisposable
         Assert.Equal($"deleted-{memberId}@deleted.local", anonymized.Email);
         Assert.Equal($"DELETED-{memberId}", anonymized.StudentNumber);
         Assert.Null(anonymized.ProfilePicturePath);
+        Assert.Equal(DateTimeOffset.MinValue, anonymized.DateOfBirth);
 
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
         await _storageService.Received(1).DeleteFileAsync("profile-pictures", "pic.webp");

@@ -183,6 +183,7 @@ namespace Backend.Services.Domain
                 member.HouseNumber = "0";
                 member.PostalCode = "0000AA";
                 member.City = "Deleted";
+                member.DateOfBirth = DateTimeOffset.MinValue;
                 member.Notes = null;
                 member.Gratie = false;
                 member.LidVanVerdienste = false;
