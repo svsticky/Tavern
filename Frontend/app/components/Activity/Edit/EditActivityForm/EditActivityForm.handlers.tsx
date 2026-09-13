@@ -135,7 +135,8 @@ export const updateQuestion = (
  */
 type HandleActivitySubmitArgs = {
   e: React.FormEvent<HTMLFormElement>;
-  isBoard: boolean;
+  canEditStructural: boolean;
+  canManageFinances: boolean;
   questions: Partial<GetSpecificationQuestionResponseDto>[];
   setSaving: (saving: boolean) => void;
   isEdit: boolean;
@@ -153,7 +154,8 @@ type HandleActivitySubmitArgs = {
  */
 export const handleActivitySubmit = async ({
   e,
-  isBoard,
+  canEditStructural,
+  canManageFinances,
   questions,
   setSaving,
   isEdit,
@@ -227,27 +229,29 @@ export const handleActivitySubmit = async ({
           ).toISOString()
         : undefined,
 
-      ShowInKoala: isBoard ? fd.get("ShowInKoala") === "on" : false,
-      ShowOnWebsite: isBoard ? fd.get("ShowOnWebsite") === "on" : false,
-      IsEnrollable: isBoard ? fd.get("IsEnrollable") === "on" : false,
+      ShowInKoala: canEditStructural ? fd.get("ShowInKoala") === "on" : false,
+      ShowOnWebsite: canEditStructural
+        ? fd.get("ShowOnWebsite") === "on"
+        : false,
+      IsEnrollable: canEditStructural ? fd.get("IsEnrollable") === "on" : false,
       AreParticipantsVisible: fd.get("AreParticipantsVisible") === "on",
       IsAdultOnly: fd.get("IsAdultOnly") === "on",
       IsWeeklyDrinks: fd.get("IsWeeklyDrinks") === "on",
 
       AllowedAudience: getAudienceString(audienceFlags),
 
-      VatRate: isBoard
+      VatRate: canManageFinances
         ? fd.get("VatRate")
           ? Number(fd.get("VatRate"))
           : undefined
         : undefined,
-      GLAccountId: isBoard
+      GLAccountId: canManageFinances
         ? (fd.get("GLAccountId") as string) || undefined
         : undefined,
-      CostUnitId: isBoard
+      CostUnitId: canManageFinances
         ? (fd.get("CostUnitId") as string) || undefined
         : undefined,
-      CostCenterId: isBoard
+      CostCenterId: canManageFinances
         ? (fd.get("CostCenterId") as string) || undefined
         : undefined,
 
@@ -258,14 +262,14 @@ export const handleActivitySubmit = async ({
 
       SpecificationQuestionsJson: JSON.stringify(questions),
 
-      PaymentDeadline: isBoard
+      PaymentDeadline: canManageFinances
         ? fd.get("PaymentDeadline")
           ? parseInputAsAssociationTime(
               fd.get("PaymentDeadline") as string,
             ).toISOString()
           : undefined
         : undefined,
-      IsOpenForPayment: isBoard
+      IsOpenForPayment: canManageFinances
         ? fd.get("IsOpenForPayment") === "on"
         : undefined,
     },
@@ -369,7 +373,7 @@ export const handleActivitySubmit = async ({
           },
         ];
 
-        if (isBoard) {
+        if (canEditStructural) {
           patchOperations.push(
             {
               op: "replace",
@@ -386,6 +390,11 @@ export const handleActivitySubmit = async ({
               path: "/IsEnrollable",
               value: fd.get("IsEnrollable") === "on",
             },
+          );
+        }
+
+        if (canManageFinances) {
+          patchOperations.push(
             {
               op: "replace",
               path: "/VatRate",

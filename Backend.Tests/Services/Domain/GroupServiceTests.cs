@@ -7,7 +7,9 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
+using Backend.Services;
 using Backend.Services.Domain;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
@@ -32,6 +34,7 @@ public class GroupServiceTests : IDisposable
     private readonly IFileCompressService _fileCompressor;
     private readonly IStorageService _storageService;
     private readonly IMemoryCache _memoryCache;
+    private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly GroupService _service;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -51,6 +54,7 @@ public class GroupServiceTests : IDisposable
         _fileCompressor = Substitute.For<IFileCompressService>();
         _storageService = Substitute.For<IStorageService>();
         _memoryCache = Substitute.For<IMemoryCache>();
+        _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, null);
 
         _service = new GroupService(
             _db,
@@ -58,6 +62,7 @@ public class GroupServiceTests : IDisposable
             _fileCompressor,
             _storageService,
             _memoryCache,
+            _authOutboxWorker,
             NullLogger<GroupService>.Instance
         );
     }
@@ -139,7 +144,7 @@ public class GroupServiceTests : IDisposable
         var list = result.ToList();
         var single = Assert.Single(list);
         Assert.Equal(groupUserBelongsTo.Id, single.Id);
-        _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.DidNotReceive().EnsurePermission(_userId, Permission.ManageGroups, Arg.Any<uint?>());
     }
 
     [Fact]
@@ -149,7 +154,7 @@ public class GroupServiceTests : IDisposable
         _db.Groups.Add(new Group { Id = 1, Name = "Committee A", Type = GroupType.Committee });
         await _db.SaveChangesAsync();
 
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ManageGroups, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         var dto = new GetGroupDTO();
@@ -548,5 +553,78 @@ public class GroupServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _service.GetCandidateBoardGroupId(CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetGroupPermissions_NoPermissionsGranted_ReturnsEmptyList()
+    {
+        var group = new Group { Id = 50, Name = "Empty", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+        await _db.SaveChangesAsync();
+
+        var result = await _service.GetGroupPermissions(50u, CancellationToken.None);
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetGroupPermissions_ReturnsGrantedPermissionKeys()
+    {
+        var group = new Group { Id = 51, Name = "WithPerms", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+        _db.GroupPermissions.Add(new GroupPermission { GroupId = 51, PermissionKey = "ViewFinances" });
+        _db.GroupPermissions.Add(new GroupPermission { GroupId = 51, PermissionKey = "CanApproveBudget" });
+        await _db.SaveChangesAsync();
+
+        var result = await _service.GetGroupPermissions(51u, CancellationToken.None);
+
+        Assert.Equal(new[] { "CanApproveBudget", "ViewFinances" }, result.OrderBy(p => p));
+    }
+
+    [Fact]
+    public async Task SetGroupPermissions_ValidKnownAndCustomKeys_ReplacesPermissions()
+    {
+        var group = new Group { Id = 52, Name = "Target", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+        _db.GroupPermissions.Add(new GroupPermission { GroupId = 52, PermissionKey = "ManageMembers" });
+        await _db.SaveChangesAsync();
+
+        await _service.SetGroupPermissions(
+            52u,
+            new List<string> { "ViewMembers", "CanApproveBudget" },
+            _userId,
+            CancellationToken.None);
+
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ManageGroupPermissions);
+        var stored = _db.GroupPermissions.Where(gp => gp.GroupId == 52).Select(gp => gp.PermissionKey).OrderBy(p => p);
+        Assert.Equal(new[] { "CanApproveBudget", "ViewMembers" }, stored);
+    }
+
+    [Fact]
+    public async Task SetGroupPermissions_TooManyCustomPermissions_ThrowsArgumentException()
+    {
+        var group = new Group { Id = 53, Name = "TooMany", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+        await _db.SaveChangesAsync();
+
+        var tooMany = Enumerable.Range(0, Backend.Validators.PermissionValidator.MaxCustomPermissionCount + 1)
+            .Select(i => $"Custom{i}")
+            .ToList();
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.SetGroupPermissions(53u, tooMany, _userId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SetGroupPermissions_CustomPermissionTooLong_ThrowsArgumentException()
+    {
+        var group = new Group { Id = 54, Name = "TooLong", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+        await _db.SaveChangesAsync();
+
+        var tooLong = new string('a', Backend.Validators.PermissionValidator.MaxCustomPermissionLength + 1);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.SetGroupPermissions(54u, new List<string> { tooLong }, _userId, CancellationToken.None));
     }
 }

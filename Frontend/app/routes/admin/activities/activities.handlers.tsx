@@ -18,6 +18,7 @@ import { appendErrorMessage } from "~/util/error.util";
  * @param {number} [page] - The page number to fetch.
  * @param {number} [pageSize] - The number of activities to fetch per page.
  * @param {string} [search] - A search term to filter activities by name or location, applied server-side.
+ * @param {boolean} [includePast] - Whether to include past activities in the results.
  */
 export const loadAdminActivities = async (
   year: number,
@@ -26,12 +27,13 @@ export const loadAdminActivities = async (
   page?: number,
   pageSize?: number,
   search?: string,
+  includePast = true,
 ) => {
   try {
     setLoading(true);
     const response = await getActivities({
       query: {
-        IncludePast: true,
+        IncludePast: includePast,
         IncludeFuture: true,
         Year: year,
         Page: page,

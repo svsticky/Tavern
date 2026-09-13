@@ -174,7 +174,7 @@ public class ActivityServiceTests : IDisposable
     public async Task GetActivities_NonBoardIncludesPast_ThrowsUnauthorizedAccessException()
     {
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId)).Do(_ => throw new UnauthorizedAccessException());
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.ViewPastActivities, Arg.Any<uint?>())).Do(_ => throw new UnauthorizedAccessException());
 
         var dto = new GetActivitiesDTO { IncludePast = true };
 
@@ -505,6 +505,7 @@ public class ActivityServiceTests : IDisposable
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
 
         var patchDoc = new JsonPatchDocument<Activity>();
         patchDoc.Replace(a => a.Name, "Updated by organizer");
@@ -789,6 +790,7 @@ public class ActivityServiceTests : IDisposable
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
 
         var dto = new PutActivityDTO
         {
@@ -837,6 +839,7 @@ public class ActivityServiceTests : IDisposable
 
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
         _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.HasPermission(_userId, Permission.EditActivityForGroup, 10u).Returns(true);
 
         var dto = new PutActivityDTO
         {

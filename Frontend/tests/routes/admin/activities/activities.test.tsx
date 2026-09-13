@@ -71,6 +71,7 @@ describe("Activities (admin)", () => {
       1,
       15,
       "",
+      false,
     );
   });
 
@@ -138,6 +139,7 @@ describe("Activities (admin)", () => {
       1,
       15,
       "kantine",
+      false,
     );
   });
 
@@ -162,6 +164,7 @@ describe("Activities (admin)", () => {
       1,
       15,
       "kroeg",
+      false,
     );
   });
 
@@ -181,6 +184,7 @@ describe("Activities (admin)", () => {
       1,
       15,
       "",
+      false,
     );
   });
 
@@ -237,6 +241,7 @@ describe("Activities (admin)", () => {
       2,
       15,
       "",
+      false,
     );
   });
 

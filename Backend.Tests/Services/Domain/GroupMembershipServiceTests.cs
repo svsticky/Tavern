@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
@@ -147,7 +148,7 @@ public class GroupMembershipServiceTests : IDisposable
         var result = await _service.GetGroupMemberships(dto, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.ViewMembers, Arg.Any<uint?>());
         Assert.Single(result);
     }
 
