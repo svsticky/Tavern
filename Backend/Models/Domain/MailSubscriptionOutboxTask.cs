@@ -18,7 +18,12 @@ public enum MailSubscriptionOutboxTaskType
     /// <summary>
     /// Move a member's subscriptions from an old email address to a new one.
     /// </summary>
-    MigrateEmail
+    MigrateEmail,
+
+    /// <summary>
+    /// Update a member's first/last name merge fields, leaving their subscriptions untouched.
+    /// </summary>
+    UpdateName
 }
 
 /// <summary>
@@ -50,6 +55,20 @@ public class MailSubscriptionOutboxTask
     /// The JSON-serialized list of mailing list IDs the member should be subscribed to. Only set for <see cref="MailSubscriptionOutboxTaskType.UpdateSubscriptions"/> tasks.
     /// </summary>
     public string? SubscribedListIdsJson { get; set; }
+
+    /// <summary>
+    /// The member's first name, when known. Set for <see cref="MailSubscriptionOutboxTaskType.UpdateName"/> tasks,
+    /// and optionally carried along on <see cref="MailSubscriptionOutboxTaskType.UpdateSubscriptions"/> and
+    /// <see cref="MailSubscriptionOutboxTaskType.MigrateEmail"/> tasks so the target record's name stays current too.
+    /// </summary>
+    public string? FirstName { get; set; }
+
+    /// <summary>
+    /// The member's last name, when known. Set for <see cref="MailSubscriptionOutboxTaskType.UpdateName"/> tasks,
+    /// and optionally carried along on <see cref="MailSubscriptionOutboxTaskType.UpdateSubscriptions"/> and
+    /// <see cref="MailSubscriptionOutboxTaskType.MigrateEmail"/> tasks so the target record's name stays current too.
+    /// </summary>
+    public string? LastName { get; set; }
 
     /// <summary>
     /// The timestamp indicating when the outbox task was created. This is used to track when the task was generated and can be useful for retry logic or auditing purposes.

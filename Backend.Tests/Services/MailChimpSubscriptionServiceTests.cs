@@ -8,7 +8,10 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Backend.Database;
+using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.MailSubscriptionServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -21,6 +24,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     private readonly DbContextOptions<PostgresDbContext> _dbOptions;
     private readonly MockHttpMessageHandler _httpHandler;
     private readonly HttpClient _httpClient;
+    private readonly MailSubscriptionOutboxWorker _mailWorker;
 
     public MailChimpSubscriptionServiceTests()
     {
@@ -34,6 +38,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
         {
             BaseAddress = new Uri("https://api.mailchimp.com/3.0/")
         };
+        _mailWorker = new MailSubscriptionOutboxWorker(null!, NullLogger<MailSubscriptionOutboxWorker>.Instance);
     }
 
     public void Dispose()
@@ -114,7 +119,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         bool httpCalled = false;
         _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
@@ -132,7 +137,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
         SetupAvailableListsHandler();
 
         // Act
@@ -154,7 +159,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
         db.SaveChanges();
 
         var httpClient = new HttpClient(_httpHandler);
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, httpClient, db, _mailWorker);
         SetupAvailableListsHandler();
 
         // Act
@@ -171,7 +176,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         bool httpCalled = false;
         _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
@@ -189,7 +194,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
         SetupAvailableListsHandler((req, ct) =>
             Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound)));
 
@@ -207,7 +212,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
         // Arrange - Mailchimp does not clear `interests` when a member unsubscribes, so a
         // non-"subscribed" status must not resurrect stale opt-ins.
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
         SetupAvailableListsHandler((req, ct) =>
         {
             var body = new { status = "unsubscribed", interests = new Dictionary<string, bool> { { "id_news", true }, { "id_events", true } } };
@@ -227,7 +232,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
         SetupAvailableListsHandler((req, ct) =>
         {
             var body = new { status = "cleaned", interests = new Dictionary<string, bool> { { "id_news", true } } };
@@ -246,7 +251,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
         SetupAvailableListsHandler((req, ct) =>
         {
             var body = new { status = "subscribed", interests = new Dictionary<string, bool> { { "id_news", true }, { "id_events", false } } };
@@ -267,7 +272,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         bool httpCalled = false;
         _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
@@ -284,7 +289,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         HttpRequestMessage? receivedRequest = null;
         _httpHandler.SendAsyncFunc = (req, ct) =>
@@ -308,7 +313,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         HttpRequestMessage? receivedRequest = null;
         SetupAvailableListsHandler((req, ct) =>
@@ -336,6 +341,36 @@ public class MailChimpSubscriptionServiceTests : IDisposable
         Assert.True(interests.GetProperty("id_news").GetBoolean());
         Assert.True(interests.GetProperty("id_events").GetBoolean());
         Assert.False(interests.GetProperty("id_career").GetBoolean());
+
+        // No name was given, so merge fields must be left out entirely rather than sent blank.
+        Assert.False(root.TryGetProperty("merge_fields", out _));
+    }
+
+    [Fact]
+    public async Task UpdateMemberSubscriptionsAsync_NameProvided_IncludesMergeFieldsInPayload()
+    {
+        // Arrange - this is what lets a first-time subscribe also set the member's name at
+        // Mailchimp in the same call, instead of needing a separate name-update task.
+        using var db = CreateEnabledDb();
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
+
+        HttpRequestMessage? receivedRequest = null;
+        SetupAvailableListsHandler((req, ct) =>
+        {
+            receivedRequest = req;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        });
+
+        // Act
+        await service.UpdateMemberSubscriptionsAsync("test@example.com", ["id_news"], CancellationToken.None, "First", "Last");
+
+        // Assert
+        Assert.NotNull(receivedRequest);
+        var contentString = await receivedRequest.Content!.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(contentString);
+        var mergeFields = jsonDoc.RootElement.GetProperty("merge_fields");
+        Assert.Equal("First", mergeFields.GetProperty("FNAME").GetString());
+        Assert.Equal("Last", mergeFields.GetProperty("LNAME").GetString());
     }
 
     [Fact]
@@ -343,7 +378,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         bool httpCalled = false;
         _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
@@ -360,7 +395,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         HttpRequestMessage? receivedRequest = null;
         _httpHandler.SendAsyncFunc = (req, ct) =>
@@ -383,7 +418,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
         _httpHandler.SendAsyncFunc = (req, ct) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
 
         // Act & Assert (should not throw)
@@ -391,11 +426,70 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateMemberNameAsync_ServiceDisabled_DoesNothing()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
+
+        bool httpCalled = false;
+        _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
+
+        // Act
+        await service.UpdateMemberNameAsync("test@example.com", "First", "Last", CancellationToken.None);
+
+        // Assert
+        Assert.False(httpCalled);
+    }
+
+    [Fact]
+    public async Task UpdateMemberNameAsync_ServiceEnabled_SendsPatchRequestWithMergeFields()
+    {
+        // Arrange
+        using var db = CreateEnabledDb();
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
+
+        HttpRequestMessage? receivedRequest = null;
+        _httpHandler.SendAsyncFunc = (req, ct) =>
+        {
+            receivedRequest = req;
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        };
+
+        // Act
+        await service.UpdateMemberNameAsync("test@example.com", "First", "Last", CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(receivedRequest);
+        Assert.Equal(HttpMethod.Patch, receivedRequest.Method);
+        // MD5 of "test@example.com" is "55502f40dc8b7c769880b10874abc9d0"
+        Assert.Contains("lists/test_list_123/members/55502f40dc8b7c769880b10874abc9d0", receivedRequest.RequestUri!.ToString());
+
+        var contentString = await receivedRequest.Content!.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(contentString);
+        var mergeFields = jsonDoc.RootElement.GetProperty("merge_fields");
+        Assert.Equal("First", mergeFields.GetProperty("FNAME").GetString());
+        Assert.Equal("Last", mergeFields.GetProperty("LNAME").GetString());
+    }
+
+    [Fact]
+    public async Task UpdateMemberNameAsync_MemberNotFound_DoesNotThrow()
+    {
+        // Arrange
+        using var db = CreateEnabledDb();
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
+        _httpHandler.SendAsyncFunc = (req, ct) => Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+
+        // Act & Assert (should not throw)
+        await service.UpdateMemberNameAsync("test@example.com", "First", "Last", CancellationToken.None);
+    }
+
+    [Fact]
     public async Task MigrateEmailAsync_ServiceDisabled_DoesNothing()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         bool httpCalled = false;
         _httpHandler.SendAsyncFunc = (req, ct) => { httpCalled = true; return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)); };
@@ -412,7 +506,7 @@ public class MailChimpSubscriptionServiceTests : IDisposable
     {
         // Arrange
         using var db = CreateEnabledDb();
-        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
 
         // MD5("old@example.com")
         var oldHash = "bf25d950bde50b8e13f413bb4eb0b1dd";
@@ -467,5 +561,118 @@ public class MailChimpSubscriptionServiceTests : IDisposable
 
         Assert.Single(deletePermanentRequests);
         Assert.Contains($"members/{oldHash}/actions/delete-permanent", deletePermanentRequests[0].RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task MigrateEmailAsync_NameProvided_CarriesNameToMigratedRecord()
+    {
+        // Arrange - an email-only change must not leave the migrated record with blank merge
+        // fields until some later, unrelated name edit happens to refresh it.
+        using var db = CreateEnabledDb();
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, _mailWorker);
+
+        var oldHash = "bf25d950bde50b8e13f413bb4eb0b1dd"; // MD5("old@example.com")
+        var putRequests = new List<HttpRequestMessage>();
+
+        _httpHandler.SendAsyncFunc = (req, ct) =>
+        {
+            var path = req.RequestUri!.AbsolutePath;
+
+            if (path.EndsWith("interest-categories"))
+            {
+                var body = new { categories = new[] { new { id = "cat_1" } } };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body) });
+            }
+
+            if (path.EndsWith("interest-categories/cat_1/interests"))
+            {
+                var body = new { interests = new[] { new { id = "id_news", name = "Newsletter" } } };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body) });
+            }
+
+            if (req.Method == HttpMethod.Get && path.EndsWith($"members/{oldHash}"))
+            {
+                var body = new { status = "subscribed", interests = new Dictionary<string, bool> { { "id_news", true } } };
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(body) });
+            }
+
+            if (req.Method == HttpMethod.Put)
+            {
+                putRequests.Add(req);
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
+        };
+
+        // Act
+        await service.MigrateEmailAsync("old@example.com", "new@example.com", CancellationToken.None, "First", "Last");
+
+        // Assert
+        Assert.Single(putRequests);
+        var putContent = await putRequests[0].Content!.ReadAsStringAsync();
+        using var jsonDoc = JsonDocument.Parse(putContent);
+        var mergeFields = jsonDoc.RootElement.GetProperty("merge_fields");
+        Assert.Equal("First", mergeFields.GetProperty("FNAME").GetString());
+        Assert.Equal("Last", mergeFields.GetProperty("LNAME").GetString());
+    }
+
+    [Fact]
+    public void OnMailChanged_MemberFound_EnqueuesMigrateTaskWithCurrentName()
+    {
+        // Arrange - the auth service is no longer notified of mail changes it didn't originate
+        // itself, so this real member lookup (rather than a listener parameter) is what lets
+        // migration carry the name across.
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var mailWorker = new MailSubscriptionOutboxWorker(null!, NullLogger<MailSubscriptionOutboxWorker>.Instance);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, mailWorker);
+
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "First",
+            LastName = "Last",
+            Email = "old@example.com",
+            StudentNumber = "s1234567",
+            PhoneNumber = "+31600000000",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "Enschede"
+        };
+        db.Members.Add(member);
+        db.SaveChanges();
+
+        // Act
+        ((IMailChangedListener)service).OnMailChanged(member.Id, "old@example.com", "new@example.com", db);
+
+        // Assert
+        var tasks = db.MailSubscriptionOutboxTasks.ToList();
+        Assert.Single(tasks);
+        Assert.Equal(MailSubscriptionOutboxTaskType.MigrateEmail, tasks[0].TaskType);
+        Assert.Equal("old@example.com", tasks[0].OldEmail);
+        Assert.Equal("new@example.com", tasks[0].Email);
+        Assert.Equal("First", tasks[0].FirstName);
+        Assert.Equal("Last", tasks[0].LastName);
+    }
+
+    [Fact]
+    public void OnMailChanged_MemberNotFound_EnqueuesMigrateTaskWithoutName()
+    {
+        // Arrange
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var mailWorker = new MailSubscriptionOutboxWorker(null!, NullLogger<MailSubscriptionOutboxWorker>.Instance);
+        var service = new MailChimpSubscriptionService(NullLogger<MailChimpSubscriptionService>.Instance, _httpClient, db, mailWorker);
+
+        // Act
+        ((IMailChangedListener)service).OnMailChanged(Guid.NewGuid(), "old@example.com", "new@example.com", db);
+
+        // Assert
+        var tasks = db.MailSubscriptionOutboxTasks.ToList();
+        Assert.Single(tasks);
+        Assert.Null(tasks[0].FirstName);
+        Assert.Null(tasks[0].LastName);
     }
 }

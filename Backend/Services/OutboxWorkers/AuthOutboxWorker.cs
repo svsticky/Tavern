@@ -3,7 +3,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Services.OutboxWorkers;
 
 /// <summary>
 /// Processes queued auth-system tasks in the background.
