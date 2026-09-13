@@ -22,7 +22,9 @@ namespace Backend.Services.AccountingToolServices
 
         private readonly HttpClient _http = http;
 
-        private string Division => _db.Settings.Find("ExactDivision")?.Value ?? "";
+        private string Division => _db.Settings.FirstOrDefault(s => s.Name == "ExactDivision")?.Value
+            ?? Environment.GetEnvironmentVariable("EXACT_DIVISION")
+            ?? "";
 
         /// <summary>
         /// Cost centers/units are optional; treat a blank value as "not set" so it is omitted from the Exact payload
@@ -30,9 +32,13 @@ namespace Backend.Services.AccountingToolServices
         /// </summary>
         private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 
-        private string AccessToken => _db.Settings.Find("ExactAccessToken")?.Value ?? "";
+        private string AccessToken => _db.Settings.FirstOrDefault(s => s.Name == "ExactAccessToken")?.Value
+            ?? Environment.GetEnvironmentVariable("EXACT_ACCESS_TOKEN")
+            ?? "";
 
-        private string PaymentService => _db.Settings.Find("PaymentProvider")?.Value ?? "MOLLIE";
+        private string PaymentService => _db.Settings.FirstOrDefault(s => s.Name == "PaymentProvider")?.Value
+            ?? Environment.GetEnvironmentVariable("PAYMENT_PROVIDER")
+            ?? "MOLLIE";
 
         /// <inheritdoc />
         protected override async Task<Guid> SyncPaymentCoreAsync(Payment payment, CancellationToken ct)
@@ -81,11 +87,16 @@ namespace Backend.Services.AccountingToolServices
         private object BuildSalesEntry(Payment payment)
         {
             var pService = string.IsNullOrEmpty(PaymentService) ? "Mollie" : PaymentService;
+            var paymentCondition = _db.Settings.FirstOrDefault(s => s.Name == "PaymentServicePaymentsCondition")?.Value;
+            var customer = _db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceRelationCode")?.Value;
+
             return new
             {
                 EntryDate = DateTime.UtcNow,
                 Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} payment {payment.PaymentServiceId}",
                 YourRef = $"{GetYourRefPrefix(payment)}-{payment.Id}",
+                PaymentCondition = NullIfBlank(paymentCondition),
+                Customer = NullIfBlank(customer),
 
                 SalesEntryLines = new[]
                 {
@@ -124,9 +135,10 @@ namespace Backend.Services.AccountingToolServices
 
         private object BuildEnrollmentLine(EnrollmentPayment payment)
         {
+            var activityGLFallback = _db.Settings.FirstOrDefault(s => s.Name == "ActivityGLAccount")?.Value ?? "7001";
             return new
             {
-                GLAccount = payment.Activity?.GLAccountId ?? payment.Activity?.Organizer?.DefaultGLAccount,
+                GLAccount = payment.Activity?.GLAccountId ?? payment.Activity?.Organizer?.DefaultGLAccount ?? activityGLFallback,
                 Description = $"{payment.Activity?.Organizer?.Name ?? ""} | {payment.Activity?.Name}",
                 VATCode = MapVat(payment.Activity?.VatRate),
                 CostCenter = NullIfBlank(payment.Activity?.CostCenterId ?? payment.Activity?.Organizer?.DefaultCostCenter),
@@ -139,11 +151,11 @@ namespace Backend.Services.AccountingToolServices
         {
             return new
             {
-                GLAccount = _db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault(),
+                GLAccount = _db.Settings.FirstOrDefault(s => s.Name == "MembershipGLAccount")?.Value ?? "8000",
                 Description = "Lidmaatschap",
-                VATCode = _db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0",
-                CostCenter = NullIfBlank(_db.Settings.Where(s => s.Name == "MembershipCostCenter").Select(s => s.Value).FirstOrDefault()),
-                CostUnit = NullIfBlank(_db.Settings.Where(s => s.Name == "MembershipCostUnit").Select(s => s.Value).FirstOrDefault()),
+                VATCode = _db.Settings.FirstOrDefault(s => s.Name == "MembershipVATCode")?.Value ?? "0",
+                CostCenter = NullIfBlank(_db.Settings.FirstOrDefault(s => s.Name == "MembershipCostCenter")?.Value),
+                CostUnit = NullIfBlank(_db.Settings.FirstOrDefault(s => s.Name == "MembershipCostUnit")?.Value),
                 AmountDC = payment.Price
             };
         }
@@ -153,11 +165,11 @@ namespace Backend.Services.AccountingToolServices
             var pService = string.IsNullOrEmpty(PaymentService) ? "Mollie" : PaymentService;
             return new
             {
-                GLAccount = _db.Settings.Where(s => s.Name == "PaymentServiceFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
+                GLAccount = _db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeGLAccount")?.Value ?? "4900",
                 Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} fee",
-                VATCode = _db.Settings.Where(s => s.Name == "PaymentServiceFeeVATCode").Select(s => s.Value).FirstOrDefault() ?? "21",
-                CostCenter = NullIfBlank(_db.Settings.Where(s => s.Name == "PaymentServiceFeeCostCenter").Select(s => s.Value).FirstOrDefault()),
-                CostUnit = NullIfBlank(_db.Settings.Where(s => s.Name == "PaymentServiceFeeCostUnit").Select(s => s.Value).FirstOrDefault()),
+                VATCode = _db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeVATCode")?.Value ?? "21",
+                CostCenter = NullIfBlank(_db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value),
+                CostUnit = NullIfBlank(_db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostUnit")?.Value),
                 AmountDC = payment.Price
             };
         }
@@ -166,11 +178,13 @@ namespace Backend.Services.AccountingToolServices
         {
             return new
             {
-                GLAccount = _db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault(),
+                GLAccount = _db.Settings.FirstOrDefault(s => s.Name == "BegunstigerGLAccount")?.Value
+                    ?? _db.Settings.FirstOrDefault(s => s.Name == "MembershipGLAccount")?.Value
+                    ?? "8000",
                 Description = "Begunstiger",
-                VATCode = _db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0",
-                CostCenter = NullIfBlank(_db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault()),
-                CostUnit = NullIfBlank(_db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault()),
+                VATCode = _db.Settings.FirstOrDefault(s => s.Name == "BegunstigerVATCode")?.Value ?? "0",
+                CostCenter = NullIfBlank(_db.Settings.FirstOrDefault(s => s.Name == "BegunstigerCostCenter")?.Value),
+                CostUnit = NullIfBlank(_db.Settings.FirstOrDefault(s => s.Name == "BegunstigerCostUnit")?.Value),
                 AmountDC = payment.Price
             };
         }

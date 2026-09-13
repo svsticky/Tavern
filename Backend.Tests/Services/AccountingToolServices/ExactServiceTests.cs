@@ -26,6 +26,7 @@ public class MockHttpMessageHandler : HttpMessageHandler
     }
 }
 
+[Collection("NonParallelEnvironment")]
 public class ExactServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
@@ -33,10 +34,18 @@ public class ExactServiceTests : IDisposable
     private readonly MockHttpMessageHandler _handler;
     private readonly HttpClient _httpClient;
     private readonly ExactService _service;
+    private readonly string? _originalAccountingEnabled;
+    private readonly string? _originalExactDivision;
+    private readonly string? _originalExactAccessToken;
 
     public ExactServiceTests()
     {
+        _originalAccountingEnabled = Environment.GetEnvironmentVariable("ACCOUNTING_ENABLED");
+        _originalExactDivision = Environment.GetEnvironmentVariable("EXACT_DIVISION");
+        _originalExactAccessToken = Environment.GetEnvironmentVariable("EXACT_ACCESS_TOKEN");
+
         // Setup Environment Variables
+        Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", "true");
         Environment.SetEnvironmentVariable("EXACT_DIVISION", "12345");
         Environment.SetEnvironmentVariable("EXACT_ACCESS_TOKEN", "mock_token");
 
@@ -69,6 +78,10 @@ public class ExactServiceTests : IDisposable
         _db.Dispose();
         _connection.Dispose();
         _httpClient.Dispose();
+
+        Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", _originalAccountingEnabled);
+        Environment.SetEnvironmentVariable("EXACT_DIVISION", _originalExactDivision);
+        Environment.SetEnvironmentVariable("EXACT_ACCESS_TOKEN", _originalExactAccessToken);
     }
 
     [Fact]
@@ -374,5 +387,171 @@ public class ExactServiceTests : IDisposable
         var exception = await Assert.ThrowsAsync<Exception>(() =>
             _service.SyncPaymentAsync(payment, CancellationToken.None));
         Assert.Contains("Exact sync failed: Server crashed", exception.Message);
+    }
+
+    [Fact]
+    public async Task SyncPaymentAsync_WhenAccountingDisabledByEnv_ReturnsGuidEmpty()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", "false");
+        try
+        {
+            var payment = new MembershipPayment
+            {
+                Id = 80,
+                PaymentServiceId = "tr_disabled",
+                PaymentIntentUrl = "https://mollie.com/pay/disabled"
+            };
+
+            // Act
+            var result = await _service.SyncPaymentAsync(payment, CancellationToken.None);
+
+            // Assert
+            Assert.Equal(Guid.Empty, result);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", "true");
+        }
+    }
+
+    [Fact]
+    public async Task SyncPaymentAsync_WhenAccountingServiceSettingMissing_ReturnsGuidEmpty()
+    {
+        // Arrange
+        var setting = await _db.Settings.FirstAsync(s => s.Name == "AccountingService");
+        _db.Settings.Remove(setting);
+        await _db.SaveChangesAsync();
+
+        var payment = new MembershipPayment
+        {
+            Id = 81,
+            PaymentServiceId = "tr_no_service",
+            PaymentIntentUrl = "https://mollie.com/pay/no_service"
+        };
+
+        // Act
+        var result = await _service.SyncPaymentAsync(payment, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(Guid.Empty, result);
+    }
+
+    [Fact]
+    public async Task SyncPaymentAsync_WithPaymentConditionAndCustomer_IncludesInPostedSalesEntry()
+    {
+        // Arrange
+        _db.Settings.Add(new Setting { Name = "PaymentServicePaymentsCondition", Value = "COND_2" });
+        _db.Settings.Add(new Setting { Name = "PaymentServiceRelationCode", Value = "CUST_473" });
+        await _db.SaveChangesAsync();
+
+        var payment = new MembershipPayment
+        {
+            Id = 82,
+            PaymentServiceId = "tr_cond",
+            PaymentIntentUrl = "https://mollie.com/pay/cond",
+            Price = 20.00m
+        };
+
+        var expectedGuid = Guid.NewGuid();
+        string? postedBody = null;
+
+        _handler.SendAsyncFunc = async (req, ct) =>
+        {
+            if (req.Method == HttpMethod.Get)
+            {
+                var emptyResponse = new { d = new { results = Array.Empty<object>() } };
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(emptyResponse))
+                };
+            }
+            else if (req.Method == HttpMethod.Post)
+            {
+                postedBody = await req.Content!.ReadAsStringAsync(ct);
+                var createdResponse = new { ID = expectedGuid };
+                return new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(createdResponse))
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.BadRequest);
+        };
+
+        // Act
+        var result = await _service.SyncPaymentAsync(payment, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(expectedGuid, result);
+        Assert.NotNull(postedBody);
+        Assert.Contains("\"PaymentCondition\":\"COND_2\"", postedBody);
+        Assert.Contains("\"Customer\":\"CUST_473\"", postedBody);
+    }
+
+    [Fact]
+    public async Task SyncPaymentAsync_EnrollmentPaymentWithoutGLAccount_UsesActivityGLAccountFallback()
+    {
+        // Arrange - no GLAccountId on activity, Organizer is null
+        _db.Settings.Add(new Setting { Name = "ActivityGLAccount", Value = "7050" });
+        await _db.SaveChangesAsync();
+
+        var activity = new Activity
+        {
+            Id = 99,
+            Name = "Fallback Activity",
+            Price = 12.0m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow,
+            DateTimeEnd = DateTime.UtcNow.AddHours(2),
+            Location = "Taverndo",
+            AllowedAudience = Backend.Models.TargetAudience.All,
+            PaymentDeadline = DateTimeOffset.UtcNow
+        };
+
+        var payment = new EnrollmentPayment
+        {
+            Id = 83,
+            PaymentServiceId = "tr_fallback_act",
+            PaymentIntentUrl = "https://mollie.com/pay/fallback_act",
+            Price = 12.00m,
+            ActivityId = 99,
+            Activity = activity
+        };
+
+        var expectedGuid = Guid.NewGuid();
+        string? postedBody = null;
+
+        _handler.SendAsyncFunc = async (req, ct) =>
+        {
+            if (req.Method == HttpMethod.Get)
+            {
+                var emptyResponse = new { d = new { results = Array.Empty<object>() } };
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(emptyResponse))
+                };
+            }
+            else if (req.Method == HttpMethod.Post)
+            {
+                postedBody = await req.Content!.ReadAsStringAsync(ct);
+                var createdResponse = new { ID = expectedGuid };
+                return new HttpResponseMessage(HttpStatusCode.Created)
+                {
+                    Content = new StringContent(JsonSerializer.Serialize(createdResponse))
+                };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.BadRequest);
+        };
+
+        // Act
+        var result = await _service.SyncPaymentAsync(payment, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(expectedGuid, result);
+        Assert.NotNull(postedBody);
+        Assert.Contains("\"GLAccount\":\"7050\"", postedBody);
     }
 }
