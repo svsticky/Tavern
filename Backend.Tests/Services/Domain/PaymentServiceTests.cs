@@ -11,6 +11,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

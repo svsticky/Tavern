@@ -9,6 +9,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.AuthServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,8 @@ public class KeycloakAPIServiceTests : IDisposable
     private readonly PostgresDbContext _db;
     private readonly PermissionService _permissionService;
     private readonly MailSubscriptionOutboxWorker _mailWorker;
+    private readonly IMailChangedListener _otherMailChangedListener;
+    private readonly List<IMailChangedListener> _mailChangedListeners;
     private readonly IPaymentValidationService _paymentMock;
     private readonly IHttpClientFactory _clientFactoryMock;
     private readonly MockAuthHttpMessageHandler _tokenHandler;
@@ -61,6 +64,13 @@ public class KeycloakAPIServiceTests : IDisposable
 
         _permissionService = new PermissionService(_db, NullLogger<PermissionService>.Instance);
         _mailWorker = new MailSubscriptionOutboxWorker(null!, NullLogger<MailSubscriptionOutboxWorker>.Instance);
+
+        // A stand-in for the mail subscription provider (Mailchimp) - the only production
+        // registrant of IMailChangedListener, now that the auth service no longer implements it.
+        _otherMailChangedListener = Substitute.For<IMailChangedListener>();
+        _otherMailChangedListener.IsEnabled.Returns(true);
+        _mailChangedListeners = new List<IMailChangedListener> { _otherMailChangedListener };
+
         _paymentMock = Substitute.For<IPaymentValidationService>();
 
         _tokenHandler = new MockAuthHttpMessageHandler();
@@ -79,7 +89,7 @@ public class KeycloakAPIServiceTests : IDisposable
         _service = new KeycloakAPIService(
             _db,
             _permissionService,
-            _mailWorker,
+            _mailChangedListeners,
             _clientFactoryMock,
             _paymentMock,
             NullLogger<KeycloakAPIService>.Instance
@@ -273,10 +283,8 @@ public class KeycloakAPIServiceTests : IDisposable
         var updatedMember = await _db.Members.FirstAsync(m => m.Id == member.Id);
         Assert.Equal("newbob@example.com", updatedMember.Email);
 
-        var tasks = await _db.MailSubscriptionOutboxTasks.ToListAsync();
-        Assert.Single(tasks);
-        Assert.Contains(tasks, t => t.TaskType == MailSubscriptionOutboxTaskType.MigrateEmail
-            && t.OldEmail == "bob@example.com" && t.Email == "newbob@example.com");
+        // SyncMember dispatches the email change to every registered IMailChangedListener.
+        _otherMailChangedListener.Received(1).OnMailChanged(member.Id, "bob@example.com", "newbob@example.com", _db);
     }
 
     [Fact]
@@ -398,6 +406,47 @@ public class KeycloakAPIServiceTests : IDisposable
         // Assert
         var updated = await _db.Members.FirstAsync(m => m.Id == member.Id);
         Assert.Equal("neweve@example.com", updated.Email);
+        _otherMailChangedListener.Received(1).OnMailChanged(member.Id, "eve@example.com", "neweve@example.com", _db);
+    }
+
+    [Fact]
+    public async Task RefreshEmail_EmailUnchanged_DoesNotNotifyOrThrow()
+    {
+        // Arrange - this is the outbox task handler for a Keycloak-originated email-change
+        // webhook; if the email already matches (e.g. a retried/duplicate delivery), there's
+        // nothing to persist or notify.
+        var keycloakId = Guid.NewGuid();
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            AuthSystemUserId = keycloakId,
+            FirstName = "Eve",
+            LastName = "White",
+            Email = "eve@example.com",
+            StudentNumber = "s4444444",
+            PhoneNumber = "+31600000000",
+            Street = "St",
+            HouseNumber = "1",
+            PostalCode = "1234AB",
+            City = "Enschede"
+        };
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _adminHandler.SendAsyncFunc = (req) =>
+        {
+            var userResponse = new { email = "eve@example.com" };
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(userResponse))
+            });
+        };
+
+        // Act
+        await _service.RefreshEmail(keycloakId);
+
+        // Assert
+        _otherMailChangedListener.DidNotReceiveWithAnyArgs().OnMailChanged(default!, default!, default!, default!);
     }
 
     [Fact]

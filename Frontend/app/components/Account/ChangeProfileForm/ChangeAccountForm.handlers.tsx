@@ -117,6 +117,7 @@ export const handleSaveAccount = async (
 
       const mailinglistsResponse = await putMembersByIdMailinglists({
         path: { id: userId },
+        query: { includeYearlyRenewal: true },
         body: subscribedMailinglistIds,
       });
       if (mailinglistsResponse.error) {

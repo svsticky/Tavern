@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Backend.Database;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.AccountingToolServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

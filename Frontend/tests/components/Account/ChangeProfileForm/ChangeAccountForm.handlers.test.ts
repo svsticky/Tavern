@@ -141,6 +141,7 @@ describe("handleSaveAccount", () => {
     });
     expect(putMembersByIdMailinglists).toHaveBeenCalledWith({
       path: { id: "user-1" },
+      query: { includeYearlyRenewal: true },
       body: ["list-1"],
     });
     expect(setSaving).toHaveBeenNthCalledWith(1, true);
