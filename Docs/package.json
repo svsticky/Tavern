@@ -8,7 +8,7 @@
         "start": "next start",
         "lint": "next lint",
         "build-docs": "npm run prepare-for-build-api-docs && node scripts/generate-api-docs.mjs && node scripts/generate-backend-docs.js && node scripts/generate-frontend-docs.mjs",
-        "prepare-for-build-api-docs": "cd ../Backend && dotnet build Backend.csproj -c Release && DOTNET_ENVIRONMENT=docs swagger tofile --output ../Docs/swagger.json bin/Release/net8.0/Backend.dll v1 && cd ../Docs"
+        "prepare-for-build-api-docs": "cd ../Backend && dotnet build Backend.csproj -c Release && DOTNET_ENVIRONMENT=docs swagger tofile --output ../Docs/swagger.json bin/Release/net10.0/Backend.dll v1 && cd ../Docs"
     },
         "dependencies": {
         "@radix-ui/react-collapsible": "^1.1.4",
