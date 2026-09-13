@@ -7,6 +7,12 @@
     "workspaceFolder": "/workspaces",
     "shutdownAction": "stopCompose",
 
+    // Docker Compose only reads a ".env" file next to compose.yaml for variable
+    // interpolation (e.g. ${NGROK_AUTHTOKEN}); the real .env lives at the repo
+    // root. Symlink it in before compose parses the file so values resolve
+    // instead of triggering "variable is not set" warnings.
+    "initializeCommand": "ln -sf ../.env devcontainer.env",
+
     "remoteEnv": {
         "DOTNET_ENVIRONMENT": "Development"
     },
