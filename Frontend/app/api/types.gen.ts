@@ -584,6 +584,10 @@ export type GetSpecificationQuestionResponseDto = {
      * The unique identifier of a specification question, assigned incrementally.
      */
     id: number;
+    /**
+     * The optional deadline until which an answer for this question may be given or changed. Must lie strictly before the activity's end date and time. When not set, the question can be answered until the activity's enrollment deadline, or until the activity's end date and time if no enrollment deadline is set either.
+     */
+    answerDeadline?: string | null;
 };
 
 /**

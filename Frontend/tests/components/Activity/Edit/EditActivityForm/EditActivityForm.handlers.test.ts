@@ -101,6 +101,7 @@ describe("addQuestion", () => {
         isMandatory: false,
         isPublic: true,
         options: [],
+        answerDeadline: null,
       },
     ]);
   });
@@ -255,6 +256,56 @@ describe("handleActivitySubmit", () => {
     expect(payload.ShowInKoala).toBe(false);
     expect(payload.ShowOnWebsite).toBe(false);
     expect(payload.IsEnrollable).toBe(false);
+  });
+
+  it("rejects a question answer deadline that is not before the activity end", async () => {
+    await handleActivitySubmit({
+      e: buildFormEvent(baseFields),
+      isBoard: false,
+      questions: [
+        {
+          questionDutch: "V",
+          questionEnglish: "Q",
+          type: "String",
+          answerDeadline: "2026-08-01T13:00:00Z",
+        },
+      ],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate: vi.fn(),
+    });
+
+    expect(toastErrorFn).toHaveBeenCalledWith(
+      "question_answer_deadline_after_end",
+    );
+    expect(postActivities).not.toHaveBeenCalled();
+  });
+
+  it("allows a question answer deadline before the activity end", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+
+    await handleActivitySubmit({
+      e: buildFormEvent(baseFields),
+      isBoard: false,
+      questions: [
+        {
+          questionDutch: "V",
+          questionEnglish: "Q",
+          type: "String",
+          answerDeadline: "2026-07-01T00:00:00Z",
+        },
+      ],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate: vi.fn(),
+    });
+
+    expect(toastErrorFn).not.toHaveBeenCalled();
+    expect(postActivities).toHaveBeenCalled();
   });
 
   it("creating as a board member includes financial fields in the payload", async () => {
