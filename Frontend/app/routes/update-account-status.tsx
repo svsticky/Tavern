@@ -85,7 +85,9 @@ export default function UpdateAccountStatus() {
 
       setEnrollments(studyEnrollmentsResponse.data);
 
-      const studiesResponse = await getStudies();
+      const studiesResponse = await getStudies({
+        query: { IncludeInactive: true },
+      });
 
       if (studiesResponse.error || !studiesResponse.data) {
         throw studiesResponse.error ?? new Error("Failed to load studies");
@@ -216,12 +218,18 @@ export default function UpdateAccountStatus() {
       render: (item) => {
         if (!studies || studies.length === 0) return t("loading");
 
+        const study = studies.find((s) => s.id === item.studyId);
+
+        if (!study) {
+          return item.status === "Completed"
+            ? t("status_completed")
+            : t("status_dropped_out");
+        }
+
         const deadline = new Date();
 
         deadline.setFullYear(
-          deadline.getFullYear() +
-            studies.filter((s) => s.id === item.studyId)[0]
-              .nominalDurationYears!,
+          deadline.getFullYear() + (study.nominalDurationYears ?? 0),
         );
 
         if (
@@ -286,10 +294,12 @@ export default function UpdateAccountStatus() {
                   defaultValue=""
                   options={[
                     { value: "", label: `${t("select_a_study")}...` },
-                    ...studies.map((study) => ({
-                      value: study.id!.toString(),
-                      label: study.title,
-                    })),
+                    ...studies
+                      .filter((study) => study.active)
+                      .map((study) => ({
+                        value: study.id!.toString(),
+                        label: study.title,
+                      })),
                   ]}
                 />
               </div>
