@@ -200,6 +200,65 @@ describe("ActivityDetailsTile", () => {
     expect(handleUpdateEnrollment).toHaveBeenCalled();
   });
 
+  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but questions are still answerable", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          specificationQuestions: [
+            {
+              id: 1,
+              questionDutch: "V",
+              questionEnglish: "Q",
+              type: "String",
+            },
+          ] as ActivityResponseDto["specificationQuestions"],
+          enrollments: [
+            { member: { id: memberToken.UserId }, specificationAnswers: [] },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByText("update_answers")).toBeInTheDocument();
+    expect(screen.getByText("you_are_enrolled")).toBeInTheDocument();
+    expect(screen.queryByText("sign_out")).not.toBeInTheDocument();
+  });
+
+  it("hides the update-answers button once every question's own answer deadline has passed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          specificationQuestions: [
+            {
+              id: 1,
+              questionDutch: "V",
+              questionEnglish: "Q",
+              type: "String",
+              answerDeadline: "2020-01-01T00:00:00Z",
+            },
+          ] as ActivityResponseDto["specificationQuestions"],
+          enrollments: [
+            { member: { id: memberToken.UserId }, specificationAnswers: [] },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByText("sign_out")).toBeInTheDocument();
+    expect(screen.queryByText("update_answers")).not.toBeInTheDocument();
+  });
+
   it("calls handleAddToCalendar when the calendar button is clicked", async () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
     fireEvent.click(await screen.findByText("copy_once_to_calendar"));

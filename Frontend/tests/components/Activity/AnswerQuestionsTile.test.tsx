@@ -1,7 +1,10 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { GetSpecificationQuestionResponseDto } from "~/api";
+import type {
+  ActivityResponseDto,
+  GetSpecificationQuestionResponseDto,
+} from "~/api";
 import AnswerQuestionsTile from "~/components/Activity/AnswerQuestionsTile";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -17,6 +20,19 @@ function question(
     isMandatory: false,
     ...overrides,
   } as GetSpecificationQuestionResponseDto;
+}
+
+function activity(
+  overrides: Partial<ActivityResponseDto> = {},
+): ActivityResponseDto {
+  return {
+    id: 1,
+    name: "Party",
+    dateTimeStart: "2027-01-01T10:00:00Z",
+    dateTimeEnd: "2027-01-01T12:00:00Z",
+    enrollmentDeadline: undefined,
+    ...overrides,
+  } as ActivityResponseDto;
 }
 
 const enToken: TokenParsed = {
@@ -36,6 +52,7 @@ describe("AnswerQuestionsTile", () => {
     const { container } = renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({})]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -49,7 +66,12 @@ describe("AnswerQuestionsTile", () => {
       getTokenParsed: vi.fn(async () => enToken),
     });
     const { container } = renderWithProviders(
-      <AnswerQuestionsTile questions={[]} answers={{}} onChange={vi.fn()} />,
+      <AnswerQuestionsTile
+        questions={[]}
+        activity={activity()}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
       { authService },
     );
     await waitFor(() => expect(authService.getTokenParsed).toHaveBeenCalled());
@@ -63,6 +85,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({})]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -78,6 +101,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({})]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -93,6 +117,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ isMandatory: true })]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -110,6 +135,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "String" })]}
+        activity={activity()}
         answers={{}}
         onChange={onChange}
       />,
@@ -131,6 +157,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "Boolean" })]}
+        activity={activity()}
         answers={{}}
         onChange={onChange}
       />,
@@ -150,6 +177,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "MultipleChoice", options: ["A", "B"] })]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -162,6 +190,84 @@ describe("AnswerQuestionsTile", () => {
     expect(screen.getByRole("option", { name: "B" })).toBeInTheDocument();
   });
 
+  it("disables a String question whose own answer deadline has passed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[
+          question({ type: "String", answerDeadline: "2020-01-01T00:00:00Z" }),
+        ]}
+        activity={activity()}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByRole("textbox")).toBeDisabled();
+  });
+
+  it("disables a MultipleChoice question whose own answer deadline has passed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[
+          question({
+            type: "MultipleChoice",
+            options: ["A", "B"],
+            answerDeadline: "2020-01-01T00:00:00Z",
+          }),
+        ]}
+        activity={activity()}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByRole("combobox")).toBeDisabled();
+  });
+
+  it("keeps a question enabled while its own answer deadline is still in the future", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[
+          question({ type: "String", answerDeadline: "2028-01-01T00:00:00Z" }),
+        ]}
+        activity={activity()}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByRole("textbox")).not.toBeDisabled();
+  });
+
+  it("disables a question once the activity's fallback deadline (no question or enrollment deadline) has passed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[question({ type: "String" })]}
+        activity={activity({ dateTimeEnd: "2020-01-01T00:00:00Z" })}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByRole("textbox")).toBeDisabled();
+  });
+
   it("disables all inputs when disabled is true", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => enToken),
@@ -169,6 +275,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "String" })]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
         disabled
@@ -187,6 +294,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "Number" })]}
+        activity={activity()}
         answers={{}}
         onChange={onChange}
       />,
@@ -207,6 +315,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "Date" })]}
+        activity={activity()}
         answers={{}}
         onChange={onChange}
       />,
@@ -232,6 +341,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "Date" })]}
+        activity={activity()}
         answers={{ 1: "2026-07-31T22:00:00.000Z" }}
         onChange={onChange}
       />,
@@ -255,6 +365,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "DateTime" })]}
+        activity={activity()}
         answers={{ 1: "2026-08-01T10:00:00Z" }}
         onChange={onChange}
       />,
@@ -279,6 +390,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "MultipleChoice", options: ["A", "B"] })]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -300,6 +412,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "MultipleChoice", options: ["A", "B"] })]}
+        activity={activity()}
         answers={{ 1: "B" }}
         onChange={vi.fn()}
       />,
@@ -319,6 +432,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "MultipleChoice", options: ["A", "B"] })]}
+        activity={activity()}
         answers={{}}
         onChange={onChange}
       />,
@@ -338,6 +452,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ id: undefined })]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,
@@ -355,6 +470,7 @@ describe("AnswerQuestionsTile", () => {
     renderWithProviders(
       <AnswerQuestionsTile
         questions={[question({ type: "Unknown" as any })]}
+        activity={activity()}
         answers={{}}
         onChange={vi.fn()}
       />,

@@ -89,6 +89,7 @@ export const addQuestion = (
       isMandatory: false,
       isPublic: true,
       options: [],
+      answerDeadline: null,
     },
   ]);
 };
@@ -191,6 +192,16 @@ export const handleActivitySubmit = async ({
     parseInputAsAssociationTime(unenrollmentDeadline) > dateTimeEnd
   ) {
     toast.error(t("activity_unenrollment_deadline_after_end"));
+    return;
+  }
+
+  if (
+    questions.some(
+      (q) =>
+        q.answerDeadline && new Date(q.answerDeadline) >= dateTimeEnd,
+    )
+  ) {
+    toast.error(t("question_answer_deadline_after_end"));
     return;
   }
 

@@ -250,9 +250,9 @@ public class CalendarService : ICalendarService
     /// <returns>The localized calendar name.</returns>
     private static string CalendarName(Language language) => language switch
     {
-        Language.NL => "Sticky Activiteiten",
-        Language.EN => "Sticky Activities",
-        _ => "Sticky Activities"
+        Language.NL => "Koala Activiteiten",
+        Language.EN => "Koala Activities",
+        _ => "Koala Activities"
     };
 
     /// <summary>Gets the summary prefix marking a waiting list enrollment in the given language.</summary>

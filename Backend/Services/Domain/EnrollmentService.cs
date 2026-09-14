@@ -236,8 +236,9 @@ public class EnrollmentService : IEnrollmentService
 
             // Get and validate provided answers
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
+            var existingAnswers = enrollment.SpecificationAnswers.ToDictionary(a => a.SpecificationQuestionId, a => a.Answer);
 
-            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity, isBoard, existingAnswers);
 
             // Remove old answers and add new ones
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
@@ -276,6 +277,9 @@ public class EnrollmentService : IEnrollmentService
 
         // Get enrollment
         var enrollment = await _db.Enrollments
+            .Include(e => e.Activity)
+                .ThenInclude(a => a.SpecificationQuestions)
+            .Include(e => e.SpecificationAnswers)
             .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
 
         if (enrollment == null)
@@ -290,8 +294,12 @@ public class EnrollmentService : IEnrollmentService
         }
 
         // Apply patch and validate
+        var oldAnswers = enrollment.SpecificationAnswers.ToList();
         patchDoc.ApplyTo(enrollment);
         StateValidator.Validate(enrollment);
+
+        var questionsById = enrollment.Activity.SpecificationQuestions.ToDictionary(q => q.Id);
+        EnrollmentValidator.ValidateAnswerDeadlines(oldAnswers, enrollment.SpecificationAnswers, questionsById, enrollment.Activity, isBoardMember);
 
         await _db.SaveChangesAsync(cancellationToken);
     }

@@ -251,6 +251,7 @@ public class ActivityValidatorTests
             IsPublic = false,
             Options = null
         };
+        var deadline = DateTimeOffset.UtcNow.AddDays(3);
         var dto = new UpdateSpecificationQuestionDTO
         {
             QuestionDutch = "Nieuw",
@@ -258,7 +259,8 @@ public class ActivityValidatorTests
             Type = QuestionType.MultipleChoice,
             IsMandatory = true,
             IsPublic = true,
-            Options = new List<string> { "Ja", "Nee" }
+            Options = new List<string> { "Ja", "Nee" },
+            AnswerDeadline = deadline
         };
 
         ActivityValidator.MapSpecificationQuestion(entity, dto);
@@ -269,6 +271,61 @@ public class ActivityValidatorTests
         Assert.True(entity.IsMandatory);
         Assert.True(entity.IsPublic);
         Assert.Equal("Ja;Nee", entity.Options);
+        Assert.Equal(deadline, entity.AnswerDeadline);
+    }
+
+    [Fact]
+    public void ValidateQuestionDeadlines_NoDeadlines_DoesNotThrow()
+    {
+        var end = DateTimeOffset.UtcNow.AddDays(5);
+        var questions = new List<SpecificationQuestionDTO>
+        {
+            new() { QuestionDutch = "Vraag", QuestionEnglish = "Question", Type = QuestionType.String, IsMandatory = false, IsPublic = false }
+        };
+
+        var exception = Record.Exception(() => ActivityValidator.ValidateQuestionDeadlines(end, questions));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateQuestionDeadlines_DeadlineBeforeEnd_DoesNotThrow()
+    {
+        var end = DateTimeOffset.UtcNow.AddDays(5);
+        var questions = new List<SpecificationQuestionDTO>
+        {
+            new() { QuestionDutch = "Vraag", QuestionEnglish = "Question", Type = QuestionType.String, IsMandatory = false, IsPublic = false, AnswerDeadline = end.AddDays(-1) }
+        };
+
+        var exception = Record.Exception(() => ActivityValidator.ValidateQuestionDeadlines(end, questions));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateQuestionDeadlines_DeadlineAfterEnd_ThrowsArgumentException()
+    {
+        var end = DateTimeOffset.UtcNow.AddDays(5);
+        var questions = new List<SpecificationQuestionDTO>
+        {
+            new() { QuestionDutch = "Vraag", QuestionEnglish = "Question", Type = QuestionType.String, IsMandatory = false, IsPublic = false, AnswerDeadline = end.AddDays(1) }
+        };
+
+        var exception = Assert.Throws<ArgumentException>(() => ActivityValidator.ValidateQuestionDeadlines(end, questions));
+
+        Assert.Equal("A question's answer deadline must be before the activity ends.", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateQuestionDeadlines_DeadlineEqualToEnd_ThrowsArgumentException()
+    {
+        var end = DateTimeOffset.UtcNow.AddDays(5);
+        var questions = new List<SpecificationQuestionDTO>
+        {
+            new() { QuestionDutch = "Vraag", QuestionEnglish = "Question", Type = QuestionType.String, IsMandatory = false, IsPublic = false, AnswerDeadline = end }
+        };
+
+        Assert.Throws<ArgumentException>(() => ActivityValidator.ValidateQuestionDeadlines(end, questions));
     }
 
     private TestActivityDTO CreateValidDTO()
