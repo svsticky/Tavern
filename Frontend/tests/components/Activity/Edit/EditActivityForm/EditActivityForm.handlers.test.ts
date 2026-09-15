@@ -257,6 +257,72 @@ describe("handleActivitySubmit", () => {
     expect(payload.IsEnrollable).toBe(false);
   });
 
+  it("includes CloseAnswersOnUnenrollmentDeadline as true when the checkbox is checked", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+
+    await handleActivitySubmit({
+      e: buildFormEvent({
+        ...baseFields,
+        CloseAnswersOnUnenrollmentDeadline: "on",
+      }),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate: vi.fn(),
+    });
+
+    const payload = postActivities.mock.calls[0][0].body;
+    expect(payload.CloseAnswersOnUnenrollmentDeadline).toBe(true);
+  });
+
+  it("includes CloseAnswersOnUnenrollmentDeadline as false when the checkbox is unchecked", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+
+    await handleActivitySubmit({
+      e: buildFormEvent(baseFields),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate: vi.fn(),
+    });
+
+    const payload = postActivities.mock.calls[0][0].body;
+    expect(payload.CloseAnswersOnUnenrollmentDeadline).toBe(false);
+  });
+
+  it("includes a CloseAnswersOnUnenrollmentDeadline patch operation when editing", async () => {
+    patchActivitiesById.mockResolvedValue({});
+
+    await handleActivitySubmit({
+      e: buildFormEvent({
+        ...baseFields,
+        CloseAnswersOnUnenrollmentDeadline: "on",
+      }),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: true,
+      id: "5",
+      pathname: "/activities/5/edit",
+      navigate: vi.fn(),
+    });
+
+    const operations = patchActivitiesById.mock.calls[0][0].body as {
+      path: string;
+      value: unknown;
+    }[];
+    const op = operations.find(
+      (o) => o.path === "/CloseAnswersOnUnenrollmentDeadline",
+    );
+    expect(op?.value).toBe(true);
+  });
+
   it("creating as a board member includes financial fields in the payload", async () => {
     postActivities.mockResolvedValue({ data: { id: 1 } });
 

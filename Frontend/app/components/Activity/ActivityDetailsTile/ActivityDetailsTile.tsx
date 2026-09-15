@@ -22,7 +22,7 @@ import {
   getActivityEnrollmentStatus,
   hasEnrollmentOpened,
 } from "~/util/activity.util";
-import { hasAllMandatoryAnswers } from "~/util/answer.util";
+import { areAnswersOpen, hasAllMandatoryAnswers } from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -175,7 +175,13 @@ export default function ActivityDetailsTile({
   const { canEnroll, canUnenroll } = getActivityEnrollmentStatus(activity);
 
   const submitAnswers = (action: typeof handleEnrollment) => {
-    if (!hasAllMandatoryAnswers(activity.specificationQuestions, answers)) {
+    if (
+      !hasAllMandatoryAnswers(
+        activity.specificationQuestions,
+        activity,
+        answers,
+      )
+    ) {
       toast.error(t("please_fill_all_fields"));
       return;
     }
@@ -348,20 +354,21 @@ export default function ActivityDetailsTile({
         {(isEnrolled || canEnroll) && (
           <AnswerQuestionsTile
             questions={activity.specificationQuestions}
+            activity={activity}
             answers={answers}
             onChange={(id, value) =>
               setAnswers((prev) => ({ ...prev, [id]: value }))
             }
-            disabled={submitting || !canUnenroll}
+            disabled={submitting}
           />
         )}
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
           {isEnrolled ? (
-            canUnenroll ? (
-              <div className="flex flex-col gap-3">
-                {activity.specificationQuestions.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {activity.specificationQuestions.length > 0 &&
+                areAnswersOpen(activity) && (
                   <Button
                     variant="primary"
                     className="w-full sm:w-auto"
@@ -372,6 +379,7 @@ export default function ActivityDetailsTile({
                   </Button>
                 )}
 
+              {canUnenroll ? (
                 <Button
                   variant="danger"
                   className="w-full sm:w-auto"
@@ -396,17 +404,17 @@ export default function ActivityDetailsTile({
                     : t("sign_out")}
                   {submitting && "..."}
                 </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
-                <CheckCircle2 size={18} className="shrink-0" />
-                <span className="text-sm font-medium">
-                  {currentEnrollment.isOnWaitingList
-                    ? t("you_are_on_waiting_list")
-                    : t("you_are_enrolled")}
-                </span>
-              </div>
-            )
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+                  <CheckCircle2 size={18} className="shrink-0" />
+                  <span className="text-sm font-medium">
+                    {currentEnrollment.isOnWaitingList
+                      ? t("you_are_on_waiting_list")
+                      : t("you_are_enrolled")}
+                  </span>
+                </div>
+              )}
+            </div>
           ) : (
             canEnroll && (
               <Button

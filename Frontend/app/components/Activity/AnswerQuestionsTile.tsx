@@ -1,8 +1,12 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import type { GetSpecificationQuestionResponseDto } from "~/api";
+import type {
+  ActivityResponseDto,
+  GetSpecificationQuestionResponseDto,
+} from "~/api";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { areAnswersOpen } from "~/util/answer.util";
 import {
   formatDateOnly,
   formatForInput,
@@ -23,18 +27,22 @@ import Select from "../UI/Select";
  * - **Controlled Inputs**: Uses parent-owned answer state, so rerenders never
  *   reset in-progress typing.
  * - **Validation Visuals**: Appends a red asterisk to labels for mandatory questions.
+ * - **Answer deadline**: All inputs are disabled once the activity's answer deadline has passed
+ *   (see `areAnswersOpen`), regardless of the blanket `disabled` prop.
  *
  * @component
  * @param {Object} props - The component props.
  * @param {GetSpecificationQuestionResponseDto[]} props.questions - The list of question definitions to render.
+ * @param {ActivityResponseDto} props.activity - The activity the questions belong to, used to resolve the effective answer deadline.
  * @param {Record<number, string>} props.answers - Current answers keyed by question id.
- * @param {boolean} [props.disabled=false] - If true, prevents user interaction with all input fields.
+ * @param {boolean} [props.disabled=false] - If true, prevents user interaction with all input fields (in addition to the activity's own answer deadline).
  * @param {(id: number, value: string) => void} props.onChange - Callback triggered for each input change.
  *
  * @example
  * ```tsx
  * <AnswerQuestionsTile
  *   questions={activity.specificationQuestions}
+ *   activity={activity}
  *   answers={formData}
  *   onChange={(id, value) => setFormData((prev) => ({ ...prev, [id]: value }))}
  * />
@@ -42,11 +50,13 @@ import Select from "../UI/Select";
  */
 export default function AnswerQuestionsTile({
   questions,
+  activity,
   answers,
   disabled = false,
   onChange,
 }: {
   questions: GetSpecificationQuestionResponseDto[];
+  activity: ActivityResponseDto;
   answers: Record<number, string>;
   disabled?: boolean;
   onChange: (id: number, value: string) => void;
@@ -64,6 +74,8 @@ export default function AnswerQuestionsTile({
 
   if (!tokenParsed) return null;
 
+  const allDisabled = disabled || !areAnswersOpen(activity);
+
   const renderInput = (q: GetSpecificationQuestionResponseDto) => {
     if (q.id === undefined) return null;
 
@@ -80,7 +92,7 @@ export default function AnswerQuestionsTile({
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               onChange(id, e.target.value)
             }
-            disabled={disabled}
+            disabled={allDisabled}
             required={q.isMandatory}
           />
         );
@@ -93,7 +105,7 @@ export default function AnswerQuestionsTile({
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               onChange(id, e.target.checked ? "true" : "false")
             }
-            disabled={disabled}
+            disabled={allDisabled}
           />
         );
 
@@ -106,7 +118,7 @@ export default function AnswerQuestionsTile({
             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
               onChange(id, e.target.value)
             }
-            disabled={disabled}
+            disabled={allDisabled}
             required={q.isMandatory}
           />
         );
@@ -124,7 +136,7 @@ export default function AnswerQuestionsTile({
                 raw ? parseInputAsAssociationTime(raw).toISOString() : "",
               );
             }}
-            disabled={disabled}
+            disabled={allDisabled}
             required={q.isMandatory}
           />
         );
@@ -142,7 +154,7 @@ export default function AnswerQuestionsTile({
                 raw ? parseInputAsAssociationTime(raw).toISOString() : "",
               );
             }}
-            disabled={disabled}
+            disabled={allDisabled}
             required={q.isMandatory}
           />
         );
@@ -159,6 +171,7 @@ export default function AnswerQuestionsTile({
               { label: t("select_option"), value: "" },
               ...options.map((opt) => ({ label: opt, value: opt })),
             ]}
+            disabled={allDisabled}
             required={q.isMandatory}
           />
         );

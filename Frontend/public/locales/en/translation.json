@@ -67,6 +67,8 @@
   "cheap_activities": "Cheap activities",
   "cheap_activities_description": "Our association organizes many activities from free drinks and fun parties to educational workshops and lectures.",
   "city": "City",
+  "close_answers_on_unenrollment_deadline": "Close answers on unenrollment deadline",
+  "close_answers_on_unenrollment_deadline_hint": "When checked, specification answers can no longer be given or changed once the unenrollment deadline (if any) passes. Otherwise - or if there is no unenrollment deadline - answers stay open until the enrollment deadline, or until the activity ends if there is no enrollment deadline either.",
   "close_modal": "Close modal",
   "committee": "Committee",
   "company_mails": "Company mails",

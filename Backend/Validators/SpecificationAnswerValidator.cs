@@ -1,4 +1,5 @@
 using Backend.Models.Domain;
+using Backend.Utils;
 using Microsoft.AspNetCore.JsonPatch;
 
 namespace Backend.Validators;
@@ -23,16 +24,15 @@ public static class SpecificationAnswerValidator
     }
 
     /// <summary>
-    /// Validates that the related enrollment deadline has not passed.
+    /// Validates that the activity's answer deadline (see <see cref="AnswerDeadlineHelper"/>) has not passed.
     /// </summary>
     /// <param name="answer">The specification answer to check.</param>
-    /// <exception cref="InvalidOperationException">Thrown when the enrollment deadline has passed.</exception>
-    public static void ValidateWithinEnrollmentDeadline(SpecificationAnswer answer)
+    /// <exception cref="InvalidOperationException">Thrown when the answer deadline has passed.</exception>
+    public static void ValidateWithinAnswerDeadline(SpecificationAnswer answer)
     {
-        if (answer.Question.Activity.EnrollmentDeadline != null
-            && DateTimeOffset.UtcNow > answer.Question.Activity.EnrollmentDeadline)
+        if (!AnswerDeadlineHelper.AreAnswersOpen(answer.Question.Activity, DateTimeOffset.UtcNow))
         {
-            throw new InvalidOperationException("Cannot modify specification answers after the enrollment deadline.");
+            throw new InvalidOperationException("Cannot modify this specification answer after the answer deadline has passed.");
         }
     }
 

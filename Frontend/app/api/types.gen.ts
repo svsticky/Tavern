@@ -58,6 +58,10 @@ export type Activity = {
      */
     enrollmentDeadline?: string | null;
     /**
+     * Whether specification answers close at the unenrollment deadline instead of the enrollment deadline. When true and unenrollmentDeadline is set, answers can no longer be given or changed once the unenrollment deadline passes. Otherwise - or when this is false - answers remain open until enrollmentDeadline, falling back to dateTimeEnd if neither deadline is set.
+     */
+    closeAnswersOnUnenrollmentDeadline?: boolean;
+    /**
      * The date and time at which the activity will be open for enrolling.
      */
     enrollOpenDate?: string | null;
@@ -181,6 +185,10 @@ export type ActivityResponseDto = {
      * The deadline for enrollment from the activity.
      */
     enrollmentDeadline?: string | null;
+    /**
+     * Whether specification answers close at the unenrollment deadline instead of the enrollment deadline. When true and unenrollmentDeadline is set, answers can no longer be given or changed once the unenrollment deadline passes. Otherwise - or when this is false - answers remain open until enrollmentDeadline, falling back to dateTimeEnd if neither deadline is set.
+     */
+    closeAnswersOnUnenrollmentDeadline: boolean;
     /**
      * The date and time at which the activity will be open for enrolling.
      */
@@ -2159,6 +2167,10 @@ export type PostActivitiesData = {
          */
         EnrollmentDeadline?: string;
         /**
+         * Whether specification answers close at the unenrollment deadline instead of the enrollment deadline. When true and UnenrollmentDeadline is set, answers can no longer be given or changed once the unenrollment deadline passes. Otherwise - or when this is false - answers remain open until EnrollmentDeadline, falling back to DateTimeEnd if neither deadline is set.
+         */
+        CloseAnswersOnUnenrollmentDeadline: boolean;
+        /**
          * The date and time at which the activity will be open for enrolling.
          */
         EnrollOpenDate?: string;
@@ -2425,6 +2437,10 @@ export type PutActivitiesByIdData = {
          * The deadline for enrollment from the activity.
          */
         EnrollmentDeadline?: string;
+        /**
+         * Whether specification answers close at the unenrollment deadline instead of the enrollment deadline. When true and UnenrollmentDeadline is set, answers can no longer be given or changed once the unenrollment deadline passes. Otherwise - or when this is false - answers remain open until EnrollmentDeadline, falling back to DateTimeEnd if neither deadline is set.
+         */
+        CloseAnswersOnUnenrollmentDeadline: boolean;
         /**
          * The date and time at which the activity will be open for enrolling.
          */

@@ -576,6 +576,7 @@ public class ActivityService : IActivityService
             DateTimeEnd = dto.DateTimeEnd,
             UnenrollmentDeadline = dto.UnenrollmentDeadline,
             EnrollmentDeadline = dto.EnrollmentDeadline,
+            CloseAnswersOnUnenrollmentDeadline = dto.CloseAnswersOnUnenrollmentDeadline,
             EnrollOpenDate = dto.EnrollOpenDate,
             Location = dto.Location,
             ParticipantLimit = dto.ParticipantLimit,
@@ -717,6 +718,7 @@ public class ActivityService : IActivityService
         activity.DateTimeEnd = dto.DateTimeEnd;
         activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;
         activity.EnrollmentDeadline = dto.EnrollmentDeadline;
+        activity.CloseAnswersOnUnenrollmentDeadline = dto.CloseAnswersOnUnenrollmentDeadline;
         activity.EnrollOpenDate = dto.IsEnrollable ? null : dto.EnrollOpenDate;
         activity.Location = dto.Location;
         activity.ParticipantLimit = dto.ParticipantLimit;

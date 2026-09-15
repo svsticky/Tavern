@@ -121,8 +121,6 @@ public static class ActivityValidator
             throw new ArgumentException("Unenrollment deadline cannot be after the activity ends.");
     }
 
-
-
     /// <summary>
     /// Validates the poster file provided for an activity, ensuring that if a poster file is provided, it has an acceptable format. This method checks if the poster file is not null, and if so, it calls the ExtensionValidator.ValidatePosterExtension method to validate the file's extension. This validation helps to ensure that only valid poster files are accepted for activities within the system, maintaining data integrity and security.
     /// </summary>

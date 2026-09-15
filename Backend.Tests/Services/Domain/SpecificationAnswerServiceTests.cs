@@ -56,6 +56,7 @@ public class SpecificationAnswerServiceTests : IDisposable
             PosterFileName = "poster.png",
             EnrollmentDeadline = deadline,
             DateTimeStart = DateTimeOffset.UtcNow.AddDays(1),
+            DateTimeEnd = DateTimeOffset.UtcNow.AddDays(2),
             PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5),
             DutchDescription = "Beschrijving",
             EnglishDescription = "Description"
