@@ -13,6 +13,10 @@ import {
   removeQuestion,
   updateQuestion,
 } from "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers";
+import {
+  loadActivityDraft,
+  saveActivityDraft,
+} from "~/util/activityDraft.util";
 
 const {
   postActivities,
@@ -342,6 +346,25 @@ describe("handleActivitySubmit", () => {
     });
 
     expect(navigate).toHaveBeenCalledWith("/activities/99");
+  });
+
+  it("clears activity draft from storage on successful creation", async () => {
+    postActivities.mockResolvedValue({ data: { id: 100 } });
+    saveActivityDraft({ name: "Incomplete party" });
+    expect(loadActivityDraft()).not.toBeNull();
+
+    await handleActivitySubmit({
+      e: buildFormEvent(baseFields),
+      isBoard: true,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate: vi.fn(),
+    });
+
+    expect(loadActivityDraft()).toBeNull();
   });
 
   it("prefixes the admin path when submitting from the admin section", async () => {

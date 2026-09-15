@@ -12,6 +12,7 @@ import {
   postActivitiesByIdPoster,
 } from "~/api";
 import { getAudienceString } from "~/types/AudienceMap";
+import { clearActivityDraft } from "~/util/activityDraft.util";
 import {
   getCommitteeYear,
   parseInputAsAssociationTime,
@@ -450,6 +451,7 @@ export const handleActivitySubmit = async ({
         if (response.error || !response.data?.id) {
           throw response.error ?? new Error("Failed to create activity");
         }
+        clearActivityDraft();
         navigate(`${redirectPathBase}${response.data?.id}`);
       }
     } catch (error) {
