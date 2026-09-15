@@ -176,7 +176,11 @@ export default function ActivityDetailsTile({
 
   const submitAnswers = (action: typeof handleEnrollment) => {
     if (
-      !hasAllMandatoryAnswers(activity.specificationQuestions, activity, answers)
+      !hasAllMandatoryAnswers(
+        activity.specificationQuestions,
+        activity,
+        answers,
+      )
     ) {
       toast.error(t("please_fill_all_fields"));
       return;
