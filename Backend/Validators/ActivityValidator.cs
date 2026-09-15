@@ -91,7 +91,6 @@ public static class ActivityValidator
         entity.Options = dto.Options != null && dto.Options.Any()
             ? string.Join(';', dto.Options)
             : null;
-        entity.AnswerDeadline = dto.AnswerDeadline;
     }
 
     /// <summary>
@@ -121,20 +120,6 @@ public static class ActivityValidator
         if (unenrollmentDeadline > end)
             throw new ArgumentException("Unenrollment deadline cannot be after the activity ends.");
     }
-
-    /// <summary>
-    /// Validates that every specification question's optional answer deadline, if set, lies strictly before the activity's end date and time.
-    /// </summary>
-    /// <param name="end">The end date and time of the activity.</param>
-    /// <param name="questions">The specification questions to validate.</param>
-    /// <exception cref="ArgumentException">Thrown when a question's answer deadline is not before the activity's end date and time.</exception>
-    public static void ValidateQuestionDeadlines(DateTimeOffset end, IEnumerable<SpecificationQuestionDTO> questions)
-    {
-        if (questions.Any(q => q.AnswerDeadline != null && q.AnswerDeadline >= end))
-            throw new ArgumentException("A question's answer deadline must be before the activity ends.");
-    }
-
-
 
     /// <summary>
     /// Validates the poster file provided for an activity, ensuring that if a poster file is provided, it has an acceptable format. This method checks if the poster file is not null, and if so, it calls the ExtensionValidator.ValidatePosterExtension method to validate the file's extension. This validation helps to ensure that only valid poster files are accepted for activities within the system, maintaining data integrity and security.

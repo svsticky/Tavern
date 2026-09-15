@@ -89,7 +89,6 @@ export const addQuestion = (
       isMandatory: false,
       isPublic: true,
       options: [],
-      answerDeadline: null,
     },
   ]);
 };
@@ -195,16 +194,6 @@ export const handleActivitySubmit = async ({
     return;
   }
 
-  if (
-    questions.some(
-      (q) =>
-        q.answerDeadline && new Date(q.answerDeadline) >= dateTimeEnd,
-    )
-  ) {
-    toast.error(t("question_answer_deadline_after_end"));
-    return;
-  }
-
   const audienceFlags = fd
     .getAll("AudienceBit")
     .reduce((acc, val) => acc + Number(val), 0);
@@ -232,6 +221,8 @@ export const handleActivitySubmit = async ({
       UnenrollmentDeadline: unenrollmentDeadline
         ? parseInputAsAssociationTime(unenrollmentDeadline).toISOString()
         : undefined,
+      CloseAnswersOnUnenrollmentDeadline:
+        fd.get("CloseAnswersOnUnenrollmentDeadline") === "on",
       EnrollOpenDate: fd.get("EnrollOpenDate")
         ? parseInputAsAssociationTime(
             fd.get("EnrollOpenDate") as string,
@@ -343,6 +334,11 @@ export const handleActivitySubmit = async ({
             value: unenrollmentDeadline
               ? parseInputAsAssociationTime(unenrollmentDeadline).toISOString()
               : null,
+          },
+          {
+            op: "replace",
+            path: "/CloseAnswersOnUnenrollmentDeadline",
+            value: fd.get("CloseAnswersOnUnenrollmentDeadline") === "on",
           },
           {
             op: "replace",

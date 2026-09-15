@@ -30,9 +30,6 @@ public class SpecificationQuestionDTO
 
     /// <inheritdoc cref="SpecificationQuestion.Options"/>
     public List<string>? Options { get; set; }
-
-    /// <inheritdoc cref="SpecificationQuestion.AnswerDeadline"/>
-    public DateTimeOffset? AnswerDeadline { get; set; }
 }
 
 /// <summary>
@@ -68,8 +65,7 @@ public class GetSpecificationQuestionResponseDTO : SpecificationQuestionDTO
             IsPublic = sq.IsPublic,
             Options = sq.Options != null
                 ? sq.Options.Split(new[] { ';' }, StringSplitOptions.None).ToList()
-                : null,
-            AnswerDeadline = sq.AnswerDeadline
+                : null
         };
     }
 }

@@ -98,9 +98,4 @@ public class SpecificationQuestion
     /// The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
     /// </summary>
     public string? Options { get; set; }
-
-    /// <summary>
-    /// The optional deadline until which an answer for this question may be given or changed. Must lie strictly before the activity's end date and time. When not set, the question can be answered until the activity's enrollment deadline, or until the activity's end date and time if no enrollment deadline is set either.
-    /// </summary>
-    public DateTimeOffset? AnswerDeadline { get; set; }
 }

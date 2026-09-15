@@ -87,32 +87,48 @@ public class SpecificationAnswerValidatorTests
         var exception = Assert.Throws<InvalidOperationException>(() =>
             SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
 
-        Assert.Equal("Cannot modify this specification answer after its answer deadline has passed.", exception.Message);
+        Assert.Equal("Cannot modify this specification answer after the answer deadline has passed.", exception.Message);
     }
 
     [Fact]
-    public void ValidateWithinAnswerDeadline_QuestionDeadlineOverridesEnrollmentDeadline_ThrowsInvalidOperationException()
+    public void ValidateWithinAnswerDeadline_CloseOnUnenrollmentDeadlineTrueAndPassed_ThrowsInvalidOperationException()
     {
         var answer = CreateAnswer();
         answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
-        answer.Question.AnswerDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.Activity.UnenrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.Activity.CloseAnswersOnUnenrollmentDeadline = true;
 
         var exception = Assert.Throws<InvalidOperationException>(() =>
             SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
 
-        Assert.Equal("Cannot modify this specification answer after its answer deadline has passed.", exception.Message);
+        Assert.Equal("Cannot modify this specification answer after the answer deadline has passed.", exception.Message);
     }
 
     [Fact]
-    public void ValidateWithinAnswerDeadline_QuestionDeadlineInFutureAfterEnrollmentDeadlinePassed_DoesNotThrow()
+    public void ValidateWithinAnswerDeadline_CloseOnUnenrollmentDeadlineFalse_IgnoresPassedUnenrollmentDeadline()
     {
         var answer = CreateAnswer();
-        answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
-        answer.Question.AnswerDeadline = DateTimeOffset.UtcNow.AddHours(1);
+        answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
+        answer.Question.Activity.UnenrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.Activity.CloseAnswersOnUnenrollmentDeadline = false;
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
 
         Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateWithinAnswerDeadline_CloseOnUnenrollmentDeadlineTrueButNoUnenrollmentDeadline_UsesEnrollmentDeadline()
+    {
+        var answer = CreateAnswer();
+        answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.Activity.UnenrollmentDeadline = null;
+        answer.Question.Activity.CloseAnswersOnUnenrollmentDeadline = true;
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
+        Assert.Equal("Cannot modify this specification answer after the answer deadline has passed.", exception.Message);
     }
 
     [Fact]

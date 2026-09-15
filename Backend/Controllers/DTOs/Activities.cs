@@ -46,6 +46,9 @@ public abstract class BaseActivityDTO<TQuestion>
     /// <inheritdoc cref="Activity.EnrollmentDeadline"/>
     public DateTimeOffset? EnrollmentDeadline { get; set; }
 
+    /// <inheritdoc cref="Activity.CloseAnswersOnUnenrollmentDeadline"/>
+    public bool CloseAnswersOnUnenrollmentDeadline { get; set; }
+
     /// <inheritdoc cref="Activity.EnrollOpenDate"/>
     public DateTimeOffset? EnrollOpenDate { get; set; }
 
@@ -139,6 +142,9 @@ public class ActivityResponseDTO
     /// <inheritdoc cref="Activity.EnrollmentDeadline"/>
     public DateTimeOffset? EnrollmentDeadline { get; set; }
 
+    /// <inheritdoc cref="Activity.CloseAnswersOnUnenrollmentDeadline"/>
+    public required bool CloseAnswersOnUnenrollmentDeadline { get; set; }
+
     /// <inheritdoc cref="Activity.EnrollOpenDate"/>
     public DateTimeOffset? EnrollOpenDate { get; set; }
 
@@ -217,6 +223,7 @@ public class ActivityResponseDTO
             DateTimeEnd = a.DateTimeEnd,
             UnenrollmentDeadline = a.UnenrollmentDeadline,
             EnrollmentDeadline = a.EnrollmentDeadline,
+            CloseAnswersOnUnenrollmentDeadline = a.CloseAnswersOnUnenrollmentDeadline,
             EnrollOpenDate = a.EnrollOpenDate,
             Location = a.Location,
             ParticipantLimit = a.ParticipantLimit,
