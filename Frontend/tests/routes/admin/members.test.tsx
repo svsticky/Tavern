@@ -155,4 +155,33 @@ describe("Members", () => {
     expect(plusButton).toBeTruthy();
     fireEvent.click(plusButton!);
   });
+
+  it("renders honorary and merit badges in the table", async () => {
+    getMembers.mockResolvedValue({
+      data: [
+        {
+          id: "m-1",
+          firstName: "Arthur",
+          lastName: "Dent",
+          email: "arthur@example.com",
+          phoneNumber: "0612345678",
+          ereLid: true,
+        },
+        {
+          id: "m-2",
+          firstName: "Ford",
+          lastName: "Prefect",
+          email: "ford@example.com",
+          phoneNumber: "0612345679",
+          lidVanVerdienste: true,
+        },
+      ],
+    });
+    renderWithProviders(<Members />);
+
+    expect(await screen.findByText("Arthur Dent")).toBeInTheDocument();
+    expect(screen.getByText("ere_lid")).toBeInTheDocument();
+    expect(screen.getByText("Ford Prefect")).toBeInTheDocument();
+    expect(screen.getByText("lid_van_verdienste")).toBeInTheDocument();
+  });
 });
