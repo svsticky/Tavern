@@ -200,7 +200,7 @@ describe("ActivityDetailsTile", () => {
     expect(handleUpdateEnrollment).toHaveBeenCalled();
   });
 
-  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but questions are still answerable", async () => {
+  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but closeAnswersOnUnenrollmentDeadline is false", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => memberToken),
     });
@@ -209,6 +209,7 @@ describe("ActivityDetailsTile", () => {
         activity={buildActivity({
           isEnrollable: true,
           unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          closeAnswersOnUnenrollmentDeadline: false,
           specificationQuestions: [
             {
               id: 1,
@@ -230,7 +231,7 @@ describe("ActivityDetailsTile", () => {
     expect(screen.queryByText("sign_out")).not.toBeInTheDocument();
   });
 
-  it("hides the update-answers button once every question's own answer deadline has passed", async () => {
+  it("hides the update-answers button once the unenrollment deadline has passed and closeAnswersOnUnenrollmentDeadline is true", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => memberToken),
     });
@@ -238,13 +239,14 @@ describe("ActivityDetailsTile", () => {
       <ActivityDetailsTile
         activity={buildActivity({
           isEnrollable: true,
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          closeAnswersOnUnenrollmentDeadline: true,
           specificationQuestions: [
             {
               id: 1,
               questionDutch: "V",
               questionEnglish: "Q",
               type: "String",
-              answerDeadline: "2020-01-01T00:00:00Z",
             },
           ] as ActivityResponseDto["specificationQuestions"],
           enrollments: [
@@ -255,7 +257,7 @@ describe("ActivityDetailsTile", () => {
       { authService },
     );
 
-    expect(await screen.findByText("sign_out")).toBeInTheDocument();
+    expect(await screen.findByText("you_are_enrolled")).toBeInTheDocument();
     expect(screen.queryByText("update_answers")).not.toBeInTheDocument();
   });
 

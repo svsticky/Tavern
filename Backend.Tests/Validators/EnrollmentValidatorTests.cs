@@ -188,10 +188,11 @@ public class EnrollmentValidatorTests
     }
 
     [Fact]
-    public void ValidateAnswers_QuestionDeadlinePassed_MandatoryNoLongerRequiredForNewcomer()
+    public void ValidateAnswers_AnswerDeadlinePassed_MandatoryNoLongerRequiredForNewcomer()
     {
         var activity = ActivityWithQuestions(
-            new SpecificationQuestion { Id = 1, IsMandatory = true, QuestionDutch = "Vraag", QuestionEnglish = "Question", AnswerDeadline = DateTimeOffset.UtcNow.AddHours(-1) });
+            new SpecificationQuestion { Id = 1, IsMandatory = true, QuestionDutch = "Vraag", QuestionEnglish = "Question" });
+        activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
         var provided = new List<PostSpecificationAnswerDTO>();
 
         var exception = Record.Exception(() =>
@@ -201,10 +202,11 @@ public class EnrollmentValidatorTests
     }
 
     [Fact]
-    public void ValidateAnswers_NewAnswerForExpiredQuestion_ThrowsArgumentException()
+    public void ValidateAnswers_NewAnswerAfterDeadline_ThrowsArgumentException()
     {
         var activity = ActivityWithQuestions(
-            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question", AnswerDeadline = DateTimeOffset.UtcNow.AddHours(-1) });
+            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question" });
+        activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
         var provided = new List<PostSpecificationAnswerDTO>
         {
             new() { QuestionId = 1, Answer = "Too late" }
@@ -213,14 +215,15 @@ public class EnrollmentValidatorTests
         var exception = Assert.Throws<ArgumentException>(() =>
             EnrollmentValidator.ValidateAnswers(provided, activity, false));
 
-        Assert.Equal("Cannot answer or change this question after its answer deadline has passed.", exception.Message);
+        Assert.Equal("Cannot answer or change specification answers after the answer deadline has passed.", exception.Message);
     }
 
     [Fact]
-    public void ValidateAnswers_ChangedAnswerForExpiredQuestion_ThrowsArgumentException()
+    public void ValidateAnswers_ChangedAnswerAfterDeadline_ThrowsArgumentException()
     {
         var activity = ActivityWithQuestions(
-            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question", AnswerDeadline = DateTimeOffset.UtcNow.AddHours(-1) });
+            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question" });
+        activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
         var provided = new List<PostSpecificationAnswerDTO>
         {
             new() { QuestionId = 1, Answer = "New value" }
@@ -230,14 +233,15 @@ public class EnrollmentValidatorTests
         var exception = Assert.Throws<ArgumentException>(() =>
             EnrollmentValidator.ValidateAnswers(provided, activity, false, existing));
 
-        Assert.Equal("Cannot answer or change this question after its answer deadline has passed.", exception.Message);
+        Assert.Equal("Cannot answer or change specification answers after the answer deadline has passed.", exception.Message);
     }
 
     [Fact]
-    public void ValidateAnswers_UnchangedAnswerForExpiredQuestion_DoesNotThrow()
+    public void ValidateAnswers_UnchangedAnswerAfterDeadline_DoesNotThrow()
     {
         var activity = ActivityWithQuestions(
-            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question", AnswerDeadline = DateTimeOffset.UtcNow.AddHours(-1) });
+            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question" });
+        activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
         var provided = new List<PostSpecificationAnswerDTO>
         {
             new() { QuestionId = 1, Answer = "Same value" }
@@ -246,6 +250,44 @@ public class EnrollmentValidatorTests
 
         var exception = Record.Exception(() =>
             EnrollmentValidator.ValidateAnswers(provided, activity, false, existing));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateAnswers_CloseOnUnenrollmentDeadlineTrueAndPassed_ThrowsEvenThoughEnrollmentDeadlineIsInFuture()
+    {
+        var activity = ActivityWithQuestions(
+            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question" });
+        activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
+        activity.UnenrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        activity.CloseAnswersOnUnenrollmentDeadline = true;
+        var provided = new List<PostSpecificationAnswerDTO>
+        {
+            new() { QuestionId = 1, Answer = "Too late" }
+        };
+
+        var exception = Assert.Throws<ArgumentException>(() =>
+            EnrollmentValidator.ValidateAnswers(provided, activity, false));
+
+        Assert.Equal("Cannot answer or change specification answers after the answer deadline has passed.", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateAnswers_CloseOnUnenrollmentDeadlineFalse_UsesEnrollmentDeadlineAndDoesNotThrow()
+    {
+        var activity = ActivityWithQuestions(
+            new SpecificationQuestion { Id = 1, IsMandatory = false, Type = QuestionType.String, QuestionDutch = "Vraag", QuestionEnglish = "Question" });
+        activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
+        activity.UnenrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        activity.CloseAnswersOnUnenrollmentDeadline = false;
+        var provided = new List<PostSpecificationAnswerDTO>
+        {
+            new() { QuestionId = 1, Answer = "Still open" }
+        };
+
+        var exception = Record.Exception(() =>
+            EnrollmentValidator.ValidateAnswers(provided, activity, false));
 
         Assert.Null(exception);
     }

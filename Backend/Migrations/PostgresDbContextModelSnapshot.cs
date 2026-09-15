@@ -68,6 +68,9 @@ namespace Backend.Migrations
                     b.Property<bool>("AreParticipantsVisible")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("CloseAnswersOnUnenrollmentDeadline")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("CostCenterId")
                         .HasColumnType("text");
 
@@ -791,9 +794,6 @@ namespace Backend.Migrations
 
                     b.Property<long>("ActivityId")
                         .HasColumnType("bigint");
-
-                    b.Property<DateTimeOffset?>("AnswerDeadline")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsMandatory")
                         .HasColumnType("boolean");

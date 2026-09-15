@@ -3,10 +3,6 @@ import type { GetSpecificationQuestionResponseDto } from "~/api";
 import Checkbox from "~/components/UI/Checkbox";
 import Input from "~/components/UI/Input";
 import Select from "~/components/UI/Select";
-import {
-  formatForInput,
-  parseInputAsAssociationTime,
-} from "~/util/date.util";
 import BorderedTile from "../../Tiles/BorderedTile";
 
 /**
@@ -107,26 +103,6 @@ export default function EditQuestionTile({
               onUpdate("isPublic", e.target.checked)
             }
           />
-        </div>
-
-        <div>
-          <Input
-            label={t("answer_deadline")}
-            type="datetime-local"
-            defaultValue={formatForInput(
-              question.answerDeadline ?? undefined,
-            )}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-              const raw = e.target.value;
-              onUpdate(
-                "answerDeadline",
-                raw ? parseInputAsAssociationTime(raw).toISOString() : null,
-              );
-            }}
-          />
-          <p className="text-xs text-gray-400 mt-1 italic">
-            {t("answer_deadline_hint")}
-          </p>
         </div>
       </div>
 

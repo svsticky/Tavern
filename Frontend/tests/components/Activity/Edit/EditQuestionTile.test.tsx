@@ -116,41 +116,6 @@ describe("EditQuestionTile", () => {
     expect(onUpdate).toHaveBeenCalledWith("isPublic", true);
   });
 
-  it("calls onUpdate with an association-timezone ISO string when the answer deadline changes", () => {
-    const onUpdate = vi.fn();
-    render(
-      <EditQuestionTile
-        question={buildQuestion()}
-        onRemove={vi.fn()}
-        onUpdate={onUpdate}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText("answer_deadline"), {
-      target: { value: "2026-08-01T15:30" },
-    });
-    // 15:30 on 2026-08-01 in Europe/Amsterdam (CEST, UTC+2) is 13:30Z, regardless
-    // of the entering device's own timezone.
-    expect(onUpdate).toHaveBeenCalledWith(
-      "answerDeadline",
-      "2026-08-01T13:30:00.000Z",
-    );
-  });
-
-  it("calls onUpdate with null when the answer deadline is cleared", () => {
-    const onUpdate = vi.fn();
-    render(
-      <EditQuestionTile
-        question={buildQuestion({ answerDeadline: "2026-08-01T13:30:00Z" })}
-        onRemove={vi.fn()}
-        onUpdate={onUpdate}
-      />,
-    );
-    fireEvent.change(screen.getByLabelText("answer_deadline"), {
-      target: { value: "" },
-    });
-    expect(onUpdate).toHaveBeenCalledWith("answerDeadline", null);
-  });
-
   it("does not render the options input for non-MultipleChoice types", () => {
     render(
       <EditQuestionTile

@@ -137,7 +137,6 @@ public class ActivityService : IActivityService
         {
             // Parse questions and create activity
             var questions = ActivityValidator.ParseCreateQuestions(dto.SpecificationQuestionsJson);
-            ActivityValidator.ValidateQuestionDeadlines(dto.DateTimeEnd, questions);
             var activity = BuildActivity(dto, questions);
             _db.Activities.Add(activity);
 
@@ -268,7 +267,6 @@ public class ActivityService : IActivityService
 
             if (questionsToSync != null)
             {
-                ActivityValidator.ValidateQuestionDeadlines(activity.DateTimeEnd, questionsToSync);
                 await SyncSpecificationQuestions(activity, questionsToSync);
             }
 
@@ -406,7 +404,6 @@ public class ActivityService : IActivityService
 
         // Parse the specification questions from the JSON string in the DTO
         var questions = ActivityValidator.ParseUpdateQuestions(dto.SpecificationQuestionsJson);
-        ActivityValidator.ValidateQuestionDeadlines(dto.DateTimeEnd, questions);
 
         try
         {
@@ -579,6 +576,7 @@ public class ActivityService : IActivityService
             DateTimeEnd = dto.DateTimeEnd,
             UnenrollmentDeadline = dto.UnenrollmentDeadline,
             EnrollmentDeadline = dto.EnrollmentDeadline,
+            CloseAnswersOnUnenrollmentDeadline = dto.CloseAnswersOnUnenrollmentDeadline,
             EnrollOpenDate = dto.EnrollOpenDate,
             Location = dto.Location,
             ParticipantLimit = dto.ParticipantLimit,
@@ -601,8 +599,7 @@ public class ActivityService : IActivityService
                 Type = q.Type,
                 IsMandatory = q.IsMandatory,
                 IsPublic = q.IsPublic,
-                Options = q.Options != null ? string.Join(";", q.Options) : null,
-                AnswerDeadline = q.AnswerDeadline
+                Options = q.Options != null ? string.Join(";", q.Options) : null
             }).ToList(),
             PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
         };
@@ -661,8 +658,7 @@ public class ActivityService : IActivityService
                     IsPublic = dto.IsPublic,
                     Options = dto.Options != null && dto.Options.Any()
                         ? string.Join(';', dto.Options)
-                        : null,
-                    AnswerDeadline = dto.AnswerDeadline
+                        : null
                 };
 
                 activity.SpecificationQuestions.Add(newQuestion);
@@ -722,6 +718,7 @@ public class ActivityService : IActivityService
         activity.DateTimeEnd = dto.DateTimeEnd;
         activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;
         activity.EnrollmentDeadline = dto.EnrollmentDeadline;
+        activity.CloseAnswersOnUnenrollmentDeadline = dto.CloseAnswersOnUnenrollmentDeadline;
         activity.EnrollOpenDate = dto.IsEnrollable ? null : dto.EnrollOpenDate;
         activity.Location = dto.Location;
         activity.ParticipantLimit = dto.ParticipantLimit;

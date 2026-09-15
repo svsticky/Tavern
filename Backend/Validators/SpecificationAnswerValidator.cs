@@ -24,15 +24,15 @@ public static class SpecificationAnswerValidator
     }
 
     /// <summary>
-    /// Validates that the question's answer deadline (see <see cref="QuestionDeadlineHelper"/>) has not passed.
+    /// Validates that the activity's answer deadline (see <see cref="AnswerDeadlineHelper"/>) has not passed.
     /// </summary>
     /// <param name="answer">The specification answer to check.</param>
-    /// <exception cref="InvalidOperationException">Thrown when the question's answer deadline has passed.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when the answer deadline has passed.</exception>
     public static void ValidateWithinAnswerDeadline(SpecificationAnswer answer)
     {
-        if (!QuestionDeadlineHelper.IsAnswerable(answer.Question, answer.Question.Activity, DateTimeOffset.UtcNow))
+        if (!AnswerDeadlineHelper.AreAnswersOpen(answer.Question.Activity, DateTimeOffset.UtcNow))
         {
-            throw new InvalidOperationException("Cannot modify this specification answer after its answer deadline has passed.");
+            throw new InvalidOperationException("Cannot modify this specification answer after the answer deadline has passed.");
         }
     }
 
