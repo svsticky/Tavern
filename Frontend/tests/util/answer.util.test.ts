@@ -39,15 +39,13 @@ function activity(
 
 describe("hasAllMandatoryAnswers", () => {
   it("passes when every mandatory question has a non-empty answer", () => {
-    expect(
-      hasAllMandatoryAnswers([question({})], activity(), { 1: "x" }),
-    ).toBe(true);
+    expect(hasAllMandatoryAnswers([question({})], activity(), { 1: "x" })).toBe(
+      true,
+    );
   });
 
   it("fails when a mandatory question has no answer at all", () => {
-    expect(hasAllMandatoryAnswers([question({})], activity(), {})).toBe(
-      false,
-    );
+    expect(hasAllMandatoryAnswers([question({})], activity(), {})).toBe(false);
   });
 
   it("fails when a mandatory question's answer is an empty string", () => {
@@ -75,7 +73,11 @@ describe("hasAllMandatoryAnswers", () => {
 
   it("ignores unanswered non-mandatory questions", () => {
     expect(
-      hasAllMandatoryAnswers([question({ isMandatory: false })], activity(), {}),
+      hasAllMandatoryAnswers(
+        [question({ isMandatory: false })],
+        activity(),
+        {},
+      ),
     ).toBe(true);
   });
 
