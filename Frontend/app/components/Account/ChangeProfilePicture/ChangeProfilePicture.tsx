@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { useEffect, useRef, useState } from "react";
 import { getMembersByIdProfilePicture } from "~/api";
+import { cn } from "~/util/tailwind.util";
 import { handleProfilePictureUpload } from "./ChangeProfilePicture.handlers";
 
 /**
@@ -8,14 +9,17 @@ import { handleProfilePictureUpload } from "./ChangeProfilePicture.handlers";
  * @param {Object} props - The component props.
  * @param {string} props.userId - The ID of the user whose profile picture is being changed.
  * @param {React.ReactNode} [props.children] - Optional children to render below the profile picture.
+ * @param {boolean} [props.isHonoraryOrMerit] - Whether to show a gold border for honorary members / members of merit.
  * @returns {JSX.Element} - The rendered component.
  */
 export default function ChangeProfilePicture({
   userId,
   children,
+  isHonoraryOrMerit = false,
 }: {
   userId: string;
   children?: React.ReactNode;
+  isHonoraryOrMerit?: boolean;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
@@ -59,7 +63,14 @@ export default function ChangeProfilePicture({
         className="relative w-40 h-40 group cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
-        <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-(--board-primary) shadow-md border-4 border-white transition-transform group-hover:scale-105">
+        <div
+          className={cn(
+            "w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-(--board-primary) shadow-md border-4 transition-transform group-hover:scale-105",
+            isHonoraryOrMerit
+              ? "border-amber-400 ring-4 ring-amber-300/50 shadow-amber-200"
+              : "border-white",
+          )}
+        >
           <img
             src={profilePictureSrc || "/profile-picture.svg"}
             className={

@@ -108,4 +108,15 @@ describe("ChangeProfilePicture", () => {
     expect(handleProfilePictureUpload).toHaveBeenCalledTimes(1);
     expect(handleProfilePictureUpload.mock.calls[0][1]).toBe("user-1");
   });
+
+  it("renders a gold border when isHonoraryOrMerit is true", async () => {
+    getMembersByIdProfilePicture.mockResolvedValue({ status: 404 });
+    const { container } = render(
+      <ChangeProfilePicture userId="user-1" isHonoraryOrMerit={true} />,
+    );
+    await waitFor(() =>
+      expect(screen.getByAltText("Profile")).toBeInTheDocument(),
+    );
+    expect(container.querySelector(".border-amber-400")).toBeInTheDocument();
+  });
 });
