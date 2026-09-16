@@ -598,7 +598,8 @@ public class ActivityService : IActivityService
                 Type = q.Type,
                 IsMandatory = q.IsMandatory,
                 IsPublic = q.IsPublic,
-                Options = q.Options != null ? string.Join(";", q.Options) : null
+                Options = q.Options != null ? string.Join(";", q.Options) : null,
+                CloseOnUnenrollmentDeadline = q.CloseOnUnenrollmentDeadline
             }).ToList(),
             PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
         };
@@ -657,7 +658,8 @@ public class ActivityService : IActivityService
                     IsPublic = dto.IsPublic,
                     Options = dto.Options != null && dto.Options.Any()
                         ? string.Join(';', dto.Options)
-                        : null
+                        : null,
+                    CloseOnUnenrollmentDeadline = dto.CloseOnUnenrollmentDeadline
                 };
 
                 activity.SpecificationQuestions.Add(newQuestion);

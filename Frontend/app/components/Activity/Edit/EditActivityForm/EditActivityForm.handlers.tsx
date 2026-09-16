@@ -89,6 +89,7 @@ export const addQuestion = (
       isMandatory: false,
       isPublic: true,
       options: [],
+      closeOnUnenrollmentDeadline: false,
     },
   ]);
 };

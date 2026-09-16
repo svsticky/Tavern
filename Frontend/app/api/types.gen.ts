@@ -581,6 +581,10 @@ export type GetSpecificationQuestionResponseDto = {
      */
     options?: Array<string> | null;
     /**
+     * Whether this question's answer closes at the activity's unenrollment deadline instead of its enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no longer be given or changed once that deadline passes. Otherwise - or when this is false - the answer remains open until the activity's enrollment deadline, falling back to the activity's end date and time if neither deadline is set.
+     */
+    closeOnUnenrollmentDeadline: boolean;
+    /**
      * The unique identifier of a specification question, assigned incrementally.
      */
     id: number;
