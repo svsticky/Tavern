@@ -258,7 +258,8 @@ public class ActivityValidatorTests
             Type = QuestionType.MultipleChoice,
             IsMandatory = true,
             IsPublic = true,
-            Options = new List<string> { "Ja", "Nee" }
+            Options = new List<string> { "Ja", "Nee" },
+            CloseOnUnenrollmentDeadline = true
         };
 
         ActivityValidator.MapSpecificationQuestion(entity, dto);
@@ -269,6 +270,7 @@ public class ActivityValidatorTests
         Assert.True(entity.IsMandatory);
         Assert.True(entity.IsPublic);
         Assert.Equal("Ja;Nee", entity.Options);
+        Assert.True(entity.CloseOnUnenrollmentDeadline);
     }
 
     private TestActivityDTO CreateValidDTO()

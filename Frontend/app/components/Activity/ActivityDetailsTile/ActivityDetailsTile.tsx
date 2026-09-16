@@ -22,7 +22,10 @@ import {
   getActivityEnrollmentStatus,
   hasEnrollmentOpened,
 } from "~/util/activity.util";
-import { areAnswersOpen, hasAllMandatoryAnswers } from "~/util/answer.util";
+import {
+  hasAllMandatoryAnswers,
+  isQuestionAnswerable,
+} from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -367,17 +370,18 @@ export default function ActivityDetailsTile({
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
           {isEnrolled ? (
             <div className="flex flex-col gap-3">
-              {activity.specificationQuestions.length > 0 &&
-                areAnswersOpen(activity) && (
-                  <Button
-                    variant="primary"
-                    className="w-full sm:w-auto"
-                    onClick={() => submitAnswers(handleUpdateEnrollment)}
-                    disabled={submitting}
-                  >
-                    {submitting ? t("saving") : t("update_answers")}
-                  </Button>
-                )}
+              {activity.specificationQuestions.some((q) =>
+                isQuestionAnswerable(q, activity),
+              ) && (
+                <Button
+                  variant="primary"
+                  className="w-full sm:w-auto"
+                  onClick={() => submitAnswers(handleUpdateEnrollment)}
+                  disabled={submitting}
+                >
+                  {submitting ? t("saving") : t("update_answers")}
+                </Button>
+              )}
 
               {canUnenroll ? (
                 <Button

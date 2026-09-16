@@ -278,6 +278,7 @@ public class EnrollmentService : IEnrollmentService
         // Get enrollment
         var enrollment = await _db.Enrollments
             .Include(e => e.Activity)
+                .ThenInclude(a => a.SpecificationQuestions)
             .Include(e => e.SpecificationAnswers)
             .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
 
@@ -297,7 +298,8 @@ public class EnrollmentService : IEnrollmentService
         patchDoc.ApplyTo(enrollment);
         StateValidator.Validate(enrollment);
 
-        EnrollmentValidator.ValidateAnswerDeadlines(oldAnswers, enrollment.SpecificationAnswers, enrollment.Activity, isBoardMember);
+        var questionsById = enrollment.Activity.SpecificationQuestions.ToDictionary(q => q.Id);
+        EnrollmentValidator.ValidateAnswerDeadlines(oldAnswers, enrollment.SpecificationAnswers, questionsById, enrollment.Activity, isBoardMember);
 
         await _db.SaveChangesAsync(cancellationToken);
     }

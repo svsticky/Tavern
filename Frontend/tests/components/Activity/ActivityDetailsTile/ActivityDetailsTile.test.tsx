@@ -200,7 +200,7 @@ describe("ActivityDetailsTile", () => {
     expect(handleUpdateEnrollment).toHaveBeenCalled();
   });
 
-  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but closeAnswersOnUnenrollmentDeadline is false", async () => {
+  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but the question's closeOnUnenrollmentDeadline is false", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => memberToken),
     });
@@ -209,13 +209,13 @@ describe("ActivityDetailsTile", () => {
         activity={buildActivity({
           isEnrollable: true,
           unenrollmentDeadline: "2020-01-01T00:00:00Z",
-          closeAnswersOnUnenrollmentDeadline: false,
           specificationQuestions: [
             {
               id: 1,
               questionDutch: "V",
               questionEnglish: "Q",
               type: "String",
+              closeOnUnenrollmentDeadline: false,
             },
           ] as ActivityResponseDto["specificationQuestions"],
           enrollments: [
@@ -231,7 +231,7 @@ describe("ActivityDetailsTile", () => {
     expect(screen.queryByText("sign_out")).not.toBeInTheDocument();
   });
 
-  it("hides the update-answers button once the unenrollment deadline has passed and closeAnswersOnUnenrollmentDeadline is true", async () => {
+  it("hides the update-answers button once the unenrollment deadline has passed and the question's closeOnUnenrollmentDeadline is true", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => memberToken),
     });
@@ -240,13 +240,13 @@ describe("ActivityDetailsTile", () => {
         activity={buildActivity({
           isEnrollable: true,
           unenrollmentDeadline: "2020-01-01T00:00:00Z",
-          closeAnswersOnUnenrollmentDeadline: true,
           specificationQuestions: [
             {
               id: 1,
               questionDutch: "V",
               questionEnglish: "Q",
               type: "String",
+              closeOnUnenrollmentDeadline: true,
             },
           ] as ActivityResponseDto["specificationQuestions"],
           enrollments: [

@@ -91,6 +91,7 @@ public static class ActivityValidator
         entity.Options = dto.Options != null && dto.Options.Any()
             ? string.Join(';', dto.Options)
             : null;
+        entity.CloseOnUnenrollmentDeadline = dto.CloseOnUnenrollmentDeadline;
     }
 
     /// <summary>

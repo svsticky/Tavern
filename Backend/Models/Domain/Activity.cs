@@ -27,7 +27,6 @@ public class Activity
         "/datetimeend",
         "/unenrollmentdeadline",
         "/enrollmentdeadline",
-        "/closeanswersonunenrollmentdeadline",
         "/location",
         "/participantlimit",
         "/organizerid",
@@ -113,15 +112,6 @@ public class Activity
     /// The deadline for enrollment from the activity.
     /// </summary>
     public DateTimeOffset? EnrollmentDeadline { get; set; }
-
-    /// <summary>
-    /// Whether specification answers close at the unenrollment deadline instead of the enrollment
-    /// deadline. When true and <see cref="UnenrollmentDeadline"/> is set, answers can no longer be
-    /// given or changed once the unenrollment deadline passes. Otherwise - or when this is false -
-    /// answers remain open until <see cref="EnrollmentDeadline"/>, falling back to
-    /// <see cref="DateTimeEnd"/> if neither deadline is set.
-    /// </summary>
-    public bool CloseAnswersOnUnenrollmentDeadline { get; set; }
 
     /// <summary>
     /// The date and time at which the activity will be open for enrolling.

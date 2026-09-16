@@ -104,6 +104,19 @@ export default function EditQuestionTile({
             }
           />
         </div>
+
+        <div className="md:col-span-2">
+          <Checkbox
+            label={t("close_on_unenrollment_deadline")}
+            defaultChecked={question.closeOnUnenrollmentDeadline}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              onUpdate("closeOnUnenrollmentDeadline", e.target.checked)
+            }
+          />
+          <p className="text-xs text-gray-400 mt-1 italic">
+            {t("close_on_unenrollment_deadline_hint")}
+          </p>
+        </div>
       </div>
 
       {question.type === "MultipleChoice" && (

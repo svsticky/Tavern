@@ -86,19 +86,6 @@ describe("EditActivityForm", () => {
     expect(screen.getByLabelText(/show_in_koala/)).toBeInTheDocument();
   });
 
-  it("renders the close-answers-on-unenrollment-deadline checkbox reflecting the activity's value", () => {
-    renderWithProviders(
-      <EditActivityForm
-        activity={buildActivity({ closeAnswersOnUnenrollmentDeadline: true })}
-        id="1"
-        isBoard={false}
-      />,
-    );
-    expect(
-      screen.getByLabelText("close_answers_on_unenrollment_deadline"),
-    ).toBeChecked();
-  });
-
   it("shows a hint about keeping the current poster only in edit mode", () => {
     renderWithProviders(
       <EditActivityForm activity={null} id={undefined} isBoard={false} />,

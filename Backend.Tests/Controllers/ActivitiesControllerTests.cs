@@ -64,7 +64,6 @@ public class ActivitiesControllerTests
                 AreParticipantsVisible = true,
                 IsAdultOnly = false,
                 IsWeeklyDrinks = false,
-                CloseAnswersOnUnenrollmentDeadline = false,
                 Enrollments = new List<EnrollmentResponseDTO>(),
                 SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
                 AllowedAudience = TargetAudience.All
@@ -195,7 +194,6 @@ public class ActivitiesControllerTests
             AreParticipantsVisible = true,
             IsAdultOnly = false,
             IsWeeklyDrinks = false,
-            CloseAnswersOnUnenrollmentDeadline = false,
             Enrollments = new List<EnrollmentResponseDTO>(),
             SpecificationQuestions = new List<GetSpecificationQuestionResponseDTO>(),
             AllowedAudience = TargetAudience.All

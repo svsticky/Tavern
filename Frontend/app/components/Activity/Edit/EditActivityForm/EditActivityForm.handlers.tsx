@@ -89,6 +89,7 @@ export const addQuestion = (
       isMandatory: false,
       isPublic: true,
       options: [],
+      closeOnUnenrollmentDeadline: false,
     },
   ]);
 };
@@ -221,8 +222,6 @@ export const handleActivitySubmit = async ({
       UnenrollmentDeadline: unenrollmentDeadline
         ? parseInputAsAssociationTime(unenrollmentDeadline).toISOString()
         : undefined,
-      CloseAnswersOnUnenrollmentDeadline:
-        fd.get("CloseAnswersOnUnenrollmentDeadline") === "on",
       EnrollOpenDate: fd.get("EnrollOpenDate")
         ? parseInputAsAssociationTime(
             fd.get("EnrollOpenDate") as string,
@@ -334,11 +333,6 @@ export const handleActivitySubmit = async ({
             value: unenrollmentDeadline
               ? parseInputAsAssociationTime(unenrollmentDeadline).toISOString()
               : null,
-          },
-          {
-            op: "replace",
-            path: "/CloseAnswersOnUnenrollmentDeadline",
-            value: fd.get("CloseAnswersOnUnenrollmentDeadline") === "on",
           },
           {
             op: "replace",

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(PostgresDbContext))]
-    [Migration("20260915165845_AddActivityCloseAnswersOnUnenrollmentDeadline")]
-    partial class AddActivityCloseAnswersOnUnenrollmentDeadline
+    [Migration("20260916131639_AddSpecificationQuestionCloseOnUnenrollmentDeadline")]
+    partial class AddSpecificationQuestionCloseOnUnenrollmentDeadline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -69,9 +69,6 @@ namespace Backend.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<bool>("AreParticipantsVisible")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("CloseAnswersOnUnenrollmentDeadline")
                         .HasColumnType("boolean");
 
                     b.Property<string>("CostCenterId")
@@ -797,6 +794,9 @@ namespace Backend.Migrations
 
                     b.Property<long>("ActivityId")
                         .HasColumnType("bigint");
+
+                    b.Property<bool>("CloseOnUnenrollmentDeadline")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsMandatory")
                         .HasColumnType("boolean");

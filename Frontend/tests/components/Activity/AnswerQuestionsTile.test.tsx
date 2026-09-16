@@ -241,17 +241,18 @@ describe("AnswerQuestionsTile", () => {
     expect(await screen.findByRole("textbox")).not.toBeDisabled();
   });
 
-  it("closes answers at the unenrollment deadline when closeAnswersOnUnenrollmentDeadline is true, even though the enrollment deadline is in the future", async () => {
+  it("closes a question at the unenrollment deadline when its closeOnUnenrollmentDeadline is true, even though the enrollment deadline is in the future", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => enToken),
     });
     renderWithProviders(
       <AnswerQuestionsTile
-        questions={[question({ type: "String" })]}
+        questions={[
+          question({ type: "String", closeOnUnenrollmentDeadline: true }),
+        ]}
         activity={activity({
           enrollmentDeadline: "2028-01-01T00:00:00Z",
           unenrollmentDeadline: "2020-01-01T00:00:00Z",
-          closeAnswersOnUnenrollmentDeadline: true,
         })}
         answers={{}}
         onChange={vi.fn()}
@@ -262,17 +263,18 @@ describe("AnswerQuestionsTile", () => {
     expect(await screen.findByRole("textbox")).toBeDisabled();
   });
 
-  it("ignores a passed unenrollment deadline and uses the enrollment deadline when closeAnswersOnUnenrollmentDeadline is false", async () => {
+  it("ignores a passed unenrollment deadline and uses the enrollment deadline when the question's closeOnUnenrollmentDeadline is false", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => enToken),
     });
     renderWithProviders(
       <AnswerQuestionsTile
-        questions={[question({ type: "String" })]}
+        questions={[
+          question({ type: "String", closeOnUnenrollmentDeadline: false }),
+        ]}
         activity={activity({
           enrollmentDeadline: "2028-01-01T00:00:00Z",
           unenrollmentDeadline: "2020-01-01T00:00:00Z",
-          closeAnswersOnUnenrollmentDeadline: false,
         })}
         answers={{}}
         onChange={vi.fn()}
@@ -281,6 +283,38 @@ describe("AnswerQuestionsTile", () => {
     );
 
     expect(await screen.findByRole("textbox")).not.toBeDisabled();
+  });
+
+  it("disables only the question whose own closeOnUnenrollmentDeadline is true, leaving other questions answerable", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[
+          question({
+            id: 1,
+            type: "String",
+            closeOnUnenrollmentDeadline: true,
+          }),
+          question({
+            id: 2,
+            type: "Number",
+            closeOnUnenrollmentDeadline: false,
+          }),
+        ]}
+        activity={activity({
+          enrollmentDeadline: "2028-01-01T00:00:00Z",
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+        })}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByRole("textbox")).toBeDisabled();
+    expect(screen.getByRole("spinbutton")).not.toBeDisabled();
   });
 
   it("disables all inputs when disabled is true", async () => {

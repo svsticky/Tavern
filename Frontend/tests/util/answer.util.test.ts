@@ -4,9 +4,9 @@ import type {
   GetSpecificationQuestionResponseDto,
 } from "~/api";
 import {
-  areAnswersOpen,
-  getAnswerDeadline,
+  getQuestionEffectiveDeadline,
   hasAllMandatoryAnswers,
+  isQuestionAnswerable,
 } from "~/util/answer.util";
 
 function question(
@@ -18,6 +18,7 @@ function question(
     questionEnglish: "Question",
     type: "String",
     isMandatory: true,
+    closeOnUnenrollmentDeadline: false,
     ...overrides,
   } as GetSpecificationQuestionResponseDto;
 }
@@ -32,7 +33,6 @@ function activity(
     dateTimeEnd: "2027-01-01T12:00:00Z",
     enrollmentDeadline: undefined,
     unenrollmentDeadline: undefined,
-    closeAnswersOnUnenrollmentDeadline: false,
     ...overrides,
   } as ActivityResponseDto;
 }
@@ -87,7 +87,7 @@ describe("hasAllMandatoryAnswers", () => {
     ).toBe(true);
   });
 
-  it("ignores an unanswered mandatory question once the activity's answer deadline has passed", () => {
+  it("ignores an unanswered mandatory question whose answer deadline has passed", () => {
     expect(
       hasAllMandatoryAnswers(
         [question({})],
@@ -98,57 +98,51 @@ describe("hasAllMandatoryAnswers", () => {
   });
 });
 
-describe("getAnswerDeadline", () => {
-  it("falls back to the activity's end date when there are no other deadlines", () => {
-    const deadline = getAnswerDeadline(activity());
-    expect(deadline?.toISOString()).toBe("2027-01-01T12:00:00.000Z");
-  });
-
-  it("uses the enrollment deadline when set", () => {
-    const deadline = getAnswerDeadline(
-      activity({ enrollmentDeadline: "2026-11-01T00:00:00Z" }),
-    );
-    expect(deadline?.toISOString()).toBe("2026-11-01T00:00:00.000Z");
-  });
-
-  it("ignores the unenrollment deadline when closeAnswersOnUnenrollmentDeadline is false", () => {
-    const deadline = getAnswerDeadline(
+describe("getQuestionEffectiveDeadline", () => {
+  it("uses the enrollment deadline when the question doesn't close on unenrollment", () => {
+    const deadline = getQuestionEffectiveDeadline(
+      question({ closeOnUnenrollmentDeadline: false }),
       activity({
         enrollmentDeadline: "2026-11-01T00:00:00Z",
         unenrollmentDeadline: "2026-06-01T00:00:00Z",
-        closeAnswersOnUnenrollmentDeadline: false,
       }),
     );
     expect(deadline?.toISOString()).toBe("2026-11-01T00:00:00.000Z");
   });
 
-  it("uses the unenrollment deadline when closeAnswersOnUnenrollmentDeadline is true and it is set", () => {
-    const deadline = getAnswerDeadline(
+  it("uses the unenrollment deadline when the question closes on unenrollment and it is set", () => {
+    const deadline = getQuestionEffectiveDeadline(
+      question({ closeOnUnenrollmentDeadline: true }),
       activity({
         enrollmentDeadline: "2026-11-01T00:00:00Z",
         unenrollmentDeadline: "2026-06-01T00:00:00Z",
-        closeAnswersOnUnenrollmentDeadline: true,
       }),
     );
     expect(deadline?.toISOString()).toBe("2026-06-01T00:00:00.000Z");
   });
 
-  it("falls back to the enrollment deadline when closeAnswersOnUnenrollmentDeadline is true but there is no unenrollment deadline", () => {
-    const deadline = getAnswerDeadline(
+  it("falls back to the enrollment deadline when closing on unenrollment but there is no unenrollment deadline", () => {
+    const deadline = getQuestionEffectiveDeadline(
+      question({ closeOnUnenrollmentDeadline: true }),
       activity({
         enrollmentDeadline: "2026-11-01T00:00:00Z",
         unenrollmentDeadline: undefined,
-        closeAnswersOnUnenrollmentDeadline: true,
       }),
     );
     expect(deadline?.toISOString()).toBe("2026-11-01T00:00:00.000Z");
   });
+
+  it("falls back to the activity's end date when neither deadline is set", () => {
+    const deadline = getQuestionEffectiveDeadline(question({}), activity({}));
+    expect(deadline?.toISOString()).toBe("2027-01-01T12:00:00.000Z");
+  });
 });
 
-describe("areAnswersOpen", () => {
+describe("isQuestionAnswerable", () => {
   it("returns true before the effective deadline", () => {
     expect(
-      areAnswersOpen(
+      isQuestionAnswerable(
+        question({}),
         activity({ dateTimeEnd: "2027-01-01T12:00:00Z" }),
         new Date("2026-01-01T00:00:00Z"),
       ),
@@ -157,24 +151,39 @@ describe("areAnswersOpen", () => {
 
   it("returns false after the effective deadline", () => {
     expect(
-      areAnswersOpen(
+      isQuestionAnswerable(
+        question({}),
         activity({ dateTimeEnd: "2020-01-01T12:00:00Z" }),
         new Date("2026-01-01T00:00:00Z"),
       ),
     ).toBe(false);
   });
 
-  it("closes at the unenrollment deadline when closeAnswersOnUnenrollmentDeadline is true, even though the enrollment deadline is still in the future", () => {
+  it("closes at the unenrollment deadline when closeOnUnenrollmentDeadline is true, even though the enrollment deadline is still in the future", () => {
     const now = new Date("2026-06-01T00:00:00Z");
     expect(
-      areAnswersOpen(
+      isQuestionAnswerable(
+        question({ closeOnUnenrollmentDeadline: true }),
         activity({
           enrollmentDeadline: "2026-12-01T00:00:00Z",
           unenrollmentDeadline: "2026-05-01T00:00:00Z",
-          closeAnswersOnUnenrollmentDeadline: true,
         }),
         now,
       ),
     ).toBe(false);
+  });
+
+  it("ignores a passed unenrollment deadline when closeOnUnenrollmentDeadline is false", () => {
+    const now = new Date("2026-06-01T00:00:00Z");
+    expect(
+      isQuestionAnswerable(
+        question({ closeOnUnenrollmentDeadline: false }),
+        activity({
+          enrollmentDeadline: "2026-12-01T00:00:00Z",
+          unenrollmentDeadline: "2026-05-01T00:00:00Z",
+        }),
+        now,
+      ),
+    ).toBe(true);
   });
 });

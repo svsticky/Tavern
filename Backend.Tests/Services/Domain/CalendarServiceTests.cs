@@ -247,7 +247,7 @@ public class CalendarServiceTests : IDisposable
 
         string ics = CalendarService.BuildCalendar(SingleEnrollment(activity, isOnWaitingList: true), Language.NL, DateTime.UtcNow);
 
-        Assert.Contains("X-WR-CALNAME:Koala Activiteiten", ics);
+        Assert.Contains("X-WR-CALNAME:Sticky Activiteiten", ics);
         Assert.Contains("[WACHTLIJST]", ics);
         Assert.Contains("Nederlandse omschrijving", Unfold(ics));
     }
@@ -261,7 +261,7 @@ public class CalendarServiceTests : IDisposable
 
         string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
 
-        Assert.Contains("X-WR-CALNAME:Koala Activities", ics);
+        Assert.Contains("X-WR-CALNAME:Sticky Activities", ics);
         Assert.Contains("English description", Unfold(ics));
     }
 

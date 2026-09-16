@@ -73,7 +73,6 @@ public class EnrollmentResponseDTO
                 DateTimeEnd = e.Activity.DateTimeEnd,
                 UnenrollmentDeadline = e.Activity.UnenrollmentDeadline,
                 EnrollmentDeadline = e.Activity.EnrollmentDeadline,
-                CloseAnswersOnUnenrollmentDeadline = e.Activity.CloseAnswersOnUnenrollmentDeadline,
                 EnrollOpenDate = e.Activity.EnrollOpenDate,
                 Location = e.Activity.Location,
                 ParticipantLimit = e.Activity.ParticipantLimit,

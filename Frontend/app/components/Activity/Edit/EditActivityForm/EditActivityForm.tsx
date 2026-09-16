@@ -177,18 +177,6 @@ export default function EditActivityForm({
                 activity?.unenrollmentDeadline ?? "",
               )}
             />
-            <div>
-              <Checkbox
-                label={t("close_answers_on_unenrollment_deadline")}
-                name="CloseAnswersOnUnenrollmentDeadline"
-                defaultChecked={
-                  activity?.closeAnswersOnUnenrollmentDeadline ?? false
-                }
-              />
-              <p className="text-xs text-gray-400 mt-1 italic">
-                {t("close_answers_on_unenrollment_deadline_hint")}
-              </p>
-            </div>
             {isBoard && (
               <Input
                 label={t("enroll_open_date")}

@@ -576,7 +576,6 @@ public class ActivityService : IActivityService
             DateTimeEnd = dto.DateTimeEnd,
             UnenrollmentDeadline = dto.UnenrollmentDeadline,
             EnrollmentDeadline = dto.EnrollmentDeadline,
-            CloseAnswersOnUnenrollmentDeadline = dto.CloseAnswersOnUnenrollmentDeadline,
             EnrollOpenDate = dto.EnrollOpenDate,
             Location = dto.Location,
             ParticipantLimit = dto.ParticipantLimit,
@@ -599,7 +598,8 @@ public class ActivityService : IActivityService
                 Type = q.Type,
                 IsMandatory = q.IsMandatory,
                 IsPublic = q.IsPublic,
-                Options = q.Options != null ? string.Join(";", q.Options) : null
+                Options = q.Options != null ? string.Join(";", q.Options) : null,
+                CloseOnUnenrollmentDeadline = q.CloseOnUnenrollmentDeadline
             }).ToList(),
             PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
         };
@@ -658,7 +658,8 @@ public class ActivityService : IActivityService
                     IsPublic = dto.IsPublic,
                     Options = dto.Options != null && dto.Options.Any()
                         ? string.Join(';', dto.Options)
-                        : null
+                        : null,
+                    CloseOnUnenrollmentDeadline = dto.CloseOnUnenrollmentDeadline
                 };
 
                 activity.SpecificationQuestions.Add(newQuestion);
@@ -718,7 +719,6 @@ public class ActivityService : IActivityService
         activity.DateTimeEnd = dto.DateTimeEnd;
         activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;
         activity.EnrollmentDeadline = dto.EnrollmentDeadline;
-        activity.CloseAnswersOnUnenrollmentDeadline = dto.CloseAnswersOnUnenrollmentDeadline;
         activity.EnrollOpenDate = dto.IsEnrollable ? null : dto.EnrollOpenDate;
         activity.Location = dto.Location;
         activity.ParticipantLimit = dto.ParticipantLimit;
