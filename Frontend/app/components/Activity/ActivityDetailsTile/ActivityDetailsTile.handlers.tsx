@@ -15,6 +15,10 @@ import {
   formatForGoogleCalendar,
   formatForWhatsApp,
 } from "~/util/markdown.util";
+import {
+  HOME_ENROLLED_ACTIVITIES_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/util/resourceCache.util";
 import { capitalizeFirst } from "~/util/string.util";
 
 /**
@@ -141,6 +145,7 @@ export const handleEnrollment = async (
           : [newEnrollment];
 
         setActivity?.({ ...activity });
+        invalidateCachedResource(HOME_ENROLLED_ACTIVITIES_CACHE_KEY);
 
         return response.data;
       } else {
@@ -321,6 +326,7 @@ export const handleUnenrollment = async (
         (e) => e.member?.id !== tokenParsed.UserId,
       );
       setActivity?.({ ...activity });
+      invalidateCachedResource(HOME_ENROLLED_ACTIVITIES_CACHE_KEY);
     } catch (error) {
       console.error("Error while unenrolling:", error);
       throw error;

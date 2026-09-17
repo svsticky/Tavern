@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   ActivityResponseDto,
@@ -12,7 +12,15 @@ import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import Button from "~/components/UI/Button";
 import { useAuth } from "~/context/AuthContext";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  ACTIVITIES_CACHE_KEY,
+  ANNOUNCEMENTS_CACHE_KEY,
+  getCachedResource,
+  HOME_ENROLLED_ACTIVITIES_CACHE_KEY,
+  HOME_GROUP_MEMBERSHIPS_CACHE_KEY,
+} from "~/util/resourceCache.util";
 import { loadHomePageData } from "./home.handlers";
 
 /**
@@ -52,18 +60,44 @@ export default function DashboardPage() {
     loadTokenAndAuth();
   }, [authService]);
 
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const cachedActivities =
+    getCachedResource<ActivityResponseDto[]>(ACTIVITIES_CACHE_KEY);
+  const cachedAnnouncements = getCachedResource<GetAnnouncementResponseDto[]>(
+    ANNOUNCEMENTS_CACHE_KEY,
+  );
+  const cachedEnrolledActivities = getCachedResource<ActivityResponseDto[]>(
+    HOME_ENROLLED_ACTIVITIES_CACHE_KEY,
+  );
+  const cachedGroupMemberships = getCachedResource<
+    GroupMembershipResponseDto[]
+  >(HOME_GROUP_MEMBERSHIPS_CACHE_KEY);
+  const allCached =
+    cachedActivities !== undefined &&
+    cachedAnnouncements !== undefined &&
+    cachedEnrolledActivities !== undefined &&
+    cachedGroupMemberships !== undefined;
+
+  const [activities, setActivities] = useState<ActivityResponseDto[]>(
+    cachedActivities ?? [],
+  );
   const [enrolledActivities, setEnrolledActivities] = useState<
     ActivityResponseDto[]
-  >([]);
+  >(cachedEnrolledActivities ?? []);
   const [announcements, setAnnouncements] = useState<
     GetAnnouncementResponseDto[]
-  >([]);
+  >(cachedAnnouncements ?? []);
   const [groupMemberships, setGroupMemberships] = useState<
     GroupMembershipResponseDto[]
-  >([]);
+  >(cachedGroupMemberships ?? []);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!allCached);
+  // Never mutated - a consume-once ref would break under React Strict
+  // Mode's double-invoked effects (the 2nd pass would refetch for real).
+  const wasCachedAtMountRef = useRef(allCached);
+
+  // cached* values are intentionally omitted: they'd refire this effect the
+  // moment loadHomePageData populates the cache.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   useEffect(() => {
     if (authenticated === null || tokenParsed === null) {
       return;
@@ -71,9 +105,15 @@ export default function DashboardPage() {
 
     if (!authenticated) return;
 
+    if (wasCachedAtMountRef.current) return;
+
     loadHomePageData({
       authenticated: authenticated,
       userId: tokenParsed.UserId,
+      cachedActivities,
+      cachedAnnouncements,
+      cachedEnrolledActivities,
+      cachedGroupMemberships,
       setLoading,
       setActivities,
       setAnnouncements,
@@ -81,6 +121,9 @@ export default function DashboardPage() {
       setEnrolledActivities,
     });
   }, [authenticated, tokenParsed]);
+
+  // Also gate on tokenParsed, or this fires while the page is still blank.
+  useScrollRestoration(!loading && !!tokenParsed);
 
   if (!tokenParsed) {
     return null;

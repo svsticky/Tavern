@@ -7,7 +7,6 @@ import {
   Meta,
   Outlet,
   Scripts,
-  ScrollRestoration,
   useLocation,
 } from "react-router";
 import "./i18n";
@@ -18,6 +17,7 @@ import "./app.css";
 import { t } from "i18next";
 import Cookies from "js-cookie";
 import FaviconHandler from "./components/FavIconHandler";
+import { GlobalScrollRestoration } from "./components/GlobalScrollRestoration";
 import StickyLoadingLogo from "./components/StickyLoadingLogo";
 import { AppProvider } from "./context/AppContext";
 import { getActiveAuthService } from "./layout/auth-service";
@@ -94,7 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
-        <ScrollRestoration />
+        <GlobalScrollRestoration />
         <Scripts />
       </body>
     </html>

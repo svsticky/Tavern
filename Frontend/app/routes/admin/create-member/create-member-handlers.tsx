@@ -100,8 +100,10 @@ export const handleCreateSubmit = async ({
       const response = await postMembers({ body: payload });
 
       if (response.status === 201 && response.data) {
+        // Replace: don't leave the create form in history as a back target.
         navigate(
           `/confirm-mail?memberId=${response.data.id}&createdByAdmin=true`,
+          { replace: true },
         );
       } else {
         throw response.error ?? new Error("Registration failed");
