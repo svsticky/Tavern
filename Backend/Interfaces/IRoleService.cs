@@ -58,5 +58,22 @@ namespace Backend.Interfaces
         /// <param name="userId">The ID of the user updating the role.</param>
         /// <param name="ct">The cancellation token.</param>
         Task UpdateRole(uint id, RoleUpdateDTO dto, Guid userId, CancellationToken ct);
+
+        /// <summary>
+        /// Retrieves the permissions granted to a role.
+        /// </summary>
+        /// <param name="id">The role ID.</param>
+        /// <param name="ct">The cancellation token.</param>
+        /// <returns>The permissions granted to the role.</returns>
+        Task<List<string>> GetRolePermissions(uint id, CancellationToken ct);
+
+        /// <summary>
+        /// Replaces the permissions granted to a role.
+        /// </summary>
+        /// <param name="id">The role ID.</param>
+        /// <param name="permissions">The full set of permissions the role should have.</param>
+        /// <param name="userId">The ID of the user updating the permissions.</param>
+        /// <param name="ct">The cancellation token.</param>
+        Task SetRolePermissions(uint id, List<string> permissions, Guid userId, CancellationToken ct);
     }
 }

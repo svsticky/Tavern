@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.Http;
@@ -119,7 +120,7 @@ public class ActivityValidatorTests
             OrganizerId = 1
         };
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
-        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionServiceMock.When(x => x.EnsurePermission(_userId, Permission.EditAllActivities, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
@@ -302,7 +303,7 @@ public class ActivityValidatorTests
         dto.ShowOnWebsite = true;
 
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
-        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionServiceMock.When(x => x.EnsurePermission(_userId, Permission.EditAllActivities, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
@@ -315,7 +316,7 @@ public class ActivityValidatorTests
         dto.PaymentDeadline = DateTimeOffset.UtcNow.AddDays(1);
 
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
-        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionServiceMock.When(x => x.EnsurePermission(_userId, Permission.EditAllActivities, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
@@ -328,7 +329,7 @@ public class ActivityValidatorTests
         dto.EnrollOpenDate = DateTimeOffset.UtcNow.AddDays(-1);
 
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
-        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionServiceMock.When(x => x.EnsurePermission(_userId, Permission.EditAllActivities, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
@@ -340,7 +341,7 @@ public class ActivityValidatorTests
         var dto = CreateValidDTO();
         dto.OrganizerId = null;
 
-        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionServiceMock.When(x => x.EnsurePermission(_userId, Permission.EditAllActivities, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
@@ -353,7 +354,7 @@ public class ActivityValidatorTests
         dto.OrganizerId = 1;
 
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(false);
-        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionServiceMock.When(x => x.EnsurePermission(_userId, Permission.EditAllActivities, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));

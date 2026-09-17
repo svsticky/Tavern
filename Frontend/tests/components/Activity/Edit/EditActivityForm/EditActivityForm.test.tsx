@@ -56,7 +56,12 @@ describe("EditActivityForm", () => {
   it("shows a loading state while editing until groups have loaded", () => {
     vi.mocked(loadGroups).mockImplementationOnce(async () => {});
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={false} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(screen.getByText("loading")).toBeInTheDocument();
     expect(loadGroups).toHaveBeenCalled();
@@ -64,7 +69,12 @@ describe("EditActivityForm", () => {
 
   it("renders the form immediately when creating a new activity", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={false} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(screen.getByLabelText(/^name/)).toBeInTheDocument();
     expect(screen.getByText("create_activity")).toBeInTheDocument();
@@ -72,7 +82,12 @@ describe("EditActivityForm", () => {
 
   it("does not show board-only fields for a non-board user", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={false} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(screen.queryByLabelText("vat_rate")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("show_in_koala")).not.toBeInTheDocument();
@@ -80,7 +95,12 @@ describe("EditActivityForm", () => {
 
   it("shows board-only fields for a board user", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
     expect(screen.getByLabelText("vat_rate")).toBeInTheDocument();
     expect(screen.getByLabelText(/show_in_koala/)).toBeInTheDocument();
@@ -88,7 +108,12 @@ describe("EditActivityForm", () => {
 
   it("shows a hint about keeping the current poster only in edit mode", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={false} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(
       screen.queryByText("leave_empty_to_keep_current"),
@@ -97,7 +122,12 @@ describe("EditActivityForm", () => {
 
   it("shows the no-content message when there are no specification questions", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={false} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(
       screen.getByText("no_specification_questions_yet"),
@@ -118,7 +148,8 @@ describe("EditActivityForm", () => {
           ] as ActivityResponseDto["specificationQuestions"],
         })}
         id="1"
-        isBoard={false}
+        canEditStructural={false}
+        canManageFinances={false}
       />,
     );
 
@@ -133,7 +164,12 @@ describe("EditActivityForm", () => {
 
   it("calls addQuestion when the add-question button is clicked", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={false} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     fireEvent.click(screen.getByText("+ add_question"));
     expect(addQuestion).toHaveBeenCalledWith([], expect.any(Function));
@@ -141,7 +177,12 @@ describe("EditActivityForm", () => {
 
   it("calls handleActivityFormChange when a form field changes", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={false} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     fireEvent.change(screen.getByLabelText(/^name/), {
       target: { value: "New name" },
@@ -151,13 +192,19 @@ describe("EditActivityForm", () => {
 
   it("calls handleActivitySubmit on form submission with the expected context", () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
     fireEvent.submit(screen.getByText("save").closest("form")!);
 
     expect(handleActivitySubmit).toHaveBeenCalledWith(
       expect.objectContaining({
-        isBoard: true,
+        canEditStructural: true,
+        canManageFinances: true,
         isEdit: true,
         id: "1",
       }),
@@ -166,28 +213,48 @@ describe("EditActivityForm", () => {
 
   it("shows 'create_activity' for a new activity and 'save' when editing", () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={false} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(screen.getByText("save")).toBeInTheDocument();
   });
 
   it("does not show a delete button for a non-board user", () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={false} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={false}
+        canManageFinances={false}
+      />,
     );
     expect(screen.queryByText("delete")).not.toBeInTheDocument();
   });
 
   it("does not show a delete button when creating a new activity", () => {
     renderWithProviders(
-      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+      <EditActivityForm
+        activity={null}
+        id={undefined}
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
     expect(screen.queryByText("delete")).not.toBeInTheDocument();
   });
 
   it("shows a delete button for a board member editing an activity, and deletes on confirm", async () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
 
     fireEvent.click(screen.getByText("delete"));
@@ -208,7 +275,12 @@ describe("EditActivityForm", () => {
 
   it("closes the delete modal on cancel without deleting", async () => {
     renderWithProviders(
-      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+      <EditActivityForm
+        activity={buildActivity()}
+        id="1"
+        canEditStructural={true}
+        canManageFinances={true}
+      />,
     );
 
     fireEvent.click(screen.getByText("delete"));

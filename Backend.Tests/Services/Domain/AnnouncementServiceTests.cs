@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Microsoft.AspNetCore.JsonPatch;
@@ -149,7 +150,7 @@ public class AnnouncementServiceTests : IDisposable
     {
         // Arrange
         var dto = new PostAnnouncementDTO { TitleDutch = "T NL", TitleEnglish = "T EN", ContentDutch = "C NL", ContentEnglish = "C EN" };
-        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+        _permissionService.When(p => p.EnsurePermission(_userId, Permission.EditAnnouncements, Arg.Any<uint?>()))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
@@ -167,7 +168,7 @@ public class AnnouncementServiceTests : IDisposable
         var result = await _service.CreateAnnouncement(_userId, dto, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.EditAnnouncements, Arg.Any<uint?>());
         Assert.True(result.Id > 0);
         Assert.Equal("Special Title NL", result.TitleDutch);
 
@@ -205,7 +206,7 @@ public class AnnouncementServiceTests : IDisposable
         await _service.DeleteAnnouncement(ann.Id, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.EditAnnouncements, Arg.Any<uint?>());
         var deleted = await _db.Announcements.FindAsync(ann.Id);
         Assert.Null(deleted);
     }
@@ -258,7 +259,7 @@ public class AnnouncementServiceTests : IDisposable
         await _service.PatchAnnouncement(ann.Id, patchDoc, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.EditAnnouncements, Arg.Any<uint?>());
         var updated = await _db.Announcements.FindAsync(ann.Id);
         Assert.NotNull(updated);
         Assert.Equal("New Title NL", updated.TitleDutch);
@@ -286,7 +287,7 @@ public class AnnouncementServiceTests : IDisposable
         await _service.UpdateAnnouncement(ann.Id, dto, _userId, CancellationToken.None);
 
         // Assert
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _permissionService.Received(1).EnsurePermission(_userId, Permission.EditAnnouncements, Arg.Any<uint?>());
         var updated = await _db.Announcements.FindAsync(ann.Id);
         Assert.NotNull(updated);
         Assert.Equal("New Title NL", updated.TitleDutch);

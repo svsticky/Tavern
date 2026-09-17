@@ -48,6 +48,8 @@ public class EnrollmentService : IEnrollmentService
     public async Task<IEnumerable<EnrollmentResponseDTO>> GetEnrollments(GetEnrollmentsDTO dto, Guid userId, CancellationToken cancellationToken)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool hasViewMembers = _permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers);
+        bool hasViewFinances = _permissionService.HasPermissionOrBoard(userId, Permission.ViewFinances);
 
         if (dto.FromMemberId == null || dto.FromMemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -58,13 +60,15 @@ public class EnrollmentService : IEnrollmentService
             .Filter(dto)
             .ToListAsync(cancellationToken);
 
-        return enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard).Compile()(e));
+        return enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, hasViewMembers, hasViewFinances, isBoard).Compile()(e));
     }
 
     /// <inheritdoc />
     public async Task<EnrollmentResponseDTO?> GetEnrollment(uint activityId, Guid enrolledUser, Guid userId, CancellationToken cancellationToken)
     {
         bool isBoard = _permissionService.IsBoardOrCandidateBoardMember(userId);
+        bool hasViewMembers = _permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers);
+        bool hasViewFinances = _permissionService.HasPermissionOrBoard(userId, Permission.ViewFinances);
 
         if (enrolledUser != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
@@ -79,7 +83,7 @@ public class EnrollmentService : IEnrollmentService
         if (enrollment == null)
             return null;
 
-        return EnrollmentResponseDTO.ToDto(userId, isBoard).Compile()(enrollment);
+        return EnrollmentResponseDTO.ToDto(userId, hasViewMembers, hasViewFinances, isBoard).Compile()(enrollment);
     }
 
     /// <inheritdoc />
@@ -141,7 +145,7 @@ public class EnrollmentService : IEnrollmentService
                 .ThenInclude(sa => sa.Question)
             .FirstAsync(e => e.ActivityId == dto.ActivityId && e.MemberId == dto.MemberId, cancellationToken);
 
-        return EnrollmentResponseDTO.ToDto(userId, isBoardMember).Compile()(savedEnrollment);
+        return EnrollmentResponseDTO.ToDto(userId, _permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers), _permissionService.HasPermissionOrBoard(userId, Permission.ViewFinances), isBoardMember).Compile()(savedEnrollment);
     }
 
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
+using Backend.Models;
 using Backend.Models.Domain;
 using Backend.QueryExtensions;
 using Backend.Services.OutboxWorkers;
@@ -33,7 +34,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            permissionService.EnsurePermission(userId, Permission.ViewMembers);
 
             var members = await db.Members
                 .AsQueryable()
@@ -46,7 +47,7 @@ namespace Backend.Services.Domain
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
-            var mapper = MemberResponseDTO.ToDto(userId, true).Compile();
+            var mapper = MemberResponseDTO.ToDto(userId, true, permissionService.IsBoardOrCandidateBoardMember(userId)).Compile();
 
             return members.Select(m => mapper(m)).ToList();
         }
@@ -55,7 +56,7 @@ namespace Backend.Services.Domain
         public async Task<MemberResponseDTO?> GetMember(Guid userIdFromUserToGet, Guid userId, CancellationToken cancellationToken)
         {
             if (userId != userIdFromUserToGet)
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ViewMembers);
 
             return await db.Members
                 .Where(m => m.Id == userIdFromUserToGet)
@@ -65,7 +66,7 @@ namespace Backend.Services.Domain
                     .ThenInclude(gm => gm.Group)
                 .Include(m => m.GroupMemberships)
                     .ThenInclude(gm => gm.RoleAlias)
-                .Select(MemberResponseDTO.ToDto(userId, permissionService.IsBoardOrCandidateBoardMember(userId)))
+                .Select(MemberResponseDTO.ToDto(userId, permissionService.HasPermissionOrBoard(userId, Permission.ViewMembers), permissionService.IsBoardOrCandidateBoardMember(userId)))
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
@@ -79,11 +80,11 @@ namespace Backend.Services.Domain
             {
                 if (userId == null)
                     throw new UnauthorizedAccessException();
-                permissionService.EnsureBoardOrCandidateBoardMember(userId.Value);
+                permissionService.EnsurePermission(userId.Value, Permission.ManageMembers);
             }
             else
             {
-                if ((dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0) && (userId == null || !permissionService.IsBoardOrCandidateBoardMember(userId.Value)))
+                if ((dto.StudyEnrollments == null || dto.StudyEnrollments.Count == 0) && (userId == null || !permissionService.HasPermissionOrBoard(userId.Value, Permission.ManageMembers)))
                     throw new ArgumentException("Member must be enrolled to atleast one study.");
 
                 if (dto.StudentNumber.Trim() == "" || !int.TryParse(dto.StudentNumber, out var _))
@@ -158,7 +159,7 @@ namespace Backend.Services.Domain
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
             if (id != userId)
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ManageMembers);
 
             // Member must pay all activities before they can be deleted
             if (!paymentValidationService.MemberHasPaidAllActivities(member))
@@ -239,12 +240,19 @@ namespace Backend.Services.Domain
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
+            // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they have the ManageMembers permission
             bool hasUnauthorizedOperations = patchDoc.Operations.Any(op =>
                 !Member.AllowedFields.Contains(op.path) ||
                 (!string.IsNullOrEmpty(op.from) && !Member.AllowedFields.Contains(op.from))
             );
             if (member.Id != userId || hasUnauthorizedOperations)
+                permissionService.EnsurePermission(userId, Permission.ManageMembers);
+
+            // Notes stays board-only regardless of ManageMembers, since it isn't covered by that permission
+            bool touchesNotes = patchDoc.Operations.Any(op =>
+                op.path.Equals("/notes", StringComparison.OrdinalIgnoreCase) ||
+                (op.from?.Equals("/notes", StringComparison.OrdinalIgnoreCase) ?? false));
+            if (touchesNotes)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             // Email is managed by Keycloak, not editable here regardless of who's asking.
@@ -291,10 +299,10 @@ namespace Backend.Services.Domain
 
             if (member.Id != userId)
             {
-                // Only board members may edit someone else's profile at all
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                // Only ManageMembers holders (or board) may edit someone else's profile at all
+                permissionService.EnsurePermission(userId, Permission.ManageMembers);
             }
-            else if (!permissionService.IsBoardOrCandidateBoardMember(userId))
+            else if (!permissionService.HasPermissionOrBoard(userId, Permission.ManageMembers))
             {
                 // Some settings a member should not be able to edit themselves. Silently keep them as
                 // they are instead of rejecting the request when they differ - comparing and rejecting
@@ -302,6 +310,10 @@ namespace Backend.Services.Domain
                 // whether they guessed right from whether the request succeeds or fails.
                 PreserveFieldsOutsideAllowedFields(member, dto);
             }
+
+            // Notes stays board-only regardless of ManageMembers, since it isn't covered by that permission
+            if (!permissionService.IsBoardOrCandidateBoardMember(userId))
+                dto.Notes = member.Notes;
 
             var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
 
@@ -333,7 +345,7 @@ namespace Backend.Services.Domain
         public async Task DeleteProfilePicture(Guid id, Guid userId, CancellationToken cancellationToken)
         {
             if (id != userId)
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ManageMembers);
 
             var member = await db.Members.FindAsync(id, cancellationToken);
             if (member == null)
@@ -371,7 +383,7 @@ namespace Backend.Services.Domain
         public async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglists(Guid id, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken)
         {
             if (id != userId)
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ManageMembers);
 
             var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
             if (member == null)
@@ -387,7 +399,7 @@ namespace Backend.Services.Domain
         public async Task UpdateMemberMailinglists(Guid id, List<string> subscribedListIds, bool includeYearlyRenewal, Guid userId, CancellationToken cancellationToken)
         {
             if (id != userId)
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
+                permissionService.EnsurePermission(userId, Permission.ManageMembers);
 
             var member = await db.Members.FindAsync(new object[] { id }, cancellationToken);
             if (member == null)
