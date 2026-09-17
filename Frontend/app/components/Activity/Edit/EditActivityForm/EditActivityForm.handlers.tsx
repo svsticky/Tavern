@@ -11,12 +11,17 @@ import {
   postActivities,
   postActivitiesByIdPoster,
 } from "~/api";
+import {
+  ACTIVITIES_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/hooks/sharedResourceCache";
 import { getAudienceString } from "~/types/AudienceMap";
 import {
   getCommitteeYear,
   parseInputAsAssociationTime,
 } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
+import { navigateBackOrReplace } from "~/util/navigation.util";
 
 export { formatDateOnly, formatForInput } from "~/util/date.util";
 
@@ -445,13 +450,19 @@ export const handleActivitySubmit = async ({
           }
         }
 
-        navigate(`${redirectPathBase}${id}`);
+        invalidateCachedResource(ACTIVITIES_CACHE_KEY);
+        // Go back to the activity's page instead of replacing this entry -
+        // it's already earlier in history, so replacing would duplicate it
+        // and make the next "back" press a no-op.
+        navigateBackOrReplace(navigate, `${redirectPathBase}${id}`);
       } else {
         const response = await postActivities(payload);
         if (response.error || !response.data?.id) {
           throw response.error ?? new Error("Failed to create activity");
         }
-        navigate(`${redirectPathBase}${response.data?.id}`);
+        invalidateCachedResource(ACTIVITIES_CACHE_KEY);
+        // Replace: don't leave the create form in history as a back target.
+        navigate(`${redirectPathBase}${response.data?.id}`, { replace: true });
       }
     } catch (error) {
       console.error(error);

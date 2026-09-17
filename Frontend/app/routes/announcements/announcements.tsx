@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { GetAnnouncementResponseDto } from "~/api";
 import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
@@ -8,6 +8,12 @@ import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
+import {
+  ANNOUNCEMENTS_CACHE_KEY,
+  getCachedResource,
+  setCachedResource,
+} from "~/hooks/sharedResourceCache";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
@@ -32,11 +38,15 @@ export default function AnnouncementsPage() {
   const authService = useAuth();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const cachedAnnouncements = getCachedResource<GetAnnouncementResponseDto[]>(
+    ANNOUNCEMENTS_CACHE_KEY,
+  );
+  const [loading, setLoading] = useState(cachedAnnouncements === undefined);
 
   const [announcements, setAnnouncements] = useState<
     GetAnnouncementResponseDto[]
-  >([]);
+  >(cachedAnnouncements ?? []);
+  const skipNextFetchRef = useRef(cachedAnnouncements !== undefined);
 
   const navigate = useNavigate();
 
@@ -60,13 +70,21 @@ export default function AnnouncementsPage() {
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   useEffect(() => {
-    if (tokenParsed) {
-      loadAnnouncements({
-        setLoading,
-        setAnnouncements,
-      });
+    if (!tokenParsed) return;
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
     }
+    loadAnnouncements({
+      setLoading,
+      setAnnouncements: (data) => {
+        setCachedResource(ANNOUNCEMENTS_CACHE_KEY, data);
+        setAnnouncements(data);
+      },
+    });
   }, [tokenParsed]);
+
+  useScrollRestoration(!loading);
 
   return (
     <>

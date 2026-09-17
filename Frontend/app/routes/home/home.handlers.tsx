@@ -8,6 +8,11 @@ import {
   getAnnouncements,
   getGroupmemberships,
 } from "~/api";
+import {
+  ACTIVITIES_CACHE_KEY,
+  ANNOUNCEMENTS_CACHE_KEY,
+  setCachedResource,
+} from "~/hooks/sharedResourceCache";
 import { appendErrorMessage } from "~/util/error.util";
 
 /**
@@ -16,6 +21,8 @@ import { appendErrorMessage } from "~/util/error.util";
 type loadHomePageArgs = {
   authenticated: boolean | undefined;
   userId: string | undefined;
+  cachedActivities?: ActivityResponseDto[];
+  cachedAnnouncements?: GetAnnouncementResponseDto[];
   setLoading: (loading: boolean) => void;
   setActivities: (activities: ActivityResponseDto[]) => void;
   setAnnouncements: (announcements: GetAnnouncementResponseDto[]) => void;
@@ -47,6 +54,8 @@ type loadHomePageArgs = {
 export const loadHomePageData = async ({
   authenticated,
   userId,
+  cachedActivities,
+  cachedAnnouncements,
   setLoading,
   setActivities,
   setAnnouncements,
@@ -55,20 +64,43 @@ export const loadHomePageData = async ({
 }: loadHomePageArgs) => {
   if (!authenticated) return;
 
+  // Activities and announcements are shared with /activities and /announcements -
+  // reuse them if another page already fetched them, instead of fetching again.
+  const activitiesPromise = cachedActivities
+    ? Promise.resolve(cachedActivities)
+    : getActivities({ query: { IncludePast: false, IncludeFuture: true } })
+        .then((res) => {
+          if (res.error || !res.data)
+            throw new Error("Failed to load activities");
+          return res.data as ActivityResponseDto[];
+        })
+        .then((data) => {
+          setCachedResource(ACTIVITIES_CACHE_KEY, data);
+          return data;
+        });
+
+  const announcementsPromise = cachedAnnouncements
+    ? Promise.resolve(cachedAnnouncements)
+    : getAnnouncements()
+        .then((res) => {
+          if (res.error || !res.data)
+            throw new Error("Failed to load announcements");
+          return res.data as GetAnnouncementResponseDto[];
+        })
+        .then((data) => {
+          setCachedResource(ANNOUNCEMENTS_CACHE_KEY, data);
+          return data;
+        });
+
   try {
     setLoading(true);
     const [
-      activitiesResponse,
+      activities,
       enrolledActivitiesResponse,
-      announcementsResponse,
+      announcements,
       committeesResponse,
     ] = await Promise.all([
-      getActivities({
-        query: {
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
+      activitiesPromise,
       getActivities({
         query: {
           UserId: userId,
@@ -76,16 +108,14 @@ export const loadHomePageData = async ({
           IncludeFuture: true,
         },
       }),
-      getAnnouncements(),
+      announcementsPromise,
       getGroupmemberships({
         query: {
           MemberId: userId,
         },
       }),
     ]);
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activities");
-    setActivities(activitiesResponse.data as ActivityResponseDto[]);
+    setActivities(activities);
 
     if (enrolledActivitiesResponse.error || !enrolledActivitiesResponse.data)
       throw new Error("Failed to load enrolled activities");
@@ -93,11 +123,7 @@ export const loadHomePageData = async ({
       enrolledActivitiesResponse.data as ActivityResponseDto[],
     );
 
-    if (announcementsResponse.error || !announcementsResponse.data)
-      throw new Error("Failed to load announcements");
-    setAnnouncements(
-      announcementsResponse.data as GetAnnouncementResponseDto[],
-    );
+    setAnnouncements(announcements);
 
     if (committeesResponse.error || !committeesResponse.data)
       throw new Error("Failed to load group memberships");

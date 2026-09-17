@@ -342,7 +342,9 @@ describe("handleActivitySubmit", () => {
       navigate,
     });
 
-    expect(navigate).toHaveBeenCalledWith("/activities/99");
+    expect(navigate).toHaveBeenCalledWith("/activities/99", {
+      replace: true,
+    });
   });
 
   it("prefixes the admin path when submitting from the admin section", async () => {
@@ -360,7 +362,9 @@ describe("handleActivitySubmit", () => {
       navigate,
     });
 
-    expect(navigate).toHaveBeenCalledWith("/admin/activities/5");
+    expect(navigate).toHaveBeenCalledWith("/admin/activities/5", {
+      replace: true,
+    });
   });
 
   it("calls setSaving(true) then setSaving(false) around the request", async () => {

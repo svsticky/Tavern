@@ -8,7 +8,12 @@ import {
   postAnnouncements,
   putAnnouncementsById,
 } from "~/api";
+import {
+  ANNOUNCEMENTS_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/hooks/sharedResourceCache";
 import { appendErrorMessage } from "~/util/error.util";
+import { navigateBackOrReplace } from "~/util/navigation.util";
 
 /**
  * Arguments for the loadAnnouncementData handler.
@@ -89,7 +94,11 @@ export const handleAnnouncementSubmit = async ({
           throw response.error ?? new Error("Failed to create announcement");
         }
       }
-      navigate("/announcements");
+      invalidateCachedResource(ANNOUNCEMENTS_CACHE_KEY);
+      // The list is already the previous entry - go back to it instead of
+      // replacing this one, which would duplicate it and make the next
+      // "back" press a no-op.
+      navigateBackOrReplace(navigate, "/announcements");
     } catch (error) {
       console.error(error);
       throw error;
@@ -132,7 +141,8 @@ export const handleDeleteAnnouncement = async (
       if (response.error) {
         throw response.error ?? new Error("Failed to delete announcement");
       }
-      navigate("/announcements");
+      invalidateCachedResource(ANNOUNCEMENTS_CACHE_KEY);
+      navigateBackOrReplace(navigate, "/announcements");
     } catch (error) {
       console.error(error);
       throw error;
