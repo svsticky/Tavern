@@ -7,6 +7,10 @@ import type {
   GetSpecificationQuestionResponseDto,
   GroupResponseDto,
 } from "~/api";
+import {
+  ACTIVITIES_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/hooks/sharedResourceCache";
 import { parseAudience } from "~/types/AudienceMap";
 import { cn } from "~/util/tailwind.util";
 import BorderedTile from "../../../Tiles/BorderedTile";
@@ -418,11 +422,14 @@ export default function EditActivityForm({
                   ) {
                     return;
                   }
-                  handleDeleteActivity(activity.id, () =>
+                  handleDeleteActivity(activity.id, () => {
+                    invalidateCachedResource(ACTIVITIES_CACHE_KEY);
+                    // Replace: don't leave the edit form in history as a back target.
                     navigate(
                       `${pathname.startsWith("/admin") ? "/admin" : ""}/activities`,
-                    ),
-                  );
+                      { replace: true },
+                    );
+                  });
                 }}
               >
                 <Trash2Icon size={18} />

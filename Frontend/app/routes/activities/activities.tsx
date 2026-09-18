@@ -5,7 +5,7 @@ import {
   DownloadIcon,
   PlusIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
@@ -16,6 +16,12 @@ import Button from "~/components/UI/Button";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
+import {
+  ACTIVITIES_CACHE_KEY,
+  getCachedResource,
+  setCachedResource,
+} from "~/hooks/sharedResourceCache";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -75,16 +81,31 @@ export default function ActivitiesPage() {
 
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const cachedActivities =
+    getCachedResource<ActivityResponseDto[]>(ACTIVITIES_CACHE_KEY);
+  const [loading, setLoading] = useState(cachedActivities === undefined);
+  const [activities, setActivities] = useState<ActivityResponseDto[]>(
+    cachedActivities ?? [],
+  );
   const [calendarTileOpen, setCalendarTileOpen] = useState(false);
+  const skipNextFetchRef = useRef(cachedActivities !== undefined);
+
   useEffect(() => {
     if (!tokenParsed) return;
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
     loadActivities({
       setLoading,
-      setActivities,
+      setActivities: (data) => {
+        setCachedResource(ACTIVITIES_CACHE_KEY, data);
+        setActivities(data);
+      },
     });
   }, [tokenParsed]);
+
+  useScrollRestoration(!loading);
 
   if (!tokenParsed) return null;
 

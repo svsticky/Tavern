@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   ActivityResponseDto,
@@ -12,8 +12,22 @@ import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import Button from "~/components/UI/Button";
 import { useAuth } from "~/context/AuthContext";
+import {
+  ACTIVITIES_CACHE_KEY,
+  ANNOUNCEMENTS_CACHE_KEY,
+  getCachedResource,
+} from "~/hooks/sharedResourceCache";
+import { usePersistentPageState } from "~/hooks/usePersistentPageState";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { loadHomePageData } from "./home.handlers";
+
+type HomePageState = {
+  activities: ActivityResponseDto[];
+  enrolledActivities: ActivityResponseDto[];
+  announcements: GetAnnouncementResponseDto[];
+  groupMemberships: GroupMembershipResponseDto[];
+};
 
 /**
  * The main application landing page for authenticated members.
@@ -52,18 +66,41 @@ export default function DashboardPage() {
     loadTokenAndAuth();
   }, [authService]);
 
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const cachedActivities =
+    getCachedResource<ActivityResponseDto[]>(ACTIVITIES_CACHE_KEY);
+  const cachedAnnouncements = getCachedResource<GetAnnouncementResponseDto[]>(
+    ANNOUNCEMENTS_CACHE_KEY,
+  );
+
+  const { initial, isRestored, save } = usePersistentPageState<HomePageState>(
+    () => ({
+      activities: cachedActivities ?? [],
+      enrolledActivities: [],
+      announcements: cachedAnnouncements ?? [],
+      groupMemberships: [],
+    }),
+  );
+
+  const [activities, setActivities] = useState<ActivityResponseDto[]>(
+    initial.activities,
+  );
   const [enrolledActivities, setEnrolledActivities] = useState<
     ActivityResponseDto[]
-  >([]);
+  >(initial.enrolledActivities);
   const [announcements, setAnnouncements] = useState<
     GetAnnouncementResponseDto[]
-  >([]);
+  >(initial.announcements);
   const [groupMemberships, setGroupMemberships] = useState<
     GroupMembershipResponseDto[]
-  >([]);
+  >(initial.groupMemberships);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!isRestored);
+  const skipNextFetchRef = useRef(isRestored);
+
+  // cachedActivities/cachedAnnouncements are intentionally omitted: they change
+  // once loadHomePageData populates the cache, which would otherwise re-run
+  // this effect and needlessly refetch enrolledActivities/groupMemberships.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   useEffect(() => {
     if (authenticated === null || tokenParsed === null) {
       return;
@@ -71,9 +108,16 @@ export default function DashboardPage() {
 
     if (!authenticated) return;
 
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
+
     loadHomePageData({
       authenticated: authenticated,
       userId: tokenParsed.UserId,
+      cachedActivities,
+      cachedAnnouncements,
       setLoading,
       setActivities,
       setAnnouncements,
@@ -81,6 +125,20 @@ export default function DashboardPage() {
       setEnrolledActivities,
     });
   }, [authenticated, tokenParsed]);
+
+  useEffect(() => {
+    if (loading) return;
+    save({ activities, enrolledActivities, announcements, groupMemberships });
+  }, [
+    loading,
+    activities,
+    enrolledActivities,
+    announcements,
+    groupMemberships,
+    save,
+  ]);
+
+  useScrollRestoration(!loading);
 
   if (!tokenParsed) {
     return null;

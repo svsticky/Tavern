@@ -12,11 +12,22 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { usePersistentPageState } from "~/hooks/usePersistentPageState";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
 
 /** The number of members to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 20;
+
+type MembersPageState = {
+  members: MemberResponseDto[];
+  searchQuery: string;
+  debouncedSearchQuery: string;
+  filters: MembersFilterDto | null;
+  page: number;
+  hasMore: boolean;
+};
 
 /**
  * An administrative directory page for managing association members.
@@ -36,16 +47,32 @@ const PAGE_SIZE = 20;
  */
 export default function Members() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<MemberResponseDto[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState<MembersFilterDto | null>(null);
 
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const { initial, isRestored, save } =
+    usePersistentPageState<MembersPageState>(() => ({
+      members: [],
+      searchQuery: "",
+      debouncedSearchQuery: "",
+      filters: null,
+      page: 1,
+      hasMore: true,
+    }));
+
+  const [loading, setLoading] = useState(!isRestored);
+  const [members, setMembers] = useState<MemberResponseDto[]>(initial.members);
+  const [searchQuery, setSearchQuery] = useState(initial.searchQuery);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(
+    initial.debouncedSearchQuery,
+  );
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<MembersFilterDto | null>(
+    initial.filters,
+  );
+
+  const [page, setPage] = useState(initial.page);
+  const [hasMore, setHasMore] = useState(initial.hasMore);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const skipNextResetRef = useRef(isRestored);
 
   const fetchMembers = useCallback(
     async (pageNum: number, search: string, isInitial: boolean) => {
@@ -102,6 +129,10 @@ export default function Members() {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (skipNextResetRef.current) {
+      skipNextResetRef.current = false;
+      return;
+    }
     setPage(1);
     setHasMore(true);
     fetchMembers(1, debouncedSearchQuery, true);
@@ -125,6 +156,29 @@ export default function Members() {
 
     return () => observer.disconnect();
   }, [hasMore, loading, page, debouncedSearchQuery, fetchMembers]);
+
+  useEffect(() => {
+    if (loading) return;
+    save({
+      members,
+      searchQuery,
+      debouncedSearchQuery,
+      filters,
+      page,
+      hasMore,
+    });
+  }, [
+    loading,
+    members,
+    searchQuery,
+    debouncedSearchQuery,
+    filters,
+    page,
+    hasMore,
+    save,
+  ]);
+
+  useScrollRestoration(!loading);
 
   const columns: Column<MemberResponseDto>[] = [
     {
@@ -195,6 +249,7 @@ export default function Members() {
             <Input
               label={t("search")}
               placeholder={t("search_members")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }

@@ -9,11 +9,22 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { usePersistentPageState } from "~/hooks/usePersistentPageState";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
 /** The number of activities to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 15;
+
+type AdminActivitiesPageState = {
+  year: number;
+  activities: ActivityResponseDto[];
+  searchQuery: string;
+  debouncedSearchQuery: string;
+  page: number;
+  hasMore: boolean;
+};
 
 /**
  * An administrative management page for viewing and filtering all association activities.
@@ -33,17 +44,32 @@ const PAGE_SIZE = 15;
  */
 export default function Activities() {
   const navigate = useNavigate();
-
-  const [loading, setLoading] = useState(false);
   const currentYear = getCommitteeYear();
-  const [year, setYear] = useState(currentYear);
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const { initial, isRestored, save } =
+    usePersistentPageState<AdminActivitiesPageState>(() => ({
+      year: currentYear,
+      activities: [],
+      searchQuery: "",
+      debouncedSearchQuery: "",
+      page: 1,
+      hasMore: true,
+    }));
+
+  const [loading, setLoading] = useState(!isRestored);
+  const [year, setYear] = useState(initial.year);
+  const [activities, setActivities] = useState<ActivityResponseDto[]>(
+    initial.activities,
+  );
+  const [searchQuery, setSearchQuery] = useState(initial.searchQuery);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(
+    initial.debouncedSearchQuery,
+  );
+
+  const [page, setPage] = useState(initial.page);
+  const [hasMore, setHasMore] = useState(initial.hasMore);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const skipNextResetRef = useRef(isRestored);
 
   const yearsSince2007 = Array.from(
     { length: currentYear - 2007 + 1 },
@@ -85,6 +111,10 @@ export default function Activities() {
   }, [searchQuery]);
 
   useEffect(() => {
+    if (skipNextResetRef.current) {
+      skipNextResetRef.current = false;
+      return;
+    }
     setPage(1);
     setHasMore(true);
     fetchActivities(1, true, year, debouncedSearchQuery);
@@ -108,6 +138,29 @@ export default function Activities() {
 
     return () => observer.disconnect();
   }, [hasMore, loading, page, year, debouncedSearchQuery, fetchActivities]);
+
+  useEffect(() => {
+    if (loading) return;
+    save({
+      year,
+      activities,
+      searchQuery,
+      debouncedSearchQuery,
+      page,
+      hasMore,
+    });
+  }, [
+    loading,
+    year,
+    activities,
+    searchQuery,
+    debouncedSearchQuery,
+    page,
+    hasMore,
+    save,
+  ]);
+
+  useScrollRestoration(!loading);
 
   const columns: Column<ActivityResponseDto>[] = [
     {
@@ -180,6 +233,7 @@ export default function Activities() {
             <Input
               label={t("search")}
               placeholder={t("search_activities")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }

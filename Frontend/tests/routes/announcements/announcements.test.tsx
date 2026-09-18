@@ -2,6 +2,10 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import i18next from "i18next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ANNOUNCEMENTS_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/hooks/sharedResourceCache";
 import AnnouncementsPage from "~/routes/announcements/announcements";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -37,6 +41,7 @@ function baseToken(overrides: Partial<TokenParsed> = {}): TokenParsed {
 describe("AnnouncementsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidateCachedResource(ANNOUNCEMENTS_CACHE_KEY);
   });
 
   it("shows the loading text while waiting for the announcements to load", () => {

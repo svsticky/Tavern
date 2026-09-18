@@ -1,6 +1,10 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
+import {
+  ACTIVITIES_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/hooks/sharedResourceCache";
 import ActivitiesPage from "~/routes/activities/activities";
 import {
   copyWeekOverview,
@@ -47,6 +51,7 @@ function makeActivity(id: number): ActivityResponseDto {
 describe("ActivitiesPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    invalidateCachedResource(ACTIVITIES_CACHE_KEY);
   });
 
   it("renders nothing while the token has not loaded", () => {
