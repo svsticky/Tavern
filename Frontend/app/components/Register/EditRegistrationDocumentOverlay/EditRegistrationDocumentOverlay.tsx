@@ -23,16 +23,14 @@ export default function EditRegistrationDocumentOverlay({
   const [formData, setFormData] = useState({
     nameDutch: document?.nameDutch || "",
     nameEnglish: document?.nameEnglish || "",
-    url: document?.url || "",
+    urlDutch: document?.urlDutch || "",
+    urlEnglish: document?.urlEnglish || "",
     sortOrder: document?.sortOrder ?? 0,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "number" ? Number.parseInt(value, 10) || 0 : value,
-    }));
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   return (
@@ -65,30 +63,33 @@ export default function EditRegistrationDocumentOverlay({
         />
       </div>
 
-      <Input
-        label={t("url")}
-        name="url"
-        type="url"
-        placeholder="https://example.com/document.pdf"
-        value={formData.url}
-        onChange={handleChange}
-        required
-      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Input
+          label={t("url_nl")}
+          name="urlDutch"
+          type="url"
+          placeholder="https://example.com/document.pdf"
+          value={formData.urlDutch}
+          onChange={handleChange}
+          required
+        />
+        <Input
+          label={t("url_en")}
+          name="urlEnglish"
+          type="url"
+          placeholder="https://example.com/document.pdf"
+          value={formData.urlEnglish}
+          onChange={handleChange}
+          required
+        />
+      </div>
 
-      <Input
-        label={t("sort_order")}
-        name="sortOrder"
-        type="number"
-        value={formData.sortOrder.toString()}
-        onChange={handleChange}
-        required
-      />
-
-      <div className="flex items-center justify-between gap-3 pt-4 border-t border-slate-100">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t border-slate-100">
         {document ? (
           <Button
             type="button"
             variant="danger"
+            className="w-full sm:w-auto"
             onClick={() =>
               handleDocumentDelete({
                 document,
@@ -101,20 +102,26 @@ export default function EditRegistrationDocumentOverlay({
             {t("delete")}
           </Button>
         ) : (
-          <div />
+          <div className="hidden sm:block" />
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-col-reverse sm:flex-row gap-2">
           <Button
             type="button"
             variant="secondary"
+            className="w-full sm:w-auto"
             onClick={onComplete}
             disabled={loading}
           >
             {t("cancel")}
           </Button>
 
-          <Button type="submit" variant="primary" disabled={loading}>
+          <Button
+            type="submit"
+            variant="primary"
+            className="w-full sm:w-auto"
+            disabled={loading}
+          >
             {loading ? t("saving") : document ? t("update") : t("create")}
           </Button>
         </div>

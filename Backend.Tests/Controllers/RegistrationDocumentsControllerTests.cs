@@ -47,7 +47,8 @@ public class RegistrationDocumentsControllerTests
                 Id = 1,
                 NameDutch = "Privacy",
                 NameEnglish = "Privacy",
-                Url = "https://example.com",
+                UrlDutch = "https://example.com",
+                UrlEnglish = "https://example.com",
                 SortOrder = 1
             }
         };
@@ -68,7 +69,8 @@ public class RegistrationDocumentsControllerTests
             Id = 1,
             NameDutch = "Privacy",
             NameEnglish = "Privacy",
-            Url = "https://example.com",
+            UrlDutch = "https://example.com",
+            UrlEnglish = "https://example.com",
             SortOrder = 1
         };
         _serviceMock.GetRegistrationDocument(1, Arg.Any<CancellationToken>()).Returns(doc);
@@ -97,7 +99,8 @@ public class RegistrationDocumentsControllerTests
         {
             NameDutch = "Privacy",
             NameEnglish = "Privacy",
-            Url = "https://example.com",
+            UrlDutch = "https://example.com",
+            UrlEnglish = "https://example.com",
             SortOrder = 1
         };
         var created = new RegistrationDocumentResponseDTO
@@ -105,7 +108,8 @@ public class RegistrationDocumentsControllerTests
             Id = 10,
             NameDutch = "Privacy",
             NameEnglish = "Privacy",
-            Url = "https://example.com",
+            UrlDutch = "https://example.com",
+            UrlEnglish = "https://example.com",
             SortOrder = 1
         };
         _serviceMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Returns(created);
@@ -123,7 +127,8 @@ public class RegistrationDocumentsControllerTests
         {
             NameDutch = "Privacy NL",
             NameEnglish = "Privacy EN",
-            Url = "https://example.com",
+            UrlDutch = "https://example.com",
+            UrlEnglish = "https://example.com",
             SortOrder = 1
         };
 
@@ -161,7 +166,7 @@ public class RegistrationDocumentsControllerTests
     [Fact]
     public async Task PostRegistrationDocument_Unauthorized_ThrowsUnauthorizedAccessException()
     {
-        var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
+        var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", UrlDutch = "http://a.b", UrlEnglish = "http://a.b", SortOrder = 1 };
         _serviceMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegistrationDocument(dto, CancellationToken.None));
@@ -170,7 +175,7 @@ public class RegistrationDocumentsControllerTests
     [Fact]
     public async Task PostRegistrationDocument_GenericException_ThrowsException()
     {
-        var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
+        var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", UrlDutch = "http://a.b", UrlEnglish = "http://a.b", SortOrder = 1 };
         _serviceMock.CreateRegistrationDocument(dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Fail"));
 
         await Assert.ThrowsAsync<Exception>(() => _controller.PostRegistrationDocument(dto, CancellationToken.None));
@@ -179,7 +184,7 @@ public class RegistrationDocumentsControllerTests
     [Fact]
     public async Task PutRegistrationDocument_NotFound_ThrowsKeyNotFoundException()
     {
-        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
+        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", UrlDutch = "http://a.b", UrlEnglish = "http://a.b", SortOrder = 1 };
         _serviceMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new KeyNotFoundException());
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutRegistrationDocument(1, dto, CancellationToken.None));
@@ -188,7 +193,7 @@ public class RegistrationDocumentsControllerTests
     [Fact]
     public async Task PutRegistrationDocument_Unauthorized_ThrowsUnauthorizedAccessException()
     {
-        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
+        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", UrlDutch = "http://a.b", UrlEnglish = "http://a.b", SortOrder = 1 };
         _serviceMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRegistrationDocument(1, dto, CancellationToken.None));
@@ -197,7 +202,7 @@ public class RegistrationDocumentsControllerTests
     [Fact]
     public async Task PutRegistrationDocument_GenericException_ThrowsException()
     {
-        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
+        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "A", NameEnglish = "B", UrlDutch = "http://a.b", UrlEnglish = "http://a.b", SortOrder = 1 };
         _serviceMock.UpdateRegistrationDocument(1, dto, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         await Assert.ThrowsAsync<Exception>(() => _controller.PutRegistrationDocument(1, dto, CancellationToken.None));
@@ -235,7 +240,7 @@ public class RegistrationDocumentsControllerTests
             HttpContext = new DefaultHttpContext()
         };
 
-        var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", Url = "http://a.b", SortOrder = 1 };
+        var dto = new PostRegistrationDocumentDTO { NameDutch = "A", NameEnglish = "B", UrlDutch = "http://a.b", UrlEnglish = "http://a.b", SortOrder = 1 };
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegistrationDocument(dto, CancellationToken.None));
     }
 }

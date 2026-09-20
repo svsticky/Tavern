@@ -555,6 +555,8 @@
   "terms_and_conditions": "Terms and Conditions",
   "title_nl": "Title (Dutch)",
   "title_en": "Title (English)",
+  "url_nl": "URL (Dutch)",
+  "url_en": "URL (English)",
   "description_nl": "Description (Dutch)",
   "description_en": "Description (English)",
   "sort_order": "Sort Order",

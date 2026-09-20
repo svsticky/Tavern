@@ -49,8 +49,8 @@ public class RegistrationDocumentServiceTests : IDisposable
     [Fact]
     public async Task GetRegistrationDocuments_ReturnsSortedDocuments()
     {
-        _db.RegistrationDocuments.Add(new RegistrationDocument { Id = 1, NameDutch = "A", NameEnglish = "A", Url = "http://a", SortOrder = 2 });
-        _db.RegistrationDocuments.Add(new RegistrationDocument { Id = 2, NameDutch = "B", NameEnglish = "B", Url = "http://b", SortOrder = 1 });
+        _db.RegistrationDocuments.Add(new RegistrationDocument { Id = 1, NameDutch = "A", NameEnglish = "A", UrlDutch = "http://a", UrlEnglish = "http://a", SortOrder = 2 });
+        _db.RegistrationDocuments.Add(new RegistrationDocument { Id = 2, NameDutch = "B", NameEnglish = "B", UrlDutch = "http://b", UrlEnglish = "http://b", SortOrder = 1 });
         await _db.SaveChangesAsync();
 
         var result = (await _service.GetRegistrationDocuments(CancellationToken.None)).ToList();
@@ -63,7 +63,7 @@ public class RegistrationDocumentServiceTests : IDisposable
     [Fact]
     public async Task CreateRegistrationDocument_ValidData_CreatesDocument()
     {
-        var dto = new PostRegistrationDocumentDTO { NameDutch = "NL", NameEnglish = "EN", Url = "http://doc.nl", SortOrder = 1 };
+        var dto = new PostRegistrationDocumentDTO { NameDutch = "NL", NameEnglish = "EN", UrlDutch = "http://doc.nl", UrlEnglish = "http://doc.nl", SortOrder = 1 };
 
         var result = await _service.CreateRegistrationDocument(dto, _userId, CancellationToken.None);
 
@@ -78,24 +78,25 @@ public class RegistrationDocumentServiceTests : IDisposable
     [Fact]
     public async Task UpdateRegistrationDocument_DocumentExists_UpdatesDatabase()
     {
-        var doc = new RegistrationDocument { Id = 1, NameDutch = "Old", NameEnglish = "Old", Url = "http://old", SortOrder = 1 };
+        var doc = new RegistrationDocument { Id = 1, NameDutch = "Old", NameEnglish = "Old", UrlDutch = "http://old", UrlEnglish = "http://old", SortOrder = 1 };
         _db.RegistrationDocuments.Add(doc);
         await _db.SaveChangesAsync();
 
-        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "New", NameEnglish = "New", Url = "http://new", SortOrder = 2 };
+        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "New", NameEnglish = "New", UrlDutch = "http://new", UrlEnglish = "http://new", SortOrder = 2 };
 
         await _service.UpdateRegistrationDocument(1, dto, _userId, CancellationToken.None);
 
         var updated = await _db.RegistrationDocuments.FindAsync(1);
         Assert.NotNull(updated);
         Assert.Equal("New", updated.NameDutch);
-        Assert.Equal("http://new", updated.Url);
+        Assert.Equal("http://new", updated.UrlDutch);
+        Assert.Equal("http://new", updated.UrlEnglish);
     }
 
     [Fact]
     public async Task DeleteRegistrationDocument_DocumentExists_DeletesFromDatabase()
     {
-        var doc = new RegistrationDocument { Id = 1, NameDutch = "A", NameEnglish = "A", Url = "http://a", SortOrder = 1 };
+        var doc = new RegistrationDocument { Id = 1, NameDutch = "A", NameEnglish = "A", UrlDutch = "http://a", UrlEnglish = "http://a", SortOrder = 1 };
         _db.RegistrationDocuments.Add(doc);
         await _db.SaveChangesAsync();
 
@@ -108,7 +109,7 @@ public class RegistrationDocumentServiceTests : IDisposable
     [Fact]
     public async Task GetRegistrationDocument_Found_ReturnsDto()
     {
-        var doc = new RegistrationDocument { Id = 5, NameDutch = "NL", NameEnglish = "EN", Url = "http://doc.nl", SortOrder = 1 };
+        var doc = new RegistrationDocument { Id = 5, NameDutch = "NL", NameEnglish = "EN", UrlDutch = "http://doc.nl", UrlEnglish = "http://doc.nl", SortOrder = 1 };
         _db.RegistrationDocuments.Add(doc);
         await _db.SaveChangesAsync();
 
@@ -130,7 +131,7 @@ public class RegistrationDocumentServiceTests : IDisposable
     [Fact]
     public async Task UpdateRegistrationDocument_NotFound_ThrowsKeyNotFoundException()
     {
-        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "New", NameEnglish = "New", Url = "http://new", SortOrder = 2 };
+        var dto = new RegistrationDocumentUpdateDTO { NameDutch = "New", NameEnglish = "New", UrlDutch = "http://new", UrlEnglish = "http://new", SortOrder = 2 };
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _service.UpdateRegistrationDocument(999, dto, _userId, CancellationToken.None));

@@ -555,6 +555,8 @@
   "edit_slide": "Dia bewerken",
   "title_nl": "Titel (Nederlands)",
   "title_en": "Titel (Engels)",
+  "url_nl": "URL (Nederlands)",
+  "url_en": "URL (Engels)",
   "description_nl": "Beschrijving (Nederlands)",
   "description_en": "Beschrijving (Engels)",
   "sort_order": "Sorteervolgorde",

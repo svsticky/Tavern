@@ -1507,9 +1507,13 @@ export type PostRegistrationDocumentDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1707,9 +1711,13 @@ export type RegistrationDocumentResponseDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1729,9 +1737,13 @@ export type RegistrationDocumentUpdateDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
