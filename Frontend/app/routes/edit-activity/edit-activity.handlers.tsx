@@ -9,38 +9,84 @@ import { appendErrorMessage } from "~/util/error.util";
 type LoadEditActivityArgs = {
   isEdit: boolean;
   id: string | undefined;
+  cloneFromId?: string | null;
   setActivity: (activity: ActivityResponseDto) => void;
   setLoading: (loading: boolean) => void;
 };
 
 /**
- * Hydrates the Activity editor with existing data if the page is in edit mode.
+ * Hydrates the Activity editor with existing data if the page is in edit mode or clone mode.
  *
  * If `isEdit` is true, this handler performs a network request to fetch the activity
- * details by ID. If the fetch fails, it triggers an error toast. In creation mode,
- * it simply toggles the loading state off.
+ * details by ID. If `cloneFromId` is provided in creation mode, it fetches the source
+ * activity and populates the form with cloned values and updated dates.
  *
  * @async
- * @param {LoadEditActivityArgs} args - Configuration object containing:
- * @param {boolean} args.isEdit - Whether the handler should fetch existing data.
- * @param {string | undefined} args.id - The ID of the activity to retrieve.
- * @param {Function} args.setActivity - Function to update the local activity state.
- * @param {Function} args.setLoading - Function to update the loading indicator state.
+ * @param {LoadEditActivityArgs} args - Configuration object containing parameters and state setters.
  */
 export const loadEditActivityData = async ({
   isEdit,
   id,
+  cloneFromId,
   setActivity,
   setLoading,
 }: LoadEditActivityArgs) => {
   try {
-    if (isEdit) {
+    if (isEdit && id) {
       const activityRes = await getActivitiesById({
         path: { id: Number(id) },
       });
       if (activityRes.error || !activityRes.data)
         throw new Error("Failed to load activity");
       setActivity(activityRes.data);
+    } else if (cloneFromId) {
+      const activityRes = await getActivitiesById({
+        path: { id: Number(cloneFromId) },
+      });
+      if (activityRes.error || !activityRes.data)
+        throw new Error("Failed to load activity to clone");
+
+      const source = activityRes.data;
+      const originalStart = new Date(source.dateTimeStart).getTime();
+      const originalEnd = new Date(source.dateTimeEnd).getTime();
+      const duration = Math.max(
+        originalEnd - originalStart,
+        2 * 60 * 60 * 1000,
+      );
+
+      const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const newStart = new Date(nextWeek);
+      const sourceStartDate = new Date(source.dateTimeStart);
+      newStart.setHours(
+        sourceStartDate.getHours(),
+        sourceStartDate.getMinutes(),
+        0,
+        0,
+      );
+      const newEnd = new Date(newStart.getTime() + duration);
+
+      const clonedActivity: ActivityResponseDto = {
+        ...source,
+        id: 0,
+        name: `${source.name} (${t("activity_copy_suffix")})`,
+        dateTimeStart: newStart.toISOString(),
+        dateTimeEnd: newEnd.toISOString(),
+        enrollmentDeadline: null,
+        unenrollmentDeadline: null,
+        enrollOpenDate: null,
+        posterFileName: null,
+        posterPath: null,
+        enrollments: [],
+        showInKoala: false,
+        specificationQuestions: (source.specificationQuestions || []).map(
+          (q) => ({
+            ...q,
+            id: undefined as unknown as number,
+            options: q.options ? [...q.options] : [],
+          }),
+        ),
+      };
+      setActivity(clonedActivity);
     }
   } catch (error) {
     console.error("Error loading data:", error);
