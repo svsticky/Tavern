@@ -7,7 +7,7 @@ import Markdown from "~/components/UI/Markdown";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { hasPermission, isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../Tiles/Tile";
 
@@ -38,7 +38,9 @@ export default function AnnouncementTile({
     };
   }, [authService]);
 
-  const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const canEdit =
+    isBoardOrCandidateBoard(tokenParsed) ||
+    hasPermission(tokenParsed, "EditAnnouncements");
 
   const title = isDutch ? announcement.titleDutch : announcement.titleEnglish;
   const content = isDutch
@@ -57,7 +59,7 @@ export default function AnnouncementTile({
             {formatDate(new Date(announcement.createdAt), "defaultDate")}
           </p>
 
-          {isBoard && (
+          {canEdit && (
             <button
               onClick={() => navigate(`/announcements/edit/${announcement.id}`)}
               className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-(--board-primary) transition-colors border border-gray-100 hover:cursor-pointer"
