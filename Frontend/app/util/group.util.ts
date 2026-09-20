@@ -1,4 +1,5 @@
 import type { ActivityResponseDto } from "~/api/types.gen";
+import { isAdminModeActive } from "~/context/AdminModeContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "./date.util";
 
@@ -67,16 +68,29 @@ export const isInGroupWithId = (
 };
 
 /**
+ * Checks if the current user has genuine board member or admin privileges on their token.
+ * Does not respect the temporary client-side member view mode toggle.
+ */
+export const isActualBoardOrAdmin = (
+  tokenParsed: TokenParsed | null,
+): boolean => {
+  if (!tokenParsed) return false;
+  return tokenParsed.is_admin ?? false;
+};
+
+/**
  * Checks if the current user is a board member or candidate board member.
+ * If the user has switched to member view mode, this returns false so they can preview the site as a regular member.
  * @param tokenParsed The parsed token.
- * @returns True if the user is a board member or candidate board member, false otherwise.
+ * @returns True if the user is a board member and admin mode is active, false otherwise.
  */
 export const isBoardOrCandidateBoard = (
   tokenParsed: TokenParsed | null,
 ): boolean => {
   if (!tokenParsed) return false;
+  if (!tokenParsed.is_admin) return false;
 
-  return tokenParsed.is_admin ?? false;
+  return isAdminModeActive();
 };
 
 /**
