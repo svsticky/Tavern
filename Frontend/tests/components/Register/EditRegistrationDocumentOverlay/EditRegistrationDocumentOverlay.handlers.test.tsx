@@ -39,7 +39,8 @@ function baseFormData() {
   return {
     nameDutch: "Naam",
     nameEnglish: "Name",
-    url: "https://example.com/doc.pdf",
+    urlDutch: "https://example.com/nl/doc.pdf",
+    urlEnglish: "https://example.com/en/doc.pdf",
     sortOrder: 1,
   };
 }
@@ -52,7 +53,8 @@ const existingDocument: RegistrationDocumentResponseDto = {
   id: 5,
   nameDutch: "Oud",
   nameEnglish: "Old",
-  url: "https://old.example.com/doc.pdf",
+  urlDutch: "https://old.example.com/nl/doc.pdf",
+  urlEnglish: "https://old.example.com/en/doc.pdf",
   sortOrder: 2,
 } as RegistrationDocumentResponseDto;
 

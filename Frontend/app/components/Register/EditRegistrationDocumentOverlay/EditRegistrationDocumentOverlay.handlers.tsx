@@ -12,7 +12,8 @@ import { appendErrorMessage } from "~/util/error.util";
 type EditDocumentFormData = {
   nameDutch: string;
   nameEnglish: string;
-  url: string;
+  urlDutch: string;
+  urlEnglish: string;
   sortOrder: number;
 };
 

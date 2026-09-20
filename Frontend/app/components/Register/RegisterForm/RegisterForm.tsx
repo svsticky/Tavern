@@ -413,7 +413,7 @@ export default function RegisterForm({ className }: { className?: string }) {
                         }}
                       />
                       <a
-                        href={doc.url}
+                        href={isDutch ? doc.urlDutch : doc.urlEnglish}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline font-medium"

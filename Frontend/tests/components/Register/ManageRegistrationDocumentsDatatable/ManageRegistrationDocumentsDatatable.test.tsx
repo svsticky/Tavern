@@ -34,14 +34,16 @@ function makeDocuments(): RegistrationDocumentResponseDto[] {
       id: 1,
       nameDutch: "Doc Een",
       nameEnglish: "Doc One",
-      url: "https://example.com/one.pdf",
+      urlDutch: "https://example.com/nl/one.pdf",
+      urlEnglish: "https://example.com/en/one.pdf",
       sortOrder: 1,
     },
     {
       id: 2,
       nameDutch: "Doc Twee",
       nameEnglish: "Doc Two",
-      url: "https://example.com/two.pdf",
+      urlDutch: "https://example.com/nl/two.pdf",
+      urlEnglish: "https://example.com/en/two.pdf",
       sortOrder: 2,
     },
   ] as RegistrationDocumentResponseDto[];
@@ -68,8 +70,8 @@ describe("ManageRegistrationDocumentsDatatable", () => {
     expect(headings[0]).toHaveTextContent("Doc One");
     expect(headings[1]).toHaveTextContent("Doc Two");
     expect(
-      screen.getByRole("link", { name: "https://example.com/one.pdf" }),
-    ).toHaveAttribute("href", "https://example.com/one.pdf");
+      screen.getByRole("link", { name: "https://example.com/en/one.pdf" }),
+    ).toHaveAttribute("href", "https://example.com/en/one.pdf");
   });
 
   it("shows the empty state when there are no documents", async () => {
@@ -221,7 +223,7 @@ describe("ManageRegistrationDocumentsDatatable", () => {
     );
 
     const link = screen.getByRole("link", {
-      name: "https://example.com/one.pdf",
+      name: "https://example.com/en/one.pdf",
     });
     fireEvent.click(link);
 
