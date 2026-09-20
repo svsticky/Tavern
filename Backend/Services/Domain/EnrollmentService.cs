@@ -277,6 +277,7 @@ public class EnrollmentService : IEnrollmentService
 
         // Get enrollment
         var enrollment = await _db.Enrollments
+            .Include(e => e.Member)
             .Include(e => e.Activity)
                 .ThenInclude(a => a.SpecificationQuestions)
             .Include(e => e.SpecificationAnswers)
@@ -295,6 +296,7 @@ public class EnrollmentService : IEnrollmentService
 
         // Apply patch and validate
         var oldAnswers = enrollment.SpecificationAnswers.ToList();
+        bool wasOnWaitingList = enrollment.IsOnWaitingList;
         patchDoc.ApplyTo(enrollment);
         StateValidator.Validate(enrollment);
 
@@ -302,6 +304,19 @@ public class EnrollmentService : IEnrollmentService
         EnrollmentValidator.ValidateAnswerDeadlines(oldAnswers, enrollment.SpecificationAnswers, questionsById, enrollment.Activity, isBoardMember);
 
         await _db.SaveChangesAsync(cancellationToken);
+
+        // A board member manually moved this enrollment off the waiting list, so notify the member like any other promotion
+        if (wasOnWaitingList && !enrollment.IsOnWaitingList)
+        {
+            try
+            {
+                await _mailService.SendEnrollmentPromotionEmail(enrollment);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed sending enrollment promotion email to member {MemberId} for activity {ActivityId}.", enrollment.MemberId, enrollment.ActivityId);
+            }
+        }
     }
 
     /// <inheritdoc />

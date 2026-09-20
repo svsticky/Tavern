@@ -849,6 +849,81 @@ public class EnrollmentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchEnrollment_BoardMemberMovesOffWaitingList_SendsPromotionEmail()
+    {
+        var boardMember = CreateMember("9999999");
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity");
+
+        _db.Members.AddRange(boardMember, member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = true });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(boardMember.Id).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.IsOnWaitingList, false);
+
+        await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, boardMember.Id, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        Assert.False((await _db.Enrollments.FirstAsync(e => e.MemberId == member.Id)).IsOnWaitingList);
+        await _mailService.Received(1).SendEnrollmentPromotionEmail(Arg.Is<Enrollment>(e => e.MemberId == member.Id));
+    }
+
+    [Fact]
+    public async Task PatchEnrollment_NotChangingWaitingListStatus_DoesNotSendPromotionEmail()
+    {
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity");
+
+        _db.Members.Add(member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
+
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.SpecificationAnswers, new List<SpecificationAnswer>());
+
+        await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, member.Id, CancellationToken.None);
+
+        await _mailService.DidNotReceive().SendEnrollmentPromotionEmail(Arg.Any<Enrollment>());
+    }
+
+    [Fact]
+    public async Task PatchEnrollment_PromotionMailThrows_SwallowsException()
+    {
+        var boardMember = CreateMember("9999999");
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity");
+
+        _db.Members.AddRange(boardMember, member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = true });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(boardMember.Id).Returns(true);
+        _mailService.SendEnrollmentPromotionEmail(Arg.Any<Enrollment>()).Throws(new Exception("Mail error"));
+
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.IsOnWaitingList, false);
+
+        await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, boardMember.Id, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        Assert.False((await _db.Enrollments.FirstAsync(e => e.MemberId == member.Id)).IsOnWaitingList);
+    }
+
+    [Fact]
     public async Task PromoteFromWaitingList_PromotesInOrderAndChangesWaitingListStatus()
     {
         var member1 = CreateMember("1111111");
