@@ -71,6 +71,8 @@ export default [
           ]),
         ]),
         route("update-account-status", "routes/update-account-status.tsx"),
+        route("403", "routes/forbidden.tsx"),
+        route("*", "routes/not-found.tsx"),
       ]),
     ]),
 

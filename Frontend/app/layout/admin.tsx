@@ -16,7 +16,7 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
  * Logic Flow:
  * 1. Waits for global context IDs (`boardGroupId`, `candidateBoardGroupId`) to be available.
  * 2. Checks group memberships against these IDs.
- * 3. Redirects unauthorized users to the home page (`/`).
+ * 3. Redirects unauthorized users to the 403 page (`/403`).
  * 4. Displays a loading state while membership verification is in progress.
  * 5. Renders child routes via `<Outlet />` only upon successful authorization.
  *
@@ -47,7 +47,7 @@ export default function AdminLayout() {
       return;
     }
     if (!isBoardOrCandidateBoard(tokenParsed)) {
-      navigate("/");
+      navigate("/403");
       return;
     }
 

@@ -623,5 +623,21 @@
   "copy_calendar_link": "Copy calendar link",
   "reset_calendar_link": "Reset calendar link",
   "calendar_link_reset": "Calendar link reset. Update your calendar app with the new link.",
-  "calendar_link_reset_failed": "Could not reset the calendar link"
+  "calendar_link_reset_failed": "Could not reset the calendar link",
+  "403": "No access",
+  "forbidden_description": "The koala on guard says you're not allowed in here. Think that's a mistake? Ask the board.",
+  "back_to_home": "Back to home",
+  "404": "Page not found",
+  "not_found_description": "We looked everywhere, but the page you're looking for doesn't exist or has moved.",
+  "forbidden_headline": "Whoa there, this branch is off-limits!",
+  "not_found_headline": "This koala got lost in the eucalyptus",
+  "add_member": "Add member",
+  "creating_group": "Creating group",
+  "deletion_failed": "Deletion failed",
+  "deletion_successful": "Deletion successful",
+  "failed_to_save": "Failed to save",
+  "membership_payment_not_processed_description": "Your membership payment has not been processed yet. Please come back later or contact the board if you have any questions.",
+  "saved": "Saved",
+  "slide": "Slide",
+  "url": "URL"
 }

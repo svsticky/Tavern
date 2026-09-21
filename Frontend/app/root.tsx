@@ -56,8 +56,8 @@ client.instance.interceptors.response.use(
         window.location.href = "/logout";
       } else if (error.response.status === 403) {
         console.warn("Forbidden - user does not have access to this resource.");
-        if (window.location.pathname !== "/") {
-          window.location.href = "/";
+        if (window.location.pathname !== "/403") {
+          window.location.href = "/403";
         }
       }
     }

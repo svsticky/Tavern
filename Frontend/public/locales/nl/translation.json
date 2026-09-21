@@ -623,5 +623,21 @@
   "copy_calendar_link": "Kopieer agendalink",
   "reset_calendar_link": "Reset agendalink",
   "calendar_link_reset": "Agendalink gereset. Werk je agenda-app bij met de nieuwe link.",
-  "calendar_link_reset_failed": "Kon de agendalink niet resetten"
+  "calendar_link_reset_failed": "Kon de agendalink niet resetten",
+  "403": "Geen toegang",
+  "forbidden_description": "De koala die de wacht houdt, zegt dat je hier niet in mag. Denk je dat dit een vergissing is? Vraag het aan het bestuur.",
+  "back_to_home": "Terug naar home",
+  "404": "Pagina niet gevonden",
+  "not_found_description": "We hebben overal gezocht, maar de pagina die je zoekt bestaat niet of is verplaatst.",
+  "forbidden_headline": "Hé, deze tak is verboden terrein!",
+  "not_found_headline": "Deze koala is verdwaald in het eucalyptusbos",
+  "add_member": "Lid toevoegen",
+  "creating_group": "Groep aanmaken",
+  "deletion_failed": "Verwijderen mislukt",
+  "deletion_successful": "Succesvol verwijderd",
+  "failed_to_save": "Opslaan mislukt",
+  "membership_payment_not_processed_description": "Je lidmaatschapsbetaling is nog niet verwerkt. Kom later terug of neem contact op met het bestuur als je vragen hebt.",
+  "saved": "Opgeslagen",
+  "slide": "Slide",
+  "url": "URL"
 }
