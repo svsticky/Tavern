@@ -51,6 +51,7 @@
     "overrides": {
         "@types/react": "19.0.10",
         "@types/react-dom": "19.0.4",
-        "prismjs": "1.30.0"
+        "prismjs": "1.30.0",
+        "yaml": "^2.8.3"
     }
 }
