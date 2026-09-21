@@ -28,6 +28,7 @@ public static class ActivityValidator
                 || dto.ShowOnWebsite
                 || dto.PaymentDeadline != null
                 || dto.EnrollOpenDate != null
+                || dto.IsEnrollable
                 || dto.OrganizerId == null
                 || !permissionService.IsInGroupInCurrentYear(userId, dto.OrganizerId.Value)
             )

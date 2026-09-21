@@ -303,6 +303,9 @@ describe("handleActivitySubmit", () => {
     expect(paths).not.toContain("/CostCenterId");
     expect(paths).not.toContain("/ShowInKoala");
     expect(paths).not.toContain("/IsEnrollable");
+    // /EnrollOpenDate isn't in the backend's AllowedFields list for non-board
+    // patches, so including it here would get the whole patch rejected.
+    expect(paths).not.toContain("/EnrollOpenDate");
   });
 
   it("editing as a board member includes financial patch operations", async () => {

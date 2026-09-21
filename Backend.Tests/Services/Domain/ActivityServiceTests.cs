@@ -492,6 +492,29 @@ public class ActivityServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchActivity_OrganizerChangesIsEnrollable_ThrowsUnauthorizedAccessException()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.IsEnrollable = false;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.IsEnrollable, true);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task PatchActivity_OrganizerChangesAllowedField_Succeeds()
     {
         var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
@@ -499,6 +522,7 @@ public class ActivityServiceTests : IDisposable
 
         var activity = CreateActivity("A1");
         activity.ShowInKoala = false;
+        activity.IsEnrollable = false;
         activity.OrganizerId = 10;
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
@@ -784,6 +808,7 @@ public class ActivityServiceTests : IDisposable
         activity.ShowOnWebsite = false;
         activity.OrganizerId = 10;
         activity.VatRate = 21;
+        activity.IsEnrollable = false;
         _db.Activities.Add(activity);
         await _db.SaveChangesAsync();
 
@@ -802,7 +827,8 @@ public class ActivityServiceTests : IDisposable
             OrganizerId = activity.OrganizerId,
             ShowInKoala = false,
             ShowOnWebsite = false,
-            IsEnrollable = activity.IsEnrollable,
+            // An organizer isn't allowed to touch IsEnrollable either - same reasoning as VatRate below.
+            IsEnrollable = true,
             AreParticipantsVisible = activity.AreParticipantsVisible,
             IsAdultOnly = activity.IsAdultOnly,
             IsWeeklyDrinks = activity.IsWeeklyDrinks,
@@ -819,6 +845,7 @@ public class ActivityServiceTests : IDisposable
         var saved = await _db.Activities.FindAsync(activity.Id);
         Assert.Equal("Updated by organizer", saved?.Name);
         Assert.Equal((uint?)21, saved?.VatRate);
+        Assert.False(saved?.IsEnrollable);
     }
 
     [Fact]
@@ -830,6 +857,7 @@ public class ActivityServiceTests : IDisposable
         var activity = CreateActivity("A1");
         activity.ShowInKoala = false;
         activity.ShowOnWebsite = false;
+        activity.IsEnrollable = false;
         activity.OrganizerId = 10;
         activity.VatRate = 21;
         _db.Activities.Add(activity);
@@ -1072,6 +1100,93 @@ public class ActivityServiceTests : IDisposable
         _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.UploadPoster(_userId, activity.Id, formFile));
+    }
+
+    [Fact]
+    public async Task UploadPoster_OrganizerActivityNotPublishedOrEnrollable_Succeeds()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.ShowOnWebsite = false;
+        activity.EnrollOpenDate = null;
+        activity.IsEnrollable = false;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var formFile = Substitute.For<IFormFile>();
+        formFile.FileName.Returns("new.png");
+        formFile.ContentType.Returns("image/png");
+
+        var compressedStream = new MemoryStream(new byte[] { 1, 2, 3 });
+        _fileCompressor.CompressFileAsync(formFile)
+            .Returns(Task.FromResult((Stream: (Stream)compressedStream, ContentType: "image/webp")));
+        _storageService.SaveFileAsync(Arg.Any<Stream>(), "image/webp", "posters")
+            .Returns(Task.FromResult("new.webp"));
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        await _service.UploadPoster(_userId, activity.Id, formFile);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.Equal("new.webp", saved?.PosterPath);
+    }
+
+    [Fact]
+    public async Task UploadPoster_OrganizerEnrollOpenDateSet_ThrowsUnauthorizedAccessException()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.ShowOnWebsite = false;
+        activity.IsEnrollable = false;
+        activity.EnrollOpenDate = DateTimeOffset.UtcNow.AddDays(1);
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var formFile = Substitute.For<IFormFile>();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(_ => throw new UnauthorizedAccessException());
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            _service.UploadPoster(_userId, activity.Id, formFile));
+    }
+
+    [Fact]
+    public async Task UploadPoster_OrganizerIsEnrollableTrue_ThrowsUnauthorizedAccessException()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.ShowOnWebsite = false;
+        activity.EnrollOpenDate = null;
+        activity.IsEnrollable = true;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var formFile = Substitute.For<IFormFile>();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(_ => throw new UnauthorizedAccessException());
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
             _service.UploadPoster(_userId, activity.Id, formFile));
     }
 

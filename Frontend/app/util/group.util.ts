@@ -82,11 +82,14 @@ export const isBoardOrCandidateBoard = (
 /**
  * Determines if the current user has permission to edit a specific activity.
  *
- * Logic:
+ * Logic mirrors the backend's PatchActivity/UpdateActivity authorization
+ * (see ActivityService.cs) exactly, so the edit button never appears for a
+ * request the backend would reject:
  * - **Board Members**: Always allowed to edit.
- * - **Organizers**: Allowed only if the activity hasn't been finalized for
- *   external systems (Website/Koala) and the event hasn't started yet and is part of
- *   the organizing group
+ * - **Organizers**: Allowed only if the activity hasn't ended, hasn't been
+ *   finalized for external systems (Website/Koala), doesn't have an
+ *   enrollment open date set or enrollment already opened, and belongs to
+ *   their organizing group.
  *
  * @param {ActivityResponseDto} activity - The activity data to check against.
  * @param {TokenParsed} tokenParsed - The parsed token containing user roles and ID.
@@ -101,9 +104,11 @@ export const canEditActivity = (
     Boolean(
       !activity.showInKoala &&
         !activity.showOnWebsite &&
+        !activity.enrollOpenDate &&
+        !activity.isEnrollable &&
         activity.organizerId &&
         isInGroupWithId(tokenParsed, activity.organizerId) &&
-        new Date(activity.dateTimeStart) > new Date(Date.now()),
+        new Date(activity.dateTimeEnd) > new Date(Date.now()),
     )
   );
 };

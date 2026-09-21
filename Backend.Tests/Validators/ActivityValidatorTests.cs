@@ -335,6 +335,19 @@ public class ActivityValidatorTests
     }
 
     [Fact]
+    public void ValidateRequest_IsEnrollableTrue_ChecksBoardPermission()
+    {
+        var dto = CreateValidDTO();
+        dto.IsEnrollable = true;
+
+        _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
+        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(x => throw new UnauthorizedAccessException());
+
+        Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
+    }
+
+    [Fact]
     public void ValidateRequest_OrganizerIdNull_ChecksBoardPermission()
     {
         var dto = CreateValidDTO();

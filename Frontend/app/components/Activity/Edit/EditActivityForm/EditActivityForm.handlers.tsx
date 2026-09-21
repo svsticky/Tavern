@@ -336,15 +336,6 @@ export const handleActivitySubmit = async ({
           },
           {
             op: "replace",
-            path: "/EnrollOpenDate",
-            value: fd.get("EnrollOpenDate")
-              ? parseInputAsAssociationTime(
-                  fd.get("EnrollOpenDate") as string,
-                ).toISOString()
-              : null,
-          },
-          {
-            op: "replace",
             path: "/AreParticipantsVisible",
             value: fd.get("AreParticipantsVisible") === "on",
           },
@@ -372,6 +363,15 @@ export const handleActivitySubmit = async ({
 
         if (isBoard) {
           patchOperations.push(
+            {
+              op: "replace",
+              path: "/EnrollOpenDate",
+              value: fd.get("EnrollOpenDate")
+                ? parseInputAsAssociationTime(
+                    fd.get("EnrollOpenDate") as string,
+                  ).toISOString()
+                : null,
+            },
             {
               op: "replace",
               path: "/ShowInKoala",
