@@ -166,7 +166,7 @@ public class MemberResponseDTO
     {
         return m => new MemberResponseDTO
         {
-            Id = m.Id,
+            Id = isBoard || userId == m.Id ? m.Id : null,
             StudentNumber = isBoard || userId == m.Id ? m.StudentNumber : null,
             FirstName = m.FirstName,
             LastName = m.LastName,
