@@ -169,14 +169,14 @@ public class EnrollmentService : IEnrollmentService
 
             EnsureActivityUnenrollmentOpen(enrollment.Activity, isBoardMember);
 
-            // If the enrollment is not on the waiting list, we need to promote the next in line after deletion
-            bool wasOnWaitingList = enrollment.IsOnWaitingList;
+            // If the enrollment is not on the waiting list, and the activity wasn't overfull, we need to promote the next in line after deletion
+            bool shouldPromoteSomeone = !enrollment.IsOnWaitingList && enrollment.Activity.Enrollments.Count(e => !e.IsOnWaitingList) <= enrollment.Activity.ParticipantLimit;
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
             _db.Enrollments.Remove(enrollment);
 
             Enrollment? promotedEnrollment = null;
-            if (!wasOnWaitingList)
+            if (shouldPromoteSomeone)
             {
                 promotedEnrollment = await PromoteFromWaitingList(activityId, cancellationToken);
             }

@@ -535,6 +535,43 @@ public class EnrollmentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteEnrollment_ActivityAlreadyOverCapacity_DoesNotDoublePromote()
+    {
+        // Activity at its limit, plus one extra participant manually moved off the
+        // waiting list by a board member (over capacity by one, e.g. via the "move to
+        // participants" action, which doesn't enforce ParticipantLimit).
+        var memberToUnenroll = CreateMember("1111111");
+        var manuallyPromotedMember = CreateMember("2222222");
+        var stillWaitingMember = CreateMember("3333333");
+        var activity = CreateActivity("Waitlist Activity");
+        activity.ParticipantLimit = 1;
+
+        _db.Members.AddRange(memberToUnenroll, manuallyPromotedMember, stillWaitingMember);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var enrollment1 = new Enrollment { MemberId = memberToUnenroll.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow.AddMinutes(-10), IsOnWaitingList = false };
+        var enrollment2 = new Enrollment { MemberId = manuallyPromotedMember.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow.AddMinutes(-8), IsOnWaitingList = false };
+        var enrollment3 = new Enrollment { MemberId = stillWaitingMember.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow.AddMinutes(-5), IsOnWaitingList = true };
+        _db.Enrollments.AddRange(enrollment1, enrollment2, enrollment3);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(memberToUnenroll.Id).Returns(false);
+
+        // Act: unenroll one of the two participants. One participant remains, exactly at
+        // the limit, so no spot actually opened up — the waiting list must NOT be touched.
+        await _service.DeleteEnrollment(activity.Id, memberToUnenroll.Id, memberToUnenroll.Id, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var stillWaiting = await _db.Enrollments.FirstOrDefaultAsync(e => e.MemberId == stillWaitingMember.Id && e.ActivityId == activity.Id);
+        Assert.NotNull(stillWaiting);
+        Assert.True(stillWaiting.IsOnWaitingList);
+
+        await _mailService.DidNotReceive().SendEnrollmentPromotionEmail(Arg.Any<Enrollment>());
+    }
+
+    [Fact]
     public async Task DeleteEnrollment_MailSendThrows_SwallowsException()
     {
         var memberToDelete = CreateMember("1111111");
