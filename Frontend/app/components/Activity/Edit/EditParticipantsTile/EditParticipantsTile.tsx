@@ -107,24 +107,27 @@ export default function EditParticipantsTile({
                   title={`${t("waiting_list")} (${waitingList.length})`}
                   border
                 />
-                <EditWaitinglistParticipantTile
-                  activityId={activity.id}
-                  enrollment={waitingList[0]}
-                  onUnenroll={() =>
-                    handleUnenrollParticipant(
-                      waitingList[0].member.id!,
-                      activity,
-                      setActivity,
-                    )
-                  }
-                  onMoveToParticipants={() =>
-                    handleMoveToParticipants(
-                      waitingList[0].member.id!,
-                      activity,
-                      setActivity,
-                    )
-                  }
-                />
+                {waitingList.map((e, index) => (
+                  <EditWaitinglistParticipantTile
+                    key={index}
+                    activityId={activity.id}
+                    enrollment={e}
+                    onUnenroll={() =>
+                      handleUnenrollParticipant(
+                        e.member.id!,
+                        activity,
+                        setActivity,
+                      )
+                    }
+                    onMoveToParticipants={() =>
+                      handleMoveToParticipants(
+                        e.member.id!,
+                        activity,
+                        setActivity,
+                      )
+                    }
+                  />
+                ))}
               </>
             )}
           </div>
