@@ -147,6 +147,50 @@ public class EnrollmentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetEnrollments_ActivityIsDraft_ExcludesEnrollment()
+    {
+        // Arrange
+        var member = CreateMember("1234567");
+        var publishedActivity = CreateActivity("Published Activity");
+        var draftActivity = CreateActivity("Draft Activity");
+        draftActivity.ShowInKoala = false;
+        _db.Members.Add(member);
+        _db.Activities.AddRange(publishedActivity, draftActivity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.AddRange(
+            new Enrollment
+            {
+                ActivityId = publishedActivity.Id,
+                MemberId = member.Id,
+                Price = 10,
+                RegisteredOn = DateTime.UtcNow,
+                IsOnWaitingList = false
+            },
+            new Enrollment
+            {
+                ActivityId = draftActivity.Id,
+                MemberId = member.Id,
+                Price = 10,
+                RegisteredOn = DateTime.UtcNow,
+                IsOnWaitingList = false
+            });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var dto = new GetEnrollmentsDTO { FromMemberId = member.Id };
+
+        // Act
+        var result = await _service.GetEnrollments(dto, _userId, CancellationToken.None);
+
+        // Assert
+        var list = result.ToList();
+        Assert.Single(list);
+        Assert.Equal(publishedActivity.Id, list[0].Activity.Id);
+    }
+
+    [Fact]
     public async Task GetEnrollments_UserIsNotBoardMemberAndRequestsOthers_EnsuresBoardPermission()
     {
         // Arrange
