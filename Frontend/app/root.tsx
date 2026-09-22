@@ -206,7 +206,11 @@ export default function App() {
     );
   }
 
-  if (!i18nReady || !themeReady) {
+  if (!themeReady) {
+    return null;
+  }
+
+  if (!i18nReady) {
     return <StickyLoadingLogo />;
   }
 
