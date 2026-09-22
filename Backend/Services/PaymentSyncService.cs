@@ -182,7 +182,9 @@ public class PaymentSyncService(
                                 bool hasOtherPendingPayments = await db.MembershipPayments.AnyAsync(p => p.MemberId == member.Id && p.PaidAt == null && p.Id != payment.Id)
                                     || await db.BegunstigerPayments.AnyAsync(p => p.MemberId == member.Id && p.PaidAt == null && p.Id != payment.Id);
 
-                                if (!hasOtherPendingPayments && !paymentValidationService.HasEverPaidMembershipPayment(member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(member.Id))
+                                bool hasEnrollments = await db.Enrollments.AnyAsync(e => e.MemberId == member.Id);
+
+                                if (!hasOtherPendingPayments && !hasEnrollments && !paymentValidationService.HasEverPaidMembershipPayment(member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(member.Id))
                                 {
                                     db.Members.Remove(member);
                                     authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."), db);
