@@ -203,7 +203,7 @@ export default function ActivityTile({
                 <UsersRound size={12} className="shrink-0" />
                 <span className="min-w-0 truncate">
                   {activity.participantLimit && canEnroll
-                    ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
+                    ? `${Math.max(0, activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length)} ${t("places_available")}`
                     : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
                 </span>
               </div>
