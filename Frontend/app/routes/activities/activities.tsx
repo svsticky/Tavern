@@ -124,7 +124,10 @@ export default function ActivitiesPage() {
               <Button
                 variant="secondary"
                 onClick={async () =>
-                  downloadPosters(activities, (await authService.getToken()) ?? "")
+                  downloadPosters(
+                    activities,
+                    (await authService.getToken()) ?? "",
+                  )
                 }
                 className="text-xs px-3 py-1"
                 title="Download Koala Posters"

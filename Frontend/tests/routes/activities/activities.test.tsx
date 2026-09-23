@@ -1,9 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
-import ActivitiesPage, {
-  clientLoader,
-} from "~/routes/activities/activities";
+import ActivitiesPage, { clientLoader } from "~/routes/activities/activities";
 import {
   copyWeekOverview,
   downloadPosters,
