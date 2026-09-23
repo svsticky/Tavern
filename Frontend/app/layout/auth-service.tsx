@@ -31,6 +31,15 @@ export const getActiveAuthService = (): IAuthService | null => {
 };
 
 /**
+ * Test-only escape hatch: clears the cached singleton so each test can
+ * observe a fresh construction instead of the first test's instance leaking
+ * into every later one.
+ */
+export const __resetAuthServiceForTests = () => {
+  activeAuthService = null;
+};
+
+/**
  * Resolves once the active auth service has finished its init flow (Keycloak
  * SSO check, etc). Safe to call from a `clientLoader` - `IAuthService.init`
  * is idempotent, so this piggybacks on the same init the `AuthProvider`
