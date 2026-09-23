@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadHomePageData } from "~/routes/home/home.handlers";
+import { describe, expect, it, vi } from "vitest";
+import { loadHomeLoaderData } from "~/routes/home/home.handlers";
 
 const { getActivities, getAnnouncements, getGroupmemberships } = vi.hoisted(
   () => ({
@@ -15,38 +15,7 @@ vi.mock("~/api", () => ({
   getGroupmemberships,
 }));
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  toast: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
-
-function baseArgs(
-  overrides: Partial<Parameters<typeof loadHomePageData>[0]> = {},
-) {
-  return {
-    authenticated: true,
-    userId: "user-1",
-    setLoading: vi.fn(),
-    setActivities: vi.fn(),
-    setAnnouncements: vi.fn(),
-    setGroupMemberships: vi.fn(),
-    setEnrolledActivities: vi.fn(),
-    ...overrides,
-  };
-}
-
-describe("loadHomePageData", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("does nothing when not authenticated", async () => {
-    const setLoading = vi.fn();
-    await loadHomePageData(baseArgs({ authenticated: false, setLoading }));
-    expect(getActivities).not.toHaveBeenCalled();
-    expect(setLoading).not.toHaveBeenCalled();
-  });
-
+describe("loadHomeLoaderData", () => {
   it("loads activities, enrolled activities, announcements and group memberships on success", async () => {
     getActivities
       .mockResolvedValueOnce({ data: [{ id: 1 }] })
@@ -54,43 +23,30 @@ describe("loadHomePageData", () => {
     getAnnouncements.mockResolvedValue({ data: [{ id: 3 }] });
     getGroupmemberships.mockResolvedValue({ data: [{ id: 4 }] });
 
-    const setActivities = vi.fn();
-    const setEnrolledActivities = vi.fn();
-    const setAnnouncements = vi.fn();
-    const setGroupMemberships = vi.fn();
-    const setLoading = vi.fn();
+    const result = await loadHomeLoaderData("user-1");
 
-    await loadHomePageData(
-      baseArgs({
-        setActivities,
-        setEnrolledActivities,
-        setAnnouncements,
-        setGroupMemberships,
-        setLoading,
-      }),
-    );
-
-    expect(setActivities).toHaveBeenCalledWith([{ id: 1 }]);
-    expect(setEnrolledActivities).toHaveBeenCalledWith([{ id: 2 }]);
-    expect(setAnnouncements).toHaveBeenCalledWith([{ id: 3 }]);
-    expect(setGroupMemberships).toHaveBeenCalledWith([{ id: 4 }]);
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
+    expect(result).toEqual({
+      activities: [{ id: 1 }],
+      enrolledActivities: [{ id: 2 }],
+      announcements: [{ id: 3 }],
+      groupMemberships: [{ id: 4 }],
+    });
+    expect(getActivities).toHaveBeenNthCalledWith(1, {
+      query: { IncludePast: false, IncludeFuture: true },
+    });
+    expect(getActivities).toHaveBeenNthCalledWith(2, {
+      query: { UserId: "user-1", IncludePast: false, IncludeFuture: true },
+    });
   });
 
-  it("logs and shows an error toast when activities fail to load", async () => {
+  it("throws when activities fail to load", async () => {
     getActivities.mockResolvedValue({ error: "fail" });
     getAnnouncements.mockResolvedValue({ data: [] });
     getGroupmemberships.mockResolvedValue({ data: [] });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
+    await expect(loadHomeLoaderData("user-1")).rejects.toThrow(
+      "Failed to load activities",
+    );
   });
 
   it("throws when enrolled activities fail to load", async () => {
@@ -99,41 +55,29 @@ describe("loadHomePageData", () => {
       .mockResolvedValueOnce({ error: "fail" });
     getAnnouncements.mockResolvedValue({ data: [] });
     getGroupmemberships.mockResolvedValue({ data: [] });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
+    await expect(loadHomeLoaderData("user-1")).rejects.toThrow(
+      "Failed to load enrolled activities",
+    );
   });
 
   it("throws when announcements fail to load", async () => {
     getActivities.mockResolvedValue({ data: [] });
     getAnnouncements.mockResolvedValue({ error: "fail" });
     getGroupmemberships.mockResolvedValue({ data: [] });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
+    await expect(loadHomeLoaderData("user-1")).rejects.toThrow(
+      "Failed to load announcements",
+    );
   });
 
   it("throws when group memberships fail to load", async () => {
     getActivities.mockResolvedValue({ data: [] });
     getAnnouncements.mockResolvedValue({ data: [] });
     getGroupmemberships.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
+    await expect(loadHomeLoaderData("user-1")).rejects.toThrow(
+      "Failed to load group memberships",
+    );
   });
 });

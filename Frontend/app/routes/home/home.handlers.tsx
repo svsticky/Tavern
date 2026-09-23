@@ -1,5 +1,3 @@
-import { t } from "i18next";
-import { toast } from "react-hot-toast";
 import {
   type ActivityResponseDto,
   type GetAnnouncementResponseDto,
@@ -8,104 +6,69 @@ import {
   getAnnouncements,
   getGroupmemberships,
 } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
 
-/**
- * Arguments for the loadHomePageData handler.
- */
-type loadHomePageArgs = {
-  authenticated: boolean | undefined;
-  userId: string | undefined;
-  setLoading: (loading: boolean) => void;
-  setActivities: (activities: ActivityResponseDto[]) => void;
-  setAnnouncements: (announcements: GetAnnouncementResponseDto[]) => void;
-  setGroupMemberships: (memberships: GroupMembershipResponseDto[]) => void;
-  setEnrolledActivities: (activities: ActivityResponseDto[]) => void;
+export type HomeLoaderData = {
+  activities: ActivityResponseDto[];
+  enrolledActivities: ActivityResponseDto[];
+  announcements: GetAnnouncementResponseDto[];
+  groupMemberships: GroupMembershipResponseDto[];
 };
 
 /**
- * Orchestrates the data hydration for the main user home page.
+ * Fetches the three core data sets the home dashboard needs, in parallel:
+ * upcoming activities, the user's own enrolled activities, announcements,
+ * and the user's group memberships.
  *
- * Fetches three core data sets in sequence:
- * 1. **Upcoming Activities**: Future events available for viewing or enrollment.
- * 2. **Announcements**: Recent association-wide notifications.
- * 3. **Personal Memberships**: Groups and committees the specific user belongs to.
- *
- * @async
- * @param {loadHomePageArgs} args - Configuration object containing:
- * @param {boolean} args.initialized - Guard to ensure auth services are ready.
- * @param {boolean | undefined} args.authenticated - Guard to ensure the user is logged in.
- * @param {string | undefined} args.userId - The ID used to filter personal group memberships.
- * @param {Function} args.setLoading - Function to toggle the loading overlay.
- * @param {Function} args.setActivities - Function to update the activities state.
- * @param {Function} args.setAnnouncements - Function to update the announcements state.
- * @param {Function} args.setGroupMemberships - Function to update the user's committees state.
- * @param {Function} args.setEnrolledActivities - Function to update the user's enrolled activities state.
- * @throws {Error} Throws an error if any of the API requests fail.
- * @returns {Promise<void>} Resolves when all data has been fetched and state updated, or rejects with an error.
+ * Called from the route's `clientLoader` - throws on failure so React
+ * Router's error boundary handles it, rather than each caller having to
+ * check `.error` itself.
  */
-export const loadHomePageData = async ({
-  authenticated,
-  userId,
-  setLoading,
-  setActivities,
-  setAnnouncements,
-  setGroupMemberships,
-  setEnrolledActivities,
-}: loadHomePageArgs) => {
-  if (!authenticated) return;
+export async function loadHomeLoaderData(
+  userId: string,
+): Promise<HomeLoaderData> {
+  const [
+    activitiesResponse,
+    enrolledActivitiesResponse,
+    announcementsResponse,
+    groupMembershipsResponse,
+  ] = await Promise.all([
+    getActivities({
+      query: {
+        IncludePast: false,
+        IncludeFuture: true,
+      },
+    }),
+    getActivities({
+      query: {
+        UserId: userId,
+        IncludePast: false,
+        IncludeFuture: true,
+      },
+    }),
+    getAnnouncements(),
+    getGroupmemberships({
+      query: {
+        MemberId: userId,
+      },
+    }),
+  ]);
 
-  try {
-    setLoading(true);
-    const [
-      activitiesResponse,
-      enrolledActivitiesResponse,
-      announcementsResponse,
-      committeesResponse,
-    ] = await Promise.all([
-      getActivities({
-        query: {
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
-      getActivities({
-        query: {
-          UserId: userId,
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
-      getAnnouncements(),
-      getGroupmemberships({
-        query: {
-          MemberId: userId,
-        },
-      }),
-    ]);
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activities");
-    setActivities(activitiesResponse.data as ActivityResponseDto[]);
+  if (activitiesResponse.error || !activitiesResponse.data)
+    throw new Error("Failed to load activities");
 
-    if (enrolledActivitiesResponse.error || !enrolledActivitiesResponse.data)
-      throw new Error("Failed to load enrolled activities");
-    setEnrolledActivities(
-      enrolledActivitiesResponse.data as ActivityResponseDto[],
-    );
+  if (enrolledActivitiesResponse.error || !enrolledActivitiesResponse.data)
+    throw new Error("Failed to load enrolled activities");
 
-    if (announcementsResponse.error || !announcementsResponse.data)
-      throw new Error("Failed to load announcements");
-    setAnnouncements(
-      announcementsResponse.data as GetAnnouncementResponseDto[],
-    );
+  if (announcementsResponse.error || !announcementsResponse.data)
+    throw new Error("Failed to load announcements");
 
-    if (committeesResponse.error || !committeesResponse.data)
-      throw new Error("Failed to load group memberships");
-    setGroupMemberships(committeesResponse.data);
-  } catch (error) {
-    console.error("Error while loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
-};
+  if (groupMembershipsResponse.error || !groupMembershipsResponse.data)
+    throw new Error("Failed to load group memberships");
+
+  return {
+    activities: activitiesResponse.data as ActivityResponseDto[],
+    enrolledActivities: enrolledActivitiesResponse.data as ActivityResponseDto[],
+    announcements: announcementsResponse.data as GetAnnouncementResponseDto[],
+    groupMemberships: groupMembershipsResponse.data,
+  };
+}
