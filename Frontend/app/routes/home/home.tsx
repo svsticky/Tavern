@@ -53,6 +53,10 @@ export default function DashboardPage() {
     enrolledActivities,
     announcements,
     groupMemberships,
+    outstandingPayments,
+    unpaidActivityIds,
+    pastEnrollmentAmount,
+    comingEnrollmentAmount,
   } = useLoaderData<typeof clientLoader>();
 
   return (
@@ -61,6 +65,10 @@ export default function DashboardPage() {
       <DashboardHeader
         name={tokenParsed.given_name}
         nextActivity={activities[0]}
+        outstandingPayments={outstandingPayments}
+        unpaidActivityIds={unpaidActivityIds}
+        pastEnrollmentAmount={pastEnrollmentAmount}
+        comingEnrollmentAmount={comingEnrollmentAmount}
       />
 
       <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">

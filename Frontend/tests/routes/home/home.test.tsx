@@ -53,6 +53,10 @@ describe("home clientLoader", () => {
       enrolledActivities: [],
       announcements: [],
       groupMemberships: [],
+      outstandingPayments: 7.5,
+      unpaidActivityIds: [1],
+      pastEnrollmentAmount: 1,
+      comingEnrollmentAmount: 2,
     });
 
     const result = await clientLoader();
@@ -64,6 +68,10 @@ describe("home clientLoader", () => {
       enrolledActivities: [],
       announcements: [],
       groupMemberships: [],
+      outstandingPayments: 7.5,
+      unpaidActivityIds: [1],
+      pastEnrollmentAmount: 1,
+      comingEnrollmentAmount: 2,
     });
   });
 });
@@ -81,6 +89,10 @@ describe("DashboardPage", () => {
       enrolledActivities: [],
       announcements: [],
       groupMemberships: [],
+      outstandingPayments: 0,
+      unpaidActivityIds: [],
+      pastEnrollmentAmount: 0,
+      comingEnrollmentAmount: 0,
     });
 
     renderWithProviders(<DashboardPage />);
