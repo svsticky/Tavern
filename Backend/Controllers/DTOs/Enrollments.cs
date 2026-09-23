@@ -47,14 +47,14 @@ public class EnrollmentResponseDTO
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
     /// <param name="includeActivity">A boolean indicating whether to include activity information.</param>
     /// <returns>An expression that projects an Enrollment entity into an EnrollmentResponseDTO.</returns>
-    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid userId, bool isBoard, bool includeActivity = true)
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeActivity = true)
     {
         return e => new EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
             RegisteredOn = e.RegisteredOn,
-            Member = e.Member != null && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
-                        ? MemberResponseDTO.ToDto(userId, isBoard).Compile()(e.Member)
+            Member = e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+                        ? MemberResponseDTO.ToDto(userId.Value, isBoard).Compile()(e.Member)
                         : null,
             SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
                 .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)

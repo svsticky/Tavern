@@ -202,7 +202,7 @@ public class ActivityResponseDTO
     /// <param name="userId">The ID of the user for whom to project the activity.</param>
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
     /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid? userId, bool isBoard)
     {
         return a => new ActivityResponseDTO
         {

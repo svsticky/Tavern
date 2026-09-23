@@ -88,7 +88,7 @@ public class ActivityService : IActivityService
             .ApplyPaging(dto)
             .ToListAsync();
 
-        return activities.Select(a => ActivityResponseDTO.ToDto(userId ?? Guid.Empty, isBoard).Compile()(a));
+        return activities.Select(a => ActivityResponseDTO.ToDto(userId, isBoard).Compile()(a));
     }
 
     /// <inheritdoc />
