@@ -2,9 +2,10 @@ import { t } from "i18next";
 import { Mail, Phone, PlusIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router";
-import { getMembers, type MemberResponseDto } from "~/api";
+import { useLoaderData, useNavigate } from "react-router";
+import type { MemberResponseDto } from "~/api";
 import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
@@ -14,9 +15,29 @@ import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import { PAGE_SIZE, fetchMembersPage } from "./members.handlers";
 
-/** The number of members to fetch per page for infinite scrolling. */
-const PAGE_SIZE = 20;
+type LoaderData = {
+  members: MemberResponseDto[];
+  hasMore: boolean;
+};
+
+/**
+ * Fetches the first, unfiltered page of members before the route renders.
+ * Search text and the filter panel stay local component state (not reflected
+ * in the URL) exactly as before - only the initial mount's fetch moves ahead
+ * of render here, to fix scroll restoration and drop the loading flash.
+ */
+export async function clientLoader(): Promise<LoaderData> {
+  await requireTokenParsed();
+  const members = await fetchMembersPage(1, "", null);
+  return { members, hasMore: members.length === PAGE_SIZE };
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative directory page for managing association members.
@@ -35,47 +56,31 @@ const PAGE_SIZE = 20;
  * @component
  */
 export default function Members() {
+  const loaderData = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<MemberResponseDto[]>([]);
+  const [members, setMembers] = useState<MemberResponseDto[]>(
+    loaderData.members,
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<MembersFilterDto | null>(null);
 
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(loaderData.hasMore);
   const loaderRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
   const fetchMembers = useCallback(
     async (pageNum: number, search: string, isInitial: boolean) => {
       try {
         setLoading(true);
-        const response = await getMembers({
-          query: {
-            Page: pageNum,
-            PageSize: PAGE_SIZE,
-            Search: search,
-            StudyId: filters?.studyId || undefined,
-            Gratie: filters?.gratie || undefined,
-            LidVanVerdienste: filters?.lidVanVerdienste || undefined,
-            EreLid: filters?.ereLid || undefined,
-            Begunstiger: filters?.begunstiger || undefined,
-            Suspended: filters?.suspended || undefined,
-            Inactive: filters?.inactive || undefined,
-            StudyType: filters?.studyType || undefined,
-          },
-        });
+        const data = await fetchMembersPage(pageNum, search, filters);
 
-        if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to fetch members");
-        }
+        setMembers((prev) => (isInitial ? data : [...prev, ...data]));
 
-        setMembers((prev) =>
-          isInitial ? response.data! : [...prev, ...response.data!],
-        );
-
-        if (response.data.length < PAGE_SIZE) {
+        if (data.length < PAGE_SIZE) {
           setHasMore(false);
         }
       } catch (error) {
@@ -101,7 +106,14 @@ export default function Members() {
     return () => clearTimeout(handler);
   }, [searchQuery]);
 
+  // The loader already fetched page 1 with no search/filters for the initial
+  // mount - skip that first run so it isn't immediately refetched, and only
+  // react to an actual later change to search or filters.
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setPage(1);
     setHasMore(true);
     fetchMembers(1, debouncedSearchQuery, true);

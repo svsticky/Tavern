@@ -2,19 +2,33 @@ import { configure } from "@testing-library/dom";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MemberResponseDto } from "~/api";
-import Members from "~/routes/admin/members";
 import { renderWithProviders } from "~/testUtils";
 
-// The component debounces its initial fetch by 300ms; under full-suite parallel load the
+// The component debounces search refetches by 300ms; under full-suite parallel load the
 // default 1000ms async-query timeout can be too tight, so give these queries more headroom.
 configure({ asyncUtilTimeout: 20000 });
 vi.setConfig({ testTimeout: 25000 });
 
-const { getMembers } = vi.hoisted(() => ({
-  getMembers: vi.fn(),
+const { fetchMembersPage } = vi.hoisted(() => ({
+  fetchMembersPage: vi.fn(),
+}));
+vi.mock("~/routes/admin/members.handlers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/routes/admin/members.handlers")>()),
+  fetchMembersPage,
 }));
 
-vi.mock("~/api", () => ({ getMembers }));
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+const { useLoaderData } = vi.hoisted(() => ({
+  useLoaderData: vi.fn(),
+}));
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  useLoaderData,
+}));
 
 const toastErrorFn = vi.fn();
 vi.mock("react-hot-toast", () => ({
@@ -51,6 +65,46 @@ function makeMembers(count: number, offset = 0): MemberResponseDto[] {
   })) as MemberResponseDto[];
 }
 
+function loaderData(overrides: Partial<ReturnType<typeof baseLoaderData>> = {}) {
+  return { ...baseLoaderData(), ...overrides };
+}
+function baseLoaderData() {
+  return { members: [] as MemberResponseDto[], hasMore: false };
+}
+
+import Members, { clientLoader } from "~/routes/admin/members";
+
+describe("admin members clientLoader", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("fetches the first, unfiltered page of members", async () => {
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+    fetchMembersPage.mockResolvedValue(makeMembers(20));
+
+    const result = await clientLoader();
+
+    expect(fetchMembersPage).toHaveBeenCalledWith(1, "", null);
+    expect(result.members).toHaveLength(20);
+    expect(result.hasMore).toBe(true);
+  });
+
+  it("reports hasMore as false for a partial page", async () => {
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+    fetchMembersPage.mockResolvedValue(makeMembers(5));
+
+    const result = await clientLoader();
+
+    expect(result.hasMore).toBe(false);
+  });
+
+  it("propagates a fetch failure to React Router's error boundary", async () => {
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+    fetchMembersPage.mockRejectedValue(new Error("fail"));
+
+    await expect(clientLoader()).rejects.toThrow("fail");
+  });
+});
+
 describe("Members", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -58,65 +112,65 @@ describe("Members", () => {
     intersectionCallback = null;
   });
 
-  it("fetches the first page of members on mount", async () => {
-    getMembers.mockResolvedValue({ data: makeMembers(20) });
+  it("renders the members the loader already fetched", () => {
+    useLoaderData.mockReturnValue(
+      loaderData({ members: makeMembers(20), hasMore: true }),
+    );
+
     renderWithProviders(<Members />);
 
-    expect(await screen.findByText("First0 Last0")).toBeInTheDocument();
-    expect(getMembers).toHaveBeenCalledWith(
-      expect.objectContaining({
-        query: expect.objectContaining({ Page: 1, Search: "" }),
-      }),
-    );
+    expect(screen.getByText("First0 Last0")).toBeInTheDocument();
+    expect(fetchMembersPage).not.toHaveBeenCalled();
   });
 
-  it("shows an error toast when fetching members fails", async () => {
-    getMembers.mockResolvedValue({ error: "fail" });
+  it("shows an error toast when a search/filter refetch fails", async () => {
+    useLoaderData.mockReturnValue(loaderData());
+    fetchMembersPage.mockRejectedValue(new Error("fail"));
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
     renderWithProviders(<Members />);
+    fireEvent.change(screen.getByLabelText("search"), {
+      target: { value: "jane" },
+    });
 
     await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
     consoleError.mockRestore();
   });
 
-  it("shows 'no_data' when there are no members and no more pages", async () => {
-    getMembers.mockResolvedValue({ data: [] });
+  it("shows 'no_data' when the loader found no members", () => {
+    useLoaderData.mockReturnValue(loaderData());
+
     renderWithProviders(<Members />);
 
-    expect(await screen.findByText("no_data")).toBeInTheDocument();
+    expect(screen.getByText("no_data")).toBeInTheDocument();
   });
 
   it("debounces the search query before refetching", async () => {
-    getMembers.mockResolvedValue({ data: [] });
+    useLoaderData.mockReturnValue(loaderData());
+    fetchMembersPage.mockResolvedValue([]);
     renderWithProviders(<Members />);
-    await screen.findByText("no_data");
 
-    getMembers.mockClear();
     fireEvent.change(screen.getByLabelText("search"), {
       target: { value: "jane" },
     });
 
+    expect(fetchMembersPage).not.toHaveBeenCalled();
+
     await waitFor(
-      () =>
-        expect(getMembers).toHaveBeenCalledWith(
-          expect.objectContaining({
-            query: expect.objectContaining({ Search: "jane" }),
-          }),
-        ),
+      () => expect(fetchMembersPage).toHaveBeenCalledWith(1, "jane", null),
       { timeout: 2000 },
     );
   });
 
   it("loads more members when the loader comes into view", async () => {
-    getMembers
-      .mockResolvedValueOnce({ data: makeMembers(20, 0) })
-      .mockResolvedValueOnce({ data: makeMembers(5, 20) });
-    renderWithProviders(<Members />);
+    useLoaderData.mockReturnValue(
+      loaderData({ members: makeMembers(20, 0), hasMore: true }),
+    );
+    fetchMembersPage.mockResolvedValue(makeMembers(5, 20));
 
-    await screen.findByText("First0 Last0");
+    renderWithProviders(<Members />);
     expect(intersectionCallback).toBeTruthy();
 
     intersectionCallback!(
@@ -125,30 +179,30 @@ describe("Members", () => {
     );
 
     expect(await screen.findByText("First20 Last20")).toBeInTheDocument();
+    expect(fetchMembersPage).toHaveBeenCalledWith(2, "", null);
   });
 
   it("opens the filters modal and applies filters", async () => {
-    getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+    useLoaderData.mockReturnValue(loaderData());
+    fetchMembersPage.mockResolvedValue([]);
 
-    await screen.findByText("no_data");
+    renderWithProviders(<Members />);
     fireEvent.click(screen.getByText("filters"));
     fireEvent.click(await screen.findByText("apply-filters"));
 
     await waitFor(() =>
-      expect(getMembers).toHaveBeenCalledWith(
-        expect.objectContaining({
-          query: expect.objectContaining({ StudyId: 5 }),
-        }),
+      expect(fetchMembersPage).toHaveBeenCalledWith(
+        1,
+        "",
+        expect.objectContaining({ studyId: 5 }),
       ),
     );
   });
 
-  it("navigates to create-member when the plus button is clicked", async () => {
-    getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+  it("navigates to create-member when the plus button is clicked", () => {
+    useLoaderData.mockReturnValue(loaderData());
 
-    await screen.findByText("no_data");
+    renderWithProviders(<Members />);
     const plusButton = document
       .querySelector("svg.lucide-plus")
       ?.closest("button");
