@@ -33,6 +33,7 @@ export function createMockAuthService(
   overrides: Partial<IAuthService> = {},
 ): IAuthService {
   return {
+    init: vi.fn(async () => {}),
     login: vi.fn(async () => {}),
     logout: vi.fn(async () => {}),
     isAuthenticated: vi.fn(() => true),
