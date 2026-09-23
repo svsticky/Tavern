@@ -1,12 +1,9 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import type {
-  Activity,
-  ActivityResponseDto,
-  EnrollmentBalance,
-  Member,
-} from "~/api";
+import { useLoaderData, useSearchParams } from "react-router";
+import type { ActivityResponseDto } from "~/api";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
@@ -14,14 +11,48 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
+  type FinancesData,
+  fetchExpiredActivities,
+  fetchFinancesData,
   handleMarkAsPaid,
   handlePaymentsExport,
   handleWhatsAppClick,
-  loadExpiredActivities,
-  loadFinancesData,
   refreshUnpaidPayments,
 } from "./finances.handlers";
+
+type LoaderData = FinancesData & {
+  year: number;
+  expiredActivities: ActivityResponseDto[];
+};
+
+/**
+ * Fetches the finance dashboard's unpaid/overpaid data and the "expired
+ * activities" queue for the year in the URL (so a selected year is
+ * shareable and restored for free on back-navigation).
+ */
+export async function clientLoader({
+  request,
+}: {
+  request: Request;
+}): Promise<LoaderData> {
+  await requireTokenParsed();
+
+  const url = new URL(request.url);
+  const year = Number(url.searchParams.get("year")) || getCommitteeYear();
+
+  const [financesData, expiredActivities] = await Promise.all([
+    fetchFinancesData(),
+    fetchExpiredActivities(year),
+  ]);
+
+  return { ...financesData, expiredActivities, year };
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The administrative Finances dashboard for the association.
@@ -41,69 +72,47 @@ import {
  * @component
  */
 export default function Finances() {
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [totalUnpaid, setTotalUnpaid] = useState(0);
-  const [openPayments, setOpenPayments] = useState(0);
+  const [totalUnpaid, setTotalUnpaid] = useState(loaderData.totalUnpaid);
+  const [openPayments, setOpenPayments] = useState(loaderData.openPayments);
+  const [unpaidBalances, setUnpaidBalances] = useState(
+    loaderData.unpaidBalances,
+  );
+  const [unpaidActivities, setUnpaidActivities] = useState(
+    loaderData.unpaidActivities,
+  );
+  const [membersWithOverduePayment, setMembersWithOverduePayment] = useState(
+    loaderData.membersWithOverduePayment,
+  );
+  const [exportStartDate, setExportStartDate] = useState<string>("");
+  const [exportEndDate, setExportEndDate] = useState<string>("");
+
+  // The loader reruns (and hands back new unpaid/overpaid data) on every
+  // navigation, including a year change - resync the locally-patched state
+  // (see refreshUnpaidPayments below) to that fresh data.
+  useEffect(() => {
+    setTotalUnpaid(loaderData.totalUnpaid);
+    setOpenPayments(loaderData.openPayments);
+    setUnpaidBalances(loaderData.unpaidBalances);
+    setUnpaidActivities(loaderData.unpaidActivities);
+    setMembersWithOverduePayment(loaderData.membersWithOverduePayment);
+  }, [loaderData]);
+
   const currentYear = getCommitteeYear();
-  const [expiredActivitiesYear, setExpiredActivitiesYear] =
-    useState(currentYear);
-  const [loadingExpiredActivities, setLoadingExpiredActivities] =
-    useState(true);
-  const [expiredActivities, setExpiredActivities] = useState<
-    ActivityResponseDto[] | null
-  >(null);
   const expiredActivitiesYears = Array.from(
     { length: 10 },
     (_, i) => currentYear - i,
   );
-  const [unpaidActivities, setUnpaidActivities] = useState<Activity[] | null>(
-    null,
-  );
-  const [membersWithOverduePayment, setMembersWithOverduePayment] = useState<
-    { member: Member; enrollments: EnrollmentBalance[] }[] | null
-  >(null);
-  const [unpaidBalances, setUnpaidBalances] = useState<
-    EnrollmentBalance[] | null
-  >(null);
-  const [overpaidBalances, setOverpaidBalances] = useState<
-    EnrollmentBalance[] | null
-  >(null);
-  const [exportStartDate, setExportStartDate] = useState<string>("");
-  const [exportEndDate, setExportEndDate] = useState<string>("");
 
-  useEffect(() => {
-    loadFinancesData({
-      setLoading,
-      setUnpaidBalances,
-      setTotalUnpaid,
-      setOpenPayments,
-      setUnpaidActivities,
-      setMembersWithOverduePayment,
-      setOverpaidBalances,
-    });
-  }, []);
-
-  useEffect(() => {
-    loadExpiredActivities({
-      year: expiredActivitiesYear,
-      setLoadingExpiredActivities,
-      setExpiredActivities,
-    });
-  }, [expiredActivitiesYear]);
-
-  if (loading || (loadingExpiredActivities && expiredActivities === null))
-    return t("loading");
-
-  if (
-    totalUnpaid === null ||
-    totalUnpaid === undefined ||
-    openPayments === null ||
-    openPayments === undefined ||
-    expiredActivities === null ||
-    expiredActivities === undefined
-  )
-    return t("failed_fetching");
+  const changeExpiredActivitiesYear = (year: number) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("year", String(year));
+    setSearchParams(next);
+  };
 
   const deviceLocale =
     typeof navigator !== "undefined" ? navigator.language : undefined;
@@ -165,14 +174,14 @@ export default function Finances() {
           <BorderedTile
             title={t("overpaid")}
             subtitle={
-              overpaidBalances && overpaidBalances.length === 0
+              loaderData.overpaidBalances.length === 0
                 ? t("no_overpaid_balances")
                 : ""
             }
             className="flex-1"
           >
             <div className="flex flex-col gap-2">
-              {overpaidBalances?.map((balance, index) => (
+              {loaderData.overpaidBalances.map((balance, index) => (
                 <>
                   <div
                     key={index}
@@ -208,54 +217,48 @@ export default function Finances() {
               }))}
               label={t("year")}
               style={{ minWidth: "150px" }}
-              value={expiredActivitiesYear}
-              onChange={(e) => setExpiredActivitiesYear(Number(e.target.value))}
+              value={loaderData.year}
+              onChange={(e) =>
+                changeExpiredActivitiesYear(Number(e.target.value))
+              }
             />
           </div>
 
-          {loadingExpiredActivities && (
-            <span className="text-sm text-slate-400">{t("loading")}</span>
-          )}
-
-          {!loadingExpiredActivities && expiredActivities.length === 0 && (
+          {loaderData.expiredActivities.length === 0 && (
             <span className="text-sm text-slate-400">{t("no_data")}</span>
           )}
 
-          {!loadingExpiredActivities &&
-            expiredActivities.map((activity) => (
-              <Tile
-                className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
-                key={activity.id}
-              >
-                <div className="flex flex-col gap-1">
-                  <span className="text-slate-700 font-medium">
-                    {activity.name}
+          {loaderData.expiredActivities.map((activity) => (
+            <Tile
+              className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
+              key={activity.id}
+            >
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-700 font-medium">
+                  {activity.name}
+                </span>
+                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
+                  <span>
+                    {formatDate(new Date(activity.dateTimeEnd), "fullDateTime")}
                   </span>
-                  <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
-                    <span>
-                      {formatDate(
-                        new Date(activity.dateTimeEnd),
-                        "fullDateTime",
-                      )}
-                    </span>
-                    <span className="hidden md:inline">•</span>
-                    <span>
-                      {activity.enrollments.length} {t("participants")}
-                    </span>
-                    <span className="hidden md:inline">•</span>
-                    <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
-                  </div>
+                  <span className="hidden md:inline">•</span>
+                  <span>
+                    {activity.enrollments.length} {t("participants")}
+                  </span>
+                  <span className="hidden md:inline">•</span>
+                  <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
                 </div>
+              </div>
 
-                <Button
-                  variant="primary"
-                  className="w-full md:w-auto"
-                  href={`/activities/${activity.id}`}
-                >
-                  {t("go_to_activity")}
-                </Button>
-              </Tile>
-            ))}
+              <Button
+                variant="primary"
+                className="w-full md:w-auto"
+                href={`/activities/${activity.id}`}
+              >
+                {t("go_to_activity")}
+              </Button>
+            </Tile>
+          ))}
         </BorderedTile>
 
         <BorderedTile
@@ -263,7 +266,7 @@ export default function Finances() {
           subtitle={t("overdue_payment_subtitle")}
           className="flex flex-col gap-3"
         >
-          {unpaidActivities?.map((activity) => (
+          {unpaidActivities.map((activity) => (
             <BorderedTile
               key={activity.id}
               title={activity.name}
@@ -271,57 +274,54 @@ export default function Finances() {
               collapsibleContent={
                 <div className="flex flex-col gap-3">
                   <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {t("unpaid_members")} (
-                    {membersWithOverduePayment?.length || 0})
+                    {t("unpaid_members")} ({membersWithOverduePayment.length})
                   </span>
-                  {membersWithOverduePayment?.map(
-                    (memberWithOverduePayment) => {
-                      const member = memberWithOverduePayment.member;
+                  {membersWithOverduePayment.map((memberWithOverduePayment) => {
+                    const member = memberWithOverduePayment.member;
 
-                      return (
-                        <div
-                          key={member.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-slate-100 rounded-xl gap-3"
-                        >
-                          <div className="flex items-center justify-between sm:justify-start sm:gap-6 flex-1">
-                            <span className="font-semibold text-slate-700 text-sm">
-                              {member.firstName} {member.lastName}
-                            </span>
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-slate-100 rounded-xl gap-3"
+                      >
+                        <div className="flex items-center justify-between sm:justify-start sm:gap-6 flex-1">
+                          <span className="font-semibold text-slate-700 text-sm">
+                            {member.firstName} {member.lastName}
+                          </span>
 
-                            <span className="font-bold text-slate-600 sm:ml-auto sm:mr-4">
-                              {`€${memberWithOverduePayment.enrollments.reduce((sum, enrollment) => sum + enrollment.balance, 0).toFixed(2)}`}
-                            </span>
-                          </div>
-
-                          <div className="w-full sm:w-auto">
-                            <Button
-                              variant="primary"
-                              className="w-full sm:w-auto"
-                              onClick={() =>
-                                handleMarkAsPaid({
-                                  member,
-                                  enrollments:
-                                    memberWithOverduePayment.enrollments,
-                                  setLoading,
-                                  refreshUnpaid: () =>
-                                    refreshUnpaidPayments({
-                                      setUnpaidBalances,
-                                      setTotalUnpaid,
-                                      setOpenPayments,
-                                      setUnpaidActivities,
-                                      setMembersWithOverduePayment,
-                                    }),
-                                })
-                              }
-                              disabled={loading}
-                            >
-                              {t("mark_as_paid")}
-                            </Button>
-                          </div>
+                          <span className="font-bold text-slate-600 sm:ml-auto sm:mr-4">
+                            {`€${memberWithOverduePayment.enrollments.reduce((sum, enrollment) => sum + enrollment.balance, 0).toFixed(2)}`}
+                          </span>
                         </div>
-                      );
-                    },
-                  )}
+
+                        <div className="w-full sm:w-auto">
+                          <Button
+                            variant="primary"
+                            className="w-full sm:w-auto"
+                            onClick={() =>
+                              handleMarkAsPaid({
+                                member,
+                                enrollments:
+                                  memberWithOverduePayment.enrollments,
+                                setLoading,
+                                refreshUnpaid: () =>
+                                  refreshUnpaidPayments({
+                                    setUnpaidBalances,
+                                    setTotalUnpaid,
+                                    setOpenPayments,
+                                    setUnpaidActivities,
+                                    setMembersWithOverduePayment,
+                                  }),
+                              })
+                            }
+                            disabled={loading}
+                          >
+                            {t("mark_as_paid")}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               }
             >
@@ -329,7 +329,7 @@ export default function Finances() {
                 <span className="ml-4 text-(--board-primary) font-bold">
                   {t("outstanding")}: €
                   {unpaidBalances
-                    ?.filter((b) => b.enrollment?.activityId === activity.id)
+                    .filter((b) => b.enrollment?.activityId === activity.id)
                     .reduce((sum, balance) => sum + balance.balance, 0)
                     .toFixed(2)}
                 </span>
@@ -344,7 +344,7 @@ export default function Finances() {
           className=""
         >
           <div className="flex flex-col">
-            {membersWithOverduePayment?.map((memberWithOverduePayment) => {
+            {membersWithOverduePayment.map((memberWithOverduePayment) => {
               if (
                 !memberWithOverduePayment.enrollments.some(
                   (enrollment) =>
