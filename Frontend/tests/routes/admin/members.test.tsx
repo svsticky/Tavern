@@ -65,7 +65,9 @@ function makeMembers(count: number, offset = 0): MemberResponseDto[] {
   })) as MemberResponseDto[];
 }
 
-function loaderData(overrides: Partial<ReturnType<typeof baseLoaderData>> = {}) {
+function loaderData(
+  overrides: Partial<ReturnType<typeof baseLoaderData>> = {},
+) {
   return { ...baseLoaderData(), ...overrides };
 }
 function baseLoaderData() {
