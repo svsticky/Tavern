@@ -16,7 +16,7 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
-import { PAGE_SIZE, fetchMembersPage } from "./members.handlers";
+import { fetchMembersPage, PAGE_SIZE } from "./members.handlers";
 
 type LoaderData = {
   members: MemberResponseDto[];

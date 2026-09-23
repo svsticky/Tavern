@@ -1,4 +1,4 @@
-import { type MemberResponseDto, getMembers } from "~/api";
+import { getMembers, type MemberResponseDto } from "~/api";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 
 /** The number of members to fetch per page for infinite scrolling. */
