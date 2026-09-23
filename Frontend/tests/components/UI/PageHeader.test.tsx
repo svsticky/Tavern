@@ -34,9 +34,9 @@ describe("PageHeader", () => {
     expect(link).toHaveAttribute("href", "/home");
   });
 
-  it("navigates back (POP) instead of pushing when backTo matches where a real back button would land", () => {
+  it("navigates back (POP) instead of pushing when there's a safe page to go back to, even if it doesn't match backTo", () => {
     renderWithProviders(
-      <BackNavigationContext.Provider value="/admin/members">
+      <BackNavigationContext.Provider value="/activities/42">
         <PageHeader title="Member" backTo="/admin/members" />
       </BackNavigationContext.Provider>,
       { route: "/admin/members/123" },
@@ -49,9 +49,9 @@ describe("PageHeader", () => {
     expect(screen.getByRole("button", { name: "back" })).toBeInTheDocument();
   });
 
-  it("still renders a navigation link when backTo does not match where a real back button would land", () => {
+  it("falls back to the navigation link when there's no safe page to go back to (no in-app history, or it's a create/edit/confirm-mail page)", () => {
     renderWithProviders(
-      <BackNavigationContext.Provider value="/some/other/page">
+      <BackNavigationContext.Provider value={undefined}>
         <PageHeader title="Member" backTo="/admin/members" />
       </BackNavigationContext.Provider>,
       { route: "/admin/members/123" },

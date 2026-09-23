@@ -1,5 +1,28 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { useLocation, useNavigationType } from "react-router";
+import { matchPath, useLocation, useNavigationType } from "react-router";
+
+/**
+ * Pages you should never land on via a "back" button, even if that's where
+ * in-app history actually points: create/edit forms (going "back" into one
+ * re-opens something the user just finished with) and the confirm-mail
+ * interstitial. Mirrors the create/edit routes in `app/routes.ts`.
+ */
+const EXCLUDED_BACK_TARGETS = [
+  "/activities/create",
+  "/activities/edit/:id",
+  "/announcements/create",
+  "/announcements/edit/:id",
+  "/admin/activities/create",
+  "/admin/activities/edit/:id",
+  "/admin/members/create-member",
+  "/admin/members/:id",
+  "/admin/groups/:id",
+  "/confirm-mail",
+];
+
+function isExcludedBackTarget(pathname: string): boolean {
+  return EXCLUDED_BACK_TARGETS.some((pattern) => matchPath(pattern, pathname));
+}
 
 /** Exported for tests only - components should use `useBackNavigationTarget()`. */
 export const BackNavigationContext = createContext<string | undefined>(
@@ -37,7 +60,12 @@ export function BackNavigationProvider({
     } else if (stack[stack.length - 1] !== location.pathname) {
       stack.push(location.pathname);
     }
-    setTarget(stack.length > 1 ? stack[stack.length - 2] : undefined);
+    const previous = stack.length > 1 ? stack[stack.length - 2] : undefined;
+    setTarget(
+      previous != null && !isExcludedBackTarget(previous)
+        ? previous
+        : undefined,
+    );
   }, [location.pathname, navigationType]);
 
   return (
@@ -48,9 +76,13 @@ export function BackNavigationProvider({
 }
 
 /**
- * The pathname a real browser back button would currently land on, or
- * `undefined` if there's no in-app history to go back to (e.g. the page was
- * opened directly via a link).
+ * Whether it's safe to send the user to wherever a real browser back button
+ * would currently land: `undefined` when there's no in-app history to go
+ * back to (e.g. the page was opened directly via a link) or when that page
+ * is a create/edit form or the confirm-mail page - landing back on one of
+ * those would be confusing, so callers should fall back to a fixed
+ * destination instead. Otherwise, the actual pathname (informational only;
+ * callers should navigate with `navigate(-1)`, not push to this path).
  */
 export function useBackNavigationTarget() {
   return useContext(BackNavigationContext);
