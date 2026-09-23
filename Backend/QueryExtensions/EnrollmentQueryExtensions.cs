@@ -23,6 +23,8 @@ public static class EnrollmentQueryExtensions
             query = query.Where(e => e.MemberId == dto.FromMemberId);
         }
 
+        query = query.Where(e => e.Activity.ShowInKoala);
+
         return query;
     }
 }

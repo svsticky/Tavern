@@ -11,11 +11,12 @@ public class EnrollmentQueryExtensionsTests
     {
         var memberId1 = Guid.NewGuid();
         var memberId2 = Guid.NewGuid();
+        var activity = new Activity { Id = 1, ShowInKoala = true, PaymentDeadline = DateTimeOffset.UtcNow };
         var list = new List<Enrollment>
         {
-            new() { ActivityId = 1, MemberId = memberId1 },
-            new() { ActivityId = 2, MemberId = memberId1 },
-            new() { ActivityId = 1, MemberId = memberId2 }
+            new() { ActivityId = 1, MemberId = memberId1, Activity = activity },
+            new() { ActivityId = 2, MemberId = memberId1, Activity = activity },
+            new() { ActivityId = 1, MemberId = memberId2, Activity = activity }
         }.AsQueryable();
 
         var dto = new GetEnrollmentsDTO { FromMemberId = memberId1 };
@@ -31,11 +32,12 @@ public class EnrollmentQueryExtensionsTests
     {
         var memberId1 = Guid.NewGuid();
         var memberId2 = Guid.NewGuid();
+        var activity = new Activity { Id = 1, ShowInKoala = true, PaymentDeadline = DateTimeOffset.UtcNow };
         var list = new List<Enrollment>
         {
-            new() { ActivityId = 1, MemberId = memberId1 },
-            new() { ActivityId = 2, MemberId = memberId1 },
-            new() { ActivityId = 1, MemberId = memberId2 }
+            new() { ActivityId = 1, MemberId = memberId1, Activity = activity },
+            new() { ActivityId = 2, MemberId = memberId1, Activity = activity },
+            new() { ActivityId = 1, MemberId = memberId2, Activity = activity }
         }.AsQueryable();
 
         var dto = new GetEnrollmentsDTO { FromMemberId = null };
@@ -43,5 +45,25 @@ public class EnrollmentQueryExtensionsTests
         var result = list.Filter(dto).ToList();
 
         Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
+    public void Filter_ActivityNotShownInKoala_ExcludesEnrollment()
+    {
+        var memberId = Guid.NewGuid();
+        var visibleActivity = new Activity { Id = 1, ShowInKoala = true, PaymentDeadline = DateTimeOffset.UtcNow };
+        var draftActivity = new Activity { Id = 2, ShowInKoala = false, PaymentDeadline = DateTimeOffset.UtcNow };
+        var list = new List<Enrollment>
+        {
+            new() { ActivityId = 1, MemberId = memberId, Activity = visibleActivity },
+            new() { ActivityId = 2, MemberId = memberId, Activity = draftActivity }
+        }.AsQueryable();
+
+        var dto = new GetEnrollmentsDTO { FromMemberId = memberId };
+
+        var result = list.Filter(dto).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(1u, result[0].ActivityId);
     }
 }
