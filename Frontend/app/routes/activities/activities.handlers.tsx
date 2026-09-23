@@ -1,49 +1,10 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivities } from "~/api";
+import type { ActivityResponseDto } from "~/api";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
 import { generateA3Pdf } from "~/util/pdf.util";
-
-/**
- * Arguments for the loadActivities handler.
- */
-type LoadActivitiesArgs = {
-  setLoading: (loading: boolean) => void;
-  setActivities: (activities: ActivityResponseDto[]) => void;
-};
-
-/**
- * Fetches the list of current and future activities from the API.
- *
- * @async
- * @param {LoadActivitiesArgs} args - Configuration and state setter functions.
- */
-export const loadActivities = async ({
-  setLoading,
-  setActivities,
-}: LoadActivitiesArgs) => {
-  try {
-    setLoading(true);
-    const activitiesResponse = await getActivities({
-      query: {
-        IncludePast: false,
-        IncludeFuture: true,
-      },
-    });
-
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activities");
-
-    setActivities(activitiesResponse.data as ActivityResponseDto[]);
-  } catch (error) {
-    console.error("Error while loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
-};
 
 /**
  * Generates a formatted text overview of the current/next week's activities
