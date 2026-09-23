@@ -14,14 +14,29 @@ const { requireTokenParsed } = vi.hoisted(() => ({
 }));
 vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
 
-const { useLoaderData } = vi.hoisted(() => ({ useLoaderData: vi.fn() }));
+const { useLoaderData, revalidate, useRevalidator } = vi.hoisted(() => {
+  const revalidate = vi.fn();
+  return {
+    useLoaderData: vi.fn(),
+    revalidate,
+    useRevalidator: vi.fn(() => ({ revalidate, state: "idle" })),
+  };
+});
 vi.mock("react-router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-router")>()),
   useLoaderData,
+  useRevalidator,
 }));
 
 vi.mock("~/components/Group/CreateGroupOverlay/CreateGroupOverlay", () => ({
-  default: () => <div>create-group-overlay</div>,
+  default: ({ onSuccess }: { onSuccess: () => void }) => (
+    <div>
+      create-group-overlay
+      <button type="button" onClick={onSuccess}>
+        simulate-create-success
+      </button>
+    </div>
+  ),
 }));
 
 function makeGroup(
@@ -95,5 +110,19 @@ describe("Groups", () => {
 
     fireEvent.click(plusButton!);
     expect(await screen.findByText("create-group-overlay")).toBeInTheDocument();
+  });
+
+  it("revalidates the loader and closes the modal after a group is created, instead of reloading the page", async () => {
+    useLoaderData.mockReturnValue({ groups: [] });
+    renderWithProviders(<Groups />);
+
+    const plusButton = document
+      .querySelector("svg.lucide-plus")
+      ?.closest("button");
+    fireEvent.click(plusButton!);
+    fireEvent.click(await screen.findByText("simulate-create-success"));
+
+    expect(revalidate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("create-group-overlay")).not.toBeInTheDocument();
   });
 });

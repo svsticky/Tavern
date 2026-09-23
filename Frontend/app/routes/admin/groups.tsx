@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useLoaderData, useNavigate } from "react-router";
+import { useLoaderData, useNavigate, useRevalidator } from "react-router";
 import { type GroupResponseDto, getGroups } from "~/api";
 import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
@@ -46,6 +46,7 @@ export function HydrateFallback() {
 export default function Groups() {
   const { groups } = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [createGroupModalIsOpen, setCreateGroupModalIsOpen] = useState(false);
@@ -133,7 +134,12 @@ export default function Groups() {
         isOpen={createGroupModalIsOpen}
         onClose={() => setCreateGroupModalIsOpen(false)}
       >
-        <CreateGroupOverlay onSuccess={() => window.location.reload()} />
+        <CreateGroupOverlay
+          onSuccess={() => {
+            setCreateGroupModalIsOpen(false);
+            revalidator.revalidate();
+          }}
+        />
       </Modal>
     </div>
   );
