@@ -1,18 +1,23 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import type { GroupResponseDto } from "~/api";
-import Groups from "~/routes/admin/groups";
+import Groups, { clientLoader } from "~/routes/admin/groups";
 import { renderWithProviders } from "~/testUtils";
 
 const { getGroups } = vi.hoisted(() => ({
   getGroups: vi.fn(),
 }));
-
 vi.mock("~/api", () => ({ getGroups }));
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+const { useLoaderData } = vi.hoisted(() => ({ useLoaderData: vi.fn() }));
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  useLoaderData,
 }));
 
 vi.mock("~/components/Group/CreateGroupOverlay/CreateGroupOverlay", () => ({
@@ -30,70 +35,67 @@ function makeGroup(
   } as GroupResponseDto;
 }
 
-describe("Groups", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("shows a loading state, then the table once groups have loaded", async () => {
+describe("admin groups clientLoader", () => {
+  it("waits for auth and returns the fetched groups", async () => {
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
     getGroups.mockResolvedValue({ data: [makeGroup()] });
-    renderWithProviders(<Groups />);
 
-    expect(screen.getByText("loading")).toBeInTheDocument();
-    expect(await screen.findByText("Board")).toBeInTheDocument();
+    await expect(clientLoader()).resolves.toEqual({ groups: [makeGroup()] });
+    expect(requireTokenParsed).toHaveBeenCalled();
   });
 
-  it("shows an error toast when groups fail to load", async () => {
+  it("throws when groups fail to load", async () => {
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
     getGroups.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
 
+    await expect(clientLoader()).rejects.toBe("fail");
+  });
+});
+
+describe("Groups", () => {
+  it("renders the table with loaded groups", () => {
+    useLoaderData.mockReturnValue({ groups: [makeGroup()] });
     renderWithProviders(<Groups />);
 
-    await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
-    consoleError.mockRestore();
+    expect(screen.getByText("Board")).toBeInTheDocument();
   });
 
-  it("filters groups by name or type as the search query changes", async () => {
-    getGroups.mockResolvedValue({
-      data: [
+  it("filters groups by name or type as the search query changes", () => {
+    useLoaderData.mockReturnValue({
+      groups: [
         makeGroup({ id: 1, name: "Board", type: "Committee" }),
         makeGroup({ id: 2, name: "Party Committee", type: "WorkingGroup" }),
       ],
     });
     renderWithProviders(<Groups />);
 
-    await screen.findByText("Board");
     fireEvent.change(screen.getByLabelText("search"), {
       target: { value: "working" },
     });
 
-    await waitFor(() =>
-      expect(screen.queryByText("Board")).not.toBeInTheDocument(),
-    );
+    expect(screen.queryByText("Board")).not.toBeInTheDocument();
     expect(screen.getByText("Party Committee")).toBeInTheDocument();
   });
 
-  it("navigates to a group's detail page when 'view_group' is clicked", async () => {
-    getGroups.mockResolvedValue({ data: [makeGroup()] });
+  it("navigates to a group's detail page when 'view_group' is clicked", () => {
+    useLoaderData.mockReturnValue({ groups: [makeGroup()] });
     renderWithProviders(<Groups />);
 
-    await screen.findByText("Board");
     fireEvent.click(screen.getAllByText("view_group")[0]);
   });
 
   it("opens the create-group modal when the plus button is clicked", async () => {
-    getGroups.mockResolvedValue({ data: [] });
+    useLoaderData.mockReturnValue({ groups: [] });
     renderWithProviders(<Groups />);
 
-    await screen.findByText("loading");
     const plusButton = document
       .querySelector("svg.lucide-plus")
       ?.closest("button");
     expect(plusButton).toBeTruthy();
 
     fireEvent.click(plusButton!);
-    expect(await screen.findByText("create-group-overlay")).toBeInTheDocument();
+    expect(
+      await screen.findByText("create-group-overlay"),
+    ).toBeInTheDocument();
   });
 });
