@@ -175,7 +175,12 @@ export default function EditMemberPage() {
     <>
       <PageHeader title="" backTo="/admin/members" />
       <div className="flex flex-col lg:flex-row gap-12">
-        <ChangeProfilePicture userId={memberId!} />
+        <ChangeProfilePicture
+          userId={memberId!}
+          isHonoraryOrMerit={Boolean(
+            formData.ereLid || formData.lidVanVerdienste,
+          )}
+        />
 
         <Form className="w-full space-y-8">
           <FormSection title={t("personal_info")} columns={2}>
