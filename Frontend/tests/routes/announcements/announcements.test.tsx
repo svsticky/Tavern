@@ -19,12 +19,10 @@ const { requireTokenParsed } = vi.hoisted(() => ({
 }));
 vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
 
-const { loadAnnouncements, handleCreateAnnouncementClick } = vi.hoisted(
-  () => ({
-    loadAnnouncements: vi.fn(),
-    handleCreateAnnouncementClick: vi.fn(),
-  }),
-);
+const { loadAnnouncements, handleCreateAnnouncementClick } = vi.hoisted(() => ({
+  loadAnnouncements: vi.fn(),
+  handleCreateAnnouncementClick: vi.fn(),
+}));
 vi.mock("~/routes/announcements/announcements.handlers", () => ({
   loadAnnouncements,
   handleCreateAnnouncementClick,

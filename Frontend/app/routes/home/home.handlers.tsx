@@ -67,7 +67,8 @@ export async function loadHomeLoaderData(
 
   return {
     activities: activitiesResponse.data as ActivityResponseDto[],
-    enrolledActivities: enrolledActivitiesResponse.data as ActivityResponseDto[],
+    enrolledActivities:
+      enrolledActivitiesResponse.data as ActivityResponseDto[],
     announcements: announcementsResponse.data as GetAnnouncementResponseDto[],
     groupMemberships: groupMembershipsResponse.data,
   };

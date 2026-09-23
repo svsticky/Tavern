@@ -94,8 +94,6 @@ describe("Groups", () => {
     expect(plusButton).toBeTruthy();
 
     fireEvent.click(plusButton!);
-    expect(
-      await screen.findByText("create-group-overlay"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("create-group-overlay")).toBeInTheDocument();
   });
 });

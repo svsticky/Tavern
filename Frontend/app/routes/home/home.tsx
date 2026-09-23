@@ -8,7 +8,6 @@ import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview"
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import Button from "~/components/UI/Button";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
-import type { Route } from "./+types/home";
 import { loadHomeLoaderData } from "./home.handlers";
 
 /**
@@ -48,8 +47,13 @@ export function HydrateFallback() {
  */
 export default function DashboardPage() {
   const { t } = useTranslation();
-  const { tokenParsed, activities, enrolledActivities, announcements, groupMemberships } =
-    useLoaderData<typeof clientLoader>();
+  const {
+    tokenParsed,
+    activities,
+    enrolledActivities,
+    announcements,
+    groupMemberships,
+  } = useLoaderData<typeof clientLoader>();
 
   return (
     <div className="flex flex-col items-center gap-5 max-w-8xl mx-auto w-full">

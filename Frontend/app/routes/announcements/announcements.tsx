@@ -8,7 +8,6 @@ import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
-import type { Route } from "./+types/announcements";
 import {
   handleCreateAnnouncementClick,
   loadAnnouncements,
