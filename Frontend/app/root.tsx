@@ -20,6 +20,7 @@ import Cookies from "js-cookie";
 import FaviconHandler from "./components/FavIconHandler";
 import StickyLoadingLogo from "./components/StickyLoadingLogo";
 import { AppProvider } from "./context/AppContext";
+import { BackNavigationProvider } from "./context/BackNavigationContext";
 import { getActiveAuthService } from "./layout/auth-service";
 import { getEnv } from "./util/config.utils";
 import {
@@ -216,9 +217,11 @@ export default function App() {
 
   return (
     <AppProvider>
-      <FaviconHandler />
-      {isClient && <Toaster position="bottom-right" />}
-      <Outlet />
+      <BackNavigationProvider>
+        <FaviconHandler />
+        {isClient && <Toaster position="bottom-right" />}
+        <Outlet />
+      </BackNavigationProvider>
     </AppProvider>
   );
 }

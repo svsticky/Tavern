@@ -1,8 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import i18next from "i18next";
+import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExternalLinkResponseDto } from "~/api";
 import ExternalLinksPage from "~/routes/external-links";
+
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <ExternalLinksPage />
+    </MemoryRouter>,
+  );
+}
 
 const { getExternallinks } = vi.hoisted(() => ({
   getExternallinks: vi.fn(),
@@ -37,7 +46,7 @@ describe("ExternalLinksPage", () => {
 
   it("falls back to an empty list when the response has no data", async () => {
     getExternallinks.mockResolvedValue({ data: undefined });
-    render(<ExternalLinksPage />);
+    renderPage();
 
     expect(await screen.findByText("no_external_links")).toBeInTheDocument();
   });
@@ -45,7 +54,7 @@ describe("ExternalLinksPage", () => {
   it("renders Dutch titles and descriptions for a Dutch-locale user", async () => {
     await i18next.changeLanguage("nl");
     getExternallinks.mockResolvedValue({ data: [makeLink()] });
-    render(<ExternalLinksPage />);
+    renderPage();
 
     expect(await screen.findByText("Koala NL")).toBeInTheDocument();
     expect(screen.getByText("Ledenadministratie")).toBeInTheDocument();
@@ -53,7 +62,7 @@ describe("ExternalLinksPage", () => {
 
   it("shows a loading state, then the no-links message when empty", async () => {
     getExternallinks.mockResolvedValue({ data: [] });
-    render(<ExternalLinksPage />);
+    renderPage();
 
     expect(screen.getByText("loading")).toBeInTheDocument();
     expect(await screen.findByText("no_external_links")).toBeInTheDocument();
@@ -66,7 +75,7 @@ describe("ExternalLinksPage", () => {
         makeLink({ id: 1, titleEnglish: "First", sortOrder: 1 }),
       ],
     });
-    render(<ExternalLinksPage />);
+    renderPage();
 
     const headings = await screen.findAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.textContent)).toEqual(["First", "Second"]);
@@ -76,7 +85,7 @@ describe("ExternalLinksPage", () => {
     getExternallinks.mockResolvedValue({
       data: [makeLink({ iconPath: "icon.png" })],
     });
-    render(<ExternalLinksPage />);
+    renderPage();
 
     await screen.findByText("Koala");
     expect(document.querySelector("img")).toBeTruthy();
@@ -88,7 +97,7 @@ describe("ExternalLinksPage", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    render(<ExternalLinksPage />);
+    renderPage();
 
     await waitFor(() => expect(consoleError).toHaveBeenCalled());
     consoleError.mockRestore();

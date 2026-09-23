@@ -1,6 +1,7 @@
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { BackNavigationContext } from "~/context/BackNavigationContext";
 import { renderWithProviders, screen } from "~/testUtils";
 
 describe("PageHeader", () => {
@@ -31,6 +32,33 @@ describe("PageHeader", () => {
 
     const link = screen.getByRole("link", { name: "back" });
     expect(link).toHaveAttribute("href", "/home");
+  });
+
+  it("navigates back (POP) instead of pushing when backTo matches where a real back button would land", () => {
+    renderWithProviders(
+      <BackNavigationContext.Provider value="/admin/members">
+        <PageHeader title="Member" backTo="/admin/members" />
+      </BackNavigationContext.Provider>,
+      { route: "/admin/members/123" },
+    );
+
+    // Acts like a real back button now: a plain button, not a link to a new entry.
+    expect(
+      screen.queryByRole("link", { name: "back" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "back" })).toBeInTheDocument();
+  });
+
+  it("still renders a navigation link when backTo does not match where a real back button would land", () => {
+    renderWithProviders(
+      <BackNavigationContext.Provider value="/some/other/page">
+        <PageHeader title="Member" backTo="/admin/members" />
+      </BackNavigationContext.Provider>,
+      { route: "/admin/members/123" },
+    );
+
+    const link = screen.getByRole("link", { name: "back" });
+    expect(link).toHaveAttribute("href", "/admin/members");
   });
 
   it("renders the action content on the right side", () => {
