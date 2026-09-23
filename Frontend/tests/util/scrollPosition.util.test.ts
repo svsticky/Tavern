@@ -149,14 +149,14 @@ describe("restoreScroll", () => {
     expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
   });
 
-  it.each([
-    NavigationType.Push,
-    NavigationType.Replace,
-  ])("ignores the saved position on %s navigation", (navigationType) => {
-    recordScrollPosition("/restore-push", 420);
+  it.each([NavigationType.Push, NavigationType.Replace])(
+    "ignores the saved position on %s navigation",
+    (navigationType) => {
+      recordScrollPosition("/restore-push", 420);
 
-    restoreScroll("/restore-push", navigationType);
+      restoreScroll("/restore-push", navigationType);
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
-  });
+      expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
+    },
+  );
 });
