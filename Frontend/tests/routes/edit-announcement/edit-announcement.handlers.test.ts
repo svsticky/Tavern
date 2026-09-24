@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  fetchAnnouncementFormData,
   handleAnnouncementSubmit,
   handleDeleteAnnouncement,
-  loadAnnouncementData,
 } from "~/routes/edit-announcement/edit-announcement.handlers";
 
 const {
@@ -50,34 +50,22 @@ function makeEvent(fields: Record<string, string>) {
   } as unknown as React.FormEvent<HTMLFormElement>;
 }
 
-describe("loadAnnouncementData", () => {
+describe("fetchAnnouncementFormData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("does nothing when not editing", async () => {
-    const setLoading = vi.fn();
-    await loadAnnouncementData({
-      isEdit: false,
-      id: undefined,
-      setInitialData: vi.fn(),
-      setLoading,
-    });
-    expect(getAnnouncementsById).not.toHaveBeenCalled();
-    expect(setLoading).not.toHaveBeenCalled();
-  });
-
-  it("does nothing when editing but id is missing", async () => {
-    await loadAnnouncementData({
-      isEdit: true,
-      id: undefined,
-      setInitialData: vi.fn(),
-      setLoading: vi.fn(),
+  it("returns a blank form without fetching when creating", async () => {
+    await expect(fetchAnnouncementFormData(undefined)).resolves.toEqual({
+      TitleDutch: "",
+      TitleEnglish: "",
+      ContentDutch: "",
+      ContentEnglish: "",
     });
     expect(getAnnouncementsById).not.toHaveBeenCalled();
   });
 
-  it("populates initial data and stops loading on success", async () => {
+  it("returns the announcement's values when editing", async () => {
     getAnnouncementsById.mockResolvedValue({
       data: {
         titleDutch: "Titel",
@@ -86,40 +74,28 @@ describe("loadAnnouncementData", () => {
         contentEnglish: "Content",
       },
     });
-    const setInitialData = vi.fn();
-    const setLoading = vi.fn();
 
-    await loadAnnouncementData({
-      isEdit: true,
-      id: "1",
-      setInitialData,
-      setLoading,
-    });
-
-    expect(getAnnouncementsById).toHaveBeenCalledWith({ path: { id: 1 } });
-    expect(setInitialData).toHaveBeenCalledWith({
+    await expect(fetchAnnouncementFormData("1")).resolves.toEqual({
       TitleDutch: "Titel",
       TitleEnglish: "Title",
       ContentDutch: "Inhoud",
       ContentEnglish: "Content",
     });
-    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(getAnnouncementsById).toHaveBeenCalledWith({ path: { id: 1 } });
   });
 
-  it("stops loading without setting data when the response has no data", async () => {
+  it("throws the API error so React Router's error boundary handles it", async () => {
+    getAnnouncementsById.mockResolvedValue({ error: new Error("fail") });
+
+    await expect(fetchAnnouncementFormData("1")).rejects.toThrow("fail");
+  });
+
+  it("throws when the response has no data", async () => {
     getAnnouncementsById.mockResolvedValue({});
-    const setInitialData = vi.fn();
-    const setLoading = vi.fn();
 
-    await loadAnnouncementData({
-      isEdit: true,
-      id: "1",
-      setInitialData,
-      setLoading,
-    });
-
-    expect(setInitialData).not.toHaveBeenCalled();
-    expect(setLoading).toHaveBeenCalledWith(false);
+    await expect(fetchAnnouncementFormData("1")).rejects.toThrow(
+      "Failed to load announcement",
+    );
   });
 });
 

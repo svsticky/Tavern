@@ -1,17 +1,29 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useState } from "react";
+import { useLoaderData, useNavigate, useParams } from "react-router";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import Button from "~/components/UI/Button";
 import Form from "~/components/UI/Form/Form";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import TextArea from "~/components/UI/TextArea";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
+  fetchAnnouncementFormData,
   handleAnnouncementSubmit,
   handleDeleteAnnouncement,
-  loadAnnouncementData,
 } from "./edit-announcement.handlers";
+
+/** Loads the announcement to edit (or a blank form) before the route renders. */
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  await requireTokenParsed();
+  return { initialData: await fetchAnnouncementFormData(params.id) };
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative page for creating or editing system-wide announcements.
@@ -36,21 +48,9 @@ export default function AnnouncementFormPage() {
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const [loading, setLoading] = useState(isEdit);
+  const { initialData } = useLoaderData<typeof clientLoader>();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [initialData, setInitialData] = useState({
-    TitleDutch: "",
-    TitleEnglish: "",
-    ContentDutch: "",
-    ContentEnglish: "",
-  });
-
-  useEffect(() => {
-    loadAnnouncementData({ isEdit, id, setInitialData, setLoading });
-  }, [id, isEdit]);
-
-  if (loading) return t("loading");
 
   return (
     <div className="max-w-4xl mx-auto">

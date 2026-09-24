@@ -1,21 +1,42 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import AnnouncementFormPage from "~/routes/edit-announcement/edit-announcement";
+import AnnouncementFormPage, {
+  clientLoader,
+} from "~/routes/edit-announcement/edit-announcement";
 import {
+  fetchAnnouncementFormData,
   handleAnnouncementSubmit,
   handleDeleteAnnouncement,
-  loadAnnouncementData,
 } from "~/routes/edit-announcement/edit-announcement.handlers";
 import { renderWithProviders } from "~/testUtils";
 
 vi.mock("~/routes/edit-announcement/edit-announcement.handlers", () => ({
-  loadAnnouncementData: vi.fn(),
+  fetchAnnouncementFormData: vi.fn(),
   handleAnnouncementSubmit: vi.fn(),
   handleDeleteAnnouncement: vi.fn(),
 }));
 
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+const { useLoaderData } = vi.hoisted(() => ({ useLoaderData: vi.fn() }));
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  useLoaderData,
+}));
+
+const blank = {
+  TitleDutch: "",
+  TitleEnglish: "",
+  ContentDutch: "",
+  ContentEnglish: "",
+};
+
 function renderCreate() {
+  useLoaderData.mockReturnValue({ initialData: blank });
   return renderWithProviders(
     <Routes>
       <Route path="/announcements/create" element={<AnnouncementFormPage />} />
@@ -24,7 +45,8 @@ function renderCreate() {
   );
 }
 
-function renderEdit(id = "3") {
+function renderEdit(initialData = blank, id = "3") {
+  useLoaderData.mockReturnValue({ initialData });
   return renderWithProviders(
     <Routes>
       <Route
@@ -36,52 +58,68 @@ function renderEdit(id = "3") {
   );
 }
 
+describe("announcement form clientLoader", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+  });
+
+  it("loads the announcement named by the URL", async () => {
+    vi.mocked(fetchAnnouncementFormData).mockResolvedValue({
+      ...blank,
+      TitleDutch: "Titel",
+    });
+
+    const result = await clientLoader({ params: { id: "3" } });
+
+    expect(fetchAnnouncementFormData).toHaveBeenCalledWith("3");
+    expect(result.initialData.TitleDutch).toBe("Titel");
+  });
+
+  it("loads a blank form when creating", async () => {
+    vi.mocked(fetchAnnouncementFormData).mockResolvedValue(blank);
+
+    await clientLoader({ params: {} });
+
+    expect(fetchAnnouncementFormData).toHaveBeenCalledWith(undefined);
+  });
+
+  it("propagates a failed load to React Router's error boundary", async () => {
+    vi.mocked(fetchAnnouncementFormData).mockRejectedValue(new Error("fail"));
+
+    await expect(clientLoader({ params: { id: "3" } })).rejects.toThrow("fail");
+  });
+});
+
 describe("AnnouncementFormPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("renders the create form immediately when not editing", () => {
+  it("renders the create form when not editing", () => {
     renderCreate();
     expect(screen.getByLabelText(/title_nl/)).toBeInTheDocument();
     expect(screen.getByText("create")).toBeInTheDocument();
     expect(screen.queryByText("delete")).not.toBeInTheDocument();
   });
 
-  it("shows a loading state while editing until data has loaded", () => {
-    vi.mocked(loadAnnouncementData).mockImplementation(
-      () => new Promise(() => {}),
-    );
-    renderEdit();
-    expect(screen.getByText("loading")).toBeInTheDocument();
-  });
+  it("pre-fills the form with the loaded announcement in edit mode", () => {
+    renderEdit({
+      TitleDutch: "Titel",
+      TitleEnglish: "Title",
+      ContentDutch: "Inhoud",
+      ContentEnglish: "Content",
+    });
 
-  it("pre-fills the form once announcement data has loaded in edit mode", async () => {
-    vi.mocked(loadAnnouncementData).mockImplementation(
-      async ({ setInitialData, setLoading }) => {
-        setInitialData({
-          TitleDutch: "Titel",
-          TitleEnglish: "Title",
-          ContentDutch: "Inhoud",
-          ContentEnglish: "Content",
-        });
-        setLoading(false);
-      },
-    );
-    renderEdit();
-
-    expect(await screen.findByDisplayValue("Titel")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Titel")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Content")).toBeInTheDocument();
     expect(screen.getByText("update")).toBeInTheDocument();
     expect(screen.getByText("delete")).toBeInTheDocument();
   });
 
-  it("calls handleAnnouncementSubmit on form submission", async () => {
-    vi.mocked(loadAnnouncementData).mockImplementation(async ({ setLoading }) =>
-      setLoading(false),
-    );
+  it("calls handleAnnouncementSubmit on form submission", () => {
     renderEdit();
 
-    await screen.findByText("update");
     fireEvent.submit(screen.getByText("update").closest("form")!);
 
     expect(handleAnnouncementSubmit).toHaveBeenCalledWith(
@@ -89,13 +127,10 @@ describe("AnnouncementFormPage", () => {
     );
   });
 
-  it("calls handleDeleteAnnouncement when the delete button is clicked", async () => {
-    vi.mocked(loadAnnouncementData).mockImplementation(async ({ setLoading }) =>
-      setLoading(false),
-    );
+  it("calls handleDeleteAnnouncement when the delete button is clicked", () => {
     renderEdit();
 
-    fireEvent.click(await screen.findByText("delete"));
+    fireEvent.click(screen.getByText("delete"));
 
     expect(handleDeleteAnnouncement).toHaveBeenCalledWith(
       "3",

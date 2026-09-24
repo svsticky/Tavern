@@ -10,41 +10,40 @@ import {
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
-/**
- * Arguments for the loadAnnouncementData handler.
- */
-type LoadAnnouncementArgs = {
-  isEdit: boolean;
-  id: string | undefined;
-  setInitialData: (value: {
-    TitleDutch: string;
-    TitleEnglish: string;
-    ContentDutch: string;
-    ContentEnglish: string;
-  }) => void;
-  setLoading: (value: boolean) => void;
+export type AnnouncementFormData = {
+  TitleDutch: string;
+  TitleEnglish: string;
+  ContentDutch: string;
+  ContentEnglish: string;
 };
 
-export const loadAnnouncementData = async ({
-  isEdit,
-  id,
-  setInitialData,
-  setLoading,
-}: LoadAnnouncementArgs) => {
-  if (!isEdit || !id) return;
+const EMPTY_FORM: AnnouncementFormData = {
+  TitleDutch: "",
+  TitleEnglish: "",
+  ContentDutch: "",
+  ContentEnglish: "",
+};
 
-  await getAnnouncementsById({ path: { id: Number(id) } })
-    .then((res) => {
-      if (res.data) {
-        setInitialData({
-          TitleDutch: res.data.titleDutch,
-          TitleEnglish: res.data.titleEnglish,
-          ContentDutch: res.data.contentDutch,
-          ContentEnglish: res.data.contentEnglish,
-        });
-      }
-    })
-    .finally(() => setLoading(false));
+/**
+ * Fetches the values to prefill the announcement form with, for the route's
+ * `clientLoader`: the existing announcement when editing, blank when creating.
+ * Throws on failure so React Router's error boundary handles it.
+ */
+export const fetchAnnouncementFormData = async (
+  id: string | undefined,
+): Promise<AnnouncementFormData> => {
+  if (!id) return EMPTY_FORM;
+
+  const res = await getAnnouncementsById({ path: { id: Number(id) } });
+  if (res.error || !res.data)
+    throw res.error ?? new Error("Failed to load announcement");
+
+  return {
+    TitleDutch: res.data.titleDutch,
+    TitleEnglish: res.data.titleEnglish,
+    ContentDutch: res.data.contentDutch,
+    ContentEnglish: res.data.contentEnglish,
+  };
 };
 
 type SubmitAnnouncementArgs = {
