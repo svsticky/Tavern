@@ -14,8 +14,7 @@ import {
   getPaymentsUnpaid,
   postPaymentsActivity,
 } from "~/api";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useAuth, useTokenParsed } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import Tile from "./Tiles/Tile";
@@ -88,8 +87,8 @@ export default function DashboardHeader({
   comingEnrollmentAmount,
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const _authService = useAuth();
+  const tokenParsed = useTokenParsed();
   const navigate = useNavigate();
 
   const [confirmingPayment, setConfirmingPayment] = useState<boolean>(false);
@@ -99,16 +98,6 @@ export default function DashboardHeader({
   const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>(
     initialUnpaidActivityIds,
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    authService.getTokenParsed().then((parsedToken) => {
-      if (!cancelled) setTokenParsed(parsedToken);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
 
   // After returning from a Mollie checkout, the payment webhook may not have landed yet, so the
   // route's clientLoader snapshot can still show the activity as unpaid. Poll just the payments

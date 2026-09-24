@@ -7,7 +7,7 @@ import {
   MapPin,
   Users,
 } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Markdown from "react-markdown";
 import type {
@@ -15,8 +15,7 @@ import type {
   SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
-import { TokenParsedContext, useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useAuth, useTokenParsed } from "~/context/AuthContext";
 import {
   getActivityEnrollmentStatus,
   hasEnrollmentOpened,
@@ -107,25 +106,7 @@ export default function ActivityDetailsTile({
 }) {
   const authService = useAuth();
   const { member } = useApp();
-  // Inside the app tree the token is already known, so read it synchronously -
-  // waiting for an async fetch would make the enrollment state pop in late.
-  // Only fall back to fetching it when rendered without that context.
-  const inheritedToken = useContext(TokenParsedContext);
-  const [fetchedToken, setFetchedToken] = useState<TokenParsed | null>(null);
-  const tokenParsed = inheritedToken ?? fetchedToken;
-
-  useEffect(() => {
-    if (inheritedToken) return;
-    const loadToken = async () => {
-      const parsedToken = await authService.getTokenParsed();
-      if (!parsedToken) {
-        console.error("User not authenticated");
-        return;
-      }
-      setFetchedToken(parsedToken);
-    };
-    loadToken();
-  }, [authService, inheritedToken]);
+  const tokenParsed = useTokenParsed();
 
   const [submitting, setSubmitting] = useState(false);
   const [posterStatus, setPosterStatus] = useState<

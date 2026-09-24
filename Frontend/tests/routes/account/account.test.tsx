@@ -60,20 +60,17 @@ describe("AccountPage", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("logs an error when the token has no UserId", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  it("renders nothing when there is no token", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => null),
     });
-    renderWithProviders(<AccountPage />, {
+    const { container } = renderWithProviders(<AccountPage />, {
       authService,
       withAppProvider: false,
     });
 
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
+    await waitFor(() => expect(authService.getTokenParsed).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 
   it("renders the profile picture uploader once the user id loads", async () => {

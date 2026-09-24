@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { IAuthService } from "~/auth/IAuthService";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -23,5 +23,31 @@ export const useAuth = () => {
  * `null` outside `AuthenticatedLayout` (e.g. tests rendering a layout alone).
  */
 export const TokenParsedContext = createContext<TokenParsed | null>(null);
+
+/**
+ * The current user's parsed token. Inside the app tree it comes straight from
+ * `TokenParsedContext`, so it's there on the very first render - a component
+ * that had to fetch it asynchronously would pop its token-dependent parts in
+ * late. Rendered outside that context (e.g. on its own in a test) it falls
+ * back to fetching the token, and is `null` until that resolves.
+ */
+export function useTokenParsed(): TokenParsed | null {
+  const authService = useAuth();
+  const inherited = useContext(TokenParsedContext);
+  const [fetched, setFetched] = useState<TokenParsed | null>(null);
+
+  useEffect(() => {
+    if (inherited) return;
+    let cancelled = false;
+    authService.getTokenParsed().then((token) => {
+      if (!cancelled) setFetched(token);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authService, inherited]);
+
+  return inherited ?? fetched;
+}
 
 export default AuthContext;

@@ -1,9 +1,8 @@
 import { t } from "i18next";
-import { useContext, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { useApp } from "~/context/AppContext";
-import { TokenParsedContext, useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useTokenParsed } from "~/context/AuthContext";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
@@ -24,25 +23,13 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
  */
 export default function AdminLayout() {
   const { boardGroupId, candidateBoardGroupId } = useApp();
-  const authService = useAuth();
-  const inheritedToken = useContext(TokenParsedContext);
-  const [fetchedToken, setFetchedToken] = useState<TokenParsed | null>(null);
+  // Known synchronously inside the app tree (see useTokenParsed), so the outlet
+  // renders in the very first commit - which is what lets scroll restoration
+  // find a full-height page when coming back to an admin route from outside
+  // this layout.
+  const tokenParsed = useTokenParsed();
   const navigate = useNavigate();
 
-  // Inside the real app tree the token is already known (see
-  // TokenParsedContext), so there's nothing to wait for and the outlet renders
-  // in the very first commit - which is what lets scroll restoration find a
-  // full-height page when coming back to an admin route from outside this
-  // layout. Only fall back to fetching it when rendered without that context.
-  useEffect(() => {
-    if (inheritedToken) return;
-    const loadToken = async () => {
-      setFetchedToken(await authService.getTokenParsed());
-    };
-    loadToken();
-  }, [authService, inheritedToken]);
-
-  const tokenParsed = inheritedToken ?? fetchedToken;
   const isReady =
     tokenParsed !== null &&
     boardGroupId !== null &&
