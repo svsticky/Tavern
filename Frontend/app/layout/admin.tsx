@@ -1,8 +1,8 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
+import { TokenParsedContext, useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
@@ -25,37 +25,38 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
 export default function AdminLayout() {
   const { boardGroupId, candidateBoardGroupId } = useApp();
   const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const inheritedToken = useContext(TokenParsedContext);
+  const [fetchedToken, setFetchedToken] = useState<TokenParsed | null>(null);
   const navigate = useNavigate();
-  const [isLoading, setLoading] = useState(true);
 
+  // Inside the real app tree the token is already known (see
+  // TokenParsedContext), so there's nothing to wait for and the outlet renders
+  // in the very first commit - which is what lets scroll restoration find a
+  // full-height page when coming back to an admin route from outside this
+  // layout. Only fall back to fetching it when rendered without that context.
   useEffect(() => {
+    if (inheritedToken) return;
     const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      setTokenParsed(token);
+      setFetchedToken(await authService.getTokenParsed());
     };
     loadToken();
-  }, [authService]);
+  }, [authService, inheritedToken]);
+
+  const tokenParsed = inheritedToken ?? fetchedToken;
+  const isReady =
+    tokenParsed !== null &&
+    boardGroupId !== null &&
+    candidateBoardGroupId !== null;
+  const isAuthorized = isReady && isBoardOrCandidateBoard(tokenParsed);
 
   useEffect(() => {
-    if (!tokenParsed) return;
-    if (
-      boardGroupId === null ||
-      candidateBoardGroupId === null ||
-      !tokenParsed
-    ) {
-      return;
-    }
-    if (!isBoardOrCandidateBoard(tokenParsed)) {
+    if (isReady && !isAuthorized) {
       navigate("/403");
-      return;
     }
+  }, [isReady, isAuthorized, navigate]);
 
-    setLoading(false);
-  }, [boardGroupId, candidateBoardGroupId, navigate, tokenParsed]);
-
-  if (isLoading) {
-    return `${t("loading")}`;
+  if (!isAuthorized) {
+    return isReady ? null : `${t("loading")}`;
   }
 
   return <Outlet />;
