@@ -28,58 +28,59 @@ export type EditGroupFormData = {
   Active: boolean;
 };
 
-/**
- * Arguments for the loadGroupData handler.
- */
-type LoadGroupArgs = {
-  id: number | null;
-  setFormData: React.Dispatch<React.SetStateAction<EditGroupFormData>>;
-  setGroupPictureSrc: (value: string | null) => void;
-  setRoleAliases: React.Dispatch<React.SetStateAction<RoleAlias[]>>;
-  setLoading: (value: boolean) => void;
+/** What the edit-group page needs before it can render, as loaded by the route's `clientLoader`. */
+export type GroupPageData = {
+  formData: EditGroupFormData;
+  roleAliases: RoleAlias[];
 };
 
 /**
- * Initializes the edit page by fetching the group profile, group picture, and available role aliases.
- *
- * @async
- * @param {LoadGroupArgs} args - Configuration object containing:
- * @param {number | null} args.id - The ID of the group to load.
- * @param {Function} args.setFormData - Setter for the group's basic info form state.
- * @param {Function} args.setGroupPictureSrc - Setter for the group's profile image source URL.
- * @param {Function} args.setRoleAliases - Setter for the global list of selectable role aliases.
- * @param {Function} args.setLoading - Setter for the component's main loading state.
- * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
+ * Fetches the group's profile and the selectable role aliases, in parallel.
+ * Throws on failure so React Router's error boundary handles it.
  */
-export const loadGroupData = async ({
-  id,
-  setFormData,
-  setGroupPictureSrc,
-  setRoleAliases,
-  setLoading,
-}: LoadGroupArgs) => {
-  if (!id) return;
-  let url = null as string | null;
+export const fetchGroupPageData = async (
+  id: number,
+): Promise<GroupPageData> => {
+  const [groupResponse, roleAliasesResponse] = await Promise.all([
+    getGroupsById({ path: { id } }),
+    getRolealiases(),
+  ]);
 
-  try {
-    const groupResponse = await getGroupsById({ path: { id } });
+  if (groupResponse.error || !groupResponse.data)
+    throw groupResponse.error ?? new Error("Failed to load group data");
+  if (roleAliasesResponse.error || !roleAliasesResponse.data)
+    throw roleAliasesResponse.error ?? new Error("Failed to load role aliases");
 
-    if (groupResponse.error || !groupResponse.data)
-      throw new Error("Failed to load group data");
-
-    setFormData({
+  return {
+    formData: {
       Name: groupResponse.data.name,
       Type: groupResponse.data.type,
       Active: groupResponse.data.active,
       DefaultGLAccount: groupResponse.data.glAccountId ?? "",
       DefaultCostCenter: groupResponse.data.costUnitId ?? "",
-    });
+    },
+    roleAliases: roleAliasesResponse.data,
+  };
+};
 
-    const roleAliasesResponse = await getRolealiases();
-    if (roleAliasesResponse.error || !roleAliasesResponse.data)
-      throw new Error("Failed to load role aliases");
-    setRoleAliases(roleAliasesResponse.data);
+/**
+ * Fetches the group's picture as an Object URL for the header avatar. It stays
+ * out of the route loader - an image isn't worth holding the page back for, and
+ * a missing one just leaves the default avatar.
+ *
+ * @returns A cleanup function that revokes the generated Object URL.
+ */
+export const loadGroupPicture = async ({
+  id,
+  setGroupPictureSrc,
+}: {
+  id: number | null;
+  setGroupPictureSrc: (value: string | null) => void;
+}) => {
+  if (!id) return;
+  let url = null as string | null;
 
+  try {
     const groupPictureResponse = await getGroupsByIdGroupPicture({
       path: { id },
       responseType: "blob",
@@ -96,10 +97,7 @@ export const loadGroupData = async ({
     url = URL.createObjectURL(groupPictureResponse.data);
     setGroupPictureSrc(url);
   } catch (err) {
-    console.log("Failed to load group data:", err);
-    toast.error(appendErrorMessage(t("loading_failed"), err));
-  } finally {
-    setLoading(false);
+    console.warn("Failed to load group picture:", err);
   }
 
   return () => {
