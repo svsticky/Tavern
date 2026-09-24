@@ -1,7 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import { vi } from "vitest";
+import { afterEach, vi } from "vitest";
+import { clearResourceCache } from "~/util/resourceCache.util";
 
 // react-i18next's useTranslation() returns `i18n: undefined` entirely until an instance has been
 // registered via initReactI18next - it's not enough to just set properties on the `i18next`
@@ -35,3 +36,7 @@ class ResizeObserverStub {
   disconnect() {}
 }
 vi.stubGlobal("ResizeObserver", ResizeObserverStub);
+
+// The resource cache is module-level state shared across a file's tests - reset it so a
+// cached response from one test can't satisfy (or be invalidated by) the next.
+afterEach(() => clearResourceCache());

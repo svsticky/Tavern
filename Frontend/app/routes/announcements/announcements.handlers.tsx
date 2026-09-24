@@ -1,21 +1,7 @@
 import type { NavigateFunction } from "react-router";
-import { type GetAnnouncementResponseDto, getAnnouncements } from "~/api";
 
-/**
- * Fetches the list of all announcements from the API, for use in the
- * route's `clientLoader`. Throws on failure so React Router's error
- * boundary handles it.
- */
-export const loadAnnouncements = async (): Promise<
-  GetAnnouncementResponseDto[]
-> => {
-  const announcementsResponse = await getAnnouncements();
-
-  if (announcementsResponse.error || !announcementsResponse.data)
-    throw new Error("Failed to load announcements");
-
-  return announcementsResponse.data as GetAnnouncementResponseDto[];
-};
+// Shared with the home dashboard, so served from the resource cache when fresh.
+export { loadAnnouncements } from "~/util/cachedResources.util";
 
 /**
  * Navigates the user to the announcement creation form.

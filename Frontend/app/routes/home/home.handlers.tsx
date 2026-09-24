@@ -2,12 +2,15 @@ import {
   type ActivityResponseDto,
   type GetAnnouncementResponseDto,
   type GroupMembershipResponseDto,
-  getActivities,
-  getAnnouncements,
   getEnrollments,
-  getGroupmemberships,
   getPaymentsUnpaid,
 } from "~/api";
+import {
+  loadAnnouncements,
+  loadEnrolledActivities,
+  loadGroupMemberships,
+  loadUpcomingActivities,
+} from "~/util/cachedResources.util";
 
 export type HomeLoaderData = {
   activities: ActivityResponseDto[];
@@ -38,32 +41,17 @@ export async function loadHomeLoaderData(
   userId: string,
 ): Promise<HomeLoaderData> {
   const [
-    activitiesResponse,
-    enrolledActivitiesResponse,
-    announcementsResponse,
-    groupMembershipsResponse,
+    activities,
+    enrolledActivities,
+    announcements,
+    groupMemberships,
     outstandingPaymentsResponse,
     enrollmentAmountResponse,
   ] = await Promise.all([
-    getActivities({
-      query: {
-        IncludePast: false,
-        IncludeFuture: true,
-      },
-    }),
-    getActivities({
-      query: {
-        UserId: userId,
-        IncludePast: false,
-        IncludeFuture: true,
-      },
-    }),
-    getAnnouncements(),
-    getGroupmemberships({
-      query: {
-        MemberId: userId,
-      },
-    }),
+    loadUpcomingActivities(),
+    loadEnrolledActivities(userId),
+    loadAnnouncements(),
+    loadGroupMemberships(userId),
     getPaymentsUnpaid(),
     getEnrollments({
       query: {
@@ -71,18 +59,6 @@ export async function loadHomeLoaderData(
       },
     }),
   ]);
-
-  if (activitiesResponse.error || !activitiesResponse.data)
-    throw new Error("Failed to load activities");
-
-  if (enrolledActivitiesResponse.error || !enrolledActivitiesResponse.data)
-    throw new Error("Failed to load enrolled activities");
-
-  if (announcementsResponse.error || !announcementsResponse.data)
-    throw new Error("Failed to load announcements");
-
-  if (groupMembershipsResponse.error || !groupMembershipsResponse.data)
-    throw new Error("Failed to load group memberships");
 
   if (outstandingPaymentsResponse.error || !outstandingPaymentsResponse.data)
     throw new Error("Failed to load outstanding payments");
@@ -103,11 +79,10 @@ export async function loadHomeLoaderData(
   }
 
   return {
-    activities: activitiesResponse.data as ActivityResponseDto[],
-    enrolledActivities:
-      enrolledActivitiesResponse.data as ActivityResponseDto[],
-    announcements: announcementsResponse.data as GetAnnouncementResponseDto[],
-    groupMemberships: groupMembershipsResponse.data,
+    activities,
+    enrolledActivities,
+    announcements,
+    groupMemberships,
     outstandingPayments: outstandingPaymentsResponse.data.reduce(
       (total, payment) => total + (payment.balance || 0),
       0,

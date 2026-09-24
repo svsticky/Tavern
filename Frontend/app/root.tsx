@@ -23,6 +23,7 @@ import { AppProvider } from "./context/AppContext";
 import { BackNavigationProvider } from "./context/BackNavigationContext";
 import { getActiveAuthService } from "./layout/auth-service";
 import { getEnv } from "./util/config.utils";
+import { installCacheInvalidation } from "./util/resourceCache.util";
 import {
   BOARD_THEME_SETTINGS_UPDATED_EVENT,
   loadBoardThemeSettings,
@@ -47,6 +48,9 @@ client.setConfig({
     return undefined;
   },
 });
+
+// Any successful create/edit/delete drops the cached data it made stale.
+installCacheInvalidation(client.instance);
 
 client.instance.interceptors.response.use(
   async (response: AxiosResponse) => response,
