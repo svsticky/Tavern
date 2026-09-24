@@ -1,19 +1,37 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router";
+import { useLoaderData, useLocation, useParams } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
+import { fetchGroups } from "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import { cn } from "~/util/tailwind.util";
 import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
 import {
+  fetchEditActivity,
   getEditActivityBackPath,
-  loadEditActivityData,
 } from "./edit-activity.handlers";
+
+/**
+ * Loads what the form needs before the route renders: the activity to edit
+ * (none when creating), the groups it can be organized by, and the user's token.
+ */
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  const tokenParsed = await requireTokenParsed();
+  const [activity, groups] = await Promise.all([
+    params.id ? fetchEditActivity(params.id) : Promise.resolve(null),
+    fetchGroups(),
+  ]);
+  return { tokenParsed, activity, groups };
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * A dynamic page for creating new activities or editing existing ones.
@@ -38,46 +56,19 @@ export default function ActivityFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
   const { pathname } = useLocation();
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const { tokenParsed, groups } = loaderData;
 
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
-
+  // EditParticipantsTile patches the activity locally as participants are
+  // moved around; a re-run loader hands back a fresh one to sync to.
+  const [activity, setActivity] = useState<ActivityResponseDto | null>(
+    loaderData.activity,
+  );
   useEffect(() => {
-    let cancelled = false;
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      if (!cancelled) {
-        setTokenParsed(token);
-        if (!token) {
-          console.error("User not authenticated");
-        }
-      }
-    };
-    loadToken();
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
+    setActivity(loaderData.activity);
+  }, [loaderData.activity]);
 
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
-
-  useEffect(() => {
-    if (!tokenParsed) return;
-    loadEditActivityData({
-      isEdit,
-      id,
-      setActivity: (next) => setActivity(next),
-      setLoading,
-    });
-  }, [id, isEdit, tokenParsed]);
-
-  if (loading) return t("loading");
-
-  if (isEdit && !activity) return t("failed_fetching");
 
   return (
     <div className="">
@@ -93,7 +84,12 @@ export default function ActivityFormPage() {
         )}
       >
         <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
-          <EditActivityForm activity={activity} id={id} isBoard={isBoard} />
+          <EditActivityForm
+            activity={activity}
+            id={id}
+            isBoard={isBoard}
+            groups={groups}
+          />
         </div>
 
         {isBoard && isEdit && activity && (
