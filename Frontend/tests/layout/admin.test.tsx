@@ -2,6 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useApp } from "~/context/AppContext";
+import { TokenParsedContext } from "~/context/AuthContext";
 import AdminLayout from "~/layout/admin";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -84,5 +85,39 @@ describe("AdminLayout", () => {
     await waitFor(() =>
       expect(screen.queryByText("loading")).not.toBeInTheDocument(),
     );
+  });
+
+  it("uses the token from context instead of fetching it again", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => boardToken),
+    });
+
+    renderWithProviders(
+      <TokenParsedContext.Provider value={boardToken}>
+        <WithGroupIdsPopulated />
+      </TokenParsedContext.Provider>,
+      { authService },
+    );
+
+    await waitFor(() =>
+      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
+    );
+    expect(authService.getTokenParsed).not.toHaveBeenCalled();
+  });
+
+  it("redirects a non-board member from the context token to the 403 page without fetching", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => regularToken),
+    });
+
+    renderWithProviders(
+      <TokenParsedContext.Provider value={regularToken}>
+        <WithGroupIdsPopulated />
+      </TokenParsedContext.Provider>,
+      { authService },
+    );
+
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/403"));
+    expect(authService.getTokenParsed).not.toHaveBeenCalled();
   });
 });
