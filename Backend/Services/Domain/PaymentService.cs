@@ -123,15 +123,15 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId)
+        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid userId)
         {
             logger.LogInformation("Creating begunstiger payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
 
             var member = await GetMemberOrThrow(dto.MemberId);
 
-            if (userId != dto.MemberId)
+            if (userId != dto.MemberId || dto.ManuallyMarkedAsPaid)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
 
             using var transaction = await db.Database.BeginTransactionAsync();
