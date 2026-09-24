@@ -1,8 +1,8 @@
 import { t } from "i18next";
 import { Mail, Phone, PlusIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useLoaderData, useNavigate } from "react-router";
+import { useLoaderData, useNavigate, useSearchParams } from "react-router";
 import type { MemberResponseDto } from "~/api";
 import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
@@ -13,27 +13,60 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { useInfiniteLoadMore } from "~/hooks/useInfiniteLoadMore";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
+import {
+  fetchPages,
+  PAGES_PARAM,
+  readPages,
+  shouldRevalidateIgnoring,
+} from "~/util/infiniteList.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
-import { fetchMembersPage, PAGE_SIZE } from "./members.handlers";
+import {
+  FILTERS_PARAM,
+  fetchMembersPage,
+  PAGE_SIZE,
+  parseMembersFilters,
+  SEARCH_PARAM,
+  serializeMembersFilters,
+} from "./members.handlers";
 
 type LoaderData = {
   members: MemberResponseDto[];
   hasMore: boolean;
+  search: string;
+  filters: MembersFilterDto | null;
 };
 
 /**
- * Fetches the first, unfiltered page of members before the route renders.
- * Search text and the filter panel stay local component state (not reflected
- * in the URL) exactly as before - only the initial mount's fetch moves ahead
- * of render here, to fix scroll restoration and drop the loading flash.
+ * Reads the search text, filter panel criteria and how many pages were loaded
+ * from the URL and fetches them before the route renders. Keeping all of that
+ * in the URL (rather than local state) is what lets a back navigation from a
+ * member's page rebuild the exact list - same search, filters and scroll
+ * depth - so scroll restoration has something to land on.
  */
-export async function clientLoader(): Promise<LoaderData> {
+export async function clientLoader({
+  request,
+}: {
+  request: Request;
+}): Promise<LoaderData> {
   await requireTokenParsed();
-  const members = await fetchMembersPage(1, "", null);
-  return { members, hasMore: members.length === PAGE_SIZE };
+
+  const url = new URL(request.url);
+  const search = url.searchParams.get(SEARCH_PARAM) ?? "";
+  const filters = parseMembersFilters(url.searchParams.get(FILTERS_PARAM));
+  const pages = readPages(url.searchParams);
+
+  const { items, hasMore } = await fetchPages(pages, PAGE_SIZE, (page) =>
+    fetchMembersPage(page, search, filters),
+  );
+
+  return { members: items, hasMore, search, filters };
 }
+
+/** Bumping `pages` while scrolling must not refetch what's already loaded. */
+export const shouldRevalidate = shouldRevalidateIgnoring(PAGES_PARAM);
 
 export function HydrateFallback() {
   return <StickyLoadingLogo />;
@@ -58,85 +91,73 @@ export function HydrateFallback() {
 export default function Members() {
   const loaderData = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<MemberResponseDto[]>(
-    loaderData.members,
-  );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState<MembersFilterDto | null>(null);
+  const [searchInput, setSearchInput] = useState(loaderData.search);
+  const { filters } = loaderData;
 
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(loaderData.hasMore);
-  const loaderRef = useRef<HTMLDivElement>(null);
-  const isInitialMount = useRef(true);
+  const {
+    items: members,
+    hasMore,
+    loadingMore: loading,
+    sentinelRef: loaderRef,
+  } = useInfiniteLoadMore({
+    loaderItems: loaderData.members,
+    loaderHasMore: loaderData.hasMore,
+    pageSize: PAGE_SIZE,
+    fetchPage: useCallback(
+      (page: number) =>
+        fetchMembersPage(page, loaderData.search, loaderData.filters),
+      [loaderData.search, loaderData.filters],
+    ),
+    onError: useCallback((error: unknown) => {
+      console.error("Error fetching members:", error);
+      toast.error(appendErrorMessage(t("loading_failed"), error));
+    }, []),
+  });
 
-  const fetchMembers = useCallback(
-    async (pageNum: number, search: string, isInitial: boolean) => {
-      try {
-        setLoading(true);
-        const data = await fetchMembersPage(pageNum, search, filters);
-
-        setMembers((prev) => (isInitial ? data : [...prev, ...data]));
-
-        if (data.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
-      } catch (error) {
-        console.error("Error fetching members:", error);
-        toast.error(appendErrorMessage(t("loading_failed"), error));
-      } finally {
-        setLoading(false);
-      }
+  // Search/filter changes rewrite the URL (a `replace`, so back still leaves
+  // this page in one step); the loader reruns and the list restarts from page 1.
+  const updateQuery = useCallback(
+    (update: (next: URLSearchParams) => void) => {
+      const next = new URLSearchParams(searchParams);
+      update(next);
+      next.delete(PAGES_PARAM);
+      setSearchParams(next, { replace: true, preventScrollReset: true });
     },
-    [filters],
+    [searchParams, setSearchParams],
   );
 
   const applyFilters = (newFilters: MembersFilterDto) => {
-    setFilters(newFilters);
     setIsFiltersOpen(false);
+    updateQuery((next) => {
+      const serialized = serializeMembersFilters(newFilters);
+      if (serialized) {
+        next.set(FILTERS_PARAM, serialized);
+      } else {
+        next.delete(FILTERS_PARAM);
+      }
+    });
   };
 
   useEffect(() => {
+    setSearchInput(loaderData.search);
+  }, [loaderData.search]);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
+      if (searchInput === loaderData.search) return;
+      updateQuery((next) => {
+        if (searchInput) {
+          next.set(SEARCH_PARAM, searchInput);
+        } else {
+          next.delete(SEARCH_PARAM);
+        }
+      });
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  // The loader already fetched page 1 with no search/filters for the initial
-  // mount - skip that first run so it isn't immediately refetched, and only
-  // react to an actual later change to search or filters.
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    setPage(1);
-    setHasMore(true);
-    fetchMembers(1, debouncedSearchQuery, true);
-  }, [debouncedSearchQuery, fetchMembers]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchMembers(nextPage, debouncedSearchQuery, false);
-        }
-      },
-      { threshold: 1.0 },
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, page, debouncedSearchQuery, fetchMembers]);
+  }, [searchInput, loaderData.search, updateQuery]);
 
   const columns: Column<MemberResponseDto>[] = [
     {
@@ -207,8 +228,9 @@ export default function Members() {
             <Input
               label={t("search")}
               placeholder={t("search_members")}
+              value={searchInput}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(e.target.value)
+                setSearchInput(e.target.value)
               }
             />
           </div>

@@ -1,7 +1,12 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
-import { useMemo, useState } from "react";
-import { useLoaderData, useNavigate, useRevalidator } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+  useSearchParams,
+} from "react-router";
 import { type GroupResponseDto, getGroups } from "~/api";
 import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
@@ -12,7 +17,11 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { shouldRevalidateIgnoring } from "~/util/infiniteList.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
+
+/** URL search param holding the search text. */
+const SEARCH_PARAM = "q";
 
 export async function clientLoader(): Promise<{ groups: GroupResponseDto[] }> {
   await requireTokenParsed();
@@ -24,6 +33,13 @@ export async function clientLoader(): Promise<{ groups: GroupResponseDto[] }> {
 
   return { groups: response.data };
 }
+
+/**
+ * Search is filtered client-side over the already-loaded list, so typing must
+ * not refetch it - the text only lives in the URL so back-navigation can
+ * restore the filtered list (and with it the scroll position).
+ */
+export const shouldRevalidate = shouldRevalidateIgnoring(SEARCH_PARAM);
 
 export function HydrateFallback() {
   return <StickyLoadingLogo />;
@@ -48,8 +64,25 @@ export default function Groups() {
   const navigate = useNavigate();
   const revalidator = useRevalidator();
 
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearch = searchParams.get(SEARCH_PARAM) ?? "";
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [createGroupModalIsOpen, setCreateGroupModalIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (searchQuery === urlSearch) return;
+      const next = new URLSearchParams(searchParams);
+      if (searchQuery) {
+        next.set(SEARCH_PARAM, searchQuery);
+      } else {
+        next.delete(SEARCH_PARAM);
+      }
+      setSearchParams(next, { replace: true, preventScrollReset: true });
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery, urlSearch, searchParams, setSearchParams]);
 
   const filteredGroups = useMemo(
     () =>
@@ -118,6 +151,7 @@ export default function Groups() {
             <Input
               label={t("search")}
               placeholder={t("search_groups")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }

@@ -113,6 +113,28 @@ describe("admin activities clientLoader", () => {
     expect(result.search).toBe("kroeg");
     expect(result.hasMore).toBe(true);
   });
+
+  it("rebuilds every page the user had scrolled through from the URL's pages param", async () => {
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+    fetchAdminActivitiesPage.mockImplementation(
+      async (_year: number, page: number) =>
+        Array.from({ length: 15 }, (_, i) =>
+          makeActivity({ id: page * 100 + i }),
+        ),
+    );
+
+    const result = await clientLoader({
+      request: new Request(
+        "https://example.com/admin/activities?year=2020&pages=3",
+      ),
+    });
+
+    expect(fetchAdminActivitiesPage).toHaveBeenCalledWith(2020, 1, 15, "");
+    expect(fetchAdminActivitiesPage).toHaveBeenCalledWith(2020, 2, 15, "");
+    expect(fetchAdminActivitiesPage).toHaveBeenCalledWith(2020, 3, 15, "");
+    expect(result.activities).toHaveLength(45);
+    expect(result.hasMore).toBe(true);
+  });
 });
 
 describe("Activities (admin)", () => {
@@ -261,6 +283,43 @@ describe("Activities (admin)", () => {
         "",
       ),
     );
+  });
+
+  it("records the loaded page in the URL with a replace that keeps the scroll position", async () => {
+    const page = Array.from({ length: 15 }, (_, i) =>
+      makeActivity({ id: i + 1, name: `Activity ${i + 1}` }),
+    );
+    useLoaderData.mockReturnValue(
+      loaderData({ activities: page, hasMore: true }),
+    );
+    fetchAdminActivitiesPage.mockResolvedValue([makeActivity({ id: 99 })]);
+
+    renderWithProviders(<Activities />);
+    intersectionCallback?.(
+      [{ isIntersecting: true } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
+    );
+
+    await waitFor(() => expect(setSearchParams).toHaveBeenCalled());
+    const [update, options] = setSearchParams.mock.calls.at(-1)!;
+    expect(
+      (update as (p: URLSearchParams) => URLSearchParams)(
+        new URLSearchParams(),
+      ).get("pages"),
+    ).toBe("2");
+    expect(options).toEqual({ replace: true, preventScrollReset: true });
+  });
+
+  it("restarts at page 1 when the year changes", () => {
+    useLoaderData.mockReturnValue(loaderData());
+    renderWithProviders(<Activities />);
+
+    fireEvent.change(screen.getByLabelText("year"), {
+      target: { value: "2020" },
+    });
+
+    const [params] = setSearchParams.mock.calls.at(-1)!;
+    expect((params as URLSearchParams).has("pages")).toBe(false);
   });
 
   it("does not fetch the next page when there are no more pages", () => {

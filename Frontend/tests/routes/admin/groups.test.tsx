@@ -1,4 +1,5 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { useLocation } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import type { GroupResponseDto } from "~/api";
 import Groups, { clientLoader } from "~/routes/admin/groups";
@@ -67,6 +68,10 @@ describe("admin groups clientLoader", () => {
   });
 });
 
+function LocationProbe() {
+  return <div data-testid="location">{useLocation().search}</div>;
+}
+
 describe("Groups", () => {
   it("renders the table with loaded groups", () => {
     useLoaderData.mockReturnValue({ groups: [makeGroup()] });
@@ -90,6 +95,40 @@ describe("Groups", () => {
 
     expect(screen.queryByText("Board")).not.toBeInTheDocument();
     expect(screen.getByText("Party Committee")).toBeInTheDocument();
+  });
+
+  it("restores the search text (and the filtered list) from the URL", () => {
+    useLoaderData.mockReturnValue({
+      groups: [
+        makeGroup({ id: 1, name: "Board", type: "Committee" }),
+        makeGroup({ id: 2, name: "Party Committee", type: "WorkingGroup" }),
+      ],
+    });
+    renderWithProviders(<Groups />, { route: "/admin/groups?q=working" });
+
+    expect(screen.getByLabelText("search")).toHaveValue("working");
+    expect(screen.queryByText("Board")).not.toBeInTheDocument();
+    expect(screen.getByText("Party Committee")).toBeInTheDocument();
+  });
+
+  it("writes the search text to the URL (debounced) so back-navigation can restore it", async () => {
+    useLoaderData.mockReturnValue({ groups: [makeGroup()] });
+    renderWithProviders(
+      <>
+        <Groups />
+        <LocationProbe />
+      </>,
+    );
+
+    fireEvent.change(screen.getByLabelText("search"), {
+      target: { value: "board" },
+    });
+
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("location")).toHaveTextContent("?q=board"),
+      { timeout: 2000 },
+    );
   });
 
   it("navigates to a group's detail page when 'view_group' is clicked", () => {

@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLoaderData, useNavigate, useSearchParams } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
@@ -10,7 +10,14 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useInfiniteLoadMore } from "~/hooks/useInfiniteLoadMore";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import {
+  fetchPages,
+  PAGES_PARAM,
+  readPages,
+  shouldRevalidateIgnoring,
+} from "~/util/infiniteList.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
   fetchAdminActivitiesPage,
@@ -28,11 +35,10 @@ type LoaderData = {
 };
 
 /**
- * Reads `year`/`search` from the URL (so a filtered view is shareable and
- * restored for free on back-navigation) and fetches the first page for that
- * combination. Subsequent "load more" pages are fetched imperatively as the
- * user scrolls - React Router's loader model fetches one page per
- * navigation, it isn't a fit for open-ended accumulation.
+ * Reads `year`/`search`/`pages` from the URL (so a filtered, scrolled-down view
+ * is shareable and restored for free on back-navigation) and fetches the
+ * first `pages` pages for that combination. Further pages are appended as the
+ * user scrolls (see `useInfiniteLoadMore`), which bumps `pages` in the URL.
  */
 export async function clientLoader({
   request,
@@ -44,11 +50,17 @@ export async function clientLoader({
   const url = new URL(request.url);
   const year = Number(url.searchParams.get("year")) || getCommitteeYear();
   const search = url.searchParams.get("search") ?? "";
+  const pages = readPages(url.searchParams);
 
-  const activities = await fetchAdminActivitiesPage(year, 1, PAGE_SIZE, search);
+  const { items, hasMore } = await fetchPages(pages, PAGE_SIZE, (page) =>
+    fetchAdminActivitiesPage(year, page, PAGE_SIZE, search),
+  );
 
-  return { activities, year, search, hasMore: activities.length === PAGE_SIZE };
+  return { activities: items, year, search, hasMore };
 }
+
+/** Bumping `pages` while scrolling must not refetch what's already loaded. */
+export const shouldRevalidate = shouldRevalidateIgnoring(PAGES_PARAM);
 
 export function HydrateFallback() {
   return <StickyLoadingLogo />;
@@ -82,21 +94,33 @@ export default function Activities() {
   );
 
   const [searchInput, setSearchInput] = useState(loaderData.search);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [activities, setActivities] = useState(loaderData.activities);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(loaderData.hasMore);
-  const loaderRef = useRef<HTMLDivElement>(null);
 
-  // The loader reruns (and hands back a new object) whenever `year`/`search`
-  // change in the URL - reset the accumulated infinite-scroll list to that
-  // fresh first page.
+  const {
+    items: activities,
+    hasMore,
+    loadingMore,
+    sentinelRef: loaderRef,
+  } = useInfiniteLoadMore({
+    loaderItems: loaderData.activities,
+    loaderHasMore: loaderData.hasMore,
+    pageSize: PAGE_SIZE,
+    fetchPage: useCallback(
+      (page: number) =>
+        fetchAdminActivitiesPage(
+          loaderData.year,
+          page,
+          PAGE_SIZE,
+          loaderData.search,
+        ),
+      [loaderData.year, loaderData.search],
+    ),
+  });
+
+  // The loader reruns whenever `year`/`search` change in the URL - keep the
+  // box in sync with what it actually searched for.
   useEffect(() => {
-    setActivities(loaderData.activities);
-    setPage(1);
-    setHasMore(loaderData.hasMore);
     setSearchInput(loaderData.search);
-  }, [loaderData]);
+  }, [loaderData.search]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -107,7 +131,8 @@ export default function Activities() {
       } else {
         next.delete("search");
       }
-      setSearchParams(next, { replace: true });
+      next.delete(PAGES_PARAM);
+      setSearchParams(next, { replace: true, preventScrollReset: true });
     }, 300);
 
     return () => clearTimeout(handler);
@@ -116,38 +141,9 @@ export default function Activities() {
   const changeYear = (year: number) => {
     const next = new URLSearchParams(searchParams);
     next.set("year", String(year));
+    next.delete(PAGES_PARAM);
     setSearchParams(next);
   };
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries[0].isIntersecting || !hasMore || loadingMore) return;
-
-        const nextPage = page + 1;
-        setLoadingMore(true);
-        fetchAdminActivitiesPage(
-          loaderData.year,
-          nextPage,
-          PAGE_SIZE,
-          loaderData.search,
-        )
-          .then((fetched) => {
-            setActivities((prev) => [...prev, ...fetched]);
-            setPage(nextPage);
-            if (fetched.length < PAGE_SIZE) setHasMore(false);
-          })
-          .finally(() => setLoadingMore(false));
-      },
-      { threshold: 1.0 },
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, page, loaderData.year, loaderData.search]);
 
   const columns: Column<ActivityResponseDto>[] = [
     {

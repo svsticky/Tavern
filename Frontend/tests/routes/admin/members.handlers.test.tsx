@@ -8,7 +8,11 @@ const { getMembers } = vi.hoisted(() => ({
 
 vi.mock("~/api", () => ({ getMembers }));
 
-import { fetchMembersPage } from "~/routes/admin/members.handlers";
+import {
+  fetchMembersPage,
+  parseMembersFilters,
+  serializeMembersFilters,
+} from "~/routes/admin/members.handlers";
 
 describe("fetchMembersPage", () => {
   it("fetches members for the given page/search with no filters", async () => {
@@ -71,5 +75,65 @@ describe("fetchMembersPage", () => {
     await expect(fetchMembersPage(1, "", null)).rejects.toThrow(
       "Failed to fetch members",
     );
+  });
+});
+
+describe("members filter URL param", () => {
+  it("serializes only the set filters", () => {
+    expect(
+      serializeMembersFilters({
+        studyId: 5,
+        gratie: null,
+        lidVanVerdienste: null,
+        ereLid: true,
+        begunstiger: null,
+        suspended: null,
+        inactive: null,
+        studyType: null,
+      }),
+    ).toBe('{"studyId":5,"ereLid":true}');
+  });
+
+  it("serializes to null when nothing is filtered, so the param is dropped", () => {
+    expect(serializeMembersFilters(null)).toBeNull();
+    expect(
+      serializeMembersFilters({
+        studyId: null,
+        gratie: null,
+        lidVanVerdienste: null,
+        ereLid: null,
+        begunstiger: null,
+        suspended: null,
+        inactive: null,
+        studyType: null,
+      }),
+    ).toBeNull();
+  });
+
+  it("round-trips through parse", () => {
+    const filters = {
+      studyId: 5,
+      gratie: null,
+      lidVanVerdienste: null,
+      ereLid: true,
+      begunstiger: null,
+      suspended: null,
+      inactive: null,
+      studyType: null,
+    };
+    expect(parseMembersFilters(serializeMembersFilters(filters))).toEqual(
+      filters,
+    );
+  });
+
+  it.each([
+    null,
+    "",
+    "{not json",
+    "42",
+    "[1,2]",
+    "null",
+  ])("parses %j as no filters", (value) => {
+    expect(parseMembersFilters(value)).toBeNull();
   });
 });
