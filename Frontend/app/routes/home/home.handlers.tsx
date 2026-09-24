@@ -9,6 +9,13 @@ import {
   getGroupmemberships,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
+import {
+  ACTIVITIES_CACHE_KEY,
+  ANNOUNCEMENTS_CACHE_KEY,
+  HOME_ENROLLED_ACTIVITIES_CACHE_KEY,
+  HOME_GROUP_MEMBERSHIPS_CACHE_KEY,
+  setCachedResource,
+} from "~/util/resourceCache.util";
 
 /**
  * Arguments for the loadHomePageData handler.
@@ -16,6 +23,10 @@ import { appendErrorMessage } from "~/util/error.util";
 type loadHomePageArgs = {
   authenticated: boolean | undefined;
   userId: string | undefined;
+  cachedActivities?: ActivityResponseDto[];
+  cachedAnnouncements?: GetAnnouncementResponseDto[];
+  cachedEnrolledActivities?: ActivityResponseDto[];
+  cachedGroupMemberships?: GroupMembershipResponseDto[];
   setLoading: (loading: boolean) => void;
   setActivities: (activities: ActivityResponseDto[]) => void;
   setAnnouncements: (announcements: GetAnnouncementResponseDto[]) => void;
@@ -23,17 +34,27 @@ type loadHomePageArgs = {
   setEnrolledActivities: (activities: ActivityResponseDto[]) => void;
 };
 
+/** Reuses `cached` if given, otherwise fetches and caches it under `cacheKey`. */
+function fetchOrCached<T>(
+  cached: T | undefined,
+  cacheKey: string,
+  fetcher: () => Promise<T>,
+): Promise<T> {
+  if (cached) return Promise.resolve(cached);
+  return fetcher().then((data) => {
+    setCachedResource(cacheKey, data);
+    return data;
+  });
+}
+
 /**
  * Orchestrates the data hydration for the main user home page.
  *
- * Fetches three core data sets in sequence:
- * 1. **Upcoming Activities**: Future events available for viewing or enrollment.
- * 2. **Announcements**: Recent association-wide notifications.
- * 3. **Personal Memberships**: Groups and committees the specific user belongs to.
+ * Each of the four data sets is cached - a `cached*` value passed in is
+ * reused as-is instead of being re-fetched.
  *
  * @async
  * @param {loadHomePageArgs} args - Configuration object containing:
- * @param {boolean} args.initialized - Guard to ensure auth services are ready.
  * @param {boolean | undefined} args.authenticated - Guard to ensure the user is logged in.
  * @param {string | undefined} args.userId - The ID used to filter personal group memberships.
  * @param {Function} args.setLoading - Function to toggle the loading overlay.
@@ -47,6 +68,10 @@ type loadHomePageArgs = {
 export const loadHomePageData = async ({
   authenticated,
   userId,
+  cachedActivities,
+  cachedAnnouncements,
+  cachedEnrolledActivities,
+  cachedGroupMemberships,
   setLoading,
   setActivities,
   setAnnouncements,
@@ -55,53 +80,68 @@ export const loadHomePageData = async ({
 }: loadHomePageArgs) => {
   if (!authenticated) return;
 
+  const activitiesPromise = fetchOrCached(
+    cachedActivities,
+    ACTIVITIES_CACHE_KEY,
+    () =>
+      getActivities({
+        query: { IncludePast: false, IncludeFuture: true },
+      }).then((res) => {
+        if (res.error || !res.data)
+          throw new Error("Failed to load activities");
+        return res.data as ActivityResponseDto[];
+      }),
+  );
+
+  const announcementsPromise = fetchOrCached(
+    cachedAnnouncements,
+    ANNOUNCEMENTS_CACHE_KEY,
+    () =>
+      getAnnouncements().then((res) => {
+        if (res.error || !res.data)
+          throw new Error("Failed to load announcements");
+        return res.data as GetAnnouncementResponseDto[];
+      }),
+  );
+
+  const enrolledActivitiesPromise = fetchOrCached(
+    cachedEnrolledActivities,
+    HOME_ENROLLED_ACTIVITIES_CACHE_KEY,
+    () =>
+      getActivities({
+        query: { UserId: userId, IncludePast: false, IncludeFuture: true },
+      }).then((res) => {
+        if (res.error || !res.data)
+          throw new Error("Failed to load enrolled activities");
+        return res.data as ActivityResponseDto[];
+      }),
+  );
+
+  const groupMembershipsPromise = fetchOrCached(
+    cachedGroupMemberships,
+    HOME_GROUP_MEMBERSHIPS_CACHE_KEY,
+    () =>
+      getGroupmemberships({ query: { MemberId: userId } }).then((res) => {
+        if (res.error || !res.data)
+          throw new Error("Failed to load group memberships");
+        return res.data;
+      }),
+  );
+
   try {
     setLoading(true);
-    const [
-      activitiesResponse,
-      enrolledActivitiesResponse,
-      announcementsResponse,
-      committeesResponse,
-    ] = await Promise.all([
-      getActivities({
-        query: {
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
-      getActivities({
-        query: {
-          UserId: userId,
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
-      getAnnouncements(),
-      getGroupmemberships({
-        query: {
-          MemberId: userId,
-        },
-      }),
-    ]);
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activities");
-    setActivities(activitiesResponse.data as ActivityResponseDto[]);
+    const [activities, enrolledActivities, announcements, groupMemberships] =
+      await Promise.all([
+        activitiesPromise,
+        enrolledActivitiesPromise,
+        announcementsPromise,
+        groupMembershipsPromise,
+      ]);
 
-    if (enrolledActivitiesResponse.error || !enrolledActivitiesResponse.data)
-      throw new Error("Failed to load enrolled activities");
-    setEnrolledActivities(
-      enrolledActivitiesResponse.data as ActivityResponseDto[],
-    );
-
-    if (announcementsResponse.error || !announcementsResponse.data)
-      throw new Error("Failed to load announcements");
-    setAnnouncements(
-      announcementsResponse.data as GetAnnouncementResponseDto[],
-    );
-
-    if (committeesResponse.error || !committeesResponse.data)
-      throw new Error("Failed to load group memberships");
-    setGroupMemberships(committeesResponse.data);
+    setActivities(activities);
+    setEnrolledActivities(enrolledActivities);
+    setAnnouncements(announcements);
+    setGroupMemberships(groupMemberships);
   } catch (error) {
     console.error("Error while loading data:", error);
     toast.error(appendErrorMessage(t("loading_failed"), error));

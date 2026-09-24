@@ -12,7 +12,15 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { usePersistentPageState } from "~/hooks/usePersistentPageState";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import { appendErrorMessage } from "~/util/error.util";
+
+type GroupsPageState = {
+  groups: GroupResponseDto[] | null;
+  filteredGroups: GroupResponseDto[] | null;
+  searchQuery: string;
+};
 
 /**
  * An administrative management page for viewing, filtering, and creating association groups.
@@ -32,16 +40,24 @@ import { appendErrorMessage } from "~/util/error.util";
 export default function Groups() {
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [groups, setGroups] = useState<GroupResponseDto[] | null>(null);
+  const { initial, isRestored, save } = usePersistentPageState<GroupsPageState>(
+    () => ({ groups: null, filteredGroups: null, searchQuery: "" }),
+  );
+
+  const [loading, setLoading] = useState(!isRestored);
+  const [groups, setGroups] = useState<GroupResponseDto[] | null>(
+    initial.groups,
+  );
   const [filteredGroups, setFilteredGroups] = useState<
     GroupResponseDto[] | null
-  >(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  >(initial.filteredGroups);
+  const [searchQuery, setSearchQuery] = useState(initial.searchQuery);
 
   const [createGroupModalIsOpen, setCreateGroupModalIsOpen] = useState(false);
 
   useEffect(() => {
+    if (isRestored) return;
+
     const fetchGroups = async () => {
       try {
         setLoading(true);
@@ -62,7 +78,7 @@ export default function Groups() {
     };
 
     fetchGroups();
-  }, []);
+  }, [isRestored]);
 
   useEffect(() => {
     if (!groups) return;
@@ -75,6 +91,13 @@ export default function Groups() {
 
     setFilteredGroups(filtered);
   }, [searchQuery, groups]);
+
+  useEffect(() => {
+    if (loading) return;
+    save({ groups, filteredGroups, searchQuery });
+  }, [loading, groups, filteredGroups, searchQuery, save]);
+
+  useScrollRestoration(!loading);
 
   const columns: Column<GroupResponseDto>[] = [
     {
@@ -133,6 +156,7 @@ export default function Groups() {
             <Input
               label={t("search")}
               placeholder={t("search_groups")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }

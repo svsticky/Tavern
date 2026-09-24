@@ -98,7 +98,9 @@ export default function ConfirmMail() {
             <p className="text-lg mb-4">
               {t("verification_mail_sent_to_new_user_description")}
             </p>
-            <Link to={`/admin/members/${memberId}`}>{t("back_to_member")}</Link>
+            <Link to={`/admin/members/${memberId}`} replace>
+              {t("back_to_member")}
+            </Link>
           </>
         ) : (
           <>
