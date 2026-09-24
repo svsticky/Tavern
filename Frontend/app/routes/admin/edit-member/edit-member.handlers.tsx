@@ -7,7 +7,6 @@ import {
   type GroupMembershipResponseDto,
   getGroupmemberships,
   getMembersById,
-  getMembersByIdProfilePicture,
   getPaymentsMemberByFromUserIdStatus,
   getStudies,
   getStudyenrollments,
@@ -25,7 +24,7 @@ import { appendErrorMessage } from "~/util/error.util";
 /**
  * Interface representing the comprehensive form state for editing a member.
  */
-type EditMemberFormData = {
+export type EditMemberFormData = {
   firstName: string;
   lastName: string;
   studentNumber: string;
@@ -45,151 +44,98 @@ type EditMemberFormData = {
   dateOfBirth: string;
 };
 
-/**
- * Arguments for the loadMemberData handler.
- */
-type LoadMemberArgs = {
-  memberId: string | undefined;
-  setFormData: React.Dispatch<React.SetStateAction<EditMemberFormData>>;
-  setEmail: (value: string) => void;
-  setEnrollments: React.Dispatch<
-    React.SetStateAction<StudyEnrollmentResponseDto[]>
-  >;
-  setGroupMemberships: React.Dispatch<
-    React.SetStateAction<GroupMembershipResponseDto[]>
-  >;
-  setAvailableStudies: React.Dispatch<React.SetStateAction<Study[]>>;
-  setProfilePictureSrc: (value: string | null) => void;
-  setHasPaidMembership: (value: boolean) => void;
-  setIsBegunstiger: (value: boolean) => void;
-  setLoading: (value: boolean) => void;
+/** Everything the edit-member page shows, as loaded by the route's `clientLoader`. */
+export type MemberPageData = {
+  formData: EditMemberFormData;
+  email: string;
+  enrollments: StudyEnrollmentResponseDto[];
+  groupMemberships: GroupMembershipResponseDto[];
+  availableStudies: Study[];
+  hasPaidMembership: boolean;
+  isBegunstiger: boolean;
 };
 
 /**
- * Initializes the edit page by fetching member profile, study enrollments, group
- * memberships (all years), available study programs, membership/begunstiger payment
- * status, and the profile picture.
+ * Fetches the member profile, study enrollments, group memberships (all
+ * years), the available study programs and the membership/begunstiger payment
+ * status - in parallel, since none depends on another.
  *
- * @async
- * @param {LoadMemberArgs} args - Configuration object containing:
- * @param {string | undefined} args.memberId - The unique ID of the member to load.
- * @param {Function} args.setFormData - React state setter for the main edit form.
- * @param {Function} args.setEmail - Setter to handle the member's email address separately.
- * @param {Function} args.setEnrollments - Setter for the list of study history records.
- * @param {Function} args.setGroupMemberships - Setter for the list of group memberships, across all years.
- * @param {Function} args.setAvailableStudies - Setter for the global list of selectable study programs.
- * @param {Function} args.setProfilePictureSrc - Setter for the profile image source URL.
- * @param {Function} args.setHasPaidMembership - Setter for whether the member currently has a valid membership or begunstiger fee payment.
- * @param {Function} args.setIsBegunstiger - Setter for whether the member is currently flagged as a begunstiger.
- * @param {Function} args.setLoading - Setter to toggle the component's global loading state.
- * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
+ * Throws when any of the first four fail, so React Router's error boundary
+ * handles it. The payment status is non-critical: it falls back to assuming
+ * the fee is paid (hiding the manual mark-as-paid action) rather than failing
+ * the whole page. `hasPaidMembershipBeforeExpirationTime` already reflects the
+ * begunstiger fee status instead of the regular membership one when
+ * `isBegunstiger`.
  */
-export const loadMemberData = async ({
-  memberId,
-  setFormData,
-  setEmail,
-  setEnrollments,
-  setGroupMemberships,
-  setAvailableStudies,
-  setProfilePictureSrc,
-  setHasPaidMembership,
-  setIsBegunstiger,
-  setLoading,
-}: LoadMemberArgs) => {
-  if (!memberId) return;
-  let url = null as string | null;
-
-  try {
-    const memberResponse = await getMembersById({ path: { id: memberId } });
-    if (memberResponse.error || !memberResponse.data) {
-      throw memberResponse.error ?? new Error("Failed to load member data");
-    }
-    setFormData({
-      firstName: memberResponse.data.firstName || "",
-      lastName: memberResponse.data.lastName || "",
-      studentNumber: memberResponse.data.studentNumber || "",
-      phoneNumber: memberResponse.data.phoneNumber || "",
-      street: memberResponse.data.street || "",
-      houseNumber: memberResponse.data.houseNumber || "",
-      postalCode: memberResponse.data.postalCode || "",
-      city: memberResponse.data.city || "",
-      parentPhoneNumber: memberResponse.data.parentPhoneNumber || "",
-      preferredLanguage: memberResponse.data.preferredLanguage ?? "NL",
-      notes: memberResponse.data.notes || "",
-      gratie: !!memberResponse.data.gratie,
-      lidVanVerdienste: !!memberResponse.data.lidVanVerdienste,
-      ereLid: !!memberResponse.data.ereLid,
-      begunstiger: !!memberResponse.data.begunstiger,
-      suspended: !!memberResponse.data.suspended,
-      dateOfBirth: memberResponse.data.dateOfBirth
-        ? new Date(memberResponse.data.dateOfBirth).toISOString().split("T")[0]
-        : "",
-    });
-
-    setEmail(memberResponse.data.email!);
-
-    const studyEnrollmentsResponse = await getStudyenrollments({
-      query: { MemberId: memberId },
-    });
-    if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data) {
-      throw (
-        studyEnrollmentsResponse.error ??
-        new Error("Failed to load study enrollments")
-      );
-    }
-    setEnrollments(studyEnrollmentsResponse.data);
-
+export const fetchMemberPageData = async (
+  memberId: string,
+): Promise<MemberPageData> => {
+  const [
+    memberResponse,
+    studyEnrollmentsResponse,
     // No MembershipYear filter - all years, same as the home page's "my groups" overview.
-    const groupMembershipsResponse = await getGroupmemberships({
-      query: { MemberId: memberId },
-    });
-    if (groupMembershipsResponse.error || !groupMembershipsResponse.data) {
-      throw (
-        groupMembershipsResponse.error ??
-        new Error("Failed to load group memberships")
-      );
-    }
-    setGroupMemberships(groupMembershipsResponse.data);
+    groupMembershipsResponse,
+    studiesResponse,
+    paymentStatusResponse,
+  ] = await Promise.all([
+    getMembersById({ path: { id: memberId } }),
+    getStudyenrollments({ query: { MemberId: memberId } }),
+    getGroupmemberships({ query: { MemberId: memberId } }),
+    getStudies(),
+    getPaymentsMemberByFromUserIdStatus({ path: { fromUserId: memberId } }),
+  ]);
 
-    const studiesResponse = await getStudies();
-    if (studiesResponse.error || !studiesResponse.data) {
-      throw (
-        studiesResponse.error ?? new Error("Failed to load available studies")
-      );
-    }
-    setAvailableStudies(studiesResponse.data);
-
-    // Non-critical: falls back to assuming the fee is paid (hiding the manual mark-as-paid action)
-    // rather than failing the whole page load if this lookup fails. hasPaidMembershipBeforeExpirationTime
-    // already reflects the begunstiger fee status instead of the regular membership one when isBegunstiger.
-    const paymentStatusResponse = await getPaymentsMemberByFromUserIdStatus({
-      path: { fromUserId: memberId },
-    });
-    setHasPaidMembership(
-      paymentStatusResponse.data?.hasPaidMembershipBeforeExpirationTime ?? true,
+  if (memberResponse.error || !memberResponse.data) {
+    throw memberResponse.error ?? new Error("Failed to load member data");
+  }
+  if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data) {
+    throw (
+      studyEnrollmentsResponse.error ??
+      new Error("Failed to load study enrollments")
     );
-    setIsBegunstiger(paymentStatusResponse.data?.isBegunstiger ?? false);
-
-    const profilePictureResponse = await getMembersByIdProfilePicture({
-      path: { id: memberId },
-      responseType: "blob",
-    });
-    if (
-      profilePictureResponse.error ||
-      !(profilePictureResponse.data instanceof Blob)
-    )
-      return;
-    url = URL.createObjectURL(profilePictureResponse.data);
-    setProfilePictureSrc(url);
-  } catch (err) {
-    console.log("Failed to load member data:", err);
-    toast.error(appendErrorMessage(t("loading_failed"), err));
-  } finally {
-    setLoading(false);
+  }
+  if (groupMembershipsResponse.error || !groupMembershipsResponse.data) {
+    throw (
+      groupMembershipsResponse.error ??
+      new Error("Failed to load group memberships")
+    );
+  }
+  if (studiesResponse.error || !studiesResponse.data) {
+    throw (
+      studiesResponse.error ?? new Error("Failed to load available studies")
+    );
   }
 
-  return () => {
-    if (url) URL.revokeObjectURL(url);
+  const member = memberResponse.data;
+  return {
+    formData: {
+      firstName: member.firstName || "",
+      lastName: member.lastName || "",
+      studentNumber: member.studentNumber || "",
+      phoneNumber: member.phoneNumber || "",
+      street: member.street || "",
+      houseNumber: member.houseNumber || "",
+      postalCode: member.postalCode || "",
+      city: member.city || "",
+      parentPhoneNumber: member.parentPhoneNumber || "",
+      preferredLanguage: member.preferredLanguage ?? "NL",
+      notes: member.notes || "",
+      gratie: !!member.gratie,
+      lidVanVerdienste: !!member.lidVanVerdienste,
+      ereLid: !!member.ereLid,
+      begunstiger: !!member.begunstiger,
+      suspended: !!member.suspended,
+      dateOfBirth: member.dateOfBirth
+        ? new Date(member.dateOfBirth).toISOString().split("T")[0]
+        : "",
+    },
+    email: member.email ?? "",
+    enrollments: studyEnrollmentsResponse.data,
+    groupMemberships: groupMembershipsResponse.data,
+    availableStudies: studiesResponse.data,
+    hasPaidMembership:
+      paymentStatusResponse.data?.hasPaidMembershipBeforeExpirationTime ?? true,
+    isBegunstiger: paymentStatusResponse.data?.isBegunstiger ?? false,
   };
 };
 

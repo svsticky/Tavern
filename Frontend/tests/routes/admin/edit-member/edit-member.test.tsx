@@ -5,7 +5,7 @@ import type { StudyEnrollmentResponseDto } from "~/api";
 import { renderWithProviders } from "~/testUtils";
 
 const {
-  loadMemberData,
+  fetchMemberPageData,
   handleSaveMember,
   handleDeleteMember,
   handleDeleteEnrollment,
@@ -14,7 +14,7 @@ const {
   handleMarkMembershipAsPaid,
   handleMarkBegunstigerFeeAsPaid,
 } = vi.hoisted(() => ({
-  loadMemberData: vi.fn(),
+  fetchMemberPageData: vi.fn(),
   handleSaveMember: vi.fn(),
   handleDeleteMember: vi.fn(),
   handleDeleteEnrollment: vi.fn(),
@@ -25,7 +25,7 @@ const {
 }));
 
 vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
-  loadMemberData,
+  fetchMemberPageData,
   handleSaveMember,
   handleDeleteMember,
   handleDeleteEnrollment,
@@ -44,7 +44,54 @@ vi.mock(
   }),
 );
 
-import EditMemberPage from "~/routes/admin/edit-member/edit-member";
+import EditMemberPage, {
+  clientLoader,
+} from "~/routes/admin/edit-member/edit-member";
+
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+const { useLoaderData } = vi.hoisted(() => ({ useLoaderData: vi.fn() }));
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  useLoaderData,
+}));
+
+const blankForm = {
+  firstName: "",
+  lastName: "",
+  studentNumber: "",
+  phoneNumber: "",
+  street: "",
+  houseNumber: "",
+  postalCode: "",
+  city: "",
+  parentPhoneNumber: "",
+  preferredLanguage: "NL",
+  notes: "",
+  gratie: false,
+  lidVanVerdienste: false,
+  ereLid: false,
+  begunstiger: false,
+  suspended: false,
+  dateOfBirth: "",
+};
+
+/** What the route's loader hands the page; override just what a test cares about. */
+function setLoaderData(overrides: Record<string, unknown> = {}) {
+  useLoaderData.mockReturnValue({
+    formData: { ...blankForm, firstName: "Jane" },
+    email: "jane@example.com",
+    enrollments: [],
+    groupMemberships: [],
+    availableStudies: [],
+    hasPaidMembership: true,
+    isBegunstiger: false,
+    ...overrides,
+  });
+}
 
 function renderPage(id = "m1") {
   return renderWithProviders(
@@ -67,53 +114,40 @@ function enrollment(
   } as StudyEnrollmentResponseDto;
 }
 
+describe("edit member clientLoader", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+  });
+
+  it("loads everything for the member named by the URL", async () => {
+    const data = { email: "jane@example.com" };
+    fetchMemberPageData.mockResolvedValue(data);
+
+    await expect(clientLoader({ params: { id: "m42" } })).resolves.toBe(data);
+    expect(fetchMemberPageData).toHaveBeenCalledWith("m42");
+  });
+
+  it("propagates a failed load to React Router's error boundary", async () => {
+    fetchMemberPageData.mockRejectedValue(new Error("fail"));
+
+    await expect(clientLoader({ params: { id: "m1" } })).rejects.toThrow(
+      "fail",
+    );
+  });
+});
+
 describe("EditMemberPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loadMemberData.mockImplementation(
-      async ({
-        setFormData,
-        setEnrollments,
-        setHasPaidMembership,
-        setLoading,
-      }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setEnrollments([enrollment()]);
-        setHasPaidMembership(false);
-        setLoading(false);
-      },
-    );
+    setLoaderData({ enrollments: [enrollment()], hasPaidMembership: false });
   });
 
-  it("shows a loading indicator while loading, then renders the form", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadMemberData.mockImplementation(
-      ({ setLoading }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
+  it("renders the form straight away, with no loading indicator", () => {
     renderPage();
 
-    expect(screen.getByText("loading")).toBeInTheDocument();
-    resolveLoad?.();
-
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
-    );
-  });
-
-  it("loads member data for the given member id", async () => {
-    renderPage("m42");
-
-    await waitFor(() => expect(loadMemberData).toHaveBeenCalled());
-    expect(loadMemberData.mock.calls[0][0]).toMatchObject({
-      memberId: "m42",
-    });
+    expect(screen.queryByText("loading")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("Jane")).toBeInTheDocument();
   });
 
   it("renders loaded form data and study enrollments", async () => {
@@ -124,22 +158,18 @@ describe("EditMemberPage", () => {
   });
 
   it("links a group membership to the group's admin page", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setFormData, setGroupMemberships, setLoading }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setGroupMemberships([
-          {
-            id: 1,
-            groupId: 5,
-            groupName: "Board",
-            membershipYear: 2026,
-            roleAliasName: "Chair",
-            memberName: "Jane",
-          },
-        ]);
-        setLoading(false);
-      },
-    );
+    setLoaderData({
+      groupMemberships: [
+        {
+          id: 1,
+          groupId: 5,
+          groupName: "Board",
+          membershipYear: 2026,
+          roleAliasName: "Chair",
+          memberName: "Jane",
+        },
+      ],
+    });
 
     renderPage();
 
@@ -234,21 +264,7 @@ describe("EditMemberPage", () => {
   });
 
   it("shows the begunstiger-fee action instead of the membership one for a begunstiger", async () => {
-    loadMemberData.mockImplementation(
-      async ({
-        setFormData,
-        setEnrollments,
-        setHasPaidMembership,
-        setIsBegunstiger,
-        setLoading,
-      }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setEnrollments([]);
-        setHasPaidMembership(false);
-        setIsBegunstiger(true);
-        setLoading(false);
-      },
-    );
+    setLoaderData({ hasPaidMembership: false, isBegunstiger: true });
 
     renderPage();
 
@@ -281,13 +297,7 @@ describe("EditMemberPage", () => {
   });
 
   it("hides the mark-membership-as-paid action once the membership is paid", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setEnrollments, setHasPaidMembership, setLoading }: any) => {
-        setEnrollments([]);
-        setHasPaidMembership(true);
-        setLoading(false);
-      },
-    );
+    setLoaderData({ hasPaidMembership: true });
 
     renderPage();
 
@@ -352,13 +362,7 @@ describe("EditMemberPage", () => {
   });
 
   it("adds a new study enrollment once a study is selected", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setEnrollments, setAvailableStudies, setLoading }: any) => {
-        setEnrollments([]);
-        setAvailableStudies([{ id: 3, title: "Physics" }]);
-        setLoading(false);
-      },
-    );
+    setLoaderData({ availableStudies: [{ id: 3, title: "Physics" }] });
 
     renderPage();
 
@@ -428,24 +432,20 @@ describe("EditMemberPage", () => {
   });
 
   it("styles completed and dropped-out enrollments differently", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setFormData, setEnrollments, setLoading }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setEnrollments([
-          enrollment({
-            id: 1,
-            studyTitle: "Completed Study",
-            status: "Completed",
-          }),
-          enrollment({
-            id: 2,
-            studyTitle: "Dropped Study",
-            status: "DroppedOut",
-          }),
-        ]);
-        setLoading(false);
-      },
-    );
+    setLoaderData({
+      enrollments: [
+        enrollment({
+          id: 1,
+          studyTitle: "Completed Study",
+          status: "Completed",
+        }),
+        enrollment({
+          id: 2,
+          studyTitle: "Dropped Study",
+          status: "DroppedOut",
+        }),
+      ],
+    });
 
     renderPage();
 
@@ -473,13 +473,7 @@ describe("EditMemberPage", () => {
   });
 
   it("clears the selected study when the placeholder option is chosen again", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setEnrollments, setAvailableStudies, setLoading }: any) => {
-        setEnrollments([]);
-        setAvailableStudies([{ id: 3, title: "Physics" }]);
-        setLoading(false);
-      },
-    );
+    setLoaderData({ availableStudies: [{ id: 3, title: "Physics" }] });
 
     renderPage();
 
