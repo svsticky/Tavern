@@ -7,16 +7,15 @@ import {
   MapPin,
   Users,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Markdown from "react-markdown";
-import {
-  type ActivityResponseDto,
-  getGroupsById,
-  type SpecificationAnswerResponseDto,
+import type {
+  ActivityResponseDto,
+  SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
+import { TokenParsedContext, useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import {
   getActivityEnrollmentStatus,
@@ -84,6 +83,7 @@ const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
  * @component
  * @param {Object} props - The component props.
  * @param {ActivityResponseDto} props.activity - The activity data to display.
+ * @param {string | null} [props.organizerName] - The organizing group's name, already looked up by the route's loader.
  * @param {React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>} [props.setActivity] - Optional state setter to update activity data (e.g., after enrollment changes) in the parent component.
  *
  * @example
@@ -97,54 +97,40 @@ const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
 export default function ActivityDetailsTile({
   activity,
   setActivity,
+  organizerName = null,
 }: {
   activity: ActivityResponseDto;
   setActivity?: React.Dispatch<
     React.SetStateAction<ActivityResponseDto | null>
   >;
+  organizerName?: string | null;
 }) {
   const authService = useAuth();
   const { member } = useApp();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  // Inside the app tree the token is already known, so read it synchronously -
+  // waiting for an async fetch would make the enrollment state pop in late.
+  // Only fall back to fetching it when rendered without that context.
+  const inheritedToken = useContext(TokenParsedContext);
+  const [fetchedToken, setFetchedToken] = useState<TokenParsed | null>(null);
+  const tokenParsed = inheritedToken ?? fetchedToken;
 
   useEffect(() => {
+    if (inheritedToken) return;
     const loadToken = async () => {
       const parsedToken = await authService.getTokenParsed();
       if (!parsedToken) {
         console.error("User not authenticated");
         return;
       }
-      setTokenParsed(parsedToken);
+      setFetchedToken(parsedToken);
     };
     loadToken();
-  }, [authService]);
+  }, [authService, inheritedToken]);
 
   const [submitting, setSubmitting] = useState(false);
   const [posterStatus, setPosterStatus] = useState<
     "loading" | "loaded" | "error"
   >("loading");
-  const [organizerName, setOrganizerName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!activity.organizerId) {
-      setOrganizerName(null);
-      return;
-    }
-
-    let cancelled = false;
-    const loadOrganizer = async () => {
-      const response = await getGroupsById({
-        path: { id: activity.organizerId! },
-      });
-      if (!cancelled) {
-        setOrganizerName(response.data?.name ?? null);
-      }
-    };
-    loadOrganizer();
-    return () => {
-      cancelled = true;
-    };
-  }, [activity.organizerId]);
 
   const posterUrl = `${getEnv("ApiUrl")}/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;

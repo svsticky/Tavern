@@ -1,58 +1,70 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import {
+  fetchActivity,
+  fetchOrganizerName,
   getActivityBackPath,
   handleEditActivityClick,
-  loadActivityData,
 } from "~/routes/activity/activity.handlers";
 
-const { getActivitiesById } = vi.hoisted(() => ({
+const { getActivitiesById, getGroupsById } = vi.hoisted(() => ({
   getActivitiesById: vi.fn(),
+  getGroupsById: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ getActivitiesById }));
+vi.mock("~/api", () => ({ getActivitiesById, getGroupsById }));
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
-
-describe("loadActivityData", () => {
+describe("fetchActivity", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("sets the activity on success", async () => {
+  it("returns the activity on success", async () => {
     const activity = { id: 1, name: "Party" } as ActivityResponseDto;
     getActivitiesById.mockResolvedValue({ data: activity });
-    const setActivity = vi.fn();
-    const setLoading = vi.fn();
 
-    await loadActivityData({ activityId: 1, setLoading, setActivity });
-
+    await expect(fetchActivity(1)).resolves.toBe(activity);
     expect(getActivitiesById).toHaveBeenCalledWith({ path: { id: 1 } });
-    expect(setActivity).toHaveBeenCalledWith(activity);
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
   });
 
-  it("logs and shows an error toast on failure", async () => {
-    getActivitiesById.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const setActivity = vi.fn();
+  it("throws the API error so React Router's error boundary handles it", async () => {
+    getActivitiesById.mockResolvedValue({ error: new Error("fail") });
 
-    await loadActivityData({
-      activityId: 1,
-      setLoading: vi.fn(),
-      setActivity,
-    });
+    await expect(fetchActivity(1)).rejects.toThrow("fail");
+  });
 
-    expect(setActivity).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
+  it("throws when the response has no data", async () => {
+    getActivitiesById.mockResolvedValue({});
+
+    await expect(fetchActivity(1)).rejects.toThrow("Failed to load activity");
+  });
+});
+
+describe("fetchOrganizerName", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns the group's name", async () => {
+    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
+
+    await expect(fetchOrganizerName(5)).resolves.toBe("BaCo");
+    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
+  });
+
+  it.each([
+    null,
+    undefined,
+    0,
+  ])("skips the lookup when there is no organizer (%j)", async (organizerId) => {
+    await expect(fetchOrganizerName(organizerId)).resolves.toBeNull();
+    expect(getGroupsById).not.toHaveBeenCalled();
+  });
+
+  it("yields null instead of failing the page when the lookup fails", async () => {
+    getGroupsById.mockResolvedValue({ error: "nope" });
+
+    await expect(fetchOrganizerName(5)).resolves.toBeNull();
   });
 });
 
