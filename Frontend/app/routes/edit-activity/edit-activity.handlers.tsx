@@ -1,9 +1,5 @@
 import { type ActivityResponseDto, getActivitiesById } from "~/api";
 
-/**
- * Fetches the activity to edit, for the route's `clientLoader`. Throws on
- * failure so React Router's error boundary handles it.
- */
 export const fetchEditActivity = async (
   id: string,
 ): Promise<ActivityResponseDto> => {

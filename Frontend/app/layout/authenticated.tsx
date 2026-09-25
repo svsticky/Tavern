@@ -42,12 +42,8 @@ export default function AuthenticatedLayout() {
     let retryTimer: number | undefined;
 
     const loadToken = async () => {
-      // Try a refresh first - isAuthenticated() only checks the access
-      // token's clock and never refreshes, so it reports "not authenticated"
-      // for the completely normal case of a short-lived access token having
-      // elapsed while the (long-lived) refresh token is still good. Falling
-      // through to login() for that would force a real Keycloak redirect on
-      // an otherwise ordinary in-app navigation.
+      // Refresh first: isAuthenticated() only checks the token's clock, so it fails for an expired access token
+      // that could still be refreshed, forcing a needless Keycloak redirect.
       const tokenParsed = await authService.getTokenParsed();
       if (cancelled) return;
 
@@ -264,11 +260,8 @@ export default function AuthenticatedLayout() {
     setMember,
   ]);
 
-  // tokenParsed is only ever set after a successful getTokenParsed() above,
-  // which already handles refreshing and redirecting to login when the
-  // session is truly dead - re-deriving that from isAuthenticated() here
-  // (the same clock-only check, with no refresh attempt) would reintroduce
-  // the same false-"not authenticated" bug during render.
+  // tokenParsed is only set once getTokenParsed() succeeded; re-checking isAuthenticated() here
+  // would bring back the false "not authenticated".
   if (!tokenParsed) return null;
 
   return (

@@ -82,7 +82,7 @@ const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
  * @component
  * @param {Object} props - The component props.
  * @param {ActivityResponseDto} props.activity - The activity data to display.
- * @param {string | null} [props.organizerName] - The organizing group's name, already looked up by the route's loader.
+ * @param {string | null} [props.organizerName] - The organizing group's name.
  * @param {React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>} [props.setActivity] - Optional state setter to update activity data (e.g., after enrollment changes) in the parent component.
  *
  * @example

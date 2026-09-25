@@ -1,12 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { matchPath, useLocation, useNavigationType } from "react-router";
 
-/**
- * Pages you should never land on via a "back" button, even if that's where
- * in-app history actually points: create/edit forms (going "back" into one
- * re-opens something the user just finished with) and the confirm-mail
- * interstitial. Mirrors the create/edit routes in `app/routes.ts`.
- */
+/** Create/edit forms and confirm-mail: never a back target. Mirrors `app/routes.ts`. */
 const EXCLUDED_BACK_TARGETS = [
   "/activities/create",
   "/activities/edit/:id",
@@ -24,19 +19,12 @@ function isExcludedBackTarget(pathname: string): boolean {
   return EXCLUDED_BACK_TARGETS.some((pattern) => matchPath(pattern, pathname));
 }
 
-/** Exported for tests only - components should use `useBackNavigationTarget()`. */
+/** Exported for tests; use `useBackNavigationTarget()`. */
 export const BackNavigationContext = createContext<string | undefined>(
   undefined,
 );
 
-/**
- * Tracks the app's own in-memory navigation stack so a "back" button (which
- * normally links to a fixed `backTo` path) can tell whether that destination
- * is the same page the browser's real back button would land on. When it is,
- * `PageHeader` acts like a real POP navigation (`navigate(-1)`) instead of a
- * PUSH to a new history entry - PUSH always resets scroll to top by React
- * Router's own design, only POP restores the saved position.
- */
+/** Tracks in-app navigation so `PageHeader` can do a real POP (which restores scroll) instead of a PUSH. */
 export function BackNavigationProvider({
   children,
 }: {
@@ -75,15 +63,7 @@ export function BackNavigationProvider({
   );
 }
 
-/**
- * Whether it's safe to send the user to wherever a real browser back button
- * would currently land: `undefined` when there's no in-app history to go
- * back to (e.g. the page was opened directly via a link) or when that page
- * is a create/edit form or the confirm-mail page - landing back on one of
- * those would be confusing, so callers should fall back to a fixed
- * destination instead. Otherwise, the actual pathname (informational only;
- * callers should navigate with `navigate(-1)`, not push to this path).
- */
+/** The page a real back would land on, or `undefined` if there is none or it's an excluded page. */
 export function useBackNavigationTarget() {
   return useContext(BackNavigationContext);
 }

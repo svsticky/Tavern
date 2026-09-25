@@ -4,14 +4,7 @@ import type { MembersFilterDto } from "~/types/MembersFilterDto";
 /** The number of members to fetch per page for infinite scrolling. */
 export const PAGE_SIZE = 20;
 
-/**
- * Fetches one page of members, optionally narrowed by search text and the
- * admin filter panel's criteria.
- *
- * Throws on failure - the route `clientLoader`'s initial-page call relies on
- * this to reach React Router's error boundary; the search/filter/load-more
- * refetch paths in the component catch it themselves to show a toast instead.
- */
+/** Throws on failure, so loaders reach the error boundary; load-more and search callers catch it to show a toast. */
 export async function fetchMembersPage(
   page: number,
   search: string,
@@ -40,16 +33,11 @@ export async function fetchMembersPage(
   return response.data;
 }
 
-/** URL search param holding the admin filter panel's criteria as JSON. */
 export const FILTERS_PARAM = "filters";
 
-/** URL search param holding the search text. */
 export const SEARCH_PARAM = "q";
 
-/**
- * Serializes the filter panel's criteria for the URL, dropping unset fields.
- * Returns null when nothing is filtered, so the param can be removed.
- */
+/** Returns null when nothing is filtered, so the param can be dropped. */
 export function serializeMembersFilters(
   filters: MembersFilterDto | null,
 ): string | null {
@@ -60,11 +48,7 @@ export function serializeMembersFilters(
   return Object.keys(set).length > 0 ? JSON.stringify(set) : null;
 }
 
-/**
- * Parses the `filters` URL param back into filter panel criteria. A missing,
- * malformed or hand-edited value is treated as "no filters" rather than
- * throwing, since it comes straight from the address bar.
- */
+/** A missing or malformed value (it comes from the address bar) means "no filters". */
 export function parseMembersFilters(
   value: string | null,
 ): MembersFilterDto | null {

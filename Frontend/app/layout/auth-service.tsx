@@ -17,12 +17,7 @@ const createAuthService = (): IAuthService | null => {
   return null;
 };
 
-/**
- * Returns the active authentication service instance, constructing it on
- * first call. This must not depend on `AuthServiceLayout` having rendered:
- * `clientLoader`s for the whole matched route tree run before any layout
- * component does, so a route's `clientLoader` can be the very first caller.
- */
+/** Built on first call, since route loaders run before any layout renders. */
 export const getActiveAuthService = (): IAuthService | null => {
   if (!activeAuthService && typeof window !== "undefined") {
     activeAuthService = createAuthService();
@@ -30,21 +25,12 @@ export const getActiveAuthService = (): IAuthService | null => {
   return activeAuthService;
 };
 
-/**
- * Test-only escape hatch: clears the cached singleton so each test can
- * observe a fresh construction instead of the first test's instance leaking
- * into every later one.
- */
+/** Test-only: lets each test observe a fresh construction. */
 export const __resetAuthServiceForTests = () => {
   activeAuthService = null;
 };
 
-/**
- * Resolves once the active auth service has finished its init flow (Keycloak
- * SSO check, etc). Safe to call from a `clientLoader` - `IAuthService.init`
- * is idempotent, so this piggybacks on the same init the `AuthProvider`
- * mount effect triggers instead of racing it.
- */
+/** Resolves once auth init is done; `init()` is idempotent, so this doesn't race the provider's own init. */
 export const waitForAuthReady = async (): Promise<IAuthService | null> => {
   const authService = getActiveAuthService();
   if (!authService) return null;

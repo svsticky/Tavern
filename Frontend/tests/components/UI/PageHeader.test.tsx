@@ -42,7 +42,6 @@ describe("PageHeader", () => {
       { route: "/admin/members/123" },
     );
 
-    // Acts like a real back button now: a plain button, not a link to a new entry.
     expect(
       screen.queryByRole("link", { name: "back" }),
     ).not.toBeInTheDocument();

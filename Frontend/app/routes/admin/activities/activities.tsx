@@ -34,12 +34,7 @@ type LoaderData = {
   hasMore: boolean;
 };
 
-/**
- * Reads `year`/`search`/`pages` from the URL (so a filtered, scrolled-down view
- * is shareable and restored for free on back-navigation) and fetches the
- * first `pages` pages for that combination. Further pages are appended as the
- * user scrolls (see `useInfiniteLoadMore`), which bumps `pages` in the URL.
- */
+/** `year`, `search` and `pages` live in the URL, so a filtered, scrolled-down list is restored on back-navigation. */
 export async function clientLoader({
   request,
 }: {
@@ -116,8 +111,6 @@ export default function Activities() {
     ),
   });
 
-  // The loader reruns whenever `year`/`search` change in the URL - keep the
-  // box in sync with what it actually searched for.
   useEffect(() => {
     setSearchInput(loaderData.search);
   }, [loaderData.search]);

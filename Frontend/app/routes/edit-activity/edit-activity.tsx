@@ -16,10 +16,6 @@ import {
   getEditActivityBackPath,
 } from "./edit-activity.handlers";
 
-/**
- * Loads what the form needs before the route renders: the activity to edit
- * (none when creating), the groups it can be organized by, and the user's token.
- */
 export async function clientLoader({ params }: { params: { id?: string } }) {
   const tokenParsed = await requireTokenParsed();
   const [activity, groups] = await Promise.all([
@@ -59,8 +55,7 @@ export default function ActivityFormPage() {
   const loaderData = useLoaderData<typeof clientLoader>();
   const { tokenParsed, groups } = loaderData;
 
-  // EditParticipantsTile patches the activity locally as participants are
-  // moved around; a re-run loader hands back a fresh one to sync to.
+  // EditParticipantsTile patches the activity locally; a re-run loader hands back a fresh one.
   const [activity, setActivity] = useState<ActivityResponseDto | null>(
     loaderData.activity,
   );

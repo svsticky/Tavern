@@ -44,7 +44,6 @@ export type EditMemberFormData = {
   dateOfBirth: string;
 };
 
-/** Everything the edit-member page shows, as loaded by the route's `clientLoader`. */
 export type MemberPageData = {
   formData: EditMemberFormData;
   email: string;
@@ -55,18 +54,7 @@ export type MemberPageData = {
   isBegunstiger: boolean;
 };
 
-/**
- * Fetches the member profile, study enrollments, group memberships (all
- * years), the available study programs and the membership/begunstiger payment
- * status - in parallel, since none depends on another.
- *
- * Throws when any of the first four fail, so React Router's error boundary
- * handles it. The payment status is non-critical: it falls back to assuming
- * the fee is paid (hiding the manual mark-as-paid action) rather than failing
- * the whole page. `hasPaidMembershipBeforeExpirationTime` already reflects the
- * begunstiger fee status instead of the regular membership one when
- * `isBegunstiger`.
- */
+/** The payment status is non-critical: on failure it falls back to "paid" instead of failing the page. */
 export const fetchMemberPageData = async (
   memberId: string,
 ): Promise<MemberPageData> => {

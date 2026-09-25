@@ -6,8 +6,7 @@ import type { TokenParsed } from "~/types/TokenParsed";
  */
 export interface IAuthService {
   /**
-   * Idempotent - safe to call from multiple places (a `clientLoader` and the
-   * `AuthProvider` mount effect) without triggering duplicate init flows.
+   * Idempotent: safe to call from a loader and the provider alike.
    */
   init: () => Promise<void>;
   login: (redirectUri?: string) => Promise<void>;

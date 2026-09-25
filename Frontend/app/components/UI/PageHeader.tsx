@@ -30,12 +30,8 @@ export const PageHeader = ({
 }) => {
   const navigate = useNavigate();
   const backNavigationTarget = useBackNavigationTarget();
-  // Prefer a real back navigation (navigate(-1), a POP) over pushing a new
-  // entry to the fixed backTo destination whenever that's safe - only a POP
-  // triggers React Router's scroll restoration, and it also takes the user to
-  // where they actually came from rather than a generic "up" destination.
-  // useBackNavigationTarget() already excludes create/edit pages and
-  // confirm-mail, and is undefined when there's no in-app history at all.
+  // A real back (POP) restores scroll and returns to where the user came from; a PUSH to backTo would reset scroll.
+  // undefined without in-app history, or when it would land on a create/edit form or confirm-mail.
   const isRealBack = !onBack && backTo != null && backNavigationTarget != null;
   const backButtonClassName =
     "bg-transparent p-0 hover:bg-transparent text-(--board-primary) shadow-none mb-2 min-h-0 h-auto";

@@ -50,7 +50,7 @@ import {
  * @param {ActivityResponseDto | null} props.activity - The existing activity data (if editing) or null (if creating).
  * @param {string | undefined} props.id - The unique identifier of the activity. If present, the form operates in "Edit" mode.
  * @param {boolean} props.isBoard - Flag indicating if the current user has board-level permissions.
- * @param {GroupResponseDto[]} props.groups - The groups an activity can be organized by, already loaded by the route's loader.
+ * @param {GroupResponseDto[]} props.groups - The groups an activity can be organized by.
  *
  * @example
  * ```tsx

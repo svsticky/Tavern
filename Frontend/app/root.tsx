@@ -49,7 +49,6 @@ client.setConfig({
   },
 });
 
-// Any successful create/edit/delete drops the cached data it made stale.
 installCacheInvalidation(client.instance);
 
 client.instance.interceptors.response.use(

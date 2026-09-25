@@ -20,10 +20,6 @@ import { appendErrorMessage } from "~/util/error.util";
 
 export { formatDateOnly, formatForInput } from "~/util/date.util";
 
-/**
- * Fetches the groups an activity can be organized by, for the edit page's
- * `clientLoader`. Throws on failure so React Router's error boundary handles it.
- */
 export const fetchGroups = async (): Promise<GroupResponseDto[]> => {
   const groupsRes = await getGroups({
     query: { IncludeInactive: false, MembershipYear: getCommitteeYear() },

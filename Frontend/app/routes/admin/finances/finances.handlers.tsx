@@ -27,13 +27,7 @@ type SetUnpaidStateArgs = {
   ) => void;
 };
 
-/**
- * Pure derivation of the categorized unpaid-payment view state from raw
- * balances: total debt, unique activities with debts, and debts grouped by
- * member. Shared by `setUnpaidPaymentState` (setter-based, for the
- * mark-as-paid refresh flow) and `fetchFinancesData` (the route's
- * `clientLoader`, which has no setters to call).
- */
+/** Shared by the setter-based refresh and the loader. */
 export const deriveUnpaidPaymentState = (balances: EnrollmentBalance[]) => {
   const unpaidBalances = balances.filter((b) => b.balance !== 0);
   const totalUnpaid = balances.reduce(
@@ -326,23 +320,11 @@ export const handlePaymentsExport = (
   });
 };
 
-/**
- * The finance dashboard's combined unpaid/overpaid data, as returned by the
- * route's `clientLoader`.
- */
 export type FinancesData = ReturnType<typeof deriveUnpaidPaymentState> & {
   overpaidBalances: EnrollmentBalance[];
 };
 
-/**
- * Fetches unpaid debts and overpaid credits for the finance dashboard.
- * Expired activities are fetched separately (see `fetchExpiredActivities`)
- * since they're filtered by association year.
- *
- * @async
- * @throws Throws when either request fails, for the caller (the route's
- *   `clientLoader`) to handle.
- */
+/** Expired activities are fetched separately (see `fetchExpiredActivities`) because they're filtered by year. */
 export const fetchFinancesData = async (): Promise<FinancesData> => {
   const [unpaidBalancesResponse, overpaidBalancesResponse] = await Promise.all([
     getPaymentsUnpaid({
@@ -383,7 +365,6 @@ export const fetchFinancesData = async (): Promise<FinancesData> => {
  *
  * @async
  * @param {number} year - The association year to fetch expired activities for.
- * @throws Throws when the request fails, for the caller (the route's `clientLoader`) to handle.
  */
 export const fetchExpiredActivities = async (
   year: number,

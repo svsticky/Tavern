@@ -28,16 +28,11 @@ export type EditGroupFormData = {
   Active: boolean;
 };
 
-/** What the edit-group page needs before it can render, as loaded by the route's `clientLoader`. */
 export type GroupPageData = {
   formData: EditGroupFormData;
   roleAliases: RoleAlias[];
 };
 
-/**
- * Fetches the group's profile and the selectable role aliases, in parallel.
- * Throws on failure so React Router's error boundary handles it.
- */
 export const fetchGroupPageData = async (
   id: number,
 ): Promise<GroupPageData> => {
@@ -63,13 +58,7 @@ export const fetchGroupPageData = async (
   };
 };
 
-/**
- * Fetches the group's picture as an Object URL for the header avatar. It stays
- * out of the route loader - an image isn't worth holding the page back for, and
- * a missing one just leaves the default avatar.
- *
- * @returns A cleanup function that revokes the generated Object URL.
- */
+/** Not in the loader: a missing picture just leaves the default avatar. Returns a cleanup that revokes the object URL. */
 export const loadGroupPicture = async ({
   id,
   setGroupPictureSrc,

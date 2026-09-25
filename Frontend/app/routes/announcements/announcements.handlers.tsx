@@ -1,6 +1,6 @@
 import type { NavigateFunction } from "react-router";
 
-// Shared with the home dashboard, so served from the resource cache when fresh.
+// Shared with the home dashboard, hence served from the resource cache.
 export { loadAnnouncements } from "~/util/cachedResources.util";
 
 /**

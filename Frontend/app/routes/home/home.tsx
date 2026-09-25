@@ -10,13 +10,6 @@ import Button from "~/components/UI/Button";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
 import { loadHomeLoaderData } from "./home.handlers";
 
-/**
- * Resolves the current user and their dashboard data before the route
- * renders, so the page mounts already-painted instead of flashing a
- * skeleton state. Runs client-side only (Keycloak auth is client-side-only)
- * - see `HydrateFallback` below for the gap before this resolves on the
- * initial page load.
- */
 export async function clientLoader() {
   const tokenParsed = await requireTokenParsed();
   const data = await loadHomeLoaderData(tokenParsed.UserId);

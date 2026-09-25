@@ -38,7 +38,6 @@ import {
   loadGroupPicture,
 } from "./edit-group.handlers";
 
-/** Loads the group and the role aliases, in parallel, before the route renders. */
 export async function clientLoader({ params }: { params: { id?: string } }) {
   await requireTokenParsed();
   return fetchGroupPageData(Number.parseInt(params.id ?? "", 10));
@@ -70,8 +69,7 @@ export default function EditGroupPage() {
   const params = useParams();
   const id = params.id ? parseInt(params.id, 10) : null;
   const loaderData = useLoaderData<typeof clientLoader>();
-  // `loading` only marks a mutation in flight (the handlers below toggle it);
-  // the initial data comes ready-made from the loader.
+  // Only marks a mutation in flight; the initial data comes from the loader.
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -190,8 +188,7 @@ export default function EditGroupPage() {
     },
   ];
 
-  // The handlers patch these locally after a change; a re-run loader (another
-  // group, or a revalidation) hands back fresh data to start over from.
+  // A re-run loader (another group, a revalidation) hands back fresh data to start over from.
   useEffect(() => {
     setFormData(loaderData.formData);
     setRoleAliases(loaderData.roleAliases);

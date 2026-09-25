@@ -32,7 +32,6 @@ import {
   handleUpdateEnrollmentStatus,
 } from "./edit-member.handlers";
 
-/** Loads everything the page shows, in parallel, before the route renders. */
 export async function clientLoader({ params }: { params: { id?: string } }) {
   await requireTokenParsed();
   return fetchMemberPageData(params.id!);
@@ -64,8 +63,7 @@ export default function EditMemberPage() {
   const navigate = useNavigate();
   const { id: memberId } = useParams<{ id: string }>();
   const loaderData = useLoaderData<typeof clientLoader>();
-  // `loading` only marks a mutation in flight (the handlers below toggle it);
-  // the initial data comes ready-made from the loader.
+  // Only marks a mutation in flight; the initial data comes from the loader.
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmModal, confirm] = useConfirm();
@@ -85,8 +83,7 @@ export default function EditMemberPage() {
   const [email, setEmail] = useState(loaderData.email);
   const [formData, setFormData] = useState(loaderData.formData);
 
-  // The handlers patch these locally after a change; a re-run loader (another
-  // member, or a revalidation) hands back fresh data to start over from.
+  // A re-run loader (another member, a revalidation) hands back fresh data to start over from.
   useEffect(() => {
     setHasPaidMembership(loaderData.hasPaidMembership);
     setIsBegunstiger(loaderData.isBegunstiger);

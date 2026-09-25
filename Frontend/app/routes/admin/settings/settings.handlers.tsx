@@ -31,18 +31,12 @@ const normalizeColorValue = (value: string) => {
   return trimmed;
 };
 
-/** Everything the settings dashboard needs, as loaded by the route's `clientLoader`. */
 export type SettingsPageData = {
   settings: Record<string, string>;
   availableGroups: GroupResponseDto[];
   availableRoles: Role[];
 };
 
-/**
- * Fetches all data required for the settings dashboard - settings, groups and
- * roles, in parallel. Throws on failure so React Router's error boundary
- * handles it.
- */
 export const fetchSettingsPageData = async (): Promise<SettingsPageData> => {
   const [settingsRes, groupsRes, rolesRes] = await Promise.all([
     getSettings(),

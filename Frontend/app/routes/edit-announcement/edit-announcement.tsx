@@ -15,7 +15,6 @@ import {
   handleDeleteAnnouncement,
 } from "./edit-announcement.handlers";
 
-/** Loads the announcement to edit (or a blank form) before the route renders. */
 export async function clientLoader({ params }: { params: { id?: string } }) {
   await requireTokenParsed();
   return { initialData: await fetchAnnouncementFormData(params.id) };

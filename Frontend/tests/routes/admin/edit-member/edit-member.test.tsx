@@ -79,7 +79,6 @@ const blankForm = {
   dateOfBirth: "",
 };
 
-/** What the route's loader hands the page; override just what a test cares about. */
 function setLoaderData(overrides: Record<string, unknown> = {}) {
   useLoaderData.mockReturnValue({
     formData: { ...blankForm, firstName: "Jane" },

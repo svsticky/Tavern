@@ -20,7 +20,6 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import { shouldRevalidateIgnoring } from "~/util/infiniteList.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
 
-/** URL search param holding the search text. */
 const SEARCH_PARAM = "q";
 
 export async function clientLoader(): Promise<{ groups: GroupResponseDto[] }> {
@@ -34,11 +33,7 @@ export async function clientLoader(): Promise<{ groups: GroupResponseDto[] }> {
   return { groups: response.data };
 }
 
-/**
- * Search is filtered client-side over the already-loaded list, so typing must
- * not refetch it - the text only lives in the URL so back-navigation can
- * restore the filtered list (and with it the scroll position).
- */
+/** Filtering is client-side, so typing must not refetch; the text is in the URL only so back-navigation restores it. */
 export const shouldRevalidate = shouldRevalidateIgnoring(SEARCH_PARAM);
 
 export function HydrateFallback() {

@@ -8,7 +8,6 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import { getEnv } from "~/util/config.utils";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
 
-/** Fetches the links, ordered by their `sortOrder`, before the route renders. */
 export async function clientLoader(): Promise<{
   links: ExternalLinkResponseDto[];
 }> {

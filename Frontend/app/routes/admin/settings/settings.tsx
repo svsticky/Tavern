@@ -37,7 +37,6 @@ import {
   handleSettingsChange,
 } from "./settings.handlers";
 
-/** Loads the settings, groups and roles, in parallel, before the route renders. */
 export async function clientLoader() {
   await requireTokenParsed();
   return fetchSettingsPageData();
@@ -86,8 +85,7 @@ export default function SettingsPage() {
   );
   const [selectedRoleId, setSelectedRoleId] = useState("");
 
-  // Edits are made against this local copy; a re-run loader (e.g. after saving)
-  // hands back the server's current state to start over from.
+  // A re-run loader (e.g. after saving) hands back the server's state to start over from.
   useEffect(() => {
     setSettings(loaderData.settings);
     setAvailableGroups(loaderData.availableGroups);

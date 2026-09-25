@@ -37,6 +37,5 @@ class ResizeObserverStub {
 }
 vi.stubGlobal("ResizeObserver", ResizeObserverStub);
 
-// The resource cache is module-level state shared across a file's tests - reset it so a
-// cached response from one test can't satisfy (or be invalidated by) the next.
+// Reset the module-level resource cache so one test's cached response can't leak into the next.
 afterEach(() => clearResourceCache());

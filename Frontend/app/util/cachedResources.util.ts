@@ -14,11 +14,7 @@ import {
   GROUP_MEMBERSHIPS_CACHE_KEY,
 } from "./resourceCache.util";
 
-/**
- * The fetches several routes share, served from `resourceCache` when fresh.
- * Each throws on failure so a route `clientLoader` reaches React Router's
- * error boundary instead of having to check `.error` itself.
- */
+/** Served from the resource cache when fresh; throws on failure so loaders reach the error boundary. */
 
 export const loadUpcomingActivities = () =>
   cachedResource(ACTIVITIES_CACHE_KEY, async () => {

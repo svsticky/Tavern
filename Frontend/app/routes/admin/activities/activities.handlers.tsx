@@ -1,22 +1,7 @@
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivities } from "~/api";
 
-/**
- * Fetches one page of activities for a specific year for administrative
- * purposes.
- *
- * Unlike the standard member view, this explicitly requests both past and
- * future activities to ensure board members have a complete historical and
- * upcoming record for the selected year.
- *
- * @async
- * @param {number} year - The calendar year for which to retrieve activities.
- * @param {number} page - The page number to fetch.
- * @param {number} pageSize - The number of activities to fetch per page.
- * @param {string} [search] - A search term to filter activities by name or location, applied server-side.
- * @throws Throws when the request fails, for the caller (route `clientLoader` or the
- *   infinite-scroll "load more" handler) to handle.
- */
+/** Includes past and future activities, so board members get the full record for the year. */
 export const fetchAdminActivitiesPage = async (
   year: number,
   page: number,

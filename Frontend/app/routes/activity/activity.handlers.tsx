@@ -5,10 +5,6 @@ import {
   getGroupsById,
 } from "~/api";
 
-/**
- * Fetches the details of a specific activity by its ID, for the route's
- * `clientLoader`. Throws on failure so React Router's error boundary handles it.
- */
 export const fetchActivity = async (
   activityId: number,
 ): Promise<ActivityResponseDto> => {
@@ -20,10 +16,7 @@ export const fetchActivity = async (
   return response.data;
 };
 
-/**
- * Looks up the name of the group organizing an activity. The name is only
- * decoration, so a failed lookup yields `null` rather than failing the page.
- */
+/** The name is decoration, so a failed lookup yields null instead of failing the page. */
 export const fetchOrganizerName = async (
   organizerId: number | null | undefined,
 ): Promise<string | null> => {

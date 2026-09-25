@@ -25,10 +25,10 @@ import Button from "./UI/Button";
  * @interface DashboardHeaderProps
  * @property {string} name - The display name of the user to be greeted.
  * @property {ActivityResponseDto} [nextActivity] - Data for the user's next scheduled activity, if one exists.
- * @property {number} outstandingPayments - The total outstanding balance across unpaid activity enrollments, as of the route's `clientLoader` fetch.
- * @property {number[]} unpaidActivityIds - The activity ids backing `outstandingPayments`, sent to the payment endpoint when the user pays.
- * @property {number} pastEnrollmentAmount - How many of the user's enrollments are for activities that have already ended.
- * @property {number} comingEnrollmentAmount - How many of the user's enrollments are for activities still upcoming.
+ * @property {number} outstandingPayments - The total outstanding balance across unpaid activity enrollments.
+ * @property {number[]} unpaidActivityIds - The activity ids backing `outstandingPayments`.
+ * @property {number} pastEnrollmentAmount - How many enrollments are for activities that have already ended.
+ * @property {number} comingEnrollmentAmount - How many enrollments are for activities still upcoming.
  */
 type DashboardHeaderProps = {
   name: string;
@@ -71,9 +71,6 @@ function sleep(ms: number, signal: AbortSignal) {
  * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
  * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
  *
- * Payment/enrollment totals arrive as props from the route's `clientLoader`; this
- * component only re-fetches on its own when returning from a Mollie checkout, to
- * poll for the payment webhook landing.
  *
  * @component
  * @param {DashboardHeaderProps} props - The component properties.
@@ -99,15 +96,9 @@ export default function DashboardHeader({
     initialUnpaidActivityIds,
   );
 
-  // After returning from a Mollie checkout, the payment webhook may not have landed yet, so the
-  // route's clientLoader snapshot can still show the activity as unpaid. Poll just the payments
-  // endpoint (not the whole loader - enrollment counts can't change from a payment webhook)
-  // instead of trusting that first snapshot - webhook delivery has been observed to take up to
-  // ~30s, so the window needs enough margin to reliably cover that rather than giving up early.
-  // t is intentionally omitted from the deps below: i18next-http-backend loads translations over
-  // HTTP, so t gets a new reference shortly after mount once that resolves - depending on it here
-  // would restart this poll for an unrelated reason. t is still used inside via closure for the
-  // (rare) error toast.
+  // After a Mollie checkout the payment webhook may not have landed yet (seen taking up to ~30s), so poll
+  // just the payments endpoint instead of trusting the loader's snapshot.
+  // `t` is left out of the deps on purpose: it gets a new reference once translations load and would restart the poll.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   useEffect(() => {
     const returningFromPayment =

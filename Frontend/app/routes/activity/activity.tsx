@@ -18,12 +18,6 @@ import {
   handleEditActivityClick,
 } from "./activity.handlers";
 
-/**
- * Loads the activity named by the URL's `id` (plus its organizer's name and
- * the current user's token) before the route renders, so the page - and
- * React Router's scroll restoration when coming back to it - starts from a
- * complete page instead of a "loading" placeholder.
- */
 export async function clientLoader({ params }: { params: { id?: string } }) {
   const tokenParsed = await requireTokenParsed();
   const activity = await fetchActivity(Number(params.id));
@@ -59,8 +53,7 @@ export default function ActivityPage() {
   const navigate = useNavigate();
   const { pathname } = window.location;
 
-  // The tiles below patch the activity locally after an enrollment change
-  // (see `setActivity`); a re-run loader hands back a fresh one to sync to.
+  // The tiles patch the activity locally after enrollment changes; a re-run loader hands back a fresh one.
   const [activity, setActivity] = useState<ActivityResponseDto>(
     loaderData.activity,
   );

@@ -12,25 +12,10 @@ export const useAuth = () => {
   return context;
 };
 
-/**
- * The current user's parsed token, provided by `AuthenticatedLayout` (which
- * only renders its children once it has one). Lets layouts below it read the
- * user synchronously instead of re-fetching the token on every mount - a
- * layout that renders nothing while it does so leaves the page empty at the
- * moment React Router restores scroll on back-navigation, so restoration
- * clamps to the top.
- *
- * `null` outside `AuthenticatedLayout` (e.g. tests rendering a layout alone).
- */
+/** Provided by `AuthenticatedLayout` so layouts can read the token synchronously; `null` outside it. */
 export const TokenParsedContext = createContext<TokenParsed | null>(null);
 
-/**
- * The current user's parsed token. Inside the app tree it comes straight from
- * `TokenParsedContext`, so it's there on the very first render - a component
- * that had to fetch it asynchronously would pop its token-dependent parts in
- * late. Rendered outside that context (e.g. on its own in a test) it falls
- * back to fetching the token, and is `null` until that resolves.
- */
+/** Reads the token from context (there on first render), falling back to fetching it outside the app tree. */
 export function useTokenParsed(): TokenParsed | null {
   const authService = useAuth();
   const inherited = useContext(TokenParsedContext);

@@ -2,20 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { PAGES_PARAM, readPages } from "~/util/infiniteList.util";
 
-/**
- * Infinite-scroll "load more" on top of a route `clientLoader`.
- *
- * The loader supplies the first `pages` pages (see `fetchPages`); this hook
- * appends further pages as the returned `sentinelRef` scrolls into view, and
- * mirrors the loaded-page count into the URL's `pages` param with a
- * `replace` navigation. That way a back navigation to this entry re-runs the
- * loader for the same number of pages and the page is as tall as it was -
- * which is what makes scroll restoration work on a list that grew after the
- * first load.
- *
- * The route must export `shouldRevalidate = shouldRevalidateIgnoring("pages")`,
- * otherwise bumping the URL would refetch and reset everything just loaded.
- */
+/** Load-more for loader-backed lists; the route must export `shouldRevalidate = shouldRevalidateIgnoring("pages")`. */
 export function useInfiniteLoadMore<T>({
   loaderItems,
   loaderHasMore,
@@ -39,8 +26,7 @@ export function useInfiniteLoadMore<T>({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const inFlight = useRef(false);
 
-  // A re-run loader (search/filter/year changed) hands back a fresh array:
-  // drop whatever was appended on top of the old one.
+  // A re-run loader hands back a fresh array: drop what was appended to the old one.
   useEffect(() => {
     setItems(loaderItems);
     setHasMore(loaderHasMore);

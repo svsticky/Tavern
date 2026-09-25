@@ -23,10 +23,7 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
  */
 export default function AdminLayout() {
   const { boardGroupId, candidateBoardGroupId } = useApp();
-  // Known synchronously inside the app tree (see useTokenParsed), so the outlet
-  // renders in the very first commit - which is what lets scroll restoration
-  // find a full-height page when coming back to an admin route from outside
-  // this layout.
+  // The token is known synchronously, so scroll restoration finds a full-height page on the first commit.
   const tokenParsed = useTokenParsed();
   const navigate = useNavigate();
 

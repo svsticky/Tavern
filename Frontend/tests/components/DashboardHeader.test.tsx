@@ -6,8 +6,7 @@ import DashboardHeader from "~/components/DashboardHeader";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
-// The payment-return poll waits 1500ms between attempts (real timers) - give async
-// queries enough headroom to observe a poll actually settling.
+// The poll waits 1500ms between attempts (real timers); give async queries headroom.
 configure({ asyncUtilTimeout: 20000 });
 vi.setConfig({ testTimeout: 25000 });
 
@@ -71,8 +70,7 @@ describe("DashboardHeader", () => {
   });
 
   afterEach(() => {
-    // Some tests set a `?paymentReturn=activity` URL to trigger the poll effect -
-    // reset it so it doesn't leak into the next test.
+    // Reset the URL some tests set to trigger the poll, so it doesn't leak.
     window.history.pushState({}, "", "/");
   });
 

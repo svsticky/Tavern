@@ -39,13 +39,7 @@ type LoaderData = {
   filters: MembersFilterDto | null;
 };
 
-/**
- * Reads the search text, filter panel criteria and how many pages were loaded
- * from the URL and fetches them before the route renders. Keeping all of that
- * in the URL (rather than local state) is what lets a back navigation from a
- * member's page rebuild the exact list - same search, filters and scroll
- * depth - so scroll restoration has something to land on.
- */
+/** Search, filters and page count live in the URL so back-navigation rebuilds the exact list. */
 export async function clientLoader({
   request,
 }: {
@@ -116,8 +110,7 @@ export default function Members() {
     }, []),
   });
 
-  // Search/filter changes rewrite the URL (a `replace`, so back still leaves
-  // this page in one step); the loader reruns and the list restarts from page 1.
+  // Search/filter changes `replace` the URL (back still leaves the page in one step) and restart from page 1.
   const updateQuery = useCallback(
     (update: (next: URLSearchParams) => void) => {
       const next = new URLSearchParams(searchParams);

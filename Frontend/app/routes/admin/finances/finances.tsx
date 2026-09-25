@@ -27,11 +27,6 @@ type LoaderData = FinancesData & {
   expiredActivities: ActivityResponseDto[];
 };
 
-/**
- * Fetches the finance dashboard's unpaid/overpaid data and the "expired
- * activities" queue for the year in the URL (so a selected year is
- * shareable and restored for free on back-navigation).
- */
 export async function clientLoader({
   request,
 }: {
@@ -91,9 +86,7 @@ export default function Finances() {
   const [exportStartDate, setExportStartDate] = useState<string>("");
   const [exportEndDate, setExportEndDate] = useState<string>("");
 
-  // The loader reruns (and hands back new unpaid/overpaid data) on every
-  // navigation, including a year change - resync the locally-patched state
-  // (see refreshUnpaidPayments below) to that fresh data.
+  // The loader reruns on every navigation, including a year change: resync the locally patched state to its fresh data.
   useEffect(() => {
     setTotalUnpaid(loaderData.totalUnpaid);
     setOpenPayments(loaderData.openPayments);

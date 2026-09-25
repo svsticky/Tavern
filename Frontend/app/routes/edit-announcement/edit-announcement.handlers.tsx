@@ -24,11 +24,6 @@ const EMPTY_FORM: AnnouncementFormData = {
   ContentEnglish: "",
 };
 
-/**
- * Fetches the values to prefill the announcement form with, for the route's
- * `clientLoader`: the existing announcement when editing, blank when creating.
- * Throws on failure so React Router's error boundary handles it.
- */
 export const fetchAnnouncementFormData = async (
   id: string | undefined,
 ): Promise<AnnouncementFormData> => {
