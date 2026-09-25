@@ -34,11 +34,11 @@ const routes: [string, ComponentType][] = [
 ];
 
 describe("route HydrateFallbacks", () => {
-  it.each(
-    routes,
-  )("%s shows the loading logo while its loader runs", (_name, Fallback) => {
-    render(<Fallback />);
+  for (const [name, Fallback] of routes) {
+    it(`${name} shows the loading logo while its loader runs`, () => {
+      render(<Fallback />);
 
-    expect(screen.getByRole("img", { name: "Loading" })).toBeInTheDocument();
-  });
+      expect(screen.getByRole("img", { name: "Loading" })).toBeInTheDocument();
+    });
+  }
 });

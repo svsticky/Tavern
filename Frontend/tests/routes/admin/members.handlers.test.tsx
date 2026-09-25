@@ -126,14 +126,9 @@ describe("members filter URL param", () => {
     );
   });
 
-  it.each([
-    null,
-    "",
-    "{not json",
-    "42",
-    "[1,2]",
-    "null",
-  ])("parses %j as no filters", (value) => {
-    expect(parseMembersFilters(value)).toBeNull();
-  });
+  for (const value of [null, "", "{not json", "42", "[1,2]", "null"]) {
+    it(`parses ${JSON.stringify(value)} as no filters`, () => {
+      expect(parseMembersFilters(value)).toBeNull();
+    });
+  }
 });

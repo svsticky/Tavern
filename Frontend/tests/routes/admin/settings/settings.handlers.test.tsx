@@ -92,18 +92,20 @@ describe("fetchSettingsPageData", () => {
     expect(settings).toEqual({ SomeOtherColor: "#ABCDEF80" });
   });
 
-  it.each([
+  for (const [name, failing] of [
     ["settings", () => getSettings],
     ["groups", () => getGroups],
     ["roles", () => getRoles],
-  ])("throws when the %s can't be loaded, so the error boundary handles it", async (_name, failing) => {
-    getSettings.mockResolvedValue({ data: [] });
-    getGroups.mockResolvedValue({ data: [] });
-    getRoles.mockResolvedValue({ data: [] });
-    failing().mockResolvedValue({ error: new Error("boom"), data: null });
+  ]) {
+    it(`throws when the ${name} can't be loaded, so the error boundary handles it`, async () => {
+      getSettings.mockResolvedValue({ data: [] });
+      getGroups.mockResolvedValue({ data: [] });
+      getRoles.mockResolvedValue({ data: [] });
+      failing().mockResolvedValue({ error: new Error("boom"), data: null });
 
-    await expect(fetchSettingsPageData()).rejects.toThrow("boom");
-  });
+      await expect(fetchSettingsPageData()).rejects.toThrow("boom");
+    });
+  }
 
   it("throws a descriptive error when a response has no data and no error", async () => {
     getSettings.mockResolvedValue({});

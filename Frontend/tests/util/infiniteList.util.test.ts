@@ -15,15 +15,11 @@ describe("readPages", () => {
     expect(readPages(new URLSearchParams("pages=4"))).toBe(4);
   });
 
-  it.each([
-    "0",
-    "-3",
-    "abc",
-    "NaN",
-    "",
-  ])("falls back to 1 for the invalid value %j", (value) => {
-    expect(readPages(new URLSearchParams({ pages: value }))).toBe(1);
-  });
+  for (const value of ["0", "-3", "abc", "NaN", ""]) {
+    it(`falls back to 1 for the invalid value ${JSON.stringify(value)}`, () => {
+      expect(readPages(new URLSearchParams({ pages: value }))).toBe(1);
+    });
+  }
 
   it("clamps a hand-edited huge value so a URL can't trigger a request storm", () => {
     expect(readPages(new URLSearchParams("pages=9999"))).toBe(MAX_PAGES);

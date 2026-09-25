@@ -105,18 +105,20 @@ describe("fetchGroupPageData", () => {
     expect(formData.DefaultCostCenter).toBe("");
   });
 
-  it.each([
+  for (const [name, failing] of [
     ["group", () => getGroupsById],
     ["role aliases", () => getRolealiases],
-  ])("throws when the %s can't be loaded, so the error boundary handles it", async (_name, failing) => {
-    getGroupsById.mockResolvedValue({
-      data: { name: "Board", type: "Committee", active: true },
-    });
-    getRolealiases.mockResolvedValue({ data: [] });
-    failing().mockResolvedValue({ error: new Error("boom") });
+  ]) {
+    it(`throws when the ${name} can't be loaded, so the error boundary handles it`, async () => {
+      getGroupsById.mockResolvedValue({
+        data: { name: "Board", type: "Committee", active: true },
+      });
+      getRolealiases.mockResolvedValue({ data: [] });
+      failing().mockResolvedValue({ error: new Error("boom") });
 
-    await expect(fetchGroupPageData(1)).rejects.toThrow("boom");
-  });
+      await expect(fetchGroupPageData(1)).rejects.toThrow("boom");
+    });
+  }
 });
 
 describe("loadGroupPicture", () => {
@@ -604,16 +606,16 @@ describe("toast messages", () => {
     vi.clearAllMocks();
   });
 
-  it.each(
-    cases,
-  )("%s shows a success message and reports failures with the underlying error", async (_name, run) => {
-    await run();
+  for (const [name, run] of cases) {
+    it(`${name} shows a success message and reports failures with the underlying error`, async () => {
+      await run();
 
-    const options = vi.mocked(toast.promise).mock.calls.at(-1)?.[1] as {
-      success: string;
-      error: (error: unknown) => string;
-    };
-    expect(options.success).toEqual(expect.any(String));
-    expect(options.error(new Error("boom"))).toContain("boom");
-  });
+      const options = vi.mocked(toast.promise).mock.calls.at(-1)?.[1] as {
+        success: string;
+        error: (error: unknown) => string;
+      };
+      expect(options.success).toEqual(expect.any(String));
+      expect(options.error(new Error("boom"))).toContain("boom");
+    });
+  }
 });

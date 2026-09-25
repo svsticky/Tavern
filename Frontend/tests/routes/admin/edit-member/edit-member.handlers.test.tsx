@@ -149,16 +149,18 @@ describe("fetchMemberPageData", () => {
     expect(result.isBegunstiger).toBe(false);
   });
 
-  it.each([
+  for (const [name, mock] of [
     ["member", () => getMembersById],
     ["study enrollments", () => getStudyenrollments],
     ["group memberships", () => getGroupmemberships],
     ["available studies", () => getStudies],
-  ])("throws when the %s can't be loaded, so the error boundary handles it", async (_name, mock) => {
-    mock().mockResolvedValue({ error: new Error("boom") });
+  ]) {
+    it(`throws when the ${name} can't be loaded, so the error boundary handles it`, async () => {
+      mock().mockResolvedValue({ error: new Error("boom") });
 
-    await expect(fetchMemberPageData("m1")).rejects.toThrow("boom");
-  });
+      await expect(fetchMemberPageData("m1")).rejects.toThrow("boom");
+    });
+  }
 });
 
 describe("handleSaveMember", () => {
@@ -529,16 +531,16 @@ describe("toast messages", () => {
     vi.clearAllMocks();
   });
 
-  it.each(
-    cases,
-  )("%s shows a success message and reports failures with the underlying error", async (_name, run) => {
-    await run();
+  for (const [name, run] of cases) {
+    it(`${name} shows a success message and reports failures with the underlying error`, async () => {
+      await run();
 
-    const options = vi.mocked(toast.promise).mock.calls.at(-1)?.[1] as {
-      success: string;
-      error: (error: unknown) => string;
-    };
-    expect(options.success).toEqual(expect.any(String));
-    expect(options.error(new Error("boom"))).toContain("boom");
-  });
+      const options = vi.mocked(toast.promise).mock.calls.at(-1)?.[1] as {
+        success: string;
+        error: (error: unknown) => string;
+      };
+      expect(options.success).toEqual(expect.any(String));
+      expect(options.error(new Error("boom"))).toContain("boom");
+    });
+  }
 });

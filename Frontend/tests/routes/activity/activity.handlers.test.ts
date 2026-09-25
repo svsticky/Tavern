@@ -52,14 +52,12 @@ describe("fetchOrganizerName", () => {
     expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
   });
 
-  it.each([
-    null,
-    undefined,
-    0,
-  ])("skips the lookup when there is no organizer (%j)", async (organizerId) => {
-    await expect(fetchOrganizerName(organizerId)).resolves.toBeNull();
-    expect(getGroupsById).not.toHaveBeenCalled();
-  });
+  for (const organizerId of [null, undefined, 0]) {
+    it(`skips the lookup when there is no organizer (${JSON.stringify(organizerId)})`, async () => {
+      await expect(fetchOrganizerName(organizerId)).resolves.toBeNull();
+      expect(getGroupsById).not.toHaveBeenCalled();
+    });
+  }
 
   it("yields null instead of failing the page when the lookup fails", async () => {
     getGroupsById.mockResolvedValue({ error: "nope" });
