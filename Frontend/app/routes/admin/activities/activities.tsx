@@ -1,7 +1,8 @@
 import { t } from "i18next";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useCallback, useEffect, useState } from "react";
+import { useLoaderData, useNavigate, useSearchParams } from "react-router";
 import type { ActivityResponseDto } from "~/api";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
@@ -9,11 +10,56 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useInfiniteLoadMore } from "~/hooks/useInfiniteLoadMore";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
-import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
+import {
+  fetchPages,
+  PAGES_PARAM,
+  readPages,
+  shouldRevalidateIgnoring,
+} from "~/util/infiniteList.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import {
+  fetchAdminActivitiesPage,
+  handleViewActivity,
+} from "./activities.handlers";
 
 /** The number of activities to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 15;
+
+type LoaderData = {
+  activities: ActivityResponseDto[];
+  year: number;
+  search: string;
+  hasMore: boolean;
+};
+
+/** `year`, `search` and `pages` live in the URL, so a filtered, scrolled-down list is restored on back-navigation. */
+export async function clientLoader({
+  request,
+}: {
+  request: Request;
+}): Promise<LoaderData> {
+  await requireTokenParsed();
+
+  const url = new URL(request.url);
+  const year = Number(url.searchParams.get("year")) || getCommitteeYear();
+  const search = url.searchParams.get("search") ?? "";
+  const pages = readPages(url.searchParams);
+
+  const { items, hasMore } = await fetchPages(pages, PAGE_SIZE, (page) =>
+    fetchAdminActivitiesPage(year, page, PAGE_SIZE, search),
+  );
+
+  return { activities: items, year, search, hasMore };
+}
+
+/** Bumping `pages` while scrolling must not refetch what's already loaded. */
+export const shouldRevalidate = shouldRevalidateIgnoring(PAGES_PARAM);
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative management page for viewing and filtering all association activities.
@@ -22,8 +68,8 @@ const PAGE_SIZE = 15;
  * different association years. It features:
  * - **Yearly Archiving**: A selector to view activities as far back as 2007.
  * - **Infinite Scrolling**: Automatically loads more activities as the user scrolls down.
- * - **Debounced Search**: Waits 300ms after the last keystroke before triggering a
- *   server-side search by activity name or location.
+ * - **Debounced Search**: Waits 300ms after the last keystroke before syncing a
+ *   server-side search (by activity name or location) into the URL.
  * - **Data Visualization**: A `DataTable` that summarizes key metrics such as
  *   participant counts (including limits), pricing, and scheduling.
  * - **Contextual Navigation**: Quick access to the administrative details of any specific event.
@@ -32,82 +78,65 @@ const PAGE_SIZE = 15;
  * @component
  */
 export default function Activities() {
+  const loaderData = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [loading, setLoading] = useState(false);
   const currentYear = getCommitteeYear();
-  const [year, setYear] = useState(currentYear);
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef<HTMLDivElement>(null);
-
   const yearsSince2007 = Array.from(
     { length: currentYear - 2007 + 1 },
     (_, i) => currentYear - i,
   );
 
-  const fetchActivities = useCallback(
-    async (
-      pageNum: number,
-      isInitial: boolean,
-      targetYear: number,
-      search: string,
-    ) => {
-      loadAdminActivities(
-        targetYear,
-        setLoading,
-        (fetched) => {
-          setActivities((prev) =>
-            isInitial ? fetched : [...prev, ...fetched],
-          );
-          if (fetched.length < PAGE_SIZE) {
-            setHasMore(false);
-          }
-        },
-        pageNum,
-        PAGE_SIZE,
-        search,
-      );
-    },
-    [],
-  );
+  const [searchInput, setSearchInput] = useState(loaderData.search);
+
+  const {
+    items: activities,
+    hasMore,
+    loadingMore,
+    sentinelRef: loaderRef,
+  } = useInfiniteLoadMore({
+    loaderItems: loaderData.activities,
+    loaderHasMore: loaderData.hasMore,
+    pageSize: PAGE_SIZE,
+    fetchPage: useCallback(
+      (page: number) =>
+        fetchAdminActivitiesPage(
+          loaderData.year,
+          page,
+          PAGE_SIZE,
+          loaderData.search,
+        ),
+      [loaderData.year, loaderData.search],
+    ),
+  });
+
+  useEffect(() => {
+    setSearchInput(loaderData.search);
+  }, [loaderData.search]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
+      if (searchInput === loaderData.search) return;
+      const next = new URLSearchParams(searchParams);
+      if (searchInput) {
+        next.set("search", searchInput);
+      } else {
+        next.delete("search");
+      }
+      next.delete(PAGES_PARAM);
+      setSearchParams(next, { replace: true, preventScrollReset: true });
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [searchQuery]);
+  }, [searchInput, loaderData.search, searchParams, setSearchParams]);
 
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchActivities(1, true, year, debouncedSearchQuery);
-  }, [year, debouncedSearchQuery, fetchActivities]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchActivities(nextPage, false, year, debouncedSearchQuery);
-        }
-      },
-      { threshold: 1.0 },
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, page, year, debouncedSearchQuery, fetchActivities]);
+  const changeYear = (year: number) => {
+    const next = new URLSearchParams(searchParams);
+    next.set("year", String(year));
+    next.delete(PAGES_PARAM);
+    setSearchParams(next);
+  };
 
   const columns: Column<ActivityResponseDto>[] = [
     {
@@ -180,8 +209,9 @@ export default function Activities() {
             <Input
               label={t("search")}
               placeholder={t("search_activities")}
+              value={searchInput}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(e.target.value)
+                setSearchInput(e.target.value)
               }
             />
           </div>
@@ -193,8 +223,8 @@ export default function Activities() {
               }))}
               label={t("year")}
               style={{ minWidth: "150px" }}
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              value={loaderData.year}
+              onChange={(e) => changeYear(Number(e.target.value))}
             />
           </div>
         </div>
@@ -205,7 +235,7 @@ export default function Activities() {
 
         <div ref={loaderRef} className="h-10 flex items-center justify-center">
           <span className="text-slate-400 text-sm">
-            {loading
+            {loadingMore
               ? t("loading_more")
               : hasMore
                 ? t("load_more")

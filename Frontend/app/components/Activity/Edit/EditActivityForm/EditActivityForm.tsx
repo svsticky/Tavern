@@ -28,7 +28,6 @@ import {
   handleActivityFormChange,
   handleActivitySubmit,
   handleDeleteActivity,
-  loadGroups,
   removeQuestion,
   updateQuestion,
 } from "./EditActivityForm.handlers";
@@ -51,6 +50,7 @@ import {
  * @param {ActivityResponseDto | null} props.activity - The existing activity data (if editing) or null (if creating).
  * @param {string | undefined} props.id - The unique identifier of the activity. If present, the form operates in "Edit" mode.
  * @param {boolean} props.isBoard - Flag indicating if the current user has board-level permissions.
+ * @param {GroupResponseDto[]} props.groups - The groups an activity can be organized by.
  *
  * @example
  * ```tsx
@@ -65,10 +65,12 @@ export default function EditActivityForm({
   activity,
   id,
   isBoard,
+  groups,
 }: {
   activity: ActivityResponseDto | null;
   id: string | undefined;
   isBoard: boolean;
+  groups: GroupResponseDto[];
 }) {
   const navigate = useNavigate();
   const { pathname } = window.location;
@@ -77,29 +79,17 @@ export default function EditActivityForm({
   const isEdit = !!id;
   const audienceMask = parseAudience(activity?.allowedAudience);
 
-  const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
-  const [groups, setGroups] = useState<GroupResponseDto[]>([]);
   const [formValid, setFormValid] = useState(isEdit);
   const [questions, setQuestions] = useState<
     Partial<GetSpecificationQuestionResponseDto>[]
-  >([]);
+  >(activity?.specificationQuestions ?? []);
 
   useEffect(() => {
     if (activity?.specificationQuestions) {
       setQuestions(activity.specificationQuestions);
     }
   }, [activity]);
-
-  useEffect(() => {
-    if (isEdit) {
-      setFormValid(true);
-    }
-
-    loadGroups(setLoading, setGroups);
-  }, [isEdit]);
-
-  if (loading) return t("loading");
 
   return (
     <div>

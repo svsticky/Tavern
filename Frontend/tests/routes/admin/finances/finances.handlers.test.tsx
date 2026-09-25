@@ -31,13 +31,12 @@ vi.mock("react-hot-toast", () => ({
   },
 }));
 
-import toast from "react-hot-toast";
 import {
+  fetchExpiredActivities,
+  fetchFinancesData,
   handleMarkAsPaid,
   handlePaymentsExport,
   handleWhatsAppClick,
-  loadExpiredActivities,
-  loadFinancesData,
   refreshUnpaidPayments,
   setUnpaidPaymentState,
 } from "~/routes/admin/finances/finances.handlers";
@@ -353,38 +352,42 @@ describe("handlePaymentsExport", () => {
   });
 });
 
-describe("loadFinancesData", () => {
+describe("fetchFinancesData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("loads unpaid and overpaid balances", async () => {
+  it("fetches and derives unpaid state, and filters zero-balance overpaid entries", async () => {
     getPaymentsUnpaid.mockResolvedValue({ data: [balance()] });
     getPaymentsOverpaid.mockResolvedValue({
       data: [balance({ balance: -5 }), balance({ balance: 0 })],
     });
 
-    const setOverpaidBalances = vi.fn();
-    const setLoading = vi.fn();
+    const result = await fetchFinancesData();
 
-    await loadFinancesData({
-      setLoading,
-      setUnpaidBalances: vi.fn(),
-      setTotalUnpaid: vi.fn(),
-      setOpenPayments: vi.fn(),
-      setUnpaidActivities: vi.fn(),
-      setMembersWithOverduePayment: vi.fn(),
-      setOverpaidBalances,
-    });
-
-    expect(setOverpaidBalances).toHaveBeenCalledWith([
+    expect(result.overpaidBalances).toEqual([
       expect.objectContaining({ balance: -5 }),
     ]);
-    expect(setLoading).toHaveBeenLastCalledWith(false);
+    expect(result.totalUnpaid).toBe(10);
+    expect(result.openPayments).toBe(1);
+  });
+
+  it("throws when unpaid payments fail to load", async () => {
+    getPaymentsUnpaid.mockResolvedValue({ error: "bad" });
+    getPaymentsOverpaid.mockResolvedValue({ data: [] });
+
+    await expect(fetchFinancesData()).rejects.toBe("bad");
+  });
+
+  it("throws when overpaid payments fail to load", async () => {
+    getPaymentsUnpaid.mockResolvedValue({ data: [] });
+    getPaymentsOverpaid.mockResolvedValue({ error: "bad" });
+
+    await expect(fetchFinancesData()).rejects.toBe("bad");
   });
 });
 
-describe("loadExpiredActivities", () => {
+describe("fetchExpiredActivities", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -392,14 +395,7 @@ describe("loadExpiredActivities", () => {
   it("loads closed past activities for the given year", async () => {
     getActivities.mockResolvedValue({ data: [{ id: 1, name: "Old" }] });
 
-    const setExpiredActivities = vi.fn();
-    const setLoadingExpiredActivities = vi.fn();
-
-    await loadExpiredActivities({
-      year: 2025,
-      setLoadingExpiredActivities,
-      setExpiredActivities,
-    });
+    const result = await fetchExpiredActivities(2025);
 
     expect(getActivities).toHaveBeenCalledWith({
       query: expect.objectContaining({
@@ -409,24 +405,12 @@ describe("loadExpiredActivities", () => {
         Year: 2025,
       }),
     });
-    expect(setExpiredActivities).toHaveBeenCalledWith([{ id: 1, name: "Old" }]);
-    expect(setLoadingExpiredActivities).toHaveBeenLastCalledWith(false);
+    expect(result).toEqual([{ id: 1, name: "Old" }]);
   });
 
-  it("shows an error toast when expired activities fail to load", async () => {
+  it("throws when expired activities fail to load", async () => {
     getActivities.mockResolvedValue({ error: "bad", data: null });
 
-    const setLoadingExpiredActivities = vi.fn();
-
-    await loadExpiredActivities({
-      year: 2025,
-      setLoadingExpiredActivities,
-      setExpiredActivities: vi.fn(),
-    });
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "loading_failed: Failed to load expired activities",
-    );
-    expect(setLoadingExpiredActivities).toHaveBeenLastCalledWith(false);
+    await expect(fetchExpiredActivities(2025)).rejects.toBe("bad");
   });
 });

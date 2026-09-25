@@ -2,6 +2,7 @@ import { t } from "i18next";
 import { PlusIcon, TrashIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useLoaderData } from "react-router";
 import type { GroupResponseDto, Role } from "~/api";
 import { postGroupsPromoteBoard } from "~/api/sdk.gen";
 import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
@@ -9,6 +10,7 @@ import ManageMailinglistsDatatable from "~/components/Mailinglist/ManageMailingl
 import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
 import ManageRegisterSlidesDatatable from "~/components/Register/ManageRegisterSlidesDatatable/ManageRegisterSlidesDatatable";
 import ManageRegistrationDocumentsDatatable from "~/components/Register/ManageRegistrationDocumentsDatatable/ManageRegistrationDocumentsDatatable";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Tile from "~/components/Tiles/Tile";
@@ -23,7 +25,9 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
+  fetchSettingsPageData,
   getCurrentRoleMappings,
   getGroupOptions,
   getRoleOptions,
@@ -31,8 +35,16 @@ import {
   handleRemoveRoleMapping,
   handleSaveSettings,
   handleSettingsChange,
-  loadSettingsPageData,
 } from "./settings.handlers";
+
+export async function clientLoader() {
+  await requireTokenParsed();
+  return fetchSettingsPageData();
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The primary configuration dashboard for the application's global settings.
@@ -54,9 +66,11 @@ import {
  * @component
  */
 export default function SettingsPage() {
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, string>>(
+    loaderData.settings,
+  );
 
   const [newSettings, setNewSettings] = useState<Set<string>>(new Set());
   const [deletedSettings, setDeletedSettings] = useState<Set<string>>(
@@ -64,19 +78,19 @@ export default function SettingsPage() {
   );
 
   const [availableGroups, setAvailableGroups] = useState<GroupResponseDto[]>(
-    [],
+    loaderData.availableGroups,
   );
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<Role[]>(
+    loaderData.availableRoles,
+  );
   const [selectedRoleId, setSelectedRoleId] = useState("");
 
+  // A re-run loader (e.g. after saving) hands back the server's state to start over from.
   useEffect(() => {
-    loadSettingsPageData({
-      setSettings,
-      setAvailableGroups,
-      setAvailableRoles,
-      setLoading,
-    });
-  }, []);
+    setSettings(loaderData.settings);
+    setAvailableGroups(loaderData.availableGroups);
+    setAvailableRoles(loaderData.availableRoles);
+  }, [loaderData]);
 
   const [isPromotingBoard, setIsPromotingBoard] = useState(false);
   const [confirmModal, confirm] = useConfirm();
@@ -113,8 +127,6 @@ export default function SettingsPage() {
       setIsPromotingBoard(false);
     }
   };
-
-  if (loading) return t("loading");
 
   return (
     <div className="flex flex-col max-w-4xl mx-auto w-full">

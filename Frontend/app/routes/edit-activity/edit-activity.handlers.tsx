@@ -1,53 +1,12 @@
-import { t } from "i18next";
-import toast from "react-hot-toast";
 import { type ActivityResponseDto, getActivitiesById } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
 
-/**
- * Arguments for the loadEditActivityData handler.
- */
-type LoadEditActivityArgs = {
-  isEdit: boolean;
-  id: string | undefined;
-  setActivity: (activity: ActivityResponseDto) => void;
-  setLoading: (loading: boolean) => void;
-};
-
-/**
- * Hydrates the Activity editor with existing data if the page is in edit mode.
- *
- * If `isEdit` is true, this handler performs a network request to fetch the activity
- * details by ID. If the fetch fails, it triggers an error toast. In creation mode,
- * it simply toggles the loading state off.
- *
- * @async
- * @param {LoadEditActivityArgs} args - Configuration object containing:
- * @param {boolean} args.isEdit - Whether the handler should fetch existing data.
- * @param {string | undefined} args.id - The ID of the activity to retrieve.
- * @param {Function} args.setActivity - Function to update the local activity state.
- * @param {Function} args.setLoading - Function to update the loading indicator state.
- */
-export const loadEditActivityData = async ({
-  isEdit,
-  id,
-  setActivity,
-  setLoading,
-}: LoadEditActivityArgs) => {
-  try {
-    if (isEdit) {
-      const activityRes = await getActivitiesById({
-        path: { id: Number(id) },
-      });
-      if (activityRes.error || !activityRes.data)
-        throw new Error("Failed to load activity");
-      setActivity(activityRes.data);
-    }
-  } catch (error) {
-    console.error("Error loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
+export const fetchEditActivity = async (
+  id: string,
+): Promise<ActivityResponseDto> => {
+  const response = await getActivitiesById({ path: { id: Number(id) } });
+  if (response.error || !response.data)
+    throw response.error ?? new Error("Failed to load activity");
+  return response.data;
 };
 
 /**

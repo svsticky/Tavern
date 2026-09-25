@@ -12,13 +12,6 @@ import {
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
-const { getGroupsById } = vi.hoisted(() => ({ getGroupsById: vi.fn() }));
-
-vi.mock("~/api", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/api")>()),
-  getGroupsById,
-}));
-
 vi.mock(
   "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers",
   () => ({
@@ -79,9 +72,7 @@ const memberToken: TokenParsed = {
 };
 
 describe("ActivityDetailsTile", () => {
-  beforeEach(() => {
-    getGroupsById.mockReset();
-  });
+  beforeEach(() => {});
 
   it("shows the no-poster placeholder when there is no poster", async () => {
     const authService = createMockAuthService({
@@ -393,12 +384,13 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("shows the organizer's name and logo when the activity has an organizer", async () => {
-    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
     const { container } = renderWithProviders(
-      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+      <ActivityDetailsTile
+        activity={buildActivity({ organizerId: 5 })}
+        organizerName="BaCo"
+      />,
     );
 
-    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
     expect(await screen.findByText("organizer")).toBeInTheDocument();
     expect(screen.getByText("BaCo")).toBeInTheDocument();
     // Decorative logo (alt="") - not exposed via role "img", so query the DOM directly.
@@ -412,14 +404,15 @@ describe("ActivityDetailsTile", () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
 
     await screen.findByText("copy_once_to_calendar");
-    expect(getGroupsById).not.toHaveBeenCalled();
     expect(screen.queryByText("organizer")).not.toBeInTheDocument();
   });
 
   it("falls back to the default avatar when the organizer's logo fails to load", async () => {
-    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
     const { container } = renderWithProviders(
-      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+      <ActivityDetailsTile
+        activity={buildActivity({ organizerId: 5 })}
+        organizerName="BaCo"
+      />,
     );
 
     await screen.findByText("BaCo");

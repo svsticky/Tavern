@@ -1,11 +1,9 @@
 import { Calendar, Megaphone, PencilIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import type { GetAnnouncementResponseDto } from "~/api";
 import Markdown from "~/components/UI/Markdown";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useTokenParsed } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
@@ -20,23 +18,8 @@ export default function AnnouncementTile({
 }) {
   const { t, i18n } = useTranslation();
   const isDutch = i18n.language.startsWith("nl");
-  const authService = useAuth();
   const navigate = useNavigate();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      if (!cancelled) {
-        setTokenParsed(token);
-      }
-    };
-    loadToken();
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
+  const tokenParsed = useTokenParsed();
 
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
 

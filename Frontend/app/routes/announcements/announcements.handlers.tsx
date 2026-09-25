@@ -1,48 +1,7 @@
-import { t } from "i18next";
-import { toast } from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type GetAnnouncementResponseDto, getAnnouncements } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
 
-/**
- * Arguments for the loadAnnouncements handler.
- */
-type LoadAnnouncementsArgs = {
-  setLoading: (loading: boolean) => void;
-  setAnnouncements: (announcements: GetAnnouncementResponseDto[]) => void;
-};
-
-/**
- * Fetches the list of all announcements from the API.
- *
- * This handler ensures that requests are only made when the application is
- * properly initialized and the user is authenticated. It handles the loading
- * state and provides visual feedback via toasts if an error occurs.
- *
- * @async
- * @param {LoadAnnouncementsArgs} args - Configuration and state setter functions.
- */
-export const loadAnnouncements = async ({
-  setLoading,
-  setAnnouncements,
-}: LoadAnnouncementsArgs) => {
-  try {
-    setLoading(true);
-    const announcementsResponse = await getAnnouncements();
-
-    if (announcementsResponse.error || !announcementsResponse.data)
-      throw new Error("Failed to load announcements");
-
-    setAnnouncements(
-      announcementsResponse.data as GetAnnouncementResponseDto[],
-    );
-  } catch (error) {
-    console.error("Error while loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
-};
+// Shared with the home dashboard, hence served from the resource cache.
+export { loadAnnouncements } from "~/util/cachedResources.util";
 
 /**
  * Navigates the user to the announcement creation form.

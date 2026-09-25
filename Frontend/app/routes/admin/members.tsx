@@ -1,10 +1,11 @@
 import { t } from "i18next";
 import { Mail, Phone, PlusIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router";
-import { getMembers, type MemberResponseDto } from "~/api";
+import { useLoaderData, useNavigate, useSearchParams } from "react-router";
+import type { MemberResponseDto } from "~/api";
 import FilterMemberOverlay from "~/components/Member/FilterMemberOverlay/FilterMemberOverlay";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
@@ -12,11 +13,58 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { useInfiniteLoadMore } from "~/hooks/useInfiniteLoadMore";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
+import {
+  fetchPages,
+  PAGES_PARAM,
+  readPages,
+  shouldRevalidateIgnoring,
+} from "~/util/infiniteList.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import {
+  FILTERS_PARAM,
+  fetchMembersPage,
+  PAGE_SIZE,
+  parseMembersFilters,
+  SEARCH_PARAM,
+  serializeMembersFilters,
+} from "./members.handlers";
 
-/** The number of members to fetch per page for infinite scrolling. */
-const PAGE_SIZE = 20;
+type LoaderData = {
+  members: MemberResponseDto[];
+  hasMore: boolean;
+  search: string;
+  filters: MembersFilterDto | null;
+};
+
+/** Search, filters and page count live in the URL so back-navigation rebuilds the exact list. */
+export async function clientLoader({
+  request,
+}: {
+  request: Request;
+}): Promise<LoaderData> {
+  await requireTokenParsed();
+
+  const url = new URL(request.url);
+  const search = url.searchParams.get(SEARCH_PARAM) ?? "";
+  const filters = parseMembersFilters(url.searchParams.get(FILTERS_PARAM));
+  const pages = readPages(url.searchParams);
+
+  const { items, hasMore } = await fetchPages(pages, PAGE_SIZE, (page) =>
+    fetchMembersPage(page, search, filters),
+  );
+
+  return { members: items, hasMore, search, filters };
+}
+
+/** Bumping `pages` while scrolling must not refetch what's already loaded. */
+export const shouldRevalidate = shouldRevalidateIgnoring(PAGES_PARAM);
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative directory page for managing association members.
@@ -35,96 +83,74 @@ const PAGE_SIZE = 20;
  * @component
  */
 export default function Members() {
+  const loaderData = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<MemberResponseDto[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState<MembersFilterDto | null>(null);
+  const [searchInput, setSearchInput] = useState(loaderData.search);
+  const { filters } = loaderData;
 
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef<HTMLDivElement>(null);
+  const {
+    items: members,
+    hasMore,
+    loadingMore: loading,
+    sentinelRef: loaderRef,
+  } = useInfiniteLoadMore({
+    loaderItems: loaderData.members,
+    loaderHasMore: loaderData.hasMore,
+    pageSize: PAGE_SIZE,
+    fetchPage: useCallback(
+      (page: number) =>
+        fetchMembersPage(page, loaderData.search, loaderData.filters),
+      [loaderData.search, loaderData.filters],
+    ),
+    onError: useCallback((error: unknown) => {
+      console.error("Error fetching members:", error);
+      toast.error(appendErrorMessage(t("loading_failed"), error));
+    }, []),
+  });
 
-  const fetchMembers = useCallback(
-    async (pageNum: number, search: string, isInitial: boolean) => {
-      try {
-        setLoading(true);
-        const response = await getMembers({
-          query: {
-            Page: pageNum,
-            PageSize: PAGE_SIZE,
-            Search: search,
-            StudyId: filters?.studyId || undefined,
-            Gratie: filters?.gratie || undefined,
-            LidVanVerdienste: filters?.lidVanVerdienste || undefined,
-            EreLid: filters?.ereLid || undefined,
-            Begunstiger: filters?.begunstiger || undefined,
-            Suspended: filters?.suspended || undefined,
-            Inactive: filters?.inactive || undefined,
-            StudyType: filters?.studyType || undefined,
-          },
-        });
-
-        if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to fetch members");
-        }
-
-        setMembers((prev) =>
-          isInitial ? response.data! : [...prev, ...response.data!],
-        );
-
-        if (response.data.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
-      } catch (error) {
-        console.error("Error fetching members:", error);
-        toast.error(appendErrorMessage(t("loading_failed"), error));
-      } finally {
-        setLoading(false);
-      }
+  // Search/filter changes `replace` the URL (back still leaves the page in one step) and restart from page 1.
+  const updateQuery = useCallback(
+    (update: (next: URLSearchParams) => void) => {
+      const next = new URLSearchParams(searchParams);
+      update(next);
+      next.delete(PAGES_PARAM);
+      setSearchParams(next, { replace: true, preventScrollReset: true });
     },
-    [filters],
+    [searchParams, setSearchParams],
   );
 
   const applyFilters = (newFilters: MembersFilterDto) => {
-    setFilters(newFilters);
     setIsFiltersOpen(false);
+    updateQuery((next) => {
+      const serialized = serializeMembersFilters(newFilters);
+      if (serialized) {
+        next.set(FILTERS_PARAM, serialized);
+      } else {
+        next.delete(FILTERS_PARAM);
+      }
+    });
   };
 
   useEffect(() => {
+    setSearchInput(loaderData.search);
+  }, [loaderData.search]);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
+      if (searchInput === loaderData.search) return;
+      updateQuery((next) => {
+        if (searchInput) {
+          next.set(SEARCH_PARAM, searchInput);
+        } else {
+          next.delete(SEARCH_PARAM);
+        }
+      });
     }, 300);
 
     return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchMembers(1, debouncedSearchQuery, true);
-  }, [debouncedSearchQuery, fetchMembers]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchMembers(nextPage, debouncedSearchQuery, false);
-        }
-      },
-      { threshold: 1.0 },
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, page, debouncedSearchQuery, fetchMembers]);
+  }, [searchInput, loaderData.search, updateQuery]);
 
   const columns: Column<MemberResponseDto>[] = [
     {
@@ -195,8 +221,9 @@ export default function Members() {
             <Input
               label={t("search")}
               placeholder={t("search_members")}
+              value={searchInput}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setSearchQuery(e.target.value)
+                setSearchInput(e.target.value)
               }
             />
           </div>

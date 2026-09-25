@@ -6,10 +6,10 @@ import type {
 } from "~/api";
 import {
   addQuestion,
+  fetchGroups,
   handleActivityFormChange,
   handleActivitySubmit,
   handleDeleteActivity,
-  loadGroups,
   removeQuestion,
   updateQuestion,
 } from "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers";
@@ -53,38 +53,30 @@ vi.mock("react-hot-toast", () => ({
   },
 }));
 
-describe("loadGroups", () => {
+describe("fetchGroups", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("sets groups on success", async () => {
+  it("returns the groups on success", async () => {
     const groups: GroupResponseDto[] = [
       { id: 1, name: "Board" } as GroupResponseDto,
     ];
     getGroups.mockResolvedValue({ data: groups });
-    const setGroups = vi.fn();
-    const setLoading = vi.fn();
 
-    await loadGroups(setLoading, setGroups);
-
-    expect(setGroups).toHaveBeenCalledWith(groups);
-    expect(setLoading).toHaveBeenCalledWith(false);
+    await expect(fetchGroups()).resolves.toBe(groups);
   });
 
-  it("logs and shows an error toast on failure", async () => {
-    getGroups.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const setGroups = vi.fn();
+  it("throws the API error so React Router's error boundary handles it", async () => {
+    getGroups.mockResolvedValue({ error: new Error("fail") });
 
-    await loadGroups(vi.fn(), setGroups);
+    await expect(fetchGroups()).rejects.toThrow("fail");
+  });
 
-    expect(setGroups).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
+  it("throws when the response has no data", async () => {
+    getGroups.mockResolvedValue({});
+
+    await expect(fetchGroups()).rejects.toThrow("Failed to load groups");
   });
 });
 

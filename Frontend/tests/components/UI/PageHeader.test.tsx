@@ -1,6 +1,7 @@
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { BackNavigationContext } from "~/context/BackNavigationContext";
 import { renderWithProviders, screen } from "~/testUtils";
 
 describe("PageHeader", () => {
@@ -31,6 +32,32 @@ describe("PageHeader", () => {
 
     const link = screen.getByRole("link", { name: "back" });
     expect(link).toHaveAttribute("href", "/home");
+  });
+
+  it("navigates back (POP) instead of pushing when there's a safe page to go back to, even if it doesn't match backTo", () => {
+    renderWithProviders(
+      <BackNavigationContext.Provider value="/activities/42">
+        <PageHeader title="Member" backTo="/admin/members" />
+      </BackNavigationContext.Provider>,
+      { route: "/admin/members/123" },
+    );
+
+    expect(
+      screen.queryByRole("link", { name: "back" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "back" })).toBeInTheDocument();
+  });
+
+  it("falls back to the navigation link when there's no safe page to go back to (no in-app history, or it's a create/edit/confirm-mail page)", () => {
+    renderWithProviders(
+      <BackNavigationContext.Provider value={undefined}>
+        <PageHeader title="Member" backTo="/admin/members" />
+      </BackNavigationContext.Provider>,
+      { route: "/admin/members/123" },
+    );
+
+    const link = screen.getByRole("link", { name: "back" });
+    expect(link).toHaveAttribute("href", "/admin/members");
   });
 
   it("renders the action content on the right side", () => {

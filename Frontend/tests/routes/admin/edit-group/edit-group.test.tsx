@@ -5,7 +5,8 @@ import type { GroupMembershipResponseDto } from "~/api";
 import { renderWithProviders } from "~/testUtils";
 
 const {
-  loadGroupData,
+  fetchGroupPageData,
+  loadGroupPicture,
   loadGroupMemberships,
   handleSaveGroup,
   handleGroupProfilePictureUpload,
@@ -14,9 +15,8 @@ const {
   handleUpdateGroupRole,
   handleRoleAliasAdded,
 } = vi.hoisted(() => ({
-  loadGroupData: vi.fn(async ({ setLoading }: any) => {
-    setLoading(false);
-  }),
+  fetchGroupPageData: vi.fn(),
+  loadGroupPicture: vi.fn(async (_args: any) => {}),
   loadGroupMemberships: vi.fn(),
   handleSaveGroup: vi.fn(),
   handleGroupProfilePictureUpload: vi.fn(),
@@ -27,7 +27,8 @@ const {
 }));
 
 vi.mock("~/routes/admin/edit-group/edit-group.handlers", () => ({
-  loadGroupData,
+  fetchGroupPageData,
+  loadGroupPicture,
   loadGroupMemberships,
   handleSaveGroup,
   handleGroupProfilePictureUpload,
@@ -70,7 +71,9 @@ vi.mock("~/components/Roles/CreateRoleOverlay/CreateRoleOverlay", () => ({
   ),
 }));
 
-import EditGroupPage from "~/routes/admin/edit-group/edit-group";
+import EditGroupPage, {
+  clientLoader,
+} from "~/routes/admin/edit-group/edit-group";
 
 function MemberPageStub() {
   const { id } = useParams();
@@ -103,15 +106,56 @@ function enrollment(
   } as GroupMembershipResponseDto;
 }
 
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+const { useLoaderData } = vi.hoisted(() => ({ useLoaderData: vi.fn() }));
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  useLoaderData,
+}));
+
+function setLoaderData(overrides: Record<string, unknown> = {}) {
+  useLoaderData.mockReturnValue({
+    formData: {
+      Name: "",
+      Type: "",
+      DefaultGLAccount: "",
+      DefaultCostCenter: "",
+      Active: false,
+    },
+    roleAliases: [{ id: 2, name: "Chair" }],
+    ...overrides,
+  });
+}
+
+describe("edit group clientLoader", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+  });
+
+  it("loads the group named by the URL", async () => {
+    const data = { formData: {}, roleAliases: [] };
+    fetchGroupPageData.mockResolvedValue(data);
+
+    await expect(clientLoader({ params: { id: "7" } })).resolves.toBe(data);
+    expect(fetchGroupPageData).toHaveBeenCalledWith(7);
+  });
+
+  it("propagates a failed load to React Router's error boundary", async () => {
+    fetchGroupPageData.mockRejectedValue(new Error("fail"));
+
+    await expect(clientLoader({ params: { id: "7" } })).rejects.toThrow("fail");
+  });
+});
+
 describe("EditGroupPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loadGroupData.mockImplementation(
-      async ({ setLoading, setRoleAliases }: any) => {
-        setRoleAliases([{ id: 2, name: "Chair" }]);
-        setLoading(false);
-      },
-    );
+    setLoaderData();
     loadGroupMemberships.mockImplementation(
       async (
         _id: number,
@@ -125,34 +169,17 @@ describe("EditGroupPage", () => {
     );
   });
 
-  it("shows a loading indicator while loading, then renders the form", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadGroupData.mockImplementation(
-      ({ setLoading }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
+  it("renders the form straight away, with no loading indicator", () => {
     renderPage(1);
 
-    expect(screen.getByText("loading")).toBeInTheDocument();
-
-    resolveLoad?.();
-
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
-    );
+    expect(screen.queryByText("loading")).not.toBeInTheDocument();
   });
 
   it("loads group data and memberships for the given id", async () => {
     renderPage(7);
 
-    await waitFor(() => expect(loadGroupData).toHaveBeenCalled());
-    expect(loadGroupData.mock.calls[0][0]).toMatchObject({ id: 7 });
+    await waitFor(() => expect(loadGroupPicture).toHaveBeenCalled());
+    expect(loadGroupPicture.mock.calls[0][0]).toMatchObject({ id: 7 });
     expect(loadGroupMemberships).toHaveBeenCalledWith(
       7,
       expect.any(Number),
@@ -280,7 +307,7 @@ describe("EditGroupPage", () => {
   it("uploads a profile picture when a file is chosen", async () => {
     renderPage(1);
 
-    await waitFor(() => expect(loadGroupData).toHaveBeenCalled());
+    await waitFor(() => expect(loadGroupPicture).toHaveBeenCalled());
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -293,7 +320,7 @@ describe("EditGroupPage", () => {
   it("opens the file picker when the profile picture is clicked", async () => {
     renderPage(1);
 
-    await waitFor(() => expect(loadGroupData).toHaveBeenCalled());
+    await waitFor(() => expect(loadGroupPicture).toHaveBeenCalled());
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -386,13 +413,9 @@ describe("EditGroupPage", () => {
   });
 
   it("shows a full-size profile picture once one has loaded", async () => {
-    loadGroupData.mockImplementation(
-      async ({ setLoading, setRoleAliases, setGroupPictureSrc }: any) => {
-        setRoleAliases([{ id: 2, name: "Chair" }]);
-        setGroupPictureSrc("blob:group-picture");
-        setLoading(false);
-      },
-    );
+    loadGroupPicture.mockImplementation(async ({ setGroupPictureSrc }: any) => {
+      setGroupPictureSrc("blob:group-picture");
+    });
     renderPage(1);
 
     const img = await screen.findByAltText("Profile");

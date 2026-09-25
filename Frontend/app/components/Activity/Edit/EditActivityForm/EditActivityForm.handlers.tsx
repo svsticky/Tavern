@@ -20,31 +20,13 @@ import { appendErrorMessage } from "~/util/error.util";
 
 export { formatDateOnly, formatForInput } from "~/util/date.util";
 
-/**
- * Fetches active association groups for the current membership year from the API.
- *
- * @param setLoading - Callback to update the loading state.
- * @param setGroups - Callback to update the state with the retrieved groups.
- * @returns A Promise that resolves when the groups are loaded or the request fails.
- */
-export const loadGroups = async (
-  setLoading: (loading: boolean) => void,
-  setGroups: (groups: GroupResponseDto[]) => void,
-) => {
-  try {
-    const groupsRes = await getGroups({
-      query: { IncludeInactive: false, MembershipYear: getCommitteeYear() },
-    });
-    if (groupsRes.error) {
-      throw groupsRes.error ?? new Error("Failed to load groups");
-    }
-    if (groupsRes.data) setGroups(groupsRes.data);
-  } catch (error) {
-    console.error("Error loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
+export const fetchGroups = async (): Promise<GroupResponseDto[]> => {
+  const groupsRes = await getGroups({
+    query: { IncludeInactive: false, MembershipYear: getCommitteeYear() },
+  });
+  if (groupsRes.error || !groupsRes.data)
+    throw groupsRes.error ?? new Error("Failed to load groups");
+  return groupsRes.data;
 };
 
 /**

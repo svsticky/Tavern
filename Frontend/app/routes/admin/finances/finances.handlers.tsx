@@ -18,13 +18,58 @@ import { appendErrorMessage } from "~/util/error.util";
  */
 type SetUnpaidStateArgs = {
   balances: EnrollmentBalance[];
-  setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
+  setUnpaidBalances: (value: EnrollmentBalance[]) => void;
   setTotalUnpaid: (value: number) => void;
   setOpenPayments: (value: number) => void;
-  setUnpaidActivities: (value: Activity[] | null) => void;
+  setUnpaidActivities: (value: Activity[]) => void;
   setMembersWithOverduePayment: (
-    value: { member: Member; enrollments: EnrollmentBalance[] }[] | null,
+    value: { member: Member; enrollments: EnrollmentBalance[] }[],
   ) => void;
+};
+
+/** Shared by the setter-based refresh and the loader. */
+export const deriveUnpaidPaymentState = (balances: EnrollmentBalance[]) => {
+  const unpaidBalances = balances.filter((b) => b.balance !== 0);
+  const totalUnpaid = balances.reduce(
+    (sum, payment) => sum + payment.balance,
+    0,
+  );
+  const openPayments = balances.length;
+
+  const unpaidActivities = balances.reduce(
+    (activities: Activity[], payment) => {
+      if (
+        payment.enrollment.activity &&
+        !activities.some((a) => a.id === payment.enrollment.activity?.id)
+      ) {
+        activities.push(payment.enrollment.activity);
+      }
+      return activities;
+    },
+    [],
+  );
+
+  const membersMap: Record<
+    string,
+    { member: Member; enrollments: EnrollmentBalance[] }
+  > = {};
+  balances.forEach((payment) => {
+    const member = payment.enrollment.member;
+    if (member?.id) {
+      if (!membersMap[member.id]) {
+        membersMap[member.id] = { member, enrollments: [] };
+      }
+      membersMap[member.id].enrollments.push(payment);
+    }
+  });
+
+  return {
+    unpaidBalances,
+    totalUnpaid,
+    openPayments,
+    unpaidActivities,
+    membersWithOverduePayment: Object.values(membersMap),
+  };
 };
 
 /**
@@ -41,55 +86,24 @@ export const setUnpaidPaymentState = ({
   setUnpaidActivities,
   setMembersWithOverduePayment,
 }: SetUnpaidStateArgs) => {
-  setUnpaidBalances(balances.filter((b) => b.balance !== 0));
-  const totalUnpaidAmount = balances.reduce(
-    (sum, payment) => sum + payment.balance,
-    0,
-  );
-  setTotalUnpaid(totalUnpaidAmount);
-  setOpenPayments(balances.length);
-
-  const activitiesWithUnpaid = balances.reduce(
-    (activities: Activity[], payment) => {
-      if (
-        payment.enrollment.activity &&
-        !activities.some((a) => a.id === payment.enrollment.activity?.id)
-      ) {
-        payment.enrollment.activity &&
-          activities.push(payment.enrollment.activity);
-      }
-      return activities;
-    },
-    [],
-  );
-  setUnpaidActivities(activitiesWithUnpaid);
-
-  const membersMap: Record<
-    string,
-    { member: Member; enrollments: EnrollmentBalance[] }
-  > = {};
-  balances.forEach((payment) => {
-    const member = payment.enrollment.member;
-    if (member?.id) {
-      if (!membersMap[member.id]) {
-        membersMap[member.id] = { member, enrollments: [] };
-      }
-      membersMap[member.id].enrollments.push(payment);
-    }
-  });
-  setMembersWithOverduePayment(Object.values(membersMap));
+  const derived = deriveUnpaidPaymentState(balances);
+  setUnpaidBalances(derived.unpaidBalances);
+  setTotalUnpaid(derived.totalUnpaid);
+  setOpenPayments(derived.openPayments);
+  setUnpaidActivities(derived.unpaidActivities);
+  setMembersWithOverduePayment(derived.membersWithOverduePayment);
 };
 
 /**
  * Arguments for the refreshUnpaidPayments handler.
  */
 type RefreshUnpaidArgs = {
-  setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
+  setUnpaidBalances: (value: EnrollmentBalance[]) => void;
   setTotalUnpaid: (value: number) => void;
   setOpenPayments: (value: number) => void;
-  setUnpaidActivities: (value: Activity[] | null) => void;
+  setUnpaidActivities: (value: Activity[]) => void;
   setMembersWithOverduePayment: (
-    value: { member: Member; enrollments: EnrollmentBalance[] }[] | null,
+    value: { member: Member; enrollments: EnrollmentBalance[] }[],
   ) => void;
 };
 
@@ -306,82 +320,40 @@ export const handlePaymentsExport = (
   });
 };
 
-/**
- * Arguments for the loadFinancesData handler.
- */
-type LoadFinancesArgs = {
-  setLoading: (loading: boolean) => void;
-  setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
-  setTotalUnpaid: (value: number) => void;
-  setOpenPayments: (value: number) => void;
-  setUnpaidActivities: (value: Activity[] | null) => void;
-  setMembersWithOverduePayment: (
-    value: { member: Member; enrollments: EnrollmentBalance[] }[] | null,
-  ) => void;
-  setOverpaidBalances: (value: EnrollmentBalance[] | null) => void;
+export type FinancesData = ReturnType<typeof deriveUnpaidPaymentState> & {
+  overpaidBalances: EnrollmentBalance[];
 };
 
-/**
- * The primary data loader for the Finances page.
- * Orchestrates calls for unpaid debts and overpaid credits. Expired activities are loaded
- * separately (see loadExpiredActivities) since they're paginated by association year.
- *
- * @async
- * @param {LoadFinancesArgs} args - Complete set of state setters for the finances dashboard.
- */
-export const loadFinancesData = async ({
-  setLoading,
-  setUnpaidBalances,
-  setTotalUnpaid,
-  setOpenPayments,
-  setUnpaidActivities,
-  setMembersWithOverduePayment,
-  setOverpaidBalances,
-}: LoadFinancesArgs) => {
-  try {
-    setLoading(true);
+/** Expired activities are fetched separately (see `fetchExpiredActivities`) because they're filtered by year. */
+export const fetchFinancesData = async (): Promise<FinancesData> => {
+  const [unpaidBalancesResponse, overpaidBalancesResponse] = await Promise.all([
+    getPaymentsUnpaid({
+      query: {
+        allUsers: true,
+      },
+    }),
+    getPaymentsOverpaid(),
+  ]);
 
-    const [unpaidBalancesResponse, overpaidBalancesResponse] =
-      await Promise.all([
-        getPaymentsUnpaid({
-          query: {
-            allUsers: true,
-          },
-        }),
-        getPaymentsOverpaid(),
-      ]);
-
-    if (unpaidBalancesResponse.data) {
-      setUnpaidPaymentState({
-        balances: unpaidBalancesResponse.data,
-        setUnpaidBalances,
-        setTotalUnpaid,
-        setOpenPayments,
-        setUnpaidActivities,
-        setMembersWithOverduePayment,
-      });
-    }
-
-    if (overpaidBalancesResponse.data) {
-      setOverpaidBalances(
-        overpaidBalancesResponse.data.filter((b) => b.balance !== 0),
-      );
-    }
-  } catch (error) {
-    console.error("Error while fetching data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
+  if (unpaidBalancesResponse.error || !unpaidBalancesResponse.data) {
+    throw (
+      unpaidBalancesResponse.error ??
+      new Error("Failed to load unpaid payments")
+    );
   }
-};
+  if (overpaidBalancesResponse.error || !overpaidBalancesResponse.data) {
+    throw (
+      overpaidBalancesResponse.error ??
+      new Error("Failed to load overpaid payments")
+    );
+  }
 
-/**
- * Arguments for the loadExpiredActivities handler.
- */
-type LoadExpiredActivitiesArgs = {
-  year: number;
-  setLoadingExpiredActivities: (loading: boolean) => void;
-  setExpiredActivities: (value: ActivityResponseDto[] | null) => void;
+  return {
+    ...deriveUnpaidPaymentState(unpaidBalancesResponse.data),
+    overpaidBalances: overpaidBalancesResponse.data.filter(
+      (b) => b.balance !== 0,
+    ),
+  };
 };
 
 /**
@@ -392,35 +364,25 @@ type LoadExpiredActivitiesArgs = {
  * activities from long-settled years don't pile up in the queue indefinitely.
  *
  * @async
- * @param {LoadExpiredActivitiesArgs} args - The target year and state setters to update.
+ * @param {number} year - The association year to fetch expired activities for.
  */
-export const loadExpiredActivities = async ({
-  year,
-  setLoadingExpiredActivities,
-  setExpiredActivities,
-}: LoadExpiredActivitiesArgs) => {
-  try {
-    setLoadingExpiredActivities(true);
+export const fetchExpiredActivities = async (
+  year: number,
+): Promise<ActivityResponseDto[]> => {
+  const response = await getActivities({
+    query: {
+      IncludePast: true,
+      IncludeFuture: false,
+      OpenForPayment: false,
+      Year: year,
+      Page: 1,
+      PageSize: 50,
+    },
+  });
 
-    const response = await getActivities({
-      query: {
-        IncludePast: true,
-        IncludeFuture: false,
-        OpenForPayment: false,
-        Year: year,
-        Page: 1,
-        PageSize: 50,
-      },
-    });
-
-    if (response.error || !response.data)
-      throw new Error("Failed to load expired activities");
-
-    setExpiredActivities(response.data);
-  } catch (error) {
-    console.error("Error while fetching expired activities:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoadingExpiredActivities(false);
+  if (response.error || !response.data) {
+    throw response.error ?? new Error("Failed to load expired activities");
   }
+
+  return response.data;
 };

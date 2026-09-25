@@ -6,12 +6,11 @@ import {
   PencilIcon,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useTokenParsed } from "~/context/AuthContext";
 import {
   getActivityEnrollmentStatus,
   hasEnrollmentOpened,
@@ -58,22 +57,7 @@ export default function ActivityTile({
   className?: string;
 }) {
   const { t } = useTranslation();
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      if (!cancelled) {
-        setTokenParsed(token);
-      }
-    };
-    loadToken();
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
+  const tokenParsed = useTokenParsed();
 
   const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
   const { canEnroll } = getActivityEnrollmentStatus(activity);

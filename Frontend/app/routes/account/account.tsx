@@ -1,10 +1,9 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
+import { useTokenParsed } from "~/context/AuthContext";
 
 /**
  * The primary profile management page for the authenticated user.
@@ -22,20 +21,7 @@ import { useAuth } from "~/context/AuthContext";
  * @component
  */
 export default function AccountPage() {
-  const authService = useAuth();
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadUserId = async () => {
-      const tokenParsed = await authService.getTokenParsed();
-      setUserId(tokenParsed?.UserId || null);
-      if (!tokenParsed?.UserId) {
-        console.error("User not authenticated");
-        return;
-      }
-    };
-    loadUserId();
-  }, [authService]);
+  const userId = useTokenParsed()?.UserId ?? null;
 
   const { member } = useApp();
 

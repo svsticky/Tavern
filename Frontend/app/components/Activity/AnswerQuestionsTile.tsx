@@ -1,11 +1,9 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
 import type {
   ActivityResponseDto,
   GetSpecificationQuestionResponseDto,
 } from "~/api";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useTokenParsed } from "~/context/AuthContext";
 import { isQuestionAnswerable } from "~/util/answer.util";
 import {
   formatDateOnly,
@@ -61,16 +59,7 @@ export default function AnswerQuestionsTile({
   disabled?: boolean;
   onChange: (id: number, value: string) => void;
 }) {
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  useEffect(() => {
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      setTokenParsed(token);
-    };
-    loadToken();
-  }, [authService]);
+  const tokenParsed = useTokenParsed();
 
   if (!tokenParsed) return null;
 

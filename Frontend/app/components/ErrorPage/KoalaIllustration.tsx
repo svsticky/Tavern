@@ -1,13 +1,14 @@
 import KoalaMark from "~/components/KoalaMark";
 
-export type KoalaMood = "lost" | "forbidden";
+export type KoalaMood = "lost" | "forbidden" | "error";
 
 const INK = "#292623";
 
 /**
  * The Koala logo with an attitude, used on the error pages. The `mood` decides
  * the expression: `forbidden` gets stern eyebrows, a frown and a "no entry" sign,
- * `lost` gets worried eyebrows and bouncing question marks.
+ * `lost` gets worried eyebrows and bouncing question marks, `error` gets worried
+ * eyebrows, a wobbly mouth and bouncing exclamation marks.
  *
  * @component
  * @param {Object} props - The component properties.
@@ -57,6 +58,54 @@ const KoalaIllustration = ({
           {/* No entry sign */}
           <circle cx="840" cy="790" r="92" fill="var(--board-primary)" />
           <rect x="778" y="763" width="124" height="54" rx="12" fill="#fff" />
+        </>
+      ) : mood === "error" ? (
+        <>
+          {/* Worried eyebrows, raised towards the middle */}
+          <path
+            d="M296 528 Q350 486 414 496"
+            stroke={INK}
+            strokeWidth="26"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <path
+            d="M584 540 Q640 528 696 572"
+            stroke={INK}
+            strokeWidth="26"
+            strokeLinecap="round"
+            fill="none"
+          />
+          {/* Wobbly, nervous mouth */}
+          <path
+            d="M422 812 Q444 786 466 812 T510 812 T554 812"
+            stroke={INK}
+            strokeWidth="24"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+          />
+          {/* Floating exclamation marks */}
+          <text
+            x="452"
+            y="400"
+            fontSize="190"
+            fontWeight="800"
+            fill="var(--board-primary)"
+            className="animate-bounce"
+          >
+            !
+          </text>
+          <text
+            x="600"
+            y="300"
+            fontSize="100"
+            fontWeight="800"
+            fill="var(--board-primary)"
+            opacity="0.7"
+          >
+            !
+          </text>
         </>
       ) : (
         <>

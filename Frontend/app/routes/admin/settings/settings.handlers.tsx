@@ -31,62 +31,42 @@ const normalizeColorValue = (value: string) => {
   return trimmed;
 };
 
-/**
- * Arguments for the loadSettingsPageData handler.
- */
-type LoadSettingsArgs = {
-  setSettings: (settings: Record<string, string>) => void;
-  setAvailableGroups: (groups: GroupResponseDto[]) => void;
-  setAvailableRoles: (roles: Role[]) => void;
-  setLoading: (loading: boolean) => void;
+export type SettingsPageData = {
+  settings: Record<string, string>;
+  availableGroups: GroupResponseDto[];
+  availableRoles: Role[];
 };
 
-/**
- * Fetches and synchronizes all data required for the settings dashboard.
- * Orchestrates parallel requests for settings, groups, and roles.
- *
- * @async
- * @param {LoadSettingsArgs} args - Configuration object and state setters.
- */
-export const loadSettingsPageData = async ({
-  setSettings,
-  setAvailableGroups,
-  setAvailableRoles,
-  setLoading,
-}: LoadSettingsArgs) => {
-  try {
-    const [settingsRes, groupsRes, rolesRes] = await Promise.all([
-      getSettings(),
-      getGroups({ query: { IncludeInactive: true } }),
-      getRoles(),
-    ]);
+export const fetchSettingsPageData = async (): Promise<SettingsPageData> => {
+  const [settingsRes, groupsRes, rolesRes] = await Promise.all([
+    getSettings(),
+    getGroups({ query: { IncludeInactive: true } }),
+    getRoles(),
+  ]);
 
-    if (settingsRes.error || !settingsRes.data)
-      throw new Error("Failed to load settings");
-    if (groupsRes.error || !groupsRes.data)
-      throw new Error("Failed to load groups");
-    if (rolesRes.error || !rolesRes.data)
-      throw new Error("Failed to load roles");
+  if (settingsRes.error || !settingsRes.data)
+    throw settingsRes.error ?? new Error("Failed to load settings");
+  if (groupsRes.error || !groupsRes.data)
+    throw groupsRes.error ?? new Error("Failed to load groups");
+  if (rolesRes.error || !rolesRes.data)
+    throw rolesRes.error ?? new Error("Failed to load roles");
 
-    const settingsObj = settingsRes.data.reduce(
-      (acc: Record<string, string>, s: Setting) => {
-        if (s.name)
-          acc[s.name] = BOARD_COLOR_SETTINGS.has(s.name)
-            ? normalizeColorValue(s.value || "")
-            : s.value || "";
-        return acc;
-      },
-      {},
-    );
-    setSettings(settingsObj);
-    setAvailableGroups(groupsRes.data);
-    setAvailableRoles(rolesRes.data);
-  } catch (error) {
-    console.error("Error loading settings page data:", error);
-    toast.error(appendErrorMessage(t("failed_to_load_settings"), error));
-  } finally {
-    setLoading(false);
-  }
+  const settings = settingsRes.data.reduce(
+    (acc: Record<string, string>, s: Setting) => {
+      if (s.name)
+        acc[s.name] = BOARD_COLOR_SETTINGS.has(s.name)
+          ? normalizeColorValue(s.value || "")
+          : s.value || "";
+      return acc;
+    },
+    {},
+  );
+
+  return {
+    settings,
+    availableGroups: groupsRes.data,
+    availableRoles: rolesRes.data,
+  };
 };
 
 /**

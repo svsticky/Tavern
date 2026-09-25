@@ -1,10 +1,15 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { useNavigate } from "react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useLoaderData,
+  useNavigate,
+  useRevalidator,
+  useSearchParams,
+} from "react-router";
 import { type GroupResponseDto, getGroups } from "~/api";
 import CreateGroupOverlay from "~/components/Group/CreateGroupOverlay/CreateGroupOverlay";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
@@ -12,14 +17,34 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { appendErrorMessage } from "~/util/error.util";
+import { shouldRevalidateIgnoring } from "~/util/infiniteList.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+
+const SEARCH_PARAM = "q";
+
+export async function clientLoader(): Promise<{ groups: GroupResponseDto[] }> {
+  await requireTokenParsed();
+
+  const response = await getGroups();
+  if (response.error || !response.data) {
+    throw response.error ?? new Error("Failed to fetch groups");
+  }
+
+  return { groups: response.data };
+}
+
+/** Filtering is client-side, so typing must not refetch; the text is in the URL only so back-navigation restores it. */
+export const shouldRevalidate = shouldRevalidateIgnoring(SEARCH_PARAM);
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative management page for viewing, filtering, and creating association groups.
  *
  * This component provides a high-level overview of all organizational entities (Committees,
  * Working Groups, etc.). It features:
- * - **Asynchronous Loading**: Fetches group data from the API on mount with error handling.
  * - **Dynamic Filtering**: Client-side search that filters groups by name or type.
  * - **Creation Workflow**: Integrated `Modal` and `CreateGroupOverlay` to add new groups
  *   without leaving the page.
@@ -30,51 +55,39 @@ import { appendErrorMessage } from "~/util/error.util";
  * @component
  */
 export default function Groups() {
+  const { groups } = useLoaderData<typeof clientLoader>();
   const navigate = useNavigate();
+  const revalidator = useRevalidator();
 
-  const [loading, setLoading] = useState(true);
-  const [groups, setGroups] = useState<GroupResponseDto[] | null>(null);
-  const [filteredGroups, setFilteredGroups] = useState<
-    GroupResponseDto[] | null
-  >(null);
-  const [searchQuery, setSearchQuery] = useState("");
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlSearch = searchParams.get(SEARCH_PARAM) ?? "";
+  const [searchQuery, setSearchQuery] = useState(urlSearch);
   const [createGroupModalIsOpen, setCreateGroupModalIsOpen] = useState(false);
 
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        setLoading(true);
-        const response = await getGroups();
-
-        if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to fetch groups");
-        }
-
-        setGroups(response.data);
-        setFilteredGroups(response.data);
-      } catch (error) {
-        console.error("Error fetching groups:", error);
-        toast.error(appendErrorMessage(t("loading_failed"), error));
-      } finally {
-        setLoading(false);
+    const handler = setTimeout(() => {
+      if (searchQuery === urlSearch) return;
+      const next = new URLSearchParams(searchParams);
+      if (searchQuery) {
+        next.set(SEARCH_PARAM, searchQuery);
+      } else {
+        next.delete(SEARCH_PARAM);
       }
-    };
+      setSearchParams(next, { replace: true, preventScrollReset: true });
+    }, 300);
 
-    fetchGroups();
-  }, []);
+    return () => clearTimeout(handler);
+  }, [searchQuery, urlSearch, searchParams, setSearchParams]);
 
-  useEffect(() => {
-    if (!groups) return;
-
-    const filtered = groups.filter(
-      (g) =>
-        g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        g.type.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-
-    setFilteredGroups(filtered);
-  }, [searchQuery, groups]);
+  const filteredGroups = useMemo(
+    () =>
+      groups.filter(
+        (g) =>
+          g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          g.type.toLowerCase().includes(searchQuery.toLowerCase()),
+      ),
+    [groups, searchQuery],
+  );
 
   const columns: Column<GroupResponseDto>[] = [
     {
@@ -133,6 +146,7 @@ export default function Groups() {
             <Input
               label={t("search")}
               placeholder={t("search_groups")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }
@@ -141,19 +155,20 @@ export default function Groups() {
         </div>
       </BorderedTile>
 
-      {loading ? (
-        t("loading")
-      ) : (
-        <BorderedTile className="bg-white p-0">
-          <DataTable data={filteredGroups ?? []} columns={columns} />
-        </BorderedTile>
-      )}
+      <BorderedTile className="bg-white p-0">
+        <DataTable data={filteredGroups} columns={columns} />
+      </BorderedTile>
       <Modal
         title={t("create_group")}
         isOpen={createGroupModalIsOpen}
         onClose={() => setCreateGroupModalIsOpen(false)}
       >
-        <CreateGroupOverlay onSuccess={() => window.location.reload()} />
+        <CreateGroupOverlay
+          onSuccess={() => {
+            setCreateGroupModalIsOpen(false);
+            revalidator.revalidate();
+          }}
+        />
       </Modal>
     </div>
   );

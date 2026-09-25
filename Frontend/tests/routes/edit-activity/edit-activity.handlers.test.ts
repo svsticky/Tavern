@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import {
+  fetchEditActivity,
   getEditActivityBackPath,
-  loadEditActivityData,
 } from "~/routes/edit-activity/edit-activity.handlers";
 
 const { getActivitiesById } = vi.hoisted(() => ({
@@ -11,68 +11,31 @@ const { getActivitiesById } = vi.hoisted(() => ({
 
 vi.mock("~/api", () => ({ getActivitiesById }));
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
-
-describe("loadEditActivityData", () => {
+describe("fetchEditActivity", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("does nothing but stop loading when creating a new activity", async () => {
-    const setActivity = vi.fn();
-    const setLoading = vi.fn();
-
-    await loadEditActivityData({
-      isEdit: false,
-      id: undefined,
-      setActivity,
-      setLoading,
-    });
-
-    expect(getActivitiesById).not.toHaveBeenCalled();
-    expect(setActivity).not.toHaveBeenCalled();
-    expect(setLoading).toHaveBeenCalledWith(false);
-  });
-
-  it("fetches and sets the activity when editing", async () => {
+  it("returns the activity to edit", async () => {
     const activity = { id: 5, name: "Party" } as ActivityResponseDto;
     getActivitiesById.mockResolvedValue({ data: activity });
-    const setActivity = vi.fn();
-    const setLoading = vi.fn();
 
-    await loadEditActivityData({
-      isEdit: true,
-      id: "5",
-      setActivity,
-      setLoading,
-    });
-
+    await expect(fetchEditActivity("5")).resolves.toBe(activity);
     expect(getActivitiesById).toHaveBeenCalledWith({ path: { id: 5 } });
-    expect(setActivity).toHaveBeenCalledWith(activity);
-    expect(setLoading).toHaveBeenCalledWith(false);
   });
 
-  it("logs and shows an error toast when the fetch fails", async () => {
-    getActivitiesById.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const setActivity = vi.fn();
+  it("throws the API error so React Router's error boundary handles it", async () => {
+    getActivitiesById.mockResolvedValue({ error: new Error("fail") });
 
-    await loadEditActivityData({
-      isEdit: true,
-      id: "5",
-      setActivity,
-      setLoading: vi.fn(),
-    });
+    await expect(fetchEditActivity("5")).rejects.toThrow("fail");
+  });
 
-    expect(setActivity).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
+  it("throws when the response has no data", async () => {
+    getActivitiesById.mockResolvedValue({});
+
+    await expect(fetchEditActivity("5")).rejects.toThrow(
+      "Failed to load activity",
+    );
   });
 });
 

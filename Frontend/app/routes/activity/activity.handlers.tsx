@@ -1,45 +1,29 @@
-import { t } from "i18next";
-import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivitiesById } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
+import {
+  type ActivityResponseDto,
+  getActivitiesById,
+  getGroupsById,
+} from "~/api";
 
-/**
- * Arguments for the loadActivityData handler.
- */
-type LoadActivityArgs = {
-  activityId: number;
-  setLoading: (loading: boolean) => void;
-  setActivity: (activity: ActivityResponseDto) => void;
+export const fetchActivity = async (
+  activityId: number,
+): Promise<ActivityResponseDto> => {
+  const response = await getActivitiesById({ path: { id: activityId } });
+
+  if (response.error || !response.data)
+    throw response.error ?? new Error("Failed to load activity");
+
+  return response.data;
 };
 
-/**
- * Fetches the details of a specific activity by its ID.
- *
- * @async
- * @param {LoadActivityArgs} args - Configuration, activity ID, and state setter functions.
- */
-export const loadActivityData = async ({
-  activityId,
-  setLoading,
-  setActivity,
-}: LoadActivityArgs) => {
-  try {
-    setLoading(true);
-    const activitiesResponse = await getActivitiesById({
-      path: { id: activityId },
-    });
+/** The name is decoration, so a failed lookup yields null instead of failing the page. */
+export const fetchOrganizerName = async (
+  organizerId: number | null | undefined,
+): Promise<string | null> => {
+  if (!organizerId) return null;
 
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activity");
-
-    setActivity(activitiesResponse.data);
-  } catch (error) {
-    console.error("Error while loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
+  const response = await getGroupsById({ path: { id: organizerId } });
+  return response.data?.name ?? null;
 };
 
 /**

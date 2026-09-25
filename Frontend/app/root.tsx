@@ -2,7 +2,6 @@ import type { AxiosError, AxiosResponse } from "axios";
 import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import {
-  isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
@@ -17,11 +16,14 @@ import i18n from "./i18n";
 import "./app.css";
 import { t } from "i18next";
 import Cookies from "js-cookie";
+import RouteErrorBoundary from "./components/ErrorPage/RouteErrorBoundary";
 import FaviconHandler from "./components/FavIconHandler";
 import StickyLoadingLogo from "./components/StickyLoadingLogo";
 import { AppProvider } from "./context/AppContext";
+import { BackNavigationProvider } from "./context/BackNavigationContext";
 import { getActiveAuthService } from "./layout/auth-service";
 import { getEnv } from "./util/config.utils";
+import { installCacheInvalidation } from "./util/resourceCache.util";
 import {
   BOARD_THEME_SETTINGS_UPDATED_EVENT,
   loadBoardThemeSettings,
@@ -46,6 +48,8 @@ client.setConfig({
     return undefined;
   },
 });
+
+installCacheInvalidation(client.instance);
 
 client.instance.interceptors.response.use(
   async (response: AxiosResponse) => response,
@@ -216,38 +220,19 @@ export default function App() {
 
   return (
     <AppProvider>
-      <FaviconHandler />
-      {isClient && <Toaster position="bottom-right" />}
-      <Outlet />
+      <BackNavigationProvider>
+        <FaviconHandler />
+        {isClient && <Toaster position="bottom-right" />}
+        <Outlet />
+      </BackNavigationProvider>
     </AppProvider>
   );
 }
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
-
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
-  }
-
+export function ErrorBoundary() {
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
+    <main className="min-h-screen flex items-center justify-center p-4">
+      <RouteErrorBoundary />
     </main>
   );
 }

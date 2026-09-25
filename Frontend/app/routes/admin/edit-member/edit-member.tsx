@@ -1,15 +1,11 @@
 import { t } from "i18next";
 import { CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import type {
-  GroupMembershipResponseDto,
-  Study,
-  StudyEnrollmentResponseDto,
-  StudyStatus,
-} from "~/api";
+import { useLoaderData, useNavigate, useParams } from "react-router";
+import type { StudyEnrollmentResponseDto, StudyStatus } from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
@@ -24,7 +20,9 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate } from "~/util/date.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
+  fetchMemberPageData,
   handleAddEnrollment,
   handleDeleteEnrollment,
   handleDeleteMember,
@@ -32,8 +30,16 @@ import {
   handleMarkMembershipAsPaid,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
-  loadMemberData,
 } from "./edit-member.handlers";
+
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  await requireTokenParsed();
+  return fetchMemberPageData(params.id!);
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative page for viewing and editing a member's complete profile.
@@ -56,44 +62,37 @@ import {
 export default function EditMemberPage() {
   const navigate = useNavigate();
   const { id: memberId } = useParams<{ id: string }>();
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  // Only marks a mutation in flight; the initial data comes from the loader.
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmModal, confirm] = useConfirm();
   const [markingPaid, setMarkingPaid] = useState(false);
-  const [hasPaidMembership, setHasPaidMembership] = useState(true);
-  const [isBegunstiger, setIsBegunstiger] = useState(false);
-  const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
-    null,
+  const [hasPaidMembership, setHasPaidMembership] = useState(
+    loaderData.hasPaidMembership,
   );
-  const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>(
-    [],
+  const [isBegunstiger, setIsBegunstiger] = useState(loaderData.isBegunstiger);
+  const [enrollments, setEnrollments] = useState(loaderData.enrollments);
+  const [groupMemberships, setGroupMemberships] = useState(
+    loaderData.groupMemberships,
   );
-  const [groupMemberships, setGroupMemberships] = useState<
-    GroupMembershipResponseDto[]
-  >([]);
-  const [availableStudies, setAvailableStudies] = useState<Study[]>([]);
+  const [availableStudies, setAvailableStudies] = useState(
+    loaderData.availableStudies,
+  );
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(loaderData.email);
+  const [formData, setFormData] = useState(loaderData.formData);
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    studentNumber: "",
-    phoneNumber: "",
-    street: "",
-    houseNumber: "",
-    postalCode: "",
-    city: "",
-    parentPhoneNumber: "",
-    preferredLanguage: "NL",
-    notes: "",
-    gratie: false,
-    lidVanVerdienste: false,
-    ereLid: false,
-    begunstiger: false,
-    suspended: false,
-    dateOfBirth: "",
-  });
+  // A re-run loader (another member, a revalidation) hands back fresh data to start over from.
+  useEffect(() => {
+    setHasPaidMembership(loaderData.hasPaidMembership);
+    setIsBegunstiger(loaderData.isBegunstiger);
+    setEnrollments(loaderData.enrollments);
+    setGroupMemberships(loaderData.groupMemberships);
+    setAvailableStudies(loaderData.availableStudies);
+    setEmail(loaderData.email);
+    setFormData(loaderData.formData);
+  }, [loaderData]);
 
   const enrollmentColumns: Column<StudyEnrollmentResponseDto>[] = [
     {
@@ -150,26 +149,6 @@ export default function EditMemberPage() {
       ),
     },
   ];
-
-  useEffect(() => {
-    const cleanupPromise = loadMemberData({
-      memberId,
-      setFormData,
-      setEmail,
-      setEnrollments,
-      setGroupMemberships,
-      setAvailableStudies,
-      setProfilePictureSrc,
-      setHasPaidMembership,
-      setIsBegunstiger,
-      setLoading,
-    });
-    return () => {
-      cleanupPromise.then((cleanup) => cleanup?.());
-    };
-  }, [memberId]);
-
-  if (loading) return t("loading");
 
   return (
     <>

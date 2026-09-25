@@ -6,11 +6,37 @@ import { getEnv } from "~/util/config.utils";
 
 let activeAuthService: IAuthService | null = null;
 
-/**
- * Returns the currently active authentication service instance.
- */
-export const getActiveAuthService = (): IAuthService | null =>
-  activeAuthService;
+const createAuthService = (): IAuthService | null => {
+  const authServiceVar = (getEnv("AUTH_SYSTEM") ?? "keycloak")
+    .trim()
+    .toLowerCase();
+
+  if (authServiceVar === "keycloak") {
+    return new KeycloakAuthService();
+  }
+  return null;
+};
+
+/** Built on first call, since route loaders run before any layout renders. */
+export const getActiveAuthService = (): IAuthService | null => {
+  if (!activeAuthService && typeof window !== "undefined") {
+    activeAuthService = createAuthService();
+  }
+  return activeAuthService;
+};
+
+/** Test-only: lets each test observe a fresh construction. */
+export const __resetAuthServiceForTests = () => {
+  activeAuthService = null;
+};
+
+/** Resolves once auth init is done; `init()` is idempotent, so this doesn't race the provider's own init. */
+export const waitForAuthReady = async (): Promise<IAuthService | null> => {
+  const authService = getActiveAuthService();
+  if (!authService) return null;
+  await authService.init();
+  return authService;
+};
 
 /**
  * Layout component responsible for providing authentication context to the app.
@@ -18,20 +44,12 @@ export const getActiveAuthService = (): IAuthService | null =>
  * @component
  */
 export default function AuthServiceLayout() {
-  const authServiceVar = (getEnv("AUTH_SYSTEM") ?? "keycloak")
-    .trim()
-    .toLowerCase();
-
-  const authService = React.useMemo(() => {
-    let service: IAuthService | null = null;
-    if (authServiceVar === "keycloak") {
-      service = new KeycloakAuthService();
-    }
-    activeAuthService = service;
-    return service;
-  }, [authServiceVar]);
+  const authService = React.useMemo(getActiveAuthService, []);
 
   if (!authService) {
+    const authServiceVar = (getEnv("AUTH_SYSTEM") ?? "keycloak")
+      .trim()
+      .toLowerCase();
     return <div>Unsupported authentication system: {authServiceVar}</div>;
   }
 

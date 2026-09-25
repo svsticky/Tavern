@@ -2,7 +2,10 @@ import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import AuthServiceLayout, { getActiveAuthService } from "~/layout/auth-service";
+import AuthServiceLayout, {
+  __resetAuthServiceForTests,
+  getActiveAuthService,
+} from "~/layout/auth-service";
 
 const { MockKeycloakAuthService, instances } = vi.hoisted(() => {
   const instances: unknown[] = [];
@@ -37,6 +40,7 @@ describe("AuthServiceLayout", () => {
   afterEach(() => {
     instances.length = 0;
     vi.unstubAllEnvs();
+    __resetAuthServiceForTests();
   });
 
   it("instantiates a KeycloakAuthService by default and renders its provider around the outlet", () => {

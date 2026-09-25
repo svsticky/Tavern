@@ -1,9 +1,8 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useTokenParsed } from "~/context/AuthContext";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 
 /**
@@ -24,38 +23,24 @@ import { isBoardOrCandidateBoard } from "~/util/group.util";
  */
 export default function AdminLayout() {
   const { boardGroupId, candidateBoardGroupId } = useApp();
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  // The token is known synchronously, so scroll restoration finds a full-height page on the first commit.
+  const tokenParsed = useTokenParsed();
   const navigate = useNavigate();
-  const [isLoading, setLoading] = useState(true);
+
+  const isReady =
+    tokenParsed !== null &&
+    boardGroupId !== null &&
+    candidateBoardGroupId !== null;
+  const isAuthorized = isReady && isBoardOrCandidateBoard(tokenParsed);
 
   useEffect(() => {
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      setTokenParsed(token);
-    };
-    loadToken();
-  }, [authService]);
-
-  useEffect(() => {
-    if (!tokenParsed) return;
-    if (
-      boardGroupId === null ||
-      candidateBoardGroupId === null ||
-      !tokenParsed
-    ) {
-      return;
-    }
-    if (!isBoardOrCandidateBoard(tokenParsed)) {
+    if (isReady && !isAuthorized) {
       navigate("/403");
-      return;
     }
+  }, [isReady, isAuthorized, navigate]);
 
-    setLoading(false);
-  }, [boardGroupId, candidateBoardGroupId, navigate, tokenParsed]);
-
-  if (isLoading) {
-    return `${t("loading")}`;
+  if (!isAuthorized) {
+    return isReady ? null : `${t("loading")}`;
   }
 
   return <Outlet />;

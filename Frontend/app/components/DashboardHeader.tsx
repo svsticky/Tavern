@@ -11,12 +11,10 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import {
   type ActivityResponseDto,
-  getEnrollments,
   getPaymentsUnpaid,
   postPaymentsActivity,
 } from "~/api";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useAuth, useTokenParsed } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import Tile from "./Tiles/Tile";
@@ -27,10 +25,18 @@ import Button from "./UI/Button";
  * @interface DashboardHeaderProps
  * @property {string} name - The display name of the user to be greeted.
  * @property {ActivityResponseDto} [nextActivity] - Data for the user's next scheduled activity, if one exists.
+ * @property {number} outstandingPayments - The total outstanding balance across unpaid activity enrollments.
+ * @property {number[]} unpaidActivityIds - The activity ids backing `outstandingPayments`.
+ * @property {number} pastEnrollmentAmount - How many enrollments are for activities that have already ended.
+ * @property {number} comingEnrollmentAmount - How many enrollments are for activities still upcoming.
  */
 type DashboardHeaderProps = {
   name: string;
   nextActivity?: ActivityResponseDto;
+  outstandingPayments: number;
+  unpaidActivityIds: number[];
+  pastEnrollmentAmount: number;
+  comingEnrollmentAmount: number;
 };
 
 // After returning from a Mollie checkout, the payment webhook may not have landed yet, so a
@@ -65,7 +71,6 @@ function sleep(ms: number, signal: AbortSignal) {
  * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
  * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
  *
- * It manages its own data fetching state for payments and enrollment totals.
  *
  * @component
  * @param {DashboardHeaderProps} props - The component properties.
@@ -73,65 +78,45 @@ function sleep(ms: number, signal: AbortSignal) {
 export default function DashboardHeader({
   name,
   nextActivity,
+  outstandingPayments: initialOutstandingPayments,
+  unpaidActivityIds: initialUnpaidActivityIds,
+  pastEnrollmentAmount,
+  comingEnrollmentAmount,
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const _authService = useAuth();
+  const tokenParsed = useTokenParsed();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState<boolean>(true);
   const [confirmingPayment, setConfirmingPayment] = useState<boolean>(false);
+  const [outstandingPayments, setOutstandingPayments] = useState<number>(
+    initialOutstandingPayments,
+  );
+  const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>(
+    initialUnpaidActivityIds,
+  );
 
-  const [outstandingPayments, setOutstandingPayments] = useState<number>(0);
-  const [pastEnrollmentAmount, setPastEnrollmentAmount] = useState<number>(0);
-  const [comingEnrollmentAmount, setComingEnrollmentAmount] =
-    useState<number>(0);
-  const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>([]);
-
-  // t is intentionally omitted from the deps below: i18next-http-backend loads
-  // translations over HTTP, so t gets a new reference shortly after mount once that
-  // resolves - depending on it here would restart this fetch/poll cycle for an
-  // unrelated reason. t is still used inside via closure for the (rare) error toast.
+  // After a Mollie checkout the payment webhook may not have landed yet (seen taking up to ~30s), so poll
+  // just the payments endpoint instead of trusting the loader's snapshot.
+  // `t` is left out of the deps on purpose: it gets a new reference once translations load and would restart the poll.
   // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
   useEffect(() => {
+    const returningFromPayment =
+      new URLSearchParams(window.location.search).get("paymentReturn") ===
+      "activity";
+    if (!returningFromPayment) return;
+
     const controller = new AbortController();
     const { signal } = controller;
 
-    async function loadData() {
-      if (!authService.isAuthenticated()) {
-        setLoading(false);
-        return;
-      }
-
-      const parsedToken = await authService.getTokenParsed();
-      if (signal.aborted) return;
-
-      setTokenParsed(parsedToken);
-
-      if (!parsedToken) {
-        console.error("Failed to parse token");
-        setLoading(false);
-        return;
-      }
-
-      const returningFromPayment =
-        new URLSearchParams(window.location.search).get("paymentReturn") ===
-        "activity";
-
+    async function pollUntilSettled() {
       try {
         let attempt = 0;
 
         while (true) {
-          const [outstandingPaymentsResponse, enrollmentAmountResponse] =
-            await Promise.all([
-              getPaymentsUnpaid({ signal }),
-              getEnrollments({
-                query: {
-                  FromMemberId: parsedToken.UserId,
-                },
-                signal,
-              }),
-            ]);
+          const outstandingPaymentsResponse = await getPaymentsUnpaid({
+            signal,
+          });
 
           if (outstandingPaymentsResponse.error) {
             throw new Error(
@@ -140,20 +125,11 @@ export default function DashboardHeader({
             );
           }
 
-          if (enrollmentAmountResponse.error) {
-            throw new Error(
-              String(enrollmentAmountResponse.message) ||
-                "Failed to load enrollments",
-            );
-          }
-
           attempt++;
           const stillUnpaid =
             (outstandingPaymentsResponse.data?.length ?? 0) > 0;
           const isLastAttempt =
-            !returningFromPayment ||
-            !stillUnpaid ||
-            attempt >= PAYMENT_RETURN_MAX_POLL_ATTEMPTS;
+            !stillUnpaid || attempt >= PAYMENT_RETURN_MAX_POLL_ATTEMPTS;
 
           if (isLastAttempt) {
             if (outstandingPaymentsResponse.data) {
@@ -170,27 +146,6 @@ export default function DashboardHeader({
               );
             }
 
-            if (enrollmentAmountResponse.data) {
-              const now = Date.now();
-              let past = 0;
-              let coming = 0;
-              for (let i = 0; i < enrollmentAmountResponse.data.length; i++) {
-                const enrollment = enrollmentAmountResponse.data[i];
-                const activityDate = new Date(
-                  enrollment.activity.dateTimeEnd,
-                ).getTime();
-                if (activityDate < now) {
-                  past++;
-                } else {
-                  coming++;
-                }
-              }
-              setPastEnrollmentAmount(past);
-              setComingEnrollmentAmount(coming);
-            } else {
-              throw new Error("No enrollment data returned from API");
-            }
-
             break;
           }
 
@@ -198,36 +153,29 @@ export default function DashboardHeader({
           await sleep(PAYMENT_RETURN_POLL_INTERVAL_MS, signal);
         }
 
-        setConfirmingPayment(false);
-
-        if (returningFromPayment) {
-          const url = new URL(window.location.href);
-          url.searchParams.delete("paymentReturn");
-          window.history.replaceState({}, "", url.toString());
-        }
+        const url = new URL(window.location.href);
+        url.searchParams.delete("paymentReturn");
+        window.history.replaceState({}, "", url.toString());
       } catch (error) {
         // A superseded run (aborted on cleanup) rejects here via the aborted
         // fetches/sleep - bail out silently instead of writing stale state or an
         // error toast for a run nobody's waiting on anymore.
         if (signal.aborted) return;
 
-        console.error("Error while loading outstanding payments:", error);
-        setOutstandingPayments(0);
-
+        console.error("Error while confirming payment:", error);
         toast.error(appendErrorMessage(t("dashboard_data_load_error"), error));
       } finally {
         if (!signal.aborted) {
-          setLoading(false);
           setConfirmingPayment(false);
         }
       }
     }
 
-    loadData();
+    pollUntilSettled();
     return () => {
       controller.abort();
     };
-  }, [authService]);
+  }, []);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
@@ -280,9 +228,7 @@ export default function DashboardHeader({
             <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
               <p>{t("enrollments")}</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl">
-                  {loading ? t("loading") : comingEnrollmentAmount}
-                </p>
+                <p className="text-2xl">{comingEnrollmentAmount}</p>
                 <CircleCheckBig />
               </div>
             </Tile>
@@ -291,9 +237,7 @@ export default function DashboardHeader({
             <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
               <p>{t("attended")}</p>
               <div className="flex items-center gap-2">
-                <p className="text-2xl">
-                  {loading ? t("loading") : pastEnrollmentAmount}
-                </p>
+                <p className="text-2xl">{pastEnrollmentAmount}</p>
                 <TrendingUp />
               </div>
             </Tile>
@@ -305,10 +249,8 @@ export default function DashboardHeader({
               <div>
                 <p>{t("outstanding_payments")}</p>
                 <p>
-                  {loading
-                    ? confirmingPayment
-                      ? t("confirming_payment")
-                      : t("loading")
+                  {confirmingPayment
+                    ? t("confirming_payment")
                     : `€${outstandingPayments.toFixed(2)}`}
                 </p>
               </div>
@@ -316,7 +258,9 @@ export default function DashboardHeader({
                 onClick={payActivities}
                 variant="secondary"
                 disabled={
-                  loading || loadingPayments || unpaidActivityIds.length === 0
+                  confirmingPayment ||
+                  loadingPayments ||
+                  unpaidActivityIds.length === 0
                 }
               >
                 {loadingPayments ? t("paying") : t("pay")}

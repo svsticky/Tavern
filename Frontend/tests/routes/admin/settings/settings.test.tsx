@@ -4,7 +4,7 @@ import type { GroupResponseDto, Role } from "~/api";
 import { renderWithProviders } from "~/testUtils";
 
 const {
-  loadSettingsPageData,
+  fetchSettingsPageData,
   handleSettingsChange,
   handleAddRoleMapping,
   handleRemoveRoleMapping,
@@ -15,7 +15,7 @@ const {
   postGroupsPromoteBoard,
   getEnv,
 } = vi.hoisted(() => ({
-  loadSettingsPageData: vi.fn(),
+  fetchSettingsPageData: vi.fn(),
   handleSettingsChange: vi.fn(),
   handleAddRoleMapping: vi.fn(),
   handleRemoveRoleMapping: vi.fn(),
@@ -39,7 +39,7 @@ const {
 }));
 
 vi.mock("~/routes/admin/settings/settings.handlers", () => ({
-  loadSettingsPageData,
+  fetchSettingsPageData,
   handleSettingsChange,
   handleAddRoleMapping,
   handleRemoveRoleMapping,
@@ -85,7 +85,7 @@ vi.mock(
   }),
 );
 
-import SettingsPage from "~/routes/admin/settings/settings";
+import SettingsPage, { clientLoader } from "~/routes/admin/settings/settings";
 
 function defaultSettings(overrides: Record<string, string> = {}) {
   return {
@@ -112,20 +112,43 @@ function loadWith(
   groups: GroupResponseDto[] = [{ id: 1, name: "Board" } as GroupResponseDto],
   roles: Role[] = [{ id: 1, name: "Chair" } as Role],
 ) {
-  loadSettingsPageData.mockImplementation(
-    async ({
-      setSettings,
-      setAvailableGroups,
-      setAvailableRoles,
-      setLoading,
-    }: any) => {
-      setSettings(settings);
-      setAvailableGroups(groups);
-      setAvailableRoles(roles);
-      setLoading(false);
-    },
-  );
+  useLoaderData.mockReturnValue({
+    settings,
+    availableGroups: groups,
+    availableRoles: roles,
+  });
 }
+
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+const { useLoaderData } = vi.hoisted(() => ({ useLoaderData: vi.fn() }));
+vi.mock("react-router", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-router")>()),
+  useLoaderData,
+}));
+
+describe("settings clientLoader", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue({ UserId: "user-1" });
+  });
+
+  it("loads the page data", async () => {
+    const data = { settings: {}, availableGroups: [], availableRoles: [] };
+    fetchSettingsPageData.mockResolvedValue(data);
+
+    await expect(clientLoader()).resolves.toBe(data);
+  });
+
+  it("propagates a failed load to React Router's error boundary", async () => {
+    fetchSettingsPageData.mockRejectedValue(new Error("fail"));
+
+    await expect(clientLoader()).rejects.toThrow("fail");
+  });
+});
 
 describe("SettingsPage", () => {
   beforeEach(() => {
@@ -134,36 +157,11 @@ describe("SettingsPage", () => {
     loadWith(defaultSettings());
   });
 
-  it("shows a loading indicator while loading, then renders the form", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadSettingsPageData.mockImplementation(
-      ({
-        setSettings,
-        setAvailableGroups,
-        setAvailableRoles,
-        setLoading,
-      }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            // Mirror the real handler: settings/groups/roles are populated before loading
-            // flips to false, so the form never renders with an incomplete settings object
-            // (settings.PaymentProvider.toUpperCase() etc. assume it's always a string).
-            setSettings(defaultSettings());
-            setAvailableGroups([]);
-            setAvailableRoles([]);
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
+  it("renders the form straight away, with no loading indicator", () => {
     renderWithProviders(<SettingsPage />);
-    expect(screen.getByText("loading")).toBeInTheDocument();
 
-    resolveLoad?.();
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
-    );
+    expect(screen.queryByText("loading")).not.toBeInTheDocument();
+    expect(screen.getByText("system_settings")).toBeInTheDocument();
   });
 
   it("renders the child management datatables", async () => {

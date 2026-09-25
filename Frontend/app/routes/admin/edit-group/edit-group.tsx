@@ -2,7 +2,7 @@ import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLoaderData, useNavigate, useParams } from "react-router";
 import type {
   GroupMembershipResponseDto,
   MemberResponseDto,
@@ -10,6 +10,7 @@ import type {
 } from "~/api";
 import SearchMemberOverlay from "~/components/Member/SearchMemberOverlay";
 import CreateRoleOverlay from "~/components/Roles/CreateRoleOverlay/CreateRoleOverlay";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
@@ -23,17 +24,28 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useApp } from "~/context/AppContext";
 import { getCommitteeYear } from "~/util/date.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
   type EditGroupFormData,
+  fetchGroupPageData,
   handleAddGroupEnrollment,
   handleDeleteGroupEnrollment,
   handleGroupProfilePictureUpload,
   handleRoleAliasAdded,
   handleSaveGroup,
   handleUpdateGroupRole,
-  loadGroupData,
   loadGroupMemberships,
+  loadGroupPicture,
 } from "./edit-group.handlers";
+
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  await requireTokenParsed();
+  return fetchGroupPageData(Number.parseInt(params.id ?? "", 10));
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative page for managing group details, media, and memberships.
@@ -56,27 +68,27 @@ import {
 export default function EditGroupPage() {
   const params = useParams();
   const id = params.id ? parseInt(params.id, 10) : null;
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  // Only marks a mutation in flight; the initial data comes from the loader.
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [groupPictureSrc, setGroupPictureSrc] = useState<string | null>(null);
   const [enrollments, setEnrollments] = useState<GroupMembershipResponseDto[]>(
     [],
   );
-  const [roleAliases, setRoleAliases] = useState<RoleAlias[]>([]);
+  const [roleAliases, setRoleAliases] = useState<RoleAlias[]>(
+    loaderData.roleAliases,
+  );
   const [addEnrollmentModalIsOpen, setAddEnrollmentModalIsOpen] =
     useState(false);
   const [addRoleModalIsOpen, setAddRoleModalIsOpen] = useState(false);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
   const [loadingChangeRole, setLoadingChangeRole] = useState(false);
 
-  const [formData, setFormData] = useState<EditGroupFormData>({
-    Name: "",
-    Type: "",
-    DefaultGLAccount: "",
-    DefaultCostCenter: "",
-    Active: false,
-  });
+  const [formData, setFormData] = useState<EditGroupFormData>(
+    loaderData.formData,
+  );
 
   const navigate = useNavigate();
   const { committeeCreationDate, boardGroupId } = useApp();
@@ -176,14 +188,14 @@ export default function EditGroupPage() {
     },
   ];
 
+  // A re-run loader (another group, a revalidation) hands back fresh data to start over from.
   useEffect(() => {
-    const cleanupPromise = loadGroupData({
-      id,
-      setFormData,
-      setGroupPictureSrc,
-      setRoleAliases,
-      setLoading,
-    });
+    setFormData(loaderData.formData);
+    setRoleAliases(loaderData.roleAliases);
+  }, [loaderData]);
+
+  useEffect(() => {
+    const cleanupPromise = loadGroupPicture({ id, setGroupPictureSrc });
     return () => {
       cleanupPromise.then((cleanup) => cleanup?.());
     };
@@ -197,8 +209,6 @@ export default function EditGroupPage() {
       setEnrollments,
     );
   }, [id, selectedYear]);
-
-  if (loading) return t("loading");
 
   return (
     <>

@@ -1,22 +1,33 @@
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { hasEnrollmentOpened } from "~/util/activity.util";
 import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
-import type { Route } from "./+types/activity";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
+  fetchActivity,
+  fetchOrganizerName,
   getActivityBackPath,
   handleEditActivityClick,
-  loadActivityData,
 } from "./activity.handlers";
+
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  const tokenParsed = await requireTokenParsed();
+  const activity = await fetchActivity(Number(params.id));
+  const organizerName = await fetchOrganizerName(activity.organizerId);
+  return { tokenParsed, activity, organizerName };
+}
+
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * Detailed view for a specific activity, including description and participant lists.
@@ -36,52 +47,21 @@ import {
  * @component
  * @param {Route.LoaderArgs} props - Route parameters provided by the framework, including the activity ID.
  */
-export default function ActivityPage({ params }: Route.LoaderArgs) {
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-  const [canEdit, setCanEdit] = useState(false);
+export default function ActivityPage() {
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const { tokenParsed, organizerName } = loaderData;
   const navigate = useNavigate();
   const { pathname } = window.location;
-  const [loading, setLoading] = useState(true);
-  const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
 
+  // The tiles patch the activity locally after enrollment changes; a re-run loader hands back a fresh one.
+  const [activity, setActivity] = useState<ActivityResponseDto>(
+    loaderData.activity,
+  );
   useEffect(() => {
-    const loadToken = async () => {
-      const tokenParsed = await authService.getTokenParsed();
-      setTokenParsed(tokenParsed);
+    setActivity(loaderData.activity);
+  }, [loaderData.activity]);
 
-      if (!tokenParsed) {
-        console.error("User not authenticated");
-        return;
-      }
-    };
-    loadToken();
-  }, [authService]);
-
-  useEffect(() => {
-    if (!tokenParsed) return;
-    const activityId = Number(params.id);
-    if (activity?.id === activityId) return;
-    loadActivityData({
-      activityId,
-      setLoading,
-      setActivity: (next) => setActivity(next),
-    });
-  }, [activity?.id, params.id, tokenParsed]);
-
-  useEffect(() => {
-    if (!tokenParsed || activity == null) {
-      setCanEdit(false);
-      return;
-    }
-
-    setCanEdit(canEditActivity(activity, tokenParsed));
-  }, [activity, tokenParsed]);
-
-  if (loading || !tokenParsed) return t("loading");
-
-  if (activity == null) return t("failed_fetching");
-
+  const canEdit = canEditActivity(activity, tokenParsed);
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   return (
@@ -90,8 +70,7 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
         title={activity.name}
         backTo={getActivityBackPath(pathname)}
         action={
-          canEdit &&
-          activity && (
+          canEdit && (
             <Button
               onClick={() =>
                 handleEditActivityClick(navigate, pathname, activity.id)
@@ -106,7 +85,15 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
       />
 
       <div className="space-y-6 w-full">
-        <ActivityDetailsTile activity={activity} setActivity={setActivity} />
+        <ActivityDetailsTile
+          activity={activity}
+          setActivity={
+            setActivity as React.Dispatch<
+              React.SetStateAction<ActivityResponseDto | null>
+            >
+          }
+          organizerName={organizerName}
+        />
         {activity.areParticipantsVisible && (
           <>
             <ActivityParticipantsTile
