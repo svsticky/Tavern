@@ -59,19 +59,21 @@ public class GroupService : IGroupService
         return await _db.Groups
             .Where(g => dto.IncludeInactive || g.Active)
             .Where(g => isBoardMember || dto.MembershipYear == null || g.GroupMemberships.Any(gm => gm.MembershipYear == dto.MembershipYear && userId == gm.MemberId))
-            .Select(GroupResponseDTO.ToDto())
+            .Select(GroupResponseDTO.ToDto(isBoardMember))
             .OrderBy(g => g.Name)
             .ToListAsync(cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<GroupResponseDTO?> GetGroup(uint id, CancellationToken cancellationToken)
+    public async Task<GroupResponseDTO?> GetGroup(uint id, Guid userId, CancellationToken cancellationToken)
     {
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
         return await _db.Groups
             .Where(g => g.Id == id)
             .Include(g => g.GroupMemberships)
             .ThenInclude(gm => gm.Member)
-            .Select(GroupResponseDTO.ToDto())
+            .Select(GroupResponseDTO.ToDto(isBoardMember))
             .FirstOrDefaultAsync(cancellationToken);
     }
 

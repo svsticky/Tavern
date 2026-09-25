@@ -707,7 +707,7 @@ namespace Backend.Services.Domain
                 var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
                 var activityName = p.Activity?.Name ?? "Unknown Activity";
                 var costCenter = BlankIfWhitespace(p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter);
-                var costUnit = BlankIfWhitespace(p.Activity?.CostUnitId);
+                var costUnit = BlankIfWhitespace(p.Activity?.CostUnitId ?? p.Activity?.Organizer?.DefaultCostUnit);
                 var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 

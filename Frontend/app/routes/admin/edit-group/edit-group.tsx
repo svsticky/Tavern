@@ -75,6 +75,7 @@ export default function EditGroupPage() {
     Type: "",
     DefaultGLAccount: "",
     DefaultCostCenter: "",
+    DefaultCostUnit: "",
     Active: false,
   });
 
@@ -264,10 +265,17 @@ export default function EditGroupPage() {
               }
             />
             <Input
-              label={t("cost_unit_id")}
+              label={t("cost_center_id")}
               value={formData.DefaultCostCenter}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setFormData({ ...formData, DefaultCostCenter: e.target.value })
+              }
+            />
+            <Input
+              label={t("cost_unit_id")}
+              value={formData.DefaultCostUnit}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFormData({ ...formData, DefaultCostUnit: e.target.value })
               }
             />
             <Input

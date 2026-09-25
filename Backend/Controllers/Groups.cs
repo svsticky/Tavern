@@ -63,7 +63,7 @@ public class GroupsController(IGroupService groupService) : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<GroupResponseDTO>> GetGroup(uint id, CancellationToken cancellationToken)
     {
-        var result = await groupService.GetGroup(id, cancellationToken);
+        var result = await groupService.GetGroup(id, GetUserId(), cancellationToken);
 
         if (result == null)
             return NotFound();
@@ -135,7 +135,7 @@ public class GroupsController(IGroupService groupService) : ControllerBase
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<Stream>> GetGroupPicture(uint id, CancellationToken cancellationToken)
     {
-        var group = await groupService.GetGroup(id, cancellationToken);
+        var group = await groupService.GetGroup(id, GetUserId(), cancellationToken);
         if (group == null || string.IsNullOrEmpty(group.GroupPicturePath))
             return NotFound();
 

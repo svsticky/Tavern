@@ -80,6 +80,9 @@ export default function EditActivityForm({
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [groups, setGroups] = useState<GroupResponseDto[]>([]);
+  const [organizerId, setOrganizerId] = useState<number | null>(
+    activity?.organizerId ?? null,
+  );
   const [formValid, setFormValid] = useState(isEdit);
   const [questions, setQuestions] = useState<
     Partial<GetSpecificationQuestionResponseDto>[]
@@ -98,6 +101,9 @@ export default function EditActivityForm({
 
     loadGroups(setLoading, setGroups);
   }, [isEdit]);
+
+  // The organizer's defaults are used when these activity fields are left empty, so show them as placeholders.
+  const organizer = groups.find((g) => g.id === organizerId);
 
   if (loading) return t("loading");
 
@@ -246,6 +252,11 @@ export default function EditActivityForm({
                 label={t("organizer")}
                 name="OrganizerId"
                 defaultValue={activity?.organizerId ?? ""}
+                onChange={(e) =>
+                  setOrganizerId(
+                    e.target.value ? parseInt(e.target.value, 10) : null,
+                  )
+                }
                 required
                 options={[
                   { value: "", label: t("select_organizer") },
@@ -286,16 +297,19 @@ export default function EditActivityForm({
                   label={`${t("gl_account_id")} (${t("leave_empty_for_group_default")})`}
                   name="GLAccountId"
                   defaultValue={activity?.glAccountId ?? ""}
+                  placeholder={organizer?.glAccountId ?? undefined}
                 />
                 <Input
                   label={`${t("cost_unit_id")} (${t("leave_empty_for_group_default")})`}
                   name="CostUnitId"
                   defaultValue={activity?.costUnitId ?? ""}
+                  placeholder={organizer?.costUnitId ?? undefined}
                 />
                 <Input
                   label={`${t("cost_center_id")} (${t("leave_empty_for_group_default")})`}
                   name="CostCenterId"
                   defaultValue={activity?.costCenterId ?? ""}
+                  placeholder={organizer?.costCenterId ?? undefined}
                 />
                 <Input
                   label={t("payment_deadline")}

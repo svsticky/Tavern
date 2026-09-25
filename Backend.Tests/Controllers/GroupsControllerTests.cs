@@ -84,7 +84,7 @@ public class GroupsControllerTests
     {
         // Arrange
         var group = new GroupResponseDTO { Id = 2, Name = "Board", Active = true, Type = GroupType.Committee };
-        _serviceMock.GetGroup(2, Arg.Any<CancellationToken>()).Returns(group);
+        _serviceMock.GetGroup(2, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(group);
 
         // Act
         var result = await _controller.GetGroup(2, CancellationToken.None);
@@ -99,7 +99,7 @@ public class GroupsControllerTests
     public async Task GetGroup_NotFound_ReturnsNotFound()
     {
         // Arrange
-        _serviceMock.GetGroup(3, Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
+        _serviceMock.GetGroup(3, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
 
         // Act
         var result = await _controller.GetGroup(3, CancellationToken.None);
@@ -112,7 +112,7 @@ public class GroupsControllerTests
     public async Task GetGroup_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _serviceMock.GetGroup(3, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetGroup(3, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetGroup(3, CancellationToken.None));
@@ -122,7 +122,7 @@ public class GroupsControllerTests
     public async Task GetGroup_Exception_ThrowsException()
     {
         // Arrange
-        _serviceMock.GetGroup(3, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetGroup(3, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.GetGroup(3, CancellationToken.None));
@@ -210,7 +210,7 @@ public class GroupsControllerTests
     public async Task GetGroupPicture_GroupOrPathNotFound_ReturnsNotFound()
     {
         // Arrange
-        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
+        _serviceMock.GetGroup(1, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((GroupResponseDTO?)null);
 
         // Act
         var result = await _controller.GetGroupPicture(1, CancellationToken.None);
@@ -224,7 +224,7 @@ public class GroupsControllerTests
     {
         // Arrange
         var group = new GroupResponseDTO { Id = 1, GroupPicturePath = "some/path.png", Name = "Committee", Active = true, Type = GroupType.Committee };
-        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
+        _serviceMock.GetGroup(1, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(group);
         _serviceMock.GetGroupPictureFile("some/path.png").Returns((FileResultDto?)null);
 
         // Act
@@ -239,7 +239,7 @@ public class GroupsControllerTests
     {
         // Arrange
         var group = new GroupResponseDTO { Id = 1, GroupPicturePath = "some/path.png", Name = "Committee", Active = true, Type = GroupType.Committee };
-        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Returns(group);
+        _serviceMock.GetGroup(1, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(group);
 
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
         var fileResultDto = new FileResultDto { Stream = stream, ContentType = "image/png" };
@@ -258,7 +258,7 @@ public class GroupsControllerTests
     public async Task GetGroupPicture_Unauthorized_ThrowsUnauthorizedAccessException()
     {
         // Arrange
-        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
+        _serviceMock.GetGroup(1, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Throws(new UnauthorizedAccessException());
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.GetGroupPicture(1, CancellationToken.None));
@@ -268,7 +268,7 @@ public class GroupsControllerTests
     public async Task GetGroupPicture_Exception_ThrowsException()
     {
         // Arrange
-        _serviceMock.GetGroup(1, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.GetGroup(1, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.GetGroupPicture(1, CancellationToken.None));

@@ -25,6 +25,7 @@ export type EditGroupFormData = {
   Type: string;
   DefaultGLAccount: string;
   DefaultCostCenter: string;
+  DefaultCostUnit: string;
   Active: boolean;
 };
 
@@ -72,7 +73,8 @@ export const loadGroupData = async ({
       Type: groupResponse.data.type,
       Active: groupResponse.data.active,
       DefaultGLAccount: groupResponse.data.glAccountId ?? "",
-      DefaultCostCenter: groupResponse.data.costUnitId ?? "",
+      DefaultCostCenter: groupResponse.data.costCenterId ?? "",
+      DefaultCostUnit: groupResponse.data.costUnitId ?? "",
     });
 
     const roleAliasesResponse = await getRolealiases();
