@@ -462,3 +462,83 @@ describe("handleUpdateEnrollmentStatus", () => {
     await vi.waitFor(() => expect(setLoading).toHaveBeenLastCalledWith(false));
   });
 });
+
+describe("toast messages", () => {
+  const cases: [string, () => Promise<unknown>][] = [
+    [
+      "handleSaveMember",
+      () => {
+        patchMembersById.mockResolvedValue({});
+        return handleSaveMember(
+          "m1",
+          {
+            firstName: "Jane",
+            studentNumber: "s1",
+            postalCode: "1234AB",
+            city: "Enschede",
+          } as any,
+          vi.fn(),
+        );
+      },
+    ],
+    [
+      "handleDeleteMember",
+      () => {
+        deleteMembersById.mockResolvedValue({});
+        return handleDeleteMember("m1", vi.fn(), vi.fn());
+      },
+    ],
+    [
+      "handleMarkMembershipAsPaid",
+      () => {
+        postPaymentsMembership.mockResolvedValue({});
+        return handleMarkMembershipAsPaid("m1", vi.fn(), vi.fn());
+      },
+    ],
+    [
+      "handleMarkBegunstigerFeeAsPaid",
+      () => {
+        postPaymentsBegunstiger.mockResolvedValue({});
+        return handleMarkBegunstigerFeeAsPaid("m1", vi.fn(), vi.fn());
+      },
+    ],
+    [
+      "handleDeleteEnrollment",
+      () => {
+        deleteStudyenrollmentsById.mockResolvedValue({});
+        return handleDeleteEnrollment(5, vi.fn(), vi.fn());
+      },
+    ],
+    [
+      "handleAddEnrollment",
+      () => {
+        postStudyenrollments.mockResolvedValue({ data: {} });
+        return handleAddEnrollment("m1", 2, vi.fn(), vi.fn());
+      },
+    ],
+    [
+      "handleUpdateEnrollmentStatus",
+      () => {
+        patchStudyenrollmentsById.mockResolvedValue({});
+        return handleUpdateEnrollmentStatus(5, "Completed", vi.fn(), vi.fn());
+      },
+    ],
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each(
+    cases,
+  )("%s shows a success message and reports failures with the underlying error", async (_name, run) => {
+    await run();
+
+    const options = vi.mocked(toast.promise).mock.calls.at(-1)?.[1] as {
+      success: string;
+      error: (error: unknown) => string;
+    };
+    expect(options.success).toEqual(expect.any(String));
+    expect(options.error(new Error("boom"))).toContain("boom");
+  });
+});

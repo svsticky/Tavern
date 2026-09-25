@@ -544,3 +544,76 @@ describe("handleRoleAliasAdded", () => {
     expect(setAddRoleModalIsOpen).toHaveBeenCalledWith(false);
   });
 });
+
+describe("toast messages", () => {
+  const cases: [string, () => Promise<unknown>][] = [
+    [
+      "handleSaveGroup",
+      () => {
+        patchGroupsById.mockResolvedValue({});
+        return handleSaveGroup(1, { Name: "Board" } as any, vi.fn());
+      },
+    ],
+    [
+      "handleGroupProfilePictureUpload",
+      () => {
+        vi.stubGlobal("location", { reload: vi.fn() });
+        postGroupsByIdGroupPicture.mockResolvedValue({});
+        return handleGroupProfilePictureUpload(
+          {
+            target: { files: [new File(["x"], "a.png")], value: "" },
+          } as unknown as React.ChangeEvent<HTMLInputElement>,
+          1,
+          vi.fn(),
+        );
+      },
+    ],
+    [
+      "handleDeleteGroupEnrollment",
+      () => {
+        deleteGroupmembershipsById.mockResolvedValue({});
+        return handleDeleteGroupEnrollment(5, vi.fn(), vi.fn());
+      },
+    ],
+    [
+      "handleAddGroupEnrollment",
+      () => {
+        postGroupmemberships.mockResolvedValue({
+          data: { id: 10, group: { name: "Board", type: "Committee" } },
+        });
+        return handleAddGroupEnrollment(
+          1,
+          { id: "m1" } as any,
+          2024,
+          vi.fn(),
+          vi.fn(),
+          vi.fn(),
+        );
+      },
+    ],
+    [
+      "handleUpdateGroupRole",
+      () => {
+        patchGroupmembershipsById.mockResolvedValue({});
+        return handleUpdateGroupRole(5, 2, vi.fn(), vi.fn());
+      },
+    ],
+  ];
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it.each(
+    cases,
+  )("%s shows a success message and reports failures with the underlying error", async (_name, run) => {
+    await run();
+
+    const options = vi.mocked(toast.promise).mock.calls.at(-1)?.[1] as {
+      success: string;
+      error: (error: unknown) => string;
+    };
+    expect(options.success).toEqual(expect.any(String));
+    expect(options.error(new Error("boom"))).toContain("boom");
+  });
+});
