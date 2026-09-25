@@ -22,9 +22,10 @@ public interface IGroupService
     /// Retrieves a single group by ID.
     /// </summary>
     /// <param name="id">The group ID.</param>
+    /// <param name="userId">The ID of the requesting user.</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The group when found; otherwise <c>null</c>.</returns>
-    Task<GroupResponseDTO?> GetGroup(uint id, CancellationToken cancellationToken);
+    Task<GroupResponseDTO?> GetGroup(uint id, Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
     /// Creates a new group.

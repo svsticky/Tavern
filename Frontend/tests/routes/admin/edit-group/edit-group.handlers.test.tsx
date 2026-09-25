@@ -91,6 +91,7 @@ describe("loadGroupData", () => {
         type: "Committee",
         active: true,
         glAccountId: "GL1",
+        costCenterId: "CC1",
         costUnitId: "CU1",
       },
     });
@@ -115,7 +116,8 @@ describe("loadGroupData", () => {
       Type: "Committee",
       Active: true,
       DefaultGLAccount: "GL1",
-      DefaultCostCenter: "CU1",
+      DefaultCostCenter: "CC1",
+      DefaultCostUnit: "CU1",
     });
     expect(setRoleAliases).toHaveBeenCalledWith([{ id: 1, name: "Chair" }]);
     expect(setGroupPictureSrc).toHaveBeenCalledWith("blob:mock-url");
@@ -125,7 +127,7 @@ describe("loadGroupData", () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
   });
 
-  it("defaults DefaultGLAccount/DefaultCostCenter to empty string when missing", async () => {
+  it("defaults DefaultGLAccount/DefaultCostCenter/DefaultCostUnit to empty string when missing", async () => {
     getGroupsById.mockResolvedValue({
       data: { name: "Board", type: "Committee", active: true },
     });
@@ -143,7 +145,11 @@ describe("loadGroupData", () => {
     });
 
     expect(setFormData).toHaveBeenCalledWith(
-      expect.objectContaining({ DefaultGLAccount: "", DefaultCostCenter: "" }),
+      expect.objectContaining({
+        DefaultGLAccount: "",
+        DefaultCostCenter: "",
+        DefaultCostUnit: "",
+      }),
     );
   });
 
@@ -271,6 +277,7 @@ describe("handleSaveGroup", () => {
         Type: "Committee",
         DefaultGLAccount: "",
         DefaultCostCenter: "",
+        DefaultCostUnit: "",
         Active: true,
       },
       setSaving,
@@ -285,7 +292,7 @@ describe("handleSaveGroup", () => {
     });
   });
 
-  it("sends DefaultGLAccount/DefaultCostCenter patch paths matching the backend's Group entity", async () => {
+  it("sends DefaultGLAccount/DefaultCostCenter/DefaultCostUnit patch paths matching the backend's Group entity", async () => {
     patchGroupsById.mockResolvedValue({});
     const setSaving = vi.fn();
 
@@ -296,6 +303,7 @@ describe("handleSaveGroup", () => {
         Type: "Committee",
         DefaultGLAccount: "8000",
         DefaultCostCenter: "TRX",
+        DefaultCostUnit: "KD1",
         Active: true,
       },
       setSaving,
@@ -307,6 +315,7 @@ describe("handleSaveGroup", () => {
       body: expect.arrayContaining([
         { op: "replace", path: "/DefaultGLAccount", value: "8000" },
         { op: "replace", path: "/DefaultCostCenter", value: "TRX" },
+        { op: "replace", path: "/DefaultCostUnit", value: "KD1" },
       ]),
     });
   });
@@ -324,6 +333,7 @@ describe("handleSaveGroup", () => {
         Type: "",
         DefaultGLAccount: "",
         DefaultCostCenter: "",
+        DefaultCostUnit: "",
         Active: false,
       },
       setSaving,

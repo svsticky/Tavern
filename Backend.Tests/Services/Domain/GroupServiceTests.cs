@@ -167,7 +167,7 @@ public class GroupServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        var result = await _service.GetGroup(10, CancellationToken.None);
+        var result = await _service.GetGroup(10, _userId, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -178,7 +178,7 @@ public class GroupServiceTests : IDisposable
     public async Task GetGroup_NotFound_ReturnsNull()
     {
         // Act
-        var result = await _service.GetGroup(999, CancellationToken.None);
+        var result = await _service.GetGroup(999, _userId, CancellationToken.None);
 
         // Assert
         Assert.Null(result);

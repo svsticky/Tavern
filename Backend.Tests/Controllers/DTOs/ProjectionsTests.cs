@@ -49,6 +49,28 @@ public class ProjectionsTests
         Assert.Equal("/path/img.png", dto.GroupPicturePath);
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void GroupProjections_ToDto_FinancialFieldsOnlyForBoard(bool isBoard)
+    {
+        var group = new Group
+        {
+            Id = 1u,
+            Name = "Web Committee",
+            Type = GroupType.Committee,
+            DefaultGLAccount = "7001",
+            DefaultCostCenter = "KP1",
+            DefaultCostUnit = "KD1"
+        };
+
+        var dto = GroupResponseDTO.ToDto(isBoard).Compile()(group);
+
+        Assert.Equal(isBoard ? "7001" : null, dto.GLAccountId);
+        Assert.Equal(isBoard ? "KP1" : null, dto.CostCenterId);
+        Assert.Equal(isBoard ? "KD1" : null, dto.CostUnitId);
+    }
+
     [Fact]
     public void SpecificationQuestionProjections_ToDto_Works()
     {

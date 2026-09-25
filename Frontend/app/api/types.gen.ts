@@ -621,6 +621,10 @@ export type Group = {
      */
     defaultCostCenter?: string | null;
     /**
+     * The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
+     */
+    defaultCostUnit?: string | null;
+    /**
      * The path where the picture for the group is stored, if any.
      */
     groupPicturePath?: string | null;
@@ -731,6 +735,10 @@ export type GroupResponseDto = {
     glAccountId?: string | null;
     /**
      * The default cost center for the group, used for financial transactions.
+     */
+    costCenterId?: string | null;
+    /**
+     * The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
      */
     costUnitId?: string | null;
     /**
