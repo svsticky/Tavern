@@ -122,6 +122,34 @@ public static class YearUtils
     }
 
     /// <summary>
+    /// Gets the UTC instant at which the given operational year starts: midnight on the start date ("MM-DD") in the association's timezone.
+    /// </summary>
+    public static DateTimeOffset GetYearStartUtc(uint year, string startDateStr)
+    {
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+
+        int targetMonth = 8;
+        int targetDay = 1;
+        if (!string.IsNullOrEmpty(startDateStr))
+        {
+            var parts = startDateStr.Split('-');
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out int m) &&
+                int.TryParse(parts[1], out int d))
+            {
+                targetMonth = m;
+                targetDay = d;
+            }
+        }
+
+        int startYear = targetMonth > 6 ? (int)year - 1 : (int)year;
+        var localStart = new System.DateTime(startYear, targetMonth, targetDay, 0, 0, 0, DateTimeKind.Unspecified);
+
+        return new DateTimeOffset(localStart, tz.GetUtcOffset(localStart)).ToUniversalTime();
+    }
+
+    /// <summary>
     /// Gets the current board year as the maximum membership year in the board group.
     /// </summary>
     public static uint GetBoardYear(PostgresDbContext db)

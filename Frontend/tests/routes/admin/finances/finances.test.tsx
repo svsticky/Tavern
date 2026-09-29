@@ -207,6 +207,57 @@ describe("Finances (admin)", () => {
     );
   });
 
+  it("only lists members with an unpaid enrollment for that activity, with that enrollment's balance", async () => {
+    const otherMember = {
+      ...member,
+      id: "m2",
+      firstName: "John",
+      lastName: "Smith",
+    } as Member;
+    const feest = unpaidBalance();
+    const borrel = unpaidBalance({
+      balance: 3,
+      enrollment: {
+        activityId: 2,
+        activity: {
+          id: 2,
+          name: "Borrel",
+          paymentDeadline: "2099-01-01T00:00:00Z",
+        },
+        member: otherMember,
+      },
+    } as Partial<EnrollmentBalance>);
+    const janeBorrel = unpaidBalance({
+      balance: 4,
+      enrollment: { ...borrel.enrollment, member },
+    });
+    loadWith({
+      unpaidActivities: [
+        { id: 1, name: "Feest" } as Activity,
+        { id: 2, name: "Borrel" } as Activity,
+      ],
+      membersWithOverduePayment: [
+        { member, enrollments: [feest, janeBorrel] },
+        { member: otherMember, enrollments: [borrel] },
+      ],
+      unpaidBalances: [feest, janeBorrel, borrel],
+    });
+
+    renderWithProviders(<Finances />);
+
+    expect(await screen.findByText("Feest")).toBeInTheDocument();
+    expect(screen.getByText("unpaid_members (1)")).toBeInTheDocument();
+    expect(screen.getByText("unpaid_members (2)")).toBeInTheDocument();
+    expect(screen.getByText("€12.50")).toBeInTheDocument();
+    expect(screen.getByText("€4.00")).toBeInTheDocument();
+    expect(screen.queryByText("€16.50")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText("mark_as_paid")[0]);
+    expect(handleMarkAsPaid).toHaveBeenCalledWith(
+      expect.objectContaining({ member, enrollments: [feest] }),
+    );
+  });
+
   it("shows overdue members highlighted and triggers WhatsApp reminders", async () => {
     loadWith({
       membersWithOverduePayment: [{ member, enrollments: [unpaidBalance()] }],

@@ -161,5 +161,20 @@ public class FinancialYearUtilsTests
         var currentYear = (uint)DateTime.UtcNow.Year;
         Assert.True(committeeYear == currentYear || committeeYear == currentYear + 1);
     }
-}
 
+    [Fact]
+    public void GetYearStartUtc_SummerStartDate_ReturnsMidnightInAssociationTimeZone()
+    {
+        var yearStart = YearUtils.GetYearStartUtc(2027, "08-01");
+
+        Assert.Equal(new DateTimeOffset(2026, 7, 31, 22, 0, 0, TimeSpan.Zero), yearStart);
+    }
+
+    [Fact]
+    public void GetYearStartUtc_WinterStartDate_ReturnsMidnightInAssociationTimeZone()
+    {
+        var yearStart = YearUtils.GetYearStartUtc(2026, "03-01");
+
+        Assert.Equal(new DateTimeOffset(2026, 2, 28, 23, 0, 0, TimeSpan.Zero), yearStart);
+    }
+}
