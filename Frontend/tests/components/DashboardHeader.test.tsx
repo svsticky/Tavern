@@ -293,6 +293,9 @@ describe("DashboardHeader", () => {
     expect(screen.getByText("Borrel")).toBeInTheDocument();
     expect(screen.getByText("€4.00")).toBeInTheDocument();
     expect(screen.queryByText("Future")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    expect(screen.queryByText("attended_activities")).not.toBeInTheDocument();
   });
 
   it("opens a modal with the outstanding payments", async () => {
@@ -313,6 +316,9 @@ describe("DashboardHeader", () => {
 
     expect(screen.getByText("Gala")).toBeInTheDocument();
     expect(screen.getAllByText("€5.00")).toHaveLength(2);
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    expect(screen.queryByText("Gala")).not.toBeInTheDocument();
   });
 
   it("opens a modal with the enrolled activities", async () => {
@@ -343,5 +349,8 @@ describe("DashboardHeader", () => {
     expect(screen.getByText("Lunch")).toBeInTheDocument();
     expect(screen.getByText("€3.00")).toBeInTheDocument();
     expect(screen.queryByText("Past")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    expect(screen.queryByText("enrolled_activities")).not.toBeInTheDocument();
   });
 });
