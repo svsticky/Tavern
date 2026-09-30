@@ -287,6 +287,11 @@ public class GetActivitiesDTO
     public bool? OpenForPayment { get; set; }
 
     /// <summary>
+    /// Indicates whether to only include activities with at least one enrollment (not on the waiting list) that has a price above zero.
+    /// </summary>
+    public bool OnlyWithPaidEnrollments { get; set; } = false;
+
+    /// <summary>
     /// The page number for pagination (1-indexed). If specified with PageSize, pagination will be applied.
     /// </summary>
     public int? Page { get; set; }

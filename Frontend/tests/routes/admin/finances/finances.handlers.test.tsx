@@ -446,6 +446,7 @@ describe("loadExpiredActivities", () => {
         IncludePast: true,
         IncludeFuture: false,
         OpenForPayment: false,
+        OnlyWithPaidEnrollments: true,
         Year: 2025,
       }),
     });

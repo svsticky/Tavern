@@ -450,6 +450,7 @@ export const loadExpiredActivities = async ({
         IncludePast: true,
         IncludeFuture: false,
         OpenForPayment: false,
+        OnlyWithPaidEnrollments: true,
         Year: year,
         Page: 1,
         PageSize: 50,
