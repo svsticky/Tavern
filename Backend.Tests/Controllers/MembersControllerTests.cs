@@ -8,6 +8,7 @@ using Backend.Controllers;
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.JsonPatch;

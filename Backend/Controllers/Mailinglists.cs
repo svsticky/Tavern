@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,7 +17,7 @@ namespace Backend.Controllers;
 [Route("[controller]")]
 [ApiController]
 [Authorize]
-public class Mailinglists(IMailSubscriptionService mailSubscriptionService, IMailinglistCurationService curationService) : ControllerBase
+public class Mailinglists(AbstractMailSubscriptionService mailSubscriptionService, IMailinglistCurationService curationService) : ControllerBase
 {
     /// <summary>
     /// Retrieves the unique identifier of the currently authenticated user from the request claims.

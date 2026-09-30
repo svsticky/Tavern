@@ -417,6 +417,16 @@ describe("SettingsPage", () => {
     expect(screen.getByLabelText("mailchimp_api_key")).toBeInTheDocument();
   });
 
+  it("shows listmonk fields when MailSubscriptionService is Listmonk", async () => {
+    loadWith(defaultSettings({ MailSubscriptionService: "LISTMONK" }));
+
+    renderWithProviders(<SettingsPage />);
+
+    expect(await screen.findByLabelText("listmonk_url")).toBeInTheDocument();
+    expect(screen.getByLabelText("listmonk_user")).toBeInTheDocument();
+    expect(screen.getByLabelText("listmonk_api_key")).toBeInTheDocument();
+  });
+
   function fireAllFieldChanges(container: HTMLElement) {
     const fields = container.querySelectorAll<
       HTMLInputElement | HTMLSelectElement
@@ -467,6 +477,22 @@ describe("SettingsPage", () => {
         MailService: "MAILGUN",
         MailSubscriptionService: "MAILCHIMP",
         AccountingService: "EXACT",
+      }),
+    );
+
+    const { container } = renderWithProviders(<SettingsPage />);
+    await screen.findByText("studies-datatable");
+
+    const count = fireAllFieldChanges(container);
+    expect(count).toBeGreaterThan(20);
+    expect(handleSettingsChange.mock.calls.length).toBeGreaterThan(15);
+  });
+
+  it("fires handleSettingsChange for every visible settings field (LISTMONK)", async () => {
+    getEnv.mockReturnValue("true");
+    loadWith(
+      defaultSettings({
+        MailSubscriptionService: "LISTMONK",
       }),
     );
 
