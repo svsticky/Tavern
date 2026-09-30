@@ -763,7 +763,7 @@ public class PaymentServiceTests : IDisposable
 
         Assert.NotNull(result.Content);
         var csvStr = Encoding.UTF8.GetString(result.Content);
-        Assert.Contains(",8000,Lidmaatschap,0,7.50,,", csvStr);
+        Assert.Contains(",8000,Lidmaatschap - John Doe,0,7.50,,", csvStr);
         Assert.Contains("Test Organizer | Test Activity", csvStr);
         Assert.Contains("Transaction costs 0.50 x 1", csvStr);
         Assert.Contains(",8010,Begunstiger,0,10.00,BEG,BU1", csvStr);
@@ -813,6 +813,7 @@ public class PaymentServiceTests : IDisposable
         var payment = await _db.EnrollmentPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ActivityId == activity.Id);
         Assert.NotNull(payment);
         Assert.True(payment.PaidAt.HasValue);
+        Assert.True(payment.ManuallyMarkedAsPaid);
     }
 
     [Fact]
