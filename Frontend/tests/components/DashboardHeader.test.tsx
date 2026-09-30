@@ -264,4 +264,93 @@ describe("DashboardHeader", () => {
     expect(await screen.findByText("Party")).toBeInTheDocument();
     fireEvent.click(screen.getByText("view_details"));
   });
+
+  it("opens a modal with the attended activities", async () => {
+    getEnrollments.mockResolvedValue({
+      data: [
+        {
+          price: 4,
+          activity: { name: "Borrel", dateTimeEnd: "2020-01-01T00:00:00Z" },
+        },
+        {
+          activity: {
+            name: "Future",
+            price: 0,
+            dateTimeEnd: "2099-01-01T00:00:00Z",
+          },
+        },
+      ],
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+
+    await waitFor(() => expect(screen.getAllByText("1")).toHaveLength(2));
+    fireEvent.click(screen.getByText("attended"));
+
+    expect(screen.getByText("attended_activities")).toBeInTheDocument();
+    expect(screen.getByText("Borrel")).toBeInTheDocument();
+    expect(screen.getByText("€4.00")).toBeInTheDocument();
+    expect(screen.queryByText("Future")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    expect(screen.queryByText("attended_activities")).not.toBeInTheDocument();
+  });
+
+  it("opens a modal with the outstanding payments", async () => {
+    getPaymentsUnpaid.mockResolvedValue({
+      data: [
+        {
+          balance: 5,
+          enrollment: { activityId: 1, activity: { name: "Gala" } },
+        },
+      ],
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+
+    fireEvent.click(await screen.findByText("€5.00"));
+
+    expect(screen.getByText("Gala")).toBeInTheDocument();
+    expect(screen.getAllByText("€5.00")).toHaveLength(2);
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    expect(screen.queryByText("Gala")).not.toBeInTheDocument();
+  });
+
+  it("opens a modal with the enrolled activities", async () => {
+    getEnrollments.mockResolvedValue({
+      data: [
+        {
+          price: 3,
+          activity: { name: "Lunch", dateTimeEnd: "2099-01-01T00:00:00Z" },
+        },
+        {
+          activity: {
+            name: "Past",
+            price: 0,
+            dateTimeEnd: "2020-01-01T00:00:00Z",
+          },
+        },
+      ],
+    });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+
+    await waitFor(() => expect(screen.getAllByText("1")).toHaveLength(2));
+    fireEvent.click(screen.getByText("enrollments"));
+
+    expect(screen.getByText("enrolled_activities")).toBeInTheDocument();
+    expect(screen.getByText("Lunch")).toBeInTheDocument();
+    expect(screen.getByText("€3.00")).toBeInTheDocument();
+    expect(screen.queryByText("Past")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    expect(screen.queryByText("enrolled_activities")).not.toBeInTheDocument();
+  });
 });

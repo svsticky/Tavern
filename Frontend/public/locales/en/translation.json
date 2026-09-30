@@ -642,5 +642,9 @@
   "membership_payment_not_processed_description": "Your membership payment has not been processed yet. Please come back later or contact the board if you have any questions.",
   "saved": "Saved",
   "slide": "Slide",
-  "url": "URL"
+  "url": "URL",
+  "enrolled_activities": "Enrolled activities",
+  "attended_activities": "Attended activities",
+  "no_attended_activities": "You haven't attended any activities yet.",
+  "no_outstanding_payments": "You have no outstanding payments."
 }

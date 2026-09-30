@@ -642,5 +642,9 @@
   "membership_payment_not_processed_description": "Je lidmaatschapsbetaling is nog niet verwerkt. Kom later terug of neem contact op met het bestuur als je vragen hebt.",
   "saved": "Opgeslagen",
   "slide": "Slide",
-  "url": "URL"
+  "url": "URL",
+  "enrolled_activities": "Aangemelde activiteiten",
+  "attended_activities": "Bijgewoonde activiteiten",
+  "no_attended_activities": "Je hebt nog geen activiteiten bijgewoond.",
+  "no_outstanding_payments": "Je hebt geen openstaande betalingen."
 }

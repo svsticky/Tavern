@@ -123,15 +123,15 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId)
+        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid userId)
         {
             logger.LogInformation("Creating begunstiger payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
 
             var member = await GetMemberOrThrow(dto.MemberId);
 
-            if (userId != dto.MemberId)
+            if (userId != dto.MemberId || dto.ManuallyMarkedAsPaid)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
 
             using var transaction = await db.Database.BeginTransactionAsync();
@@ -197,6 +197,7 @@ namespace Backend.Services.Domain
                 .ToListAsync(ct);
 
             var membershipPayments = await db.MembershipPayments
+                .Include(p => p.Member)
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
@@ -666,7 +667,8 @@ namespace Backend.Services.Domain
                     Price = price,
                     PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentId ?? "",
                     PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentUrl ?? "",
-                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
+                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                    ManuallyMarkedAsPaid = manuallyMarkedAsPaid
                 };
 
                 StateValidator.Validate(payment);
@@ -722,7 +724,7 @@ namespace Backend.Services.Domain
 
             foreach (var p in membershipPayments)
             {
-                var description = "Lidmaatschap";
+                var description = p.Member != null ? $"Lidmaatschap - {p.Member.FirstName} {p.Member.LastName}" : "Lidmaatschap";
                 var price = p.Price;
 
                 csv.AppendLine(CsvUtils.FormatLine("", membershipGLAccount, description, membershipVatCode, price, membershipCostCenter, membershipCostUnit));
