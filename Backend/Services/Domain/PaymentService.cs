@@ -666,7 +666,8 @@ namespace Backend.Services.Domain
                     Price = price,
                     PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentId ?? "",
                     PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentUrl ?? "",
-                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
+                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                    ManuallyMarkedAsPaid = manuallyMarkedAsPaid
                 };
 
                 StateValidator.Validate(payment);

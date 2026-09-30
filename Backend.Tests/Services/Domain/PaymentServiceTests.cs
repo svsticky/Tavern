@@ -813,6 +813,7 @@ public class PaymentServiceTests : IDisposable
         var payment = await _db.EnrollmentPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ActivityId == activity.Id);
         Assert.NotNull(payment);
         Assert.True(payment.PaidAt.HasValue);
+        Assert.True(payment.ManuallyMarkedAsPaid);
     }
 
     [Fact]
