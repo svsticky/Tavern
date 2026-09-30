@@ -58,6 +58,9 @@ public class GroupResponseDTO
     public string? GLAccountId { get; set; }
 
     /// <inheritdoc cref="Group.DefaultCostCenter"/>
+    public string? CostCenterId { get; set; }
+
+    /// <inheritdoc cref="Group.DefaultCostUnit"/>
     public string? CostUnitId { get; set; }
 
     /// <inheritdoc cref="Group.GroupPicturePath"/>
@@ -66,8 +69,9 @@ public class GroupResponseDTO
     /// <summary>
     /// Projects a Group entity into a GroupResponseDTO, including relevant group information such as its name, type, active status, and picture path. This projection is used to transform the data from the Group model into a format that is suitable for API responses, ensuring that the relevant information is included while maintaining appropriate access control based on the user's role within the system.
     /// </summary>
+    /// <param name="isBoard">Whether the requesting user is a board member. Financial fields are only included for board members.</param>
     /// <returns>An expression that projects a Group entity into a GroupResponseDTO.</returns>
-    public static Expression<Func<Group, GroupResponseDTO>> ToDto()
+    public static Expression<Func<Group, GroupResponseDTO>> ToDto(bool isBoard = false)
     {
         return g => new GroupResponseDTO
         {
@@ -75,6 +79,9 @@ public class GroupResponseDTO
             Name = g.Name,
             Type = g.Type,
             Active = g.Active,
+            GLAccountId = isBoard ? g.DefaultGLAccount : null,
+            CostCenterId = isBoard ? g.DefaultCostCenter : null,
+            CostUnitId = isBoard ? g.DefaultCostUnit : null,
             GroupPicturePath = g.GroupPicturePath
         };
     }

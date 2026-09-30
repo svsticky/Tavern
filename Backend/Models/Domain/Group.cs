@@ -73,6 +73,12 @@ public class Group
     public string? DefaultCostCenter { get; set; }
 
     /// <summary>
+    /// The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
+    /// </summary>
+    [StringLength(20)]
+    public string? DefaultCostUnit { get; set; }
+
+    /// <summary>
     /// The path where the picture for the group is stored, if any.
     /// </summary>
     public string? GroupPicturePath { get; set; }
