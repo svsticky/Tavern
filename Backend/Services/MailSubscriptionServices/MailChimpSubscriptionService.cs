@@ -33,7 +33,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         ILogger<MailChimpSubscriptionService> logger,
         HttpClient httpClient,
         PostgresDbContext context,
-        MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker) : 
+        MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker) :
         base(mailSubscriptionOutboxWorker)
     {
         _logger = logger;

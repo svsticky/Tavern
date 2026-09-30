@@ -9,7 +9,8 @@ namespace Backend.Services.MailSubscriptionServices;
 /// <summary>
 /// Implements <see cref="IMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
 /// </summary>
-public class ListmonkSubscriptionService : IMailSubscriptionService {
+public class ListmonkSubscriptionService : IMailSubscriptionService
+{
     private readonly ILogger<ListmonkSubscriptionService> _logger;
     private readonly HttpClient _httpClient;
     private readonly PostgresDbContext _context;
@@ -36,14 +37,16 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
         _context = context;
     }
 
-    private void ConfigureHttpClient() {
+    private void ConfigureHttpClient()
+    {
         if (_httpClient.BaseAddress != null)
             return;
 
         string? api_key = _context.Settings.Find("ListmonkApiKey")?.Value,
                 user = _context.Settings.Find("ListmonkUser")?.Value,
                 api_url = _context.Settings.Find("ListmonkUrl")?.Value;
-        if (api_key is null || user is null || api_url is null) {
+        if (api_key is null || user is null || api_url is null)
+        {
             throw new Exception("Cannot instantiate Listmonk subscription service without configured user, url and api key.");
         }
 
@@ -53,8 +56,10 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
     }
 
     /// <inheritdoc />
-    public override async Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct) {
-        if (!IsEnabled) {
+    public override async Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct)
+    {
+        if (!IsEnabled)
+        {
             _logger.LogInformation("Listmonk subscription service is disabled. Returning no available mailing lists.");
             return [];
         }
@@ -68,8 +73,10 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
     }
 
     /// <inheritdoc />
-    public override async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct) {
-        if (!IsEnabled) {
+    public override async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct)
+    {
+        if (!IsEnabled)
+        {
             _logger.LogInformation($"Listmonk subscription service is disabled. Returning no member mailing lists for {email}.");
             return [];
         }
@@ -79,7 +86,7 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
         var all_mailinglists_response = await _httpClient.GetFromJsonAsync<ListmonkResponse<Paginated<Mailinglist>>>(
             $"api/lists?status=active&minimal=true", ct);
         var all_mailinglists = all_mailinglists_response?.Data?.Results ?? [];
-       
+
         var subscriber = await GetSubscriberByEmail(email, ct);
         var own_mailinglists = subscriber!.Lists;
         var own_mailinglists_ids = own_mailinglists.Select(ml => ml.Id).ToArray();
@@ -89,8 +96,10 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
     }
 
     /// <inheritdoc />
-    public override async Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? first_name = null, string? last_name = null) {
-        if (!IsEnabled) {
+    public override async Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? first_name = null, string? last_name = null)
+    {
+        if (!IsEnabled)
+        {
             _logger.LogInformation($"Listmonk subscription service is disabled. Skipping update for {email}.");
             return;
         }
@@ -98,12 +107,16 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
         ConfigureHttpClient();
 
         // If this user has been registered in listmonk already, update the record.
-        if (await GetSubscriberByEmail(email, ct) is Subscriber { Id: var subscriber_id }) {
+        if (await GetSubscriberByEmail(email, ct) is Subscriber { Id: var subscriber_id })
+        {
             var payload = new { lists = subscribedListIds.Select(int.Parse).ToList(), name = $"{first_name} {last_name}" };
             var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber_id}", payload, ct);
             response.EnsureSuccessStatusCode();
-        } else { // Otherwise create a new subscriber record in listmonk.
-            var payload = new {
+        }
+        else
+        { // Otherwise create a new subscriber record in listmonk.
+            var payload = new
+            {
                 email,
                 name = $"{first_name} {last_name}",
                 status = "enabled",
@@ -117,8 +130,10 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
     }
 
     /// <inheritdoc />
-    public override async Task UpdateMemberNameAsync(string email, string first_name, string last_name, CancellationToken ct) {
-        if (!IsEnabled) {
+    public override async Task UpdateMemberNameAsync(string email, string first_name, string last_name, CancellationToken ct)
+    {
+        if (!IsEnabled)
+        {
             _logger.LogInformation($"Listmonk subscription service is disabled. Skipping update for {email}.");
             return;
         }
@@ -127,7 +142,7 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
 
         var subscriber = await GetSubscriberByEmail(email, ct);
 
-        var payload = new { name = $"{first_name} {last_name}"  };
+        var payload = new { name = $"{first_name} {last_name}" };
         var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber!.Id}", payload, ct);
         response.EnsureSuccessStatusCode();
 
@@ -135,8 +150,10 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
     }
 
     /// <inheritdoc />
-    public override async Task DeleteMemberAsync(string email, CancellationToken ct) {
-        if (!IsEnabled) {
+    public override async Task DeleteMemberAsync(string email, CancellationToken ct)
+    {
+        if (!IsEnabled)
+        {
             _logger.LogInformation($"Listmonk subscription service is disabled. Skipping delete for {email}.");
             return;
         }
@@ -150,8 +167,10 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
     }
 
     /// <inheritdoc />
-    public override async Task MigrateEmailAsync(string old_email, string new_email, CancellationToken ct, string? first_name = null, string? last_name = null) {
-        if (!IsEnabled) {
+    public override async Task MigrateEmailAsync(string old_email, string new_email, CancellationToken ct, string? first_name = null, string? last_name = null)
+    {
+        if (!IsEnabled)
+        {
             _logger.LogInformation($"Listmonk subscription service is disabled. Skipping email migration from {old_email} to {new_email}.");
             return;
         }
@@ -166,26 +185,31 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
         _logger.LogInformation($"Migrated Mailchimp subscriptions from {old_email} to {new_email}.");
     }
 
-    private async Task<Subscriber?> GetSubscriberByEmail(string email, CancellationToken ct) {
+    private async Task<Subscriber?> GetSubscriberByEmail(string email, CancellationToken ct)
+    {
         var subscriber_response = await _httpClient.GetFromJsonAsync<ListmonkResponse<Paginated<Subscriber>>>(
             $"api/subscribers?per_page=1&query=subscribers.email = '{email}'", ct);
-        return subscriber_response?.Data?.Results switch {
-            [var subscriber , ..] => subscriber,
+        return subscriber_response?.Data?.Results switch
+        {
+            [var subscriber, ..] => subscriber,
             _ => null
         };
     }
 
-    private class ListmonkResponse<T> {
+    private class ListmonkResponse<T>
+    {
         [JsonPropertyName("data")]
         public required T Data { get; set; }
     }
 
-    private class Paginated<T> {
+    private class Paginated<T>
+    {
         [JsonPropertyName("results")]
         public required List<T> Results { get; set; }
     }
 
-    private class Mailinglist {
+    private class Mailinglist
+    {
         [JsonPropertyName("id")]
         public required int Id { get; set; }
 
@@ -193,7 +217,8 @@ public class ListmonkSubscriptionService : IMailSubscriptionService {
         public required string Name { get; set; }
     }
 
-    private class Subscriber {
+    private class Subscriber
+    {
         [JsonPropertyName("id")]
         public required int Id { get; set; }
 
