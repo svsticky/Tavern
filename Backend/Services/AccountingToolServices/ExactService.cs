@@ -130,7 +130,7 @@ namespace Backend.Services.AccountingToolServices
                 Description = $"{payment.Activity?.Organizer?.Name ?? ""} | {payment.Activity?.Name}",
                 VATCode = MapVat(payment.Activity?.VatRate),
                 CostCenter = NullIfBlank(payment.Activity?.CostCenterId ?? payment.Activity?.Organizer?.DefaultCostCenter),
-                CostUnit = NullIfBlank(payment.Activity?.CostUnitId),
+                CostUnit = NullIfBlank(payment.Activity?.CostUnitId ?? payment.Activity?.Organizer?.DefaultCostUnit),
                 AmountDC = payment.Price
             };
         }
