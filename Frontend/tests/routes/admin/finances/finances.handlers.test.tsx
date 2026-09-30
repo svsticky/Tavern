@@ -7,14 +7,12 @@ const {
   getPaymentsOverpaid,
   getPaymentsUnpaid,
   postPaymentsActivity,
-  postPaymentsOverpaidProcessed,
 } = vi.hoisted(() => ({
   getActivities: vi.fn(),
   getPaymentsExport: vi.fn(),
   getPaymentsOverpaid: vi.fn(),
   getPaymentsUnpaid: vi.fn(),
   postPaymentsActivity: vi.fn(),
-  postPaymentsOverpaidProcessed: vi.fn(),
 }));
 
 vi.mock("~/api", () => ({
@@ -23,7 +21,6 @@ vi.mock("~/api", () => ({
   getPaymentsOverpaid,
   getPaymentsUnpaid,
   postPaymentsActivity,
-  postPaymentsOverpaidProcessed,
 }));
 
 vi.mock("react-hot-toast", () => ({
@@ -321,7 +318,7 @@ describe("handleOverpaidProcessed", () => {
   });
 
   it("marks the overpaid enrollment as processed and reloads the overpaid balances", async () => {
-    postPaymentsOverpaidProcessed.mockResolvedValue({});
+    postPaymentsActivity.mockResolvedValue({});
     getPaymentsOverpaid.mockResolvedValue({
       data: [balance({ balance: 0 }), balance({ balance: 3 })],
     });
@@ -335,14 +332,14 @@ describe("handleOverpaidProcessed", () => {
     });
 
     await vi.waitFor(() => expect(setOverpaidBalances).toHaveBeenCalled());
-    expect(postPaymentsOverpaidProcessed).toHaveBeenCalledWith({
-      body: { memberId: "m1", activityId: 5 },
+    expect(postPaymentsActivity).toHaveBeenCalledWith({
+      body: { memberId: "m1", activityIds: [5], manuallyMarkedAsPaid: true },
     });
     expect(setOverpaidBalances.mock.calls[0][0]).toHaveLength(1);
   });
 
   it("does not reload when marking as processed fails", async () => {
-    postPaymentsOverpaidProcessed.mockResolvedValue({ error: true });
+    postPaymentsActivity.mockResolvedValue({ error: true });
     const setOverpaidBalances = vi.fn();
 
     handleOverpaidProcessed({ balance: balance(), setOverpaidBalances });

@@ -330,39 +330,6 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task ProcessOverpaid(PostOverpaidProcessedDTO dto, Guid userId)
-        {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
-
-            var enrollment = await db.Enrollments
-                .Include(e => e.Activity)
-                .FirstOrDefaultAsync(e => e.MemberId == dto.MemberId && e.ActivityId == dto.ActivityId)
-                ?? throw new KeyNotFoundException($"Enrollment for member {dto.MemberId} and activity {dto.ActivityId} not found");
-
-            var unpaidAmount = paymentValidationService.GetUnpaidAmountForEnrollment(enrollment, true);
-            if (unpaidAmount >= 0)
-                throw new InvalidOperationException("Enrollment is not overpaid");
-
-            // Stored as a negative manual payment so the balance settles at zero and the refund stays out of the export
-            var refund = new EnrollmentPayment
-            {
-                MemberId = dto.MemberId,
-                ActivityId = dto.ActivityId,
-                Price = unpaidAmount,
-                PaymentServiceId = "",
-                PaymentIntentUrl = "",
-                PaidAt = DateTime.UtcNow,
-                ManuallyMarkedAsPaid = true
-            };
-            StateValidator.Validate(refund);
-
-            db.EnrollmentPayments.Add(refund);
-            await db.SaveChangesAsync();
-            logger.LogInformation("Processed overpaid enrollment for member {MemberId} and activity {ActivityId}. Refunded: {Amount}",
-                dto.MemberId, dto.ActivityId, -unpaidAmount);
-        }
-
-        /// <inheritdoc />
         public async Task<PaymentStatusResponse> GetMemberPaymentStatus(Guid fromUserId, Guid userId, CancellationToken ct)
         {
             if (fromUserId != userId)
@@ -691,7 +658,8 @@ namespace Backend.Services.Domain
                     throw new Exception($"Activity {enrollment.Activity.Name} is not open for payment");
 
                 var price = paymentValidationService.GetUnpaidAmountForEnrollment(enrollment);
-                if (price <= 0) continue;
+                // A negative manual amount records the refund of an overpaid enrollment
+                if (price == 0 || (price < 0 && !manuallyMarkedAsPaid)) continue;
 
                 var payment = new EnrollmentPayment
                 {

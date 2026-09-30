@@ -10,7 +10,6 @@ import {
   getPaymentsUnpaid,
   type Member,
   postPaymentsActivity,
-  postPaymentsOverpaidProcessed,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
@@ -268,10 +267,11 @@ export const handleOverpaidProcessed = ({
   setOverpaidBalances,
 }: OverpaidProcessedArgs) => {
   const process = async () => {
-    const response = await postPaymentsOverpaidProcessed({
+    const response = await postPaymentsActivity({
       body: {
         memberId: balance.enrollment.memberId,
-        activityId: balance.enrollment.activityId,
+        activityIds: [balance.enrollment.activityId],
+        manuallyMarkedAsPaid: true,
       },
     });
 

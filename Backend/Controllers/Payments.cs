@@ -235,26 +235,6 @@ namespace Backend.Controllers
             return Ok(result);
         }
 
-        // POST: payments/overpaid/processed
-        /// <summary>
-        /// Marks an overpaid enrollment as processed, e.g. after the difference was refunded to the member. The overpaid amount is recorded as a manual refund so the enrollment no longer shows up as overpaid.
-        /// </summary>
-        /// <param name="dto">The member and activity of the overpaid enrollment.</param>
-        /// <returns>No content once the enrollment has been marked as processed.</returns>
-        [HttpPost("overpaid/processed")]
-        [Consumes("application/json")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult> PostOverpaidProcessed(PostOverpaidProcessedDTO dto)
-        {
-            var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-            await paymentService.ProcessOverpaid(dto, userId);
-            return NoContent();
-        }
-
         // GET: payments/member/{userId}/status
         /// <summary>
         /// Retrieves the current payment and membership status for a specific member. The GetMemberPaymentStatus endpoint provides a high-level summary of a user's financial standing, including whether they are considered a "paid member" and if they have any critical outstanding debts. This is frequently used by other modules to determine eligibility for activity registration or access to certain system features.

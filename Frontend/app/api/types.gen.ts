@@ -1237,20 +1237,6 @@ export type PostActivityMailDto = {
 };
 
 /**
- * Defines the DTO for marking an overpaid enrollment as processed, e.g. after the difference was refunded to the member.
- */
-export type PostOverpaidProcessedDto = {
-    /**
-     * The identifier of the member who made the payment.
-     */
-    memberId?: string;
-    /**
-     * The identifier of the activity the payment is for.
-     */
-    activityId?: number;
-};
-
-/**
  * Defines the DTO for posting an activity payment, containing the necessary information for creating a new activity payment, including the member ID, an optional flag indicating whether the payment was manually marked as paid, and a list of unique identifiers of the activities for which the activity payment is being created. The PostActivityPaymentDTO is used to transfer data from the client to the server when creating a new activity payment, ensuring that all required information is provided and validated appropriately for the creation process, allowing for effective tracking and management of activity payments based on the provided activity IDs in the request payload.
  */
 export type PostActivityPaymentDto = {
@@ -5400,46 +5386,6 @@ export type GetPaymentsOverpaidResponses = {
 };
 
 export type GetPaymentsOverpaidResponse = GetPaymentsOverpaidResponses[keyof GetPaymentsOverpaidResponses];
-
-export type PostPaymentsOverpaidProcessedData = {
-    /**
-     * The member and activity of the overpaid enrollment.
-     */
-    body?: PostOverpaidProcessedDto;
-    path?: never;
-    query?: never;
-    url: '/payments/overpaid/processed';
-};
-
-export type PostPaymentsOverpaidProcessedErrors = {
-    /**
-     * Bad Request
-     */
-    400: ErrorResponseDto;
-    /**
-     * Forbidden
-     */
-    403: ProblemDetails;
-    /**
-     * Not Found
-     */
-    404: ProblemDetails;
-    /**
-     * Internal Server Error
-     */
-    500: ErrorResponseDto;
-};
-
-export type PostPaymentsOverpaidProcessedError = PostPaymentsOverpaidProcessedErrors[keyof PostPaymentsOverpaidProcessedErrors];
-
-export type PostPaymentsOverpaidProcessedResponses = {
-    /**
-     * No Content
-     */
-    204: void;
-};
-
-export type PostPaymentsOverpaidProcessedResponse = PostPaymentsOverpaidProcessedResponses[keyof PostPaymentsOverpaidProcessedResponses];
 
 export type GetPaymentsMemberByFromUserIdStatusData = {
     body?: never;

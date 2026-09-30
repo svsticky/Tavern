@@ -826,73 +826,6 @@ public class PaymentServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task ProcessOverpaid_OverpaidEnrollment_RecordsManualRefund()
-    {
-        var member = CreateMember("1234567");
-        _db.Members.Add(member);
-
-        var activity = new Activity
-        {
-            Name = "Act",
-            Price = 10m,
-            DutchDescription = "NL",
-            EnglishDescription = "EN",
-            DateTimeStart = DateTime.UtcNow.AddDays(1),
-            DateTimeEnd = DateTime.UtcNow.AddDays(2),
-            Location = "Enschede",
-            IsOpenForPayment = true,
-            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
-        };
-        _db.Activities.Add(activity);
-        await _db.SaveChangesAsync();
-
-        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false });
-        await _db.SaveChangesAsync();
-
-        _paymentValidationService.GetUnpaidAmountForEnrollment(Arg.Is<Enrollment>(e => e.ActivityId == activity.Id), true).Returns(-5m);
-
-        await _service.ProcessOverpaid(new PostOverpaidProcessedDTO { MemberId = member.Id, ActivityId = activity.Id }, _userId);
-
-        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
-        _db.ChangeTracker.Clear();
-        var refund = await _db.EnrollmentPayments.SingleAsync(p => p.MemberId == member.Id && p.ActivityId == activity.Id);
-        Assert.Equal(-5m, refund.Price);
-        Assert.True(refund.ManuallyMarkedAsPaid);
-        Assert.NotNull(refund.PaidAt);
-    }
-
-    [Fact]
-    public async Task ProcessOverpaid_NotOverpaid_ThrowsInvalidOperationException()
-    {
-        var member = CreateMember("1234567");
-        _db.Members.Add(member);
-
-        var activity = new Activity
-        {
-            Name = "Act",
-            Price = 10m,
-            DutchDescription = "NL",
-            EnglishDescription = "EN",
-            DateTimeStart = DateTime.UtcNow.AddDays(1),
-            DateTimeEnd = DateTime.UtcNow.AddDays(2),
-            Location = "Enschede",
-            IsOpenForPayment = true,
-            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
-        };
-        _db.Activities.Add(activity);
-        await _db.SaveChangesAsync();
-
-        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false });
-        await _db.SaveChangesAsync();
-
-        _paymentValidationService.GetUnpaidAmountForEnrollment(Arg.Any<Enrollment>(), true).Returns(0m);
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _service.ProcessOverpaid(new PostOverpaidProcessedDTO { MemberId = member.Id, ActivityId = activity.Id }, _userId));
-        Assert.Empty(_db.EnrollmentPayments);
-    }
-
-    [Fact]
     public async Task CreateActivityPayment_Manual_CreatesPaidEnrollmentPayments()
     {
         var member = CreateMember("1234567");
@@ -936,6 +869,48 @@ public class PaymentServiceTests : IDisposable
         var payment = await _db.EnrollmentPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ActivityId == activity.Id);
         Assert.NotNull(payment);
         Assert.True(payment.PaidAt.HasValue);
+        Assert.True(payment.ManuallyMarkedAsPaid);
+    }
+
+    [Fact]
+    public async Task CreateActivityPayment_ManualOverpaid_RecordsNegativePayment()
+    {
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+
+        var activity = new Activity
+        {
+            Name = "Act",
+            Price = 10m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5)
+        };
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10m, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false });
+        await _db.SaveChangesAsync();
+
+        _paymentValidationService.GetUnpaidAmountForEnrollment(Arg.Is<Enrollment>(e => e.ActivityId == activity.Id)).Returns(-5m);
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var dto = new PostActivityPaymentDTO
+        {
+            MemberId = member.Id,
+            ActivityIds = new List<uint> { activity.Id },
+            ManuallyMarkedAsPaid = true
+        };
+
+        await _service.CreateActivityPayment(dto, _userId);
+
+        _db.ChangeTracker.Clear();
+        var payment = await _db.EnrollmentPayments.SingleAsync(p => p.MemberId == member.Id && p.ActivityId == activity.Id);
+        Assert.Equal(-5m, payment.Price);
         Assert.True(payment.ManuallyMarkedAsPaid);
     }
 
