@@ -803,7 +803,11 @@ export default function SettingsPage() {
               label={t("mail_subscription_service")}
               value={settings.MailSubscriptionService}
               onChange={(e) =>
-                handleSettingsChange("MailSubscriptionService", e.target.value, setSettings)
+                handleSettingsChange(
+                  "MailSubscriptionService",
+                  e.target.value,
+                  setSettings,
+                )
               }
               options={[
                 { value: "", label: t("none") },
@@ -811,7 +815,8 @@ export default function SettingsPage() {
                 { value: "MAILCHIMP", label: "Mailchimp" },
               ]}
             />
-            {(settings.MailSubscriptionService || "").toUpperCase() === "LISTMONK" && (
+            {(settings.MailSubscriptionService || "").toUpperCase() ===
+              "LISTMONK" && (
               <>
                 <Input
                   label={t("listmonk_url")}
