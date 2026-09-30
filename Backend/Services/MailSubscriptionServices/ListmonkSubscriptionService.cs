@@ -76,7 +76,10 @@ public class ListmonkSubscriptionService(
         var all_mailinglists = all_mailinglists_response?.Data?.Results ?? [];
 
         var subscriber = await GetSubscriberByEmail(email, ct);
-        var own_mailinglists = subscriber!.Lists;
+
+        // If the subscriber does not exist, they cannot have any mailing list subscriptions.
+        // When they select one, a subscriber is created and then their subscriptions will be correctly displayed.
+        var own_mailinglists = subscriber?.Lists ?? []; 
         var own_mailinglists_ids = own_mailinglists.Select(ml => ml.Id).ToArray();
 
         return all_mailinglists.Select(ml =>
