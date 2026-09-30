@@ -488,6 +488,22 @@ describe("SettingsPage", () => {
     expect(handleSettingsChange.mock.calls.length).toBeGreaterThan(15);
   });
 
+  it("fires handleSettingsChange for every visible settings field (LISTMONK)", async () => {
+    getEnv.mockReturnValue("true");
+    loadWith(
+      defaultSettings({
+        MailSubscriptionService: "LISTMONK",
+      }),
+    );
+
+    const { container } = renderWithProviders(<SettingsPage />);
+    await screen.findByText("studies-datatable");
+
+    const count = fireAllFieldChanges(container);
+    expect(count).toBeGreaterThan(20);
+    expect(handleSettingsChange.mock.calls.length).toBeGreaterThan(15);
+  });
+
   it("renders sensible fallbacks when optional settings are unset or zeroed out", async () => {
     loadWith({
       BoardGroupId: "1",
