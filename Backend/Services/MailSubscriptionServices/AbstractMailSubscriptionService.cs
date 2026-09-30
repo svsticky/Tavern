@@ -1,8 +1,9 @@
 using Backend.Database;
 using Backend.Models.Domain;
+using Backend.Interfaces;
 using Backend.Services.OutboxWorkers;
 
-namespace Backend.Interfaces;
+namespace Backend.Services.MailSubscriptionServices;
 
 /// <summary>
 /// Signals that a mail subscription outbox task can never succeed, no matter how many times it's
@@ -30,7 +31,7 @@ public record MemberMailinglistDto(string Id, string Name, bool Subscribed);
 /// Defines the contract for a mail subscription service that manages mailing lists and member subscriptions against an external provider (such as Mailchimp). Implementations are the sole source of truth for which lists exist and which members are subscribed to them - no subscription state is mirrored locally.
 /// Also implements <see cref="INameChangedListener"/> and <see cref="IMailChangedListener"/>.
 /// </summary>
-public abstract class IMailSubscriptionService : INameChangedListener, IMailChangedListener
+public abstract class AbstractMailSubscriptionService : INameChangedListener, IMailChangedListener
 {
     private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
 
@@ -61,7 +62,7 @@ public abstract class IMailSubscriptionService : INameChangedListener, IMailChan
     /// 
     /// </summary>
     /// <param name="mailSubscriptionOutboxWorker"></param>
-    protected IMailSubscriptionService(MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker)
+    protected AbstractMailSubscriptionService(MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker)
     {
         _mailSubscriptionOutboxWorker = mailSubscriptionOutboxWorker;
     }

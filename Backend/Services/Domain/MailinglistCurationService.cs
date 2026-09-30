@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models;
 using Backend.Models.Domain;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services.Domain;
@@ -9,12 +10,12 @@ namespace Backend.Services.Domain;
 /// <summary>
 /// Implements <see cref="IMailinglistCurationService"/>. Curation records only ever store a provider
 /// list ID and a visibility - display names and existence are always resolved live against
-/// <see cref="IMailSubscriptionService"/>, never cached locally.
+/// <see cref="AbstractMailSubscriptionService"/>, never cached locally.
 /// </summary>
 public class MailinglistCurationService : IMailinglistCurationService
 {
     private readonly PostgresDbContext _db;
-    private readonly IMailSubscriptionService _mailSubscriptionService;
+    private readonly AbstractMailSubscriptionService _mailSubscriptionService;
     private readonly IPermissionService _permissionService;
     private readonly ILogger<MailinglistCurationService> _logger;
 
@@ -27,7 +28,7 @@ public class MailinglistCurationService : IMailinglistCurationService
     /// <param name="logger">The logger.</param>
     public MailinglistCurationService(
         PostgresDbContext db,
-        IMailSubscriptionService mailSubscriptionService,
+        AbstractMailSubscriptionService mailSubscriptionService,
         IPermissionService permissionService,
         ILogger<MailinglistCurationService> logger)
     {

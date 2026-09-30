@@ -1,5 +1,4 @@
 using Backend.Database;
-using Backend.Interfaces;
 using Backend.Services.OutboxWorkers;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -7,35 +6,24 @@ using System.Text.Json.Serialization;
 namespace Backend.Services.MailSubscriptionServices;
 
 /// <summary>
-/// Implements <see cref="IMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
+/// Implements <see cref="AbstractMailSubscriptionService"/> against the Listmonk API. Listmonk is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
 /// </summary>
-public class ListmonkSubscriptionService : IMailSubscriptionService
+/// <param name="logger">The logger.</param>
+/// <param name="httpClient">The HTTP client.</param>
+/// <param name="context">The database context.</param>
+/// <param name="mailSubscriptionOutboxWorker">Used to queue outbox tasks from listener notifications.</param>
+public class ListmonkSubscriptionService(
+    ILogger<ListmonkSubscriptionService> logger,
+    HttpClient httpClient,
+    PostgresDbContext context,
+    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker) : AbstractMailSubscriptionService(mailSubscriptionOutboxWorker)
 {
-    private readonly ILogger<ListmonkSubscriptionService> _logger;
-    private readonly HttpClient _httpClient;
-    private readonly PostgresDbContext _context;
+    private readonly ILogger<ListmonkSubscriptionService> _logger = logger;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly PostgresDbContext _context = context;
 
     /// <inheritdoc />
     public override bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("LISTMONK", StringComparison.OrdinalIgnoreCase) ?? false;
-
-    /// <summary>
-    /// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve Mailchimp settings.
-    /// </summary>
-    /// <param name="logger">The logger.</param>
-    /// <param name="httpClient">The HTTP client.</param>
-    /// <param name="context">The database context.</param>
-    /// <param name="mailSubscriptionOutboxWorker">Used to queue outbox tasks from listener notifications.</param>
-    public ListmonkSubscriptionService(
-        ILogger<ListmonkSubscriptionService> logger,
-        HttpClient httpClient,
-        PostgresDbContext context,
-        MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker) :
-        base(mailSubscriptionOutboxWorker)
-    {
-        _logger = logger;
-        _httpClient = httpClient;
-        _context = context;
-    }
 
     private void ConfigureHttpClient()
     {
