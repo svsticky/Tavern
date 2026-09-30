@@ -296,7 +296,7 @@ export default function DashboardHeader({
             <button
               type="button"
               onClick={() => setEnrollmentsModalIsOpen(true)}
-              className="grow text-left cursor-pointer"
+              className="grow min-w-0 text-left cursor-pointer"
             >
               <Tile className="bg-(--board-primary-light) border-2 border-white/20 h-full hover:border-white/50 transition-colors">
                 <p>{t("enrollments")}</p>
@@ -313,7 +313,7 @@ export default function DashboardHeader({
             <button
               type="button"
               onClick={() => setAttendedModalIsOpen(true)}
-              className="grow text-left cursor-pointer"
+              className="grow min-w-0 text-left cursor-pointer"
             >
               <Tile className="bg-(--board-primary-light) border-2 border-white/20 h-full hover:border-white/50 transition-colors">
                 <p>{t("attended")}</p>
