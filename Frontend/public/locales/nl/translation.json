@@ -643,5 +643,8 @@
   "enrolled_activities": "Aangemelde activiteiten",
   "attended_activities": "Bijgewoonde activiteiten",
   "no_attended_activities": "Je hebt nog geen activiteiten bijgewoond.",
-  "no_outstanding_payments": "Je hebt geen openstaande betalingen."
+  "no_outstanding_payments": "Je hebt geen openstaande betalingen.",
+  "marking_as_processed": "Markeren als verwerkt...",
+  "marked_as_processed": "Gemarkeerd als verwerkt",
+  "mark_as_processed_failed": "Markeren als verwerkt mislukt"
 }

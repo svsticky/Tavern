@@ -10,6 +10,7 @@ import {
   getPaymentsUnpaid,
   type Member,
   postPaymentsActivity,
+  postPaymentsOverpaidProcessed,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
@@ -246,6 +247,48 @@ export const handleMarkAsPaid = ({
     loading: t("marking_as_paid"),
     success: t("marked_as_paid"),
     error: (error) => appendErrorMessage(t("mark_as_paid_failed"), error),
+  });
+};
+
+/**
+ * Arguments for the handleOverpaidProcessed handler.
+ */
+type OverpaidProcessedArgs = {
+  balance: EnrollmentBalance;
+  setOverpaidBalances: (value: EnrollmentBalance[] | null) => void;
+};
+
+/**
+ * Marks an overpaid enrollment as processed (e.g. after refunding the member) and reloads the overpaid balances.
+ *
+ * @param {OverpaidProcessedArgs} args - The overpaid balance and the state setter to refresh.
+ */
+export const handleOverpaidProcessed = ({
+  balance,
+  setOverpaidBalances,
+}: OverpaidProcessedArgs) => {
+  const process = async () => {
+    const response = await postPaymentsOverpaidProcessed({
+      body: {
+        memberId: balance.enrollment.memberId,
+        activityId: balance.enrollment.activityId,
+      },
+    });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to mark as processed");
+    }
+
+    const overpaidBalances = await getPaymentsOverpaid();
+    if (overpaidBalances.data) {
+      setOverpaidBalances(overpaidBalances.data.filter((b) => b.balance !== 0));
+    }
+  };
+
+  toast.promise(process(), {
+    loading: t("marking_as_processed"),
+    success: t("marked_as_processed"),
+    error: (error) => appendErrorMessage(t("mark_as_processed_failed"), error),
   });
 };
 

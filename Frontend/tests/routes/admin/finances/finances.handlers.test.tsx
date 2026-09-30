@@ -7,12 +7,14 @@ const {
   getPaymentsOverpaid,
   getPaymentsUnpaid,
   postPaymentsActivity,
+  postPaymentsOverpaidProcessed,
 } = vi.hoisted(() => ({
   getActivities: vi.fn(),
   getPaymentsExport: vi.fn(),
   getPaymentsOverpaid: vi.fn(),
   getPaymentsUnpaid: vi.fn(),
   postPaymentsActivity: vi.fn(),
+  postPaymentsOverpaidProcessed: vi.fn(),
 }));
 
 vi.mock("~/api", () => ({
@@ -21,6 +23,7 @@ vi.mock("~/api", () => ({
   getPaymentsOverpaid,
   getPaymentsUnpaid,
   postPaymentsActivity,
+  postPaymentsOverpaidProcessed,
 }));
 
 vi.mock("react-hot-toast", () => ({
@@ -34,6 +37,7 @@ vi.mock("react-hot-toast", () => ({
 import toast from "react-hot-toast";
 import {
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   loadExpiredActivities,
@@ -308,6 +312,45 @@ describe("handleMarkAsPaid", () => {
 
     await vi.waitFor(() => expect(setLoading).toHaveBeenLastCalledWith(false));
     expect(refreshUnpaid).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleOverpaidProcessed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("marks the overpaid enrollment as processed and reloads the overpaid balances", async () => {
+    postPaymentsOverpaidProcessed.mockResolvedValue({});
+    getPaymentsOverpaid.mockResolvedValue({
+      data: [balance({ balance: 0 }), balance({ balance: 3 })],
+    });
+    const setOverpaidBalances = vi.fn();
+
+    handleOverpaidProcessed({
+      balance: balance({
+        enrollment: { memberId: "m1", activityId: 5 } as any,
+      }),
+      setOverpaidBalances,
+    });
+
+    await vi.waitFor(() => expect(setOverpaidBalances).toHaveBeenCalled());
+    expect(postPaymentsOverpaidProcessed).toHaveBeenCalledWith({
+      body: { memberId: "m1", activityId: 5 },
+    });
+    expect(setOverpaidBalances.mock.calls[0][0]).toHaveLength(1);
+  });
+
+  it("does not reload when marking as processed fails", async () => {
+    postPaymentsOverpaidProcessed.mockResolvedValue({ error: true });
+    const setOverpaidBalances = vi.fn();
+
+    handleOverpaidProcessed({ balance: balance(), setOverpaidBalances });
+
+    await vi.waitFor(() => expect(toast.promise).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(getPaymentsOverpaid).not.toHaveBeenCalled();
+    expect(setOverpaidBalances).not.toHaveBeenCalled();
   });
 });
 

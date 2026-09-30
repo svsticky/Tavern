@@ -643,5 +643,8 @@
   "enrolled_activities": "Enrolled activities",
   "attended_activities": "Attended activities",
   "no_attended_activities": "You haven't attended any activities yet.",
-  "no_outstanding_payments": "You have no outstanding payments."
+  "no_outstanding_payments": "You have no outstanding payments.",
+  "marking_as_processed": "Marking as processed...",
+  "marked_as_processed": "Marked as processed",
+  "mark_as_processed_failed": "Marking as processed failed"
 }

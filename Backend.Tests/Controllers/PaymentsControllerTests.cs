@@ -513,6 +513,20 @@ public class PaymentsControllerTests
     }
 
     [Fact]
+    public async Task PostOverpaidProcessed_Success_ReturnsNoContent()
+    {
+        // Arrange
+        var dto = new PostOverpaidProcessedDTO { MemberId = Guid.NewGuid(), ActivityId = 1 };
+
+        // Act
+        var result = await _controller.PostOverpaidProcessed(dto);
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+        await _serviceMock.Received(1).ProcessOverpaid(dto, _userId);
+    }
+
+    [Fact]
     public async Task ExportPaymentsToCsv_Success_ReturnsFile()
     {
         // Arrange

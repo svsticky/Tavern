@@ -33,6 +33,18 @@ public class PostActivityPaymentDTO : AbstractPaymentDTO
 }
 
 /// <summary>
+/// Defines the DTO for marking an overpaid enrollment as processed, e.g. after the difference was refunded to the member.
+/// </summary>
+public class PostOverpaidProcessedDTO
+{
+    /// <inheritdoc cref="Models.Domain.Payment.MemberId"/>
+    public Guid MemberId { get; set; }
+
+    /// <inheritdoc cref="Models.Domain.EnrollmentPayment.ActivityId"/>
+    public uint ActivityId { get; set; }
+}
+
+/// <summary>
 /// Defines the DTO for posting a "Begunstiger" (benefactor) fee payment, containing the necessary information for creating a new begunstiger payment, including the member ID and an optional flag indicating whether the payment was manually marked as paid. This is a distinct payment type from PostMembershipPaymentDTO so that a begunstiger cannot pay the (cheaper) regular membership fee through the membership payment endpoint instead of their own fee.
 /// </summary>
 public class PostBegunstigerPaymentDTO : AbstractPaymentDTO

@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type {
   Activity,
   ActivityResponseDto,
@@ -16,6 +16,7 @@ import Select from "~/components/UI/Select";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
 import {
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   loadExpiredActivities,
@@ -173,11 +174,8 @@ export default function Finances() {
           >
             <div className="flex flex-col gap-2">
               {overpaidBalances?.map((balance, index) => (
-                <>
-                  <div
-                    key={index}
-                    className="p-3 bg-green-100 rounded-lg flex items-center justify-between"
-                  >
+                <Fragment key={index}>
+                  <div className="p-3 bg-green-100 rounded-lg flex items-center justify-between">
                     <span className="text-sm text-slate-700">
                       {balance.enrollment.member?.firstName}{" "}
                       {balance.enrollment.member?.lastName}
@@ -187,10 +185,16 @@ export default function Finances() {
                       {balance.enrollment.activity?.name}
                     </span>
                   </div>
-                  <Button variant="primary" className="self-end">
+                  <Button
+                    variant="primary"
+                    className="self-end"
+                    onClick={() =>
+                      handleOverpaidProcessed({ balance, setOverpaidBalances })
+                    }
+                  >
                     {t("processed")}
                   </Button>
-                </>
+                </Fragment>
               ))}
             </div>
           </BorderedTile>

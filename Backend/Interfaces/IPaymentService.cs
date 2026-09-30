@@ -82,6 +82,13 @@ namespace Backend.Interfaces
         IEnumerable<EnrollmentBalance> GetOverpaid(Guid userId);
 
         /// <summary>
+        /// Marks an overpaid enrollment as processed by recording the overpaid amount as a manual refund.
+        /// </summary>
+        /// <param name="dto">The member and activity of the overpaid enrollment.</param>
+        /// <param name="userId">The ID of the requesting user.</param>
+        Task ProcessOverpaid(PostOverpaidProcessedDTO dto, Guid userId);
+
+        /// <summary>
         /// Retrieves payment status for a member.
         /// </summary>
         /// <param name="fromUserId">The ID of the requesting user.</param>

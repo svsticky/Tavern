@@ -12,6 +12,7 @@ const {
   loadFinancesData,
   loadExpiredActivities,
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   refreshUnpaidPayments,
@@ -19,6 +20,7 @@ const {
   loadFinancesData: vi.fn(),
   loadExpiredActivities: vi.fn(),
   handleMarkAsPaid: vi.fn(),
+  handleOverpaidProcessed: vi.fn(),
   handlePaymentsExport: vi.fn(),
   handleWhatsAppClick: vi.fn(),
   refreshUnpaidPayments: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock("~/routes/admin/finances/finances.handlers", () => ({
   loadFinancesData,
   loadExpiredActivities,
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   refreshUnpaidPayments,
@@ -161,6 +164,26 @@ describe("Finances (admin)", () => {
 
     expect(await screen.findByText("John Smith")).toBeInTheDocument();
     expect(screen.getByText("€20.00")).toBeInTheDocument();
+  });
+
+  it("marks an overpaid balance as processed", async () => {
+    const overpaid = {
+      balance: -20,
+      enrollment: {
+        memberId: "m2",
+        activityId: 3,
+        member: { firstName: "John", lastName: "Smith" },
+        activity: { name: "Borrel" },
+      },
+    } as EnrollmentBalance;
+    loadWith({ overpaidBalances: [overpaid] });
+
+    renderWithProviders(<Finances />);
+
+    fireEvent.click(await screen.findByText("processed"));
+    expect(handleOverpaidProcessed).toHaveBeenCalledWith(
+      expect.objectContaining({ balance: overpaid }),
+    );
   });
 
   it("renders expired activities and navigates on click", async () => {
