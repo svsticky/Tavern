@@ -254,6 +254,7 @@ internal static class ServiceExtensions
 
         // Mail Subscription
         services.AddHttpClient<MailChimpSubscriptionService>();
+        services.AddHttpClient<ListmonkSubscriptionService>();
         services.AddScoped<IMailSubscriptionService>(sp =>
         {
             var db = sp.GetRequiredService<PostgresDbContext>();
@@ -261,7 +262,8 @@ internal static class ServiceExtensions
             return mailSubscriptionService switch
             {
                 "MAILCHIMP" => sp.GetRequiredService<MailChimpSubscriptionService>(),
-                _ => sp.GetRequiredService<MailChimpSubscriptionService>()
+                "LISTMONK" => sp.GetRequiredService<ListmonkSubscriptionService>(),
+                _ => sp.GetRequiredService<ListmonkSubscriptionService>()
             };
         });
 

@@ -796,7 +796,61 @@ export default function SettingsPage() {
                 />
               </>
             )}
+          </FormSection>
 
+          <FormSection columns={2} title={t("mail_subscription_service")}>
+            <Select
+              label={t("mail_subscription_service")}
+              value={settings.MailSubscriptionService}
+              onChange={(e) =>
+                handleSettingsChange("MailSubscriptionService", e.target.value, setSettings)
+              }
+              options={[
+                { value: "", label: t("none") },
+                { value: "LISTMONK", label: "Listmonk" },
+                { value: "MAILCHIMP", label: "Mailchimp" },
+              ]}
+            />
+            {(settings.MailSubscriptionService || "").toUpperCase() === "LISTMONK" && (
+              <>
+                <Input
+                  label={t("listmonk_url")}
+                  type="text"
+                  value={settings.ListmonkUrl || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "ListmonkUrl",
+                      e.target.value,
+                      setSettings,
+                    )
+                  }
+                />
+                <Input
+                  label={t("listmonk_user")}
+                  type="text"
+                  value={settings.ListmonkUser || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "ListmonkUser",
+                      e.target.value,
+                      setSettings,
+                    )
+                  }
+                />
+                <Input
+                  label={t("listmonk_api_key")}
+                  type="password"
+                  value={settings.ListmonkApiKey || ""}
+                  onChange={(e) =>
+                    handleSettingsChange(
+                      "ListmonkApiKey",
+                      e.target.value,
+                      setSettings,
+                    )
+                  }
+                />
+              </>
+            )}
             {(settings.MailSubscriptionService || "").toUpperCase() ===
               "MAILCHIMP" && (
               <>
