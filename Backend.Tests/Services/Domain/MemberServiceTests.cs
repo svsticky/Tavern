@@ -12,6 +12,7 @@ using Backend.Services.Domain;
 using Backend.Services;
 using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
 using Microsoft.Data.Sqlite;
@@ -36,7 +37,7 @@ public class MemberServiceTests : IDisposable
     private readonly AbstractPaymentService _paymentService;
     private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
-    private readonly IMailSubscriptionService _mailSubscriptionService;
+    private readonly AbstractMailSubscriptionService _mailSubscriptionService;
     private readonly IMailinglistCurationService _mailinglistCurationService;
     private readonly IMemoryCache _memoryCache;
     private readonly List<INameChangedListener> _nameChangedListeners;
@@ -61,7 +62,7 @@ public class MemberServiceTests : IDisposable
         _paymentService = Substitute.For<AbstractPaymentService>(null, null);
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, NullLogger<AuthOutboxWorker>.Instance);
         _mailSubscriptionOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
-        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>(_mailSubscriptionOutboxWorker);
+        _mailSubscriptionService = Substitute.For<AbstractMailSubscriptionService>(_mailSubscriptionOutboxWorker);
         _mailinglistCurationService = Substitute.For<IMailinglistCurationService>();
         _memoryCache = Substitute.For<IMemoryCache>();
 

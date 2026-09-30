@@ -8,6 +8,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
 using Backend.Services.OutboxWorkers;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +21,7 @@ namespace Backend.Tests.Services;
 public class MailSubscriptionOutboxWorkerTests
 {
     private readonly DbContextOptions<PostgresDbContext> _dbOptions;
-    private readonly IMailSubscriptionService _mailSubscriptionService;
+    private readonly AbstractMailSubscriptionService _mailSubscriptionService;
     private readonly ILogger<MailSubscriptionOutboxWorker> _logger;
 
     public MailSubscriptionOutboxWorkerTests()
@@ -31,7 +32,7 @@ public class MailSubscriptionOutboxWorkerTests
             .Options;
 
         var _mailSubscriptionServiceOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
-        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
+        _mailSubscriptionService = Substitute.For<AbstractMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
         _logger = NullLogger<MailSubscriptionOutboxWorker>.Instance;
     }
 

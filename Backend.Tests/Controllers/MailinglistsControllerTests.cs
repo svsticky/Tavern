@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Backend.Controllers;
 using Backend.Controllers.DTOs;
 using Backend.Services.OutboxWorkers;
+using Backend.Services.MailSubscriptionServices;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +20,7 @@ namespace Backend.Tests.Controllers;
 
 public class MailinglistsControllerTests
 {
-    private readonly IMailSubscriptionService _mailSubscriptionServiceMock;
+    private readonly AbstractMailSubscriptionService _mailSubscriptionServiceMock;
     private readonly IMailinglistCurationService _curationServiceMock;
     private readonly Mailinglists _controller;
     private readonly Guid _userId;
@@ -27,7 +28,7 @@ public class MailinglistsControllerTests
     public MailinglistsControllerTests()
     {
         var _mailSubscriptionServiceOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
-        _mailSubscriptionServiceMock = Substitute.For<IMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
+        _mailSubscriptionServiceMock = Substitute.For<AbstractMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
         _curationServiceMock = Substitute.For<IMailinglistCurationService>();
         _controller = new Mailinglists(_mailSubscriptionServiceMock, _curationServiceMock);
         _userId = Guid.NewGuid();
