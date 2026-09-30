@@ -2,7 +2,6 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.EntityFrameworkCore;
@@ -181,10 +180,6 @@ public class GroupService : IGroupService
         var group = await GetGroupOrThrow(id, cancellationToken);
 
         patchDoc.ApplyTo(group);
-
-        group.DefaultGLAccount = StringUtils.NullIfBlank(group.DefaultGLAccount);
-        group.DefaultCostCenter = StringUtils.NullIfBlank(group.DefaultCostCenter);
-        group.DefaultCostUnit = StringUtils.NullIfBlank(group.DefaultCostUnit);
 
         StateValidator.Validate(group);
 

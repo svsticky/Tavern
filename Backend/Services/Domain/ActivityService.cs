@@ -4,7 +4,6 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.QueryExtensions;
 using Backend.Services.MailServices;
-using Backend.Utils;
 using Backend.Utils.DateTime;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
@@ -256,9 +255,6 @@ public class ActivityService : IActivityService
                 throw new ArgumentException(err.ErrorMessage);
             });
 
-            activity.GLAccountId = StringUtils.NullIfBlank(activity.GLAccountId);
-            activity.CostCenterId = StringUtils.NullIfBlank(activity.CostCenterId);
-            activity.CostUnitId = StringUtils.NullIfBlank(activity.CostUnitId);
 
             if (activity.IsEnrollable)
             {
@@ -593,9 +589,9 @@ public class ActivityService : IActivityService
             IsWeeklyDrinks = dto.IsWeeklyDrinks,
             AllowedAudience = dto.AllowedAudience,
             VatRate = dto.VatRate,
-            GLAccountId = StringUtils.NullIfBlank(dto.GLAccountId),
-            CostCenterId = StringUtils.NullIfBlank(dto.CostCenterId),
-            CostUnitId = StringUtils.NullIfBlank(dto.CostUnitId),
+            GLAccountId = dto.GLAccountId,
+            CostCenterId = dto.CostCenterId,
+            CostUnitId = dto.CostUnitId,
             SpecificationQuestions = questions.Select(q => new SpecificationQuestion
             {
                 QuestionDutch = q.QuestionDutch,
@@ -737,9 +733,9 @@ public class ActivityService : IActivityService
         activity.IsWeeklyDrinks = dto.IsWeeklyDrinks;
         activity.AllowedAudience = dto.AllowedAudience;
         activity.VatRate = dto.VatRate;
-        activity.GLAccountId = StringUtils.NullIfBlank(dto.GLAccountId);
-        activity.CostCenterId = StringUtils.NullIfBlank(dto.CostCenterId);
-        activity.CostUnitId = StringUtils.NullIfBlank(dto.CostUnitId);
+        activity.GLAccountId = dto.GLAccountId;
+        activity.CostCenterId = dto.CostCenterId;
+        activity.CostUnitId = dto.CostUnitId;
     }
 
     private static StringBuilder BuildEnrollmentsCsv(Language language, Activity activity)

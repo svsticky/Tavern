@@ -375,27 +375,6 @@ public class GroupServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task PatchGroup_BlankCostFields_StoresNull()
-    {
-        // Arrange
-        var group = new Group { Id = 1, Name = "Group", Type = GroupType.Committee, DefaultGLAccount = "7001" };
-        _db.Groups.Add(group);
-        await _db.SaveChangesAsync();
-
-        var patchDoc = new JsonPatchDocument<Group>();
-        patchDoc.Replace(g => g.DefaultGLAccount, "");
-        patchDoc.Replace(g => g.DefaultCostCenter, " ");
-
-        // Act
-        await _service.PatchGroup(1, _userId, patchDoc, CancellationToken.None);
-
-        // Assert
-        var updated = await _db.Groups.FindAsync(1u);
-        Assert.Null(updated!.DefaultGLAccount);
-        Assert.Null(updated.DefaultCostCenter);
-    }
-
-    [Fact]
     public async Task PatchGroup_ValidPatch_UpdatesFields()
     {
         // Arrange
