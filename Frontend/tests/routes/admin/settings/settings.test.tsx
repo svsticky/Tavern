@@ -417,6 +417,16 @@ describe("SettingsPage", () => {
     expect(screen.getByLabelText("mailchimp_api_key")).toBeInTheDocument();
   });
 
+  it("shows listmonk fields when MailSubscriptionService is Listmonk", async () => {
+    loadWith(defaultSettings({ MailSubscriptionService: "LISTMONK" }));
+
+    renderWithProviders(<SettingsPage />);
+
+    expect(await screen.findByLabelText("listmonk_url")).toBeInTheDocument();
+    expect(screen.getByLabelText("listmonk_user")).toBeInTheDocument();
+    expect(screen.getByLabelText("listmonk_api_key")).toBeInTheDocument();
+  });
+
   function fireAllFieldChanges(container: HTMLElement) {
     const fields = container.querySelectorAll<
       HTMLInputElement | HTMLSelectElement
