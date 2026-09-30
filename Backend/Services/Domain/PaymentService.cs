@@ -705,11 +705,11 @@ namespace Backend.Services.Domain
 
             foreach (var p in enrollmentPayments)
             {
-                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? activityGLAccountFallback;
+                var glAccount = StringUtils.NullIfBlank(p.Activity?.GLAccountId) ?? StringUtils.NullIfBlank(p.Activity?.Organizer?.DefaultGLAccount) ?? activityGLAccountFallback;
                 var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
                 var activityName = p.Activity?.Name ?? "Unknown Activity";
-                var costCenter = BlankIfWhitespace(p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter);
-                var costUnit = BlankIfWhitespace(p.Activity?.CostUnitId ?? p.Activity?.Organizer?.DefaultCostUnit);
+                var costCenter = StringUtils.NullIfBlank(p.Activity?.CostCenterId) ?? BlankIfWhitespace(p.Activity?.Organizer?.DefaultCostCenter);
+                var costUnit = StringUtils.NullIfBlank(p.Activity?.CostUnitId) ?? BlankIfWhitespace(p.Activity?.Organizer?.DefaultCostUnit);
                 var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 
