@@ -5,10 +5,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using Backend.Controllers;
 using Backend.Controllers.DTOs;
+using Backend.Services.OutboxWorkers;
 using Backend.Interfaces;
 using Backend.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Xunit;
@@ -24,7 +26,8 @@ public class MailinglistsControllerTests
 
     public MailinglistsControllerTests()
     {
-        _mailSubscriptionServiceMock = Substitute.For<IMailSubscriptionService>();
+        var _mailSubscriptionServiceOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
+        _mailSubscriptionServiceMock = Substitute.For<IMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
         _curationServiceMock = Substitute.For<IMailinglistCurationService>();
         _controller = new Mailinglists(_mailSubscriptionServiceMock, _curationServiceMock);
         _userId = Guid.NewGuid();

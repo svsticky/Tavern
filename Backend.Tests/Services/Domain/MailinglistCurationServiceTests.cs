@@ -8,6 +8,7 @@ using Backend.Interfaces;
 using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
+using Backend.Services.OutboxWorkers;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -37,7 +38,8 @@ public class MailinglistCurationServiceTests : IDisposable
         _db = new TestPostgresDbContext(dbOptions);
         _db.Database.EnsureCreated();
 
-        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>();
+        var _mailSubscriptionServiceOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
+        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
         _permissionService = Substitute.For<IPermissionService>();
 
         _service = new MailinglistCurationService(

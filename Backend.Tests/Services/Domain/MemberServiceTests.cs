@@ -61,7 +61,7 @@ public class MemberServiceTests : IDisposable
         _paymentService = Substitute.For<AbstractPaymentService>(null, null);
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, NullLogger<AuthOutboxWorker>.Instance);
         _mailSubscriptionOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
-        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>();
+        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>(_mailSubscriptionOutboxWorker);
         _mailinglistCurationService = Substitute.For<IMailinglistCurationService>();
         _memoryCache = Substitute.For<IMemoryCache>();
 
@@ -817,7 +817,6 @@ public class MemberServiceTests : IDisposable
         Assert.Equal("New Street", updated.Street);
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
-        ((INameChangedListener)_mailSubscriptionService).DidNotReceiveWithAnyArgs().OnNameChanged(default!, default!);
     }
 
     [Fact]
@@ -842,8 +841,7 @@ public class MemberServiceTests : IDisposable
         // Assert - the general Sync trigger already covers pushing the name to Keycloak, so the
         // name-changed notification only needs to reach the Mailchimp listener.
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
-        ((INameChangedListener)_mailSubscriptionService).Received(1).OnNameChanged(
-            Arg.Is<Member>(m => m.Id == member.Id && m.FirstName == "Changed"), _db);
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateNameTask(member.Email, "Changed", member.LastName, _db);
     }
 
     [Fact]
@@ -870,7 +868,7 @@ public class MemberServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var updated = await _db.Members.FindAsync(_userId);
         Assert.Equal(member.Email, updated!.Email);
-        ((IMailChangedListener)_mailSubscriptionService).DidNotReceiveWithAnyArgs().OnMailChanged(default!, default!, default!, default!);
+        _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueMigrateEmailTask(default!, default!, default!, default!, default!);
     }
 
     [Fact]
@@ -965,7 +963,7 @@ public class MemberServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var updated = await _db.Members.FindAsync(member.Id);
         Assert.Equal(originalEmail, updated!.Email);
-        ((IMailChangedListener)_mailSubscriptionService).DidNotReceiveWithAnyArgs().OnMailChanged(default!, default!, default!, default!);
+        _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueMigrateEmailTask(default!, default!, default!, default!, default!);
     }
 
     [Fact]
@@ -1003,8 +1001,7 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(member.Id);
         Assert.NotNull(updated);
         Assert.Equal("Updated By Board", updated.FirstName);
-        ((INameChangedListener)_mailSubscriptionService).Received(1).OnNameChanged(
-            Arg.Is<Member>(m => m.Id == member.Id && m.FirstName == "Updated By Board"), _db);
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateNameTask(member.Email, "Updated By Board", member.LastName, _db);
     }
 
     [Fact]

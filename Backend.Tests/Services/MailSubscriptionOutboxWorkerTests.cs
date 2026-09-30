@@ -30,7 +30,8 @@ public class MailSubscriptionOutboxWorkerTests
             .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
 
-        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>();
+        var _mailSubscriptionServiceOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
+        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>(_mailSubscriptionServiceOutboxWorker);
         _logger = NullLogger<MailSubscriptionOutboxWorker>.Instance;
     }
 
