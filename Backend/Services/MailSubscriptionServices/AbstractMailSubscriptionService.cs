@@ -1,6 +1,6 @@
 using Backend.Database;
-using Backend.Models.Domain;
 using Backend.Interfaces;
+using Backend.Models.Domain;
 using Backend.Services.OutboxWorkers;
 
 namespace Backend.Services.MailSubscriptionServices;

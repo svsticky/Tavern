@@ -1,5 +1,4 @@
 using Backend.Database;
-using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.MailSubscriptionServices;
 using Microsoft.EntityFrameworkCore;
