@@ -328,13 +328,20 @@ export default function DashboardHeader({
           </div>
 
           {/* Outstanding Payments */}
-          <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
+          <Tile
+            className="bg-(--board-primary-light) border-2 border-white/20 grow cursor-pointer hover:border-white/50 transition-colors"
+            onClick={() => setPaymentsModalIsOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setPaymentsModalIsOpen(true);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+          >
             <div className="flex justify-between flex-col w-full min-[330px]:flex-row">
-              <button
-                type="button"
-                onClick={() => setPaymentsModalIsOpen(true)}
-                className="text-left cursor-pointer hover:opacity-80 transition-opacity"
-              >
+              <div className="grow min-w-0 text-left">
                 <p>{t("outstanding_payments")}</p>
                 <p>
                   {loading
@@ -343,9 +350,12 @@ export default function DashboardHeader({
                       : t("loading")
                     : `€${outstandingPayments.toFixed(2)}`}
                 </p>
-              </button>
+              </div>
               <Button
-                onClick={payActivities}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  payActivities();
+                }}
                 variant="secondary"
                 disabled={
                   loading || loadingPayments || unpaidActivityIds.length === 0
