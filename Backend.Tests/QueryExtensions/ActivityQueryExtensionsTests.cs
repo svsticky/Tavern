@@ -173,6 +173,53 @@ public class ActivityQueryExtensionsTests
     }
 
     [Fact]
+    public void Filter_BySearch_MatchesNameCaseInsensitively()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO { IncludePast = true, Search = "future" };
+
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(2u, result[0].Id);
+    }
+
+    [Fact]
+    public void Filter_BySearch_MatchesLocation()
+    {
+        var activities = GetTestActivities();
+        activities[2].Location = "Grand Hall";
+
+        var dto = new GetActivitiesDTO { IncludePast = true, Search = "grand" };
+        var result = activities.AsQueryable().Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(3u, result[0].Id);
+    }
+
+    [Fact]
+    public void Filter_BySearch_NoMatch_ReturnsEmpty()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO { IncludePast = true, Search = "nonexistent" };
+
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public void Filter_BySearch_EmptyString_DoesNotFilter()
+    {
+        var query = GetTestActivities().AsQueryable();
+        var dto = new GetActivitiesDTO { IncludePast = true, Search = "" };
+
+        var result = query.Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Equal(3, result.Count);
+    }
+
+    [Fact]
     public void ApplyPaging_NoPageOrPageSize_ReturnsAllUnpaginated()
     {
         var query = GetTestActivities().AsQueryable();

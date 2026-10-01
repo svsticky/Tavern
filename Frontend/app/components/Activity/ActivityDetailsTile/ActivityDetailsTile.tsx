@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import {
   Calendar,
+  CheckCircle2,
   Clock,
   Image as ImageIcon,
   MapPin,
@@ -17,8 +18,14 @@ import {
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { getActivityEnrollmentStatus } from "~/util/activity.util";
-import { hasAllMandatoryAnswers } from "~/util/answer.util";
+import {
+  getActivityEnrollmentStatus,
+  hasEnrollmentOpened,
+} from "~/util/activity.util";
+import {
+  hasAllMandatoryAnswers,
+  isQuestionAnswerable,
+} from "~/util/answer.util";
 import { getEnv } from "~/util/config.utils";
 import { formatDate } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
@@ -171,7 +178,13 @@ export default function ActivityDetailsTile({
   const { canEnroll, canUnenroll } = getActivityEnrollmentStatus(activity);
 
   const submitAnswers = (action: typeof handleEnrollment) => {
-    if (!hasAllMandatoryAnswers(activity.specificationQuestions, answers)) {
+    if (
+      !hasAllMandatoryAnswers(
+        activity.specificationQuestions,
+        activity,
+        answers,
+      )
+    ) {
       toast.error(t("please_fill_all_fields"));
       return;
     }
@@ -269,7 +282,8 @@ export default function ActivityDetailsTile({
 
           <div
             className="prose prose-sm max-w-none
-              prose-p:!my-0.5
+              prose-p:!my-0
+              [&_p+p]:!mt-[1.375em]
               prose-ul:!my-0.5
               prose-ol:!my-0.5
               prose-li:!my-0
@@ -305,106 +319,124 @@ export default function ActivityDetailsTile({
               value={organizerName}
             />
           )}
-          <InfoItem
-            icon={<Clock size={18} />}
-            label={t("unenrollment_deadline")}
-            value={
-              activity.unenrollmentDeadline
-                ? formatDate(
-                    new Date(activity.unenrollmentDeadline),
-                    "fullDateTime",
-                  )
-                : t("none")
-            }
-          />
-          <InfoItem
-            icon={<Clock size={18} />}
-            label={t("enrollment_deadline")}
-            value={
-              activity.enrollmentDeadline
-                ? formatDate(
-                    new Date(activity.enrollmentDeadline),
-                    "fullDateTime",
-                  )
-                : t("none")
-            }
-          />
-          <InfoItem
-            icon={<Users size={18} />}
-            label={t("participants")}
-            value={`${activity.enrollments.filter((e) => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ""}`}
-          />
+          {hasEnrollmentOpened(activity) && (
+            <>
+              <InfoItem
+                icon={<Clock size={18} />}
+                label={t("unenrollment_deadline")}
+                value={
+                  activity.unenrollmentDeadline
+                    ? formatDate(
+                        new Date(activity.unenrollmentDeadline),
+                        "fullDateTime",
+                      )
+                    : t("none")
+                }
+              />
+              <InfoItem
+                icon={<Clock size={18} />}
+                label={t("enrollment_deadline")}
+                value={
+                  activity.enrollmentDeadline
+                    ? formatDate(
+                        new Date(activity.enrollmentDeadline),
+                        "fullDateTime",
+                      )
+                    : t("none")
+                }
+              />
+              <InfoItem
+                icon={<Users size={18} />}
+                label={t("participants")}
+                value={`${activity.enrollments.filter((e) => !e.isOnWaitingList).length}${activity.participantLimit ? ` ${t("of")} ${activity.participantLimit}` : ""}`}
+              />
+            </>
+          )}
         </div>
 
         {(isEnrolled || canEnroll) && (
           <AnswerQuestionsTile
             questions={activity.specificationQuestions}
+            activity={activity}
             answers={answers}
             onChange={(id, value) =>
               setAnswers((prev) => ({ ...prev, [id]: value }))
             }
-            disabled={submitting || !canUnenroll}
+            disabled={submitting}
           />
         )}
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pt-4 border-t border-slate-100">
-          {isEnrolled
-            ? canUnenroll && (
-                <div className="flex flex-col gap-3">
-                  {activity.specificationQuestions.length > 0 && (
-                    <Button
-                      variant="primary"
-                      className="w-full sm:w-auto"
-                      onClick={() => submitAnswers(handleUpdateEnrollment)}
-                      disabled={submitting}
-                    >
-                      {submitting ? t("saving") : t("update_answers")}
-                    </Button>
-                  )}
-
-                  <Button
-                    variant="danger"
-                    className="w-full sm:w-auto"
-                    onClick={() =>
-                      handleUnenrollment(
-                        authService,
-                        activity,
-                        setActivity,
-                        setSubmitting,
-                      )
-                    }
-                    disabled={
-                      submitting ||
-                      (activity.unenrollmentDeadline
-                        ? new Date(Date.now()) >
-                          new Date(activity.unenrollmentDeadline)
-                        : false)
-                    }
-                  >
-                    {currentEnrollment.isOnWaitingList
-                      ? t("leave_waitlist")
-                      : t("sign_out")}
-                    {submitting && "..."}
-                  </Button>
-                </div>
-              )
-            : canEnroll && (
+          {isEnrolled ? (
+            <div className="flex flex-col gap-3">
+              {activity.specificationQuestions.some((q) =>
+                isQuestionAnswerable(q, activity),
+              ) && (
                 <Button
                   variant="primary"
                   className="w-full sm:w-auto"
-                  onClick={() => submitAnswers(handleEnrollment)}
+                  onClick={() => submitAnswers(handleUpdateEnrollment)}
                   disabled={submitting}
                 >
-                  {activity.participantLimit &&
-                  activity.participantLimit <=
-                    (activity.enrollments.length || 0) &&
-                  inTargetAudience
-                    ? t("sign_in_on_waitlist")
-                    : t("sign_in")}
-                  {submitting && "..."}
+                  {submitting ? t("saving") : t("update_answers")}
                 </Button>
               )}
+
+              {canUnenroll ? (
+                <Button
+                  variant="danger"
+                  className="w-full sm:w-auto"
+                  onClick={() =>
+                    handleUnenrollment(
+                      authService,
+                      activity,
+                      setActivity,
+                      setSubmitting,
+                    )
+                  }
+                  disabled={
+                    submitting ||
+                    (activity.unenrollmentDeadline
+                      ? new Date(Date.now()) >
+                        new Date(activity.unenrollmentDeadline)
+                      : false)
+                  }
+                >
+                  {currentEnrollment.isOnWaitingList
+                    ? t("leave_waitlist")
+                    : t("sign_out")}
+                  {submitting && "..."}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700">
+                  <CheckCircle2 size={18} className="shrink-0" />
+                  <span className="text-sm font-medium">
+                    {currentEnrollment.isOnWaitingList
+                      ? t("you_are_on_waiting_list")
+                      : t("you_are_enrolled")}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            canEnroll && (
+              <Button
+                variant="primary"
+                className="w-full sm:w-auto"
+                onClick={() => submitAnswers(handleEnrollment)}
+                disabled={submitting}
+              >
+                {activity.participantLimit &&
+                activity.participantLimit <=
+                  (activity.enrollments.length || 0) &&
+                inTargetAudience
+                  ? t("sign_in_on_waitlist")
+                  : t("sign_in")}
+                {submitting && "..."}
+              </Button>
+            )
+          )}
           <Button
             variant="secondary"
             className="w-full sm:w-auto"

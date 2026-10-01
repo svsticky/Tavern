@@ -581,6 +581,10 @@ export type GetSpecificationQuestionResponseDto = {
      */
     options?: Array<string> | null;
     /**
+     * Whether this question's answer closes at the activity's unenrollment deadline instead of its enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no longer be given or changed once that deadline passes. Otherwise - or when this is false - the answer remains open until the activity's enrollment deadline, falling back to the activity's end date and time if neither deadline is set.
+     */
+    closeOnUnenrollmentDeadline: boolean;
+    /**
      * The unique identifier of a specification question, assigned incrementally.
      */
     id: number;
@@ -616,6 +620,10 @@ export type Group = {
      * The default cost center for the group, used for financial transactions.
      */
     defaultCostCenter?: string | null;
+    /**
+     * The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
+     */
+    defaultCostUnit?: string | null;
     /**
      * The path where the picture for the group is stored, if any.
      */
@@ -727,6 +735,10 @@ export type GroupResponseDto = {
     glAccountId?: string | null;
     /**
      * The default cost center for the group, used for financial transactions.
+     */
+    costCenterId?: string | null;
+    /**
+     * The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
      */
     costUnitId?: string | null;
     /**
@@ -1503,9 +1515,13 @@ export type PostRegistrationDocumentDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1703,9 +1719,13 @@ export type RegistrationDocumentResponseDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1725,9 +1745,13 @@ export type RegistrationDocumentUpdateDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -2083,6 +2107,10 @@ export type GetActivitiesData = {
          * The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
          */
         UserId?: string;
+        /**
+         * A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
+         */
+        Search?: string;
     };
     url: '/activities';
 };

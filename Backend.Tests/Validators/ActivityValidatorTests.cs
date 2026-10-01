@@ -258,7 +258,8 @@ public class ActivityValidatorTests
             Type = QuestionType.MultipleChoice,
             IsMandatory = true,
             IsPublic = true,
-            Options = new List<string> { "Ja", "Nee" }
+            Options = new List<string> { "Ja", "Nee" },
+            CloseOnUnenrollmentDeadline = true
         };
 
         ActivityValidator.MapSpecificationQuestion(entity, dto);
@@ -269,6 +270,7 @@ public class ActivityValidatorTests
         Assert.True(entity.IsMandatory);
         Assert.True(entity.IsPublic);
         Assert.Equal("Ja;Nee", entity.Options);
+        Assert.True(entity.CloseOnUnenrollmentDeadline);
     }
 
     private TestActivityDTO CreateValidDTO()
@@ -324,6 +326,19 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.EnrollOpenDate = DateTimeOffset.UtcNow.AddDays(-1);
+
+        _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
+        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(x => throw new UnauthorizedAccessException());
+
+        Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
+    }
+
+    [Fact]
+    public void ValidateRequest_IsEnrollableTrue_ChecksBoardPermission()
+    {
+        var dto = CreateValidDTO();
+        dto.IsEnrollable = true;
 
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))

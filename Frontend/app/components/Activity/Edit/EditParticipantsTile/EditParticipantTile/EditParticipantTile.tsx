@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { Link } from "react-router";
 import type { EnrollmentResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Button from "~/components/UI/Button";
@@ -85,9 +86,18 @@ export default function EditParticipantTile({
 
   return (
     <BorderedTile className="bg-gray-50 p-2" noPadding>
-      <p className="font-semibold text-sm truncate">
-        {enrollment.member.firstName} {enrollment.member.lastName}
-      </p>
+      {enrollment.member.id ? (
+        <Link
+          to={`/admin/members/${enrollment.member.id}`}
+          className="font-semibold text-sm truncate block hover:underline text-inherit"
+        >
+          {enrollment.member.firstName} {enrollment.member.lastName}
+        </Link>
+      ) : (
+        <p className="font-semibold text-sm truncate">
+          {enrollment.member.firstName} {enrollment.member.lastName}
+        </p>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full justify-between mt-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">

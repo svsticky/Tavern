@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
@@ -22,7 +22,8 @@ const PAGE_SIZE = 15;
  * different association years. It features:
  * - **Yearly Archiving**: A selector to view activities as far back as 2007.
  * - **Infinite Scrolling**: Automatically loads more activities as the user scrolls down.
- * - **Real-time Filtering**: Search by activity name or location using a memoized filter.
+ * - **Debounced Search**: Waits 300ms after the last keystroke before triggering a
+ *   server-side search by activity name or location.
  * - **Data Visualization**: A `DataTable` that summarizes key metrics such as
  *   participant counts (including limits), pricing, and scheduling.
  * - **Contextual Navigation**: Quick access to the administrative details of any specific event.
@@ -38,6 +39,7 @@ export default function Activities() {
   const [year, setYear] = useState(currentYear);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -49,7 +51,12 @@ export default function Activities() {
   );
 
   const fetchActivities = useCallback(
-    async (pageNum: number, isInitial: boolean, targetYear: number) => {
+    async (
+      pageNum: number,
+      isInitial: boolean,
+      targetYear: number,
+      search: string,
+    ) => {
       loadAdminActivities(
         targetYear,
         setLoading,
@@ -63,35 +70,25 @@ export default function Activities() {
         },
         pageNum,
         PAGE_SIZE,
+        search,
       );
     },
     [],
   );
 
   useEffect(() => {
-    let isCurrent = true;
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
 
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
+  useEffect(() => {
     setPage(1);
     setHasMore(true);
-
-    loadAdminActivities(
-      year,
-      setLoading,
-      (fetched) => {
-        if (!isCurrent) return;
-        setActivities(fetched);
-        if (fetched.length < PAGE_SIZE) {
-          setHasMore(false);
-        }
-      },
-      1,
-      PAGE_SIZE,
-    );
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [year]);
+    fetchActivities(1, true, year, debouncedSearchQuery);
+  }, [year, debouncedSearchQuery, fetchActivities]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -99,7 +96,7 @@ export default function Activities() {
         if (entries[0].isIntersecting && hasMore && !loading) {
           const nextPage = page + 1;
           setPage(nextPage);
-          fetchActivities(nextPage, false, year);
+          fetchActivities(nextPage, false, year, debouncedSearchQuery);
         }
       },
       { threshold: 1.0 },
@@ -110,16 +107,7 @@ export default function Activities() {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, loading, page, year, fetchActivities]);
-
-  const filteredActivities = useMemo(() => {
-    if (!activities) return [];
-    return activities.filter(
-      (act) =>
-        act.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        act.location?.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-  }, [activities, searchQuery]);
+  }, [hasMore, loading, page, year, debouncedSearchQuery, fetchActivities]);
 
   const columns: Column<ActivityResponseDto>[] = [
     {
@@ -213,7 +201,7 @@ export default function Activities() {
       </BorderedTile>
 
       <BorderedTile className="bg-white p-0">
-        <DataTable data={filteredActivities} columns={columns} emptyText="" />
+        <DataTable data={activities} columns={columns} emptyText="" />
 
         <div ref={loaderRef} className="h-10 flex items-center justify-center">
           <span className="text-slate-400 text-sm">

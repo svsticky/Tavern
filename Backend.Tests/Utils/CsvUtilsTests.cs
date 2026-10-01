@@ -58,13 +58,13 @@ public class CsvUtilsTests
     [Fact]
     public void FormatLine_NullField_RendersAsEmpty()
     {
-        Assert.Equal(";b", CsvUtils.FormatLine(null, "b"));
+        Assert.Equal(",b", CsvUtils.FormatLine(null, "b"));
     }
 
     [Fact]
-    public void FormatLine_JoinsFieldsWithSemicolon()
+    public void FormatLine_JoinsFieldsWithComma()
     {
-        Assert.Equal("a;b;c", CsvUtils.FormatLine("a", "b", "c"));
+        Assert.Equal("a,b,c", CsvUtils.FormatLine("a", "b", "c"));
     }
 
     [Fact]
@@ -85,6 +85,6 @@ public class CsvUtilsTests
     public void FormatLine_FieldNeedingEscaping_IsEscaped()
     {
         var result = CsvUtils.FormatLine("a;b", "plain");
-        Assert.Equal("\"a;b\";plain", result);
+        Assert.Equal("\"a;b\",plain", result);
     }
 }

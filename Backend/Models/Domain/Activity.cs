@@ -30,7 +30,6 @@ public class Activity
         "/location",
         "/participantlimit",
         "/organizerid",
-        "/isenrollable",
         "/areparticipantsvisible",
         "/isadultonly",
         "/isweeklydrinks",

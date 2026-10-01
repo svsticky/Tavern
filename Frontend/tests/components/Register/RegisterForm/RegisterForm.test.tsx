@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import i18next from "i18next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   MailinglistDto,
@@ -108,7 +109,8 @@ describe("RegisterForm", () => {
         id: 1,
         nameDutch: "Statuten",
         nameEnglish: "Statutes",
-        url: "https://example.com/doc.pdf",
+        urlDutch: "https://example.com/nl/doc.pdf",
+        urlEnglish: "https://example.com/en/doc.pdf",
       } as RegistrationDocumentResponseDto,
     ];
     vi.mocked(loadRegistrationDocuments).mockImplementation(
@@ -121,6 +123,38 @@ describe("RegisterForm", () => {
       'input[type="checkbox"]',
     ) as HTMLInputElement;
     expect(checkbox).toBeTruthy();
+  });
+
+  it("links registration documents to the URL matching the page language", async () => {
+    const docs: RegistrationDocumentResponseDto[] = [
+      {
+        id: 1,
+        nameDutch: "Statuten",
+        nameEnglish: "Statutes",
+        urlDutch: "https://example.com/nl/doc.pdf",
+        urlEnglish: "https://example.com/en/doc.pdf",
+      } as RegistrationDocumentResponseDto,
+    ];
+    vi.mocked(loadRegistrationDocuments).mockImplementation(
+      async (setDocuments) => setDocuments(docs),
+    );
+
+    await i18next.changeLanguage("en");
+    const { unmount } = renderWithProviders(<RegisterForm />);
+    expect(
+      await screen.findByRole("link", { name: "Statutes" }),
+    ).toHaveAttribute("href", "https://example.com/en/doc.pdf");
+    unmount();
+
+    await i18next.changeLanguage("nl");
+    try {
+      renderWithProviders(<RegisterForm />);
+      expect(
+        await screen.findByRole("link", { name: "Statuten" }),
+      ).toHaveAttribute("href", "https://example.com/nl/doc.pdf");
+    } finally {
+      await i18next.changeLanguage("en");
+    }
   });
 
   it("calls handleRegisterInputChange when a text field changes", async () => {
@@ -254,7 +288,8 @@ describe("RegisterForm", () => {
         id: 1,
         nameDutch: "Statuten",
         nameEnglish: "Statutes",
-        url: "https://example.com/doc.pdf",
+        urlDutch: "https://example.com/nl/doc.pdf",
+        urlEnglish: "https://example.com/en/doc.pdf",
       } as RegistrationDocumentResponseDto,
     ];
     vi.mocked(loadRegistrationDocuments).mockImplementation(

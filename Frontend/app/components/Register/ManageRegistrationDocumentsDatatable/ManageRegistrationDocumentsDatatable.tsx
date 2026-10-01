@@ -81,7 +81,8 @@ export default function ManageRegistrationDocumentsDatatable() {
         body: {
           nameDutch: doc.nameDutch,
           nameEnglish: doc.nameEnglish,
-          url: doc.url,
+          urlDutch: doc.urlDutch,
+          urlEnglish: doc.urlEnglish,
           sortOrder: newSortOrder,
         },
       });
@@ -152,13 +153,13 @@ export default function ManageRegistrationDocumentsDatatable() {
                   {isDutch ? item.nameDutch : item.nameEnglish}
                 </h4>
                 <a
-                  href={item.url}
+                  href={isDutch ? item.urlDutch : item.urlEnglish}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-blue-600 hover:underline truncate block"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {item.url}
+                  {isDutch ? item.urlDutch : item.urlEnglish}
                 </a>
               </div>
 

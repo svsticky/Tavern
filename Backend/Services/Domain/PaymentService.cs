@@ -2,6 +2,7 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Utils;
 using Backend.Validators;
@@ -122,15 +123,15 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId)
+        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid userId)
         {
             logger.LogInformation("Creating begunstiger payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
 
             var member = await GetMemberOrThrow(dto.MemberId);
 
-            if (userId != dto.MemberId)
+            if (userId != dto.MemberId || dto.ManuallyMarkedAsPaid)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
 
             using var transaction = await db.Database.BeginTransactionAsync();
@@ -196,6 +197,7 @@ namespace Backend.Services.Domain
                 .ToListAsync(ct);
 
             var membershipPayments = await db.MembershipPayments
+                .Include(p => p.Member)
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
@@ -665,7 +667,8 @@ namespace Backend.Services.Domain
                     Price = price,
                     PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentId ?? "",
                     PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentUrl ?? "",
-                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
+                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                    ManuallyMarkedAsPaid = manuallyMarkedAsPaid
                 };
 
                 StateValidator.Validate(payment);
@@ -690,23 +693,23 @@ namespace Backend.Services.Domain
         {
             var csv = new StringBuilder();
 
-            var invoiceDate = endDateInNL.AddDays(-1).ToString("dd-MM-yyyy");
-            var periodLabel = $"ideal - {startDateInNL:dd-MM-yyyy} / {endDateInNL:dd-MM-yyyy}";
+            var invoiceDate = endDateInNL.AddDays(-1).ToString("yyyy-MM-dd");
+            var periodLabel = $"ideal - {startDateInNL:yyyy-MM-dd} / {endDateInNL:yyyy-MM-dd}";
             var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
             var paymentServiceRelationalCode = db.Settings.Where(s => s.Name == "PaymentServiceRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
 
             // Header line
-            csv.AppendLine(CsvUtils.FormatLine("factuurdatum", invoiceDate, periodLabel, paymentsCondition, paymentServiceRelationalCode));
+            csv.AppendLine(CsvUtils.FormatLine("Factuurdatum", invoiceDate, periodLabel, paymentsCondition, paymentServiceRelationalCode));
 
             var activityGLAccountFallback = db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
 
             foreach (var p in enrollmentPayments)
             {
-                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? activityGLAccountFallback;
+                var glAccount = StringUtils.NullIfBlank(p.Activity?.GLAccountId) ?? StringUtils.NullIfBlank(p.Activity?.Organizer?.DefaultGLAccount) ?? activityGLAccountFallback;
                 var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
                 var activityName = p.Activity?.Name ?? "Unknown Activity";
-                var costCenter = BlankIfWhitespace(p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter);
-                var costUnit = BlankIfWhitespace(p.Activity?.CostUnitId);
+                var costCenter = StringUtils.NullIfBlank(p.Activity?.CostCenterId) ?? BlankIfWhitespace(p.Activity?.Organizer?.DefaultCostCenter);
+                var costUnit = StringUtils.NullIfBlank(p.Activity?.CostUnitId) ?? BlankIfWhitespace(p.Activity?.Organizer?.DefaultCostUnit);
                 var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 
@@ -721,7 +724,7 @@ namespace Backend.Services.Domain
 
             foreach (var p in membershipPayments)
             {
-                var description = "Lidmaatschap";
+                var description = p.Member != null ? $"Lidmaatschap - {p.Member.FirstName} {p.Member.LastName}" : "Lidmaatschap";
                 var price = p.Price;
 
                 csv.AppendLine(CsvUtils.FormatLine("", membershipGLAccount, description, membershipVatCode, price, membershipCostCenter, membershipCostUnit));

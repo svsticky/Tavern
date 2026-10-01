@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
+import { DateRowHeightGroup } from "~/components/Activity/ActivityTile/DateRowHeightGroup";
 import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
@@ -172,13 +173,15 @@ export default function ActivitiesPage() {
         <NoContentTile text={t("no_upcoming_activities")} />
       ) : (
         <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
-          {activities.map((activity) => (
-            <ActivityTile
-              key={activity.id}
-              className="w-auto"
-              activity={activity}
-            />
-          ))}
+          <DateRowHeightGroup>
+            {activities.map((activity) => (
+              <ActivityTile
+                key={activity.id}
+                className="w-auto"
+                activity={activity}
+              />
+            ))}
+          </DateRowHeightGroup>
         </div>
       )}
     </>

@@ -29,7 +29,8 @@ const existingDocument: RegistrationDocumentResponseDto = {
   id: 5,
   nameDutch: "Oud",
   nameEnglish: "Old",
-  url: "https://old.example.com/doc.pdf",
+  urlDutch: "https://old.example.com/nl/doc.pdf",
+  urlEnglish: "https://old.example.com/en/doc.pdf",
   sortOrder: 2,
 } as RegistrationDocumentResponseDto;
 
@@ -44,8 +45,9 @@ describe("EditRegistrationDocumentOverlay", () => {
     );
 
     expect(getInput("title_nl")).toHaveValue("");
-    expect(getInput("url")).toHaveValue("");
-    expect(getInput("sort_order")).toHaveValue(0);
+    expect(getInput("url_nl")).toHaveValue("");
+    expect(getInput("url_en")).toHaveValue("");
+    expect(screen.queryByLabelText("sort_order")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "create" })).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "delete" }),
@@ -62,24 +64,21 @@ describe("EditRegistrationDocumentOverlay", () => {
 
     expect(getInput("title_nl")).toHaveValue("Oud");
     expect(getInput("title_en")).toHaveValue("Old");
-    expect(getInput("url")).toHaveValue(existingDocument.url);
-    expect(getInput("sort_order")).toHaveValue(2);
+    expect(getInput("url_nl")).toHaveValue(existingDocument.urlDutch);
+    expect(getInput("url_en")).toHaveValue(existingDocument.urlEnglish);
     expect(screen.getByRole("button", { name: "update" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "delete" })).toBeInTheDocument();
   });
 
-  it("updates text fields and parses sortOrder as a number as the user types", async () => {
+  it("updates text fields as the user types", async () => {
     const user = userEvent.setup();
     renderWithProviders(
       <EditRegistrationDocumentOverlay onComplete={vi.fn()} />,
     );
 
     await user.type(getInput("title_nl"), "Naam");
-    await user.clear(getInput("sort_order"));
-    await user.type(getInput("sort_order"), "5");
 
     expect(getInput("title_nl")).toHaveValue("Naam");
-    expect(getInput("sort_order")).toHaveValue(5);
   });
 
   it("calls handleDocumentSubmit with the current form data on submit", () => {
@@ -101,7 +100,8 @@ describe("EditRegistrationDocumentOverlay", () => {
     expect(callArgs.formData).toEqual({
       nameDutch: existingDocument.nameDutch,
       nameEnglish: existingDocument.nameEnglish,
-      url: existingDocument.url,
+      urlDutch: existingDocument.urlDutch,
+      urlEnglish: existingDocument.urlEnglish,
       sortOrder: existingDocument.sortOrder,
     });
     expect(callArgs.onComplete).toBe(onComplete);

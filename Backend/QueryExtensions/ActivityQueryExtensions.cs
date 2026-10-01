@@ -72,6 +72,16 @@ public static class ActivityQueryExtensions
         if (dto.UserId.HasValue)
             query = query.Where(a => a.Enrollments.Any(e => e.MemberId == dto.UserId.Value && !e.IsOnWaitingList));
 
+        if (!string.IsNullOrEmpty(dto.Search))
+        {
+            var search = dto.Search.Trim().ToLower();
+
+            query = query.Where(a =>
+                a.Name.ToLower().Contains(search) ||
+                (a.Location != null && a.Location.ToLower().Contains(search))
+            );
+        }
+
         query = query.OrderBy(a => a.DateTimeStart);
 
         return query;

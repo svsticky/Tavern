@@ -72,6 +72,7 @@ function makeStudy(overrides: Partial<Study> = {}): Study {
     id: 1,
     title: "Computer Science",
     nominalDurationYears: 3,
+    active: true,
     ...overrides,
   } as Study;
 }
@@ -244,6 +245,36 @@ describe("UpdateAccountStatus", () => {
     // Clearing the study selection back to the placeholder disables add again.
     fireEvent.change(studySelect, { target: { value: "" } });
     expect(screen.getByText("add")).toBeDisabled();
+  });
+
+  it("doesn't crash and shows a dropped-out label when enrolled in a study that is no longer returned (e.g. deactivated)", async () => {
+    getStudyenrollments.mockResolvedValue({
+      data: [makeEnrollment({ studyId: 999 })],
+    });
+    getStudies.mockResolvedValue({ data: [makeStudy({ id: 1 })] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateAccountStatus />, { authService });
+
+    expect(
+      (await screen.findAllByText("status_dropped_out")).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("fetches studies including inactive ones so deadline calculations still work for deactivated studies", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateAccountStatus />, { authService });
+
+    await waitFor(() =>
+      expect(getStudies).toHaveBeenCalledWith({
+        query: { IncludeInactive: true },
+      }),
+    );
   });
 
   it("shows a loading placeholder in the status column while studies haven't loaded, and a dropped-out label once the deadline has passed", async () => {

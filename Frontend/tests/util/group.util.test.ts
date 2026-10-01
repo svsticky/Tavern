@@ -151,7 +151,7 @@ describe("canEditActivity", () => {
     );
   });
 
-  it("disallows editing once the activity has already started", () => {
+  it("allows an organizer to keep editing an activity that has started but not yet ended", () => {
     const token = buildToken({
       group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
     });
@@ -160,6 +160,42 @@ describe("canEditActivity", () => {
         buildActivity({ dateTimeStart: "2000-01-01T00:00:00Z" }),
         token,
       ),
+    ).toBe(true);
+  });
+
+  it("disallows editing once the activity has ended", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
+    });
+    expect(
+      canEditActivity(
+        buildActivity({
+          dateTimeStart: "2000-01-01T00:00:00Z",
+          dateTimeEnd: "2000-01-01T02:00:00Z",
+        }),
+        token,
+      ),
     ).toBe(false);
+  });
+
+  it("disallows editing once an enrollment open date is set", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
+    });
+    expect(
+      canEditActivity(
+        buildActivity({ enrollOpenDate: "2999-01-01T00:00:00Z" }),
+        token,
+      ),
+    ).toBe(false);
+  });
+
+  it("disallows editing once enrollment has been opened", () => {
+    const token = buildToken({
+      group_memberships: [membershipEntry(year, 7, "Web", 2, "Chair")],
+    });
+    expect(canEditActivity(buildActivity({ isEnrollable: true }), token)).toBe(
+      false,
+    );
   });
 });

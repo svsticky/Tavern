@@ -11,6 +11,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -643,17 +644,25 @@ public class PaymentServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task CreateBegunstigerPayment_ManualWithoutAuthentication_ThrowsUnauthorizedAccessException()
+    public async Task CreateBegunstigerPayment_SelfPayManualByNonBoardMember_ThrowsUnauthorizedAccessException()
     {
         var member = CreateMember("1234567");
         member.Begunstiger = true;
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
+        _paymentValidationService.HasPaidBegunstigerFeeSinceLastBoardChange(member.Id).Returns(false);
+        _permissionService.When(p => p.EnsureBoardOrCandidateBoardMember(member.Id))
+            .Do(_ => throw new UnauthorizedAccessException());
+
+        // Self-pay normally skips the board check, but marking a payment as manually paid must always
+        // require board permissions - otherwise a begunstiger could mark their own fee as paid.
         var dto = new PostBegunstigerPaymentDTO { MemberId = member.Id, ManuallyMarkedAsPaid = true };
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            _service.CreateBegunstigerPayment(dto, null));
+            _service.CreateBegunstigerPayment(dto, member.Id));
+
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(member.Id);
 
         _db.ChangeTracker.Clear();
         Assert.Empty(await _db.BegunstigerPayments.Where(p => p.MemberId == member.Id).ToListAsync());
@@ -754,10 +763,66 @@ public class PaymentServiceTests : IDisposable
 
         Assert.NotNull(result.Content);
         var csvStr = Encoding.UTF8.GetString(result.Content);
-        Assert.Contains(";8000;Lidmaatschap;0;7.50;;", csvStr);
+        Assert.Contains(",8000,Lidmaatschap - John Doe,0,7.50,,", csvStr);
         Assert.Contains("Test Organizer | Test Activity", csvStr);
         Assert.Contains("Transaction costs 0.50 x 1", csvStr);
-        Assert.Contains(";8010;Begunstiger;0;10.00;BEG;BU1", csvStr);
+        Assert.Contains(",8010,Begunstiger,0,10.00,BEG,BU1", csvStr);
+    }
+
+    [Fact]
+    public async Task ExportPaymentsToCsv_BlankCostFields_FallBackToOrganizerAndSetting()
+    {
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        _db.Settings.Add(new Setting { Name = "ActivityGLAccount", Value = "7001" });
+        await _db.SaveChangesAsync();
+
+        var member = CreateMember("1234567");
+        _db.Members.Add(member);
+
+        var organizer = new Group
+        {
+            Name = "Organizer",
+            DefaultGLAccount = "",
+            DefaultCostCenter = "CC1",
+            Active = true,
+            Type = GroupType.Committee
+        };
+        _db.Groups.Add(organizer);
+
+        var activity = new Activity
+        {
+            Name = "Act",
+            Price = 15m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Enschede",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5),
+            Organizer = organizer,
+            GLAccountId = " ",
+            CostCenterId = ""
+        };
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.EnrollmentPayments.Add(new EnrollmentPayment
+        {
+            MemberId = member.Id,
+            ActivityId = activity.Id,
+            Price = 15m,
+            PaymentServiceId = "ps1",
+            PaymentIntentUrl = "url",
+            PaidAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _service.ExportPaymentsToCsv(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1), _userId, CancellationToken.None);
+
+        var csvStr = Encoding.UTF8.GetString(result.Content);
+        Assert.Contains(",7001,Organizer | Act,,15.00,CC1,", csvStr);
     }
 
     [Fact]
@@ -804,6 +869,7 @@ public class PaymentServiceTests : IDisposable
         var payment = await _db.EnrollmentPayments.FirstOrDefaultAsync(p => p.MemberId == member.Id && p.ActivityId == activity.Id);
         Assert.NotNull(payment);
         Assert.True(payment.PaidAt.HasValue);
+        Assert.True(payment.ManuallyMarkedAsPaid);
     }
 
     [Fact]

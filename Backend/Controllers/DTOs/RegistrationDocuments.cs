@@ -18,10 +18,15 @@ public class PostRegistrationDocumentDTO
     [Required(AllowEmptyStrings = false)]
     public required string NameEnglish { get; set; }
 
-    /// <inheritdoc cref="RegistrationDocument.Url"/>
+    /// <inheritdoc cref="RegistrationDocument.UrlDutch"/>
     [StringLength(2000)]
     [Required(AllowEmptyStrings = false)]
-    public required string Url { get; set; }
+    public required string UrlDutch { get; set; }
+
+    /// <inheritdoc cref="RegistrationDocument.UrlEnglish"/>
+    [StringLength(2000)]
+    [Required(AllowEmptyStrings = false)]
+    public required string UrlEnglish { get; set; }
 
     /// <inheritdoc cref="RegistrationDocument.SortOrder"/>
     public int SortOrder { get; set; }
@@ -42,10 +47,15 @@ public class RegistrationDocumentUpdateDTO
     [Required(AllowEmptyStrings = false)]
     public required string NameEnglish { get; set; }
 
-    /// <inheritdoc cref="RegistrationDocument.Url"/>
+    /// <inheritdoc cref="RegistrationDocument.UrlDutch"/>
     [StringLength(2000)]
     [Required(AllowEmptyStrings = false)]
-    public required string Url { get; set; }
+    public required string UrlDutch { get; set; }
+
+    /// <inheritdoc cref="RegistrationDocument.UrlEnglish"/>
+    [StringLength(2000)]
+    [Required(AllowEmptyStrings = false)]
+    public required string UrlEnglish { get; set; }
 
     /// <inheritdoc cref="RegistrationDocument.SortOrder"/>
     public int SortOrder { get; set; }
@@ -65,8 +75,11 @@ public class RegistrationDocumentResponseDTO
     /// <inheritdoc cref="RegistrationDocument.NameEnglish"/>
     public required string NameEnglish { get; set; }
 
-    /// <inheritdoc cref="RegistrationDocument.Url"/>
-    public required string Url { get; set; }
+    /// <inheritdoc cref="RegistrationDocument.UrlDutch"/>
+    public required string UrlDutch { get; set; }
+
+    /// <inheritdoc cref="RegistrationDocument.UrlEnglish"/>
+    public required string UrlEnglish { get; set; }
 
     /// <inheritdoc cref="RegistrationDocument.SortOrder"/>
     public required int SortOrder { get; set; }

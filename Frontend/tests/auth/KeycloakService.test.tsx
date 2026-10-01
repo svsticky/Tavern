@@ -191,7 +191,7 @@ describe("KeycloakAuthService", () => {
         </AuthProvider>,
       );
 
-      expect(screen.getByText("loading")).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Loading" })).toBeInTheDocument();
       await waitFor(() =>
         expect(screen.getByText("Protected content")).toBeInTheDocument(),
       );
@@ -212,7 +212,7 @@ describe("KeycloakAuthService", () => {
       );
 
       await waitFor(() => expect(latestKeycloak().init).toHaveBeenCalled());
-      expect(screen.getByText("loading")).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Loading" })).toBeInTheDocument();
       expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
       consoleError.mockRestore();
     });

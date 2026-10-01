@@ -200,6 +200,67 @@ describe("ActivityDetailsTile", () => {
     expect(handleUpdateEnrollment).toHaveBeenCalled();
   });
 
+  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but the question's closeOnUnenrollmentDeadline is false", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          specificationQuestions: [
+            {
+              id: 1,
+              questionDutch: "V",
+              questionEnglish: "Q",
+              type: "String",
+              closeOnUnenrollmentDeadline: false,
+            },
+          ] as ActivityResponseDto["specificationQuestions"],
+          enrollments: [
+            { member: { id: memberToken.UserId }, specificationAnswers: [] },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByText("update_answers")).toBeInTheDocument();
+    expect(screen.getByText("you_are_enrolled")).toBeInTheDocument();
+    expect(screen.queryByText("sign_out")).not.toBeInTheDocument();
+  });
+
+  it("hides the update-answers button once the unenrollment deadline has passed and the question's closeOnUnenrollmentDeadline is true", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          specificationQuestions: [
+            {
+              id: 1,
+              questionDutch: "V",
+              questionEnglish: "Q",
+              type: "String",
+              closeOnUnenrollmentDeadline: true,
+            },
+          ] as ActivityResponseDto["specificationQuestions"],
+          enrollments: [
+            { member: { id: memberToken.UserId }, specificationAnswers: [] },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByText("you_are_enrolled")).toBeInTheDocument();
+    expect(screen.queryByText("update_answers")).not.toBeInTheDocument();
+  });
+
   it("calls handleAddToCalendar when the calendar button is clicked", async () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
     fireEvent.click(await screen.findByText("copy_once_to_calendar"));
@@ -289,7 +350,7 @@ describe("ActivityDetailsTile", () => {
     fireEvent.click(await screen.findByText("answer-questions-tile"));
   });
 
-  it("does not show enroll/unenroll actions when neither can enroll nor unenroll", async () => {
+  it("does not show enroll/unenroll actions or participant details when enrollment has not opened", async () => {
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -302,6 +363,33 @@ describe("ActivityDetailsTile", () => {
       await screen.findByText("copy_once_to_calendar"),
     ).toBeInTheDocument();
     expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.queryByText("participants")).not.toBeInTheDocument();
+    expect(screen.queryByText("enrollment_deadline")).not.toBeInTheDocument();
+    expect(screen.queryByText("unenrollment_deadline")).not.toBeInTheDocument();
+  });
+
+  it("shows participant details and deadlines when enrollment has closed after closing date", async () => {
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          enrollmentDeadline: "2020-01-01T00:00:00Z",
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          dateTimeStart: "2020-01-02T00:00:00Z",
+          dateTimeEnd: "2020-01-02T02:00:00Z",
+          enrollments: [
+            { id: 1, memberId: "m1", isOnWaitingList: false } as any,
+          ],
+        })}
+      />,
+    );
+    expect(
+      await screen.findByText("copy_once_to_calendar"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.getByText("participants")).toBeInTheDocument();
+    expect(screen.getByText("enrollment_deadline")).toBeInTheDocument();
+    expect(screen.getByText("unenrollment_deadline")).toBeInTheDocument();
   });
 
   it("shows the organizer's name and logo when the activity has an organizer", async () => {

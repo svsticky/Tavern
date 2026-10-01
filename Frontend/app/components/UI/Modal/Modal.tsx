@@ -67,7 +67,7 @@ export default function Modal({
         onClick={onClose}
       />
 
-      <div className="relative bg-white w-full h-full sm:h-auto sm:max-w-lg sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+      <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="font-bold text-lg text-slate-900">{title}</h2>
           <button

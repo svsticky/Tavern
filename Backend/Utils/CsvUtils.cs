@@ -27,7 +27,7 @@ public static class CsvUtils
         // Escape double quotes by doubling them
         var escaped = value.Replace("\"", "\"\"");
 
-        // Wrap in quotes if it contains delimiter (;), double quotes, or newlines
+        // Wrap in quotes if it contains a delimiter (; or ,), double quotes, or newlines
         if (escaped.Contains(';') || escaped.Contains('"') || escaped.Contains('\n') || escaped.Contains('\r') || escaped.Contains(','))
         {
             return $"\"{escaped}\"";
@@ -37,11 +37,11 @@ public static class CsvUtils
     }
 
     /// <summary>
-    /// Formats a full CSV line using semicolon (;) delimiter.
+    /// Formats a full CSV line using comma (,) delimiter.
     /// </summary>
     public static string FormatLine(params object?[] fields)
     {
-        return string.Join(";", fields.Select(f =>
+        return string.Join(",", fields.Select(f =>
         {
             if (f == null) return "";
             if (f is decimal dec) return dec.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture);

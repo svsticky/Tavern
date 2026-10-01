@@ -11,6 +11,8 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import {
   type ActivityResponseDto,
+  type EnrollmentBalance,
+  type EnrollmentResponseDto,
   getEnrollments,
   getPaymentsUnpaid,
   postPaymentsActivity,
@@ -19,8 +21,10 @@ import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
+import ActivityPriceList from "./Activity/ActivityPriceList";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
+import Modal from "./UI/Modal/Modal";
 
 /**
  * Props for the DashboardHeader component.
@@ -63,6 +67,7 @@ function sleep(ms: number, signal: AbortSignal) {
  * - **Greeting**: Personalized welcome message.
  * - **Activity Stats**: Counts of upcoming and past enrollments.
  * - **Financial Summary**: Outstanding balance calculation with a "Pay" action that handles redirecting to a checkout URL.
+ * - **Detail Modals**: Clicking the enrollments, attended or outstanding payments tile opens an overview of the underlying activities.
  * - **Next Activity Highlight**: A specialized card showing details and a quick-link to the most immediate upcoming event.
  *
  * It manages its own data fetching state for payments and enrollment totals.
@@ -83,10 +88,20 @@ export default function DashboardHeader({
   const [confirmingPayment, setConfirmingPayment] = useState<boolean>(false);
 
   const [outstandingPayments, setOutstandingPayments] = useState<number>(0);
-  const [pastEnrollmentAmount, setPastEnrollmentAmount] = useState<number>(0);
-  const [comingEnrollmentAmount, setComingEnrollmentAmount] =
-    useState<number>(0);
+  const [pastEnrollments, setPastEnrollments] = useState<
+    EnrollmentResponseDto[]
+  >([]);
+  const [comingEnrollments, setComingEnrollments] = useState<
+    EnrollmentResponseDto[]
+  >([]);
   const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>([]);
+  const [unpaidEnrollments, setUnpaidEnrollments] = useState<
+    EnrollmentBalance[]
+  >([]);
+
+  const [enrollmentsModalIsOpen, setEnrollmentsModalIsOpen] = useState(false);
+  const [attendedModalIsOpen, setAttendedModalIsOpen] = useState(false);
+  const [paymentsModalIsOpen, setPaymentsModalIsOpen] = useState(false);
 
   // t is intentionally omitted from the deps below: i18next-http-backend loads
   // translations over HTTP, so t gets a new reference shortly after mount once that
@@ -168,25 +183,26 @@ export default function DashboardHeader({
                   (payment) => payment.enrollment.activityId,
                 ),
               );
+              setUnpaidEnrollments(outstandingPaymentsResponse.data);
             }
 
             if (enrollmentAmountResponse.data) {
               const now = Date.now();
-              let past = 0;
-              let coming = 0;
+              const past: EnrollmentResponseDto[] = [];
+              const coming: EnrollmentResponseDto[] = [];
               for (let i = 0; i < enrollmentAmountResponse.data.length; i++) {
                 const enrollment = enrollmentAmountResponse.data[i];
                 const activityDate = new Date(
                   enrollment.activity.dateTimeEnd,
                 ).getTime();
                 if (activityDate < now) {
-                  past++;
+                  past.push(enrollment);
                 } else {
-                  coming++;
+                  coming.push(enrollment);
                 }
               }
-              setPastEnrollmentAmount(past);
-              setComingEnrollmentAmount(coming);
+              setPastEnrollments(past);
+              setComingEnrollments(coming);
             } else {
               throw new Error("No enrollment data returned from API");
             }
@@ -277,32 +293,48 @@ export default function DashboardHeader({
           {/* Stats */}
           <div className="flex flex-col min-[380px]:flex-row gap-5">
             {/* Activity Enrollments */}
-            <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
-              <p>{t("enrollments")}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl">
-                  {loading ? t("loading") : comingEnrollmentAmount}
-                </p>
-                <CircleCheckBig />
-              </div>
-            </Tile>
+            <button
+              type="button"
+              onClick={() => setEnrollmentsModalIsOpen(true)}
+              className="grow min-w-0 text-left cursor-pointer"
+            >
+              <Tile className="bg-(--board-primary-light) border-2 border-white/20 h-full hover:border-white/50 transition-colors">
+                <p>{t("enrollments")}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl">
+                    {loading ? t("loading") : comingEnrollments.length}
+                  </p>
+                  <CircleCheckBig />
+                </div>
+              </Tile>
+            </button>
 
             {/* Attended Activities */}
-            <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
-              <p>{t("attended")}</p>
-              <div className="flex items-center gap-2">
-                <p className="text-2xl">
-                  {loading ? t("loading") : pastEnrollmentAmount}
-                </p>
-                <TrendingUp />
-              </div>
-            </Tile>
+            <button
+              type="button"
+              onClick={() => setAttendedModalIsOpen(true)}
+              className="grow min-w-0 text-left cursor-pointer"
+            >
+              <Tile className="bg-(--board-primary-light) border-2 border-white/20 h-full hover:border-white/50 transition-colors">
+                <p>{t("attended")}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl">
+                    {loading ? t("loading") : pastEnrollments.length}
+                  </p>
+                  <TrendingUp />
+                </div>
+              </Tile>
+            </button>
           </div>
 
           {/* Outstanding Payments */}
           <Tile className="bg-(--board-primary-light) border-2 border-white/20 grow">
             <div className="flex justify-between flex-col w-full min-[330px]:flex-row">
-              <div>
+              <button
+                type="button"
+                onClick={() => setPaymentsModalIsOpen(true)}
+                className="text-left cursor-pointer hover:opacity-80 transition-opacity"
+              >
                 <p>{t("outstanding_payments")}</p>
                 <p>
                   {loading
@@ -311,7 +343,7 @@ export default function DashboardHeader({
                       : t("loading")
                     : `€${outstandingPayments.toFixed(2)}`}
                 </p>
-              </div>
+              </button>
               <Button
                 onClick={payActivities}
                 variant="secondary"
@@ -352,6 +384,48 @@ export default function DashboardHeader({
           </Tile>
         )}
       </div>
+
+      <Modal
+        isOpen={enrollmentsModalIsOpen}
+        onClose={() => setEnrollmentsModalIsOpen(false)}
+        title={t("enrolled_activities")}
+      >
+        <ActivityPriceList
+          items={comingEnrollments.map((enrollment) => ({
+            name: enrollment.activity.name,
+            price: enrollment.price ?? enrollment.activity.price,
+          }))}
+          emptyText={t("no_enrollments")}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={attendedModalIsOpen}
+        onClose={() => setAttendedModalIsOpen(false)}
+        title={t("attended_activities")}
+      >
+        <ActivityPriceList
+          items={pastEnrollments.map((enrollment) => ({
+            name: enrollment.activity.name,
+            price: enrollment.price ?? enrollment.activity.price,
+          }))}
+          emptyText={t("no_attended_activities")}
+        />
+      </Modal>
+
+      <Modal
+        isOpen={paymentsModalIsOpen}
+        onClose={() => setPaymentsModalIsOpen(false)}
+        title={t("outstanding_payments")}
+      >
+        <ActivityPriceList
+          items={unpaidEnrollments.map((payment) => ({
+            name: payment.enrollment.activity?.name ?? "",
+            price: payment.balance,
+          }))}
+          emptyText={t("no_outstanding_payments")}
+        />
+      </Modal>
     </Tile>
   );
 }

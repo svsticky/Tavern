@@ -82,12 +82,13 @@ public class ActivityService : IActivityService
             .Include(a => a.Enrollments)
                 .ThenInclude(e => e.Member)
             .Include(a => a.SpecificationQuestions)
+            .AsSplitQuery()
             .AsNoTracking()
             .Filter(dto, isBoard, userGroupIds, userId.HasValue)
             .ApplyPaging(dto)
             .ToListAsync();
 
-        return activities.Select(a => ActivityResponseDTO.ToDto(userId ?? Guid.Empty, isBoard).Compile()(a));
+        return activities.Select(a => ActivityResponseDTO.ToDto(userId, isBoard).Compile()(a));
     }
 
     /// <inheritdoc />
@@ -224,7 +225,7 @@ public class ActivityService : IActivityService
             if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
                 throw new UnauthorizedAccessException("Only board members can edit past activities.");
 
-            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer || patchDoc.Operations.Any(op => !Activity.AllowedFields.Contains(op.path)))
+            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || activity.IsEnrollable || !isOrganizer || patchDoc.Operations.Any(op => !Activity.AllowedFields.Contains(op.path)))
                 throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
         }
 
@@ -324,8 +325,9 @@ public class ActivityService : IActivityService
         if (activity == null)
             throw new KeyNotFoundException();
 
-        // Uploading is only allowed if the activity is not online yet
-        if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null)
+        // Uploading is only allowed if the activity is not online yet and enrollment hasn't been opened or scheduled
+        bool isOrganizer = activity.OrganizerId.HasValue && _permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value);
+        if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || activity.IsEnrollable || !isOrganizer)
         {
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
         }
@@ -387,7 +389,7 @@ public class ActivityService : IActivityService
             if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow)
                 throw new UnauthorizedAccessException("Only board members can edit past activities.");
 
-            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || !isOrganizer)
+            if (activity.ShowInKoala || activity.ShowOnWebsite || activity.EnrollOpenDate != null || activity.IsEnrollable || !isOrganizer)
                 throw new UnauthorizedAccessException("You are not authorized to edit this activity.");
 
             // Non-board organizers can't change these fields via PUT either. Silently keep them as
@@ -597,7 +599,8 @@ public class ActivityService : IActivityService
                 Type = q.Type,
                 IsMandatory = q.IsMandatory,
                 IsPublic = q.IsPublic,
-                Options = q.Options != null ? string.Join(";", q.Options) : null
+                Options = q.Options != null ? string.Join(";", q.Options) : null,
+                CloseOnUnenrollmentDeadline = q.CloseOnUnenrollmentDeadline
             }).ToList(),
             PaymentDeadline = dto.PaymentDeadline ?? dto.DateTimeStart.Date.AddDays(14)
         };
@@ -656,7 +659,8 @@ public class ActivityService : IActivityService
                     IsPublic = dto.IsPublic,
                     Options = dto.Options != null && dto.Options.Any()
                         ? string.Join(';', dto.Options)
-                        : null
+                        : null,
+                    CloseOnUnenrollmentDeadline = dto.CloseOnUnenrollmentDeadline
                 };
 
                 activity.SpecificationQuestions.Add(newQuestion);
@@ -704,6 +708,7 @@ public class ActivityService : IActivityService
         dto.ShowInKoala = activity.ShowInKoala;
         dto.ShowOnWebsite = activity.ShowOnWebsite;
         dto.EnrollOpenDate = activity.EnrollOpenDate;
+        dto.IsEnrollable = activity.IsEnrollable;
     }
 
     private static void ApplyUpdateDto(Activity activity, PutActivityDTO dto)

@@ -1,5 +1,6 @@
 using Backend.Database;
 using Backend.Models.Domain;
+using Backend.Services.OutboxWorkers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services;

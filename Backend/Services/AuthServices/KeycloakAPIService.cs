@@ -13,7 +13,7 @@ namespace Backend.Services.AuthServices;
 public class KeycloakAPIService(
     PostgresDbContext db,
     IPermissionService permissionService,
-    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
+    IEnumerable<IMailChangedListener> mailChangedListeners,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
     ILogger<KeycloakAPIService> logger) : IAuthService
@@ -79,8 +79,11 @@ public class KeycloakAPIService(
             using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, currentEmail, db);
+                var oldEmail = member.Email;
                 member.Email = currentEmail;
+
+                mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, currentEmail, db);
+
                 await db.SaveChangesAsync();
                 logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);
                 await transaction.CommitAsync();
@@ -241,11 +244,28 @@ public class KeycloakAPIService(
         var email = await GetEmail(keycloakId);
 
         var member = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == keycloakId);
-        if (member != null)
+        if (member == null || string.Equals(member.Email, email, StringComparison.OrdinalIgnoreCase))
         {
+            return;
+        }
+
+        using var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            var oldEmail = member.Email;
             member.Email = email;
+
+            mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, email, db);
+
             await db.SaveChangesAsync();
             logger.LogInformation("Updated local member email from Keycloak for {KeycloakId}.", keycloakId);
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            logger.LogError("Failed to update local member email from Keycloak for {KeycloakId}. Rolling back transaction.", keycloakId);
+            await transaction.RollbackAsync();
+            throw;
         }
     }
 

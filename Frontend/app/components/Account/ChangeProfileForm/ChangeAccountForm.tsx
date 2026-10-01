@@ -107,6 +107,7 @@ export default function ChangeAccountForm({
       try {
         const response = await getMembersByIdMailinglists({
           path: { id: member.id },
+          query: { includeYearlyRenewal: true },
         });
 
         if (response.error || !response.data) {

@@ -147,6 +147,50 @@ public class EnrollmentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetEnrollments_ActivityIsDraft_ExcludesEnrollment()
+    {
+        // Arrange
+        var member = CreateMember("1234567");
+        var publishedActivity = CreateActivity("Published Activity");
+        var draftActivity = CreateActivity("Draft Activity");
+        draftActivity.ShowInKoala = false;
+        _db.Members.Add(member);
+        _db.Activities.AddRange(publishedActivity, draftActivity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.AddRange(
+            new Enrollment
+            {
+                ActivityId = publishedActivity.Id,
+                MemberId = member.Id,
+                Price = 10,
+                RegisteredOn = DateTime.UtcNow,
+                IsOnWaitingList = false
+            },
+            new Enrollment
+            {
+                ActivityId = draftActivity.Id,
+                MemberId = member.Id,
+                Price = 10,
+                RegisteredOn = DateTime.UtcNow,
+                IsOnWaitingList = false
+            });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var dto = new GetEnrollmentsDTO { FromMemberId = member.Id };
+
+        // Act
+        var result = await _service.GetEnrollments(dto, _userId, CancellationToken.None);
+
+        // Assert
+        var list = result.ToList();
+        Assert.Single(list);
+        Assert.Equal(publishedActivity.Id, list[0].Activity.Id);
+    }
+
+    [Fact]
     public async Task GetEnrollments_UserIsNotBoardMemberAndRequestsOthers_EnsuresBoardPermission()
     {
         // Arrange
@@ -535,6 +579,43 @@ public class EnrollmentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteEnrollment_ActivityAlreadyOverCapacity_DoesNotDoublePromote()
+    {
+        // Activity at its limit, plus one extra participant manually moved off the
+        // waiting list by a board member (over capacity by one, e.g. via the "move to
+        // participants" action, which doesn't enforce ParticipantLimit).
+        var memberToUnenroll = CreateMember("1111111");
+        var manuallyPromotedMember = CreateMember("2222222");
+        var stillWaitingMember = CreateMember("3333333");
+        var activity = CreateActivity("Waitlist Activity");
+        activity.ParticipantLimit = 1;
+
+        _db.Members.AddRange(memberToUnenroll, manuallyPromotedMember, stillWaitingMember);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        var enrollment1 = new Enrollment { MemberId = memberToUnenroll.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow.AddMinutes(-10), IsOnWaitingList = false };
+        var enrollment2 = new Enrollment { MemberId = manuallyPromotedMember.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow.AddMinutes(-8), IsOnWaitingList = false };
+        var enrollment3 = new Enrollment { MemberId = stillWaitingMember.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow.AddMinutes(-5), IsOnWaitingList = true };
+        _db.Enrollments.AddRange(enrollment1, enrollment2, enrollment3);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(memberToUnenroll.Id).Returns(false);
+
+        // Act: unenroll one of the two participants. One participant remains, exactly at
+        // the limit, so no spot actually opened up — the waiting list must NOT be touched.
+        await _service.DeleteEnrollment(activity.Id, memberToUnenroll.Id, memberToUnenroll.Id, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var stillWaiting = await _db.Enrollments.FirstOrDefaultAsync(e => e.MemberId == stillWaitingMember.Id && e.ActivityId == activity.Id);
+        Assert.NotNull(stillWaiting);
+        Assert.True(stillWaiting.IsOnWaitingList);
+
+        await _mailService.DidNotReceive().SendEnrollmentPromotionEmail(Arg.Any<Enrollment>());
+    }
+
+    [Fact]
     public async Task DeleteEnrollment_MailSendThrows_SwallowsException()
     {
         var memberToDelete = CreateMember("1111111");
@@ -846,6 +927,81 @@ public class EnrollmentServiceTests : IDisposable
         var updated = await _db.Enrollments.Include(e => e.SpecificationAnswers).FirstAsync(e => e.MemberId == member.Id);
         Assert.Empty(updated.SpecificationAnswers);
         Assert.Equal(10, updated.Price);
+    }
+
+    [Fact]
+    public async Task PatchEnrollment_BoardMemberMovesOffWaitingList_SendsPromotionEmail()
+    {
+        var boardMember = CreateMember("9999999");
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity");
+
+        _db.Members.AddRange(boardMember, member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = true });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(boardMember.Id).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.IsOnWaitingList, false);
+
+        await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, boardMember.Id, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        Assert.False((await _db.Enrollments.FirstAsync(e => e.MemberId == member.Id)).IsOnWaitingList);
+        await _mailService.Received(1).SendEnrollmentPromotionEmail(Arg.Is<Enrollment>(e => e.MemberId == member.Id));
+    }
+
+    [Fact]
+    public async Task PatchEnrollment_NotChangingWaitingListStatus_DoesNotSendPromotionEmail()
+    {
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity");
+
+        _db.Members.Add(member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(member.Id).Returns(false);
+
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.SpecificationAnswers, new List<SpecificationAnswer>());
+
+        await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, member.Id, CancellationToken.None);
+
+        await _mailService.DidNotReceive().SendEnrollmentPromotionEmail(Arg.Any<Enrollment>());
+    }
+
+    [Fact]
+    public async Task PatchEnrollment_PromotionMailThrows_SwallowsException()
+    {
+        var boardMember = CreateMember("9999999");
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity");
+
+        _db.Members.AddRange(boardMember, member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment { MemberId = member.Id, ActivityId = activity.Id, Price = 10, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = true });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(boardMember.Id).Returns(true);
+        _mailService.SendEnrollmentPromotionEmail(Arg.Any<Enrollment>()).Throws(new Exception("Mail error"));
+
+        var patchDoc = new JsonPatchDocument<Enrollment>();
+        patchDoc.Replace(e => e.IsOnWaitingList, false);
+
+        await _service.PatchEnrollment(activity.Id, member.Id, patchDoc, boardMember.Id, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        Assert.False((await _db.Enrollments.FirstAsync(e => e.MemberId == member.Id)).IsOnWaitingList);
     }
 
     [Fact]

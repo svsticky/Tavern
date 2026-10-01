@@ -1,6 +1,6 @@
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics.CodeAnalysis;
@@ -486,7 +486,8 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
             {
                 NameDutch = "Privacyverklaring",
                 NameEnglish = "Privacy Statement",
-                Url = "https://public.svsticky.nl/privacystatement.pdf",
+                UrlDutch = "https://public.svsticky.nl/Privacyverklaring_Sticky_NL.pdf",
+                UrlEnglish = "https://public.svsticky.nl/Privacy_Statement_Sticky_EN.pdf",
                 SortOrder = 1
             }
         );

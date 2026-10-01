@@ -3,7 +3,7 @@ using Backend.Models.Domain;
 using Backend.Services.AccountingToolServices;
 using Microsoft.EntityFrameworkCore;
 
-namespace Backend.Services;
+namespace Backend.Services.OutboxWorkers;
 
 /// <summary>
 /// Background worker that processes queued accounting synchronization tasks.

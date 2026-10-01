@@ -6,6 +6,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

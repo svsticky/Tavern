@@ -3,6 +3,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services.Domain;
 
@@ -32,7 +33,7 @@ public class SpecificationAnswerService(
             throw new ArgumentException("Cannot modify Id, EnrollmentId or QuestionId fields.");
 
         SpecificationAnswerValidator.ValidateOwnership(answer, userId);
-        SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer);
+        SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer);
         SpecificationAnswerValidator.ValidatePatchOperations(patchDoc);
 
         patchDoc.ApplyTo(answer);
@@ -46,7 +47,10 @@ public class SpecificationAnswerService(
 
     private SpecificationAnswer GetAnswerOrThrow(uint answerId)
     {
-        var answer = db.SpecificationAnswers.FirstOrDefault(a => a.Id == answerId);
+        var answer = db.SpecificationAnswers
+            .Include(a => a.Question)
+                .ThenInclude(q => q.Activity)
+            .FirstOrDefault(a => a.Id == answerId);
         return answer ?? throw new KeyNotFoundException();
     }
 }
