@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { NoContentTile } from "../Tiles/NoContentTile";
 
 /**
  * Props for the ActivityPriceList component.
@@ -24,15 +25,20 @@ export default function ActivityPriceList({
   const { t } = useTranslation();
 
   if (items.length === 0) {
-    return <p className="text-gray-500">{emptyText}</p>;
+    return <NoContentTile text={emptyText} className="p-6" />;
   }
 
   return (
-    <ul className="flex flex-col divide-y divide-gray-200">
+    <ul className="flex flex-col gap-3">
       {items.map((item, index) => (
-        <li key={index} className="flex justify-between gap-4 py-2">
-          <span className="truncate">{item.name}</span>
-          <span className="shrink-0">
+        <li
+          key={index}
+          className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 transition-colors hover:border-(--board-primary-light) hover:bg-orange-50"
+        >
+          <span className="truncate font-medium text-slate-700">
+            {item.name}
+          </span>
+          <span className="shrink-0 font-semibold text-(--board-primary-dark)">
             {item.price > 0 ? `€${item.price.toFixed(2)}` : t("free")}
           </span>
         </li>

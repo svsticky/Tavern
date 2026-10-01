@@ -67,19 +67,21 @@ export default function Modal({
         onClick={onClose}
       />
 
-      <div className="relative bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="font-bold text-lg text-slate-900">{title}</h2>
+      <div className="relative flex h-full w-full flex-col overflow-hidden border border-gray-200 bg-white shadow-2xl animate-in fade-in zoom-in duration-200 sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:rounded-2xl">
+        <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-5 py-4">
+          <h2 className="border-l-4 border-(--board-primary) pl-3 text-lg font-bold text-slate-900">
+            {title}
+          </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+            className="cursor-pointer rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 hover:shadow-sm"
             aria-label={t("close_modal")}
           >
-            <X size={20} className="hover:cursor-pointer" />
+            <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4">{children}</div>
+        <div className="flex-1 overflow-y-auto p-5">{children}</div>
       </div>
     </div>,
     document.body,
