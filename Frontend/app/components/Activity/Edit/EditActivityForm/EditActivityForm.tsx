@@ -300,16 +300,16 @@ export default function EditActivityForm({
                   placeholder={organizer?.glAccountId ?? undefined}
                 />
                 <Input
-                  label={`${t("cost_unit_id")} (${t("leave_empty_for_group_default")})`}
-                  name="CostUnitId"
-                  defaultValue={activity?.costUnitId ?? ""}
-                  placeholder={organizer?.costUnitId ?? undefined}
-                />
-                <Input
                   label={`${t("cost_center_id")} (${t("leave_empty_for_group_default")})`}
                   name="CostCenterId"
                   defaultValue={activity?.costCenterId ?? ""}
                   placeholder={organizer?.costCenterId ?? undefined}
+                />
+                <Input
+                  label={`${t("cost_unit_id")} (${t("leave_empty_for_group_default")})`}
+                  name="CostUnitId"
+                  defaultValue={activity?.costUnitId ?? ""}
+                  placeholder={organizer?.costUnitId ?? undefined}
                 />
                 <Input
                   label={t("payment_deadline")}
