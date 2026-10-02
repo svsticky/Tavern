@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { HTMLAttributes } from "react";
 import { cn } from "~/util/tailwind.util";
 
 /**
@@ -7,10 +7,7 @@ import { cn } from "~/util/tailwind.util";
  * @property {string} [className] - Optional CSS classes to customize styling (e.g., background, borders, or shadows).
  * @property {ReactNode} [children] - The content to be rendered inside the tile.
  */
-type TileProps = {
-  className?: string;
-  children?: ReactNode;
-};
+type TileProps = HTMLAttributes<HTMLDivElement>;
 
 /**
  * A fundamental layout building block that provides a consistent container style.
@@ -22,9 +19,10 @@ type TileProps = {
  * @component
  * @param {TileProps} props - The component properties.
  */
-export default function Tile({ className, children }: TileProps) {
+export default function Tile({ className, children, ...props }: TileProps) {
   return (
     <div
+      {...props}
       className={cn("box-border rounded-2xl p-5 overflow-hidden", className)}
     >
       {children}
