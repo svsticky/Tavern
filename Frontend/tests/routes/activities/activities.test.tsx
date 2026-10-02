@@ -10,6 +10,10 @@ import {
 } from "~/routes/activities/activities.handlers";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  ACTIVITIES_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/util/resourceCache.util";
 
 vi.mock("~/routes/activities/activities.handlers", () => ({
   loadActivities: vi.fn(),
@@ -47,6 +51,7 @@ function makeActivity(id: number): ActivityResponseDto {
 describe("ActivitiesPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    invalidateCachedResource(ACTIVITIES_CACHE_KEY);
   });
 
   it("renders nothing while the token has not loaded", () => {

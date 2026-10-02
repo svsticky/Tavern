@@ -24,6 +24,7 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate } from "~/util/date.util";
+import { navigateBackOrReplace } from "~/util/navigation.util";
 import {
   handleAddEnrollment,
   handleDeleteEnrollment,
@@ -403,7 +404,7 @@ export default function EditMemberPage() {
                   return;
                 }
                 handleDeleteMember(memberId, setLoading, () =>
-                  navigate("/admin/members"),
+                  navigateBackOrReplace(navigate, "/admin/members"),
                 );
               }}
               className="bg-red-600 hover:bg-red-700 text-white border-transparent"

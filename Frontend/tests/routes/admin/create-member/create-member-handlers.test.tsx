@@ -119,6 +119,7 @@ describe("handleCreateSubmit", () => {
     await vi.waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(
         "/confirm-mail?memberId=1&createdByAdmin=true",
+        { replace: true },
       ),
     );
 

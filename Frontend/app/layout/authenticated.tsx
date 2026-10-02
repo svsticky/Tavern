@@ -40,25 +40,31 @@ export default function AuthenticatedLayout() {
 
     let cancelled = false;
     let retryTimer: number | undefined;
+    let attempts = 0;
+    // getTokenParsed() refreshes an expired access token, so idle time alone
+    // doesn't force a login redirect. Give up after a few tries in case the
+    // session really is dead.
+    const MAX_ATTEMPTS = 10;
 
     const loadToken = async () => {
-      if (!authService.isAuthenticated()) {
-        console.error("User not authenticated");
-        authService.login(window.location.href);
-        return;
-      }
-
       const tokenParsed = await authService.getTokenParsed();
       if (cancelled) return;
 
-      if (!tokenParsed) {
+      if (tokenParsed) {
+        setTokenParsed(tokenParsed);
+        return;
+      }
+
+      attempts += 1;
+      if (attempts < MAX_ATTEMPTS) {
         retryTimer = window.setTimeout(() => {
           if (!cancelled) loadToken();
         }, 250);
         return;
       }
 
-      setTokenParsed(tokenParsed);
+      console.error("User not authenticated");
+      authService.login(window.location.href);
     };
 
     loadToken();
@@ -259,11 +265,6 @@ export default function AuthenticatedLayout() {
   ]);
 
   if (!tokenParsed) return null;
-
-  if (!authService.isAuthenticated()) {
-    authService.login(window.location.href);
-    return null;
-  }
 
   return <Outlet />;
 }

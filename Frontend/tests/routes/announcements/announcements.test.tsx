@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import AnnouncementsPage from "~/routes/announcements/announcements";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  ANNOUNCEMENTS_CACHE_KEY,
+  invalidateCachedResource,
+} from "~/util/resourceCache.util";
 
 // This route reads `t` directly from the bare "i18next" singleton (not the `useTranslation()`
 // hook), which returns `undefined` for every key until the instance is initialized. Give it a
@@ -37,6 +41,7 @@ function baseToken(overrides: Partial<TokenParsed> = {}): TokenParsed {
 describe("AnnouncementsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    invalidateCachedResource(ANNOUNCEMENTS_CACHE_KEY);
   });
 
   it("shows the loading text while waiting for the announcements to load", () => {

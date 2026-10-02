@@ -299,7 +299,10 @@ export const handleRegisterSubmit = async ({
             );
           }
         } else {
-          navigate(`/confirm-mail?memberId=${response.data.id}`);
+          // Replace: don't leave the registration form in history as a back target.
+          navigate(`/confirm-mail?memberId=${response.data.id}`, {
+            replace: true,
+          });
         }
       } else {
         throw response.error ?? new Error("Registration failed");

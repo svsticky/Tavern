@@ -74,15 +74,35 @@ describe("AuthenticatedLayout", () => {
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
   });
 
-  it("redirects to login when the user is not authenticated", async () => {
+  it("redirects to login when the token can't be refreshed", async () => {
+    vi.useFakeTimers();
     const authService = createMockAuthService({
       isReady: () => true,
       isAuthenticated: () => false,
+      getTokenParsed: vi.fn(async () => null),
     });
 
     renderLayout(authService);
 
-    await waitFor(() => expect(authService.login).toHaveBeenCalled());
+    await vi.advanceTimersByTimeAsync(3000);
+
+    expect(authService.login).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it("does not redirect to login when a stale isAuthenticated() flag still has a refreshable token", async () => {
+    const authService = createMockAuthService({
+      isReady: () => true,
+      isAuthenticated: () => false,
+      getTokenParsed: vi.fn(async () => token),
+    });
+
+    renderLayout(authService);
+
+    await waitFor(() =>
+      expect(screen.getByText("Protected content")).toBeInTheDocument(),
+    );
+    expect(authService.login).not.toHaveBeenCalled();
   });
 
   it("renders the outlet once the token is loaded for an authenticated user", async () => {

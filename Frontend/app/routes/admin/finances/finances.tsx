@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   Activity,
   ActivityResponseDto,
@@ -13,6 +13,8 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { usePersistentPageState } from "~/hooks/usePersistentPageState";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
 import {
   handleMarkAsPaid,
@@ -22,6 +24,19 @@ import {
   loadFinancesData,
   refreshUnpaidPayments,
 } from "./finances.handlers";
+
+type FinancesPageState = {
+  totalUnpaid: number;
+  openPayments: number;
+  unpaidActivities: Activity[] | null;
+  membersWithOverduePayment:
+    | { member: Member; enrollments: EnrollmentBalance[] }[]
+    | null;
+  unpaidBalances: EnrollmentBalance[] | null;
+  overpaidBalances: EnrollmentBalance[] | null;
+  expiredActivitiesYear: number;
+  expiredActivities: ActivityResponseDto[] | null;
+};
 
 /**
  * The administrative Finances dashboard for the association.
@@ -41,38 +56,57 @@ import {
  * @component
  */
 export default function Finances() {
-  const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState(false);
-  const [totalUnpaid, setTotalUnpaid] = useState(0);
-  const [openPayments, setOpenPayments] = useState(0);
   const currentYear = getCommitteeYear();
-  const [expiredActivitiesYear, setExpiredActivitiesYear] =
-    useState(currentYear);
-  const [loadingExpiredActivities, setLoadingExpiredActivities] =
-    useState(true);
+
+  const { initial, isRestored, save } =
+    usePersistentPageState<FinancesPageState>(() => ({
+      totalUnpaid: 0,
+      openPayments: 0,
+      unpaidActivities: null,
+      membersWithOverduePayment: null,
+      unpaidBalances: null,
+      overpaidBalances: null,
+      expiredActivitiesYear: currentYear,
+      expiredActivities: null,
+    }));
+
+  const [loading, setLoading] = useState(!isRestored);
+  const [exporting, setExporting] = useState(false);
+  const [totalUnpaid, setTotalUnpaid] = useState(initial.totalUnpaid);
+  const [openPayments, setOpenPayments] = useState(initial.openPayments);
+  const [expiredActivitiesYear, setExpiredActivitiesYear] = useState(
+    initial.expiredActivitiesYear,
+  );
+  const [loadingExpiredActivities, setLoadingExpiredActivities] = useState(
+    !isRestored,
+  );
   const [expiredActivities, setExpiredActivities] = useState<
     ActivityResponseDto[] | null
-  >(null);
+  >(initial.expiredActivities);
   const expiredActivitiesYears = Array.from(
     { length: 10 },
     (_, i) => currentYear - i,
   );
   const [unpaidActivities, setUnpaidActivities] = useState<Activity[] | null>(
-    null,
+    initial.unpaidActivities,
   );
   const [membersWithOverduePayment, setMembersWithOverduePayment] = useState<
     { member: Member; enrollments: EnrollmentBalance[] }[] | null
-  >(null);
+  >(initial.membersWithOverduePayment);
   const [unpaidBalances, setUnpaidBalances] = useState<
     EnrollmentBalance[] | null
-  >(null);
+  >(initial.unpaidBalances);
   const [overpaidBalances, setOverpaidBalances] = useState<
     EnrollmentBalance[] | null
-  >(null);
+  >(initial.overpaidBalances);
   const [exportStartDate, setExportStartDate] = useState<string>("");
   const [exportEndDate, setExportEndDate] = useState<string>("");
+  // Never mutated - see the comment in useInfiniteScrollSearch on why a
+  // consume-once ref breaks under React Strict Mode's double-invoked effects.
+  const initialExpiredActivitiesYearRef = useRef(initial.expiredActivitiesYear);
 
   useEffect(() => {
+    if (isRestored) return;
     loadFinancesData({
       setLoading,
       setUnpaidBalances,
@@ -82,18 +116,55 @@ export default function Finances() {
       setMembersWithOverduePayment,
       setOverpaidBalances,
     });
-  }, []);
+  }, [isRestored]);
 
   useEffect(() => {
+    if (
+      isRestored &&
+      expiredActivitiesYear === initialExpiredActivitiesYearRef.current
+    ) {
+      return;
+    }
     loadExpiredActivities({
       year: expiredActivitiesYear,
       setLoadingExpiredActivities,
       setExpiredActivities,
     });
-  }, [expiredActivitiesYear]);
+  }, [isRestored, expiredActivitiesYear]);
 
-  if (loading || (loadingExpiredActivities && expiredActivities === null))
-    return t("loading");
+  const ready = !(
+    loading ||
+    (loadingExpiredActivities && expiredActivities === null)
+  );
+
+  useEffect(() => {
+    if (!ready) return;
+    save({
+      totalUnpaid,
+      openPayments,
+      unpaidActivities,
+      membersWithOverduePayment,
+      unpaidBalances,
+      overpaidBalances,
+      expiredActivitiesYear,
+      expiredActivities,
+    });
+  }, [
+    ready,
+    totalUnpaid,
+    openPayments,
+    unpaidActivities,
+    membersWithOverduePayment,
+    unpaidBalances,
+    overpaidBalances,
+    expiredActivitiesYear,
+    expiredActivities,
+    save,
+  ]);
+
+  useScrollRestoration(ready);
+
+  if (!ready) return t("loading");
 
   if (
     totalUnpaid === null ||

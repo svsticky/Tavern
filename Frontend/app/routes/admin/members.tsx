@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { Mail, Phone, PlusIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import { getMembers, type MemberResponseDto } from "~/api";
@@ -12,11 +12,23 @@ import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { useInfiniteScrollSearch } from "~/hooks/useInfiniteScrollSearch";
+import { usePersistentPageState } from "~/hooks/usePersistentPageState";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { MembersFilterDto } from "~/types/MembersFilterDto";
 import { appendErrorMessage } from "~/util/error.util";
 
 /** The number of members to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 20;
+
+type MembersPageState = {
+  members: MemberResponseDto[];
+  searchQuery: string;
+  debouncedSearchQuery: string;
+  filters: MembersFilterDto | null;
+  page: number;
+  hasMore: boolean;
+};
 
 /**
  * An administrative directory page for managing association members.
@@ -36,16 +48,26 @@ const PAGE_SIZE = 20;
  */
 export default function Members() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [members, setMembers] = useState<MemberResponseDto[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [filters, setFilters] = useState<MembersFilterDto | null>(null);
 
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef<HTMLDivElement>(null);
+  const { initial, isRestored, save } =
+    usePersistentPageState<MembersPageState>(() => ({
+      members: [],
+      searchQuery: "",
+      debouncedSearchQuery: "",
+      filters: null,
+      page: 1,
+      hasMore: true,
+    }));
+
+  const [loading, setLoading] = useState(!isRestored);
+  const [members, setMembers] = useState<MemberResponseDto[]>(initial.members);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [filters, setFilters] = useState<MembersFilterDto | null>(
+    initial.filters,
+  );
+
+  const [page, setPage] = useState(initial.page);
+  const [hasMore, setHasMore] = useState(initial.hasMore);
 
   const fetchMembers = useCallback(
     async (pageNum: number, search: string, isInitial: boolean) => {
@@ -93,38 +115,53 @@ export default function Members() {
     setIsFiltersOpen(false);
   };
 
+  const {
+    searchQuery,
+    setSearchQuery,
+    debouncedSearchQuery,
+    loaderRef,
+    hasLoadedOnce,
+  } = useInfiniteScrollSearch({
+    isRestored,
+    loading,
+    hasMore,
+    page,
+    initialSearchQuery: initial.searchQuery,
+    initialDebouncedSearchQuery: initial.debouncedSearchQuery,
+    resetDep: filters,
+    onReset: (search) => {
+      setPage(1);
+      setHasMore(true);
+      fetchMembers(1, search, true);
+    },
+    onLoadMore: (nextPage, search) => {
+      setPage(nextPage);
+      fetchMembers(nextPage, search, false);
+    },
+  });
+
   useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
+    if (loading) return;
+    save({
+      members,
+      searchQuery,
+      debouncedSearchQuery,
+      filters,
+      page,
+      hasMore,
+    });
+  }, [
+    loading,
+    members,
+    searchQuery,
+    debouncedSearchQuery,
+    filters,
+    page,
+    hasMore,
+    save,
+  ]);
 
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchMembers(1, debouncedSearchQuery, true);
-  }, [debouncedSearchQuery, fetchMembers]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchMembers(nextPage, debouncedSearchQuery, false);
-        }
-      },
-      { threshold: 1.0 },
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, page, debouncedSearchQuery, fetchMembers]);
+  useScrollRestoration(hasLoadedOnce);
 
   const columns: Column<MemberResponseDto>[] = [
     {
@@ -195,6 +232,7 @@ export default function Members() {
             <Input
               label={t("search")}
               placeholder={t("search_members")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }

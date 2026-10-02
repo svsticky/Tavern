@@ -5,7 +5,7 @@ import {
   DownloadIcon,
   PlusIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
@@ -16,9 +16,15 @@ import Button from "~/components/UI/Button";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
+import { useScrollRestoration } from "~/hooks/useScrollRestoration";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import {
+  ACTIVITIES_CACHE_KEY,
+  getCachedResource,
+  setCachedResource,
+} from "~/util/resourceCache.util";
 import {
   copyWeekOverview,
   downloadPosters,
@@ -75,16 +81,31 @@ export default function ActivitiesPage() {
 
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const cachedActivities =
+    getCachedResource<ActivityResponseDto[]>(ACTIVITIES_CACHE_KEY);
+  const [loading, setLoading] = useState(cachedActivities === undefined);
+  const [activities, setActivities] = useState<ActivityResponseDto[]>(
+    cachedActivities ?? [],
+  );
   const [calendarTileOpen, setCalendarTileOpen] = useState(false);
+  // Never mutated - a consume-once ref would break under React Strict
+  // Mode's double-invoked effects (the 2nd pass would refetch for real).
+  const wasCachedAtMountRef = useRef(cachedActivities !== undefined);
+
   useEffect(() => {
     if (!tokenParsed) return;
+    if (wasCachedAtMountRef.current) return;
     loadActivities({
       setLoading,
-      setActivities,
+      setActivities: (data) => {
+        setCachedResource(ACTIVITIES_CACHE_KEY, data);
+        setActivities(data);
+      },
     });
   }, [tokenParsed]);
+
+  // Also gate on tokenParsed, or this fires while the page is still blank.
+  useScrollRestoration(!loading && !!tokenParsed);
 
   if (!tokenParsed) return null;
 

@@ -432,6 +432,7 @@ describe("RegisterForm.handlers", () => {
       await waitFor(() =>
         expect(navigate).toHaveBeenCalledWith(
           "/confirm-mail?memberId=member-3",
+          { replace: true },
         ),
       );
       expect(postPaymentsMembership).not.toHaveBeenCalled();

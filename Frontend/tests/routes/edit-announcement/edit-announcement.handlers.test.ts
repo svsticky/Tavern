@@ -158,7 +158,9 @@ describe("handleAnnouncementSubmit", () => {
       },
     });
     await vi.waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith("/announcements"),
+      expect(navigate).toHaveBeenCalledWith("/announcements", {
+        replace: true,
+      }),
     );
     expect(setSaving).toHaveBeenCalledWith(true);
     expect(setSaving).toHaveBeenCalledWith(false);
@@ -183,7 +185,9 @@ describe("handleAnnouncementSubmit", () => {
 
     expect(postAnnouncements).toHaveBeenCalled();
     await vi.waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith("/announcements"),
+      expect(navigate).toHaveBeenCalledWith("/announcements", {
+        replace: true,
+      }),
     );
   });
 
@@ -229,7 +233,9 @@ describe("handleDeleteAnnouncement", () => {
       path: { id: 4 },
     });
     await vi.waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith("/announcements"),
+      expect(navigate).toHaveBeenCalledWith("/announcements", {
+        replace: true,
+      }),
     );
     expect(setDeleting).toHaveBeenCalledWith(true);
     expect(setDeleting).toHaveBeenCalledWith(false);
