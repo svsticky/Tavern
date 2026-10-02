@@ -2096,6 +2096,10 @@ export type GetActivitiesData = {
          */
         OpenForPayment?: boolean;
         /**
+         * Indicates whether to only include activities with at least one enrollment (not on the waiting list) that has a price above zero.
+         */
+        OnlyWithPaidEnrollments?: boolean;
+        /**
          * The page number for pagination (1-indexed). If specified with PageSize, pagination will be applied.
          */
         Page?: number;

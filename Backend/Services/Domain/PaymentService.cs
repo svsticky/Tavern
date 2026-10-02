@@ -658,7 +658,8 @@ namespace Backend.Services.Domain
                     throw new Exception($"Activity {enrollment.Activity.Name} is not open for payment");
 
                 var price = paymentValidationService.GetUnpaidAmountForEnrollment(enrollment);
-                if (price <= 0) continue;
+                // A negative manual amount records the refund of an overpaid enrollment
+                if (price == 0 || (price < 0 && !manuallyMarkedAsPaid)) continue;
 
                 var payment = new EnrollmentPayment
                 {

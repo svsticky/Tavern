@@ -34,6 +34,7 @@ vi.mock("react-hot-toast", () => ({
 import toast from "react-hot-toast";
 import {
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   loadExpiredActivities,
@@ -311,6 +312,45 @@ describe("handleMarkAsPaid", () => {
   });
 });
 
+describe("handleOverpaidProcessed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("marks the overpaid enrollment as processed and reloads the overpaid balances", async () => {
+    postPaymentsActivity.mockResolvedValue({});
+    getPaymentsOverpaid.mockResolvedValue({
+      data: [balance({ balance: 0 }), balance({ balance: 3 })],
+    });
+    const setOverpaidBalances = vi.fn();
+
+    handleOverpaidProcessed({
+      balance: balance({
+        enrollment: { memberId: "m1", activityId: 5 } as any,
+      }),
+      setOverpaidBalances,
+    });
+
+    await vi.waitFor(() => expect(setOverpaidBalances).toHaveBeenCalled());
+    expect(postPaymentsActivity).toHaveBeenCalledWith({
+      body: { memberId: "m1", activityIds: [5], manuallyMarkedAsPaid: true },
+    });
+    expect(setOverpaidBalances.mock.calls[0][0]).toHaveLength(1);
+  });
+
+  it("does not reload when marking as processed fails", async () => {
+    postPaymentsActivity.mockResolvedValue({ error: true });
+    const setOverpaidBalances = vi.fn();
+
+    handleOverpaidProcessed({ balance: balance(), setOverpaidBalances });
+
+    await vi.waitFor(() => expect(toast.promise).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(getPaymentsOverpaid).not.toHaveBeenCalled();
+    expect(setOverpaidBalances).not.toHaveBeenCalled();
+  });
+});
+
 describe("handlePaymentsExport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -406,6 +446,7 @@ describe("loadExpiredActivities", () => {
         IncludePast: true,
         IncludeFuture: false,
         OpenForPayment: false,
+        OnlyWithPaidEnrollments: true,
         Year: 2025,
       }),
     });

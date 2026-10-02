@@ -173,6 +173,33 @@ public class ActivityQueryExtensionsTests
     }
 
     [Fact]
+    public void Filter_OnlyWithPaidEnrollments_SkipsActivitiesWithoutPaidEnrollments()
+    {
+        var memberId = Guid.NewGuid();
+        var activities = GetTestActivities();
+        activities[0].Enrollments = new List<Enrollment>
+        {
+            new() { ActivityId = 1, MemberId = memberId, Price = 5, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false }
+        };
+        activities[1].Enrollments = new List<Enrollment>
+        {
+            // Free enrollment - shouldn't count as a paid enrollment
+            new() { ActivityId = 2, MemberId = memberId, Price = 0, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false }
+        };
+        activities[2].Enrollments = new List<Enrollment>
+        {
+            // On the waiting list - shouldn't count as a paid enrollment
+            new() { ActivityId = 3, MemberId = memberId, Price = 5, RegisteredOn = DateTime.UtcNow, IsOnWaitingList = true }
+        };
+
+        var dto = new GetActivitiesDTO { IncludePast = true, OnlyWithPaidEnrollments = true };
+        var result = activities.AsQueryable().Filter(dto, isBoard: true, userGroupIds: new uint[] { }, isLoggedIn: true).ToList();
+
+        Assert.Single(result);
+        Assert.Equal(1u, result[0].Id);
+    }
+
+    [Fact]
     public void Filter_BySearch_MatchesNameCaseInsensitively()
     {
         var query = GetTestActivities().AsQueryable();

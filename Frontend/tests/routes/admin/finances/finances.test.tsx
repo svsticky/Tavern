@@ -12,6 +12,7 @@ const {
   loadFinancesData,
   loadExpiredActivities,
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   refreshUnpaidPayments,
@@ -19,6 +20,7 @@ const {
   loadFinancesData: vi.fn(),
   loadExpiredActivities: vi.fn(),
   handleMarkAsPaid: vi.fn(),
+  handleOverpaidProcessed: vi.fn(),
   handlePaymentsExport: vi.fn(),
   handleWhatsAppClick: vi.fn(),
   refreshUnpaidPayments: vi.fn(),
@@ -28,6 +30,7 @@ vi.mock("~/routes/admin/finances/finances.handlers", () => ({
   loadFinancesData,
   loadExpiredActivities,
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   refreshUnpaidPayments,
@@ -163,6 +166,26 @@ describe("Finances (admin)", () => {
     expect(screen.getByText("€20.00")).toBeInTheDocument();
   });
 
+  it("marks an overpaid balance as processed", async () => {
+    const overpaid = {
+      balance: -20,
+      enrollment: {
+        memberId: "m2",
+        activityId: 3,
+        member: { firstName: "John", lastName: "Smith" },
+        activity: { name: "Borrel" },
+      },
+    } as EnrollmentBalance;
+    loadWith({ overpaidBalances: [overpaid] });
+
+    renderWithProviders(<Finances />);
+
+    fireEvent.click(await screen.findByText("processed"));
+    expect(handleOverpaidProcessed).toHaveBeenCalledWith(
+      expect.objectContaining({ balance: overpaid }),
+    );
+  });
+
   it("renders expired activities and navigates on click", async () => {
     loadWith({
       expiredActivities: [
@@ -204,6 +227,57 @@ describe("Finances (admin)", () => {
         member,
         enrollments: [unpaidBalance()],
       }),
+    );
+  });
+
+  it("only lists members with an unpaid enrollment for that activity, with that enrollment's balance", async () => {
+    const otherMember = {
+      ...member,
+      id: "m2",
+      firstName: "John",
+      lastName: "Smith",
+    } as Member;
+    const feest = unpaidBalance();
+    const borrel = unpaidBalance({
+      balance: 3,
+      enrollment: {
+        activityId: 2,
+        activity: {
+          id: 2,
+          name: "Borrel",
+          paymentDeadline: "2099-01-01T00:00:00Z",
+        },
+        member: otherMember,
+      },
+    } as Partial<EnrollmentBalance>);
+    const janeBorrel = unpaidBalance({
+      balance: 4,
+      enrollment: { ...borrel.enrollment, member },
+    });
+    loadWith({
+      unpaidActivities: [
+        { id: 1, name: "Feest" } as Activity,
+        { id: 2, name: "Borrel" } as Activity,
+      ],
+      membersWithOverduePayment: [
+        { member, enrollments: [feest, janeBorrel] },
+        { member: otherMember, enrollments: [borrel] },
+      ],
+      unpaidBalances: [feest, janeBorrel, borrel],
+    });
+
+    renderWithProviders(<Finances />);
+
+    expect(await screen.findByText("Feest")).toBeInTheDocument();
+    expect(screen.getByText("unpaid_members (1)")).toBeInTheDocument();
+    expect(screen.getByText("unpaid_members (2)")).toBeInTheDocument();
+    expect(screen.getByText("€12.50")).toBeInTheDocument();
+    expect(screen.getByText("€4.00")).toBeInTheDocument();
+    expect(screen.queryByText("€16.50")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByText("mark_as_paid")[0]);
+    expect(handleMarkAsPaid).toHaveBeenCalledWith(
+      expect.objectContaining({ member, enrollments: [feest] }),
     );
   });
 

@@ -1,7 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
-using System.Globalization;
 
 namespace Backend.QueryExtensions;
 
@@ -47,18 +46,8 @@ public static class ActivityQueryExtensions
 
         if (dto.Year.HasValue)
         {
-            var parts = YearUtils.CommitteeCreationDate.Split('-');
-            int month = int.Parse(parts[0], CultureInfo.InvariantCulture);
-            int day = int.Parse(parts[1], CultureInfo.InvariantCulture);
-
-            uint selectedYear = dto.Year.Value;
-
-            uint creationYear = month > 6
-                ? selectedYear - 1
-                : selectedYear;
-
-            var creationThreshold = new DateTime((int)creationYear, month, day).Date;
-            var nextCreationThreshold = creationThreshold.AddYears(1);
+            var creationThreshold = YearUtils.GetYearStartUtc(dto.Year.Value, YearUtils.CommitteeCreationDate);
+            var nextCreationThreshold = YearUtils.GetYearStartUtc(dto.Year.Value + 1, YearUtils.CommitteeCreationDate);
 
             query = query.Where(a =>
                 a.DateTimeStart >= creationThreshold &&
@@ -68,6 +57,9 @@ public static class ActivityQueryExtensions
 
         if (dto.OpenForPayment.HasValue)
             query = query.Where(a => a.IsOpenForPayment == dto.OpenForPayment.Value);
+
+        if (dto.OnlyWithPaidEnrollments)
+            query = query.Where(a => a.Enrollments.Any(e => e.Price > 0 && !e.IsOnWaitingList));
 
         if (dto.UserId.HasValue)
             query = query.Where(a => a.Enrollments.Any(e => e.MemberId == dto.UserId.Value && !e.IsOnWaitingList));
