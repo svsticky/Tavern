@@ -16,6 +16,17 @@ vi.mock("~/routes/activity/activity.handlers", () => ({
   handleEditActivityClick: vi.fn(),
 }));
 
+vi.mock("react-hot-toast", () => ({
+  default: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+vi.mock("~/util/activityCsv.util", () => ({
+  downloadActivityEnrollmentsCsv: vi.fn(),
+}));
+
 vi.mock(
   "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile",
   () => ({
@@ -26,9 +37,22 @@ vi.mock(
 vi.mock(
   "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile",
   () => ({
-    default: ({ title, isBoard }: { title?: string; isBoard?: boolean }) => (
+    default: ({
+      title,
+      isBoard,
+      onExportCsv,
+    }: {
+      title?: string;
+      isBoard?: boolean;
+      onExportCsv?: () => void;
+    }) => (
       <div>
         participants-tile-{title ?? "main"}-isBoard-{String(Boolean(isBoard))}
+        {onExportCsv && (
+          <button type="button" onClick={onExportCsv}>
+            export-csv-button
+          </button>
+        )}
       </div>
     ),
   }),
@@ -355,5 +379,39 @@ describe("ActivityPage", () => {
     fireEvent.click(editButton!);
     expect(handleEditActivityClick).toHaveBeenCalled();
     expect(getActivityBackPath).toHaveBeenCalled();
+  });
+
+  it("triggers csv export when board member clicks export csv", async () => {
+    const { downloadActivityEnrollmentsCsv } = await import(
+      "~/util/activityCsv.util"
+    );
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity());
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+        locale: "nl",
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    const exportBtn = await screen.findByRole("button", {
+      name: "export-csv-button",
+    });
+    fireEvent.click(exportBtn);
+    expect(downloadActivityEnrollmentsCsv).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1 }),
+      true,
+    );
   });
 });

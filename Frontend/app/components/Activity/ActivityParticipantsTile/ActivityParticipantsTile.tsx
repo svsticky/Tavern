@@ -1,6 +1,8 @@
 import { t } from "i18next";
+import { Download } from "lucide-react";
 import type { EnrollmentResponseDto } from "~/api";
 import Tile from "../../Tiles/Tile";
+import Button from "../../UI/Button";
 import ParticipantTile from "./ParticipantTile";
 
 /**
@@ -15,6 +17,7 @@ import ParticipantTile from "./ParticipantTile";
  * @param {EnrollmentResponseDto[]} props.enrollments - An array of enrollment data objects to be displayed.
  * @param {boolean} [props.isBoard] - Whether the current viewer is a board member; forwarded to each
  *   `ParticipantTile` so it can link to the member's admin page.
+ * @param {() => void} [props.onExportCsv] - Optional callback to trigger a CSV export.
  *
  * @example
  * ```tsx
@@ -22,6 +25,7 @@ import ParticipantTile from "./ParticipantTile";
  *   title="Attendees"
  *   enrollments={activity.enrollments}
  *   isBoard={isBoard}
+ *   onExportCsv={handleExportCsv}
  * />
  * ```
  */
@@ -30,11 +34,13 @@ export default function ActivityParticipantsTile({
   enrollments,
   showCount = true,
   isBoard,
+  onExportCsv,
 }: {
   title?: string;
   enrollments: EnrollmentResponseDto[];
   showCount?: boolean;
   isBoard?: boolean;
+  onExportCsv?: () => void;
 }) {
   const count = enrollments.length;
 
@@ -42,14 +48,26 @@ export default function ActivityParticipantsTile({
 
   return (
     <Tile className="w-full">
-      <h2 className="text-2xl font-extrabold text-slate-900 mb-8 flex items-center gap-3">
-        {title || t("participants")}
-        {showCount && (
-          <span className="bg-slate-100 text-slate-500 text-sm py-1 px-3 rounded-full font-bold">
-            {count}
-          </span>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
+        <h2 className="text-2xl font-extrabold text-slate-900 flex items-center gap-3">
+          {title || t("participants")}
+          {showCount && (
+            <span className="bg-slate-100 text-slate-500 text-sm py-1 px-3 rounded-full font-bold">
+              {count}
+            </span>
+          )}
+        </h2>
+        {onExportCsv && (
+          <Button
+            variant="secondary"
+            onClick={onExportCsv}
+            className="text-xs px-3 py-1 flex items-center gap-1.5 w-fit"
+          >
+            <Download size={14} />
+            {t("export_csv")}
+          </Button>
         )}
-      </h2>
+      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fit,minmax(250px,1fr))] gap-4">
         {enrollments.map((enrollment, idx) => (
