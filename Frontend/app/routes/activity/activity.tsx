@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
@@ -11,6 +12,7 @@ import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { hasEnrollmentOpened } from "~/util/activity.util";
 import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
+import { generateParticipantChecklistPdf } from "~/util/pdf.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
@@ -115,6 +117,17 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
               }
               isBoard={isBoard}
               showCount={hasEnrollmentOpened(activity)}
+              onExportPdf={
+                isBoard
+                  ? () => {
+                      generateParticipantChecklistPdf(
+                        activity,
+                        tokenParsed?.locale?.toUpperCase() === "NL",
+                      );
+                      toast.success(t("pdf_exported"));
+                    }
+                  : undefined
+              }
             />
             <ActivityParticipantsTile
               title={t("waiting_list")}
