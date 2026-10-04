@@ -26,6 +26,7 @@ export const loadAdminActivities = async (
   page?: number,
   pageSize?: number,
   search?: string,
+  isArchived: boolean = false,
 ) => {
   try {
     setLoading(true);
@@ -37,6 +38,7 @@ export const loadAdminActivities = async (
         Page: page,
         PageSize: pageSize,
         Search: search || undefined,
+        IsArchived: isArchived,
       },
     });
 

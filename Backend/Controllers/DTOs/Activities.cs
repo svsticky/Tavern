@@ -172,6 +172,9 @@ public class ActivityResponseDTO
     /// <inheritdoc cref="Activity.IsWeeklyDrinks"/>
     public required bool IsWeeklyDrinks { get; set; }
 
+    /// <inheritdoc cref="Activity.IsArchived"/>
+    public bool IsArchived { get; set; } = false;
+
     /// <inheritdoc cref="Activity.VatRate"/>
     public uint? VatRate { get; set; }
 
@@ -227,6 +230,7 @@ public class ActivityResponseDTO
             AreParticipantsVisible = a.AreParticipantsVisible,
             IsAdultOnly = a.IsAdultOnly,
             IsWeeklyDrinks = a.IsWeeklyDrinks,
+            IsArchived = a.IsArchived,
             AllowedAudience = a.AllowedAudience,
             VatRate = isBoard ? a.VatRate : null,
             GLAccountId = isBoard ? a.GLAccountId : null,
@@ -310,4 +314,9 @@ public class GetActivitiesDTO
     /// A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
     /// </summary>
     public string? Search { get; set; }
+
+    /// <summary>
+    /// Indicates whether to filter activities by their archived status. If null (default), only non-archived activities are returned. If true, only archived activities are returned. If false, only non-archived activities are returned.
+    /// </summary>
+    public bool? IsArchived { get; set; }
 }
