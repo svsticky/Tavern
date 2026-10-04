@@ -646,5 +646,7 @@
   "no_outstanding_payments": "Je hebt geen openstaande betalingen.",
   "marking_as_processed": "Markeren als verwerkt...",
   "marked_as_processed": "Gemarkeerd als verwerkt",
-  "mark_as_processed_failed": "Markeren als verwerkt mislukt"
+  "mark_as_processed_failed": "Markeren als verwerkt mislukt",
+  "clone_activity": "Activiteit kopiëren",
+  "activity_copy_suffix": "Kopie"
 }
