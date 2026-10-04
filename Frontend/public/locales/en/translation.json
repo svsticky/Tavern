@@ -1,4 +1,9 @@
 {
+  "external_services": "External services",
+  "outline": "Outline",
+  "enable_outline": "Enable Outline",
+  "outline_api_url": "Outline API URL",
+  "outline_api_key": "Outline API Key",
   "mail_subscription_service": "Mail subscription service provider",
   "mailchimp_api_key": "Mailchimp API key",
   "mailchimp_list_key": "Mailchimp list key",

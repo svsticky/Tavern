@@ -21,6 +21,7 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var authOutboxWorker = scope.ServiceProvider.GetRequiredService<AuthOutboxWorker>();
         var permissionService = scope.ServiceProvider.GetRequiredService<IPermissionService>();
+        var adminStatusWorkers = (scope.ServiceProvider.GetService(typeof(IEnumerable<IAdminStatusUpdateOutboxWorker>)) as IEnumerable<IAdminStatusUpdateOutboxWorker>) ?? [];
 
         if (userId.HasValue)
         {
@@ -73,11 +74,13 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
                 });
 
                 EnqueueAuthSync(candidate.Member, authOutboxWorker, db);
+                EnqueueAdminStatusSync(candidate.Member, true, adminStatusWorkers, db);
             }
 
             foreach (var oldMember in oldBoardMembers)
             {
                 EnqueueAuthSync(oldMember.Member, authOutboxWorker, db);
+                EnqueueAdminStatusSync(oldMember.Member, false, adminStatusWorkers, db);
             }
 
             // Reset Gratie and Begunstiger status for all active members upon board rotation.
@@ -125,5 +128,15 @@ public class CreateNewBoardService(IServiceScopeFactory serviceScopeFactory) : I
         if (member == null) return;
 
         authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
+    }
+
+    private void EnqueueAdminStatusSync(Member? member, bool isAdmin, IEnumerable<IAdminStatusUpdateOutboxWorker> adminStatusWorkers, PostgresDbContext db)
+    {
+        if (member == null) return;
+
+        foreach (var worker in adminStatusWorkers)
+        {
+            worker.EnqueueAdminStatusUpdate(member.Email, isAdmin, db);
+        }
     }
 }

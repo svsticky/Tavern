@@ -27,9 +27,11 @@ namespace Backend.Services.Domain
         IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
         ILogger<MemberService> logger,
-        IEnumerable<INameChangedListener> nameChangedListeners
+        IEnumerable<INameChangedListener> nameChangedListeners,
+        IEnumerable<IMailSyncOutboxWorker>? mailSyncWorkers = null
     ) : IMemberService
     {
+        private readonly IEnumerable<IMailSyncOutboxWorker> _mailSyncWorkers = mailSyncWorkers ?? [];
         /// <inheritdoc />
         public async Task<List<MemberResponseDTO>> GetMembers(GetMembersDto dto, Guid userId, CancellationToken cancellationToken)
         {
@@ -174,6 +176,13 @@ namespace Backend.Services.Domain
                 var oldEmail = member.Email;
 
                 mailSubscriptionOutboxWorker.EnqueueDeleteTask(oldEmail, db);
+                foreach (var worker in _mailSyncWorkers)
+                {
+                    if (!ReferenceEquals(worker, mailSubscriptionOutboxWorker))
+                    {
+                        worker.EnqueueDeleteMail(oldEmail, db);
+                    }
+                }
                 member.FirstName = "Deleted";
                 member.LastName = "Member";
                 member.Email = $"deleted-{member.Id}@deleted.local";
