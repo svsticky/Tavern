@@ -79,6 +79,64 @@ describe("loadActivities", () => {
     expect(toastFn).toHaveBeenCalledWith("error", expect.anything());
     consoleError.mockRestore();
   });
+
+  it("loads user enrolled activities when filter is enrolled", async () => {
+    getActivities.mockResolvedValue({ data: [buildActivity({ id: 10 })] });
+    const setActivities = vi.fn();
+    const setLoading = vi.fn();
+
+    await loadActivities({
+      setLoading,
+      setActivities,
+      filter: "enrolled",
+      userId: "user-123",
+    });
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: {
+        UserId: "user-123",
+        IncludePast: false,
+        IncludeFuture: true,
+      },
+    });
+    expect(setActivities).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 10 }),
+    ]);
+  });
+
+  it("loads user historical activities when filter is history", async () => {
+    const act1 = buildActivity({
+      id: 1,
+      dateTimeStart: "2026-01-01T10:00:00Z",
+    });
+    const act2 = buildActivity({
+      id: 2,
+      dateTimeStart: "2026-05-01T10:00:00Z",
+    });
+    getActivities.mockResolvedValue({ data: [act1, act2] });
+    const setActivities = vi.fn();
+    const setLoading = vi.fn();
+
+    await loadActivities({
+      setLoading,
+      setActivities,
+      filter: "history",
+      userId: "user-123",
+    });
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: {
+        UserId: "user-123",
+        IncludePast: true,
+        IncludeFuture: false,
+      },
+    });
+    // Should be sorted most recent first: act2 (May) before act1 (Jan)
+    expect(setActivities).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 2 }),
+      expect.objectContaining({ id: 1 }),
+    ]);
+  });
 });
 
 describe("copyWeekOverview", () => {
