@@ -1,14 +1,15 @@
-import { t } from "i18next";
 import {
   Calendar,
   CheckCircle2,
   Clock,
+  Download,
   Image as ImageIcon,
   MapPin,
   Users,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import {
   type ActivityResponseDto,
@@ -37,6 +38,7 @@ import AnswerQuestionsTile from "../AnswerQuestionsTile";
 import {
   handleAddToCalendar,
   handleCopyForWhatsapp,
+  handleDownloadIcs,
   handleEnrollment,
   handleUnenrollment,
   handleUpdateEnrollment,
@@ -103,6 +105,8 @@ export default function ActivityDetailsTile({
     React.SetStateAction<ActivityResponseDto | null>
   >;
 }) {
+  const { t, i18n } = useTranslation();
+  const isDutch = i18n.language.startsWith("nl");
   const authService = useAuth();
   const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
@@ -445,6 +449,16 @@ export default function ActivityDetailsTile({
             <div className="flex items-center gap-2">
               <Calendar size={18} />
               {t("copy_once_to_calendar")}
+            </div>
+          </Button>
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => handleDownloadIcs(activity, isDutch)}
+          >
+            <div className="flex items-center gap-2">
+              <Download size={18} />
+              {t("download_ics")}
             </div>
           </Button>
         </div>
