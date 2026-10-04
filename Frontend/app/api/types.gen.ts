@@ -223,6 +223,10 @@ export type ActivityResponseDto = {
      */
     isWeeklyDrinks: boolean;
     /**
+     * Whether the activity is archived.
+     */
+    isArchived?: boolean;
+    /**
      * The VAT rate applicable to the activity.
      */
     vatRate?: number | null;
@@ -2115,6 +2119,10 @@ export type GetActivitiesData = {
          * A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
          */
         Search?: string;
+        /**
+         * Indicates whether to filter activities by their archived status.
+         */
+        IsArchived?: boolean;
     };
     url: '/activities';
 };
