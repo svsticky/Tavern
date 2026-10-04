@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
@@ -109,6 +109,24 @@ export default function Activities() {
     return () => observer.disconnect();
   }, [hasMore, loading, page, year, debouncedSearchQuery, fetchActivities]);
 
+  const { publishedActivities, unpublishedActivities } = useMemo(() => {
+    const published: ActivityResponseDto[] = [];
+    const unpublished: ActivityResponseDto[] = [];
+
+    for (const act of activities) {
+      if (act.showInKoala || act.showOnWebsite) {
+        published.push(act);
+      } else {
+        unpublished.push(act);
+      }
+    }
+
+    return {
+      publishedActivities: published,
+      unpublishedActivities: unpublished,
+    };
+  }, [activities]);
+
   const columns: Column<ActivityResponseDto>[] = [
     {
       header: t("activity"),
@@ -200,21 +218,53 @@ export default function Activities() {
         </div>
       </BorderedTile>
 
-      <BorderedTile className="bg-white p-0">
-        <DataTable data={activities} columns={columns} emptyText="" />
-
-        <div ref={loaderRef} className="h-10 flex items-center justify-center">
-          <span className="text-slate-400 text-sm">
-            {loading
-              ? t("loading_more")
-              : hasMore
-                ? t("load_more")
-                : activities.length === 0
-                  ? t("no_data")
-                  : t("no_more_activities")}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-800">
+            {t("published_activities")}
+          </h2>
+          <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-bold">
+            {publishedActivities.length}
           </span>
         </div>
-      </BorderedTile>
+        <BorderedTile className="bg-white p-0">
+          <DataTable
+            data={publishedActivities}
+            columns={columns}
+            emptyText={t("no_published_activities")}
+          />
+        </BorderedTile>
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-bold text-slate-800">
+            {t("unpublished_activities")}
+          </h2>
+          <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-bold">
+            {unpublishedActivities.length}
+          </span>
+        </div>
+        <BorderedTile className="bg-white p-0">
+          <DataTable
+            data={unpublishedActivities}
+            columns={columns}
+            emptyText={t("no_unpublished_activities")}
+          />
+        </BorderedTile>
+      </section>
+
+      <div ref={loaderRef} className="h-10 flex items-center justify-center">
+        <span className="text-slate-400 text-sm">
+          {loading
+            ? t("loading_more")
+            : hasMore
+              ? t("load_more")
+              : activities.length === 0
+                ? t("no_data")
+                : t("no_more_activities")}
+        </span>
+      </div>
     </div>
   );
 }
