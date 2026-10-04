@@ -356,4 +356,30 @@ describe("ActivityPage", () => {
     expect(handleEditActivityClick).toHaveBeenCalled();
     expect(getActivityBackPath).toHaveBeenCalled();
   });
+
+  it("shows and wires up a clone button for a board member", async () => {
+    vi.mocked(loadActivityData).mockImplementation(
+      async ({ setLoading, setActivity }) => {
+        setActivity(buildActivity({ id: 42 }));
+        setLoading(false);
+      },
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        is_admin: true,
+      })),
+    });
+    renderWithProviders(
+      <ActivityPage params={{ id: "42" }} {...({} as any)} />,
+      {
+        authService,
+      },
+    );
+
+    await screen.findByText("activity-details-tile");
+    const cloneButton = await screen.findByLabelText("clone_activity");
+    expect(cloneButton).toBeTruthy();
+    fireEvent.click(cloneButton);
+  });
 });
