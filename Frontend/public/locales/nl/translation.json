@@ -1,4 +1,9 @@
 {
+  "external_services": "Externe diensten",
+  "outline": "Outline",
+  "enable_outline": "Outline inschakelen",
+  "outline_api_url": "Outline API URL",
+  "outline_api_key": "Outline API-sleutel",
   "mail_subscription_service": "Mailabonnementen service provider",
   "mailchimp_api_key": "Mailchimp API key",
   "mailchimp_list_key": "Mailchimp lijst sleutel",

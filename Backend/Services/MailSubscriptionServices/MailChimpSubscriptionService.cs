@@ -13,7 +13,7 @@ namespace Backend.Services.MailSubscriptionServices;
 /// Implements <see cref="IMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
 /// Also implements <see cref="INameChangedListener"/> and <see cref="IMailChangedListener"/> explicitly.
 /// </summary>
-public class MailChimpSubscriptionService : IMailSubscriptionService
+public class MailChimpSubscriptionService : IMailSubscriptionService, IMailUpdateService
 {
     private readonly ILogger<MailChimpSubscriptionService> _logger;
     private readonly HttpClient _httpClient;
@@ -340,6 +340,18 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         {
             return null;
         }
+    }
+
+    /// <inheritdoc />
+    public Task SyncMailAsync(string oldEmail, string newEmail, CancellationToken ct)
+    {
+        return MigrateEmailAsync(oldEmail, newEmail, ct);
+    }
+
+    /// <inheritdoc />
+    public Task DeleteMailAsync(string email, CancellationToken ct)
+    {
+        return DeleteMemberAsync(email, ct);
     }
 
     private string CalculateMd5Hash(string input)

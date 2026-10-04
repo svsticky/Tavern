@@ -16,8 +16,10 @@ public class KeycloakAPIService(
     IEnumerable<IMailChangedListener> mailChangedListeners,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
-    ILogger<KeycloakAPIService> logger) : IAuthService
+    ILogger<KeycloakAPIService> logger,
+    IEnumerable<IMailSyncOutboxWorker>? mailSyncWorkers = null) : IAuthService
 {
+    private readonly IEnumerable<IMailSyncOutboxWorker> _mailSyncWorkers = mailSyncWorkers ?? [];
     private readonly string _keycloakUrl = Environment.GetEnvironmentVariable("KeycloakUrl")!;
     private readonly string _keycloakRealm = Environment.GetEnvironmentVariable("KeycloakRealm")!;
     private readonly string _keycloakBackendClientId = Environment.GetEnvironmentVariable("KeycloakBackendClientId")!;
@@ -80,6 +82,10 @@ public class KeycloakAPIService(
             try
             {
                 var oldEmail = member.Email;
+                foreach (var worker in _mailSyncWorkers)
+                {
+                    worker.EnqueueSyncMail(member.Email, currentEmail, db);
+                }
                 member.Email = currentEmail;
 
                 mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, currentEmail, db);

@@ -547,4 +547,57 @@ describe("SettingsPage", () => {
 
     await waitFor(() => expect(handleSaveSettings).toHaveBeenCalled());
   });
+
+  it("renders Outline inputs when OutlineEnabled is true and calls handleSettingsChange on edit", async () => {
+    loadWith({
+      ...defaultSettings(),
+      OutlineEnabled: "true",
+      OutlineApiUrl: "https://wiki.svsticky.nl",
+      OutlineApiKey: "ol_api_123",
+    });
+
+    renderWithProviders(<SettingsPage />);
+
+    expect(await screen.findByLabelText("enable_outline")).toBeChecked();
+    const urlInput = screen.getByLabelText(/outline_api_url/i);
+    const keyInput = screen.getByLabelText(/outline_api_key/i);
+    expect(urlInput).toHaveValue("https://wiki.svsticky.nl");
+    expect(keyInput).toHaveValue("ol_api_123");
+
+    fireEvent.change(urlInput, {
+      target: { value: "https://outline.example.com" },
+    });
+    expect(handleSettingsChange).toHaveBeenCalledWith(
+      "OutlineApiUrl",
+      "https://outline.example.com",
+      expect.any(Function),
+    );
+
+    fireEvent.change(keyInput, { target: { value: "new_key" } });
+    expect(handleSettingsChange).toHaveBeenCalledWith(
+      "OutlineApiKey",
+      "new_key",
+      expect.any(Function),
+    );
+  });
+
+  it("toggles OutlineEnabled checkbox", async () => {
+    loadWith({
+      ...defaultSettings(),
+      OutlineEnabled: "false",
+    });
+
+    renderWithProviders(<SettingsPage />);
+
+    const checkbox = await screen.findByLabelText("enable_outline");
+    expect(checkbox).not.toBeChecked();
+    expect(screen.queryByLabelText(/outline_api_url/i)).not.toBeInTheDocument();
+
+    fireEvent.click(checkbox);
+    expect(handleSettingsChange).toHaveBeenCalledWith(
+      "OutlineEnabled",
+      "true",
+      expect.any(Function),
+    );
+  });
 });
