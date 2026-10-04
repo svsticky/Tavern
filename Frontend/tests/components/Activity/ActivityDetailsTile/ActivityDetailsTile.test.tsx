@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
@@ -9,6 +10,8 @@ import {
   handleUnenrollment,
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
+import AppContext from "~/context/AppContext";
+import AuthContext from "~/context/AuthContext";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -135,6 +138,35 @@ describe("ActivityDetailsTile", () => {
       authService,
     });
     expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
+  });
+
+  it("shows the English description when member preferredLanguage is EN even if token has Dutch locale", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => ({ ...memberToken, locale: "NL" })),
+    });
+    render(
+      <MemoryRouter>
+        <AuthContext.Provider value={authService}>
+          <AppContext.Provider
+            value={{
+              member: { preferredLanguage: "EN" } as any,
+              setMember: vi.fn(),
+              boardGroupId: 1,
+              setBoardGroupId: vi.fn(),
+              candidateBoardGroupId: 2,
+              setCandidateBoardGroupId: vi.fn(),
+              financialYearStartDate: null,
+              setFinancialYearStartDate: vi.fn(),
+              committeeCreationDate: null,
+              setCommitteeCreationDate: vi.fn(),
+            }}
+          >
+            <ActivityDetailsTile activity={buildActivity()} />
+          </AppContext.Provider>
+        </AuthContext.Provider>
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText("Description")).toBeInTheDocument();
   });
 
   it("shows a sign-in button when the user can enroll and is not enrolled", async () => {
