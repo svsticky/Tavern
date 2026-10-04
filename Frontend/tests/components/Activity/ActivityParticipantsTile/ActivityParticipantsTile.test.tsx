@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { EnrollmentResponseDto } from "~/api";
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
 
@@ -71,5 +71,20 @@ describe("ActivityParticipantsTile", () => {
       "href",
       "/admin/members/Alice-id",
     );
+  });
+
+  it("renders export button and triggers onExportCsv when clicked", () => {
+    const onExport = vi.fn();
+    render(
+      <ActivityParticipantsTile
+        enrollments={[buildEnrollment("Alice")]}
+        onExportCsv={onExport}
+      />,
+    );
+
+    const button = screen.getByText("export_csv");
+    expect(button).toBeInTheDocument();
+    fireEvent.click(button);
+    expect(onExport).toHaveBeenCalledTimes(1);
   });
 });
