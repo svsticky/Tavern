@@ -643,5 +643,7 @@
   "enrolled_activities": "Enrolled activities",
   "attended_activities": "Attended activities",
   "no_attended_activities": "You haven't attended any activities yet.",
-  "no_outstanding_payments": "You have no outstanding payments."
+  "no_outstanding_payments": "You have no outstanding payments.",
+  "clone_activity": "Clone activity",
+  "activity_copy_suffix": "Copy"
 }
