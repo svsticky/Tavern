@@ -646,5 +646,15 @@
   "no_outstanding_payments": "Je hebt geen openstaande betalingen.",
   "marking_as_processed": "Markeren als verwerkt...",
   "marked_as_processed": "Gemarkeerd als verwerkt",
-  "mark_as_processed_failed": "Markeren als verwerkt mislukt"
+  "mark_as_processed_failed": "Markeren als verwerkt mislukt",
+  "admin_mode": "Admin-modus",
+  "member_mode": "Lid-weergave",
+  "view_mode": "Weergavemodus",
+  "member_mode_active": "Lid-weergave actief",
+  "admin_mode_active": "Admin-modus actief",
+  "switch_to_admin_mode": "Terug naar admin-modus",
+  "switch_to_member_mode": "Wissel naar lid-weergave",
+  "member_view_banner_text": "Lid-weergave actief: Je bekijkt Koala momenteel zoals ieder normaal lid.",
+  "admin_mode_description": "Volledige beheerdersrechten actief.",
+  "member_mode_description": "Beheerfuncties zijn verborgen. Je ziet de app zoals een normaal lid."
 }
