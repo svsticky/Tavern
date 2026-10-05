@@ -143,6 +143,37 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetMembers_SearchQuery_OrdersByRelevance()
+    {
+        // Arrange
+        var m1 = CreateTestMember(Guid.NewGuid(), "johnvandoe@example.com");
+        m1.FirstName = "John";
+        m1.LastName = "van Doe";
+
+        var m2 = CreateTestMember(Guid.NewGuid(), "arthur@example.com");
+        m2.FirstName = "Arthur";
+        m2.LastName = "Johnson";
+
+        var m3 = CreateTestMember(Guid.NewGuid(), "john.smith@example.com");
+        m3.FirstName = "Bob";
+        m3.LastName = "Smith";
+
+        _db.Members.AddRange(m2, m3, m1);
+        await _db.SaveChangesAsync();
+
+        var dto = new GetMembersDto { Search = "John" };
+
+        // Act
+        var result = await _service.GetMembers(dto, _userId, CancellationToken.None);
+
+        // Assert: John van Doe should be ranked first because first name matches "John"
+        Assert.Equal(3, result.Count);
+        Assert.Equal(m1.Id, result[0].Id);
+        Assert.Equal(m2.Id, result[1].Id);
+        Assert.Equal(m3.Id, result[2].Id);
+    }
+
+    [Fact]
     public async Task GetMember_Self_ReturnsMember()
     {
         // Arrange
