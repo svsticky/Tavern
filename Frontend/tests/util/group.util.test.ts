@@ -4,6 +4,7 @@ import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";
 import {
   canEditActivity,
+  isBoardMember,
   isBoardOrCandidateBoard,
   isInGroupWithId,
   isInGroupWithName,
@@ -104,6 +105,50 @@ describe("isBoardOrCandidateBoard", () => {
       false,
     );
     expect(isBoardOrCandidateBoard(buildToken({}))).toBe(false);
+  });
+});
+
+describe("isBoardMember", () => {
+  const year = getCommitteeYear();
+
+  it("returns false for null token or when is_admin is false", () => {
+    expect(isBoardMember(null, 1)).toBe(false);
+    expect(
+      isBoardMember(
+        buildToken({
+          is_admin: false,
+          group_memberships: [membershipEntry(year, 1, "Board", 2, "Chair")],
+        }),
+        1,
+      ),
+    ).toBe(false);
+  });
+
+  it("returns true when member belongs to boardGroupId", () => {
+    const token = buildToken({
+      is_admin: true,
+      group_memberships: [membershipEntry(year, 1, "Board", 2, "Chair")],
+    });
+    expect(isBoardMember(token, 1)).toBe(true);
+    expect(isBoardMember(token, "1")).toBe(true);
+  });
+
+  it("returns false when member is only in candidate board and not board", () => {
+    const token = buildToken({
+      is_admin: true,
+      group_memberships: [
+        membershipEntry(year, 2, "Candidate Board", 2, "Candidate"),
+      ],
+    });
+    expect(isBoardMember(token, 1)).toBe(false);
+  });
+
+  it("falls back to checking group name 'Bestuur' when boardGroupId is omitted", () => {
+    const token = buildToken({
+      is_admin: true,
+      group_memberships: [membershipEntry(year, 10, "Bestuur", 2, "Chair")],
+    });
+    expect(isBoardMember(token)).toBe(true);
   });
 });
 
