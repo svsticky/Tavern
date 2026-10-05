@@ -364,6 +364,7 @@
   "registration_successful": "Registratie succesvol",
   "email_already_registered": "Dit e-mailadres is al geregistreerd. Probeer in te loggen, of gebruik een ander e-mailadres.",
   "student_number_already_registered": "Dit studentnummer is al geregistreerd.",
+  "member_already_enrolled_in_group": "Dit lid is al ingeschreven bij deze groep voor het geselecteerde jaar.",
   "remove": "Verwijderen",
   "reset": "Resetten",
   "role": "Rol",

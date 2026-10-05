@@ -15,7 +15,7 @@ import {
   postGroupsByIdGroupPicture,
   type RoleAlias,
 } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
+import { appendErrorMessage, getFriendlyErrorMessage } from "~/util/error.util";
 
 /**
  * Interface representing the editable fields of a group.
@@ -349,7 +349,7 @@ export const handleAddGroupEnrollment = async (
   toast.promise(executeProcess(), {
     loading: t("adding"),
     success: t("add_success"),
-    error: (error) => appendErrorMessage(t("add_error"), error),
+    error: (error) => getFriendlyErrorMessage(t("add_error"), error),
   });
 };
 

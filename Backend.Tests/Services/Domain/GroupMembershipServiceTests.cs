@@ -464,6 +464,42 @@ public class GroupMembershipServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateGroupMembership_DuplicateMembership_ThrowsInvalidOperationException()
+    {
+        var m = CreateTestMember(Guid.NewGuid());
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+        _db.GroupMemberships.Add(new GroupMembership { Member = m, Group = g, MembershipYear = 2024 });
+        await _db.SaveChangesAsync();
+
+        var dto = new PostGroupMembershipDTO { MemberId = m.Id, GroupId = g.Id, MembershipYear = 2024 };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.CreateGroupMembership(dto, _userId, CancellationToken.None));
+        Assert.Equal("Member is already enrolled in this group for the specified year.", ex.Message);
+    }
+
+    [Fact]
+    public async Task PatchGroupMembership_DuplicateMembership_ThrowsInvalidOperationException()
+    {
+        var m = CreateTestMember(Guid.NewGuid());
+        var g = CreateTestGroup(1);
+        _db.Members.Add(m);
+        _db.Groups.Add(g);
+        _db.GroupMemberships.Add(new GroupMembership { Id = 1, Member = m, Group = g, MembershipYear = 2023 });
+        _db.GroupMemberships.Add(new GroupMembership { Id = 2, Member = m, Group = g, MembershipYear = 2024 });
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<GroupMembership>();
+        patchDoc.Replace(gm => gm.MembershipYear, 2024u);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.PatchGroupMembership(1, _userId, patchDoc, CancellationToken.None));
+        Assert.Equal("Member is already enrolled in this group for the specified year.", ex.Message);
+    }
+
+    [Fact]
     public async Task UpdateGroupMembership_NotFound_ThrowsKeyNotFoundException()
     {
         var dto = new GroupMembershipUpdateDTO { RoleAliasId = null };
