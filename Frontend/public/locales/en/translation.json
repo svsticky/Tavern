@@ -139,6 +139,8 @@
   "enroll_failed": "Enroll failed",
   "enroll_member": "Enroll member",
   "enroll_open_date": "Enroll open date",
+  "enrolled": "Enrolled",
+  "not_enrolled": "Not enrolled",
   "enrollment_added": "Enrollment added",
   "enrollment_deadline": "Enrollment deadline",
   "enrollment_failed": "Enrollment failed",
