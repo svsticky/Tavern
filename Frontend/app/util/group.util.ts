@@ -80,6 +80,31 @@ export const isBoardOrCandidateBoard = (
 };
 
 /**
+ * Checks if the current user is an active board member (excluding candidate board members).
+ * @param tokenParsed The parsed token.
+ * @param boardGroupId The BoardGroupId setting or context value.
+ * @returns True if the user is in the board group for the current year.
+ */
+export const isBoardMember = (
+  tokenParsed: TokenParsed | null,
+  boardGroupId?: number | string | null,
+): boolean => {
+  if (!tokenParsed) return false;
+  if (!tokenParsed.is_admin) return false;
+
+  const parsedId =
+    boardGroupId !== undefined && boardGroupId !== null
+      ? Number(boardGroupId)
+      : undefined;
+
+  if (parsedId !== undefined && !Number.isNaN(parsedId)) {
+    return isInGroupWithId(tokenParsed, parsedId);
+  }
+
+  return isInGroupWithName(tokenParsed, "Bestuur");
+};
+
+/**
  * Determines if the current user has permission to edit a specific activity.
  *
  * Logic mirrors the backend's PatchActivity/UpdateActivity authorization
