@@ -152,6 +152,7 @@
   "export_failed": "Export failed",
   "export_success": "Export success",
   "exporting": "Exporting",
+  "include_committee_name_export": "Include committee name in export",
   "external_link_books_description": "Get books with discount.",
   "external_link_books_title": "Books",
   "external_link_commissiestrijd_description": "View the progress of the committee battle.",

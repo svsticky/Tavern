@@ -181,7 +181,7 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, Guid userId, CancellationToken ct)
+        public async Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, Guid userId, bool includeCommitteeName = false, CancellationToken ct = default)
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
@@ -209,7 +209,7 @@ namespace Backend.Services.Domain
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var csv = BuildExportCsv(startDateInTimeZone, endDateInTimeZone, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
+            var csv = BuildExportCsv(startDateInTimeZone, endDateInTimeZone, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments, includeCommitteeName);
             logger.LogInformation("Exported payments CSV for period {StartDateInTimeZone} - {EndDateInTimeZone}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
                 startDateInTimeZone, endDateInTimeZone, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
 
@@ -685,12 +685,13 @@ namespace Backend.Services.Domain
         private static string BlankIfWhitespace(string? value) => string.IsNullOrWhiteSpace(value) ? "" : value;
 
         private StringBuilder BuildExportCsv(
-    DateTime startDateInNL,
-    DateTime endDateInNL,
-    List<EnrollmentPayment> enrollmentPayments,
-    List<MembershipPayment> membershipPayments,
-    List<PaymentServiceFeePayment> paymentServiceFeePayments,
-    List<BegunstigerPayment> begunstigerPayments)
+            DateTime startDateInNL,
+            DateTime endDateInNL,
+            List<EnrollmentPayment> enrollmentPayments,
+            List<MembershipPayment> membershipPayments,
+            List<PaymentServiceFeePayment> paymentServiceFeePayments,
+            List<BegunstigerPayment> begunstigerPayments,
+            bool includeCommitteeName = false)
         {
             var csv = new StringBuilder();
 
@@ -714,7 +715,18 @@ namespace Backend.Services.Domain
                 var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 
-                var description = $"{groupName} | {activityName}";
+                string description;
+                if (includeCommitteeName && !string.IsNullOrWhiteSpace(groupName))
+                {
+                    description = activityName.StartsWith($"{groupName} |", StringComparison.OrdinalIgnoreCase)
+                        ? activityName
+                        : $"{groupName} | {activityName}";
+                }
+                else
+                {
+                    description = activityName;
+                }
+
                 csv.AppendLine(CsvUtils.FormatLine("", glAccount, description, vatCode, price, costCenter, costUnit));
             }
 
@@ -760,7 +772,7 @@ namespace Backend.Services.Domain
 
             foreach (var group in groupedFees)
             {
-                var description = $"Transaction costs {group.UnitPrice:N2} x {group.Count}";
+                var description = $"Transaction costs {group.UnitPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)} x {group.Count}";
                 var totalPrice = group.TotalPrice;
 
                 csv.AppendLine(CsvUtils.FormatLine("", paymentServiceFeeGLAccount, description, feeVatCode, totalPrice, paymentServiceFeeCostCenter, paymentServiceFeeCostUnit));

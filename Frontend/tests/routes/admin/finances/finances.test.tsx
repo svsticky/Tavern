@@ -346,6 +346,32 @@ describe("Finances (admin)", () => {
       "2024-01-01",
       "2024-01-31",
       expect.any(Function),
+      false,
+    );
+  });
+
+  it("passes includeCommitteeName true when checkbox is checked", async () => {
+    renderWithProviders(<Finances />);
+    await waitFor(() => expect(loadFinancesData).toHaveBeenCalled());
+
+    fireEvent.change(screen.getByLabelText("start_date"), {
+      target: { value: "2024-01-01" },
+    });
+    fireEvent.change(screen.getByLabelText("end_date"), {
+      target: { value: "2024-01-31" },
+    });
+
+    const checkbox = screen.getByLabelText("include_committee_name_export");
+    fireEvent.click(checkbox);
+
+    const exportButton = screen.getByText("export").closest("button");
+    fireEvent.click(exportButton as HTMLButtonElement);
+
+    expect(handlePaymentsExport).toHaveBeenCalledWith(
+      "2024-01-01",
+      "2024-01-31",
+      expect.any(Function),
+      true,
     );
   });
 });

@@ -5445,6 +5445,10 @@ export type GetPaymentsExportData = {
          * The end of the date range for the export.
          */
         endDate?: string;
+        /**
+         * Whether to prepend the committee/organizer name to activity descriptions.
+         */
+        includeCommitteeName?: boolean;
     };
     url: '/payments/export';
 };

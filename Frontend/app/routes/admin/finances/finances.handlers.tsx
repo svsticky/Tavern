@@ -299,11 +299,13 @@ export const handleOverpaidProcessed = ({
  * @param {string} exportStartDate - Start of the range (YYYY-MM-DD).
  * @param {string} exportEndDate - End of the range (YYYY-MM-DD).
  * @param {Function} setExporting - State setter for loading indicators.
+ * @param {boolean} [includeCommitteeName=false] - Whether to include the committee name in the export.
  */
 export const handlePaymentsExport = (
   exportStartDate: string,
   exportEndDate: string,
   setExporting: (exporting: boolean) => void,
+  includeCommitteeName = false,
 ) => {
   const exportAction = async () => {
     try {
@@ -312,6 +314,7 @@ export const handlePaymentsExport = (
         query: {
           startDate: exportStartDate,
           endDate: exportEndDate,
+          includeCommitteeName,
         },
         responseType: "blob",
       });

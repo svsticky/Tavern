@@ -759,14 +759,19 @@ public class PaymentServiceTests : IDisposable
         var startDate = DateTime.UtcNow.AddDays(-1);
         var endDate = DateTime.UtcNow.AddDays(1);
 
-        var result = await _service.ExportPaymentsToCsv(startDate, endDate, _userId, CancellationToken.None);
+        var resultDefault = await _service.ExportPaymentsToCsv(startDate, endDate, _userId, false, CancellationToken.None);
+        var resultWithCommittee = await _service.ExportPaymentsToCsv(startDate, endDate, _userId, true, CancellationToken.None);
 
-        Assert.NotNull(result.Content);
-        var csvStr = Encoding.UTF8.GetString(result.Content);
-        Assert.Contains(",8000,Lidmaatschap - John Doe,0,7.50,,", csvStr);
-        Assert.Contains("Test Organizer | Test Activity", csvStr);
-        Assert.Contains("Transaction costs 0.50 x 1", csvStr);
-        Assert.Contains(",8010,Begunstiger,0,10.00,BEG,BU1", csvStr);
+        Assert.NotNull(resultDefault.Content);
+        var csvDefault = Encoding.UTF8.GetString(resultDefault.Content);
+        Assert.Contains(",8000,Lidmaatschap - John Doe,0,7.50,,", csvDefault);
+        Assert.Contains(",Test Activity,", csvDefault);
+        Assert.DoesNotContain("Test Organizer | Test Activity", csvDefault);
+        Assert.Contains("Transaction costs 0.50 x 1", csvDefault);
+        Assert.Contains(",8010,Begunstiger,0,10.00,BEG,BU1", csvDefault);
+
+        var csvWithCommittee = Encoding.UTF8.GetString(resultWithCommittee.Content);
+        Assert.Contains("Test Organizer | Test Activity", csvWithCommittee);
     }
 
     [Fact]
@@ -819,10 +824,58 @@ public class PaymentServiceTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var result = await _service.ExportPaymentsToCsv(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1), _userId, CancellationToken.None);
+        var result = await _service.ExportPaymentsToCsv(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1), _userId, true, CancellationToken.None);
 
         var csvStr = Encoding.UTF8.GetString(result.Content);
         Assert.Contains(",7001,Organizer | Act,,15.00,CC1,", csvStr);
+    }
+
+    [Fact]
+    public async Task ExportPaymentsToCsv_ActivityAlreadyHasCommitteePrefix_DoesNotDuplicate()
+    {
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+        var member = CreateMember("9999999");
+        _db.Members.Add(member);
+
+        var organizer = new Group
+        {
+            Name = "Introductie",
+            Active = true,
+            Type = GroupType.Committee
+        };
+        _db.Groups.Add(organizer);
+
+        var activity = new Activity
+        {
+            Name = "Introductie | BBQ",
+            Price = 10m,
+            DutchDescription = "NL",
+            EnglishDescription = "EN",
+            DateTimeStart = DateTime.UtcNow.AddDays(1),
+            DateTimeEnd = DateTime.UtcNow.AddDays(2),
+            Location = "Utrecht",
+            IsOpenForPayment = true,
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(5),
+            Organizer = organizer
+        };
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.EnrollmentPayments.Add(new EnrollmentPayment
+        {
+            MemberId = member.Id,
+            ActivityId = activity.Id,
+            Price = 10m,
+            PaymentServiceId = "ps_dup",
+            PaymentIntentUrl = "url",
+            PaidAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        var result = await _service.ExportPaymentsToCsv(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1), _userId, true, CancellationToken.None);
+        var csvStr = Encoding.UTF8.GetString(result.Content);
+        Assert.Contains("Introductie | BBQ", csvStr);
+        Assert.DoesNotContain("Introductie | Introductie | BBQ", csvStr);
     }
 
     [Fact]

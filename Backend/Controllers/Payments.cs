@@ -266,6 +266,7 @@ namespace Backend.Controllers
         /// </summary>
         /// <param name="startDate">The beginning of the date range for the export.</param>
         /// <param name="endDate">The end of the date range for the export.</param>
+        /// <param name="includeCommitteeName">Whether to prepend the committee/organizer name to activity descriptions in the export.</param>
         /// <param name="ct">The cancellation token to monitor for request cancellation.</param>
         /// <returns>A downloadable CSV file containing the payment transaction records.</returns>
         [HttpGet("export")]
@@ -274,10 +275,14 @@ namespace Backend.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
-        public async Task<ActionResult<Stream>> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, CancellationToken ct)
+        public async Task<ActionResult<Stream>> ExportPaymentsToCsv(
+            DateTime startDate,
+            DateTime endDate,
+            [FromQuery] bool includeCommitteeName = false,
+            CancellationToken ct = default)
         {
             var userId = Guid.Parse(User.Claims.FirstOrDefault(c => c.Type == "UserId")!.Value);
-            var (content, fileName) = await paymentService.ExportPaymentsToCsv(startDate, endDate, userId, ct);
+            var (content, fileName) = await paymentService.ExportPaymentsToCsv(startDate, endDate, userId, includeCommitteeName, ct);
             return File(content, "text/csv", fileName);
         }
     }
