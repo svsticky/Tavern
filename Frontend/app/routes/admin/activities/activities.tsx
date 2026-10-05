@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { FileEditIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
@@ -115,7 +116,15 @@ export default function Activities() {
       render: (act) => (
         <div className="flex items-center gap-3">
           <div className="flex flex-col">
-            <span className="font-semibold text-slate-700">{act.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-700">{act.name}</span>
+              {!act.showInKoala && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                  <FileEditIcon size={12} />
+                  {t("draft")}
+                </span>
+              )}
+            </div>
             <span className="text-xs text-slate-400">{act.location}</span>
           </div>
         </div>
