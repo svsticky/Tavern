@@ -4,6 +4,7 @@ import type {
   ActivityResponseDto,
   GetSpecificationQuestionResponseDto,
 } from "~/api";
+import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isQuestionAnswerable } from "~/util/answer.util";
@@ -62,6 +63,7 @@ export default function AnswerQuestionsTile({
   onChange: (id: number, value: string) => void;
 }) {
   const authService = useAuth();
+  const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
 
   useEffect(() => {
@@ -191,7 +193,7 @@ export default function AnswerQuestionsTile({
         {questions.map((q) => (
           <div key={q.id}>
             <label className="font-semibold block mb-1">
-              {tokenParsed.locale === "NL"
+              {(member?.preferredLanguage ?? tokenParsed.locale) === "NL"
                 ? q.questionDutch
                 : q.questionEnglish}
 
