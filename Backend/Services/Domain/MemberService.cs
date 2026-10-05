@@ -38,7 +38,7 @@ namespace Backend.Services.Domain
             var members = await db.Members
                 .AsQueryable()
                 .Filter(dto)
-                .OrderBy(m => m.LastName)
+                .ApplyOrdering(dto)
                 .ApplyPaging(dto)
                 .Include(m => m.StudyEnrollments).ThenInclude(se => se.Study)
                 .Include(m => m.GroupMemberships).ThenInclude(gm => gm.Group)
