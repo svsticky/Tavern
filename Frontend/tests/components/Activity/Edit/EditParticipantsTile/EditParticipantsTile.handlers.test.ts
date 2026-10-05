@@ -132,6 +132,32 @@ describe("handleEnrollParticipant", () => {
     await vi.waitFor(() => expect(consoleLog).toHaveBeenCalled());
     consoleLog.mockRestore();
   });
+
+  it("passes friendly translated error when enrollment fails with known backend error", async () => {
+    postEnrollments.mockResolvedValue({
+      error: { message: "Member is already enrolled (or on waiting list)." },
+    });
+    const toast = (await import("react-hot-toast")).default;
+    const toastPromiseSpy = vi.spyOn(toast, "promise");
+    const consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await handleEnrollParticipant({
+      member: { id: "m1" } as MemberResponseDto,
+      activity: buildActivity(),
+      setActivity: vi.fn(),
+      setLoading: vi.fn(),
+      setIsSearchOpen: vi.fn(),
+    });
+
+    await vi.waitFor(() => expect(toastPromiseSpy).toHaveBeenCalled());
+    const opts = toastPromiseSpy.mock.calls[0][1] as any;
+    expect(
+      opts.error({
+        message: "Member is already enrolled (or on waiting list).",
+      }),
+    ).toBe("member_already_enrolled_in_activity");
+    consoleLog.mockRestore();
+  });
 });
 
 describe("handleUnenrollParticipant", () => {
