@@ -41,8 +41,15 @@ public class MollieService(PostgresDbContext db, ILogger<MollieService> logger, 
     /// <inheritdoc/>
     public override async Task CancelPaymentAsync(string paymentId)
     {
-        IPaymentClient mollieClient = await GetMollieClientAsync();
-        await mollieClient.CancelPaymentAsync(paymentId);
+        try
+        {
+            IPaymentClient mollieClient = await GetMollieClientAsync();
+            await mollieClient.CancelPaymentAsync(paymentId);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to cancel Mollie payment {PaymentId}. The payment may already be expired, cancelled, or cannot be cancelled via API.", paymentId);
+        }
     }
 
     /// <inheritdoc/>

@@ -523,7 +523,14 @@ namespace Backend.Services.Domain
                 // If there is a pending payment, we cancel it to prevent the member from paying for a membership/fee they won't get
                 if (paymentResponse.Status == PaymentStatus.Pending)
                 {
-                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                    try
+                    {
+                        await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to cancel payment {PaymentServiceId} at provider", existingPayment.PaymentServiceId);
+                    }
                 }
             }
 
