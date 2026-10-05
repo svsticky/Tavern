@@ -401,6 +401,15 @@ describe("handleCopyForWhatsapp", () => {
     );
   });
 
+  it("uses origin and activity id to construct the public activity url", async () => {
+    const activity = buildActivity({ id: 42 });
+    await handleCopyForWhatsapp(activity, "NL" as any);
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(`${window.location.origin}/activities/42`),
+    );
+  });
+
   it("shows 'Free'/'Gratis' when the activity has no price", async () => {
     await handleCopyForWhatsapp(buildActivity({ price: 0 }), "EN" as any);
 

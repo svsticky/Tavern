@@ -354,10 +354,12 @@ export const handleCopyForWhatsapp = async (
     ? formatDate(endDate, "timeOnly")
     : `${capitalizeFirst(formatDate(endDate, "weekdayDate"))} ${formatDate(endDate, "timeOnly")}`;
 
+  const activityUrl = `${window.location.origin}/activities/${activity.id}`;
+
   const text =
     lang === "NL"
-      ? `*${activity.name} | ${startDateTime} - ${endDateTime} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}`
-      : `*${activity.name} | ${startDateTime} - ${endDateTime} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
+      ? `*${activity.name} | ${startDateTime} - ${endDateTime} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${activityUrl}\n\n${formatForWhatsApp(activity.dutchDescription)}`
+      : `*${activity.name} | ${startDateTime} - ${endDateTime} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${activityUrl}\n\n${formatForWhatsApp(activity.englishDescription)}`;
 
   toast.promise(navigator.clipboard.writeText(text), {
     loading: t("copying"),
