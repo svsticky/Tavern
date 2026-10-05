@@ -10,6 +10,7 @@ import type {
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
+import Checkbox from "~/components/UI/Checkbox";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
@@ -72,6 +73,8 @@ export default function Finances() {
   >(null);
   const [exportStartDate, setExportStartDate] = useState<string>("");
   const [exportEndDate, setExportEndDate] = useState<string>("");
+  const [includeCommitteeName, setIncludeCommitteeName] =
+    useState<boolean>(false);
 
   useEffect(() => {
     loadFinancesData({
@@ -129,15 +132,27 @@ export default function Finances() {
             setExportEndDate(e.target.value)
           }
         />
-        <div className="w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mb-4">
+          <Checkbox
+            label={t("include_committee_name_export")}
+            checked={includeCommitteeName}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setIncludeCommitteeName(e.target.checked)
+            }
+          />
           <Button
             variant="secondary"
-            className="w-full mb-4"
+            className="w-full sm:w-auto whitespace-nowrap"
             disabled={
               exportStartDate === "" || exportEndDate === "" || exporting
             }
             onClick={() =>
-              handlePaymentsExport(exportStartDate, exportEndDate, setExporting)
+              handlePaymentsExport(
+                exportStartDate,
+                exportEndDate,
+                setExporting,
+                includeCommitteeName,
+              )
             }
           >
             {t("export")}

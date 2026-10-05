@@ -519,10 +519,10 @@ public class PaymentsControllerTests
         var start = DateTime.UtcNow.AddDays(-7);
         var end = DateTime.UtcNow;
         var csvContent = new byte[] { 1, 2, 3 };
-        _serviceMock.ExportPaymentsToCsv(start, end, _userId, Arg.Any<CancellationToken>()).Returns((csvContent, "export.csv"));
+        _serviceMock.ExportPaymentsToCsv(start, end, _userId, true, Arg.Any<CancellationToken>()).Returns((csvContent, "export.csv"));
 
         // Act
-        var result = await _controller.ExportPaymentsToCsv(start, end, CancellationToken.None);
+        var result = await _controller.ExportPaymentsToCsv(start, end, true, CancellationToken.None);
 
         // Assert
         var fileResult = Assert.IsType<FileContentResult>(result.Result);
@@ -537,9 +537,9 @@ public class PaymentsControllerTests
         // Arrange
         var start = DateTime.UtcNow.AddDays(-7);
         var end = DateTime.UtcNow;
-        _serviceMock.ExportPaymentsToCsv(start, end, _userId, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
+        _serviceMock.ExportPaymentsToCsv(start, end, _userId, false, Arg.Any<CancellationToken>()).Throws(new Exception("Error"));
 
         // Act & Assert
-        await Assert.ThrowsAsync<Exception>(() => _controller.ExportPaymentsToCsv(start, end, CancellationToken.None));
+        await Assert.ThrowsAsync<Exception>(() => _controller.ExportPaymentsToCsv(start, end, false, CancellationToken.None));
     }
 }

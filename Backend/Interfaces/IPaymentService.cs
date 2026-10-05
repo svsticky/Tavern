@@ -96,8 +96,9 @@ namespace Backend.Interfaces
         /// <param name="startDate">The inclusive start date.</param>
         /// <param name="endDate">The inclusive end date.</param>
         /// <param name="userId">The ID of the requesting user.</param>
+        /// <param name="includeCommitteeName">Whether to prepend the committee/organizer name to activity descriptions.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The CSV content and file name.</returns>
-        Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, Guid userId, CancellationToken ct);
+        Task<(byte[] Content, string FileName)> ExportPaymentsToCsv(DateTime startDate, DateTime endDate, Guid userId, bool includeCommitteeName = false, CancellationToken ct = default);
     }
 }
