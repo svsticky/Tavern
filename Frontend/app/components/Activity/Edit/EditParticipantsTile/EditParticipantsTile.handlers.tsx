@@ -7,7 +7,7 @@ import {
   type MemberResponseDto,
   postEnrollments,
 } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
+import { appendErrorMessage, getFriendlyErrorMessage } from "~/util/error.util";
 
 /**
  * Triggers a download of the activity's enrollment list as a CSV file.
@@ -89,7 +89,7 @@ export const handleEnrollParticipant = async ({
       });
 
       if (enrollment.error || !enrollment.data) {
-        throw new Error("Enrollment failed");
+        throw enrollment.error ?? new Error("Enrollment failed");
       }
 
       activity.enrollments.push({
@@ -112,7 +112,7 @@ export const handleEnrollParticipant = async ({
   toast.promise(enrollProcess(), {
     loading: t("enrolling"),
     success: t("enrollment_successful"),
-    error: (error) => appendErrorMessage(t("enrollment_failed"), error),
+    error: (error) => getFriendlyErrorMessage(t("enrollment_failed"), error),
   });
 };
 
