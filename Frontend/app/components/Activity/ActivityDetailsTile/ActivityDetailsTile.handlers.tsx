@@ -10,7 +10,7 @@ import {
 } from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
 import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
-import { appendErrorMessage } from "~/util/error.util";
+import { appendErrorMessage, getFriendlyErrorMessage } from "~/util/error.util";
 import {
   formatForGoogleCalendar,
   formatForWhatsApp,
@@ -171,7 +171,7 @@ export const handleEnrollment = async (
 
       return "";
     },
-    error: (error) => appendErrorMessage(t("enrollment_failed"), error),
+    error: (error) => getFriendlyErrorMessage(t("enrollment_failed"), error),
   });
 };
 
@@ -276,7 +276,7 @@ export const handleUpdateEnrollment = async (
   toast.promise(updateProcess(), {
     loading: t("saving"),
     success: t("answers_updated"),
-    error: (error) => appendErrorMessage(t("update_failed"), error),
+    error: (error) => getFriendlyErrorMessage(t("update_failed"), error),
   });
 };
 
@@ -332,7 +332,7 @@ export const handleUnenrollment = async (
   toast.promise(unenrollmentProcess(), {
     loading: t("signing_out"),
     success: t("unenrollment_successful"),
-    error: (error) => appendErrorMessage(t("unenrollment_failed"), error),
+    error: (error) => getFriendlyErrorMessage(t("unenrollment_failed"), error),
   });
 };
 

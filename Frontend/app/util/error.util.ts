@@ -9,6 +9,22 @@ const KNOWN_ERROR_TRANSLATION_KEYS: Record<string, string> = {
     "email_already_registered",
   "An account with this student number already exists.":
     "student_number_already_registered",
+  "Member is already enrolled (or on waiting list).":
+    "member_already_enrolled_in_activity",
+  "Member does not have a paid membership payment.":
+    "member_no_paid_membership",
+  "Member is suspended and cannot enroll in activities.": "member_suspended",
+  "Member does not meet the age requirement for this activity.":
+    "member_age_requirement_not_met",
+  "Missing mandatory answers.": "missing_mandatory_answers",
+  "Cannot answer or change this question after its answer deadline has passed.":
+    "question_deadline_passed",
+  "Enrollment deadline has passed.": "enrollment_deadline_passed",
+  "Activity is not open for enrollment.": "activity_not_open_for_enrollment",
+  "Activity is not visible for enrollment.":
+    "activity_not_visible_for_enrollment",
+  "Activity has already started.": "activity_already_started",
+  "Unenrollment deadline has passed.": "unenrollment_deadline_passed",
 };
 
 const getValidationErrorMessage = (errors: unknown): string | undefined => {

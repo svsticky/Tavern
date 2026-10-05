@@ -110,6 +110,89 @@ describe("getFriendlyErrorMessage", () => {
     ).toBe("student_number_already_registered");
   });
 
+  it("maps known enrollment backend messages to their translation keys", () => {
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Member is already enrolled (or on waiting list)."),
+      ),
+    ).toBe("member_already_enrolled_in_activity");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Member does not have a paid membership payment."),
+      ),
+    ).toBe("member_no_paid_membership");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Member is suspended and cannot enroll in activities."),
+      ),
+    ).toBe("member_suspended");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error(
+          "Member does not meet the age requirement for this activity.",
+        ),
+      ),
+    ).toBe("member_age_requirement_not_met");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Missing mandatory answers."),
+      ),
+    ).toBe("missing_mandatory_answers");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error(
+          "Cannot answer or change this question after its answer deadline has passed.",
+        ),
+      ),
+    ).toBe("question_deadline_passed");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Enrollment deadline has passed."),
+      ),
+    ).toBe("enrollment_deadline_passed");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Activity is not open for enrollment."),
+      ),
+    ).toBe("activity_not_open_for_enrollment");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Activity is not visible for enrollment."),
+      ),
+    ).toBe("activity_not_visible_for_enrollment");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Activity has already started."),
+      ),
+    ).toBe("activity_already_started");
+
+    expect(
+      getFriendlyErrorMessage(
+        "Enrollment failed",
+        new Error("Unenrollment deadline has passed."),
+      ),
+    ).toBe("unenrollment_deadline_passed");
+  });
+
   it("falls back to appending the raw message for unknown errors", () => {
     expect(
       getFriendlyErrorMessage("Registration failed", new Error("boom")),
