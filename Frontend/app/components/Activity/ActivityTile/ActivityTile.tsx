@@ -1,10 +1,13 @@
 import {
   Calendar,
+  Check,
+  Clock,
   FileEditIcon,
   ImageIcon,
   MapPin,
   PencilIcon,
   UsersRound,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -77,6 +80,22 @@ export default function ActivityTile({
 
   const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
   const { canEnroll } = getActivityEnrollmentStatus(activity);
+
+  const userEnrollment = tokenParsed?.UserId
+    ? activity.enrollments?.find((e) => e.member?.id === tokenParsed.UserId)
+    : undefined;
+
+  let enrollmentStatus: "enrolled" | "waiting_list" | "unenrolled" | null =
+    null;
+  if (tokenParsed) {
+    if (userEnrollment) {
+      enrollmentStatus = userEnrollment.isOnWaitingList
+        ? "waiting_list"
+        : "enrolled";
+    } else if (hasEnrollmentOpened(activity)) {
+      enrollmentStatus = "unenrolled";
+    }
+  }
 
   const navigate = useNavigate();
 
@@ -169,7 +188,7 @@ export default function ActivityTile({
             </p>
           </div>
 
-          <div className="mt-0 flex flex-col text-[14px] text-gray-500">
+          <div className="mt-0 flex flex-1 flex-col text-[14px] text-gray-500">
             <div
               className="mt-1 flex items-start gap-1.5 leading-snug"
               style={
@@ -209,6 +228,33 @@ export default function ActivityTile({
               </div>
             )}
           </div>
+
+          {enrollmentStatus && (
+            <div
+              className={cn(
+                "-mx-3 -mb-3 mt-3 flex items-center justify-center gap-1.5 py-1.5 px-3 text-center text-xs font-semibold uppercase tracking-wider transition-colors",
+                enrollmentStatus === "enrolled" && "bg-emerald-600 text-white",
+                enrollmentStatus === "waiting_list" &&
+                  "bg-amber-500 text-white",
+                enrollmentStatus === "unenrolled" && "bg-red-500 text-white",
+              )}
+            >
+              {enrollmentStatus === "enrolled" && (
+                <Check size={14} className="stroke-[2.5]" />
+              )}
+              {enrollmentStatus === "waiting_list" && (
+                <Clock size={14} className="stroke-[2.5]" />
+              )}
+              {enrollmentStatus === "unenrolled" && (
+                <X size={14} className="stroke-[2.5]" />
+              )}
+              <span>
+                {enrollmentStatus === "enrolled" && t("enrolled")}
+                {enrollmentStatus === "waiting_list" && t("waiting_list")}
+                {enrollmentStatus === "unenrolled" && t("not_enrolled")}
+              </span>
+            </div>
+          )}
         </div>
       </Tile>
     </Link>
