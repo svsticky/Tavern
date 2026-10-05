@@ -65,26 +65,23 @@ Copy the sample environment file to create your active configurations:
 ```bash
 cp sample.env .env
 ```
-The environment variables in the `.env` file must be filled in. Below is a description of the configuration variables, highlighting those that are only required for production (as they are overridden by `.devcontainer/devcontainer.env` in local development):
 
-#### Overwritten in Development (Only needed in Production)
-These variables are pre-configured or overridden for the devcontainer environment, but must be configured for a production deployment:
-* **Ports & Core Routing:**
-  * `FrontendPort`, `BackendPort`, `DocsPort`: Ports used to map and expose services.
-  * `HostUrl`, `ApiUrl`: Base URLs routing requests between the frontend and backend.
-* **Database Connection:**
-  * `PostgresqlConnectionString`: Connection string for the PostgreSQL database (overridden to point to the local `db` service inside the devcontainer).
-* **Identity Provider (Keycloak):**
-  * `AUTH_SYSTEM`, `KeycloakUrl`, `KeycloakRealm`, `KeycloakClientId`, `KeycloakBackendClientId`, `KeycloakClientSecret`, `AUTH_WEBHOOK_SECRET`: Keycloak client details and webhook secrets (pre-configured for local dev).
+For **local development** inside the devcontainer, all core infrastructure services (PostgreSQL, Keycloak, S3/LocalStack, and default branding) are already pre-configured in `.devcontainer/devcontainer.env`.
 
-#### Required to be Filled In (Production & Local Integration Testing)
-Configure these variables in your `.env` to enable specific features locally or in production:
-* **Theme & UI Customization:**
-  * `LOGO_URL`: Branding logo URL injected into the Vite frontend. Board colors are managed in the admin settings and stored in the database.
-* **Object Storage (S3 / LocalStack):**
-  * `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_SERVICE_URL`: Credentials and endpoints for S3 object storage (defaults are configured to run with LocalStack locally).
-* **External Integrations:**
-  * `NGROK_AUTHTOKEN`, `NGROK_URL`: Auth token and public tunnel URL used by Ngrok for local webhook testing. These are optional, but can be usefull for letting mollie call the webhook after a payment.
+The only variable required in `.env` for local development is:
+* `BACKUP_ACCOUNT_EMAIL`: Email address for the initial backup admin account created upon backend startup.
+
+Optionally, you can configure:
+* `NGROK_AUTHTOKEN`, `NGROK_URL`: Optional credentials for Ngrok tunneling if you want Mollie to call webhooks locally after completing payments.
+
+#### Production Configuration
+For production deployments (or standalone environments without the devcontainer), all variables in `sample.env` must be configured:
+* **Ports & Core Routing:** `FrontendPort`, `BackendPort`, `DocsPort`, `HostUrl`, `ApiUrl`.
+* **Database Connection:** `PostgresqlConnectionString`.
+* **Identity Provider (Keycloak):** `AUTH_SYSTEM`, `KeycloakUrl`, `KeycloakRealm`, `KeycloakClientId`, `KeycloakBackendClientId`, `KeycloakClientSecret`, `AUTH_WEBHOOK_SECRET`.
+* **Theme & UI Customization:** `LOGO_URL`.
+* **Object Storage (S3):** `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_REGION`, `S3_SERVICE_URL`.
+* **Feature Toggles & Timezone:** `ACCOUNTING_ENABLED`, `AssociationTimeZone`.
 
 
 ### 3. Launch the Devcontainer
