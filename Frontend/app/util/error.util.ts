@@ -9,6 +9,8 @@ const KNOWN_ERROR_TRANSLATION_KEYS: Record<string, string> = {
     "email_already_registered",
   "An account with this student number already exists.":
     "student_number_already_registered",
+  "Member is already enrolled in this group for the specified year.":
+    "member_already_enrolled_in_group",
 };
 
 const getValidationErrorMessage = (errors: unknown): string | undefined => {
