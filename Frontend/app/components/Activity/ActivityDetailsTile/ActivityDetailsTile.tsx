@@ -1,4 +1,3 @@
-import { t } from "i18next";
 import {
   Calendar,
   CheckCircle2,
@@ -9,6 +8,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useTranslation } from "react-i18next";
 import Markdown from "react-markdown";
 import {
   type ActivityResponseDto,
@@ -103,9 +103,16 @@ export default function ActivityDetailsTile({
     React.SetStateAction<ActivityResponseDto | null>
   >;
 }) {
+  const { t, i18n } = useTranslation();
   const authService = useAuth();
   const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  const isDutch =
+    member?.preferredLanguage !== undefined
+      ? member.preferredLanguage === "NL"
+      : tokenParsed?.locale?.toUpperCase() === "NL" ||
+        i18n.language?.toLowerCase().startsWith("nl");
 
   useEffect(() => {
     const loadToken = async () => {
@@ -292,7 +299,7 @@ export default function ActivityDetailsTile({
             "
           >
             <Markdown>
-              {tokenParsed?.locale === "NL"
+              {isDutch
                 ? activity.dutchDescription || t("no_description_available_nl")
                 : activity.englishDescription ||
                   t("no_description_available_en")}
