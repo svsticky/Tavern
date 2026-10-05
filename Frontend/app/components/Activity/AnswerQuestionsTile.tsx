@@ -1,9 +1,10 @@
-import { t } from "i18next";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type {
   ActivityResponseDto,
   GetSpecificationQuestionResponseDto,
 } from "~/api";
+import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { isQuestionAnswerable } from "~/util/answer.util";
@@ -61,8 +62,16 @@ export default function AnswerQuestionsTile({
   disabled?: boolean;
   onChange: (id: number, value: string) => void;
 }) {
+  const { t, i18n } = useTranslation();
   const authService = useAuth();
+  const { member } = useApp();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+
+  const isDutch =
+    member?.preferredLanguage !== undefined
+      ? member.preferredLanguage === "NL"
+      : tokenParsed?.locale?.toUpperCase() === "NL" ||
+        i18n.language?.toLowerCase().startsWith("nl");
 
   useEffect(() => {
     const loadToken = async () => {
@@ -191,9 +200,7 @@ export default function AnswerQuestionsTile({
         {questions.map((q) => (
           <div key={q.id}>
             <label className="font-semibold block mb-1">
-              {tokenParsed.locale === "NL"
-                ? q.questionDutch
-                : q.questionEnglish}
+              {isDutch ? q.questionDutch : q.questionEnglish}
 
               {q.isMandatory && <span className="text-red-500 ml-1">*</span>}
             </label>

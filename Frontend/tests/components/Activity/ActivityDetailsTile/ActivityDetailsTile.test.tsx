@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import i18next from "i18next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
@@ -135,6 +136,26 @@ describe("ActivityDetailsTile", () => {
       authService,
     });
     expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
+  });
+
+  it("updates activity description immediately when language is changed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
+      authService,
+    });
+    expect(await screen.findByText("Description")).toBeInTheDocument();
+
+    await act(async () => {
+      await i18next.changeLanguage("nl");
+    });
+
+    expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
+
+    await act(async () => {
+      await i18next.changeLanguage("en");
+    });
   });
 
   it("shows a sign-in button when the user can enroll and is not enrolled", async () => {
