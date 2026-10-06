@@ -9,22 +9,31 @@ import {
   putEnrollmentsByActivityIdByMemberId,
 } from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
-import { formatDate } from "~/util/date.util";
+import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import {
   formatForGoogleCalendar,
   formatForWhatsApp,
 } from "~/util/markdown.util";
+import { capitalizeFirst } from "~/util/string.util";
 
 /**
  * Generates a Google Calendar event link and opens it in a new browser tab.
+ *
+ * The event is a one-time copy of the activity as it is known right now: Google Calendar receives a
+ * snapshot, not a live link, so later changes to the activity are never reflected in the copy. A
+ * disclaimer stating when the copy was made is therefore appended to the description, and members who
+ * want an always-current calendar should subscribe to their personal feed instead.
  *
  * @param activity - The activity object containing name, description, location, and date details.
  */
 export const handleAddToCalendar = (activity: ActivityResponseDto) => {
   const title = encodeURIComponent(activity.name || "Activiteit");
+  const disclaimer = t("calendar_copy_disclaimer", {
+    datetime: new Date().toISOString(),
+  });
   const description = encodeURIComponent(
-    formatForGoogleCalendar(activity.dutchDescription) || "",
+    `${formatForGoogleCalendar(activity.dutchDescription) || ""}\n\n[${disclaimer}]`,
   );
   const location = encodeURIComponent(activity.location || "TBA");
 
@@ -95,11 +104,19 @@ export const handleEnrollment = async (
       }
 
       if (response.data) {
+        const questionPublicity = new Map(
+          activity.specificationQuestions.map((question) => [
+            question.id,
+            question.isPublic,
+          ]),
+        );
+
         const submittedAnswers = Object.entries(answers).map(
           ([questionId, answer]) => ({
             questionId: Number(questionId),
             answerId: 0,
             answer: String(answer),
+            isPublic: questionPublicity.get(Number(questionId)) ?? false,
           }),
         );
 
@@ -221,11 +238,19 @@ export const handleUpdateEnrollment = async (
         ]),
       );
 
+      const questionPublicity = new Map(
+        activity.specificationQuestions.map((question) => [
+          question.id,
+          question.isPublic,
+        ]),
+      );
+
       const updatedSpecificationAnswers = Object.entries(answers).map(
         ([questionId, answer]) => ({
           questionId: Number(questionId),
           answerId: existingAnswerIds.get(Number(questionId)) ?? 0,
           answer: String(answer),
+          isPublic: questionPublicity.get(Number(questionId)) ?? false,
         }),
       );
 
@@ -324,11 +349,17 @@ export const handleCopyForWhatsapp = async (
 ) => {
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
+  const startDateTime = `${capitalizeFirst(formatDate(startDate, "weekdayDate"))} ${formatDate(startDate, "timeOnly")}`;
+  const endDateTime = isSameDayInAssociationTimeZone(startDate, endDate)
+    ? formatDate(endDate, "timeOnly")
+    : `${capitalizeFirst(formatDate(endDate, "weekdayDate"))} ${formatDate(endDate, "timeOnly")}`;
+
+  const activityUrl = `${window.location.origin}/activities/${activity.id}`;
 
   const text =
     lang === "NL"
-      ? `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.dutchDescription)}`
-      : `*${activity.name} | ${formatDate(startDate, "fullDateTime")} - ${formatDate(endDate, "fullDateTime")} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${window.location.href}\n\n${formatForWhatsApp(activity.englishDescription)}`;
+      ? `*${activity.name} | ${startDateTime} - ${endDateTime} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${activityUrl}\n\n${formatForWhatsApp(activity.dutchDescription)}`
+      : `*${activity.name} | ${startDateTime} - ${endDateTime} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${activityUrl}\n\n${formatForWhatsApp(activity.englishDescription)}`;
 
   toast.promise(navigator.clipboard.writeText(text), {
     loading: t("copying"),

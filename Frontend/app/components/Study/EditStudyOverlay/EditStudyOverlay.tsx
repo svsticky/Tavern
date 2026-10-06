@@ -2,6 +2,7 @@ import { t } from "i18next";
 import { useState } from "react";
 import type { Study, StudyType } from "~/api";
 import Button from "../../UI/Button";
+import Checkbox from "../../UI/Checkbox";
 import Form from "../../UI/Form/Form";
 import Input from "../../UI/Input";
 import Select from "../../UI/Select";
@@ -34,6 +35,7 @@ export default function EditStudyOverlay({
     title: study ? study.title : "",
     type: study?.type ?? "Bachelor",
     nominalDurationYears: study?.nominalDurationYears,
+    active: study?.active ?? true,
   });
   const [loading, setLoading] = useState(false);
 
@@ -78,6 +80,16 @@ export default function EditStudyOverlay({
           })
         }
       />
+
+      {study && (
+        <Checkbox
+          label={t("active")}
+          checked={formData.active}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setFormData({ ...formData, active: e.target.checked })
+          }
+        />
+      )}
 
       <Button
         variant="primary"

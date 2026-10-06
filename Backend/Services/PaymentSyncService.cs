@@ -1,6 +1,7 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Microsoft.EntityFrameworkCore;
 
@@ -37,16 +38,33 @@ public class PaymentSyncService(
 
     private async Task StartSyncPaymentsLoop(CancellationToken stoppingToken)
     {
-        if (stoppingToken.IsCancellationRequested) return;
-        await SyncPayments();
+        using var timer = new PeriodicTimer(TimeSpan.FromMinutes(10));
+
+        // Run immediately on startup before the first 10-minute tick
+        await ExecuteSyncSafely();
 
         try
         {
-            await Task.Delay(600000, stoppingToken).ContinueWith(_ => StartSyncPaymentsLoop(stoppingToken), stoppingToken);
+            while (await timer.WaitForNextTickAsync(stoppingToken))
+            {
+                await ExecuteSyncSafely();
+            }
         }
-        catch (TaskCanceledException)
+        catch (OperationCanceledException)
         {
-            // Stop loop
+            // Graceful shutdown requested
+        }
+    }
+
+    private async Task ExecuteSyncSafely()
+    {
+        try
+        {
+            await SyncPayments();
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Fout tijdens het synchroniseren van betalingen.");
         }
     }
 
@@ -107,24 +125,20 @@ public class PaymentSyncService(
                     {
                         if (fullPayment.Member != null)
                         {
-                            if (fullPayment.Member.AuthSystemUserId == null)
+                            db.AuthOutboxTasks.Add(new AuthOutboxTask
                             {
-                                // The member isn't linked to the auth system yet. Don't let that block marking the
-                                // payment as paid; AuthOutboxWorker queues a catch-up Sync task once they do get linked.
-                                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking payment {PaymentId} paid without queuing an auth sync.", fullPayment.Member.Id, payment.Id);
-                            }
-                            else
-                            {
-                                db.AuthOutboxTasks.Add(new AuthOutboxTask
-                                {
-                                    AuthSystemUserId = fullPayment.Member.AuthSystemUserId.Value,
-                                    TaskType = AuthTaskType.Sync,
-                                    CreatedAt = DateTimeOffset.UtcNow,
-                                    NextAttemptAt = DateTimeOffset.UtcNow
-                                });
-                            }
+                                AuthSystemUserId = fullPayment.Member.Id,
+                                TaskType = AuthTaskType.Sync,
+                                CreatedAt = DateTimeOffset.UtcNow,
+                                NextAttemptAt = DateTimeOffset.UtcNow
+                            });
                         }
                         payment.PaidAt = paymentResponse.PaidAt;
+
+                        if (fullPayment is MembershipPayment && fullPayment.Member != null)
+                        {
+                            await paymentService.TryQueueActivationEmailAsync(fullPayment.Member.Id);
+                        }
 
                         db.AccountingToolOutboxTasks.Add(new AccountingToolOutboxTask
                         {
@@ -168,7 +182,9 @@ public class PaymentSyncService(
                                 bool hasOtherPendingPayments = await db.MembershipPayments.AnyAsync(p => p.MemberId == member.Id && p.PaidAt == null && p.Id != payment.Id)
                                     || await db.BegunstigerPayments.AnyAsync(p => p.MemberId == member.Id && p.PaidAt == null && p.Id != payment.Id);
 
-                                if (!hasOtherPendingPayments && !paymentValidationService.HasEverPaidMembershipPayment(member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(member.Id))
+                                bool hasEnrollments = await db.Enrollments.AnyAsync(e => e.MemberId == member.Id);
+
+                                if (!hasOtherPendingPayments && !hasEnrollments && !paymentValidationService.HasEverPaidMembershipPayment(member.Id) && !paymentValidationService.HasEverPaidBegunstigerFee(member.Id))
                                 {
                                     db.Members.Remove(member);
                                     authOutboxWorker.EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId ?? throw new InvalidOperationException("User is not synced with the authsystem yet."), db);

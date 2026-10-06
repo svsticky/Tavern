@@ -73,6 +73,12 @@ public class PaymentValidationService(
             var startDate = studyEnrollment.EnrollmentDate.DateTime;
 
             // Build candidate date in current calendar year
+            if (startDate.Month == 2 && startDate.Day == 29 && !DateTime.IsLeapYear(now.Year))
+            {
+                // Handle leap year case: if the study start date is Feb 29, use Feb 28 in non-leap years
+                startDate = new DateTime(now.Year, 2, 28, startDate.Hour, startDate.Minute, startDate.Second, DateTimeKind.Utc);
+            }
+
             var nextOccurrence = new DateTime(now.Year, startDate.Month, startDate.Day, startDate.Hour, startDate.Minute, startDate.Second, DateTimeKind.Utc);
             if (now >= nextOccurrence)
             {
@@ -104,9 +110,25 @@ public class PaymentValidationService(
             throw new Exception($"Member with id {memberId} not found.");
         }
 
-        bool isMaster = member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master);
+        if (db.Settings.Find("MastersShouldPayMembership")?.Value != "1" && member.StudyEnrollments.Any(e => e.Study.Type == StudyType.Master && (e.Status == StudyStatus.Enrolled)))
+        {
+            return true;
+        }
 
-        if (isMaster) return true;
+        if (db.Settings.Find("GratieShouldPayMembership")?.Value != "1" && member.Gratie)
+        {
+            return true;
+        }
+
+        if (db.Settings.Find("ErelidShouldPayMembership")?.Value != "1" && member.EreLid)
+        {
+            return true;
+        }
+
+        if (db.Settings.Find("LidVanVerdiensteShouldPayMembership")?.Value != "1" && member.LidVanVerdienste)
+        {
+            return true;
+        }
 
         return db.MembershipPayments.Any(p => p.MemberId == memberId && p.PaidAt != null);
     }
@@ -154,9 +176,11 @@ public class PaymentValidationService(
     /// <inheritdoc />
     public decimal GetUnpaidAmountForEnrollment(Enrollment enrollment, bool includeNotOpenForPayment = false)
     {
+        if (enrollment.IsOnWaitingList) return 0;
+
         var paidSum = db.EnrollmentPayments
             .Include(p => p.Activity)
-            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity != null && (includeNotOpenForPayment || p.Activity.IsOpenForPayment) && !enrollment.IsOnWaitingList)
+            .Where(p => p.PaidAt != null && p.ActivityId == enrollment.ActivityId && p.MemberId == enrollment.MemberId && p.Activity != null && (includeNotOpenForPayment || p.Activity.IsOpenForPayment))
             .Sum(p => (decimal?)p.Price) ?? 0;
 
         return enrollment.Price - paidSum;

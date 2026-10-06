@@ -2,21 +2,28 @@ import { t } from "i18next";
 import { CircleAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import type { Study, StudyEnrollmentResponseDto, StudyStatus } from "~/api";
+import type {
+  GroupMembershipResponseDto,
+  Study,
+  StudyEnrollmentResponseDto,
+  StudyStatus,
+} from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
+import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Checkbox from "~/components/UI/Checkbox";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import Form from "~/components/UI/Form/Form";
 import { FormHeader } from "~/components/UI/Form/FormHeader";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
-import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { formatDate } from "~/util/date.util";
 import {
   handleAddEnrollment,
   handleDeleteEnrollment,
@@ -51,8 +58,7 @@ export default function EditMemberPage() {
   const { id: memberId } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isMarkPaidModalOpen, setIsMarkPaidModalOpen] = useState(false);
+  const [confirmModal, confirm] = useConfirm();
   const [markingPaid, setMarkingPaid] = useState(false);
   const [hasPaidMembership, setHasPaidMembership] = useState(true);
   const [isBegunstiger, setIsBegunstiger] = useState(false);
@@ -62,6 +68,9 @@ export default function EditMemberPage() {
   const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>(
     [],
   );
+  const [groupMemberships, setGroupMemberships] = useState<
+    GroupMembershipResponseDto[]
+  >([]);
   const [availableStudies, setAvailableStudies] = useState<Study[]>([]);
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
   const [email, setEmail] = useState("");
@@ -93,7 +102,7 @@ export default function EditMemberPage() {
     },
     {
       header: t("start_date"),
-      render: (item) => new Date(item.enrollmentDate).toLocaleDateString(),
+      render: (item) => formatDate(new Date(item.enrollmentDate), "dateOnly"),
     },
     {
       header: t("status"),
@@ -148,6 +157,7 @@ export default function EditMemberPage() {
       setFormData,
       setEmail,
       setEnrollments,
+      setGroupMemberships,
       setAvailableStudies,
       setProfilePictureSrc,
       setHasPaidMembership,
@@ -323,7 +333,31 @@ export default function EditMemberPage() {
                   type="button"
                   variant="secondary"
                   className="border-amber-300 text-amber-800 hover:bg-amber-100 whitespace-nowrap"
-                  onClick={() => setIsMarkPaidModalOpen(true)}
+                  onClick={async () => {
+                    const label = isBegunstiger
+                      ? t("mark_begunstiger_fee_as_paid")
+                      : t("mark_membership_as_paid");
+                    const message = isBegunstiger
+                      ? t("are_you_sure_mark_begunstiger_fee_as_paid")
+                      : t("are_you_sure_mark_membership_as_paid");
+
+                    if (
+                      !(await confirm(message, {
+                        title: label,
+                        confirmLabel: label,
+                        variant: "primary",
+                      }))
+                    ) {
+                      return;
+                    }
+
+                    const markAsPaid = isBegunstiger
+                      ? handleMarkBegunstigerFeeAsPaid
+                      : handleMarkMembershipAsPaid;
+                    markAsPaid(memberId, setMarkingPaid, () =>
+                      setHasPaidMembership(true),
+                    );
+                  }}
                   disabled={markingPaid}
                 >
                   {isBegunstiger
@@ -333,52 +367,6 @@ export default function EditMemberPage() {
               </div>
             )}
           </section>
-
-          <Modal
-            isOpen={isMarkPaidModalOpen}
-            onClose={() => setIsMarkPaidModalOpen(false)}
-            title={
-              isBegunstiger
-                ? t("mark_begunstiger_fee_as_paid")
-                : t("mark_membership_as_paid")
-            }
-          >
-            <div className="flex flex-col gap-4">
-              <p className="text-slate-700">
-                {isBegunstiger
-                  ? t("are_you_sure_mark_begunstiger_fee_as_paid")
-                  : t("are_you_sure_mark_membership_as_paid")}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsMarkPaidModalOpen(false)}
-                  disabled={markingPaid}
-                >
-                  {t("cancel")}
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    const markAsPaid = isBegunstiger
-                      ? handleMarkBegunstigerFeeAsPaid
-                      : handleMarkMembershipAsPaid;
-                    markAsPaid(memberId, setMarkingPaid, () =>
-                      setHasPaidMembership(true),
-                    );
-                    setIsMarkPaidModalOpen(false);
-                  }}
-                  disabled={markingPaid}
-                >
-                  {markingPaid
-                    ? t("marking_as_paid")
-                    : isBegunstiger
-                      ? t("mark_begunstiger_fee_as_paid")
-                      : t("mark_membership_as_paid")}
-                </Button>
-              </div>
-            </div>
-          </Modal>
 
           {/* Notities (Admin Only) */}
           <section>
@@ -405,45 +393,33 @@ export default function EditMemberPage() {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => setIsDeleteModalOpen(true)}
+              onClick={async () => {
+                if (
+                  !(await confirm(t("are_you_sure_delete_member"), {
+                    title: t("delete"),
+                    confirmLabel: t("delete"),
+                  }))
+                ) {
+                  return;
+                }
+                handleDeleteMember(memberId, setLoading, () =>
+                  navigate("/admin/members"),
+                );
+              }}
               className="bg-red-600 hover:bg-red-700 text-white border-transparent"
             >
               {t("delete")}
             </Button>
           </div>
 
-          <Modal
-            isOpen={isDeleteModalOpen}
-            onClose={() => setIsDeleteModalOpen(false)}
-            title={t("delete")}
-          >
-            <div className="flex flex-col gap-4">
-              <p className="text-slate-700">
-                {t("are_you_sure_delete_member")}
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setIsDeleteModalOpen(false)}
-                  disabled={loading}
-                >
-                  {t("cancel")}
-                </Button>
-                <Button
-                  variant="primary"
-                  className="bg-red-600 hover:bg-red-700 text-white border-transparent"
-                  onClick={() =>
-                    handleDeleteMember(memberId, setLoading, () =>
-                      navigate("/admin/members"),
-                    )
-                  }
-                  disabled={loading}
-                >
-                  {loading ? t("deleting") : t("delete")}
-                </Button>
-              </div>
-            </div>
-          </Modal>
+          <section>
+            <FormHeader title={t("group_memberships")} />
+            <GroupMembershipOverview
+              groupMemberships={groupMemberships}
+              emptyText={t("no_group_memberships")}
+              linkToGroup
+            />
+          </section>
 
           <section>
             <FormHeader title={t("study_enrollments")} />
@@ -496,6 +472,7 @@ export default function EditMemberPage() {
           </section>
         </Form>
       </div>
+      {confirmModal}
     </>
   );
 }

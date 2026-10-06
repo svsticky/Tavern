@@ -1,4 +1,5 @@
 import { t } from "i18next";
+import { Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type {
@@ -12,6 +13,7 @@ import BorderedTile from "../../../Tiles/BorderedTile";
 import { NoContentTile } from "../../../Tiles/NoContentTile";
 import Button from "../../../UI/Button";
 import Checkbox from "../../../UI/Checkbox";
+import { useConfirm } from "../../../UI/ConfirmModal/useConfirm";
 import Form from "../../../UI/Form/Form";
 import { FormHeader } from "../../../UI/Form/FormHeader";
 import { FormSection } from "../../../UI/Form/FormSection";
@@ -25,6 +27,7 @@ import {
   formatForInput,
   handleActivityFormChange,
   handleActivitySubmit,
+  handleDeleteActivity,
   loadGroups,
   removeQuestion,
   updateQuestion,
@@ -69,6 +72,7 @@ export default function EditActivityForm({
 }) {
   const navigate = useNavigate();
   const { pathname } = window.location;
+  const [confirmModal, confirm] = useConfirm();
 
   const isEdit = !!id;
   const audienceMask = parseAudience(activity?.allowedAudience);
@@ -76,6 +80,9 @@ export default function EditActivityForm({
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [groups, setGroups] = useState<GroupResponseDto[]>([]);
+  const [organizerId, setOrganizerId] = useState<number | null>(
+    activity?.organizerId ?? null,
+  );
   const [formValid, setFormValid] = useState(isEdit);
   const [questions, setQuestions] = useState<
     Partial<GetSpecificationQuestionResponseDto>[]
@@ -94,6 +101,9 @@ export default function EditActivityForm({
 
     loadGroups(setLoading, setGroups);
   }, [isEdit]);
+
+  // The organizer's defaults are used when these activity fields are left empty, so show them as placeholders.
+  const organizer = groups.find((g) => g.id === organizerId);
 
   if (loading) return t("loading");
 
@@ -242,6 +252,11 @@ export default function EditActivityForm({
                 label={t("organizer")}
                 name="OrganizerId"
                 defaultValue={activity?.organizerId ?? ""}
+                onChange={(e) =>
+                  setOrganizerId(
+                    e.target.value ? parseInt(e.target.value, 10) : null,
+                  )
+                }
                 required
                 options={[
                   { value: "", label: t("select_organizer") },
@@ -282,16 +297,19 @@ export default function EditActivityForm({
                   label={`${t("gl_account_id")} (${t("leave_empty_for_group_default")})`}
                   name="GLAccountId"
                   defaultValue={activity?.glAccountId ?? ""}
-                />
-                <Input
-                  label={`${t("cost_unit_id")} (${t("leave_empty_for_group_default")})`}
-                  name="CostUnitId"
-                  defaultValue={activity?.costUnitId ?? ""}
+                  placeholder={organizer?.glAccountId ?? undefined}
                 />
                 <Input
                   label={`${t("cost_center_id")} (${t("leave_empty_for_group_default")})`}
                   name="CostCenterId"
                   defaultValue={activity?.costCenterId ?? ""}
+                  placeholder={organizer?.costCenterId ?? undefined}
+                />
+                <Input
+                  label={`${t("cost_unit_id")} (${t("leave_empty_for_group_default")})`}
+                  name="CostUnitId"
+                  defaultValue={activity?.costUnitId ?? ""}
+                  placeholder={organizer?.costUnitId ?? undefined}
                 />
                 <Input
                   label={t("payment_deadline")}
@@ -391,15 +409,45 @@ export default function EditActivityForm({
             )}
           </FormSection>
 
-          <Button
-            type="submit"
-            disabled={saving || !formValid}
-            className="w-full"
-          >
-            {saving ? t("saving") : isEdit ? t("save") : t("create_activity")}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              type="submit"
+              disabled={saving || !formValid}
+              className="w-full"
+            >
+              {saving ? t("saving") : isEdit ? t("save") : t("create_activity")}
+            </Button>
+
+            {isBoard && isEdit && activity && (
+              <Button
+                type="button"
+                variant="danger"
+                className="w-full sm:w-auto flex items-center justify-center gap-2"
+                onClick={async () => {
+                  if (
+                    !(await confirm(t("are_you_sure_delete_activity"), {
+                      title: t("delete"),
+                      confirmLabel: t("delete"),
+                    }))
+                  ) {
+                    return;
+                  }
+                  handleDeleteActivity(activity.id, () =>
+                    navigate(
+                      `${pathname.startsWith("/admin") ? "/admin" : ""}/activities`,
+                    ),
+                  );
+                }}
+              >
+                <Trash2Icon size={18} />
+                {t("delete")}
+              </Button>
+            )}
+          </div>
         </Form>
       </BorderedTile>
+
+      {confirmModal}
     </div>
   );
 }

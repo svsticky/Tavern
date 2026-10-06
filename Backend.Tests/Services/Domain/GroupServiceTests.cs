@@ -167,7 +167,7 @@ public class GroupServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         // Act
-        var result = await _service.GetGroup(10, CancellationToken.None);
+        var result = await _service.GetGroup(10, _userId, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -178,7 +178,7 @@ public class GroupServiceTests : IDisposable
     public async Task GetGroup_NotFound_ReturnsNull()
     {
         // Act
-        var result = await _service.GetGroup(999, CancellationToken.None);
+        var result = await _service.GetGroup(999, _userId, CancellationToken.None);
 
         // Assert
         Assert.Null(result);
@@ -267,7 +267,8 @@ public class GroupServiceTests : IDisposable
         var cachedBytes = new byte[] { 4, 5, 6 };
         object? cachedVal = (cachedBytes, "image/webp");
         _memoryCache.TryGetValue("group-pic-path.webp", out Arg.Any<object?>())
-            .Returns(x => {
+            .Returns(x =>
+            {
                 x[1] = cachedVal;
                 return true;
             });
@@ -470,6 +471,39 @@ public class GroupServiceTests : IDisposable
 
         await _storageService.Received(1).DeleteFileAsync("group-pictures", "old.webp");
         _memoryCache.Received(1).Remove("group-pic-old.webp");
+    }
+
+    [Fact]
+    public async Task UploadGroupPicture_GroupNotFound_ThrowsException()
+    {
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<Exception>(() =>
+            _service.UploadGroupPicture(999, _userId, null));
+        Assert.Equal("Group not found", ex.Message);
+    }
+
+    [Fact]
+    public async Task UploadGroupPicture_SaveFails_RollsBackTransaction()
+    {
+        // Arrange
+        var group = new Group { Id = 1, Name = "Group", Type = GroupType.Committee, GroupPicturePath = "old.webp", GroupPictureFileName = "old.png" };
+        _db.Groups.Add(group);
+        await _db.SaveChangesAsync();
+
+        var formFile = Substitute.For<IFormFile>();
+        formFile.FileName.Returns("new.png");
+        formFile.ContentType.Returns("image/png");
+
+        _fileCompressor.CompressFileAsync(formFile)
+            .Returns(Task.FromException<(Stream Stream, string ContentType)>(new Exception("Compression failed")));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<Exception>(() => _service.UploadGroupPicture(1, _userId, formFile));
+
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Groups.FindAsync(1u);
+        Assert.NotNull(updated);
+        Assert.Equal("old.webp", updated.GroupPicturePath); // Unchanged - rolled back
     }
 
     [Fact]

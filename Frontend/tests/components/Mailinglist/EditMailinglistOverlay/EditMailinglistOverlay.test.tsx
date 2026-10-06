@@ -142,6 +142,7 @@ describe("EditMailinglistOverlay", () => {
       curatedList,
       setLoading: expect.any(Function),
       onComplete: onMailinglistEdited,
+      confirm: expect.any(Function),
     });
   });
 

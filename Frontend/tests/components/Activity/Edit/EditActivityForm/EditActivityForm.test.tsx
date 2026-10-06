@@ -6,6 +6,7 @@ import {
   addQuestion,
   handleActivityFormChange,
   handleActivitySubmit,
+  handleDeleteActivity,
   loadGroups,
   removeQuestion,
 } from "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers";
@@ -25,6 +26,7 @@ vi.mock(
     removeQuestion: vi.fn(),
     updateQuestion: vi.fn(),
     handleActivitySubmit: vi.fn((args: any) => args.e.preventDefault()),
+    handleDeleteActivity: vi.fn(),
   }),
 );
 
@@ -82,6 +84,48 @@ describe("EditActivityForm", () => {
     );
     expect(screen.getByLabelText("vat_rate")).toBeInTheDocument();
     expect(screen.getByLabelText(/show_in_koala/)).toBeInTheDocument();
+  });
+
+  it("shows the organizer's financial defaults as placeholders and updates them when the organizer changes", () => {
+    vi.mocked(loadGroups).mockImplementationOnce(
+      async (setLoading, setGroups) => {
+        setGroups([
+          {
+            id: 1,
+            name: "Group A",
+            active: true,
+            type: "Committee",
+            glAccountId: "8000",
+            costCenterId: "KP1",
+            costUnitId: "KD1",
+          },
+          { id: 2, name: "Group B", active: true, type: "Committee" },
+        ]);
+        setLoading(false);
+      },
+    );
+    renderWithProviders(
+      <EditActivityForm
+        activity={buildActivity({ organizerId: 1 })}
+        id="1"
+        isBoard={true}
+      />,
+    );
+
+    const glAccount = screen.getByLabelText(/^gl_account_id/);
+    const costCenter = screen.getByLabelText(/^cost_center_id/);
+    const costUnit = screen.getByLabelText(/^cost_unit_id/);
+    expect(glAccount).toHaveAttribute("placeholder", "8000");
+    expect(costCenter).toHaveAttribute("placeholder", "KP1");
+    expect(costUnit).toHaveAttribute("placeholder", "KD1");
+
+    fireEvent.change(screen.getByLabelText(/^organizer/), {
+      target: { value: "2" },
+    });
+
+    expect(glAccount).not.toHaveAttribute("placeholder");
+    expect(costCenter).not.toHaveAttribute("placeholder");
+    expect(costUnit).not.toHaveAttribute("placeholder");
   });
 
   it("shows a hint about keeping the current poster only in edit mode", () => {
@@ -167,5 +211,58 @@ describe("EditActivityForm", () => {
       <EditActivityForm activity={buildActivity()} id="1" isBoard={false} />,
     );
     expect(screen.getByText("save")).toBeInTheDocument();
+  });
+
+  it("does not show a delete button for a non-board user", () => {
+    renderWithProviders(
+      <EditActivityForm activity={buildActivity()} id="1" isBoard={false} />,
+    );
+    expect(screen.queryByText("delete")).not.toBeInTheDocument();
+  });
+
+  it("does not show a delete button when creating a new activity", () => {
+    renderWithProviders(
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+    );
+    expect(screen.queryByText("delete")).not.toBeInTheDocument();
+  });
+
+  it("shows a delete button for a board member editing an activity, and deletes on confirm", async () => {
+    renderWithProviders(
+      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+    );
+
+    fireEvent.click(screen.getByText("delete"));
+
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "delete",
+    });
+    expect(confirmButtons.length).toBeGreaterThan(1);
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() =>
+      expect(handleDeleteActivity).toHaveBeenCalledWith(
+        1,
+        expect.any(Function),
+      ),
+    );
+  });
+
+  it("closes the delete modal on cancel without deleting", async () => {
+    renderWithProviders(
+      <EditActivityForm activity={buildActivity()} id="1" isBoard={true} />,
+    );
+
+    fireEvent.click(screen.getByText("delete"));
+
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
+    fireEvent.click(cancelButton);
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText("are_you_sure_delete_activity"),
+      ).not.toBeInTheDocument(),
+    );
+    expect(handleDeleteActivity).not.toHaveBeenCalled();
   });
 });

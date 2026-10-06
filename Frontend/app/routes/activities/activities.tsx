@@ -1,11 +1,19 @@
 import { t } from "i18next";
-import { CalendarDaysIcon, DownloadIcon, PlusIcon } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarDaysIcon,
+  DownloadIcon,
+  PlusIcon,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
+import { DateRowHeightGroup } from "~/components/Activity/ActivityTile/DateRowHeightGroup";
+import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
+import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -69,6 +77,7 @@ export default function ActivitiesPage() {
 
   const [loading, setLoading] = useState(true);
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
+  const [calendarTileOpen, setCalendarTileOpen] = useState(false);
   useEffect(() => {
     if (!tokenParsed) return;
     loadActivities({
@@ -80,14 +89,16 @@ export default function ActivitiesPage() {
   if (!tokenParsed) return null;
 
   const isInGroup =
-    isBoardOrCandidateBoard(tokenParsed) ||
+    isBoard ||
     (tokenParsed?.group_memberships ?? []).filter(
       (g) => g.split(":")[0] === getCommitteeYear().toString(),
     ).length > 0;
 
   return (
     <>
-      <div className="flex flex-col lg:flex-row lg:items-center lg:items-start justify-between gap-3">
+      <div
+        className={`flex flex-col ${isBoard ? " 2xl:flex-row 2xl:items-start 2xl:gap-3" : "md:flex-row md:items-start md:gap-3"} justify-between gap-0 `}
+      >
         <PageHeader
           title={t("activities")}
           action={
@@ -104,49 +115,73 @@ export default function ActivitiesPage() {
             </div>
           }
         />
-        {isBoard && (
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => downloadPosters(activities, token ?? "")}
-              className="text-xs px-3 py-1"
-              title="Download Koala Posters"
-            >
-              <DownloadIcon size={20} className="mr-1" />
-              {t("download_posters")}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => copyWeekOverview("NL", activities)}
-              className="text-xs px-3 py-1"
-            >
-              <CalendarDaysIcon size={20} className="mr-1" />
-              {t("copy")} {t("weekoverview").toLowerCase()} NL
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => copyWeekOverview("EN", activities)}
-              className="text-xs px-3 py-1 mb-4"
-            >
-              <CalendarDaysIcon size={20} className="mr-1" />
-              {t("copy")} {t("weekoverview").toLowerCase()} EN
-            </Button>
-          </>
-        )}
+        <div
+          className={`flex flex-col ${isBoard ? " 2xl:flex-row 2xl:items-start" : "md:flex-row md:items-start"} justify-between gap-3`}
+        >
+          <Button
+            variant="secondary"
+            onClick={() => setCalendarTileOpen(true)}
+            className={`text-xs px-3 py-1 ${!isBoard ? "mb-4" : ""}`}
+            title={t("personal_calendar")}
+          >
+            <CalendarClock size={20} className="mr-1" />
+            {t("personal_calendar")}
+          </Button>
+          {isBoard && (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => downloadPosters(activities, token ?? "")}
+                className="text-xs px-3 py-1"
+                title="Download Koala Posters"
+              >
+                <DownloadIcon size={20} className="mr-1" />
+                {t("download_posters")}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => copyWeekOverview("NL", activities)}
+                className="text-xs px-3 py-1"
+              >
+                <CalendarDaysIcon size={20} className="mr-1" />
+                {t("copy")} {t("weekoverview").toLowerCase()} NL
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => copyWeekOverview("EN", activities)}
+                className="text-xs px-3 py-1 mb-4"
+              >
+                <CalendarDaysIcon size={20} className="mr-1" />
+                {t("copy")} {t("weekoverview").toLowerCase()} EN
+              </Button>
+            </>
+          )}
+        </div>
       </div>
+
+      <Modal
+        isOpen={calendarTileOpen}
+        onClose={() => setCalendarTileOpen(false)}
+        title={t("personal_calendar")}
+      >
+        <PersonalCalendarTile />
+      </Modal>
+
       {loading ? (
         t("loading")
       ) : activities.length === 0 ? (
         <NoContentTile text={t("no_upcoming_activities")} />
       ) : (
         <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
-          {activities.map((activity) => (
-            <ActivityTile
-              key={activity.id}
-              className="w-auto"
-              activity={activity}
-            />
-          ))}
+          <DateRowHeightGroup>
+            {activities.map((activity) => (
+              <ActivityTile
+                key={activity.id}
+                className="w-auto"
+                activity={activity}
+              />
+            ))}
+          </DateRowHeightGroup>
         </div>
       )}
     </>

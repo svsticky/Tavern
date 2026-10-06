@@ -47,3 +47,38 @@ export function getActivityEnrollmentStatus(
 
   return { canEnroll, canUnenroll };
 }
+
+/**
+ * Determines whether an activity is configured to support enrollments at all.
+ * An activity is enrollable if `isEnrollable` is true OR `enrollOpenDate` is defined.
+ *
+ * @param activity The activity object.
+ * @returns `true` if the activity is configured for enrollments, `false` otherwise.
+ */
+export function isActivityEnrollable(
+  activity?: ActivityResponseDto | null,
+): boolean {
+  if (!activity) return false;
+  return Boolean(activity.isEnrollable || activity.enrollOpenDate);
+}
+
+/**
+ * Determines whether an activity has opened for enrollment (either in the past or currently).
+ * Returns `false` only for activities designed to never have enrollment or not yet have enrollment.
+ * Once opened, this remains `true` even after enrollment closes after its closing date.
+ *
+ * @param activity The activity object.
+ * @param now The reference date (defaults to current date).
+ * @returns `true` if enrollment has opened, `false` otherwise.
+ */
+export function hasEnrollmentOpened(
+  activity?: ActivityResponseDto | null,
+  now: Date = new Date(),
+): boolean {
+  if (!activity) return false;
+  const enrollOpenDate = activity.enrollOpenDate
+    ? new Date(activity.enrollOpenDate)
+    : null;
+  const afterEnrollOpenDate = enrollOpenDate ? now >= enrollOpenDate : false;
+  return Boolean(activity.isEnrollable || afterEnrollOpenDate);
+}

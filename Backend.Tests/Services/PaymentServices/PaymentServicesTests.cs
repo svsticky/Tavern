@@ -74,7 +74,7 @@ public class PaymentServicesTests : IDisposable
     [InlineData("paid", PaymentStatus.Paid)]
     [InlineData("open", PaymentStatus.Pending)]
     [InlineData("pending", PaymentStatus.Pending)]
-    [InlineData("cancelled", PaymentStatus.Failed)]
+    [InlineData("canceled", PaymentStatus.Failed)]
     [InlineData("failed", PaymentStatus.Failed)]
     [InlineData("expired", PaymentStatus.Failed)]
     public async Task GetPaymentAsync_MapsStatusCorrectly(string mollieStatus, PaymentStatus expectedStatus)
@@ -216,9 +216,16 @@ public class PaymentServicesTests : IDisposable
         Assert.NotNull(updatedEnrollment.PaidAt);
 
         // Verify Auth System Sync Outbox task was added for MembershipPayment
-        var authTask = await _db.AuthOutboxTasks.SingleAsync();
-        Assert.Equal(AuthTaskType.Sync, authTask.TaskType);
-        Assert.Equal(member.AuthSystemUserId, authTask.AuthSystemUserId);
+        var authTask = await _db.AuthOutboxTasks.SingleAsync(t => t.TaskType == AuthTaskType.Sync);
+        Assert.Equal(member.Id, authTask.AuthSystemUserId);
+
+        // Verify the initial activation email was queued, since this member hadn't been sent one yet
+        var activationTask = await _db.AuthOutboxTasks.SingleAsync(t => t.TaskType == AuthTaskType.SendActivationEmail);
+        Assert.Equal(member.Id, activationTask.AuthSystemUserId);
+        // ExecuteUpdateAsync writes straight to the database, bypassing the change tracker, so the
+        // already-tracked `member` instance needs an explicit reload to see the new value.
+        await _db.Entry(member).ReloadAsync();
+        Assert.NotNull(member.ActivationEmailSentAt);
 
         // Verify Accounting Tool Outbox tasks were added
         var accountingTasks = await _db.AccountingToolOutboxTasks.ToListAsync();
@@ -278,10 +285,218 @@ public class PaymentServicesTests : IDisposable
 
         var authTask = await _db.AuthOutboxTasks.SingleAsync();
         Assert.Equal(AuthTaskType.Sync, authTask.TaskType);
-        Assert.Equal(member.AuthSystemUserId, authTask.AuthSystemUserId);
+        Assert.Equal(member.Id, authTask.AuthSystemUserId);
 
         var accountingTask = await _db.AccountingToolOutboxTasks.SingleAsync();
         Assert.Equal(3u, accountingTask.PaymentId);
         Assert.Equal(AccountingToolTaskType.BegunstigerPayment, accountingTask.TaskType);
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_PendingStatus_DoesNothing()
+    {
+        // Arrange
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 4,
+            PaymentServiceId = "tr_pending",
+            PaymentIntentUrl = "url",
+            Price = 10
+        };
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_pending", "pending");
+        _mollieClientMock.GetPaymentAsync("tr_pending").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_pending");
+
+        // Assert
+        var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 4);
+        Assert.Null(payment.PaidAt);
+        Assert.Empty(await _db.AuthOutboxTasks.ToListAsync());
+        Assert.Empty(await _db.AccountingToolOutboxTasks.ToListAsync());
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_NoAccountingConfigured_DoesNotQueueAccountingTask()
+    {
+        // Arrange - no "AccountingService" setting row means IsUsingAccountingTool is false
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Sam",
+            LastName = "Klein",
+            Email = "sam@example.com",
+            StudentNumber = "s11",
+            PhoneNumber = "11",
+            Street = "St",
+            HouseNumber = "11",
+            PostalCode = "11",
+            City = "Enschede",
+            AuthSystemUserId = Guid.NewGuid()
+        };
+
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 5,
+            PaymentServiceId = "tr_no_accounting",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var paidTime = DateTimeOffset.UtcNow;
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_no_accounting", "paid", paidTime);
+        _mollieClientMock.GetPaymentAsync("tr_no_accounting").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_no_accounting");
+
+        // Assert
+        var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 5);
+        Assert.NotNull(payment.PaidAt);
+        Assert.Empty(await _db.AccountingToolOutboxTasks.ToListAsync());
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_MemberWithoutAuthSystemUserId_StillMarksPaidAndQueuesSync()
+    {
+        // Arrange - a member whose AuthOutboxTask.Create task hasn't completed yet shouldn't block the
+        // payment from being marked as paid; AuthOutboxWorker resolves the member and creates the auth
+        // user (then a follow-up Sync) once it processes the queued Sync task.
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Robin",
+            LastName = "de Boer",
+            Email = "robin@example.com",
+            StudentNumber = "s12",
+            PhoneNumber = "12",
+            Street = "St",
+            HouseNumber = "12",
+            PostalCode = "12",
+            City = "Enschede",
+            AuthSystemUserId = null
+        };
+
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 6,
+            PaymentServiceId = "tr_unlinked_member",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var paidTime = DateTimeOffset.UtcNow;
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_unlinked_member", "paid", paidTime);
+        _mollieClientMock.GetPaymentAsync("tr_unlinked_member").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_unlinked_member");
+
+        // Assert
+        var payment = await _db.MembershipPayments.FirstAsync(p => p.Id == 6);
+        Assert.NotNull(payment.PaidAt);
+        var authTask = await _db.AuthOutboxTasks.SingleAsync(t => t.TaskType == AuthTaskType.Sync);
+        Assert.Equal(member.Id, authTask.AuthSystemUserId);
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_MembershipPaymentPaid_QueuesActivationEmailWhenNotSentYet()
+    {
+        // Arrange - the member hasn't been sent their initial activation email yet (e.g. the
+        // confirm-mail page never sent it because the payment hadn't settled at that point).
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Nora",
+            LastName = "Jansen",
+            Email = "nora@example.com",
+            StudentNumber = "s13",
+            PhoneNumber = "13",
+            Street = "St",
+            HouseNumber = "13",
+            PostalCode = "13",
+            City = "Enschede",
+            AuthSystemUserId = Guid.NewGuid()
+        };
+
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 7,
+            PaymentServiceId = "tr_activation_email",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_activation_email", "paid", DateTimeOffset.UtcNow);
+        _mollieClientMock.GetPaymentAsync("tr_activation_email").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_activation_email");
+
+        // Assert
+        var activationTask = await _db.AuthOutboxTasks.SingleAsync(t => t.TaskType == AuthTaskType.SendActivationEmail);
+        Assert.Equal(member.Id, activationTask.AuthSystemUserId);
+
+        // ExecuteUpdateAsync writes straight to the database, bypassing the change tracker, so the
+        // already-tracked `member` instance needs an explicit reload to see the new value.
+        await _db.Entry(member).ReloadAsync();
+        Assert.NotNull(member.ActivationEmailSentAt);
+    }
+
+    [Fact]
+    public async Task HandleWebhookAsync_MembershipPaymentPaid_DoesNotQueueActivationEmailWhenAlreadySent()
+    {
+        // Arrange - e.g. the confirm-mail page already sent it right after the Mollie redirect.
+        var member = new Member
+        {
+            Id = Guid.NewGuid(),
+            FirstName = "Otto",
+            LastName = "Bakker",
+            Email = "otto@example.com",
+            StudentNumber = "s14",
+            PhoneNumber = "14",
+            Street = "St",
+            HouseNumber = "14",
+            PostalCode = "14",
+            City = "Enschede",
+            AuthSystemUserId = Guid.NewGuid(),
+            ActivationEmailSentAt = DateTimeOffset.UtcNow.AddMinutes(-5)
+        };
+
+        var membershipPayment = new MembershipPayment
+        {
+            Id = 8,
+            PaymentServiceId = "tr_already_activated",
+            PaymentIntentUrl = "url",
+            Price = 10,
+            Member = member
+        };
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(membershipPayment);
+        await _db.SaveChangesAsync();
+
+        var mockPaymentResponse = CreateMockPaymentResponse("tr_already_activated", "paid", DateTimeOffset.UtcNow);
+        _mollieClientMock.GetPaymentAsync("tr_already_activated").Returns(mockPaymentResponse);
+
+        // Act
+        await _service.HandleWebhookAsync("tr_already_activated");
+
+        // Assert
+        Assert.False(await _db.AuthOutboxTasks.AnyAsync(t => t.TaskType == AuthTaskType.SendActivationEmail));
     }
 }

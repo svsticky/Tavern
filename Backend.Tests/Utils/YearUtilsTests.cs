@@ -9,9 +9,9 @@ public class FinancialYearUtilsTests
     {
         // July 31, 2026 12:00:00 UTC
         var utcNow = new DateTime(2026, 7, 31, 12, 0, 0, DateTimeKind.Utc);
-        
+
         var financialYear = YearUtils.GetCurrentFinancialYear(utcNow);
-        
+
         Assert.Equal(2026u, financialYear);
     }
 
@@ -20,9 +20,9 @@ public class FinancialYearUtilsTests
     {
         // August 1, 2026 12:00:00 UTC
         var utcNow = new DateTime(2026, 8, 1, 12, 0, 0, DateTimeKind.Utc);
-        
+
         var financialYear = YearUtils.GetCurrentFinancialYear(utcNow);
-        
+
         Assert.Equal(2027u, financialYear);
     }
 
@@ -30,7 +30,7 @@ public class FinancialYearUtilsTests
     public void GetCurrentFinancialYear_Parameterless_ReturnsValidYear()
     {
         var financialYear = YearUtils.GetCurrentFinancialYear();
-        
+
         // Assert it returned something sane (e.g. current year or next year)
         var currentYear = (uint)DateTime.UtcNow.Year;
         Assert.True(financialYear == currentYear || financialYear == currentYear + 1);
@@ -123,11 +123,58 @@ public class FinancialYearUtilsTests
     }
 
     [Fact]
+    public void GetCurrentFinancialYear_MonthAfterTargetMonth_ReturnsCurrentYear()
+    {
+        YearUtils.FinancialYearStartDate = "03-01";
+        try
+        {
+            // April is strictly after the March target month (not just on the boundary day)
+            var april = new DateTime(2026, 4, 15, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(2026u, YearUtils.GetCurrentFinancialYear(april));
+        }
+        finally
+        {
+            YearUtils.FinancialYearStartDate = "08-01";
+        }
+    }
+
+    [Fact]
+    public void GetYearForDate_MonthAfterTargetMonth_ReturnsNextYear()
+    {
+        // October is strictly after the August target month (not just on the boundary day)
+        var october = new DateTime(2026, 10, 15, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(2027u, YearUtils.GetYearForDate(october, "08-01"));
+    }
+
+    [Fact]
+    public void GetYearForDate_MonthBeforeTargetMonth_ReturnsCurrentYear()
+    {
+        // May is strictly before the August target month
+        var may = new DateTime(2026, 5, 15, 12, 0, 0, DateTimeKind.Utc);
+        Assert.Equal(2026u, YearUtils.GetYearForDate(may, "08-01"));
+    }
+
+    [Fact]
     public void GetCommitteeYear_ReturnsValidYear()
     {
         var committeeYear = YearUtils.GetCommitteeYear();
         var currentYear = (uint)DateTime.UtcNow.Year;
         Assert.True(committeeYear == currentYear || committeeYear == currentYear + 1);
     }
-}
 
+    [Fact]
+    public void GetYearStartUtc_SummerStartDate_ReturnsMidnightInAssociationTimeZone()
+    {
+        var yearStart = YearUtils.GetYearStartUtc(2027, "08-01");
+
+        Assert.Equal(new DateTimeOffset(2026, 7, 31, 22, 0, 0, TimeSpan.Zero), yearStart);
+    }
+
+    [Fact]
+    public void GetYearStartUtc_WinterStartDate_ReturnsMidnightInAssociationTimeZone()
+    {
+        var yearStart = YearUtils.GetYearStartUtc(2026, "03-01");
+
+        Assert.Equal(new DateTimeOffset(2026, 2, 28, 23, 0, 0, TimeSpan.Zero), yearStart);
+    }
+}

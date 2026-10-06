@@ -242,6 +242,50 @@ public class StudyEnrollmentServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateStudyEnrollment_CompletedStatus_SetsCompletionDate()
+    {
+        // Arrange
+        var (member, study) = SetUpDependencies();
+        var dto = new PostStudyEnrollmentDTO
+        {
+            MemberId = member.Id,
+            StudyId = study.Id,
+            EnrollmentDate = DateTimeOffset.UtcNow.AddYears(-1),
+            Status = StudyStatus.Completed
+        };
+
+        // Act
+        var result = await _service.CreateStudyEnrollment(dto, _userId, CancellationToken.None);
+
+        // Assert
+        var saved = await _db.StudyEnrollments.FindAsync((uint)result.Id);
+        Assert.NotNull(saved);
+        Assert.NotNull(saved.CompletionDate);
+    }
+
+    [Fact]
+    public async Task CreateStudyEnrollment_DroppedOutStatus_SetsCompletionDate()
+    {
+        // Arrange
+        var (member, study) = SetUpDependencies();
+        var dto = new PostStudyEnrollmentDTO
+        {
+            MemberId = member.Id,
+            StudyId = study.Id,
+            EnrollmentDate = DateTimeOffset.UtcNow.AddYears(-1),
+            Status = StudyStatus.DroppedOut
+        };
+
+        // Act
+        var result = await _service.CreateStudyEnrollment(dto, _userId, CancellationToken.None);
+
+        // Assert
+        var saved = await _db.StudyEnrollments.FindAsync((uint)result.Id);
+        Assert.NotNull(saved);
+        Assert.NotNull(saved.CompletionDate);
+    }
+
+    [Fact]
     public async Task CreateStudyEnrollment_OwnUserNotBoardWithExistingEnrollment_DoesNotRequireBoardPermission()
     {
         // Arrange
@@ -407,6 +451,39 @@ public class StudyEnrollmentServiceTests : IDisposable
         Assert.NotNull(updated.CompletionDate);
 
         _permissionService.DidNotReceiveWithAnyArgs().EnsureBoardOrCandidateBoardMember(default);
+    }
+
+    [Fact]
+    public async Task PatchStudyEnrollment_StatusChangedBackToEnrolled_ClearsCompletionDate()
+    {
+        // Arrange
+        var (member, study) = SetUpDependencies();
+        var enrollmentDate = DateTimeOffset.UtcNow.AddYears(-4);
+        var se = new StudyEnrollment
+        {
+            Id = 12,
+            MemberId = member.Id,
+            Member = member,
+            StudyId = study.Id,
+            Study = study,
+            EnrollmentDate = enrollmentDate,
+            Status = StudyStatus.DroppedOut,
+            CompletionDate = DateTime.UtcNow
+        };
+        _db.StudyEnrollments.Add(se);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<StudyEnrollment>();
+        patchDoc.Replace(e => e.Status, StudyStatus.Enrolled);
+
+        // Act
+        await _service.PatchStudyEnrollment(12u, patchDoc, member.Id, CancellationToken.None);
+
+        // Assert
+        var updated = await _db.StudyEnrollments.FindAsync(12u);
+        Assert.NotNull(updated);
+        Assert.Equal(StudyStatus.Enrolled, updated.Status);
+        Assert.Null(updated.CompletionDate);
     }
 
     [Fact]

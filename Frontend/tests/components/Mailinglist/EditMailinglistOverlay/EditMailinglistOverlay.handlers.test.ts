@@ -128,26 +128,30 @@ describe("handleMailinglistSubmit", () => {
 describe("handleMailinglistDelete", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
   });
 
   it("does nothing without a curatedList id", async () => {
+    const confirm = vi.fn().mockResolvedValue(true);
+
     await handleMailinglistDelete({
       curatedList: undefined,
       setLoading: vi.fn(),
       onComplete: vi.fn(),
+      confirm,
     });
 
+    expect(confirm).not.toHaveBeenCalled();
     expect(deleteMailinglistsById).not.toHaveBeenCalled();
   });
 
   it("does nothing when the user cancels the confirmation", async () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+    const confirm = vi.fn().mockResolvedValue(false);
 
     await handleMailinglistDelete({
       curatedList: { id: 5 } as CuratedMailinglistDto,
       setLoading: vi.fn(),
       onComplete: vi.fn(),
+      confirm,
     });
 
     expect(deleteMailinglistsById).not.toHaveBeenCalled();
@@ -156,11 +160,13 @@ describe("handleMailinglistDelete", () => {
   it("deletes the curated list and calls onComplete", async () => {
     deleteMailinglistsById.mockResolvedValue({});
     const onComplete = vi.fn();
+    const confirm = vi.fn().mockResolvedValue(true);
 
     await handleMailinglistDelete({
       curatedList: { id: 5 } as CuratedMailinglistDto,
       setLoading: vi.fn(),
       onComplete,
+      confirm,
     });
 
     expect(deleteMailinglistsById).toHaveBeenCalledWith({ path: { id: 5 } });

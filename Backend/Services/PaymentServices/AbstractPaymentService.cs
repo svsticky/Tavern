@@ -139,6 +139,11 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
                 MarkPaymentPaid(payment, result);
                 QueueAuthenticationSystemSyncIfNeeded(payment);
                 QueueAccountingTaskIfNeeded(payment);
+
+                if (payment is MembershipPayment && payment.Member != null)
+                {
+                    await TryQueueActivationEmailAsync(payment.Member.Id);
+                }
             }
 
             await _db.SaveChangesAsync();
@@ -154,7 +159,10 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
 
     private static void MarkPaymentPaid(Payment payment, GetPaymentResponse result)
     {
-        payment.PaidAt = result.PaidAt;
+        if (payment.PaidAt == null)
+        {
+            payment.PaidAt = result.PaidAt;
+        }
     }
 
     private void QueueAuthenticationSystemSyncIfNeeded(Payment payment)
@@ -162,21 +170,46 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
         // Only membership and begunstiger payments change the member's overall paid-access status,
         // so only those need to trigger a re-sync of their access level in the auth system.
         if (payment is not (MembershipPayment or BegunstigerPayment)) return;
-
-        if (payment.Member?.AuthSystemUserId == null)
-        {
-            // The member isn't linked to the auth system yet (their AuthOutboxTask.Create task hasn't completed).
-            // Don't let that block marking the payment as paid; AuthOutboxWorker queues a catch-up Sync task
-            // once the member does get linked.
-            _logger.LogWarning("Member {MemberId} does not have an authentication system ID yet. Skipping auth sync for payment {PaymentId}.", payment.MemberId, payment.Id);
-            return;
-        }
+        if (payment.Member == null) return;
 
         _db.AuthOutboxTasks.Add(new AuthOutboxTask
         {
             TaskType = AuthTaskType.Sync,
-            AuthSystemUserId = payment.Member.AuthSystemUserId.Value
+            AuthSystemUserId = payment.Member.Id
         });
+    }
+
+    /// <summary>
+    /// Marks a member as having been sent their one-time account-activation email and enqueues the
+    /// outbox task for it, but only if one hasn't been sent already. The confirm-mail page, this
+    /// webhook, and the periodic PaymentSyncService reconciliation can all end up wanting to send it
+    /// for the same member around the same time (Mollie's redirect fires before a payment necessarily
+    /// settles, so the page's attempt may have already declined, or may race with one of the others).
+    /// The check-and-set is a single atomic conditional update at the database level rather than a
+    /// tracked-entity read followed by a separate write, so concurrent callers - even across separate
+    /// requests/DbContexts - can never both win: only one ever queues the email.
+    /// </summary>
+    /// <param name="memberId">The member to send the activation email to.</param>
+    /// <returns>True if this call queued the email; false if one had already been sent.</returns>
+    public virtual async Task<bool> TryQueueActivationEmailAsync(Guid memberId)
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        var claimed = await _db.Members
+            .Where(m => m.Id == memberId && m.ActivationEmailSentAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.ActivationEmailSentAt, now));
+
+        if (claimed == 0) return false;
+
+        _db.AuthOutboxTasks.Add(new AuthOutboxTask
+        {
+            TaskType = AuthTaskType.SendActivationEmail,
+            AuthSystemUserId = memberId,
+            CreatedAt = now,
+            NextAttemptAt = now
+        });
+
+        return true;
     }
 
     private void QueueAccountingTaskIfNeeded(Payment payment)
@@ -189,10 +222,12 @@ public abstract class AbstractPaymentService(PostgresDbContext _db, ILogger<Abst
             TaskType = payment switch
             {
                 MembershipPayment => AccountingToolTaskType.MembershipPayment,
-                PaymentServiceFeePayment => AccountingToolTaskType.PaymentServiceFeePayment,
+                EnrollmentPayment => AccountingToolTaskType.EnrollmentPayment,
                 BegunstigerPayment => AccountingToolTaskType.BegunstigerPayment,
-                _ => AccountingToolTaskType.EnrollmentPayment
-            }
+                PaymentServiceFeePayment => AccountingToolTaskType.PaymentServiceFeePayment,
+                _ => throw new Exception("Unknown payment type")
+            },
+            CreatedAt = DateTimeOffset.UtcNow
         });
     }
 }

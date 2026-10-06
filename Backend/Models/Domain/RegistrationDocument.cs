@@ -29,11 +29,18 @@ public class RegistrationDocument
     public required string NameEnglish { get; set; }
 
     /// <summary>
-    /// The destination URL for the document.
+    /// The destination URL for the Dutch version of the document.
     /// </summary>
     [StringLength(2000)]
     [Required(AllowEmptyStrings = false)]
-    public required string Url { get; set; }
+    public required string UrlDutch { get; set; }
+
+    /// <summary>
+    /// The destination URL for the English version of the document.
+    /// </summary>
+    [StringLength(2000)]
+    [Required(AllowEmptyStrings = false)]
+    public required string UrlEnglish { get; set; }
 
     /// <summary>
     /// The order in which this document should be displayed.

@@ -348,7 +348,8 @@ public class RegisterSlideServiceTests : IDisposable
         var cachedBytes = new byte[] { 4, 5, 6 };
         object? cachedVal = (cachedBytes, "image/webp");
         _memoryCache.TryGetValue("slide-img-path.webp", out Arg.Any<object?>())
-            .Returns(x => {
+            .Returns(x =>
+            {
                 x[1] = cachedVal;
                 return true;
             });

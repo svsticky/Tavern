@@ -105,16 +105,18 @@ type DeleteArgs = {
   curatedList?: CuratedMailinglistDto;
   setLoading: (loading: boolean) => void;
   onComplete: (list?: CuratedMailinglistDto) => void;
+  confirm: (message: string) => Promise<boolean>;
 };
 
 export const handleMailinglistDelete = async ({
   curatedList,
   setLoading,
   onComplete,
+  confirm,
 }: DeleteArgs) => {
   if (!curatedList?.id) return;
 
-  if (!window.confirm(t("delete_mailing_list_confirmation"))) {
+  if (!(await confirm(t("delete_mailing_list_confirmation")))) {
     return;
   }
 

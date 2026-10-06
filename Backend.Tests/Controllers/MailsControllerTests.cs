@@ -157,7 +157,7 @@ public class MailsControllerTests : IDisposable
         await SetupDatabaseForSending();
         var dto = new PostMailDTO
         {
-            Recipients = new[] { new MailRecipient { Mail = "test@example.com", Name = "Test User" } },
+            Recipients = new[] { new MailRecipient { Mail = "test@example.com", Name = "Test" } },
             Subject = "Test Subject",
             HtmlContent = "<h1>Test Body</h1>"
         };
@@ -179,12 +179,31 @@ public class MailsControllerTests : IDisposable
             Subject = "Sub",
             HtmlContent = "Content"
         };
-        
+
         _permissionServiceMock.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostNormalMail(dto, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task PostNormalMail_EmptyRecipients_SkipsSend()
+    {
+        // Arrange - no board/member setup needed: an empty recipient list short-circuits before
+        // sender resolution is ever attempted.
+        var dto = new PostMailDTO
+        {
+            Recipients = Array.Empty<MailRecipient>(),
+            Subject = "Sub",
+            HtmlContent = "Content"
+        };
+
+        // Act
+        var result = await _controller.PostNormalMail(dto, CancellationToken.None);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -226,7 +245,7 @@ public class MailsControllerTests : IDisposable
             Enrollments = new List<Enrollment>(),
             SpecificationQuestions = new List<SpecificationQuestion>()
         };
-        
+
         var participant = new Member
         {
             Id = Guid.NewGuid(),
@@ -300,7 +319,7 @@ public class MailsControllerTests : IDisposable
             HtmlContent = "Body",
             ActivityId = 1
         };
-        
+
         _permissionServiceMock.When(p => p.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
 

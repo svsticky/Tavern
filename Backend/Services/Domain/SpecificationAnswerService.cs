@@ -3,6 +3,7 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Services.Domain;
 
@@ -11,18 +12,15 @@ namespace Backend.Services.Domain;
 /// </summary>
 public class SpecificationAnswerService(
         PostgresDbContext db,
-        IPermissionService permissionService,
         ILogger<SpecificationAnswerService> logger
 ) : ISpecificationAnswerService
 {
     /// <inheritdoc />
-    public async Task PatchSpecificationAnswersAsync(Guid fromUserId, uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
+    public async Task PatchSpecificationAnswersAsync(uint answerId, JsonPatchDocument<SpecificationAnswer> patchDoc, Guid userId)
     {
-        logger.LogInformation("Patching specification answer {AnswerId} for member {MemberId} by user {UserId}.", answerId, fromUserId, userId);
-        if (userId != fromUserId)
-        {
-            permissionService.EnsureBoardOrCandidateBoardMember(userId);
-        }
+        logger.LogInformation("Patching specification answer {AnswerId} by user {UserId}.", answerId, userId);
+
+        var answer = GetAnswerOrThrow(answerId);
 
         if (patchDoc == null)
             throw new ArgumentException("Patch document is null");
@@ -34,9 +32,8 @@ public class SpecificationAnswerService(
             || op.path.Equals("/question", StringComparison.OrdinalIgnoreCase)))
             throw new ArgumentException("Cannot modify Id, EnrollmentId or QuestionId fields.");
 
-        var answer = GetAnswerOrThrow(answerId);
-        SpecificationAnswerValidator.ValidateOwnership(answer, fromUserId);
-        SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer);
+        SpecificationAnswerValidator.ValidateOwnership(answer, userId);
+        SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer);
         SpecificationAnswerValidator.ValidatePatchOperations(patchDoc);
 
         patchDoc.ApplyTo(answer);
@@ -50,7 +47,10 @@ public class SpecificationAnswerService(
 
     private SpecificationAnswer GetAnswerOrThrow(uint answerId)
     {
-        var answer = db.SpecificationAnswers.FirstOrDefault(a => a.Id == answerId);
+        var answer = db.SpecificationAnswers
+            .Include(a => a.Question)
+                .ThenInclude(q => q.Activity)
+            .FirstOrDefault(a => a.Id == answerId);
         return answer ?? throw new KeyNotFoundException();
     }
 }

@@ -1,7 +1,6 @@
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
-using Backend.Utils.DateTime;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net.Http.Headers;
@@ -13,7 +12,8 @@ namespace Backend.Services.AuthServices;
 /// </summary>
 public class KeycloakAPIService(
     PostgresDbContext db,
-    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
+    IPermissionService permissionService,
+    IEnumerable<IMailChangedListener> mailChangedListeners,
     IHttpClientFactory httpClientFactory,
     [FromServices] IPaymentValidationService paymentValidationService,
     ILogger<KeycloakAPIService> logger) : IAuthService
@@ -46,6 +46,19 @@ public class KeycloakAPIService(
 
         string currentEmail = currentKeycloakUser.GetProperty("email").GetString()!;
 
+        // Preserve the legacy_bcrypt_hash attribute across syncs. It's set on migrated members by
+        // the Koala import and cleared by the custom BCrypt authenticator once they log in with
+        // their old password - but this method replaces the whole attributes object on every sync,
+        // so without carrying it forward here it gets silently destroyed before the member ever
+        // gets a chance to log in with it.
+        string? legacyBcryptHash = null;
+        if (currentKeycloakUser.TryGetProperty("attributes", out var existingAttributes) &&
+            existingAttributes.TryGetProperty("legacy_bcrypt_hash", out var legacyBcryptHashValues) &&
+            legacyBcryptHashValues.GetArrayLength() > 0)
+        {
+            legacyBcryptHash = legacyBcryptHashValues[0].GetString();
+        }
+
         bool emailChanged = !string.Equals(currentEmail, member.Email, StringComparison.OrdinalIgnoreCase);
 
         var memberships = await db.GroupMemberships
@@ -56,7 +69,7 @@ public class KeycloakAPIService(
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", tokenResponse);
 
-        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray());
+        var updatedUser = MapToKeycloakUser(member, currentEmail, null, memberships.ToArray(), legacyBcryptHash);
 
         var response = await client.PutAsJsonAsync($"users/{member.AuthSystemUserId}", updatedUser);
         response.EnsureSuccessStatusCode();
@@ -66,8 +79,11 @@ public class KeycloakAPIService(
             using var transaction = await db.Database.BeginTransactionAsync();
             try
             {
-                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, currentEmail, db);
+                var oldEmail = member.Email;
                 member.Email = currentEmail;
+
+                mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, currentEmail, db);
+
                 await db.SaveChangesAsync();
                 logger.LogInformation("Updated local member email after Keycloak sync for KeycloakId {KeycloakId}.", keycloakId);
                 await transaction.CommitAsync();
@@ -127,6 +143,16 @@ public class KeycloakAPIService(
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
         var response = await client.DeleteAsync($"users/{keycloakId}");
+
+        // Deleting is retried on failure (e.g. AuthOutboxWorker retrying after the auth-system
+        // deletion succeeded but a later step in the same task failed). Treat "already gone" as
+        // success rather than throwing, so a retry doesn't get stuck failing forever.
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            logger.LogInformation("Keycloak user {KeycloakId} was already deleted.", keycloakId);
+            return;
+        }
+
         response.EnsureSuccessStatusCode();
     }
 
@@ -218,11 +244,28 @@ public class KeycloakAPIService(
         var email = await GetEmail(keycloakId);
 
         var member = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == keycloakId);
-        if (member != null)
+        if (member == null || string.Equals(member.Email, email, StringComparison.OrdinalIgnoreCase))
         {
+            return;
+        }
+
+        using var transaction = await db.Database.BeginTransactionAsync();
+        try
+        {
+            var oldEmail = member.Email;
             member.Email = email;
+
+            mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, email, db);
+
             await db.SaveChangesAsync();
             logger.LogInformation("Updated local member email from Keycloak for {KeycloakId}.", keycloakId);
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            logger.LogError("Failed to update local member email from Keycloak for {KeycloakId}. Rolling back transaction.", keycloakId);
+            await transaction.RollbackAsync();
+            throw;
         }
     }
 
@@ -239,38 +282,34 @@ public class KeycloakAPIService(
             : paymentValidationService.HasPaidMembershipPaymentBeforeExpirationTime(member.Id);
     }
 
-    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null)
+    private object MapToKeycloakUser(Member member, string currentEmail, bool? emailVerified = null, string[]? memberships = null, string? legacyBcryptHash = null)
     {
-        var boardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value;
-        var candidateBoardGroupIdStr = db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value;
-        uint boardGroupId = string.IsNullOrEmpty(boardGroupIdStr) ? 0 : uint.Parse(boardGroupIdStr);
-        uint candidateBoardGroupId = string.IsNullOrEmpty(candidateBoardGroupIdStr) ? 0 : uint.Parse(candidateBoardGroupIdStr);
-        uint currentBoardYear = YearUtils.GetBoardYear(db);
-
-        bool isAdmin = db.GroupMemberships.Any(gm =>
-            gm.MemberId == member.Id &&
-            gm.MembershipYear == currentBoardYear &&
-            (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId));
-
-        return new
-        {
-            username = member.Email,
-            email = currentEmail,
-            firstName = member.FirstName,
-            lastName = member.LastName,
-            enabled = true,
-            emailVerified = emailVerified,
-            attributes = new Dictionary<string, List<string>> {
+        var attributes = new Dictionary<string, List<string>> {
                 { "koala_user_id", new List<string> { member.Id.ToString() } },
                 { "access_level", new List<string> { member.Suspended ? "suspended" : HasPaidMembership(member) ? "full" : "not_paid" } },
                 { "group_memberships", memberships?.ToList() ?? new List<string>() },
                 { "student_number", new List<string> { member.StudentNumber.ToString() } },
                 { "locale", new List<string> { member.PreferredLanguage.ToString() } },
                 { "email", new List<string> { currentEmail } },
-                { "is_admin", new List<string> { isAdmin.ToString().ToLower() } },
+                { "is_admin", new List<string> { permissionService.IsBoardOrCandidateBoardMember(member.Id).ToString().ToLowerInvariant() } },
                 { "full_name", new List<string> { $"{member.FirstName} {member.LastName}" } },
                 { "birthday", new List<string> { member.DateOfBirth.ToString("yyyy-MM-dd") } }
-            }
+        };
+
+        if (!string.IsNullOrEmpty(legacyBcryptHash))
+        {
+            attributes["legacy_bcrypt_hash"] = new List<string> { legacyBcryptHash };
+        }
+
+        return new
+        {
+            username = currentEmail,
+            email = currentEmail,
+            firstName = member.FirstName,
+            lastName = member.LastName,
+            enabled = true,
+            emailVerified = emailVerified,
+            attributes
         };
     }
 }

@@ -318,18 +318,29 @@ describe("SettingsPage", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not render the accounting section unless ACCOUNTING_ENABLED is true", async () => {
+  it("always renders the accounting section, with GL/cost fields, regardless of ACCOUNTING_ENABLED", async () => {
     renderWithProviders(<SettingsPage />);
     await screen.findByText("studies-datatable");
-    expect(screen.queryByText("accounting")).not.toBeInTheDocument();
+    expect(screen.getByText("accounting")).toBeInTheDocument();
+    expect(screen.getByLabelText("membership_gl_account")).toBeInTheDocument();
   });
 
-  it("renders the accounting section when ACCOUNTING_ENABLED is true", async () => {
+  it("does not render the Exact Online connector fields unless ACCOUNTING_ENABLED is true", async () => {
+    renderWithProviders(<SettingsPage />);
+    await screen.findByText("studies-datatable");
+    expect(
+      screen.queryByLabelText("accounting_service"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the Exact Online connector field when ACCOUNTING_ENABLED is true", async () => {
     getEnv.mockReturnValue("true");
 
     renderWithProviders(<SettingsPage />);
 
-    expect(await screen.findByText("accounting")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("accounting_service"),
+    ).toBeInTheDocument();
   });
 
   it("shows Exact fields only when AccountingService is EXACT", async () => {
@@ -343,7 +354,6 @@ describe("SettingsPage", () => {
 
   it("promotes the board when confirmed", async () => {
     postGroupsPromoteBoard.mockResolvedValue({});
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     renderWithProviders(<SettingsPage />);
 
@@ -352,13 +362,15 @@ describe("SettingsPage", () => {
     });
     fireEvent.click(promoteButton);
 
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
+
     await waitFor(() => expect(postGroupsPromoteBoard).toHaveBeenCalled());
-    confirmSpy.mockRestore();
   });
 
   it("does not promote the board when the confirmation is cancelled", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-
     renderWithProviders(<SettingsPage />);
 
     const promoteButton = await screen.findByRole("button", {
@@ -366,13 +378,14 @@ describe("SettingsPage", () => {
     });
     fireEvent.click(promoteButton);
 
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
+    fireEvent.click(cancelButton);
+
     expect(postGroupsPromoteBoard).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it("shows an error toast when promoting the board fails", async () => {
     postGroupsPromoteBoard.mockRejectedValue(new Error("boom"));
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
@@ -384,8 +397,12 @@ describe("SettingsPage", () => {
     });
     fireEvent.click(promoteButton);
 
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
+
     await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    confirmSpy.mockRestore();
     consoleError.mockRestore();
   });
 
@@ -398,6 +415,16 @@ describe("SettingsPage", () => {
       await screen.findByLabelText("mailchimp_list_key"),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("mailchimp_api_key")).toBeInTheDocument();
+  });
+
+  it("shows listmonk fields when MailSubscriptionService is Listmonk", async () => {
+    loadWith(defaultSettings({ MailSubscriptionService: "LISTMONK" }));
+
+    renderWithProviders(<SettingsPage />);
+
+    expect(await screen.findByLabelText("listmonk_url")).toBeInTheDocument();
+    expect(screen.getByLabelText("listmonk_user")).toBeInTheDocument();
+    expect(screen.getByLabelText("listmonk_api_key")).toBeInTheDocument();
   });
 
   function fireAllFieldChanges(container: HTMLElement) {
@@ -450,6 +477,22 @@ describe("SettingsPage", () => {
         MailService: "MAILGUN",
         MailSubscriptionService: "MAILCHIMP",
         AccountingService: "EXACT",
+      }),
+    );
+
+    const { container } = renderWithProviders(<SettingsPage />);
+    await screen.findByText("studies-datatable");
+
+    const count = fireAllFieldChanges(container);
+    expect(count).toBeGreaterThan(20);
+    expect(handleSettingsChange.mock.calls.length).toBeGreaterThan(15);
+  });
+
+  it("fires handleSettingsChange for every visible settings field (LISTMONK)", async () => {
+    getEnv.mockReturnValue("true");
+    loadWith(
+      defaultSettings({
+        MailSubscriptionService: "LISTMONK",
       }),
     );
 

@@ -1,37 +1,35 @@
 using Backend.Database;
-using Backend.Interfaces;
+using Backend.Services.OutboxWorkers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Backend.Services.MailSubscriptionServices;
 
 /// <summary>
-/// Implements <see cref="IMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
+/// Implements <see cref="AbstractMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
 /// </summary>
-public class MailChimpSubscriptionService : IMailSubscriptionService
+/// <remarks>
+/// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve Mailchimp settings.
+/// </remarks>
+/// <param name="logger">The logger.</param>
+/// <param name="httpClient">The HTTP client.</param>
+/// <param name="context">The database context.</param>
+/// <param name="mailSubscriptionOutboxWorker">Used to queue outbox tasks from listener notifications.</param>
+public class MailChimpSubscriptionService(
+    ILogger<MailChimpSubscriptionService> logger,
+    HttpClient httpClient,
+    PostgresDbContext context,
+    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker) : AbstractMailSubscriptionService(mailSubscriptionOutboxWorker)
 {
-    private readonly ILogger<MailChimpSubscriptionService> _logger;
-    private readonly HttpClient _httpClient;
-    private readonly PostgresDbContext _context;
+    private readonly ILogger<MailChimpSubscriptionService> _logger = logger;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly PostgresDbContext _context = context;
     private string ListKey => _context.Settings.Find("MailchimpListKey")?.Value ?? string.Empty;
-    private bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("MAILCHIMP", StringComparison.OrdinalIgnoreCase) ?? false;
 
-    /// <summary>
-    /// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve Mailchimp settings.
-    /// </summary>
-    /// <param name="logger">The logger.</param>
-    /// <param name="httpClient">The HTTP client.</param>
-    /// <param name="context">The database context.</param>
-    public MailChimpSubscriptionService(
-        ILogger<MailChimpSubscriptionService> logger,
-        HttpClient httpClient,
-        PostgresDbContext context)
-    {
-        _logger = logger;
-        _httpClient = httpClient;
-        _context = context;
-    }
+    /// <inheritdoc />
+    public override bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("MAILCHIMP", StringComparison.OrdinalIgnoreCase) ?? false;
 
     private void ConfigureHttpClient()
     {
@@ -57,7 +55,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct)
+    public override async Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct)
     {
         if (!IsEnabled)
         {
@@ -86,7 +84,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct)
+    public override async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct)
     {
         if (!IsEnabled)
         {
@@ -125,7 +123,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct)
+    public override async Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? firstName = null, string? lastName = null)
     {
         if (!IsEnabled)
         {
@@ -137,7 +135,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 
         if (subscribedIdSet.Count == 0)
         {
-            await DeleteMemberAsync(email, ct);
+            await ArchiveMemberAsync(email, ct);
             return;
         }
 
@@ -149,22 +147,51 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 
         var interests = availableLists.ToDictionary(l => l.Id, l => subscribedIdSet.Contains(l.Id));
 
-        var payload = new
+        // Dictionary so merge_fields can be added conditionally - a plain anonymous object would
+        // let the default naming policy lowercase FIRSTNAME/LASTNAME, which are case-sensitive at
+        // Mailchimp (see UpdateMemberNameAsync for the actual tag names on this audience).
+        var payload = new Dictionary<string, object>
         {
-            email_address = email,
-            status_if_new = "subscribed",
-            status = "subscribed",
-            interests
+            ["email_address"] = email,
+            ["status_if_new"] = "subscribed",
+            ["status"] = "subscribed",
+            ["interests"] = interests
         };
 
+        if (firstName != null && lastName != null)
+        {
+            payload["merge_fields"] = new Dictionary<string, string> { ["FIRSTNAME"] = firstName, ["LASTNAME"] = lastName };
+        }
+
         var response = await _httpClient.PutAsJsonAsync($"lists/{ListKey}/members/{emailHash}", payload, ct);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessOrLogAsync(response, email, ct);
 
         _logger.LogInformation("Subscriptions for {Email} updated.", email);
     }
 
+    /// <summary>
+    /// Archives a member (Mailchimp's plain member DELETE) rather than permanently forgetting them -
+    /// used when a member unsubscribes from every list, so re-checking a list later can add them
+    /// back via the API. Unlike <see cref="DeleteMemberAsync"/>, this does not erase their record,
+    /// but Mailchimp does not treat it as a "forgotten" email either.
+    /// </summary>
+    private async Task ArchiveMemberAsync(string email, CancellationToken ct)
+    {
+        ConfigureHttpClient();
+
+        var emailHash = CalculateMd5Hash(email);
+        var response = await _httpClient.DeleteAsync($"lists/{ListKey}/members/{emailHash}", ct);
+
+        if (response.StatusCode != System.Net.HttpStatusCode.NotFound && response.StatusCode != System.Net.HttpStatusCode.MethodNotAllowed)
+        {
+            await EnsureSuccessOrLogAsync(response, email, ct);
+        }
+
+        _logger.LogInformation("Member {Email} archived (unsubscribed from all lists) in Mailchimp.", email);
+    }
+
     /// <inheritdoc />
-    public async Task DeleteMemberAsync(string email, CancellationToken ct)
+    public override async Task DeleteMemberAsync(string email, CancellationToken ct)
     {
         if (!IsEnabled)
         {
@@ -175,18 +202,21 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
         ConfigureHttpClient();
 
         var emailHash = CalculateMd5Hash(email);
-        var response = await _httpClient.DeleteAsync($"lists/{ListKey}/members/{emailHash}", ct);
+        var response = await _httpClient.PostAsync(
+            $"lists/{ListKey}/members/{emailHash}/actions/delete-permanent",
+            null,
+            ct);
 
         if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
         {
-            response.EnsureSuccessStatusCode();
+            await EnsureSuccessOrLogAsync(response, email, ct);
         }
 
         _logger.LogInformation("Member {Email} removed from Mailchimp.", email);
     }
 
     /// <inheritdoc />
-    public async Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct)
+    public override async Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct, string? firstName = null, string? lastName = null)
     {
         if (!IsEnabled)
         {
@@ -198,10 +228,90 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
             .Where(l => l.Subscribed)
             .Select(l => l.Id);
 
-        await UpdateMemberSubscriptionsAsync(newEmail, subscribedIds, ct);
+        await UpdateMemberSubscriptionsAsync(newEmail, subscribedIds, ct, firstName, lastName);
         await DeleteMemberAsync(oldEmail, ct);
 
         _logger.LogInformation("Migrated Mailchimp subscriptions from {OldEmail} to {NewEmail}.", oldEmail, newEmail);
+    }
+
+    /// <inheritdoc />
+    public override async Task UpdateMemberNameAsync(string email, string firstName, string lastName, CancellationToken ct)
+    {
+        if (!IsEnabled)
+        {
+            _logger.LogInformation("MailChimp subscription service is disabled. Skipping name update for {Email}.", email);
+            return;
+        }
+
+        ConfigureHttpClient();
+
+        var emailHash = CalculateMd5Hash(email);
+
+        // Dictionary, not an anonymous object - merge tags are case-sensitive at Mailchimp and the
+        // default naming policy would otherwise lowercase them. This audience's name fields are
+        // tagged FIRSTNAME/LASTNAME, not Mailchimp's usual FNAME/LNAME defaults - confirmed via
+        // GET /lists/{list_id}/merge-fields.
+        var payload = new
+        {
+            merge_fields = new Dictionary<string, string> { ["FIRSTNAME"] = firstName, ["LASTNAME"] = lastName }
+        };
+
+        var response = await _httpClient.PatchAsJsonAsync($"lists/{ListKey}/members/{emailHash}", payload, ct);
+
+        // Member not in Mailchimp yet - skip rather than create a bare record.
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            _logger.LogInformation("Member {Email} not found in Mailchimp. Skipping name update.", email);
+            return;
+        }
+
+        await EnsureSuccessOrLogAsync(response, email, ct);
+
+        _logger.LogInformation("Name for {Email} updated in Mailchimp.", email);
+    }
+
+    /// <summary>
+    /// Throws for a non-success Mailchimp response, first logging the response body - Mailchimp's
+    /// error detail (e.g. "Member In Compliance State" for a previously-unsubscribed address) is
+    /// otherwise lost, since EnsureSuccessStatusCode's exception only carries the status code.
+    /// </summary>
+    private async Task EnsureSuccessOrLogAsync(HttpResponseMessage response, string email, CancellationToken ct)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        _logger.LogError("Mailchimp request for {Email} failed with {StatusCode}: {Body}", email, (int)response.StatusCode, body);
+
+        // Two distinct Mailchimp compliance states, both permanent and both unfixable by retrying:
+        // - "Forgotten Email Not Subscribed": the member deleted their Tavern account, which
+        //   GDPR-forgets them at Mailchimp.
+        // - "Member In Compliance State": the member unsubscribed, bounced, or was flagged for
+        //   review directly at Mailchimp (e.g. via a real campaign's unsubscribe link) - unrelated
+        //   to anything Tavern did.
+        // In both cases the person must manually opt back in through an actual Mailchimp signup
+        // form; forcing status back to "subscribed" via this API can never succeed.
+        var error = TryParseError(body);
+        if (error?.Title is "Forgotten Email Not Subscribed" or "Member In Compliance State")
+        {
+            throw new NonRetriableMailSubscriptionException($"Mailchimp will not subscribe {email}: {error.Detail}");
+        }
+
+        response.EnsureSuccessStatusCode();
+    }
+
+    private static MailchimpErrorResponse? TryParseError(string body)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<MailchimpErrorResponse>(body);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     private string CalculateMd5Hash(string input)
@@ -244,5 +354,14 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
 
         [JsonPropertyName("interests")]
         public Dictionary<string, bool>? Interests { get; set; }
+    }
+
+    private class MailchimpErrorResponse
+    {
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = string.Empty;
+
+        [JsonPropertyName("detail")]
+        public string Detail { get; set; } = string.Empty;
     }
 }

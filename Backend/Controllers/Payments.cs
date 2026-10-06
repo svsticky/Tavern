@@ -168,10 +168,10 @@ namespace Backend.Controllers
 
         // POST: payments/webhook
         /// <summary>
-        /// Processes asynchronous status updates from the paymentservice payment gateway. The webhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the IPaymentWebhookService to update the internal state of the corresponding transactions in real-time without requiring user intervention.
+        /// Processes asynchronous status updates from the paymentservice payment gateway. The webhook endpoint is a secure entry point for external payment signals. It receives notifications regarding successful payments, cancellations, or failures, and triggers the payment service to update the internal state of the corresponding transactions in real-time without requiring user intervention.
         /// </summary>
         /// <param name="id">The transaction identifier provided by the payment gateway.</param>
-        /// <param name="webhookService">The service dedicated to handling external payment status webhooks.</param>
+        /// <param name="paymentService">The service dedicated to handling external payment status webhooks.</param>
         /// <returns>An OK status once the webhook has been successfully processed.</returns>
         [HttpPost("webhook")]
         [AllowAnonymous]
@@ -181,10 +181,10 @@ namespace Backend.Controllers
         [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> PaymentWebhook(
             [FromForm] string id,
-            [FromServices] AbstractPaymentService webhookService
+            [FromServices] AbstractPaymentService paymentService
         )
         {
-            await webhookService.HandleWebhookAsync(id);
+            await paymentService.HandleWebhookAsync(id);
             return Ok();
         }
 

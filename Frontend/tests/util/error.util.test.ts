@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { appendErrorMessage, getErrorMessage } from "~/util/error.util";
+import {
+  appendErrorMessage,
+  getErrorMessage,
+  getFriendlyErrorMessage,
+} from "~/util/error.util";
 
 describe("getErrorMessage", () => {
   it("returns the string directly when the error is a string", () => {
@@ -84,5 +88,37 @@ describe("appendErrorMessage", () => {
   it("returns just the base message when no error message can be extracted", () => {
     expect(appendErrorMessage("Save failed", undefined)).toBe("Save failed");
     expect(appendErrorMessage("Save failed", {})).toBe("Save failed");
+  });
+});
+
+describe("getFriendlyErrorMessage", () => {
+  it("maps a known duplicate-email backend message to its translation key", () => {
+    expect(
+      getFriendlyErrorMessage(
+        "Registration failed",
+        new Error("An account with this email address already exists."),
+      ),
+    ).toBe("email_already_registered");
+  });
+
+  it("maps a known duplicate-student-number backend message to its translation key", () => {
+    expect(
+      getFriendlyErrorMessage(
+        "Registration failed",
+        new Error("An account with this student number already exists."),
+      ),
+    ).toBe("student_number_already_registered");
+  });
+
+  it("falls back to appending the raw message for unknown errors", () => {
+    expect(
+      getFriendlyErrorMessage("Registration failed", new Error("boom")),
+    ).toBe("Registration failed: boom");
+  });
+
+  it("returns just the base message when no error message can be extracted", () => {
+    expect(getFriendlyErrorMessage("Registration failed", undefined)).toBe(
+      "Registration failed",
+    );
   });
 });

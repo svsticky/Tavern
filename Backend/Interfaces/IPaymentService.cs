@@ -64,7 +64,7 @@ namespace Backend.Interfaces
         /// <param name="dto">The begunstiger payment payload.</param>
         /// <param name="userId">The ID of the requesting user, if authenticated.</param>
         /// <returns>The created payment response.</returns>
-        Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId);
+        Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid userId);
 
         /// <summary>
         /// Retrieves unpaid enrollment balances.

@@ -5,6 +5,7 @@ using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using System.Text.RegularExpressions;
 
 namespace Backend.Services.MailServices;
@@ -12,7 +13,7 @@ namespace Backend.Services.MailServices;
 /// <summary>
 /// Provides shared mail-sending workflow and recipient resolution logic.
 /// </summary>
-public abstract class AbstractMailService
+public abstract partial class AbstractMailService
 {
     /// <summary>
     /// Sends a composed email through the underlying provider implementation.
@@ -74,7 +75,7 @@ public abstract class AbstractMailService
                 string roleId = setting.Name.Replace("ROLEMAILMAP_", "");
                 string email = setting.Value;
 
-                _roleMailMap.Add(uint.Parse(roleId), email);
+                _roleMailMap.Add(uint.Parse(roleId, CultureInfo.InvariantCulture), email);
             }
         }
     }
@@ -171,32 +172,65 @@ public abstract class AbstractMailService
 
         if (unpaidEnrollmentBalances.Count() == 0) return;
 
+        var notRecentlyMailedCutoff = DateTimeOffset.Now.AddHours(-24);
+
         var memberEnrollmentBalances = unpaidEnrollmentBalances
+            .Where(ueb => ueb.Enrollment.Member.OutstandingPaymentMailSentAt == null || ueb.Enrollment.Member.OutstandingPaymentMailSentAt < notRecentlyMailedCutoff)
             .GroupBy(ueb => ueb.Enrollment.Member)
             .ToDictionary(g => g.Key, g => g.ToArray());
+
+        var failures = new List<Exception>();
 
         foreach (var kvp in memberEnrollmentBalances)
         {
             Member member = kvp.Key;
             EnrollmentBalance[] balances = kvp.Value;
-            Language language = member.PreferredLanguage;
 
-            string subject = language switch
+            try
             {
-                Language.NL => "Openstaande betalingen voor activiteiten",
-                Language.EN => "Outstanding payments for activities",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                Language language = member.PreferredLanguage;
 
-            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/OutstandingPayment.html", new Dictionary<string, string>
+                string subject = language switch
+                {
+                    Language.NL => "Openstaande betalingen voor activiteiten",
+                    Language.EN => "Outstanding payments for activities",
+                    _ => throw new InvalidOperationException("Unsupported language")
+                };
+
+                string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/OutstandingPayment.html", new Dictionary<string, string>
+                {
+                    ["FirstName"] = member.FirstName,
+                    ["ActivityList"] = string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>")),
+                    ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+                });
+
+                await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                await MarkOutstandingPaymentMailSent(member.Id, CancellationToken.None);
+            }
+            catch (Exception ex)
             {
-                ["FirstName"] = member.FirstName,
-                ["ActivityList"] = string.Join("", balances.Select(b => $"<li>{b.Enrollment.Activity.Name}: €{b.Balance}</li>")),
-                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
-            });
-
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                _logger.LogError(ex, "Failed to send outstanding payment mail to member {MemberId}. Continuing with the rest of the batch.", member.Id);
+                failures.Add(ex);
+            }
         }
+
+        if (failures.Count > 0)
+        {
+            throw new AggregateException($"Failed to send outstanding payment mail to {failures.Count} of {memberEnrollmentBalances.Count} member(s).", failures);
+        }
+    }
+
+    /// <summary>
+    /// Records that the outstanding-payment mail was just sent to the given member, committing it to the
+    /// database immediately (rather than relying on a later <c>SaveChangesAsync</c>) so that a Hangfire retry
+    /// of <see cref="SendOutstandingPaymentMails"/> within the next 24 hours sees it and skips re-mailing them.
+    /// </summary>
+    private async Task MarkOutstandingPaymentMailSent(Guid memberId, CancellationToken ct)
+    {
+        var now = DateTimeOffset.Now;
+        await _db.Members
+            .Where(m => m.Id == memberId)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.OutstandingPaymentMailSentAt, now), ct);
     }
 
     /// <summary>
@@ -213,11 +247,17 @@ public abstract class AbstractMailService
             return;
         }
 
+        var notRecentlyMailedCutoff = DateTimeOffset.Now.AddHours(-24);
+
         var potentialMembers = _db.Members
             .Include(m => m.StudyEnrollments)
             .ThenInclude(se => se.Study)
             .Where(m => !m.IsDeleted)
+            .ToList()
+            .Where(m => m.StudyStatusMailSentAt == null || m.StudyStatusMailSentAt < notRecentlyMailedCutoff)
             .ToList();
+
+        var failures = new List<Exception>();
 
         var membersWithNoStudyHistory = potentialMembers
             .Where(m => m.StudyEnrollments.Count == 0 && !m.Begunstiger)
@@ -225,46 +265,64 @@ public abstract class AbstractMailService
 
         foreach (var member in membersWithNoStudyHistory)
         {
-            var language = member.PreferredLanguage;
-
-            string subject = language switch
+            try
             {
-                Language.NL => "Controleer je lidmaatschap",
-                Language.EN => "Check your membership",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                var language = member.PreferredLanguage;
 
-            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusNeverStudied.html", new Dictionary<string, string>
+                string subject = language switch
+                {
+                    Language.NL => "Controleer je lidmaatschap",
+                    Language.EN => "Check your membership",
+                    _ => throw new InvalidOperationException("Unsupported language")
+                };
+
+                string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusNeverStudied.html", new Dictionary<string, string>
+                {
+                    ["FirstName"] = member.FirstName,
+                    ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+                });
+
+                await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                await MarkStudyStatusMailSent(member.Id, CancellationToken.None);
+            }
+            catch (Exception ex)
             {
-                ["FirstName"] = member.FirstName,
-                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
-            });
-
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                _logger.LogError(ex, "Failed to send study status mail to member {MemberId}. Continuing with the rest of the batch.", member.Id);
+                failures.Add(ex);
+            }
         }
 
         var membersWithoutActiveStudy = potentialMembers
-            .Where(m => m.StudyEnrollments.Count > 0 && !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled))
+            .Where(m => m.StudyEnrollments.Count > 0 && !m.StudyEnrollments.Any(se => se.Status == StudyStatus.Enrolled) && m.StudyEnrollments.Any())
             .ToList();
 
         foreach (var member in membersWithoutActiveStudy)
         {
-            var language = member.PreferredLanguage;
-
-            string subject = language switch
+            try
             {
-                Language.NL => "Controleer lidmaatschap en studievoortgang",
-                Language.EN => "Check membership and study progress",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                var language = member.PreferredLanguage;
 
-            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusNoActiveStudy.html", new Dictionary<string, string>
+                string subject = language switch
+                {
+                    Language.NL => "Controleer lidmaatschap en studievoortgang",
+                    Language.EN => "Check membership and study progress",
+                    _ => throw new InvalidOperationException("Unsupported language")
+                };
+
+                string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusNoActiveStudy.html", new Dictionary<string, string>
+                {
+                    ["FirstName"] = member.FirstName,
+                    ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+                });
+
+                await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                await MarkStudyStatusMailSent(member.Id, CancellationToken.None);
+            }
+            catch (Exception ex)
             {
-                ["FirstName"] = member.FirstName,
-                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
-            });
-
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                _logger.LogError(ex, "Failed to send study status mail to member {MemberId}. Continuing with the rest of the batch.", member.Id);
+                failures.Add(ex);
+            }
         }
 
         var membersWithOutstandingStudies = potentialMembers
@@ -276,46 +334,69 @@ public abstract class AbstractMailService
 
         foreach (var member in membersWithOutstandingStudies)
         {
-            var language = member.PreferredLanguage;
-
-            string subject = language switch
+            try
             {
-                Language.NL => "Controleer lidmaatschap en studievoortgang",
-                Language.EN => "Check membership and study progress",
-                _ => throw new InvalidOperationException("Unsupported language")
-            };
+                var language = member.PreferredLanguage;
 
-            string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusApproachingDuration.html", new Dictionary<string, string>
+                string subject = language switch
+                {
+                    Language.NL => "Controleer lidmaatschap en studievoortgang",
+                    Language.EN => "Check membership and study progress",
+                    _ => throw new InvalidOperationException("Unsupported language")
+                };
+
+                string htmlContent = MailTemplateLoader.Render($"{LanguageFolder(language)}/StudyStatusApproachingDuration.html", new Dictionary<string, string>
+                {
+                    ["FirstName"] = member.FirstName,
+                    ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
+                });
+
+                await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = member.FirstName } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+                await MarkStudyStatusMailSent(member.Id, CancellationToken.None);
+            }
+            catch (Exception ex)
             {
-                ["FirstName"] = member.FirstName,
-                ["HostUrl"] = Environment.GetEnvironmentVariable("HostUrl") ?? ""
-            });
+                _logger.LogError(ex, "Failed to send study status mail to member {MemberId}. Continuing with the rest of the batch.", member.Id);
+                failures.Add(ex);
+            }
+        }
 
-            await SendEmailCoreAsync(new MailRecipient { Mail = sender, Name = sender }, new[] { new MailRecipient { Mail = member.Email, Name = $"{member.FirstName} {member.LastName}" } }, subject, BuildHtmlEmail(htmlContent, language), CancellationToken.None);
+        if (failures.Count > 0)
+        {
+            int totalAttempted = membersWithNoStudyHistory.Count + membersWithoutActiveStudy.Count + membersWithOutstandingStudies.Count;
+            throw new AggregateException($"Failed to send study status mail to {failures.Count} of {totalAttempted} member(s).", failures);
         }
     }
 
     /// <summary>
-    /// Retrieves the sender information, including email address and name, for the specified user ID by checking their group memberships and associated roles. The method ensures that the user has the necessary permissions to send emails by verifying their membership in either the board group or candidate board group for the current financial year. If the user is authorized, their email address is determined based on their role using a predefined mapping, and their full name is constructed from their first and last name. If the user does not have permission to send emails or if their information cannot be retrieved, appropriate exceptions are thrown or null is returned.
+    /// Records that the annual study-status mail was just sent to the given member, committing it to the
+    /// database immediately (rather than relying on a later <c>SaveChangesAsync</c>) so that a Hangfire retry
+    /// of <see cref="SendStudyStatusUpdateMails"/> within the next 24 hours sees it and skips re-mailing them.
+    /// </summary>
+    private async Task MarkStudyStatusMailSent(Guid memberId, CancellationToken ct)
+    {
+        var now = DateTimeOffset.Now;
+        await _db.Members
+            .Where(m => m.Id == memberId)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.StudyStatusMailSentAt, now), ct);
+    }
+
+    /// <summary>
+    /// Retrieves the sender information, including email address and name, for the specified user ID by checking their group memberships and associated roles. Their email address is determined by their role, using the predefined ROLEMAILMAP setting for that role; if the user has no role this year, or their role has no ROLEMAILMAP entry configured, the main board mailbox (MainBoardMail setting) is used as the sender instead. Their full name is constructed from their first and last name. Callers are responsible for verifying the user is allowed to send mail at all (e.g. via <see cref="IPermissionService.EnsureBoardOrCandidateBoardMember"/>) before calling this - it no longer performs that check itself.
     /// </summary>
     /// <param name="userId">The ID of the user for whom to retrieve sender information.</param>
     /// <param name="ct">The cancellation token for the asynchronous operation.</param>
     /// <returns>The mail recipient information for the sender, or null if not found.</returns>
-    /// <exception cref="UnauthorizedAccessException">Thrown when the user does not have permission to send emails.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when neither the role's mail address nor the MainBoardMail fallback is configured.</exception>
     protected async Task<MailRecipient?> GetSenderInfo(Guid userId, CancellationToken ct = default)
     {
-        int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
-        int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value)).FirstOrDefault();
+        int boardGroupId = _db.Settings.Where(s => s.Name == "BoardGroupId").Select(s => int.Parse(s.Value, CultureInfo.InvariantCulture)).FirstOrDefault();
+        int candidateBoardGroupId = _db.Settings.Where(s => s.Name == "CandidateBoardGroupId").Select(s => int.Parse(s.Value, CultureInfo.InvariantCulture)).FirstOrDefault();
 
         Role? role = await _db.GroupMemberships
             .Where(gm => gm.MemberId == userId && (gm.GroupId == boardGroupId || gm.GroupId == candidateBoardGroupId) && gm.MembershipYear == YearUtils.GetBoardYear(_db))
             .Select(gm => gm.RoleAlias != null ? gm.RoleAlias.Role : null)
             .FirstOrDefaultAsync(ct);
-
-        if (role == null)
-        {
-            throw new UnauthorizedAccessException("User does not have permission to send mails");
-        }
 
         Member? sender = await _db.Members.FindAsync(userId, ct);
         if (sender == null)
@@ -323,7 +404,18 @@ public abstract class AbstractMailService
             return null;
         }
 
-        return new MailRecipient { Mail = _roleMailMap[role.Id], Name = $"{sender.FirstName} {sender.LastName}" };
+        string? senderMail = role != null && _roleMailMap.TryGetValue(role.Id, out var roleMail)
+            ? roleMail
+            : _db.Settings.Where(s => s.Name == "MainBoardMail").Select(s => s.Value).FirstOrDefault();
+
+        if (string.IsNullOrEmpty(senderMail))
+        {
+            throw new InvalidOperationException(role == null
+                ? "User has no role this year, and no fallback MainBoardMail setting is configured."
+                : $"No mail address configured for role '{role.Name}' (missing setting ROLEMAILMAP_{role.Id}), and no fallback MainBoardMail setting is configured either.");
+        }
+
+        return new MailRecipient { Mail = senderMail, Name = sender.FirstName };
     }
 
     /// <summary>
@@ -336,19 +428,19 @@ public abstract class AbstractMailService
     /// <exception cref="InvalidOperationException">Thrown when the activity is not found.</exception>
     protected async Task<MailRecipient[]> GetRecipientsFromActivity(uint activityId, bool includeWaitingList, CancellationToken ct)
     {
-        MailRecipient[] resultRecipients = Array.Empty<MailRecipient>();
-
         Activity? activity = await _db.Activities.Where(a => a.Id == activityId).Include(a => a.Enrollments.Where(e => includeWaitingList || !e.IsOnWaitingList)).ThenInclude(e => e.Member).FirstOrDefaultAsync(ct);
         if (activity == null)
         {
             throw new InvalidOperationException("Activity not found");
         }
 
+        var resultRecipients = new List<MailRecipient>(activity.Enrollments.Count);
+
         foreach (var enrollment in activity.Enrollments)
         {
-            resultRecipients = resultRecipients.Append(new MailRecipient { Mail = enrollment.Member.Email, Name = $"{enrollment.Member.FirstName} {enrollment.Member.LastName}" }).ToArray();
+            resultRecipients.Add(new MailRecipient { Mail = enrollment.Member.Email, Name = enrollment.Member.FirstName });
         }
-        return resultRecipients;
+        return resultRecipients.ToArray();
     }
 
     /// <summary>

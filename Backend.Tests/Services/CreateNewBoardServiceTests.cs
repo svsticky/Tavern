@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Utils.DateTime;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ public class CreateNewBoardServiceTests : IDisposable
     private readonly PostgresDbContext _db;
     private readonly AuthOutboxWorker _authOutboxWorkerMock;
     private readonly IServiceScopeFactory _serviceScopeFactoryMock;
+    private readonly IPermissionService _permissionServiceMock;
     private readonly CreateNewBoardService _service;
 
     public CreateNewBoardServiceTests()
@@ -25,7 +27,7 @@ public class CreateNewBoardServiceTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .ConfigureWarnings(x => x.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .Options;
-        
+
         _db = new PostgresDbContext(options);
         _db.Database.EnsureCreated();
 
@@ -41,13 +43,13 @@ public class CreateNewBoardServiceTests : IDisposable
         var loggerMock = Substitute.For<ILogger<AuthOutboxWorker>>();
         _authOutboxWorkerMock = Substitute.For<AuthOutboxWorker>(serviceProviderMock, loggerMock);
 
-        var permissionServiceMock = Substitute.For<IPermissionService>();
+        _permissionServiceMock = Substitute.For<IPermissionService>();
 
         serviceProviderMock.GetService(typeof(PostgresDbContext)).Returns(_db);
         serviceProviderMock.GetService(typeof(AuthOutboxWorker)).Returns(_authOutboxWorkerMock);
-        serviceProviderMock.GetService(typeof(IPermissionService)).Returns(permissionServiceMock);
+        serviceProviderMock.GetService(typeof(IPermissionService)).Returns(_permissionServiceMock);
 
-        _service = new CreateNewBoardService(_serviceScopeFactoryMock, NullLogger<CreateNewBoardService>.Instance);
+        _service = new CreateNewBoardService(_serviceScopeFactoryMock);
     }
 
     private Member CreateTestMember(Guid id, Guid? authSystemUserId, string studentNumber)
@@ -75,6 +77,82 @@ public class CreateNewBoardServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PromoteCandidateBoardToBoardAsync_WithUserId_EnsuresBoardMember()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        var boardGroupId = 10u;
+        var candidateBoardGroupId = 20u;
+        var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+        var lastYear = currentYear - 1;
+
+        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
+
+        var candidate = Guid.NewGuid();
+        _db.Members.Add(CreateTestMember(candidate, Guid.NewGuid(), "s901"));
+        _db.GroupMemberships.Add(new GroupMembership
+        {
+            GroupId = candidateBoardGroupId,
+            MemberId = candidate,
+            MembershipYear = lastYear
+        });
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _service.PromoteCandidateBoardToBoardAsync(userId);
+
+        // Assert
+        _permissionServiceMock.Received(1).EnsureBoardMember(userId);
+    }
+
+    [Fact]
+    public async Task PromoteCandidateBoardToBoardAsync_NoCandidates_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var boardGroupId = 10u;
+        var candidateBoardGroupId = 20u;
+
+        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
+        await _db.SaveChangesAsync();
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.PromoteCandidateBoardToBoardAsync());
+    }
+
+    [Fact]
+    public async Task PromoteCandidateBoardToBoardAsync_CandidateWithoutAuthSystemId_StillQueuesSyncForThatMember()
+    {
+        // Arrange - AuthOutboxWorker resolves/creates the auth-system user itself, so a candidate not
+        // linked yet no longer gets silently skipped.
+        var boardGroupId = 10u;
+        var candidateBoardGroupId = 20u;
+        var currentYear = YearUtils.GetYearForDate(System.DateTime.UtcNow, YearUtils.CommitteeCreationDate);
+        var lastYear = currentYear - 1;
+
+        _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
+        _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
+
+        // Candidate not yet linked to the auth system
+        var candidate = Guid.NewGuid();
+        _db.Members.Add(CreateTestMember(candidate, null, "s901"));
+        _db.GroupMemberships.Add(new GroupMembership
+        {
+            GroupId = candidateBoardGroupId,
+            MemberId = candidate,
+            MembershipYear = lastYear
+        });
+        await _db.SaveChangesAsync();
+
+        // Act
+        await _service.PromoteCandidateBoardToBoardAsync();
+
+        // Assert
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate, Arg.Any<PostgresDbContext>());
+    }
+
+    [Fact]
     public async Task PromoteCandidateBoardToBoardAsync_WhenMaxBoardYearSet_PromotesCandidatesForMaxBoardYearToTargetYear()
     {
         // Arrange
@@ -84,7 +162,7 @@ public class CreateNewBoardServiceTests : IDisposable
 
         _db.Settings.Add(new Setting { Name = "BoardGroupId", Value = boardGroupId.ToString() });
         _db.Settings.Add(new Setting { Name = "CandidateBoardGroupId", Value = candidateBoardGroupId.ToString() });
-        
+
         // maxBoardYear will be committeeYear + 1. targetYear becomes committeeYear + 2.
         var candidateId = Guid.NewGuid();
         var candidateAuthSystemUserId = Guid.NewGuid();
@@ -117,7 +195,7 @@ public class CreateNewBoardServiceTests : IDisposable
         // Verify candidate was promoted to targetYear (committeeYear + 2)
         var totalMemberships = await _db.GroupMemberships.CountAsync();
         Assert.Equal(4, totalMemberships);
-        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidateAuthSystemUserId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidateId, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -222,15 +300,15 @@ public class CreateNewBoardServiceTests : IDisposable
         Assert.False(updatedBegunstiger!.Begunstiger);
 
         // Verify sync tasks were enqueued for all candidates and old board members, keyed by their
-        // AuthSystemUserId (not their local Member.Id, which AuthOutboxTask.Sync can't resolve)
-        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate1AuthSystemUserId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate2AuthSystemUserId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, oldBoardMemberAuthSystemUserId, Arg.Any<PostgresDbContext>());
+        // local Member.Id - AuthOutboxWorker resolves the actual auth-system user itself
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate1, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, candidate2, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, oldBoardMember, Arg.Any<PostgresDbContext>());
 
         // Verify sync tasks were also enqueued for the members whose Gratie/Begunstiger flag was just
         // reset, so their Keycloak access_level doesn't stay stale as "paid" once it should flip
-        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, gratieMemberAuthSystemUserId, Arg.Any<PostgresDbContext>());
-        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, begunstigerMemberAuthSystemUserId, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, gratieMember.Id, Arg.Any<PostgresDbContext>());
+        _authOutboxWorkerMock.Received(1).EnqueueTask(AuthTaskType.Sync, begunstigerMember.Id, Arg.Any<PostgresDbContext>());
 
         // Verify the last board rotation timestamp was stamped, so begunstiger fee checks can use it
         var lastBoardRotationAt = await _db.Settings.FindAsync("LastBoardRotationAt");

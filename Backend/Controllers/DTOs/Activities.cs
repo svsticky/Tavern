@@ -202,7 +202,7 @@ public class ActivityResponseDTO
     /// <param name="userId">The ID of the user for whom to project the activity.</param>
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
     /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid userId, bool isBoard)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid? userId, bool isBoard)
     {
         return a => new ActivityResponseDTO
         {
@@ -233,7 +233,11 @@ public class ActivityResponseDTO
             CostCenterId = isBoard ? a.CostCenterId : null,
             CostUnitId = isBoard ? a.CostUnitId : null,
 
-            Enrollments = a.Enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e)).ToList(),
+            Enrollments = a.Enrollments
+                .OrderBy(e => e.Member.FirstName)
+                .ThenBy(e => e.Member.LastName)
+                .Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e))
+                .ToList(),
 
             SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
 
@@ -283,6 +287,11 @@ public class GetActivitiesDTO
     public bool? OpenForPayment { get; set; }
 
     /// <summary>
+    /// Indicates whether to only include activities with at least one enrollment (not on the waiting list) that has a price above zero.
+    /// </summary>
+    public bool OnlyWithPaidEnrollments { get; set; } = false;
+
+    /// <summary>
     /// The page number for pagination (1-indexed). If specified with PageSize, pagination will be applied.
     /// </summary>
     public int? Page { get; set; }
@@ -296,4 +305,9 @@ public class GetActivitiesDTO
     /// The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
     /// </summary>
     public Guid? UserId { get; set; }
+
+    /// <summary>
+    /// A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
+    /// </summary>
+    public string? Search { get; set; }
 }

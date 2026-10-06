@@ -28,7 +28,7 @@ export default function InfoItem({
 }) {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-1 p-2 bg-slate-50 rounded-lg text-slate-400 font-bold">
+      <div className="mt-1 w-9 h-9 shrink-0 flex items-center justify-center bg-slate-50 rounded-lg text-slate-400 font-bold">
         {icon}
       </div>
       <div>

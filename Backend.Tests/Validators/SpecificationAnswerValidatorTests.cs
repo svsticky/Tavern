@@ -25,6 +25,7 @@ public class SpecificationAnswerValidatorTests
                     DutchDescription = "Beschrijving",
                     EnglishDescription = "Description",
                     Location = "Enschede",
+                    DateTimeEnd = DateTimeOffset.UtcNow.AddDays(20),
                     PaymentDeadline = DateTimeOffset.UtcNow.AddDays(10)
                 }
             }
@@ -38,7 +39,7 @@ public class SpecificationAnswerValidatorTests
         var answer = CreateAnswer(memberId: userId);
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateOwnership(answer, userId));
-        
+
         Assert.Null(exception);
     }
 
@@ -49,44 +50,85 @@ public class SpecificationAnswerValidatorTests
         var otherUserId = Guid.NewGuid();
         var answer = CreateAnswer(memberId: userId);
 
-        var exception = Assert.Throws<UnauthorizedAccessException>(() => 
+        var exception = Assert.Throws<UnauthorizedAccessException>(() =>
             SpecificationAnswerValidator.ValidateOwnership(answer, otherUserId));
-        
+
         Assert.Equal("Users can only modify their own specification answers.", exception.Message);
     }
 
     [Fact]
-    public void ValidateWithinEnrollmentDeadline_NoDeadline_DoesNotThrow()
+    public void ValidateWithinAnswerDeadline_NoDeadlineAtAll_FallsBackToActivityEndAndDoesNotThrow()
     {
         var answer = CreateAnswer();
         answer.Question.Activity.EnrollmentDeadline = null;
 
-        var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer));
-        
+        var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
         Assert.Null(exception);
     }
 
     [Fact]
-    public void ValidateWithinEnrollmentDeadline_DeadlineInFuture_DoesNotThrow()
+    public void ValidateWithinAnswerDeadline_EnrollmentDeadlineInFuture_DoesNotThrow()
     {
         var answer = CreateAnswer();
         answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
 
-        var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer));
-        
+        var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
         Assert.Null(exception);
     }
 
     [Fact]
-    public void ValidateWithinEnrollmentDeadline_DeadlineInPast_ThrowsInvalidOperationException()
+    public void ValidateWithinAnswerDeadline_EnrollmentDeadlineInPast_ThrowsInvalidOperationException()
     {
         var answer = CreateAnswer();
         answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => 
-            SpecificationAnswerValidator.ValidateWithinEnrollmentDeadline(answer));
-        
-        Assert.Equal("Cannot modify specification answers after the enrollment deadline.", exception.Message);
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
+        Assert.Equal("Cannot modify this specification answer after its answer deadline has passed.", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateWithinAnswerDeadline_CloseOnUnenrollmentDeadlineTrueAndPassed_ThrowsInvalidOperationException()
+    {
+        var answer = CreateAnswer();
+        answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
+        answer.Question.Activity.UnenrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.CloseOnUnenrollmentDeadline = true;
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
+        Assert.Equal("Cannot modify this specification answer after its answer deadline has passed.", exception.Message);
+    }
+
+    [Fact]
+    public void ValidateWithinAnswerDeadline_CloseOnUnenrollmentDeadlineFalse_IgnoresPassedUnenrollmentDeadline()
+    {
+        var answer = CreateAnswer();
+        answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(1);
+        answer.Question.Activity.UnenrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.CloseOnUnenrollmentDeadline = false;
+
+        var exception = Record.Exception(() => SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
+        Assert.Null(exception);
+    }
+
+    [Fact]
+    public void ValidateWithinAnswerDeadline_CloseOnUnenrollmentDeadlineTrueButNoUnenrollmentDeadline_UsesEnrollmentDeadline()
+    {
+        var answer = CreateAnswer();
+        answer.Question.Activity.EnrollmentDeadline = DateTimeOffset.UtcNow.AddHours(-1);
+        answer.Question.Activity.UnenrollmentDeadline = null;
+        answer.Question.CloseOnUnenrollmentDeadline = true;
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            SpecificationAnswerValidator.ValidateWithinAnswerDeadline(answer));
+
+        Assert.Equal("Cannot modify this specification answer after its answer deadline has passed.", exception.Message);
     }
 
     [Fact]
@@ -101,7 +143,7 @@ public class SpecificationAnswerValidatorTests
         );
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidatePatchOperations(patchDoc));
-        
+
         Assert.Null(exception);
     }
 
@@ -117,9 +159,9 @@ public class SpecificationAnswerValidatorTests
             new DefaultContractResolver()
         );
 
-        var exception = Assert.Throws<InvalidOperationException>(() => 
+        var exception = Assert.Throws<InvalidOperationException>(() =>
             SpecificationAnswerValidator.ValidatePatchOperations(patchDoc));
-        
+
         Assert.Equal("Only the 'answer' field can be modified.", exception.Message);
     }
 
@@ -138,7 +180,7 @@ public class SpecificationAnswerValidatorTests
         );
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidatePatchedAnswer(answer, patchDoc));
-        
+
         Assert.Null(exception);
     }
 
@@ -171,7 +213,7 @@ public class SpecificationAnswerValidatorTests
         );
 
         var exception = Record.Exception(() => SpecificationAnswerValidator.ValidatePatchedAnswer(answer, patchDoc));
-        
+
         Assert.Null(exception);
     }
 }

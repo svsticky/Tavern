@@ -40,8 +40,18 @@ export default async function Page(props: {
     );
 }
 
+// Generated reference sections (TypeDoc/docfx/OpenAPI) contain well over a thousand pages,
+// and every prerendered page embeds the full sidebar tree, which made the build slow and
+// the image several GB. Those pages are rendered on first request and cached instead.
+const GENERATED_SECTIONS = ["Backend", "Frontend", "API"];
+
+// Render pages not returned by generateStaticParams on demand, cached after the first request.
+export const dynamicParams = true;
+
 export async function generateStaticParams() {
-    return docsSource.generateParams();
+    return docsSource
+        .generateParams()
+        .filter(({ slug }) => !GENERATED_SECTIONS.includes(slug[0]));
 }
 
 export async function generateMetadata(props: {

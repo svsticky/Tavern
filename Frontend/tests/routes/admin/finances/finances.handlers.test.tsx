@@ -34,8 +34,10 @@ vi.mock("react-hot-toast", () => ({
 import toast from "react-hot-toast";
 import {
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
+  loadExpiredActivities,
   loadFinancesData,
   refreshUnpaidPayments,
   setUnpaidPaymentState,
@@ -310,6 +312,45 @@ describe("handleMarkAsPaid", () => {
   });
 });
 
+describe("handleOverpaidProcessed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("marks the overpaid enrollment as processed and reloads the overpaid balances", async () => {
+    postPaymentsActivity.mockResolvedValue({});
+    getPaymentsOverpaid.mockResolvedValue({
+      data: [balance({ balance: 0 }), balance({ balance: 3 })],
+    });
+    const setOverpaidBalances = vi.fn();
+
+    handleOverpaidProcessed({
+      balance: balance({
+        enrollment: { memberId: "m1", activityId: 5 } as any,
+      }),
+      setOverpaidBalances,
+    });
+
+    await vi.waitFor(() => expect(setOverpaidBalances).toHaveBeenCalled());
+    expect(postPaymentsActivity).toHaveBeenCalledWith({
+      body: { memberId: "m1", activityIds: [5], manuallyMarkedAsPaid: true },
+    });
+    expect(setOverpaidBalances.mock.calls[0][0]).toHaveLength(1);
+  });
+
+  it("does not reload when marking as processed fails", async () => {
+    postPaymentsActivity.mockResolvedValue({ error: true });
+    const setOverpaidBalances = vi.fn();
+
+    handleOverpaidProcessed({ balance: balance(), setOverpaidBalances });
+
+    await vi.waitFor(() => expect(toast.promise).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(getPaymentsOverpaid).not.toHaveBeenCalled();
+    expect(setOverpaidBalances).not.toHaveBeenCalled();
+  });
+});
+
 describe("handlePaymentsExport", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -357,20 +398,17 @@ describe("loadFinancesData", () => {
     vi.clearAllMocks();
   });
 
-  it("loads expired activities, unpaid balances, and overpaid balances", async () => {
-    getActivities.mockResolvedValue({ data: [{ id: 1, name: "Old" }] });
+  it("loads unpaid and overpaid balances", async () => {
     getPaymentsUnpaid.mockResolvedValue({ data: [balance()] });
     getPaymentsOverpaid.mockResolvedValue({
       data: [balance({ balance: -5 }), balance({ balance: 0 })],
     });
 
-    const setExpiredActivities = vi.fn();
     const setOverpaidBalances = vi.fn();
     const setLoading = vi.fn();
 
     await loadFinancesData({
       setLoading,
-      setExpiredActivities,
       setUnpaidBalances: vi.fn(),
       setTotalUnpaid: vi.fn(),
       setOpenPayments: vi.fn(),
@@ -379,34 +417,57 @@ describe("loadFinancesData", () => {
       setOverpaidBalances,
     });
 
-    expect(setExpiredActivities).toHaveBeenCalledWith([{ id: 1, name: "Old" }]);
     expect(setOverpaidBalances).toHaveBeenCalledWith([
       expect.objectContaining({ balance: -5 }),
     ]);
     expect(setLoading).toHaveBeenLastCalledWith(false);
   });
+});
+
+describe("loadExpiredActivities", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("loads closed past activities for the given year", async () => {
+    getActivities.mockResolvedValue({ data: [{ id: 1, name: "Old" }] });
+
+    const setExpiredActivities = vi.fn();
+    const setLoadingExpiredActivities = vi.fn();
+
+    await loadExpiredActivities({
+      year: 2025,
+      setLoadingExpiredActivities,
+      setExpiredActivities,
+    });
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: expect.objectContaining({
+        IncludePast: true,
+        IncludeFuture: false,
+        OpenForPayment: false,
+        OnlyWithPaidEnrollments: true,
+        Year: 2025,
+      }),
+    });
+    expect(setExpiredActivities).toHaveBeenCalledWith([{ id: 1, name: "Old" }]);
+    expect(setLoadingExpiredActivities).toHaveBeenLastCalledWith(false);
+  });
 
   it("shows an error toast when expired activities fail to load", async () => {
     getActivities.mockResolvedValue({ error: "bad", data: null });
-    getPaymentsUnpaid.mockResolvedValue({ data: [] });
-    getPaymentsOverpaid.mockResolvedValue({ data: [] });
 
-    const setLoading = vi.fn();
+    const setLoadingExpiredActivities = vi.fn();
 
-    await loadFinancesData({
-      setLoading,
+    await loadExpiredActivities({
+      year: 2025,
+      setLoadingExpiredActivities,
       setExpiredActivities: vi.fn(),
-      setUnpaidBalances: vi.fn(),
-      setTotalUnpaid: vi.fn(),
-      setOpenPayments: vi.fn(),
-      setUnpaidActivities: vi.fn(),
-      setMembersWithOverduePayment: vi.fn(),
-      setOverpaidBalances: vi.fn(),
     });
 
     expect(toast.error).toHaveBeenCalledWith(
       "loading_failed: Failed to load expired activities",
     );
-    expect(setLoading).toHaveBeenLastCalledWith(false);
+    expect(setLoadingExpiredActivities).toHaveBeenLastCalledWith(false);
   });
 });

@@ -7,7 +7,7 @@ export type ClientOptions = {
 /**
  * The outcome of a M:Backend.Interfaces.IMemberService.SendActivationEmail(System.Guid,System.Threading.CancellationToken) call.
  */
-export type ActivationEmailStatus = 'Sent' | 'AlreadySent' | 'Pending';
+export type ActivationEmailStatus = 'Sent' | 'AlreadySent' | 'Pending' | 'PaymentRequired';
 
 /**
  * Represents an activity that members can enroll in. An activity has various properties such as name, price, description, location, and enrollment deadlines. It also has relationships with other entities such as enrollments and specification questions. This entity is used to manage and organize activities within the system, allowing members to view and enroll in activities based on their preferences and eligibility.
@@ -292,6 +292,19 @@ export type Announcement = {
 };
 
 /**
+ * Represents the personal iCalendar feed URL of the requesting member. This DTO is returned when a member asks
+ * for their own subscription link, and after the member regenerates that link, so the frontend can present the
+ * current URL for copying into a calendar application.
+ */
+export type CalendarFeedUrlDto = {
+    /**
+     * The absolute URL of the member's personal iCalendar feed. Anyone in possession of this URL can read the
+     * member's activity enrollments, so it must be treated as a secret and never shared.
+     */
+    url: string;
+};
+
+/**
  * Represents a curated mailing list together with its live-resolved display name and whether the
  * underlying provider list still exists.
  */
@@ -410,6 +423,10 @@ export type EnrollmentResponseDto = {
      * If the enrollment is placed on a waiting list due to the associated activity being fully booked, this field indicates the position of the enrollment on the waiting list.
      */
     isOnWaitingList: boolean;
+    /**
+     * The date and time at which the enrollment was placed.
+     */
+    registeredOn: string;
     member: MemberResponseDto;
     /**
      * The answers for the specification questions associated with this enrollment.
@@ -564,6 +581,10 @@ export type GetSpecificationQuestionResponseDto = {
      */
     options?: Array<string> | null;
     /**
+     * Whether this question's answer closes at the activity's unenrollment deadline instead of its enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no longer be given or changed once that deadline passes. Otherwise - or when this is false - the answer remains open until the activity's enrollment deadline, falling back to the activity's end date and time if neither deadline is set.
+     */
+    closeOnUnenrollmentDeadline: boolean;
+    /**
      * The unique identifier of a specification question, assigned incrementally.
      */
     id: number;
@@ -599,6 +620,10 @@ export type Group = {
      * The default cost center for the group, used for financial transactions.
      */
     defaultCostCenter?: string | null;
+    /**
+     * The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
+     */
+    defaultCostUnit?: string | null;
     /**
      * The path where the picture for the group is stored, if any.
      */
@@ -711,6 +736,10 @@ export type GroupResponseDto = {
     /**
      * The default cost center for the group, used for financial transactions.
      */
+    costCenterId?: string | null;
+    /**
+     * The default cost unit for the group, used for financial transactions. Dutch: Kostendrager
+     */
     costUnitId?: string | null;
     /**
      * The path where the picture for the group is stored, if any.
@@ -748,13 +777,13 @@ export type Language = 'NL' | 'EN';
  */
 export type MailRecipient = {
     /**
-     * The unique identifier of the mail recipient, assigned incrementally.
+     * The email address of the mail recipient. This property is required and is used to identify the recipient for email communications. It should be a valid email address format, and it serves as the primary means of contacting the recipient through email.
      */
-    mail?: string;
+    mail: string;
     /**
-     * The name of the recipient, which can be used for personalization in email communications. The Name property allows for a more personalized and engaging experience when sending emails, as it can be used to address the recipient directly in the email content, making the communication feel more tailored and relevant to the individual recipient. This can help improve engagement and response rates for email campaigns or notifications sent to recipients.
+     * The recipient's first name, shown in mail clients as the sender/recipient name (e.g. in the From/To headers). Mails never address recipients by last name, so this holds the first name only.
      */
-    name?: string;
+    name: string;
 };
 
 /**
@@ -790,6 +819,15 @@ export type Member = {
      * The id of the member in the authentication system, used for authentication and authorization.
      */
     authSystemUserId?: string | null;
+    /**
+     * The unguessable identifier under which this member's personal iCalendar feed is published.
+     * Because calendar clients cannot authenticate, possession of this value is the only thing
+     * guarding the feed, so it is always generated with M:System.Guid.NewGuid and never derived
+     * from Backend.Models.Domain.Member.Id. It defaults to a freshly generated value so that a member can never be
+     * persisted with a guessable identifier, and it can be regenerated by the member to revoke
+     * a leaked feed URL.
+     */
+    calendarId?: string;
     /**
      * When the one-time account-activation email (verify email + set password) was sent to this member, if ever.
      * Used to make sending it idempotent regardless of how many times the confirmation page is visited.
@@ -1477,9 +1515,13 @@ export type PostRegistrationDocumentDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1677,9 +1719,13 @@ export type RegistrationDocumentResponseDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1699,9 +1745,13 @@ export type RegistrationDocumentUpdateDto = {
      */
     nameEnglish: string;
     /**
-     * The destination URL for the document.
+     * The destination URL for the Dutch version of the document.
      */
-    url: string;
+    urlDutch: string;
+    /**
+     * The destination URL for the English version of the document.
+     */
+    urlEnglish: string;
     /**
      * The order in which this document should be displayed.
      */
@@ -1820,6 +1870,10 @@ export type SpecificationAnswerResponseDto = {
      * The answer provided for the specification question. The content and format of this answer depend on the type of the associated specification question.
      */
     answer: string;
+    /**
+     * Whether the answers provided for this specification question are visible to other members who enrolled for the same activity.
+     */
+    isPublic: boolean;
 };
 
 /**
@@ -1879,6 +1933,11 @@ export type Study = {
      */
     nominalDurationYears?: number;
     type?: StudyType;
+    /**
+     * Status of the study. Inactive studies are hidden from the public registration form,
+     * but are preserved in the database for historical records and statistics.
+     */
+    active?: boolean;
     /**
      * The enrollments associated with this study.
      */
@@ -1973,6 +2032,10 @@ export type StudyUpdateDto = {
      */
     nominalDurationYears: number;
     type: StudyType;
+    /**
+     * Status of the study. Inactive studies are hidden from the public registration form, but are preserved in the database for historical records and statistics.
+     */
+    active: boolean;
 };
 
 /**
@@ -2033,6 +2096,10 @@ export type GetActivitiesData = {
          */
         OpenForPayment?: boolean;
         /**
+         * Indicates whether to only include activities with at least one enrollment (not on the waiting list) that has a price above zero.
+         */
+        OnlyWithPaidEnrollments?: boolean;
+        /**
          * The page number for pagination (1-indexed). If specified with PageSize, pagination will be applied.
          */
         Page?: number;
@@ -2044,6 +2111,10 @@ export type GetActivitiesData = {
          * The ID of the user for whom to retrieve activities. This property can be used to filter activities based on the user's enrollments or other criteria related to the user's participation in activities.
          */
         UserId?: string;
+        /**
+         * A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
+         */
+        Search?: string;
     };
     url: '/activities';
 };
@@ -2894,6 +2965,136 @@ export type PutAnnouncementsByIdResponses = {
 };
 
 export type PutAnnouncementsByIdResponse = PutAnnouncementsByIdResponses[keyof PutAnnouncementsByIdResponses];
+
+export type GetCalendarsByCalendarIdData = {
+    body?: never;
+    path: {
+        /**
+         * The unguessable identifier of the calendar feed to retrieve.
+         */
+        calendarId: string;
+    };
+    query?: never;
+    url: '/calendars/{calendarId}';
+};
+
+export type GetCalendarsByCalendarIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetCalendarsByCalendarIdError = GetCalendarsByCalendarIdErrors[keyof GetCalendarsByCalendarIdErrors];
+
+export type GetCalendarsByCalendarIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type HeadCalendarsByCalendarIdData = {
+    body?: never;
+    path: {
+        /**
+         * The unguessable identifier of the calendar feed to retrieve.
+         */
+        calendarId: string;
+    };
+    query?: never;
+    url: '/calendars/{calendarId}';
+};
+
+export type HeadCalendarsByCalendarIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type HeadCalendarsByCalendarIdError = HeadCalendarsByCalendarIdErrors[keyof HeadCalendarsByCalendarIdErrors];
+
+export type HeadCalendarsByCalendarIdResponses = {
+    /**
+     * OK
+     */
+    200: unknown;
+};
+
+export type GetCalendarsMeData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/calendars/me';
+};
+
+export type GetCalendarsMeErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type GetCalendarsMeError = GetCalendarsMeErrors[keyof GetCalendarsMeErrors];
+
+export type GetCalendarsMeResponses = {
+    /**
+     * OK
+     */
+    200: CalendarFeedUrlDto;
+};
+
+export type GetCalendarsMeResponse = GetCalendarsMeResponses[keyof GetCalendarsMeResponses];
+
+export type PostCalendarsMeRotateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/calendars/me/rotate';
+};
+
+export type PostCalendarsMeRotateErrors = {
+    /**
+     * Unauthorized
+     */
+    401: ProblemDetails;
+    /**
+     * Not Found
+     */
+    404: ProblemDetails;
+    /**
+     * Internal Server Error
+     */
+    500: ErrorResponseDto;
+};
+
+export type PostCalendarsMeRotateError = PostCalendarsMeRotateErrors[keyof PostCalendarsMeRotateErrors];
+
+export type PostCalendarsMeRotateResponses = {
+    /**
+     * OK
+     */
+    200: CalendarFeedUrlDto;
+};
+
+export type PostCalendarsMeRotateResponse = PostCalendarsMeRotateResponses[keyof PostCalendarsMeRotateResponses];
 
 export type GetEnrollmentsData = {
     body?: never;
@@ -6778,7 +6979,12 @@ export type PatchSpecificationanswersByAnswerIdResponse = PatchSpecificationansw
 export type GetStudiesData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Indicates whether to include inactive studies in the retrieved study data. If set to true, both active and inactive studies will be included in the response; if set to false, only active studies will be included.
+         */
+        IncludeInactive?: boolean;
+    };
     url: '/studies';
 };
 

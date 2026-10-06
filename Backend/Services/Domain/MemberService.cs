@@ -3,6 +3,8 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.QueryExtensions;
+using Backend.Services.MailSubscriptionServices;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Validators;
 using Microsoft.AspNetCore.JsonPatch;
@@ -22,11 +24,11 @@ namespace Backend.Services.Domain
         AbstractPaymentService paymentService,
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
-        IAuthService authService,
-        IMailSubscriptionService mailSubscriptionService,
+        AbstractMailSubscriptionService mailSubscriptionService,
         IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
-        ILogger<MemberService> logger
+        ILogger<MemberService> logger,
+        IEnumerable<INameChangedListener> nameChangedListeners
     ) : IMemberService
     {
         /// <inheritdoc />
@@ -99,7 +101,11 @@ namespace Backend.Services.Domain
             }
 
             // Check if member is a minor and if so, require parent phone number
-            if (dto.DateOfBirth > DateTimeOffset.UtcNow.AddYears(-18) &&
+            string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+            DateTime todayInTimeZone = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).Date;
+
+            if (dto.DateOfBirth.AddYears(18).Date > todayInTimeZone &&
                 string.IsNullOrEmpty(dto.ParentPhoneNumber))
             {
                 throw new ArgumentException("Parent phone number required for minors.");
@@ -126,8 +132,8 @@ namespace Backend.Services.Domain
                 // Sync with the auth system
                 authOutboxWorker.EnqueueTask(AuthTaskType.Create, member.Id, db);
 
-                // Enqueue mail subscription update
-                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, dto.SubscribedMailinglistIds ?? [], db);
+                // Enqueue mail subscription update, including the name so a newly created record carries it.
+                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, dto.SubscribedMailinglistIds ?? [], db, member.FirstName, member.LastName);
 
                 await db.SaveChangesAsync(cancellationToken);
 
@@ -179,6 +185,7 @@ namespace Backend.Services.Domain
                 member.HouseNumber = "0";
                 member.PostalCode = "0000AA";
                 member.City = "Deleted";
+                member.DateOfBirth = DateTimeOffset.MinValue;
                 member.Notes = null;
                 member.Gratie = false;
                 member.LidVanVerdienste = false;
@@ -233,8 +240,6 @@ namespace Backend.Services.Domain
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
             // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
             bool hasUnauthorizedOperations = patchDoc.Operations.Any(op =>
                 !Member.AllowedFields.Contains(op.path) ||
@@ -243,12 +248,26 @@ namespace Backend.Services.Domain
             if (member.Id != userId || hasUnauthorizedOperations)
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
+            // Email is managed by Keycloak, not editable here regardless of who's asking.
+            if (patchDoc.Operations.Any(op => string.Equals(op.path, "/Email", StringComparison.OrdinalIgnoreCase)))
+                throw new ArgumentException("Email cannot be changed here - it's managed by the authentication provider.");
+
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
+
             try
             {
                 patchDoc.ApplyTo(member);
                 StateValidator.Validate(member);
 
-                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
+                // Always sync to Keycloak, not just when the name changed.
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
+
+                if (member.FirstName != oldFirstName || member.LastName != oldLastName)
+                {
+                    nameChangedListeners.NotifyNameChanged(member, db);
+                }
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -271,28 +290,34 @@ namespace Backend.Services.Domain
 
             using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
-            // Some settings a member should not be able to edit themselves, and if they try to edit those, we check if they are board members
-            if (member.Id != userId
-                || member.Email != dto.Email
-                || member.Id != userId
-                || dto.StudentNumber != member.StudentNumber
-                || dto.FirstName != member.FirstName
-                || dto.LastName != member.LastName
-                || dto.DateOfBirth != member.DateOfBirth
-                || dto.Notes != member.Notes
-                || dto.Gratie != member.Gratie
-                || dto.LidVanVerdienste != member.LidVanVerdienste
-                || dto.EreLid != member.EreLid
-                || dto.Begunstiger != member.Begunstiger
-                || dto.Suspended != member.Suspended)
+            if (member.Id != userId)
+            {
+                // Only board members may edit someone else's profile at all
                 permissionService.EnsureBoardOrCandidateBoardMember(userId);
+            }
+            else if (!permissionService.IsBoardOrCandidateBoardMember(userId))
+            {
+                // Some settings a member should not be able to edit themselves. Silently keep them as
+                // they are instead of rejecting the request when they differ - comparing and rejecting
+                // would let someone guess a hidden value (e.g. the admin-only Notes field) and learn
+                // whether they guessed right from whether the request succeeds or fails.
+                PreserveFieldsOutsideAllowedFields(member, dto);
+            }
+
+            var (oldFirstName, oldLastName) = (member.FirstName, member.LastName);
 
             try
             {
                 ApplyMemberUpdate(member, dto);
                 StateValidator.Validate(member);
 
-                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
+                // Always sync to Keycloak, not just when the name changed.
+                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
+
+                if (member.FirstName != oldFirstName || member.LastName != oldLastName)
+                {
+                    nameChangedListeners.NotifyNameChanged(member, db);
+                }
 
                 await db.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -333,25 +358,14 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public async Task RefreshEmail(Guid id, CancellationToken cancellationToken)
         {
-            var member = await db.Members.FirstOrDefaultAsync((member) => member.AuthSystemUserId == id);
+            var member = await db.Members.FirstOrDefaultAsync(m => m.AuthSystemUserId == id, cancellationToken);
             if (member == null)
                 throw new KeyNotFoundException($"Member with ID {id} not found.");
 
-            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            try
-            {
-                authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."), db);
-                var newMail = await authService.GetEmail(member.AuthSystemUserId ?? throw new InvalidOperationException("Member does not have a authentication system ID."));
-                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newMail, db);
-                await db.SaveChangesAsync(cancellationToken);
-                await transaction.CommitAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                await transaction.RollbackAsync(cancellationToken);
-                logger.LogError(ex, "Failed updating member email {MemberId}.", id);
-                throw;
-            }
+            // Enqueued rather than done inline, so a transient Keycloak failure gets retried with
+            // backoff instead of failing the caller (this is called from an anonymous webhook Keycloak
+            // itself invokes on email change - there's no user waiting on a response to retry).
+            authOutboxWorker.EnqueueTask(AuthTaskType.RefreshEmail, member.Id, db);
         }
 
         /// <inheritdoc />
@@ -392,7 +406,22 @@ namespace Backend.Services.Domain
             var preserved = currentState.Where(l => l.Subscribed && !visibleIds.Contains(l.Id)).Select(l => l.Id);
             var finalSet = subscribedListIds.Union(preserved);
 
-            mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, finalSet, db);
+            using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            try
+            {
+                // Includes the name so a first-time subscribe - which can be what creates the Mailchimp record - carries it too.
+                mailSubscriptionOutboxWorker.EnqueueUpdateSubscriptionsTask(member.Email, finalSet, db, member.FirstName, member.LastName);
+
+                await db.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                logger.LogError(ex, "Failed updating mailing list subscriptions for member {MemberId}.", id);
+                throw;
+            }
         }
 
         /// <inheritdoc />
@@ -406,6 +435,26 @@ namespace Backend.Services.Domain
                 return ActivationEmailStatus.AlreadySent;
             }
 
+            if (!paymentValidationService.HasEverPaidMembershipPayment(member.Id))
+            {
+                var unpaidMembershipPayments = await db.MembershipPayments
+                    .Where(p => p.MemberId == member.Id && p.PaidAt == null)
+                    .ToListAsync(cancellationToken);
+
+                var liveStatuses = new List<PaymentStatus>();
+                foreach (var payment in unpaidMembershipPayments)
+                {
+                    liveStatuses.Add((await paymentService.GetPaymentAsync(payment.PaymentServiceId)).Status);
+                }
+
+                if (liveStatuses.Count > 0 && !liveStatuses.Contains(PaymentStatus.Paid))
+                {
+                    return liveStatuses.Contains(PaymentStatus.Pending)
+                        ? ActivationEmailStatus.Pending
+                        : ActivationEmailStatus.PaymentRequired;
+                }
+            }
+
             if (member.AuthSystemUserId == null)
             {
                 // Not linked to the auth system yet (their AuthOutboxTask.Create task is still pending).
@@ -413,9 +462,13 @@ namespace Backend.Services.Domain
                 return ActivationEmailStatus.Pending;
             }
 
-            member.ActivationEmailSentAt = DateTimeOffset.UtcNow;
-            authOutboxWorker.EnqueueTask(AuthTaskType.SendActivationEmail, member.AuthSystemUserId.Value, db);
+            var queued = await paymentService.TryQueueActivationEmailAsync(member.Id);
             await db.SaveChangesAsync(cancellationToken);
+
+            if (!queued)
+            {
+                return ActivationEmailStatus.AlreadySent;
+            }
 
             logger.LogInformation("Queued activation email for member {MemberId}.", id);
             return ActivationEmailStatus.Sent;
@@ -432,23 +485,23 @@ namespace Backend.Services.Domain
                 return;
 
             if ((await db.Settings.FindAsync("MastersShouldPayMembership"))?.Value != "1" && existingMember.StudyEnrollments.Any(se => se.Study.Type == StudyType.Master))
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if ((await db.Settings.FindAsync("GratieShouldPayMembership"))?.Value != "1" && existingMember.Gratie)
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if ((await db.Settings.FindAsync("ErelidShouldPayMembership"))?.Value != "1" && existingMember.EreLid)
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if ((await db.Settings.FindAsync("LidVanVerdiensteShouldPayMembership"))?.Value != "1" && existingMember.LidVanVerdienste)
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             // if ever enrolled for an activity, we don't want to delete the member, (can be an old begunstiger that isn't begunstiger anymore, we want to keep the history of their activity enrollments)
             if (existingMember.Enrollments.Any())
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             if (paymentValidationService.HasEverPaidMembershipPayment(existingMember.Id) || paymentValidationService.HasEverPaidBegunstigerFee(existingMember.Id))
-                throw new InvalidOperationException("Existing member with same email address found.");
+                throw new InvalidOperationException("An account with this email address already exists.");
 
             var existingMembershipPayments = await db.MembershipPayments
                 .Where(p => p.MemberId == existingMember.Id)
@@ -465,7 +518,7 @@ namespace Backend.Services.Domain
                 // Make sure there is no paid membership/begunstiger payment with the same email, if there is, we don't want to delete the member
                 if (paymentResponse.Status == PaymentStatus.Paid)
                 {
-                    throw new InvalidOperationException("Existing member with same email address found.");
+                    throw new InvalidOperationException("An account with this email address already exists.");
                 }
 
                 // If there is a pending payment, we cancel it to prevent the member from paying for a membership/fee they won't get
@@ -479,11 +532,19 @@ namespace Backend.Services.Domain
             db.BegunstigerPayments.RemoveRange(existingBegunstigerPayments);
 
             db.Members.Remove(existingMember);
-            authOutboxWorker.EnqueueTask(
-                AuthTaskType.Delete,
-                existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet."),
-                db
-            );
+            if (db.AuthOutboxTasks.Any(t => t.AuthSystemUserId == existingMember.Id && t.TaskType == AuthTaskType.Create))
+            {
+                db.AuthOutboxTasks.RemoveRange(db.AuthOutboxTasks.Where(t => t.AuthSystemUserId == existingMember.AuthSystemUserId));
+                db.AuthOutboxTasks.RemoveRange(db.AuthOutboxTasks.Where(t => t.AuthSystemUserId == existingMember.Id && t.TaskType == AuthTaskType.Create));
+            }
+            else
+            {
+                authOutboxWorker.EnqueueTask(
+                    AuthTaskType.Delete,
+                    existingMember.AuthSystemUserId ?? throw new Exception("Member isn't synced with the authentication system yet."),
+                    db
+                );
+            }
         }
 
         private static Member BuildMember(PostMemberDTO dto)
@@ -508,6 +569,31 @@ namespace Backend.Services.Domain
             };
         }
 
+        /// <summary>
+        /// Since PUT replaces the whole member rather than applying discrete patch operations, field-level
+        /// restrictions can't be enforced by inspecting operation paths like PatchMember does. Rejecting the
+        /// request whenever one of these fields differs from its current value would let a member guess a
+        /// hidden value (e.g. the admin-only Notes field) and learn whether the guess was correct from
+        /// whether the request succeeds - so instead, these fields are silently reset to their current
+        /// value on the DTO before it's applied, regardless of what was submitted for them.
+        /// </summary>
+        private static void PreserveFieldsOutsideAllowedFields(Member member, MemberUpdateDTO dto)
+        {
+            dto.StudentNumber = member.StudentNumber;
+            dto.FirstName = member.FirstName;
+            dto.LastName = member.LastName;
+            dto.DateOfBirth = member.DateOfBirth;
+            dto.Notes = member.Notes;
+            dto.Gratie = member.Gratie;
+            dto.LidVanVerdienste = member.LidVanVerdienste;
+            dto.EreLid = member.EreLid;
+            dto.Begunstiger = member.Begunstiger;
+            dto.Suspended = member.Suspended;
+        }
+
+        // Email is deliberately not applied here - Keycloak is the sole source of truth for it, and
+        // only ever changes locally by being pulled from there (RefreshEmail, SyncMember, token
+        // validation). Submitted DTO values are ignored, not validated against.
         private static void ApplyMemberUpdate(Member member, MemberUpdateDTO dto)
         {
             member.StudentNumber = dto.StudentNumber;
@@ -521,6 +607,12 @@ namespace Backend.Services.Domain
             member.DateOfBirth = dto.DateOfBirth;
             member.ParentPhoneNumber = dto.ParentPhoneNumber;
             member.PreferredLanguage = dto.PreferredLanguage;
+            member.Notes = dto.Notes;
+            member.Gratie = dto.Gratie;
+            member.LidVanVerdienste = dto.LidVanVerdienste;
+            member.EreLid = dto.EreLid;
+            member.Begunstiger = dto.Begunstiger;
+            member.Suspended = dto.Suspended;
         }
 
         private void AddStudyEnrollments(Guid memberId, IEnumerable<PostStudyEnrollmentDTO> studyEnrollments)

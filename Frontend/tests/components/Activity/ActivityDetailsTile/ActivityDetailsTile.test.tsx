@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import {
@@ -11,6 +11,13 @@ import {
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+
+const { getGroupsById } = vi.hoisted(() => ({ getGroupsById: vi.fn() }));
+
+vi.mock("~/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/api")>()),
+  getGroupsById,
+}));
 
 vi.mock(
   "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers",
@@ -35,6 +42,11 @@ vi.mock("~/components/Activity/AnswerQuestionsTile", () => ({
   ),
 }));
 
+// Relative to whenever the test actually runs, rather than a fixed date, so
+// enrollment-window checks (canEnroll/canUnenroll default to activity.dateTimeEnd)
+// don't start failing once that fixed date is in the past.
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
 function buildActivity(
   overrides: Partial<ActivityResponseDto> = {},
 ): ActivityResponseDto {
@@ -43,8 +55,10 @@ function buildActivity(
     name: "Party",
     price: 0,
     location: "Enschede",
-    dateTimeStart: "2026-09-01T10:00:00Z",
-    dateTimeEnd: "2026-09-01T12:00:00Z",
+    dateTimeStart: new Date(Date.now() + ONE_DAY_MS).toISOString(),
+    dateTimeEnd: new Date(
+      Date.now() + ONE_DAY_MS + 2 * 60 * 60 * 1000,
+    ).toISOString(),
     dutchDescription: "Beschrijving",
     englishDescription: "Description",
     enrollments: [],
@@ -65,6 +79,10 @@ const memberToken: TokenParsed = {
 };
 
 describe("ActivityDetailsTile", () => {
+  beforeEach(() => {
+    getGroupsById.mockReset();
+  });
+
   it("shows the no-poster placeholder when there is no poster", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => memberToken),
@@ -182,9 +200,70 @@ describe("ActivityDetailsTile", () => {
     expect(handleUpdateEnrollment).toHaveBeenCalled();
   });
 
+  it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but the question's closeOnUnenrollmentDeadline is false", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          specificationQuestions: [
+            {
+              id: 1,
+              questionDutch: "V",
+              questionEnglish: "Q",
+              type: "String",
+              closeOnUnenrollmentDeadline: false,
+            },
+          ] as ActivityResponseDto["specificationQuestions"],
+          enrollments: [
+            { member: { id: memberToken.UserId }, specificationAnswers: [] },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByText("update_answers")).toBeInTheDocument();
+    expect(screen.getByText("you_are_enrolled")).toBeInTheDocument();
+    expect(screen.queryByText("sign_out")).not.toBeInTheDocument();
+  });
+
+  it("hides the update-answers button once the unenrollment deadline has passed and the question's closeOnUnenrollmentDeadline is true", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          specificationQuestions: [
+            {
+              id: 1,
+              questionDutch: "V",
+              questionEnglish: "Q",
+              type: "String",
+              closeOnUnenrollmentDeadline: true,
+            },
+          ] as ActivityResponseDto["specificationQuestions"],
+          enrollments: [
+            { member: { id: memberToken.UserId }, specificationAnswers: [] },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    expect(await screen.findByText("you_are_enrolled")).toBeInTheDocument();
+    expect(screen.queryByText("update_answers")).not.toBeInTheDocument();
+  });
+
   it("calls handleAddToCalendar when the calendar button is clicked", async () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
-    fireEvent.click(await screen.findByText("add_to_calendar"));
+    fireEvent.click(await screen.findByText("copy_once_to_calendar"));
     expect(handleAddToCalendar).toHaveBeenCalled();
   });
 
@@ -271,7 +350,7 @@ describe("ActivityDetailsTile", () => {
     fireEvent.click(await screen.findByText("answer-questions-tile"));
   });
 
-  it("does not show enroll/unenroll actions when neither can enroll nor unenroll", async () => {
+  it("does not show enroll/unenroll actions or participant details when enrollment has not opened", async () => {
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -280,7 +359,73 @@ describe("ActivityDetailsTile", () => {
         })}
       />,
     );
-    expect(await screen.findByText("add_to_calendar")).toBeInTheDocument();
+    expect(
+      await screen.findByText("copy_once_to_calendar"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.queryByText("participants")).not.toBeInTheDocument();
+    expect(screen.queryByText("enrollment_deadline")).not.toBeInTheDocument();
+    expect(screen.queryByText("unenrollment_deadline")).not.toBeInTheDocument();
+  });
+
+  it("shows participant details and deadlines when enrollment has closed after closing date", async () => {
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          isEnrollable: true,
+          enrollmentDeadline: "2020-01-01T00:00:00Z",
+          unenrollmentDeadline: "2020-01-01T00:00:00Z",
+          dateTimeStart: "2020-01-02T00:00:00Z",
+          dateTimeEnd: "2020-01-02T02:00:00Z",
+          enrollments: [
+            { id: 1, memberId: "m1", isOnWaitingList: false } as any,
+          ],
+        })}
+      />,
+    );
+    expect(
+      await screen.findByText("copy_once_to_calendar"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("sign_in")).not.toBeInTheDocument();
+    expect(screen.getByText("participants")).toBeInTheDocument();
+    expect(screen.getByText("enrollment_deadline")).toBeInTheDocument();
+    expect(screen.getByText("unenrollment_deadline")).toBeInTheDocument();
+  });
+
+  it("shows the organizer's name and logo when the activity has an organizer", async () => {
+    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
+    const { container } = renderWithProviders(
+      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+    );
+
+    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
+    expect(await screen.findByText("organizer")).toBeInTheDocument();
+    expect(screen.getByText("BaCo")).toBeInTheDocument();
+    // Decorative logo (alt="") - not exposed via role "img", so query the DOM directly.
+    expect(container.querySelector("img")).toHaveAttribute(
+      "src",
+      expect.stringContaining("/groups/5/group-picture"),
+    );
+  });
+
+  it("does not show an organizer info item when the activity has no organizer", async () => {
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
+
+    await screen.findByText("copy_once_to_calendar");
+    expect(getGroupsById).not.toHaveBeenCalled();
+    expect(screen.queryByText("organizer")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the default avatar when the organizer's logo fails to load", async () => {
+    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
+    const { container } = renderWithProviders(
+      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+    );
+
+    await screen.findByText("BaCo");
+    const logo = container.querySelector("img")!;
+    fireEvent.error(logo);
+
+    expect(logo).toHaveAttribute("src", "/profile-picture.svg");
   });
 });

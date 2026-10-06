@@ -24,7 +24,7 @@ public class EnumSchemaFilterTests
 
         var schemaGeneratorMock = Substitute.For<ISchemaGenerator>();
         var schemaRepository = new SchemaRepository();
-        
+
         var context = new SchemaFilterContext(
             type: typeof(StudyStatus),
             schemaGenerator: schemaGeneratorMock,

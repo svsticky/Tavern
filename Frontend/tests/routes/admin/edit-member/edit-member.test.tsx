@@ -123,6 +123,30 @@ describe("EditMemberPage", () => {
     expect(screen.getByText("Computer Science")).toBeInTheDocument();
   });
 
+  it("links a group membership to the group's admin page", async () => {
+    loadMemberData.mockImplementation(
+      async ({ setFormData, setGroupMemberships, setLoading }: any) => {
+        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
+        setGroupMemberships([
+          {
+            id: 1,
+            groupId: 5,
+            groupName: "Board",
+            membershipYear: 2026,
+            roleAliasName: "Chair",
+            memberName: "Jane",
+          },
+        ]);
+        setLoading(false);
+      },
+    );
+
+    renderPage();
+
+    const groupLink = await screen.findByRole("link", { name: /Board/ });
+    expect(groupLink).toHaveAttribute("href", "/admin/groups/5");
+  });
+
   it("saves the member when the save button is clicked", async () => {
     renderPage();
 
@@ -150,10 +174,12 @@ describe("EditMemberPage", () => {
     expect(deleteButtons.length).toBeGreaterThan(1);
     fireEvent.click(deleteButtons[deleteButtons.length - 1]);
 
-    expect(handleDeleteMember).toHaveBeenCalledWith(
-      "m1",
-      expect.any(Function),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(handleDeleteMember).toHaveBeenCalledWith(
+        "m1",
+        expect.any(Function),
+        expect.any(Function),
+      ),
     );
   });
 
@@ -193,10 +219,12 @@ describe("EditMemberPage", () => {
     expect(confirmButtons.length).toBeGreaterThan(1);
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
-    expect(handleMarkMembershipAsPaid).toHaveBeenCalledWith(
-      "m1",
-      expect.any(Function),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(handleMarkMembershipAsPaid).toHaveBeenCalledWith(
+        "m1",
+        expect.any(Function),
+        expect.any(Function),
+      ),
     );
     await waitFor(() =>
       expect(
@@ -242,10 +270,12 @@ describe("EditMemberPage", () => {
     });
     fireEvent.click(confirmButtons[confirmButtons.length - 1]);
 
-    expect(handleMarkBegunstigerFeeAsPaid).toHaveBeenCalledWith(
-      "m1",
-      expect.any(Function),
-      expect.any(Function),
+    await waitFor(() =>
+      expect(handleMarkBegunstigerFeeAsPaid).toHaveBeenCalledWith(
+        "m1",
+        expect.any(Function),
+        expect.any(Function),
+      ),
     );
     expect(handleMarkMembershipAsPaid).not.toHaveBeenCalled();
   });

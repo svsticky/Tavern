@@ -1,8 +1,10 @@
 using Backend.Database;
 using Backend.Models.Domain;
+using Backend.Utils;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Backend.Services.AccountingToolServices
 {
@@ -14,6 +16,11 @@ namespace Backend.Services.AccountingToolServices
         PostgresDbContext db,
         ILogger<ExactService> logger) : AbstractAccountingToolService(db, logger)
     {
+        private static readonly JsonSerializerOptions _salesEntryJsonOptions = new()
+        {
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
         private readonly HttpClient _http = http;
 
         private string Division => _db.Settings.Find("ExactDivision")?.Value ?? "";
@@ -42,7 +49,7 @@ namespace Backend.Services.AccountingToolServices
 
             var salesEntry = BuildSalesEntry(payment);
 
-            var json = JsonSerializer.Serialize(salesEntry);
+            var json = JsonSerializer.Serialize(salesEntry, _salesEntryJsonOptions);
 
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
@@ -114,11 +121,11 @@ namespace Backend.Services.AccountingToolServices
         {
             return new
             {
-                GLAccount = payment.Activity?.GLAccountId ?? payment.Activity?.Organizer?.DefaultGLAccount,
+                GLAccount = StringUtils.NullIfBlank(payment.Activity?.GLAccountId) ?? StringUtils.NullIfBlank(payment.Activity?.Organizer?.DefaultGLAccount),
                 Description = $"{payment.Activity?.Organizer?.Name ?? ""} | {payment.Activity?.Name}",
                 VATCode = MapVat(payment.Activity?.VatRate),
-                CostCenter = payment.Activity?.CostCenterId ?? payment.Activity?.Organizer?.DefaultCostCenter,
-                CostUnit = payment.Activity?.CostUnitId,
+                CostCenter = StringUtils.NullIfBlank(payment.Activity?.CostCenterId) ?? StringUtils.NullIfBlank(payment.Activity?.Organizer?.DefaultCostCenter),
+                CostUnit = StringUtils.NullIfBlank(payment.Activity?.CostUnitId) ?? StringUtils.NullIfBlank(payment.Activity?.Organizer?.DefaultCostUnit),
                 AmountDC = payment.Price
             };
         }
@@ -130,6 +137,8 @@ namespace Backend.Services.AccountingToolServices
                 GLAccount = _db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = "Lidmaatschap",
                 VATCode = _db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0",
+                CostCenter = StringUtils.NullIfBlank(_db.Settings.Where(s => s.Name == "MembershipCostCenter").Select(s => s.Value).FirstOrDefault()),
+                CostUnit = StringUtils.NullIfBlank(_db.Settings.Where(s => s.Name == "MembershipCostUnit").Select(s => s.Value).FirstOrDefault()),
                 AmountDC = payment.Price
             };
         }
@@ -142,6 +151,8 @@ namespace Backend.Services.AccountingToolServices
                 GLAccount = _db.Settings.Where(s => s.Name == "PaymentServiceFeeGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = $"{char.ToUpper(pService[0])}{pService.Substring(1).ToLower()} fee",
                 VATCode = _db.Settings.Where(s => s.Name == "PaymentServiceFeeVATCode").Select(s => s.Value).FirstOrDefault() ?? "21",
+                CostCenter = StringUtils.NullIfBlank(_db.Settings.Where(s => s.Name == "PaymentServiceFeeCostCenter").Select(s => s.Value).FirstOrDefault()),
+                CostUnit = StringUtils.NullIfBlank(_db.Settings.Where(s => s.Name == "PaymentServiceFeeCostUnit").Select(s => s.Value).FirstOrDefault()),
                 AmountDC = payment.Price
             };
         }
@@ -153,8 +164,8 @@ namespace Backend.Services.AccountingToolServices
                 GLAccount = _db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault(),
                 Description = "Begunstiger",
                 VATCode = _db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0",
-                CostCenter = _db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault(),
-                CostUnit = _db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault(),
+                CostCenter = StringUtils.NullIfBlank(_db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault()),
+                CostUnit = StringUtils.NullIfBlank(_db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault()),
                 AmountDC = payment.Price
             };
         }

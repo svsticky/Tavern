@@ -303,7 +303,7 @@ public class ActivitiesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostActivity(dto));
-}
+    }
 
     [Fact]
     public async Task PostActivity_Exception_ThrowsException()
@@ -328,7 +328,7 @@ public class ActivitiesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostActivity(dto));
-}
+    }
 
     [Fact]
     public async Task DeleteActivity_Success_ReturnsNoContent()
@@ -516,7 +516,7 @@ public class ActivitiesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutActivity(1, dto));
-}
+    }
 
     [Fact]
     public async Task PutActivity_NotFound_ThrowsKeyNotFoundException()
@@ -541,7 +541,7 @@ public class ActivitiesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutActivity(1, dto));
-}
+    }
 
     [Fact]
     public async Task PutActivity_Exception_ThrowsException()
@@ -566,7 +566,7 @@ public class ActivitiesControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutActivity(1, dto));
-}
+    }
 
     [Fact]
     public async Task GetPoster_Found_ReturnsFile()

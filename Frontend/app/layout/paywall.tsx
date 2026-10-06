@@ -11,6 +11,7 @@ import {
   postPaymentsMembership,
 } from "~/api/sdk.gen";
 import Button from "~/components/UI/Button";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import { useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -31,6 +32,7 @@ export default function PaywallLayout() {
   );
   const [isBegunstiger, setIsBegunstiger] = useState(false);
   const [mainBoardMail, setMainBoardMail] = useState<string | null>(null);
+  const [confirmModal, confirm] = useConfirm();
 
   useEffect(() => {
     const loadToken = async () => {
@@ -58,7 +60,7 @@ export default function PaywallLayout() {
 
   const deleteAccount = async () => {
     if (!tokenParsed || !authService) return;
-    if (!window.confirm(i18n.t("delete_account_confirmation"))) {
+    if (!(await confirm(i18n.t("delete_account_confirmation")))) {
       return;
     }
 
@@ -104,18 +106,18 @@ export default function PaywallLayout() {
             err,
           ),
         );
+    }
 
-      if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
-        console.warn(
-          "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
-        );
+    if (paymentStatus === true && tokenParsed.access_level === "not_paid") {
+      console.warn(
+        "User has paid for membership but access level is still 'not_paid'. This may indicate a delay in payment processing. Forcing payment status to false to redirect user to payment page.",
+      );
 
-        // Patch member to force refresh the payment status in keycloak.
-        patchMembersById({
-          path: { id: tokenParsed.UserId },
-          body: [] as any,
-        });
-      }
+      // Patch member to force refresh the payment status in keycloak.
+      patchMembersById({
+        path: { id: tokenParsed.UserId },
+        body: [] as any,
+      });
     }
 
     // Members who are neither a begunstiger nor have ever done a study aren't eligible to pay
@@ -163,6 +165,7 @@ export default function PaywallLayout() {
       <Button variant="danger" onClick={deleteAccount}>
         {i18n.t("delete_account")}
       </Button>
+      {confirmModal}
     </>
   );
 

@@ -7,6 +7,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -148,13 +149,53 @@ public class PaymentSyncServiceTests
 
         var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Single(outboxTasks);
-        Assert.Equal(member.AuthSystemUserId, outboxTasks[0].AuthSystemUserId);
+        Assert.Equal(member.Id, outboxTasks[0].AuthSystemUserId);
         Assert.Equal(AuthTaskType.Sync, outboxTasks[0].TaskType);
+
+        // The activation-email claim-and-enqueue itself is delegated to AbstractPaymentService (see
+        // its own tests for that atomic behavior) - here we just verify it was asked to do so.
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
 
         var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
         Assert.Single(accountingTasks);
         Assert.Equal(payment.Id, accountingTasks[0].PaymentId);
         Assert.Equal(AccountingToolTaskType.MembershipPayment, accountingTasks[0].TaskType);
+    }
+
+    [Fact]
+    public async Task SyncPayments_NonMembershipPaymentPaid_DoesNotAttemptToQueueActivationEmail()
+    {
+        // Arrange - only membership payments can trigger the initial activation email; this should
+        // never even ask AbstractPaymentService about an enrollment payment's member.
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+
+        var member = CreateTestMember();
+        db.Members.Add(member);
+
+        var payment = new EnrollmentPayment
+        {
+            Id = 12,
+            Price = 5.0m,
+            PaymentServiceId = "tr_enroll_activation_check",
+            PaymentIntentUrl = "https://example.com/pay",
+            Member = member,
+            MemberId = member.Id
+        };
+        db.EnrollmentPayments.Add(payment);
+        await db.SaveChangesAsync();
+
+        var provider = CreateServiceProvider(db);
+        var service = new TestablePaymentSyncService(provider, _logger);
+
+        var now = DateTimeOffset.UtcNow;
+        _paymentService.GetPaymentAsync("tr_enroll_activation_check").Returns(new GetPaymentResponse("tr_enroll_activation_check", PaymentStatus.Paid, now));
+
+        // Act
+        await service.PublicSyncPayments();
+
+        // Assert
+        await _paymentService.DidNotReceiveWithAnyArgs().TryQueueActivationEmailAsync(default);
     }
 
     [Fact]
@@ -238,7 +279,7 @@ public class PaymentSyncServiceTests
 
         var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
         Assert.Single(outboxTasks);
-        Assert.Equal(member.AuthSystemUserId, outboxTasks[0].AuthSystemUserId);
+        Assert.Equal(member.Id, outboxTasks[0].AuthSystemUserId);
         Assert.Equal(AuthTaskType.Sync, outboxTasks[0].TaskType);
 
         var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
@@ -290,7 +331,7 @@ public class PaymentSyncServiceTests
     }
 
     [Fact]
-    public async Task SyncPayments_MembershipPaymentPaidButNoAuthSystemUserId_StillMarksPaidWithoutAuthSync()
+    public async Task SyncPayments_MembershipPaymentPaidButNoAuthSystemUserId_StillMarksPaidAndQueuesSync()
     {
         // Arrange
         using var db = new PostgresDbContext(_dbOptions);
@@ -325,8 +366,12 @@ public class PaymentSyncServiceTests
         Assert.NotNull(updatedPayment);
         Assert.Equal(now, updatedPayment.PaidAt); // Payment status must not be blocked by a missing auth link
 
-        var outboxTasks = await db.AuthOutboxTasks.ToListAsync();
-        Assert.Empty(outboxTasks); // No auth sync queued since there's no AuthSystemUserId yet
+        var outboxTasks = await db.AuthOutboxTasks.ToListAsync(); // AuthOutboxWorker resolves/creates the auth-system user itself
+        var outboxTask = Assert.Single(outboxTasks);
+        Assert.Equal(member.Id, outboxTask.AuthSystemUserId);
+        Assert.Equal(AuthTaskType.Sync, outboxTask.TaskType);
+
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
 
         var accountingTasks = await db.AccountingToolOutboxTasks.ToListAsync();
         Assert.Single(accountingTasks);

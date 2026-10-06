@@ -250,6 +250,49 @@ export const handleMarkAsPaid = ({
 };
 
 /**
+ * Arguments for the handleOverpaidProcessed handler.
+ */
+type OverpaidProcessedArgs = {
+  balance: EnrollmentBalance;
+  setOverpaidBalances: (value: EnrollmentBalance[] | null) => void;
+};
+
+/**
+ * Marks an overpaid enrollment as processed (e.g. after refunding the member) and reloads the overpaid balances.
+ *
+ * @param {OverpaidProcessedArgs} args - The overpaid balance and the state setter to refresh.
+ */
+export const handleOverpaidProcessed = ({
+  balance,
+  setOverpaidBalances,
+}: OverpaidProcessedArgs) => {
+  const process = async () => {
+    const response = await postPaymentsActivity({
+      body: {
+        memberId: balance.enrollment.memberId,
+        activityIds: [balance.enrollment.activityId],
+        manuallyMarkedAsPaid: true,
+      },
+    });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to mark as processed");
+    }
+
+    const overpaidBalances = await getPaymentsOverpaid();
+    if (overpaidBalances.data) {
+      setOverpaidBalances(overpaidBalances.data.filter((b) => b.balance !== 0));
+    }
+  };
+
+  toast.promise(process(), {
+    loading: t("marking_as_processed"),
+    success: t("marked_as_processed"),
+    error: (error) => appendErrorMessage(t("mark_as_processed_failed"), error),
+  });
+};
+
+/**
  * Generates a CSV export of payments within a specific date range and triggers a browser download.
  *
  * @async
@@ -311,7 +354,6 @@ export const handlePaymentsExport = (
  */
 type LoadFinancesArgs = {
   setLoading: (loading: boolean) => void;
-  setExpiredActivities: (value: ActivityResponseDto[] | null) => void;
   setUnpaidBalances: (value: EnrollmentBalance[] | null) => void;
   setTotalUnpaid: (value: number) => void;
   setOpenPayments: (value: number) => void;
@@ -324,14 +366,14 @@ type LoadFinancesArgs = {
 
 /**
  * The primary data loader for the Finances page.
- * Orchestrates calls for expired activities, unpaid debts, and overpaid credits.
+ * Orchestrates calls for unpaid debts and overpaid credits. Expired activities are loaded
+ * separately (see loadExpiredActivities) since they're paginated by association year.
  *
  * @async
  * @param {LoadFinancesArgs} args - Complete set of state setters for the finances dashboard.
  */
 export const loadFinancesData = async ({
   setLoading,
-  setExpiredActivities,
   setUnpaidBalances,
   setTotalUnpaid,
   setOpenPayments,
@@ -342,32 +384,15 @@ export const loadFinancesData = async ({
   try {
     setLoading(true);
 
-    const [
-      expiredActivitiesResponse,
-      unpaidBalancesResponse,
-      overpaidBalancesResponse,
-    ] = await Promise.all([
-      getActivities({
-        query: {
-          IncludePast: true,
-          IncludeFuture: false,
-          OpenForPayment: false,
-          Page: 1,
-          PageSize: 20,
-        },
-      }),
-      getPaymentsUnpaid({
-        query: {
-          allUsers: true,
-        },
-      }),
-      getPaymentsOverpaid(),
-    ]);
-
-    if (expiredActivitiesResponse.error || !expiredActivitiesResponse.data)
-      throw new Error("Failed to load expired activities");
-
-    setExpiredActivities(expiredActivitiesResponse.data || []);
+    const [unpaidBalancesResponse, overpaidBalancesResponse] =
+      await Promise.all([
+        getPaymentsUnpaid({
+          query: {
+            allUsers: true,
+          },
+        }),
+        getPaymentsOverpaid(),
+      ]);
 
     if (unpaidBalancesResponse.data) {
       setUnpaidPaymentState({
@@ -390,5 +415,56 @@ export const loadFinancesData = async ({
     toast.error(appendErrorMessage(t("loading_failed"), error));
   } finally {
     setLoading(false);
+  }
+};
+
+/**
+ * Arguments for the loadExpiredActivities handler.
+ */
+type LoadExpiredActivitiesArgs = {
+  year: number;
+  setLoadingExpiredActivities: (loading: boolean) => void;
+  setExpiredActivities: (value: ActivityResponseDto[] | null) => void;
+};
+
+/**
+ * Fetches past, closed-for-payment activities for a single association year, for the
+ * finance dashboard's "expired activities" review queue.
+ *
+ * Scoped to one year at a time (rather than every closed activity ever) so that
+ * activities from long-settled years don't pile up in the queue indefinitely.
+ *
+ * @async
+ * @param {LoadExpiredActivitiesArgs} args - The target year and state setters to update.
+ */
+export const loadExpiredActivities = async ({
+  year,
+  setLoadingExpiredActivities,
+  setExpiredActivities,
+}: LoadExpiredActivitiesArgs) => {
+  try {
+    setLoadingExpiredActivities(true);
+
+    const response = await getActivities({
+      query: {
+        IncludePast: true,
+        IncludeFuture: false,
+        OpenForPayment: false,
+        OnlyWithPaidEnrollments: true,
+        Year: year,
+        Page: 1,
+        PageSize: 50,
+      },
+    });
+
+    if (response.error || !response.data)
+      throw new Error("Failed to load expired activities");
+
+    setExpiredActivities(response.data);
+  } catch (error) {
+    console.error("Error while fetching expired activities:", error);
+    toast.error(appendErrorMessage(t("loading_failed"), error));
+  } finally {
+    setLoadingExpiredActivities(false);
   }
 };

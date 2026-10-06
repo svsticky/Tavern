@@ -35,4 +35,18 @@ public class StudyUpdateDTO
 
     /// <inheritdoc cref="Study.Type"/>
     public required StudyType Type { get; set; }
+
+    /// <inheritdoc cref="Study.Active"/>
+    public required bool Active { get; set; }
+}
+
+/// <summary>
+/// Defines the DTO for retrieving studies, allowing filtering based on active status. The GetStudyDTO is used to transfer filter criteria from the client to the server when retrieving study data, ensuring that public consumers of the study catalog (e.g. the registration form) only see currently active studies, while administrative views can opt in to see inactive ones as well.
+/// </summary>
+public class GetStudyDTO
+{
+    /// <summary>
+    /// Indicates whether to include inactive studies in the retrieved study data. If set to true, both active and inactive studies will be included in the response; if set to false, only active studies will be included.
+    /// </summary>
+    public bool IncludeInactive { get; set; } = false;
 }

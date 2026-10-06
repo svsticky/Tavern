@@ -4,6 +4,7 @@ import type { StudyEnrollmentResponseDto } from "~/api";
 const {
   deleteMembersById,
   deleteStudyenrollmentsById,
+  getGroupmemberships,
   getMembersById,
   getMembersByIdProfilePicture,
   getPaymentsMemberByFromUserIdStatus,
@@ -17,6 +18,7 @@ const {
 } = vi.hoisted(() => ({
   deleteMembersById: vi.fn(),
   deleteStudyenrollmentsById: vi.fn(),
+  getGroupmemberships: vi.fn(),
   getMembersById: vi.fn(),
   getMembersByIdProfilePicture: vi.fn(),
   getPaymentsMemberByFromUserIdStatus: vi.fn(),
@@ -32,6 +34,7 @@ const {
 vi.mock("~/api", () => ({
   deleteMembersById,
   deleteStudyenrollmentsById,
+  getGroupmemberships,
   getMembersById,
   getMembersByIdProfilePicture,
   getPaymentsMemberByFromUserIdStatus,
@@ -75,6 +78,7 @@ describe("loadMemberData", () => {
     getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
       data: { hasPaidMembershipBeforeExpirationTime: true },
     });
+    getGroupmemberships.mockResolvedValue({ data: [] });
   });
 
   it("returns immediately when memberId is undefined", async () => {
@@ -84,6 +88,7 @@ describe("loadMemberData", () => {
       setFormData: vi.fn(),
       setEmail: vi.fn(),
       setEnrollments: vi.fn(),
+      setGroupMemberships: vi.fn(),
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
@@ -126,9 +131,12 @@ describe("loadMemberData", () => {
     });
     getMembersByIdProfilePicture.mockResolvedValue({ data: new Blob(["x"]) });
 
+    getGroupmemberships.mockResolvedValue({ data: [{ id: 1, groupId: 1 }] });
+
     const setFormData = vi.fn();
     const setEmail = vi.fn();
     const setEnrollments = vi.fn();
+    const setGroupMemberships = vi.fn();
     const setAvailableStudies = vi.fn();
     const setProfilePictureSrc = vi.fn();
     const setHasPaidMembership = vi.fn();
@@ -140,6 +148,7 @@ describe("loadMemberData", () => {
       setFormData,
       setEmail,
       setEnrollments,
+      setGroupMemberships,
       setAvailableStudies,
       setProfilePictureSrc,
       setHasPaidMembership,
@@ -157,6 +166,7 @@ describe("loadMemberData", () => {
     );
     expect(setEmail).toHaveBeenCalledWith("jane@example.com");
     expect(setEnrollments).toHaveBeenCalledWith([{ id: 1 }]);
+    expect(setGroupMemberships).toHaveBeenCalledWith([{ id: 1, groupId: 1 }]);
     expect(setAvailableStudies).toHaveBeenCalledWith([{ id: 1, title: "CS" }]);
     expect(getPaymentsMemberByFromUserIdStatus).toHaveBeenCalledWith({
       path: { fromUserId: "m1" },
@@ -186,6 +196,7 @@ describe("loadMemberData", () => {
       setFormData: vi.fn(),
       setEmail: vi.fn(),
       setEnrollments: vi.fn(),
+      setGroupMemberships: vi.fn(),
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership,
@@ -211,6 +222,7 @@ describe("loadMemberData", () => {
       setFormData,
       setEmail: vi.fn(),
       setEnrollments: vi.fn(),
+      setGroupMemberships: vi.fn(),
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
@@ -237,6 +249,7 @@ describe("loadMemberData", () => {
       setFormData: vi.fn(),
       setEmail: vi.fn(),
       setEnrollments: vi.fn(),
+      setGroupMemberships: vi.fn(),
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
@@ -259,6 +272,7 @@ describe("loadMemberData", () => {
       setFormData: vi.fn(),
       setEmail: vi.fn(),
       setEnrollments: vi.fn(),
+      setGroupMemberships: vi.fn(),
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),
@@ -279,6 +293,7 @@ describe("loadMemberData", () => {
       setFormData: vi.fn(),
       setEmail: vi.fn(),
       setEnrollments: vi.fn(),
+      setGroupMemberships: vi.fn(),
       setAvailableStudies: vi.fn(),
       setProfilePictureSrc: vi.fn(),
       setHasPaidMembership: vi.fn(),

@@ -72,6 +72,7 @@ function makeStudy(overrides: Partial<Study> = {}): Study {
     id: 1,
     title: "Computer Science",
     nominalDurationYears: 3,
+    active: true,
     ...overrides,
   } as Study;
 }
@@ -246,6 +247,36 @@ describe("UpdateAccountStatus", () => {
     expect(screen.getByText("add")).toBeDisabled();
   });
 
+  it("doesn't crash and shows a dropped-out label when enrolled in a study that is no longer returned (e.g. deactivated)", async () => {
+    getStudyenrollments.mockResolvedValue({
+      data: [makeEnrollment({ studyId: 999 })],
+    });
+    getStudies.mockResolvedValue({ data: [makeStudy({ id: 1 })] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateAccountStatus />, { authService });
+
+    expect(
+      (await screen.findAllByText("status_dropped_out")).length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("fetches studies including inactive ones so deadline calculations still work for deactivated studies", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({ data: [] });
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => token),
+    });
+    renderWithProviders(<UpdateAccountStatus />, { authService });
+
+    await waitFor(() =>
+      expect(getStudies).toHaveBeenCalledWith({
+        query: { IncludeInactive: true },
+      }),
+    );
+  });
+
   it("shows a loading placeholder in the status column while studies haven't loaded, and a dropped-out label once the deadline has passed", async () => {
     getStudyenrollments.mockResolvedValue({
       data: [
@@ -299,11 +330,13 @@ describe("UpdateAccountStatus", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Account Verwijderen/ }),
     );
-    const cancelButton = await screen.findByText("Annuleren");
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
     fireEvent.click(cancelButton);
 
     await waitFor(() =>
-      expect(screen.queryByText("Annuleren")).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole("button", { name: "cancel" }),
+      ).not.toBeInTheDocument(),
     );
   });
 

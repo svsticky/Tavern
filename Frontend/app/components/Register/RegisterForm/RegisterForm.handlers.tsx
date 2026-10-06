@@ -15,7 +15,7 @@ import {
   type Study,
 } from "~/api";
 import i18n from "~/i18n";
-import { appendErrorMessage } from "~/util/error.util";
+import { appendErrorMessage, getFriendlyErrorMessage } from "~/util/error.util";
 
 /**
  * Data structure representing the registration form fields for a new member.
@@ -315,6 +315,6 @@ export const handleRegisterSubmit = async ({
   toast.promise(registerProcess(), {
     loading: t("registering"),
     success: t("registration_successful"),
-    error: (error) => appendErrorMessage(t("registration_failed"), error),
+    error: (error) => getFriendlyErrorMessage(t("registration_failed"), error),
   });
 };

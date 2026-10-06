@@ -8,6 +8,8 @@ import {
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { createMockAuthService } from "~/testUtils";
+import { formatDate } from "~/util/date.util";
+import { capitalizeFirst } from "~/util/string.util";
 
 const {
   postEnrollments,
@@ -55,6 +57,7 @@ function buildActivity(
     dutchDescription: "Beschrijving",
     englishDescription: "Description",
     enrollments: [],
+    specificationQuestions: [],
     ...overrides,
   } as ActivityResponseDto;
 }
@@ -75,6 +78,15 @@ describe("handleAddToCalendar", () => {
       "_blank",
       "noreferrer",
     );
+    openSpy.mockRestore();
+  });
+
+  it("appends a disclaimer noting the copy is a one-time snapshot", () => {
+    const openSpy = vi.spyOn(window, "open").mockImplementation(() => null);
+    handleAddToCalendar(buildActivity());
+
+    const url = openSpy.mock.calls[0][0] as string;
+    expect(decodeURIComponent(url)).toContain("calendar_copy_disclaimer");
     openSpy.mockRestore();
   });
 });
@@ -389,6 +401,15 @@ describe("handleCopyForWhatsapp", () => {
     );
   });
 
+  it("uses origin and activity id to construct the public activity url", async () => {
+    const activity = buildActivity({ id: 42 });
+    await handleCopyForWhatsapp(activity, "NL" as any);
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(`${window.location.origin}/activities/42`),
+    );
+  });
+
   it("shows 'Free'/'Gratis' when the activity has no price", async () => {
     await handleCopyForWhatsapp(buildActivity({ price: 0 }), "EN" as any);
 
@@ -408,6 +429,38 @@ describe("handleCopyForWhatsapp", () => {
 
     await vi.waitFor(() =>
       expect(navigator.clipboard.writeText).toHaveBeenCalled(),
+    );
+  });
+
+  it("only includes the end time (not a repeated date) when start and end are on the same day", async () => {
+    const activity = buildActivity({
+      dateTimeStart: "2026-08-01T10:00:00Z",
+      dateTimeEnd: "2026-08-01T12:00:00Z",
+    });
+
+    await handleCopyForWhatsapp(activity, "EN" as any);
+
+    const start = new Date(activity.dateTimeStart);
+    const end = new Date(activity.dateTimeEnd);
+    const expectedRange = `${capitalizeFirst(formatDate(start, "weekdayDate"))} ${formatDate(start, "timeOnly")} - ${formatDate(end, "timeOnly")}`;
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(expectedRange),
+    );
+  });
+
+  it("includes the full end date when start and end are on different days", async () => {
+    const activity = buildActivity({
+      dateTimeStart: "2026-08-01T10:00:00Z",
+      dateTimeEnd: "2026-08-03T12:00:00Z",
+    });
+
+    await handleCopyForWhatsapp(activity, "EN" as any);
+
+    const start = new Date(activity.dateTimeStart);
+    const end = new Date(activity.dateTimeEnd);
+    const expectedRange = `${capitalizeFirst(formatDate(start, "weekdayDate"))} ${formatDate(start, "timeOnly")} - ${capitalizeFirst(formatDate(end, "weekdayDate"))} ${formatDate(end, "timeOnly")}`;
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining(expectedRange),
     );
   });
 });

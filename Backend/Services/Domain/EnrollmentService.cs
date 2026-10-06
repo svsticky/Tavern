@@ -169,14 +169,14 @@ public class EnrollmentService : IEnrollmentService
 
             EnsureActivityUnenrollmentOpen(enrollment.Activity, isBoardMember);
 
-            // If the enrollment is not on the waiting list, we need to promote the next in line after deletion
-            bool wasOnWaitingList = enrollment.IsOnWaitingList;
+            // If the enrollment is not on the waiting list, and the activity wasn't overfull, we need to promote the next in line after deletion
+            bool shouldPromoteSomeone = !enrollment.IsOnWaitingList && enrollment.Activity.Enrollments.Count(e => !e.IsOnWaitingList) <= enrollment.Activity.ParticipantLimit;
 
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
             _db.Enrollments.Remove(enrollment);
 
             Enrollment? promotedEnrollment = null;
-            if (!wasOnWaitingList)
+            if (shouldPromoteSomeone)
             {
                 promotedEnrollment = await PromoteFromWaitingList(activityId, cancellationToken);
             }
@@ -236,8 +236,9 @@ public class EnrollmentService : IEnrollmentService
 
             // Get and validate provided answers
             var providedAnswers = dto.SpecificationAnswers ?? new List<PostSpecificationAnswerDTO>();
+            var existingAnswers = enrollment.SpecificationAnswers.ToDictionary(a => a.SpecificationQuestionId, a => a.Answer);
 
-            EnrollmentValidator.ValidateAnswers(providedAnswers, activity.SpecificationQuestions, isBoard);
+            EnrollmentValidator.ValidateAnswers(providedAnswers, activity, isBoard, existingAnswers);
 
             // Remove old answers and add new ones
             _db.SpecificationAnswers.RemoveRange(enrollment.SpecificationAnswers);
@@ -264,23 +265,26 @@ public class EnrollmentService : IEnrollmentService
         _logger.LogInformation("Patching enrollment for member {MemberId} in activity {ActivityId}. Requested by {UserId}.", memberId, activityId, userId);
         ArgumentNullException.ThrowIfNull(patchDoc);
 
-        if (patchDoc.Operations.Any(op => op.path.Equals("/activity", StringComparison.OrdinalIgnoreCase)
-            || op.path.Equals("/activityid", StringComparison.OrdinalIgnoreCase)
-            || op.path.Equals("/member", StringComparison.OrdinalIgnoreCase)
-            || op.path.Equals("/memberid", StringComparison.OrdinalIgnoreCase)))
+        // Determine if activity enrollments can be changed
+        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
+
+        // Board members can patch any field (e.g. moving someone off the waiting list); everyone else
+        // is restricted to Enrollment.AllowedFields.
+        if (!isBoardMember && patchDoc.Operations.Any(op => !Enrollment.AllowedFields.Contains(op.path)))
         {
-            throw new ArgumentException("Cannot change ActivityId or MemberId.");
+            throw new ArgumentException("Cannot change ActivityId, MemberId, Price, RegisteredOn or IsOnWaitingList.");
         }
 
         // Get enrollment
         var enrollment = await _db.Enrollments
+            .Include(e => e.Member)
+            .Include(e => e.Activity)
+                .ThenInclude(a => a.SpecificationQuestions)
+            .Include(e => e.SpecificationAnswers)
             .FirstOrDefaultAsync(e => e.ActivityId == activityId && e.MemberId == memberId, cancellationToken);
 
         if (enrollment == null)
             throw new KeyNotFoundException();
-
-        // Determine if activity enrollments can be changed
-        bool isBoardMember = _permissionService.IsBoardOrCandidateBoardMember(userId);
 
         if (!isBoardMember)
         {
@@ -291,10 +295,28 @@ public class EnrollmentService : IEnrollmentService
         }
 
         // Apply patch and validate
+        var oldAnswers = enrollment.SpecificationAnswers.ToList();
+        bool wasOnWaitingList = enrollment.IsOnWaitingList;
         patchDoc.ApplyTo(enrollment);
         StateValidator.Validate(enrollment);
 
+        var questionsById = enrollment.Activity.SpecificationQuestions.ToDictionary(q => q.Id);
+        EnrollmentValidator.ValidateAnswerDeadlines(oldAnswers, enrollment.SpecificationAnswers, questionsById, enrollment.Activity, isBoardMember);
+
         await _db.SaveChangesAsync(cancellationToken);
+
+        // A board member manually moved this enrollment off the waiting list, so notify the member like any other promotion
+        if (wasOnWaitingList && !enrollment.IsOnWaitingList)
+        {
+            try
+            {
+                await _mailService.SendEnrollmentPromotionEmail(enrollment);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed sending enrollment promotion email to member {MemberId} for activity {ActivityId}.", enrollment.MemberId, enrollment.ActivityId);
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -302,7 +324,10 @@ public class EnrollmentService : IEnrollmentService
     {
         var next = await _db.Enrollments
             .Include(e => e.Member)
-                .ThenInclude(se => se.StudyEnrollments)
+                .ThenInclude(m => m.StudyEnrollments)
+                    .ThenInclude(se => se.Study)
+            .Include(e => e.Member)
+                .ThenInclude(m => m.GroupMemberships)
             .Include(e => e.Activity)
             .Where(e => e.ActivityId == activityId && e.IsOnWaitingList)
             .OrderBy(e => e.RegisteredOn)
@@ -312,7 +337,7 @@ public class EnrollmentService : IEnrollmentService
             .Where(e => TargetAudienceHelper.IsMemberInTargetAudience(e.Member, e.Activity.AllowedAudience))
             .Take(numberToPromote);
 
-        foreach (var enrollment in next)
+        foreach (var enrollment in toPromote)
         {
             enrollment.IsOnWaitingList = false;
         }

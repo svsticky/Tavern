@@ -1,5 +1,6 @@
 import {
   Calendar,
+  FileEditIcon,
   ImageIcon,
   MapPin,
   PencilIcon,
@@ -11,12 +12,18 @@ import { Link, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  getActivityEnrollmentStatus,
+  hasEnrollmentOpened,
+} from "~/util/activity.util";
 import { getEnv } from "~/util/config.utils";
-import { formatDate } from "~/util/date.util";
+import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { canEditActivity } from "~/util/group.util";
+import { capitalizeFirst } from "~/util/string.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 import { handleEditClick } from "./ActivityTile.handlers";
+import { useDateRowHeight } from "./DateRowHeightGroup";
 
 /**
  * A preview card component for an Activity, typically used in grids or lists.
@@ -69,6 +76,7 @@ export default function ActivityTile({
   }, [authService]);
 
   const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
+  const { canEnroll } = getActivityEnrollmentStatus(activity);
 
   const navigate = useNavigate();
 
@@ -82,14 +90,16 @@ export default function ActivityTile({
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
 
+  const { ref: dateTextRef, minHeight: dateRowMinHeight } = useDateRowHeight();
+
   return (
     <Link
       to={`/activities/${activity.id}`}
-      className="no-underline text-inherit"
+      className="flex h-full flex-col no-underline text-inherit"
     >
       <Tile
         className={cn(
-          "group relative block w-60 cursor-pointer overflow-hidden p-0 transition-all hover:shadow-md",
+          "group relative flex w-60 flex-1 flex-col cursor-pointer overflow-hidden p-0 transition-all hover:shadow-md",
           className,
         )}
       >
@@ -103,8 +113,16 @@ export default function ActivityTile({
           </button>
         )}
 
+        {/* Draft indicator */}
+        {canEdit && !activity.showInKoala && (
+          <span className="absolute left-2 top-2 z-20 inline-flex items-center gap-1 rounded-full bg-amber-100/90 px-2 py-1 text-xs font-semibold text-amber-700 shadow-sm backdrop-blur-sm">
+            <FileEditIcon size={12} />
+            {t("draft")}
+          </span>
+        )}
+
         {/* Poster image */}
-        <div className="relative aspect-[1/1.414] w-full overflow-hidden bg-gray-100">
+        <div className="relative aspect-[1/1.414] w-full shrink-0 overflow-hidden bg-gray-100">
           {/* Status states (Loading, No poster, Error) - ongewijzigd */}
           {status === "loading" && hasPoster && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -139,7 +157,7 @@ export default function ActivityTile({
         </div>
 
         {/* Activity details */}
-        <div className="rounded-b-2xl border border-t-0 border-gray-200 p-3 bg-white">
+        <div className="flex flex-1 flex-col rounded-b-2xl border border-t-0 border-gray-200 p-3 bg-white">
           <div className="mb-1 mt-1.5 flex w-full justify-between text-[18px] font-bold">
             <p className="min-w-0 truncate transition-colors duration-300 group-hover:text-(--board-primary)">
               {activity.name}
@@ -152,30 +170,44 @@ export default function ActivityTile({
           </div>
 
           <div className="mt-0 flex flex-col text-[14px] text-gray-500">
-            <div className="mt-1 flex items-center gap-1.5">
-              <Calendar size={12} />
-              {startDate.getDate()} {formatDate(startDate, "monthShort")} •{" "}
-              {formatDate(startDate, "timeOnly")}
-              {" - "}
-              {startDate.toDateString() !== endDate.toDateString() && (
-                <>
-                  {endDate.getDate()} {formatDate(endDate, "monthShort")} •{" "}
-                </>
-              )}
-              {formatDate(endDate, "timeOnly")}
+            <div
+              className="mt-1 flex items-start gap-1.5 leading-snug"
+              style={
+                dateRowMinHeight ? { minHeight: dateRowMinHeight } : undefined
+              }
+            >
+              <Calendar size={12} className="mt-[3px] shrink-0" />
+              <span ref={dateTextRef}>
+                {capitalizeFirst(formatDate(startDate, "shortDateWithWeekday"))}{" "}
+                • {formatDate(startDate, "timeOnly")}
+                {" - "}
+                {!isSameDayInAssociationTimeZone(startDate, endDate) && (
+                  <>
+                    {capitalizeFirst(
+                      formatDate(endDate, "shortDateWithWeekday"),
+                    )}{" "}
+                    •{" "}
+                  </>
+                )}
+                {formatDate(endDate, "timeOnly")}
+              </span>
             </div>
 
-            <div className="mt-1 flex items-center gap-1.5">
+            <div className="mt-1 flex h-5 items-center gap-1.5">
               <MapPin size={12} className="shrink-0" />
               <span className="min-w-0 truncate">{activity.location}</span>
             </div>
 
-            <div className="mt-1 flex items-center gap-1.5">
-              <UsersRound size={12} />
-              {activity.participantLimit
-                ? `${activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("places_available")}`
-                : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
-            </div>
+            {hasEnrollmentOpened(activity) && (
+              <div className="mt-1 flex h-5 items-center gap-1.5">
+                <UsersRound size={12} className="shrink-0" />
+                <span className="min-w-0 truncate">
+                  {activity.participantLimit && canEnroll
+                    ? `${Math.max(0, activity.participantLimit - activity.enrollments.filter((e) => !e.isOnWaitingList).length)} ${t("places_available")}`
+                    : `${activity.enrollments.filter((e) => !e.isOnWaitingList).length} ${t("participants")}`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </Tile>

@@ -11,6 +11,7 @@ export default [
       layout("layout/navbar.tsx", [
         layout("layout/paywall.tsx", [
           index("routes/home/home.tsx"),
+          route("sign_in", "routes/home/home.tsx", { id: "sign-in" }),
           route("announcements", "routes/announcements/announcements.tsx"),
           route("activities", "routes/activities/activities.tsx"),
           route("activities/create", "routes/edit-activity/edit-activity.tsx", {
@@ -70,6 +71,8 @@ export default [
           ]),
         ]),
         route("update-account-status", "routes/update-account-status.tsx"),
+        route("403", "routes/forbidden.tsx"),
+        route("*", "routes/not-found.tsx"),
       ]),
     ]),
 

@@ -2,6 +2,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
+using System.Globalization;
 
 namespace Backend.Services;
 
@@ -85,7 +86,7 @@ public class PermissionService(
     /// <returns><c>true</c> when the member is in the board group; otherwise <c>false</c>.</returns>
     public bool IsBoardMember(Guid memberId)
     {
-        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0"), YearUtils.GetBoardYear(db));
+        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "0", CultureInfo.InvariantCulture), YearUtils.GetBoardYear(db));
     }
 
     /// <summary>
@@ -105,8 +106,8 @@ public class PermissionService(
     public bool IsBoardOrCandidateBoardMember(Guid memberId)
     {
         var boardYear = YearUtils.GetBoardYear(db);
-        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1"), boardYear) ||
-               IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "1"), boardYear);
+        return IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1", CultureInfo.InvariantCulture), boardYear) ||
+               IsInGroup(memberId, uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "CandidateBoardGroupId")?.Value ?? "1", CultureInfo.InvariantCulture), boardYear);
     }
 
     /// <inheritdoc />

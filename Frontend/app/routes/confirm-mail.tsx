@@ -26,7 +26,7 @@ export default function ConfirmMail() {
   const [searchParams] = useSearchParams();
   const memberId = searchParams.get("memberId");
   const createdByAdmin = searchParams.get("createdByAdmin") === "true";
-  const [status, setStatus] = useState<"loading" | "done">(
+  const [status, setStatus] = useState<"loading" | "done" | "paymentRequired">(
     memberId ? "loading" : "done",
   );
   const attemptsRef = useRef(0);
@@ -44,14 +44,20 @@ export default function ConfirmMail() {
 
       if (cancelled) return;
 
-      if (
-        response.status === 200 &&
-        response.data === "Pending" &&
-        attemptsRef.current < MAX_ATTEMPTS
-      ) {
-        // The member isn't linked to the auth system yet (still being provisioned in the
-        // background right after registration). Retry briefly instead of giving up.
-        setTimeout(trySend, RETRY_DELAY_MS);
+      if (response.status === 200 && response.data === "Pending") {
+        if (attemptsRef.current < MAX_ATTEMPTS) {
+          // The member isn't linked to the auth system yet (still being provisioned in the
+          // background right after registration). Retry briefly instead of giving up.
+          setTimeout(trySend, RETRY_DELAY_MS);
+          return;
+        }
+        setStatus("paymentRequired");
+      }
+
+      if (response.status === 200 && response.data === "PaymentRequired") {
+        // Mollie redirects back here whether the payment was paid, cancelled, or expired -
+        // reaching this page is not proof of payment. Don't activate the account or retry.
+        setStatus("paymentRequired");
         return;
       }
 
@@ -76,6 +82,14 @@ export default function ConfirmMail() {
       <div className="p-4">
         {status === "loading" ? (
           <p className="text-lg">{t("loading")}...</p>
+        ) : status === "paymentRequired" ? (
+          <>
+            <h1 className="text-2xl font-bold">{t("payment_not_completed")}</h1>
+            <p className="text-lg mb-4">
+              {t("payment_not_completed_description")}
+            </p>
+            <Link to="/register">{t("try_again")}</Link>
+          </>
         ) : createdByAdmin && memberId ? (
           <>
             <h1 className="text-2xl font-bold">

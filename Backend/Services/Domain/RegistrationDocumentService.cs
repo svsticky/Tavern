@@ -28,7 +28,8 @@ public class RegistrationDocumentService(
                 Id = d.Id,
                 NameDutch = d.NameDutch,
                 NameEnglish = d.NameEnglish,
-                Url = d.Url,
+                UrlDutch = d.UrlDutch,
+                UrlEnglish = d.UrlEnglish,
                 SortOrder = d.SortOrder
             })
             .ToListAsync(ct);
@@ -45,7 +46,8 @@ public class RegistrationDocumentService(
             Id = doc.Id,
             NameDutch = doc.NameDutch,
             NameEnglish = doc.NameEnglish,
-            Url = doc.Url,
+            UrlDutch = doc.UrlDutch,
+            UrlEnglish = doc.UrlEnglish,
             SortOrder = doc.SortOrder
         };
     }
@@ -59,7 +61,8 @@ public class RegistrationDocumentService(
         {
             NameDutch = dto.NameDutch,
             NameEnglish = dto.NameEnglish,
-            Url = dto.Url,
+            UrlDutch = dto.UrlDutch,
+            UrlEnglish = dto.UrlEnglish,
             SortOrder = dto.SortOrder
         };
 
@@ -74,7 +77,8 @@ public class RegistrationDocumentService(
             Id = doc.Id,
             NameDutch = doc.NameDutch,
             NameEnglish = doc.NameEnglish,
-            Url = doc.Url,
+            UrlDutch = doc.UrlDutch,
+            UrlEnglish = doc.UrlEnglish,
             SortOrder = doc.SortOrder
         };
     }
@@ -89,7 +93,8 @@ public class RegistrationDocumentService(
 
         doc.NameDutch = dto.NameDutch;
         doc.NameEnglish = dto.NameEnglish;
-        doc.Url = dto.Url;
+        doc.UrlDutch = dto.UrlDutch;
+        doc.UrlEnglish = dto.UrlEnglish;
         doc.SortOrder = dto.SortOrder;
 
         StateValidator.Validate(doc);

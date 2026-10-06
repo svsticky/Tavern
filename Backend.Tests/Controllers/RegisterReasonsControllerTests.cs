@@ -178,7 +178,7 @@ public class RegisterReasonsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PostRegisterReason(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PostRegisterReason_Error_ThrowsException()
@@ -197,7 +197,7 @@ public class RegisterReasonsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostRegisterReason(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutRegisterReason_Success_ReturnsNoContent()
@@ -238,7 +238,7 @@ public class RegisterReasonsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutRegisterReason(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutRegisterReason_Forbidden_ThrowsUnauthorizedAccessException()
@@ -257,7 +257,7 @@ public class RegisterReasonsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutRegisterReason(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutRegisterReason_Error_ThrowsException()
@@ -276,7 +276,7 @@ public class RegisterReasonsControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutRegisterReason(1, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task DeleteRegisterReason_Success_ReturnsNoContent()
@@ -377,8 +377,7 @@ public class RegisterReasonsControllerTests
         var result = await _controller.GetIcon(1, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("Register reason or icon not found.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -404,8 +403,7 @@ public class RegisterReasonsControllerTests
         var result = await _controller.GetIcon(1, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("File is no longer present on the server.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]

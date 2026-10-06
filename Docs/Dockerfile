@@ -16,7 +16,7 @@ RUN dotnet tool install -g docfx
 ENV PATH="/root/.dotnet/tools:${PATH}"
 
 # -- Install node dependencies for the project
-FROM node:lts-alpine AS project-deps
+FROM generation-deps AS project-deps
 WORKDIR /app
 
 COPY Docs/package.json ./ 

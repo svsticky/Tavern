@@ -8,6 +8,7 @@ using Backend.Controllers;
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.JsonPatch;
@@ -241,7 +242,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PostMember(dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task DeleteMember_Success_ReturnsNoContent()
@@ -378,7 +379,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutMember_NotFound_ThrowsKeyNotFoundException()
@@ -403,7 +404,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task PutMember_Exception_ThrowsException()
@@ -428,7 +429,7 @@ public class MembersControllerTests
 
         // Act & Assert
         await Assert.ThrowsAsync<Exception>(() => _controller.PutMember(targetId, dto, CancellationToken.None));
-}
+    }
 
     [Fact]
     public async Task GetProfilePicture_GroupOrPathNotFound_ReturnsNotFound()
@@ -441,8 +442,7 @@ public class MembersControllerTests
         var result = await _controller.GetProfilePicture(targetId, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("Member or profile picture not found.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -458,8 +458,7 @@ public class MembersControllerTests
         var result = await _controller.GetProfilePicture(targetId, CancellationToken.None);
 
         // Assert
-        var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
-        Assert.Equal("File is no longer present on the server.", notFoundResult.Value);
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -469,7 +468,7 @@ public class MembersControllerTests
         var targetId = Guid.NewGuid();
         var member = new MemberResponseDTO { Id = targetId, ProfilePicturePath = "some/path.png" };
         _memberServiceMock.GetMember(targetId, _userId, Arg.Any<CancellationToken>()).Returns(member);
-        
+
         var stream = new MemoryStream(new byte[] { 1, 2, 3 });
         _profilePictureServiceMock.GetProfilePictureByPath("some/path.png").Returns(Task.FromResult<(Stream Stream, string ContentType)?>((stream, "image/png")));
 

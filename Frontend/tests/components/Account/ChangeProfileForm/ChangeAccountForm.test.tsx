@@ -164,17 +164,16 @@ describe("ChangeAccountForm", () => {
 
   it("does not delete the account when the confirmation dialog is cancelled", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(false);
     renderWithProviders(<ChangeAccountForm member={buildMember()} />);
 
     await user.click(screen.getByRole("button", { name: "delete_account" }));
+    await user.click(screen.getByRole("button", { name: "cancel" }));
 
     expect(deleteMembersById).not.toHaveBeenCalled();
   });
 
   it("deletes the account and logs out when confirmed", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     deleteMembersById.mockResolvedValue({ status: 204 });
     const authService = createMockAuthService();
     const member = buildMember();
@@ -184,6 +183,7 @@ describe("ChangeAccountForm", () => {
     });
 
     await user.click(screen.getByRole("button", { name: "delete_account" }));
+    await user.click(screen.getByRole("button", { name: "confirm" }));
 
     await waitFor(() =>
       expect(deleteMembersById).toHaveBeenCalledWith({
@@ -195,7 +195,6 @@ describe("ChangeAccountForm", () => {
 
   it("shows an error toast when account deletion fails", async () => {
     const user = userEvent.setup();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     deleteMembersById.mockResolvedValue({ status: 500, error: "fail" });
     const toast = (await import("react-hot-toast")).default;
     const consoleError = vi
@@ -205,6 +204,7 @@ describe("ChangeAccountForm", () => {
     renderWithProviders(<ChangeAccountForm member={buildMember()} />);
 
     await user.click(screen.getByRole("button", { name: "delete_account" }));
+    await user.click(screen.getByRole("button", { name: "confirm" }));
 
     await waitFor(() => expect(toast.error).toHaveBeenCalled());
     expect(consoleError).toHaveBeenCalled();

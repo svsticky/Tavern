@@ -12,6 +12,17 @@ namespace Backend.Models.Domain;
 public class Enrollment
 {
     /// <summary>
+    /// A list of allowed field paths that can be modified by standard update operations (such as
+    /// JSON Patch or partial updates via the API). Identity fields (activity/member) and
+    /// admin-managed bookkeeping fields (price, registration time, waiting-list status) are
+    /// off-limits to everyone and must go through their own dedicated flows.
+    /// </summary>
+    public static readonly IReadOnlySet<string> AllowedFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "/specificationanswers"
+    };
+
+    /// <summary>
     /// Reference to the unique identifier of the activity which is enrolled for.
     /// </summary>
     public required uint ActivityId { get; set; }

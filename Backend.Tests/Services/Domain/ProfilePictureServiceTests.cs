@@ -223,4 +223,32 @@ public class ProfilePictureServiceTests : IDisposable
         Assert.Equal("saved-path.webp", updated.ProfilePicturePath);
         Assert.Equal("my-pic.png", updated.ProfilePictureFileName);
     }
+
+    [Fact]
+    public async Task UploadProfilePicture_CompressionFails_RollsBackTransaction()
+    {
+        // Arrange
+        var memberId = Guid.NewGuid();
+        var member = CreateTestMember(memberId);
+        member.ProfilePicturePath = "old-path.webp";
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var formFile = Substitute.For<IFormFile>();
+        formFile.FileName.Returns("my-pic.png");
+        formFile.ContentType.Returns("image/png");
+
+        _fileCompressor.CompressFileAsync(formFile)
+            .Returns(Task.FromException<(Stream Stream, string ContentType)>(new InvalidOperationException("compression failed")));
+
+        // Act & Assert
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _service.UploadProfilePicture(memberId, memberId, formFile));
+
+        _db.ChangeTracker.Clear();
+        var unchanged = await _db.Members.FindAsync(memberId);
+        Assert.NotNull(unchanged);
+        Assert.Equal("old-path.webp", unchanged.ProfilePicturePath);
+        await _storageService.DidNotReceiveWithAnyArgs().DeleteFileAsync(default!, default!);
+    }
 }

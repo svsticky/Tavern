@@ -10,11 +10,12 @@ namespace Backend.Interfaces
     public interface IStudyService
     {
         /// <summary>
-        /// Retrieves all studies.
+        /// Retrieves all studies, ordered with Bachelor programs first, then Master programs, then alphabetically by title.
         /// </summary>
+        /// <param name="dto">The filter criteria, e.g. whether to include inactive studies.</param>
         /// <param name="ct">The cancellation token.</param>
         /// <returns>The studies.</returns>
-        Task<List<Study>> GetStudies(CancellationToken ct);
+        Task<List<Study>> GetStudies(GetStudyDTO dto, CancellationToken ct);
 
         /// <summary>
         /// Retrieves a study by ID.

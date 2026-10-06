@@ -98,4 +98,13 @@ public class SpecificationQuestion
     /// The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
     /// </summary>
     public string? Options { get; set; }
+
+    /// <summary>
+    /// Whether this question's answer closes at the activity's unenrollment deadline instead of its
+    /// enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no
+    /// longer be given or changed once that deadline passes. Otherwise - or when this is false - the
+    /// answer remains open until the activity's enrollment deadline, falling back to the activity's end
+    /// date and time if neither deadline is set.
+    /// </summary>
+    public bool CloseOnUnenrollmentDeadline { get; set; }
 }

@@ -6,6 +6,7 @@ import type {
   MailinglistVisibility,
 } from "~/api";
 import Button from "~/components/UI/Button";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import Form from "~/components/UI/Form/Form";
 import Select from "~/components/UI/Select";
 import {
@@ -41,6 +42,7 @@ export default function EditMailinglistOverlay({
     curatedList?.visibility ?? "General",
   );
   const [loading, setLoading] = useState(false);
+  const [confirmModal, confirm] = useConfirm();
 
   useEffect(() => {
     if (!curatedList) {
@@ -113,12 +115,18 @@ export default function EditMailinglistOverlay({
           className="flex-1"
           type="button"
           onClick={() =>
-            handleMailinglistDelete({ curatedList, setLoading, onComplete })
+            handleMailinglistDelete({
+              curatedList,
+              setLoading,
+              onComplete,
+              confirm,
+            })
           }
         >
           {t("delete")}
         </Button>
       )}
+      {confirmModal}
     </Form>
   );
 }

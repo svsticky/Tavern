@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import type {
   Activity,
   ActivityResponseDto,
@@ -12,11 +12,14 @@ import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { formatDate } from "~/util/date.util";
+import Select from "~/components/UI/Select";
+import { formatDate, getCommitteeYear } from "~/util/date.util";
 import {
   handleMarkAsPaid,
+  handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
+  loadExpiredActivities,
   loadFinancesData,
   refreshUnpaidPayments,
 } from "./finances.handlers";
@@ -43,9 +46,18 @@ export default function Finances() {
   const [exporting, setExporting] = useState(false);
   const [totalUnpaid, setTotalUnpaid] = useState(0);
   const [openPayments, setOpenPayments] = useState(0);
+  const currentYear = getCommitteeYear();
+  const [expiredActivitiesYear, setExpiredActivitiesYear] =
+    useState(currentYear);
+  const [loadingExpiredActivities, setLoadingExpiredActivities] =
+    useState(true);
   const [expiredActivities, setExpiredActivities] = useState<
     ActivityResponseDto[] | null
   >(null);
+  const expiredActivitiesYears = Array.from(
+    { length: 10 },
+    (_, i) => currentYear - i,
+  );
   const [unpaidActivities, setUnpaidActivities] = useState<Activity[] | null>(
     null,
   );
@@ -64,7 +76,6 @@ export default function Finances() {
   useEffect(() => {
     loadFinancesData({
       setLoading,
-      setExpiredActivities,
       setUnpaidBalances,
       setTotalUnpaid,
       setOpenPayments,
@@ -74,7 +85,16 @@ export default function Finances() {
     });
   }, []);
 
-  if (loading) return t("loading");
+  useEffect(() => {
+    loadExpiredActivities({
+      year: expiredActivitiesYear,
+      setLoadingExpiredActivities,
+      setExpiredActivities,
+    });
+  }, [expiredActivitiesYear]);
+
+  if (loading || (loadingExpiredActivities && expiredActivities === null))
+    return t("loading");
 
   if (
     totalUnpaid === null ||
@@ -85,6 +105,9 @@ export default function Finances() {
     expiredActivities === undefined
   )
     return t("failed_fetching");
+
+  const deviceLocale =
+    typeof navigator !== "undefined" ? navigator.language : undefined;
 
   return (
     <>
@@ -130,7 +153,7 @@ export default function Finances() {
             className="flex-1"
           >
             <p className="text-2xl font-bold text-slate-800">
-              {totalUnpaid.toLocaleString(undefined, {
+              {totalUnpaid.toLocaleString(deviceLocale, {
                 style: "currency",
                 currency: "EUR",
               })}
@@ -151,11 +174,8 @@ export default function Finances() {
           >
             <div className="flex flex-col gap-2">
               {overpaidBalances?.map((balance, index) => (
-                <>
-                  <div
-                    key={index}
-                    className="p-3 bg-green-100 rounded-lg flex items-center justify-between"
-                  >
+                <Fragment key={index}>
+                  <div className="p-3 bg-green-100 rounded-lg flex items-center justify-between">
                     <span className="text-sm text-slate-700">
                       {balance.enrollment.member?.firstName}{" "}
                       {balance.enrollment.member?.lastName}
@@ -165,10 +185,16 @@ export default function Finances() {
                       {balance.enrollment.activity?.name}
                     </span>
                   </div>
-                  <Button variant="primary" className="self-end">
+                  <Button
+                    variant="primary"
+                    className="self-end"
+                    onClick={() =>
+                      handleOverpaidProcessed({ balance, setOverpaidBalances })
+                    }
+                  >
                     {t("processed")}
                   </Button>
-                </>
+                </Fragment>
               ))}
             </div>
           </BorderedTile>
@@ -178,60 +204,94 @@ export default function Finances() {
           title={t("expired_activities")}
           subtitle={t("expired_activities_subtitle")}
         >
-          {expiredActivities.map((activity) => (
-            <Tile
-              className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
-              key={activity.id}
-            >
-              <div className="flex flex-col gap-1">
-                <span className="text-slate-700 font-medium">
-                  {activity.name}
-                </span>
-                <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
-                  <span>
-                    {formatDate(new Date(activity.dateTimeEnd), "fullDateTime")}
-                  </span>
-                  <span className="hidden md:inline">•</span>
-                  <span>
-                    {activity.enrollments.length} {t("participants")}
-                  </span>
-                  <span className="hidden md:inline">•</span>
-                  <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
-                </div>
-              </div>
+          <div className="w-full sm:w-auto self-end">
+            <Select
+              options={expiredActivitiesYears.map((y) => ({
+                label: `${y - 1}/${y}`,
+                value: y,
+              }))}
+              label={t("year")}
+              style={{ minWidth: "150px" }}
+              value={expiredActivitiesYear}
+              onChange={(e) => setExpiredActivitiesYear(Number(e.target.value))}
+            />
+          </div>
 
-              <Button
-                variant="primary"
-                className="w-full md:w-auto"
-                href={`/activities/${activity.id}`}
-              >
-                {t("go_to_activity")}
-              </Button>
-            </Tile>
-          ))}
+          {loadingExpiredActivities && (
+            <span className="text-sm text-slate-400">{t("loading")}</span>
+          )}
+
+          {!loadingExpiredActivities && expiredActivities.length === 0 && (
+            <span className="text-sm text-slate-400">{t("no_data")}</span>
+          )}
+
+          {!loadingExpiredActivities && (
+            <div className="flex flex-col gap-3">
+              {expiredActivities.map((activity) => (
+                <Tile
+                  className="bg-gray-100 flex flex-col md:flex-row w-full justify-between items-start md:items-center p-4 rounded-lg gap-4"
+                  key={activity.id}
+                >
+                  <div className="flex flex-col gap-1">
+                    <span className="text-slate-700 font-medium">
+                      {activity.name}
+                    </span>
+                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm text-slate-500">
+                      <span>
+                        {formatDate(
+                          new Date(activity.dateTimeEnd),
+                          "fullDateTime",
+                        )}
+                      </span>
+                      <span className="hidden md:inline">•</span>
+                      <span>
+                        {activity.enrollments.length} {t("participants")}
+                      </span>
+                      <span className="hidden md:inline">•</span>
+                      <span>{`€${activity.price?.toFixed(2) || t("free")}`}</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    className="w-full md:w-auto"
+                    href={`/activities/${activity.id}`}
+                  >
+                    {t("go_to_activity")}
+                  </Button>
+                </Tile>
+              ))}
+            </div>
+          )}
         </BorderedTile>
 
         <BorderedTile
           title={t("finances_activity_overview")}
           subtitle={t("overdue_payment_subtitle")}
-          className="flex flex-col gap-3"
         >
-          {unpaidActivities?.map((activity) => (
-            <BorderedTile
-              key={activity.id}
-              title={activity.name}
-              className="bg-gray-100"
-              collapsibleContent={
-                <div className="flex flex-col gap-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    {t("unpaid_members")} (
-                    {membersWithOverduePayment?.length || 0})
-                  </span>
-                  {membersWithOverduePayment?.map(
-                    (memberWithOverduePayment) => {
-                      const member = memberWithOverduePayment.member;
+          <div className="flex flex-col gap-3">
+            {unpaidActivities?.map((activity) => {
+              const unpaidMembers =
+                membersWithOverduePayment?.flatMap(
+                  ({ member, enrollments }) => {
+                    const balance = enrollments.find(
+                      (e) => e.enrollment.activityId === activity.id,
+                    );
+                    return balance ? [{ member, balance }] : [];
+                  },
+                ) ?? [];
 
-                      return (
+              return (
+                <BorderedTile
+                  key={activity.id}
+                  title={activity.name}
+                  className="bg-gray-100"
+                  collapsibleContent={
+                    <div className="flex flex-col gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                        {t("unpaid_members")} ({unpaidMembers.length})
+                      </span>
+                      {unpaidMembers.map(({ member, balance }) => (
                         <div
                           key={member.id}
                           className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-slate-100 rounded-xl gap-3"
@@ -242,7 +302,7 @@ export default function Finances() {
                             </span>
 
                             <span className="font-bold text-slate-600 sm:ml-auto sm:mr-4">
-                              {`€${memberWithOverduePayment.enrollments.reduce((sum, enrollment) => sum + enrollment.balance, 0).toFixed(2)}`}
+                              {`€${balance.balance.toFixed(2)}`}
                             </span>
                           </div>
 
@@ -253,8 +313,7 @@ export default function Finances() {
                               onClick={() =>
                                 handleMarkAsPaid({
                                   member,
-                                  enrollments:
-                                    memberWithOverduePayment.enrollments,
+                                  enrollments: [balance],
                                   setLoading,
                                   refreshUnpaid: () =>
                                     refreshUnpaidPayments({
@@ -272,23 +331,25 @@ export default function Finances() {
                             </Button>
                           </div>
                         </div>
-                      );
-                    },
-                  )}
-                </div>
-              }
-            >
-              <div className="text-xs flex gap-2 items-center">
-                <span className="ml-4 text-(--board-primary) font-bold">
-                  {t("outstanding")}: €
-                  {unpaidBalances
-                    ?.filter((b) => b.enrollment?.activityId === activity.id)
-                    .reduce((sum, balance) => sum + balance.balance, 0)
-                    .toFixed(2)}
-                </span>
-              </div>
-            </BorderedTile>
-          ))}
+                      ))}
+                    </div>
+                  }
+                >
+                  <div className="text-xs flex gap-2 items-center">
+                    <span className="ml-4 text-(--board-primary) font-bold">
+                      {t("outstanding")}: €
+                      {unpaidBalances
+                        ?.filter(
+                          (b) => b.enrollment?.activityId === activity.id,
+                        )
+                        .reduce((sum, balance) => sum + balance.balance, 0)
+                        .toFixed(2)}
+                    </span>
+                  </div>
+                </BorderedTile>
+              );
+            })}
+          </div>
         </BorderedTile>
 
         <BorderedTile

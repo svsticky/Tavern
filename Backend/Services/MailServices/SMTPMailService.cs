@@ -23,6 +23,7 @@ public class SMTPMailService(
     private bool StartTls => _db.Settings.Find("SmtpStartTls")?.Value?.Equals("true", StringComparison.OrdinalIgnoreCase) ?? true;
     private string? User => _db.Settings.Find("SmtpUser")?.Value;
     private string? Pass => _db.Settings.Find("SmtpPass")?.Value;
+    private int? MaxBatchSize => int.TryParse(_db.Settings.Find("SmtpMaxBatchSize")?.Value, out var size) && size > 0 ? size : null;
 
     /// <summary>
     /// Sends an email through SMTP.
@@ -34,32 +35,12 @@ public class SMTPMailService(
     /// <param name="ct">The cancellation token.</param>
     protected override async Task SendEmailCoreAsync(MailRecipient from, MailRecipient[] to, string subject, string htmlContent, CancellationToken ct)
     {
+        if (to.Length == 0)
+        {
+            return;
+        }
+
         logger.LogInformation("Sending SMTP email from {From} to {RecipientCount} recipients.", from.Mail, to.Length);
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(from.Name, from.Mail));
-        message.Subject = subject;
-
-        // A single recipient goes in To so their mail client shows who the mail was sent to; multiple
-        // recipients (e.g. an activity mail to a whole group) go in Bcc so they don't see each other's address.
-        if (to.Length == 1)
-        {
-            message.To.Add(new MailboxAddress(to[0].Name, to[0].Mail));
-        }
-        else
-        {
-            foreach (var recipient in to)
-            {
-                message.Bcc.Add(new MailboxAddress(recipient.Name, recipient.Mail));
-            }
-        }
-
-        var bodyBuilder = new BodyBuilder
-        {
-            HtmlBody = htmlContent,
-            TextBody = StripHtml(htmlContent)
-        };
-
-        message.Body = bodyBuilder.ToMessageBody();
 
         using var client = new SmtpClient();
 
@@ -71,8 +52,56 @@ public class SMTPMailService(
             await client.AuthenticateAsync(User, Pass, ct);
         }
 
-        await client.SendAsync(message, ct);
+        foreach (var batch in to.Chunk(MaxBatchSize ?? to.Length))
+        {
+            var personalizedHtml = ApplyNamePlaceholder(htmlContent, batch);
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(from.Name, from.Mail));
+            message.Subject = subject;
+
+            // A single recipient goes in To so their mail client shows who the mail was sent to; multiple
+            // recipients (e.g. an activity mail to a whole group) go in Bcc so they don't see each other's address.
+            if (batch.Length == 1)
+            {
+                message.To.Add(new MailboxAddress(batch[0].Name, batch[0].Mail));
+            }
+            else
+            {
+                foreach (var recipient in batch)
+                {
+                    message.Bcc.Add(new MailboxAddress(recipient.Name, recipient.Mail));
+                }
+            }
+
+            message.Body = new BodyBuilder
+            {
+                HtmlBody = personalizedHtml,
+                TextBody = StripHtml(personalizedHtml)
+            }.ToMessageBody();
+
+            await client.SendAsync(message, ct);
+        }
+
         await client.DisconnectAsync(true, ct);
         logger.LogInformation("SMTP email sent successfully to {RecipientCount} recipients.", to.Length);
+    }
+
+    /// <summary>
+    /// Removes the "%name%" placeholder from the mail body. SMTP sends a single message per batch (To for one
+    /// recipient, Bcc for several), so there is no single name to substitute per recipient - the placeholder is
+    /// simply stripped rather than personalized. Mailgun personalizes per recipient instead via its own
+    /// recipient-variables mail merge.
+    /// </summary>
+    /// <param name="htmlContent">The mail body possibly containing a "%name%" placeholder.</param>
+    /// <param name="batch">The recipients the resulting body will be sent to.</param>
+    /// <returns>The mail body with the placeholder removed.</returns>
+    private static string ApplyNamePlaceholder(string htmlContent, MailRecipient[] batch)
+    {
+        return htmlContent
+            .Replace(" %name% ", " ")
+            .Replace(" %name%", "")
+            .Replace("%name% ", "")
+            .Replace("%name%", "");
     }
 }

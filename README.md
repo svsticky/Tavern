@@ -14,6 +14,7 @@
 
 * **Event & Activity Management:** Create, schedule, and configure activities visible on the platform and external calendar feeds.
 * **Enrollment & Waiting Lists:** Automated enrollments with real-time capacity monitoring and waiting list processing.
+* **Personal Calendar Feeds:** Members subscribe to a private iCalendar feed that keeps the activities they are enrolled in up to date automatically.
 * **Secure Authentication:** Integrated single sign-on (SSO) and user lifecycle synchronization powered by Keycloak.
 * **Integrated Payments:** Smooth checkout experience for paid activities and annual memberships via Mollie API.
 * **Robust Background Workers:** Hangfire-managed transactional outbox workers syncing payments, mail subscriptions, and accounting tools.
@@ -200,5 +201,5 @@ docker compose up -d --build
 ## Architecture & Documentation
 
 For a detailed deep dive into the system's architecture, APIs, or docs:
-* **Main Branch Documentation:** [docs.tavern.svsticky.nl](https://docs.tavern.svsticky.nl)
-* **Development Branch Documentation:** [docs.tavern.dev.svsticky.nl](https://docs.tavern.dev.svsticky.nl)
+* **Main Branch Documentation:** [docs.koala.svsticky.nl](https://docs.koala.svsticky.nl)
+* **Development Branch Documentation:** [docs.koala.dev.svsticky.nl](https://docs.koala.dev.svsticky.nl)

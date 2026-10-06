@@ -9,6 +9,7 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import RequiredAsterisk from "~/components/UI/RequiredAstrix";
 import Select from "~/components/UI/Select";
+import { calculateAge } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import {
   handleCreateBegunstigerInputChange,
@@ -52,22 +53,8 @@ export default function CreateBegunstigerPage() {
   ];
 
   const isFormValid = useMemo(() => {
-    const birthDateValue = new Date(formData.birthDate);
-    let isAdult = false;
-
-    if (birthDateValue && !Number.isNaN(birthDateValue.getTime())) {
-      const today = new Date();
-      let age = today.getFullYear() - birthDateValue.getFullYear();
-      const monthDiff = today.getMonth() - birthDateValue.getMonth();
-
-      if (
-        monthDiff < 0 ||
-        (monthDiff === 0 && today.getDate() < birthDateValue.getDate())
-      ) {
-        age--;
-      }
-      isAdult = age >= 18;
-    }
+    const age = calculateAge(formData.birthDate);
+    const isAdult = age !== null && age >= 18;
 
     const allFieldsFilled = Object.entries(formData).every(([key, value]) => {
       if (typeof value === "boolean") return true;

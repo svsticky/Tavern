@@ -74,6 +74,32 @@ public class ActivityValidatorTests
     }
 
     [Fact]
+    public void ValidateRequest_EndEqualToStart_ThrowsArgumentException()
+    {
+        // A zero-duration activity has no meaningful representation in a calendar feed, so it is rejected
+        // outright rather than published as an instantaneous event.
+        var moment = DateTimeOffset.UtcNow;
+        var dto = new TestActivityDTO
+        {
+            Name = "Drinks",
+            DutchDescription = "NL Desc",
+            EnglishDescription = "EN Desc",
+            Location = "Tavern",
+            DateTimeStart = moment,
+            DateTimeEnd = moment,
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = false,
+            AreParticipantsVisible = false,
+            IsAdultOnly = false,
+            IsWeeklyDrinks = false
+        };
+
+        var exception = Assert.Throws<ArgumentException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
+        Assert.Equal("Activity cannot end before it starts.", exception.Message);
+    }
+
+    [Fact]
     public void ValidateRequest_ShowInKoala_ChecksBoardPermission()
     {
         var dto = new TestActivityDTO
@@ -167,7 +193,7 @@ public class ActivityValidatorTests
     public void ParseCreateQuestions_ValidJson_ReturnsParsedList()
     {
         var json = "[{\"QuestionDutch\":\"Vraag\",\"QuestionEnglish\":\"Question\",\"Type\":0,\"IsMandatory\":true,\"IsPublic\":true}]";
-        
+
         var result = ActivityValidator.ParseCreateQuestions(json);
 
         Assert.Single(result);
@@ -197,7 +223,7 @@ public class ActivityValidatorTests
     public void ParseUpdateQuestions_ValidJson_ReturnsParsedList()
     {
         var json = "[{\"Id\":1,\"QuestionDutch\":\"Vraag\",\"QuestionEnglish\":\"Question\",\"Type\":1,\"IsMandatory\":false,\"IsPublic\":false}]";
-        
+
         var result = ActivityValidator.ParseUpdateQuestions(json);
 
         Assert.Single(result);
@@ -232,7 +258,8 @@ public class ActivityValidatorTests
             Type = QuestionType.MultipleChoice,
             IsMandatory = true,
             IsPublic = true,
-            Options = new List<string> { "Ja", "Nee" }
+            Options = new List<string> { "Ja", "Nee" },
+            CloseOnUnenrollmentDeadline = true
         };
 
         ActivityValidator.MapSpecificationQuestion(entity, dto);
@@ -243,6 +270,7 @@ public class ActivityValidatorTests
         Assert.True(entity.IsMandatory);
         Assert.True(entity.IsPublic);
         Assert.Equal("Ja;Nee", entity.Options);
+        Assert.True(entity.CloseOnUnenrollmentDeadline);
     }
 
     private TestActivityDTO CreateValidDTO()
@@ -272,7 +300,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.ShowOnWebsite = true;
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
@@ -285,7 +313,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.PaymentDeadline = DateTimeOffset.UtcNow.AddDays(1);
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
@@ -298,7 +326,20 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.EnrollOpenDate = DateTimeOffset.UtcNow.AddDays(-1);
-        
+
+        _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
+        _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
+            .Do(x => throw new UnauthorizedAccessException());
+
+        Assert.Throws<UnauthorizedAccessException>(() => ActivityValidator.ValidateRequest(dto, _userId, _permissionServiceMock));
+    }
+
+    [Fact]
+    public void ValidateRequest_IsEnrollableTrue_ChecksBoardPermission()
+    {
+        var dto = CreateValidDTO();
+        dto.IsEnrollable = true;
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(true);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());
@@ -323,7 +364,7 @@ public class ActivityValidatorTests
     {
         var dto = CreateValidDTO();
         dto.OrganizerId = 1;
-        
+
         _permissionServiceMock.IsInGroupInCurrentYear(_userId, 1).Returns(false);
         _permissionServiceMock.When(x => x.EnsureBoardOrCandidateBoardMember(_userId))
             .Do(x => throw new UnauthorizedAccessException());

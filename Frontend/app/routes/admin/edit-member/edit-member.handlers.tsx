@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import {
   deleteMembersById,
   deleteStudyenrollmentsById,
+  type GroupMembershipResponseDto,
+  getGroupmemberships,
   getMembersById,
   getMembersByIdProfilePicture,
   getPaymentsMemberByFromUserIdStatus,
@@ -53,6 +55,9 @@ type LoadMemberArgs = {
   setEnrollments: React.Dispatch<
     React.SetStateAction<StudyEnrollmentResponseDto[]>
   >;
+  setGroupMemberships: React.Dispatch<
+    React.SetStateAction<GroupMembershipResponseDto[]>
+  >;
   setAvailableStudies: React.Dispatch<React.SetStateAction<Study[]>>;
   setProfilePictureSrc: (value: string | null) => void;
   setHasPaidMembership: (value: boolean) => void;
@@ -61,8 +66,9 @@ type LoadMemberArgs = {
 };
 
 /**
- * Initializes the edit page by fetching member profile, study enrollments,
- * available study programs, membership/begunstiger payment status, and the profile picture.
+ * Initializes the edit page by fetching member profile, study enrollments, group
+ * memberships (all years), available study programs, membership/begunstiger payment
+ * status, and the profile picture.
  *
  * @async
  * @param {LoadMemberArgs} args - Configuration object containing:
@@ -70,6 +76,7 @@ type LoadMemberArgs = {
  * @param {Function} args.setFormData - React state setter for the main edit form.
  * @param {Function} args.setEmail - Setter to handle the member's email address separately.
  * @param {Function} args.setEnrollments - Setter for the list of study history records.
+ * @param {Function} args.setGroupMemberships - Setter for the list of group memberships, across all years.
  * @param {Function} args.setAvailableStudies - Setter for the global list of selectable study programs.
  * @param {Function} args.setProfilePictureSrc - Setter for the profile image source URL.
  * @param {Function} args.setHasPaidMembership - Setter for whether the member currently has a valid membership or begunstiger fee payment.
@@ -82,6 +89,7 @@ export const loadMemberData = async ({
   setFormData,
   setEmail,
   setEnrollments,
+  setGroupMemberships,
   setAvailableStudies,
   setProfilePictureSrc,
   setHasPaidMembership,
@@ -130,6 +138,18 @@ export const loadMemberData = async ({
       );
     }
     setEnrollments(studyEnrollmentsResponse.data);
+
+    // No MembershipYear filter - all years, same as the home page's "my groups" overview.
+    const groupMembershipsResponse = await getGroupmemberships({
+      query: { MemberId: memberId },
+    });
+    if (groupMembershipsResponse.error || !groupMembershipsResponse.data) {
+      throw (
+        groupMembershipsResponse.error ??
+        new Error("Failed to load group memberships")
+      );
+    }
+    setGroupMemberships(groupMembershipsResponse.data);
 
     const studiesResponse = await getStudies();
     if (studiesResponse.error || !studiesResponse.data) {

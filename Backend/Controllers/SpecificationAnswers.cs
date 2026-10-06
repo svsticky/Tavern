@@ -35,7 +35,7 @@ public class SpecificationAnswers(ISpecificationAnswerService specificationAnswe
     public async Task<ActionResult> PatchSpecificationAnswer(uint answerId, [FromBody] JsonPatchDocument<SpecificationAnswer> patchDoc, CancellationToken ct)
     {
         Guid userId = Guid.Parse(User.Claims.First(c => c.Type == "UserId").Value);
-        await specificationAnswerService.PatchSpecificationAnswersAsync(userId, answerId, patchDoc, userId);
+        await specificationAnswerService.PatchSpecificationAnswersAsync(answerId, patchDoc, userId);
         return NoContent();
     }
 }

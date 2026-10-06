@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Backend.Controllers;
@@ -9,12 +10,14 @@ namespace Backend.Controllers;
 /// </summary>
 [ApiController]
 [Route("[controller]")]
+[Authorize]
 public class RegistrationDocumentsController(IRegistrationDocumentService service) : ControllerBase
 {
     /// <summary>
     /// Retrieves all registration documents in display order.
     /// </summary>
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(IEnumerable<RegistrationDocumentResponseDTO>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
     public async Task<ActionResult<IEnumerable<RegistrationDocumentResponseDTO>>> GetRegistrationDocuments(CancellationToken ct)
@@ -29,6 +32,7 @@ public class RegistrationDocumentsController(IRegistrationDocumentService servic
     [ProducesResponseType(typeof(RegistrationDocumentResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ErrorResponseDto), StatusCodes.Status500InternalServerError)]
+    [AllowAnonymous]
     public async Task<ActionResult<RegistrationDocumentResponseDTO>> GetRegistrationDocument(int id, CancellationToken ct)
     {
         var doc = await service.GetRegistrationDocument(id, ct);

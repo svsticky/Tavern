@@ -49,4 +49,48 @@ describe("DataTableTile", () => {
     render(<DataTableTile data={[]} columns={columns} emptyText="" />);
     expect(screen.queryByText("no_data_found")).not.toBeInTheDocument();
   });
+
+  const actionColumns: Column<Row>[] = [
+    ...columns,
+    { header: <button type="button">add</button>, render: () => null },
+  ];
+
+  it("renders the mobile action header wrapper only once, below the table by default", () => {
+    const { container } = render(
+      <DataTableTile data={rows} columns={actionColumns} />,
+    );
+
+    // Present once in the desktop <thead> (CSS-hidden on mobile, but still in
+    // the DOM) and once in the dedicated mobile-only block - that block must
+    // not be duplicated.
+    expect(screen.getAllByText("add")).toHaveLength(2);
+    const mobileBlocks = container.querySelectorAll(".lg\\:hidden");
+    expect(mobileBlocks).toHaveLength(1);
+
+    const table = container.querySelector("table")!;
+    expect(
+      table.compareDocumentPosition(mobileBlocks[0]) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("renders the mobile action header wrapper above the table when mobileActionsPosition is 'top'", () => {
+    const { container } = render(
+      <DataTableTile
+        data={rows}
+        columns={actionColumns}
+        mobileActionsPosition="top"
+      />,
+    );
+
+    expect(screen.getAllByText("add")).toHaveLength(2);
+    const mobileBlocks = container.querySelectorAll(".lg\\:hidden");
+    expect(mobileBlocks).toHaveLength(1);
+
+    const table = container.querySelector("table")!;
+    expect(
+      table.compareDocumentPosition(mobileBlocks[0]) &
+        Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
+  });
 });

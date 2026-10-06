@@ -18,6 +18,7 @@ import "./app.css";
 import { t } from "i18next";
 import Cookies from "js-cookie";
 import FaviconHandler from "./components/FavIconHandler";
+import StickyLoadingLogo from "./components/StickyLoadingLogo";
 import { AppProvider } from "./context/AppContext";
 import { getActiveAuthService } from "./layout/auth-service";
 import { getEnv } from "./util/config.utils";
@@ -36,7 +37,7 @@ client.setConfig({
         Cookies.set("access_token", token, {
           path: "/",
           secure: true,
-          sameSite: "none",
+          sameSite: "lax",
           domain: `.${window.location.hostname}`,
         });
         return token;
@@ -55,8 +56,8 @@ client.instance.interceptors.response.use(
         window.location.href = "/logout";
       } else if (error.response.status === 403) {
         console.warn("Forbidden - user does not have access to this resource.");
-        if (window.location.pathname !== "/") {
-          window.location.href = "/";
+        if (window.location.pathname !== "/403") {
+          window.location.href = "/403";
         }
       }
     }
@@ -205,8 +206,12 @@ export default function App() {
     );
   }
 
-  if (!i18nReady || !themeReady) {
-    return t("loading");
+  if (!themeReady) {
+    return null;
+  }
+
+  if (!i18nReady) {
+    return <StickyLoadingLogo />;
   }
 
   return (

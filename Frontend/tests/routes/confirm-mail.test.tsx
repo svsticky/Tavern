@@ -82,6 +82,30 @@ describe("ConfirmMail", () => {
     expect(link).toHaveAttribute("href", "/admin/members/member-4");
   });
 
+  it("shows a payment-required message and does not retry when the payment was never completed", async () => {
+    postMembersByIdActivationEmail.mockResolvedValue({
+      status: 200,
+      data: "PaymentRequired",
+    });
+
+    renderWithProviders(<ConfirmMail />, {
+      route: "/confirm-mail?memberId=member-5",
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/payment_not_completed_description/),
+      ).toBeInTheDocument(),
+    );
+    expect(
+      screen.queryByText(/confirm_mail_description/),
+    ).not.toBeInTheDocument();
+
+    const link = screen.getByRole("link", { name: /try_again/ });
+    expect(link).toHaveAttribute("href", "/register");
+    expect(postMembersByIdActivationEmail).toHaveBeenCalledTimes(1);
+  });
+
   it("retries while the member isn't linked to the auth system yet, then stops", async () => {
     vi.useFakeTimers();
     postMembersByIdActivationEmail.mockResolvedValue({

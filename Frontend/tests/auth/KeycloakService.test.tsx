@@ -11,6 +11,7 @@ const { keycloakInstances, MockKeycloak } = vi.hoisted(() => {
     login = vi.fn(async () => {});
     logout = vi.fn(async () => {});
     updateToken = vi.fn(async () => true);
+    isTokenExpired = vi.fn(() => false);
     createLoginUrl = vi.fn(
       (opts: { action: string; redirectUri: string }) =>
         `https://kc.example.com/login?action=${opts.action}`,
@@ -119,6 +120,14 @@ describe("KeycloakAuthService", () => {
       latestKeycloak().token = "abc";
       expect(service.isAuthenticated()).toBe(true);
     });
+
+    it("returns false once the token has expired, even though keycloak.authenticated is still true", () => {
+      const service = new KeycloakAuthService();
+      latestKeycloak().authenticated = true;
+      latestKeycloak().isTokenExpired.mockReturnValue(true);
+
+      expect(service.isAuthenticated()).toBe(false);
+    });
   });
 
   describe("getToken", () => {
@@ -135,14 +144,14 @@ describe("KeycloakAuthService", () => {
       expect(latestKeycloak().updateToken).toHaveBeenCalledWith(30);
     });
 
-    it("still returns the (stale) token if the refresh call throws", async () => {
+    it("returns null (not the stale token) if the refresh call throws", async () => {
       const service = new KeycloakAuthService();
       latestKeycloak().token = "the-token";
       latestKeycloak().updateToken.mockRejectedValue(
         new Error("refresh failed"),
       );
 
-      await expect(service.getToken()).resolves.toBe("the-token");
+      await expect(service.getToken()).resolves.toBeNull();
     });
   });
 
@@ -158,6 +167,16 @@ describe("KeycloakAuthService", () => {
       latestKeycloak().tokenParsed = { name: "Test User" };
       expect(await service.getTokenParsed()).toEqual({ name: "Test User" });
     });
+
+    it("returns null (not the stale parsed token) if the refresh call throws", async () => {
+      const service = new KeycloakAuthService();
+      latestKeycloak().tokenParsed = { name: "Test User" };
+      latestKeycloak().updateToken.mockRejectedValue(
+        new Error("refresh failed"),
+      );
+
+      await expect(service.getTokenParsed()).resolves.toBeNull();
+    });
   });
 
   describe("AuthProvider", () => {
@@ -172,7 +191,7 @@ describe("KeycloakAuthService", () => {
         </AuthProvider>,
       );
 
-      expect(screen.getByText("loading")).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Loading" })).toBeInTheDocument();
       await waitFor(() =>
         expect(screen.getByText("Protected content")).toBeInTheDocument(),
       );
@@ -193,7 +212,7 @@ describe("KeycloakAuthService", () => {
       );
 
       await waitFor(() => expect(latestKeycloak().init).toHaveBeenCalled());
-      expect(screen.getByText("loading")).toBeInTheDocument();
+      expect(screen.getByRole("img", { name: "Loading" })).toBeInTheDocument();
       expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
       consoleError.mockRestore();
     });

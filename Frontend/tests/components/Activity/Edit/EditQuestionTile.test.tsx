@@ -116,6 +116,32 @@ describe("EditQuestionTile", () => {
     expect(onUpdate).toHaveBeenCalledWith("isPublic", true);
   });
 
+  it("calls onUpdate with the close-on-unenrollment-deadline checkbox state", () => {
+    const onUpdate = vi.fn();
+    render(
+      <EditQuestionTile
+        question={buildQuestion()}
+        onRemove={vi.fn()}
+        onUpdate={onUpdate}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText("close_on_unenrollment_deadline"));
+    expect(onUpdate).toHaveBeenCalledWith("closeOnUnenrollmentDeadline", true);
+  });
+
+  it("reflects the question's closeOnUnenrollmentDeadline value", () => {
+    render(
+      <EditQuestionTile
+        question={buildQuestion({ closeOnUnenrollmentDeadline: true })}
+        onRemove={vi.fn()}
+        onUpdate={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByLabelText("close_on_unenrollment_deadline"),
+    ).toBeChecked();
+  });
+
   it("does not render the options input for non-MultipleChoice types", () => {
     render(
       <EditQuestionTile

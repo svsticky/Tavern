@@ -153,6 +153,10 @@ namespace Backend.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DateTimeEnd");
+
+                    b.HasIndex("DateTimeStart");
+
                     b.HasIndex("OrganizerId");
 
                     b.ToTable("Activities");
@@ -336,6 +340,10 @@ namespace Backend.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<string>("DefaultCostUnit")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
                     b.Property<string>("DefaultGLAccount")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
@@ -405,6 +413,12 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("FirstName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("text");
+
                     b.Property<DateTimeOffset>("NextAttemptAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -439,6 +453,9 @@ namespace Backend.Migrations
 
                     b.Property<bool>("Begunstiger")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid>("CalendarId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("City")
                         .IsRequired()
@@ -483,6 +500,9 @@ namespace Backend.Migrations
                     b.Property<string>("Notes")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("OutstandingPaymentMailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("ParentPhoneNumber")
                         .HasColumnType("text");
 
@@ -516,10 +536,16 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("StudyStatusMailSentAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<bool>("Suspended")
                         .HasColumnType("boolean");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CalendarId")
+                        .IsUnique();
 
                     b.HasIndex("Email")
                         .IsUnique()
@@ -658,7 +684,12 @@ namespace Backend.Migrations
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Url")
+                    b.Property<string>("UrlDutch")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("UrlEnglish")
                         .IsRequired()
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -770,6 +801,9 @@ namespace Backend.Migrations
                     b.Property<long>("ActivityId")
                         .HasColumnType("bigint");
 
+                    b.Property<bool>("CloseOnUnenrollmentDeadline")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsMandatory")
                         .HasColumnType("boolean");
 
@@ -806,6 +840,9 @@ namespace Backend.Migrations
                         .HasColumnType("bigint");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("boolean");
 
                     b.Property<long>("NominalDurationYears")
                         .HasColumnType("bigint");
@@ -869,7 +906,8 @@ namespace Backend.Migrations
                     b.Property<long?>("ActivityId")
                         .HasColumnType("bigint");
 
-                    b.HasIndex("ActivityId");
+                    b.HasIndex("ActivityId", "MemberId")
+                        .HasFilter("\"PaidAt\" IS NOT NULL");
 
                     b.ToTable("EnrollmentPayments", (string)null);
                 });

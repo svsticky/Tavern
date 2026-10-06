@@ -11,26 +11,41 @@ import GroupMembershipItem from "./GroupMembershipItem";
  * @component
  * @param {Object} props - The component props.
  * @param {GroupMembershipResponseDto[]} props.groupMemberships - An array of membership data objects from the API.
+ * @param {string} [props.emptyText] - Optional override for the empty-state message (defaults to the
+ *   first-person "you are not enrolled" copy used on the home page; pass a third-person alternative when
+ *   showing another member's memberships, e.g. on the admin edit-member page).
+ * @param {boolean} [props.linkToGroup] - When true, each item links to the group's admin page. Only
+ *   pass this on pages board members reach (e.g. the admin edit-member page) since `/admin/groups/:id`
+ *   is board-gated.
  * @returns {JSX.Element} A list of group memberships or a "No Content" state.
  */
 export default function GroupMembershipOverview({
   groupMemberships,
+  emptyText,
+  linkToGroup,
 }: {
   groupMemberships: GroupMembershipResponseDto[];
+  emptyText?: string;
+  linkToGroup?: boolean;
 }) {
   if (groupMemberships.length === 0) {
-    return <NoContentTile text={t("no_group_enrollments")} />;
+    return <NoContentTile text={emptyText ?? t("no_group_enrollments")} />;
   }
 
   const fallbackUrl = "/profile-picture.svg";
 
+  const sortedGroupMemberships = [...groupMemberships].sort(
+    (a, b) => b.membershipYear - a.membershipYear,
+  );
+
   return (
     <ListTile className="w-full">
-      {[...groupMemberships].reverse().map((groupMembership) => (
+      {sortedGroupMemberships.map((groupMembership) => (
         <GroupMembershipItem
           key={groupMembership.id}
           groupMembership={groupMembership}
           fallbackUrl={fallbackUrl}
+          linkToGroup={linkToGroup}
         />
       ))}
     </ListTile>

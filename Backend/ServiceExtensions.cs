@@ -9,6 +9,7 @@ using Backend.Services.Domain;
 using Backend.Services.FileCompressServices;
 using Backend.Services.MailServices;
 using Backend.Services.MailSubscriptionServices;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Services.StorageServices;
 using Hangfire;
@@ -53,7 +54,7 @@ internal static class ServiceExtensions
                             {
                                 var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearerEvents");
                                 var dbContext = context.HttpContext.RequestServices.GetRequiredService<PostgresDbContext>();
-                                var mailSubscriptionOutboxWorker = context.HttpContext.RequestServices.GetRequiredService<MailSubscriptionOutboxWorker>();
+                                var mailChangedListeners = context.HttpContext.RequestServices.GetRequiredService<IEnumerable<IMailChangedListener>>();
 
                                 var authIdClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
                                 var emailClaim = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.Email)
@@ -72,8 +73,11 @@ internal static class ServiceExtensions
                                             using var transaction = await dbContext.Database.BeginTransactionAsync();
                                             try
                                             {
-                                                mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(member.Email, newEmail, dbContext);
+                                                var oldEmail = member.Email;
                                                 member.Email = newEmail;
+
+                                                mailChangedListeners.NotifyMailChanged(member.Id, oldEmail, newEmail, dbContext);
+
                                                 await dbContext.SaveChangesAsync();
                                                 logger.LogInformation("Updated member email from validated token for member {MemberId}.", member.Id);
                                                 await transaction.CommitAsync();
@@ -102,9 +106,11 @@ internal static class ServiceExtensions
                         options.TokenValidationParameters = new TokenValidationParameters
                         {
                             ValidateIssuer = true,
-                            ValidateAudience = false,
+                            ValidateAudience = true,
                             ValidateLifetime = true,
-                            ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm")
+                            ValidIssuer = (devcontainer_issuer == null ? Environment.GetEnvironmentVariable("KeycloakUrl") : devcontainer_issuer) + "/realms/" + Environment.GetEnvironmentVariable("KeycloakRealm"),
+                            ValidAudience = "tavern"
+
                         };
                     });
 
@@ -248,14 +254,16 @@ internal static class ServiceExtensions
 
         // Mail Subscription
         services.AddHttpClient<MailChimpSubscriptionService>();
-        services.AddScoped<IMailSubscriptionService>(sp =>
+        services.AddHttpClient<ListmonkSubscriptionService>();
+        services.AddScoped<AbstractMailSubscriptionService>(sp =>
         {
             var db = sp.GetRequiredService<PostgresDbContext>();
             var mailSubscriptionService = db.Settings.FirstOrDefault(s => s.Name == "MailSubscriptionService")?.Value?.Trim().ToUpperInvariant();
             return mailSubscriptionService switch
             {
                 "MAILCHIMP" => sp.GetRequiredService<MailChimpSubscriptionService>(),
-                _ => sp.GetRequiredService<MailChimpSubscriptionService>()
+                "LISTMONK" => sp.GetRequiredService<ListmonkSubscriptionService>(),
+                _ => sp.GetRequiredService<ListmonkSubscriptionService>()
             };
         });
 
@@ -266,13 +274,13 @@ internal static class ServiceExtensions
     {
         services.AddScoped<IActivityService, ActivityService>();
         services.AddScoped<IAnnouncementService, AnnouncementService>();
+        services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<IEnrollmentService, EnrollmentService>();
         services.AddScoped<IGroupMembershipService, GroupMembershipService>();
         services.AddScoped<IGroupService, GroupService>();
         services.AddScoped<IMemberService, MemberService>();
         services.AddScoped<IMailinglistCurationService, MailinglistCurationService>();
         services.AddScoped<IPaymentService, PaymentService>();
-        services.AddScoped<IPaymentWebhookService, PaymentWebhookService>();
         services.AddScoped<IPermissionService, PermissionService>();
         services.AddScoped<IProfilePictureService, ProfilePictureService>();
         services.AddScoped<IRoleAliasService, RoleAliasService>();
@@ -286,6 +294,9 @@ internal static class ServiceExtensions
         services.AddScoped<IRegisterSlideService, RegisterSlideService>();
         services.AddScoped<IExternalLinkService, ExternalLinkService>();
 
+        services.AddScoped<INameChangedListener>(sp => sp.GetRequiredService<AbstractMailSubscriptionService>());
+        services.AddScoped<IMailChangedListener>(sp => sp.GetRequiredService<AbstractMailSubscriptionService>());
+
         return services;
     }
 
@@ -295,6 +306,7 @@ internal static class ServiceExtensions
         services.AddHostedService(sp => sp.GetRequiredService<AuthOutboxWorker>());
         services.AddHostedService<AccountingToolOutboxWorker>();
         services.AddHostedService<MembershipExpirationSyncService>();
+        services.AddHostedService<YearSettingsRefreshWorker>();
         services.AddSingleton<MailSubscriptionOutboxWorker>();
         services.AddHostedService(sp => sp.GetRequiredService<MailSubscriptionOutboxWorker>());
 
@@ -314,10 +326,11 @@ internal static class ServiceExtensions
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PostgresDbContext>();
         var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-        var amsterdamTimeZone = TimeZoneInfo.FindSystemTimeZoneById("W. Europe Standard Time");
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
         var recurringJobOptions = new RecurringJobOptions
         {
-            TimeZone = amsterdamTimeZone
+            TimeZone = tz
         };
 
         recurringJobManager.AddOrUpdate<AbstractMailService>(

@@ -103,6 +103,14 @@ public class PostgresDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(p => p.ActivityId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // Backs the correlated "sum of paid amounts per enrollment" subquery used by
+            // GetAllUnpaidEnrollments/GetUnpaidEnrollmentsForMember/GetAllOverpaidEnrollments, which
+            // filters on ActivityId + MemberId + PaidAt for every enrollment. Without this composite
+            // index, Postgres falls back to the single-column ActivityId/MemberId FK indexes (or a
+            // scan), so those queries slow down linearly with the whole EnrollmentPayments history.
+            entity.HasIndex(p => new { p.ActivityId, p.MemberId })
+                .HasFilter("\"PaidAt\" IS NOT NULL");
         });
 
         modelBuilder.Entity<BegunstigerPayment>(entity =>
@@ -141,6 +149,17 @@ public class PostgresDbContext : DbContext
             entity.HasIndex(m => m.StudentNumber)
                 .IsUnique()
                 .HasFilter("\"IsDeleted\" = false");
+        });
+
+        modelBuilder.Entity<Activity>(entity =>
+        {
+            // Backs the DateTimeStart/DateTimeEnd range filters (IncludePast, IncludeFuture, Year) in
+            // ActivityQueryExtensions.Filter and the OrderBy(DateTimeStart)/OrderByDescending(DateTimeStart)
+            // used for listing and paging activities. Every activities list request hits at least one of
+            // these, so without an index Postgres falls back to a sequential scan that grows with the
+            // whole activity history.
+            entity.HasIndex(a => a.DateTimeStart);
+            entity.HasIndex(a => a.DateTimeEnd);
         });
     }
 }

@@ -220,15 +220,16 @@ describe("PaywallLayout", () => {
     postPaymentsMembership.mockResolvedValue({
       data: { checkoutUrl: "https://pay.example.com/checkout" },
     });
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
 
     renderWithProviders(<PaywallLayout />, { authService });
 
     const deleteButton = await screen.findByText("delete_account");
     fireEvent.click(deleteButton);
 
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
+    fireEvent.click(cancelButton);
+
     expect(deleteMembersById).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it("deletes the account and logs out when confirmed", async () => {
@@ -246,12 +247,16 @@ describe("PaywallLayout", () => {
       data: { checkoutUrl: "https://pay.example.com/checkout" },
     });
     deleteMembersById.mockResolvedValue({ status: 200 });
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     renderWithProviders(<PaywallLayout />, { authService });
 
     const deleteButton = await screen.findByText("delete_account");
     fireEvent.click(deleteButton);
+
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
 
     await waitFor(() =>
       expect(deleteMembersById).toHaveBeenCalledWith({
@@ -259,7 +264,6 @@ describe("PaywallLayout", () => {
       }),
     );
     await waitFor(() => expect(authService.logout).toHaveBeenCalled());
-    confirmSpy.mockRestore();
   });
 
   it("shows a mailto link to the main board and a delete option when not eligible to pay", async () => {
@@ -302,12 +306,16 @@ describe("PaywallLayout", () => {
       },
     });
     deleteMembersById.mockResolvedValue({ status: 200 });
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     renderWithProviders(<PaywallLayout />, { authService });
 
     const deleteButton = await screen.findByText("delete_account");
     fireEvent.click(deleteButton);
+
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
 
     await waitFor(() =>
       expect(deleteMembersById).toHaveBeenCalledWith({
@@ -315,7 +323,6 @@ describe("PaywallLayout", () => {
       }),
     );
     await waitFor(() => expect(authService.logout).toHaveBeenCalled());
-    confirmSpy.mockRestore();
   });
 
   it("shows an error toast when account deletion fails", async () => {
@@ -335,15 +342,18 @@ describe("PaywallLayout", () => {
       data: { checkoutUrl: "https://pay.example.com/checkout" },
     });
     deleteMembersById.mockResolvedValue({ status: 500, error: "fail" });
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     renderWithProviders(<PaywallLayout />, { authService });
 
     const deleteButton = await screen.findByText("delete_account");
     fireEvent.click(deleteButton);
 
+    const confirmButton = await screen.findByRole("button", {
+      name: "confirm",
+    });
+    fireEvent.click(confirmButton);
+
     await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    confirmSpy.mockRestore();
     consoleError.mockRestore();
   });
 });

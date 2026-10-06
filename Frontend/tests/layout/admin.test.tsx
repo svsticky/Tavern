@@ -64,14 +64,14 @@ describe("AdminLayout", () => {
     expect(screen.getByText("loading")).toBeInTheDocument();
   });
 
-  it("redirects a non-board member to home once group IDs are populated", async () => {
+  it("redirects a non-board member to the 403 page once group IDs are populated", async () => {
     const authService = createMockAuthService({
       getTokenParsed: vi.fn(async () => regularToken),
     });
 
     renderWithProviders(<WithGroupIdsPopulated />, { authService });
 
-    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/403"));
   });
 
   it("stops loading and authorizes a board member once group IDs are populated", async () => {

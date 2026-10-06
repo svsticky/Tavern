@@ -168,7 +168,7 @@ public class SettingsServiceTests : IDisposable
         // Act & Assert
         var exception = await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
             await _service.DeleteSetting("NonExistent", _userId, CancellationToken.None));
-        
+
         Assert.Contains("Setting with name 'NonExistent' not found.", exception.Message);
     }
 
@@ -205,7 +205,7 @@ public class SettingsServiceTests : IDisposable
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await _service.PatchSetting(name, null!, _userId, CancellationToken.None));
-        
+
         Assert.Equal("Patch document is null", exception.Message);
     }
 
@@ -225,7 +225,7 @@ public class SettingsServiceTests : IDisposable
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(async () =>
             await _service.PatchSetting(name, patchDoc, _userId, CancellationToken.None));
-        
+
         Assert.Equal("Cannot modify Name field.", exception.Message);
     }
 

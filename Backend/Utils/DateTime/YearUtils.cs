@@ -1,5 +1,5 @@
 using Backend.Database;
-using System.Runtime.InteropServices;
+using System.Globalization;
 
 namespace Backend.Utils.DateTime;
 
@@ -29,12 +29,10 @@ public static class YearUtils
     /// <returns>The calculated financial year.</returns>
     public static uint GetCurrentFinancialYear(System.DateTime utcNow)
     {
-        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? "W. Europe Standard Time"
-            : "Europe/Amsterdam";
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
 
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
+        System.DateTime nowInTimeZone = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
         int targetMonth = 8;
         int targetDay = 1;
@@ -51,13 +49,13 @@ public static class YearUtils
         }
 
         bool isAfterOrEqual;
-        if (nowInNetherlands.Month > targetMonth)
+        if (nowInTimeZone.Month > targetMonth)
         {
             isAfterOrEqual = true;
         }
-        else if (nowInNetherlands.Month == targetMonth)
+        else if (nowInTimeZone.Month == targetMonth)
         {
-            isAfterOrEqual = nowInNetherlands.Day >= targetDay;
+            isAfterOrEqual = nowInTimeZone.Day >= targetDay;
         }
         else
         {
@@ -65,11 +63,11 @@ public static class YearUtils
         }
 
         return targetMonth <= 6 ? isAfterOrEqual
-            ? (uint)nowInNetherlands.Year
-            : (uint)nowInNetherlands.Year - 1
+            ? (uint)nowInTimeZone.Year
+            : (uint)nowInTimeZone.Year - 1
             : isAfterOrEqual
-            ? (uint)nowInNetherlands.Year + 1
-            : (uint)nowInNetherlands.Year;
+            ? (uint)nowInTimeZone.Year + 1
+            : (uint)nowInTimeZone.Year;
     }
 
     /// <summary>
@@ -82,12 +80,10 @@ public static class YearUtils
     /// </summary>
     public static uint GetYearForDate(System.DateTime utcNow, string startDateStr)
     {
-        string timezoneId = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            ? "W. Europe Standard Time"
-            : "Europe/Amsterdam";
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
 
         TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-        System.DateTime nowInNetherlands = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
+        System.DateTime nowInTimeZone = TimeZoneInfo.ConvertTimeFromUtc(utcNow, tz);
 
         int targetMonth = 8;
         int targetDay = 1;
@@ -104,13 +100,13 @@ public static class YearUtils
         }
 
         bool isAfterOrEqual;
-        if (nowInNetherlands.Month > targetMonth)
+        if (nowInTimeZone.Month > targetMonth)
         {
             isAfterOrEqual = true;
         }
-        else if (nowInNetherlands.Month == targetMonth)
+        else if (nowInTimeZone.Month == targetMonth)
         {
-            isAfterOrEqual = nowInNetherlands.Day >= targetDay;
+            isAfterOrEqual = nowInTimeZone.Day >= targetDay;
         }
         else
         {
@@ -118,11 +114,39 @@ public static class YearUtils
         }
 
         return targetMonth <= 6 ? isAfterOrEqual
-            ? (uint)nowInNetherlands.Year
-            : (uint)nowInNetherlands.Year - 1
+            ? (uint)nowInTimeZone.Year
+            : (uint)nowInTimeZone.Year - 1
             : isAfterOrEqual
-            ? (uint)nowInNetherlands.Year + 1
-            : (uint)nowInNetherlands.Year;
+            ? (uint)nowInTimeZone.Year + 1
+            : (uint)nowInTimeZone.Year;
+    }
+
+    /// <summary>
+    /// Gets the UTC instant at which the given operational year starts: midnight on the start date ("MM-DD") in the association's timezone.
+    /// </summary>
+    public static DateTimeOffset GetYearStartUtc(uint year, string startDateStr)
+    {
+        string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+        TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+
+        int targetMonth = 8;
+        int targetDay = 1;
+        if (!string.IsNullOrEmpty(startDateStr))
+        {
+            var parts = startDateStr.Split('-');
+            if (parts.Length == 2 &&
+                int.TryParse(parts[0], out int m) &&
+                int.TryParse(parts[1], out int d))
+            {
+                targetMonth = m;
+                targetDay = d;
+            }
+        }
+
+        int startYear = targetMonth > 6 ? (int)year - 1 : (int)year;
+        var localStart = new System.DateTime(startYear, targetMonth, targetDay, 0, 0, 0, DateTimeKind.Unspecified);
+
+        return new DateTimeOffset(localStart, tz.GetUtcOffset(localStart)).ToUniversalTime();
     }
 
     /// <summary>
@@ -130,7 +154,7 @@ public static class YearUtils
     /// </summary>
     public static uint GetBoardYear(PostgresDbContext db)
     {
-        uint boardGroupId = uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1");
+        uint boardGroupId = uint.Parse(db.Settings.FirstOrDefault(s => s.Name == "BoardGroupId")?.Value ?? "1", CultureInfo.InvariantCulture);
         return db.GroupMemberships
             .Where(gm => gm.GroupId == boardGroupId)
             .Max(gm => (uint?)gm.MembershipYear) ?? GetYearForDate(System.DateTime.UtcNow, CommitteeCreationDate);

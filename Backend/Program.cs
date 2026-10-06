@@ -1,6 +1,5 @@
 using Backend;
 using DotNetEnv;
-using Hangfire;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Diagnostics.CodeAnalysis;
@@ -101,7 +100,6 @@ app.MapControllers();
 if (!isGeneratingDocs)
 {
     await app.MigrateDatabaseAsync();
-    app.UseHangfireDashboard();
     app.ConfigureHangfireJobs();
 }
 

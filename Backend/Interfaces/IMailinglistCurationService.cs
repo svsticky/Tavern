@@ -1,4 +1,5 @@
 using Backend.Models;
+using Backend.Services.MailSubscriptionServices;
 
 namespace Backend.Interfaces;
 
@@ -15,7 +16,7 @@ public record CuratedMailinglistDto(int Id, string ProviderListId, string? Name,
 
 /// <summary>
 /// Defines the contract for curating which mail subscription provider lists Tavern exposes to
-/// members, and in which context. This sits above <see cref="IMailSubscriptionService"/> - it knows
+/// members, and in which context. This sits above <see cref="AbstractMailSubscriptionService"/> - it knows
 /// nothing provider-specific, it only decides which of the provider's lists are shown, and where.
 /// </summary>
 public interface IMailinglistCurationService

@@ -7,9 +7,9 @@ namespace Backend.Tests.QueryExtensions;
 public class MemberQueryExtensionsTests
 {
     private Member CreateMember(
-        string firstName, 
-        string lastName, 
-        string email, 
+        string firstName,
+        string lastName,
+        string email,
         string studentNumber,
         string phoneNumber,
         bool gratie = false,
@@ -100,10 +100,10 @@ public class MemberQueryExtensionsTests
     {
         var m1 = CreateMember("John", "Doe", "john@example.com", "s1111111", "+31611111111");
         m1.StudyEnrollments.Add(new StudyEnrollment { StudyId = 10 });
-        
+
         var m2 = CreateMember("Jane", "Smith", "jane@example.com", "s2222222", "+31622222222");
         m2.StudyEnrollments.Add(new StudyEnrollment { StudyId = 20 });
-        
+
         var list = new List<Member> { m1, m2 }.AsQueryable();
 
         var dto = new GetMembersDto { StudyId = 10 };

@@ -10,7 +10,9 @@ using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.Services.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.JsonPatch.Operations;
 using Microsoft.Data.Sqlite;
@@ -35,10 +37,10 @@ public class MemberServiceTests : IDisposable
     private readonly AbstractPaymentService _paymentService;
     private readonly AuthOutboxWorker _authOutboxWorker;
     private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
-    private readonly IAuthService _authService;
-    private readonly IMailSubscriptionService _mailSubscriptionService;
+    private readonly AbstractMailSubscriptionService _mailSubscriptionService;
     private readonly IMailinglistCurationService _mailinglistCurationService;
     private readonly IMemoryCache _memoryCache;
+    private readonly List<INameChangedListener> _nameChangedListeners;
     private readonly MemberService _service;
     private readonly Guid _userId = Guid.NewGuid();
 
@@ -60,8 +62,7 @@ public class MemberServiceTests : IDisposable
         _paymentService = Substitute.For<AbstractPaymentService>(null, null);
         _authOutboxWorker = Substitute.For<AuthOutboxWorker>(null, NullLogger<AuthOutboxWorker>.Instance);
         _mailSubscriptionOutboxWorker = Substitute.For<MailSubscriptionOutboxWorker>(null, NullLogger<MailSubscriptionOutboxWorker>.Instance);
-        _authService = Substitute.For<IAuthService>();
-        _mailSubscriptionService = Substitute.For<IMailSubscriptionService>();
+        _mailSubscriptionService = Substitute.For<AbstractMailSubscriptionService>(_mailSubscriptionOutboxWorker);
         _mailinglistCurationService = Substitute.For<IMailinglistCurationService>();
         _memoryCache = Substitute.For<IMemoryCache>();
 
@@ -72,6 +73,16 @@ public class MemberServiceTests : IDisposable
         _mailSubscriptionService.GetMemberMailinglistsAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new List<MemberMailinglistDto>());
 
+        // _mailSubscriptionService doubles as INameChangedListener/IMailChangedListener, matching
+        // production wiring - IsEnabled must be set through the specific interface cast.
+        ((INameChangedListener)_mailSubscriptionService).IsEnabled.Returns(true);
+        ((IMailChangedListener)_mailSubscriptionService).IsEnabled.Returns(true);
+
+        _nameChangedListeners = new List<INameChangedListener>
+        {
+            (INameChangedListener)_mailSubscriptionService
+        };
+
         _service = new MemberService(
             _db,
             _permissionService,
@@ -80,11 +91,11 @@ public class MemberServiceTests : IDisposable
             _paymentService,
             _authOutboxWorker,
             _mailSubscriptionOutboxWorker,
-            _authService,
             _mailSubscriptionService,
             _mailinglistCurationService,
             _memoryCache,
-            NullLogger<MemberService>.Instance
+            NullLogger<MemberService>.Instance,
+            _nameChangedListeners
         );
     }
 
@@ -291,12 +302,17 @@ public class MemberServiceTests : IDisposable
             PostalCode = "1",
             City = "C",
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(1),
-            PreferredLanguage = Language.NL
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             _service.CreateMember(dto, _userId, CancellationToken.None));
+        Assert.Equal("Date of birth must be in the past.", ex.Message);
     }
 
     [Fact]
@@ -316,12 +332,17 @@ public class MemberServiceTests : IDisposable
             City = "C",
             DateOfBirth = DateTimeOffset.UtcNow.AddYears(-17), // 17 years old
             ParentPhoneNumber = null,
-            PreferredLanguage = Language.NL
+            PreferredLanguage = Language.NL,
+            StudyEnrollments = new List<PostStudyEnrollmentDTO>
+            {
+                new PostStudyEnrollmentDTO { StudyId = 1, MemberId = Guid.Empty, EnrollmentDate = new DateTimeOffset(new DateTime(2025, 9, 1, 0, 0, 0, DateTimeKind.Utc)), Status = StudyStatus.Enrolled }
+            }
         };
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() =>
+        var ex = await Assert.ThrowsAsync<ArgumentException>(() =>
             _service.CreateMember(dto, _userId, CancellationToken.None));
+        Assert.Equal("Parent phone number required for minors.", ex.Message);
     }
 
     [Fact]
@@ -362,10 +383,46 @@ public class MemberServiceTests : IDisposable
         Assert.NotNull(saved);
         Assert.Equal("a@b.com", saved.Email);
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Create, result.Id, Arg.Any<PostgresDbContext>());
+        // The member's name goes in the same call as the subscriptions update, so no separate
+        // name-changed notification is needed on creation.
         _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
             "a@b.com",
             Arg.Is<IEnumerable<string>>(ids => ids.SequenceEqual(new[] { "id_news" })),
-            _db);
+            _db,
+            "A",
+            "B");
+    }
+
+    [Fact]
+    public async Task CreateMember_BegunstigerAsBoardMember_Succeeds()
+    {
+        // Arrange
+        var dto = new PostMemberDTO
+        {
+            StudentNumber = "123456",
+            FirstName = "A",
+            LastName = "B",
+            Email = "begunstiger@b.com",
+            PhoneNumber = "0612345678",
+            Street = "S",
+            HouseNumber = "1",
+            PostalCode = "1",
+            City = "C",
+            DateOfBirth = DateTimeOffset.UtcNow.AddYears(-20),
+            Begunstiger = true,
+            PreferredLanguage = Language.NL
+        };
+
+        // Act
+        var result = await _service.CreateMember(dto, _userId, CancellationToken.None);
+
+        // Assert
+        Assert.NotNull(result);
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(_userId);
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Members.FindAsync(result.Id);
+        Assert.NotNull(saved);
+        Assert.True(saved.Begunstiger);
     }
 
     [Fact]
@@ -460,6 +517,14 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task DeleteMember_NotFound_ThrowsKeyNotFoundException()
+    {
+        // Act & Assert
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _service.DeleteMember(Guid.NewGuid(), _userId, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task DeleteMember_WithUnpaidActivities_ThrowsInvalidOperationException()
     {
         // Arrange
@@ -503,6 +568,7 @@ public class MemberServiceTests : IDisposable
         Assert.Equal($"deleted-{memberId}@deleted.local", anonymized.Email);
         Assert.Equal($"DELETED-{memberId}", anonymized.StudentNumber);
         Assert.Null(anonymized.ProfilePicturePath);
+        Assert.Equal(DateTimeOffset.MinValue, anonymized.DateOfBirth);
 
         _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Delete, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
         await _storageService.Received(1).DeleteFileAsync("profile-pictures", "pic.webp");
@@ -750,8 +816,60 @@ public class MemberServiceTests : IDisposable
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
         Assert.Equal("New Street", updated.Street);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId!.Value, Arg.Any<PostgresDbContext>());
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task PatchMember_NameChanged_NotifiesNameChangedListeners()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("replace", "/FirstName", null, "Changed")
+            },
+            new DefaultContractResolver()
+        );
+
+        // Act
+        await _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None);
+
+        // Assert - the general Sync trigger already covers pushing the name to Keycloak, so the
+        // name-changed notification only needs to reach the Mailchimp listener.
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.Sync, member.Id, Arg.Any<PostgresDbContext>());
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateNameTask(member.Email, "Changed", member.LastName, _db);
+    }
+
+    [Fact]
+    public async Task PatchMember_EmailInPatch_ThrowsArgumentException()
+    {
+        // Arrange - Email is managed by Keycloak; not editable here even for a board member, since
+        // Sync always treats Keycloak's email as authoritative and would silently revert it anyway.
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var patchDoc = new JsonPatchDocument<Member>(
+            new List<Operation<Member>>
+            {
+                new Operation<Member>("replace", "/Email", null, "changed@example.com")
+            },
+            new DefaultContractResolver()
+        );
+
+        // Act & Assert
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            _service.PatchMember(_userId, patchDoc, _userId, CancellationToken.None));
+
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(_userId);
+        Assert.Equal(member.Email, updated!.Email);
+        _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueMigrateEmailTask(default!, default!, default!, default!, default!);
     }
 
     [Fact]
@@ -787,10 +905,10 @@ public class MemberServiceTests : IDisposable
         var dto = new MemberUpdateDTO
         {
             StudentNumber = member.StudentNumber,
-            FirstName = "NewName",
+            FirstName = member.FirstName,
             LastName = member.LastName,
             Email = member.Email,
-            PhoneNumber = member.PhoneNumber,
+            PhoneNumber = "0698765432",
             Street = member.Street,
             HouseNumber = member.HouseNumber,
             PostalCode = member.PostalCode,
@@ -806,8 +924,124 @@ public class MemberServiceTests : IDisposable
         _db.ChangeTracker.Clear();
         var updated = await _db.Members.FindAsync(_userId);
         Assert.NotNull(updated);
-        Assert.Equal("NewName", updated.FirstName);
+        Assert.Equal("0698765432", updated.PhoneNumber);
         _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueUpdateSubscriptionsTask(default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task UpdateMember_BoardMemberSubmitsNewEmail_IsIgnored()
+    {
+        // Arrange - Email is managed by Keycloak; ApplyMemberUpdate never applies it, even for a
+        // board member, since Sync always treats Keycloak's email as authoritative and would
+        // silently revert it anyway.
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+        var originalEmail = member.Email;
+
+        var boardUserId = Guid.NewGuid();
+        _permissionService.IsBoardOrCandidateBoardMember(boardUserId).Returns(true);
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = member.StudentNumber,
+            FirstName = member.FirstName,
+            LastName = member.LastName,
+            Email = "changed@example.com",
+            PhoneNumber = member.PhoneNumber,
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act
+        await _service.UpdateMember(member.Id, dto, boardUserId, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.Equal(originalEmail, updated!.Email);
+        _mailSubscriptionOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueMigrateEmailTask(default!, default!, default!, default!, default!);
+    }
+
+    [Fact]
+    public async Task UpdateMember_BoardMemberUpdatesSomeoneElse_AppliesUpdate()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        var boardUserId = Guid.NewGuid();
+        _permissionService.IsBoardOrCandidateBoardMember(boardUserId).Returns(true);
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = member.StudentNumber,
+            FirstName = "Updated By Board",
+            LastName = member.LastName,
+            Email = member.Email,
+            PhoneNumber = member.PhoneNumber,
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act
+        await _service.UpdateMember(member.Id, dto, boardUserId, CancellationToken.None);
+
+        // Assert
+        _permissionService.Received(1).EnsureBoardOrCandidateBoardMember(boardUserId);
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.NotNull(updated);
+        Assert.Equal("Updated By Board", updated.FirstName);
+        _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateNameTask(member.Email, "Updated By Board", member.LastName, _db);
+    }
+
+    [Fact]
+    public async Task UpdateMember_NonBoardChangesRestrictedField_SilentlyIgnoresChange()
+    {
+        // Arrange
+        var member = CreateTestMember(_userId);
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+
+        var dto = new MemberUpdateDTO
+        {
+            StudentNumber = member.StudentNumber,
+            // A member isn't allowed to change their own name - only board members can. Rejecting
+            // the request based on this guess would let them learn the real value from whether the
+            // request succeeds, so it must be silently ignored instead of rejected.
+            FirstName = "NewName",
+            LastName = member.LastName,
+            Email = member.Email,
+            PhoneNumber = "0698765432",
+            Street = member.Street,
+            HouseNumber = member.HouseNumber,
+            PostalCode = member.PostalCode,
+            City = member.City,
+            DateOfBirth = member.DateOfBirth,
+            PreferredLanguage = member.PreferredLanguage
+        };
+
+        // Act
+        await _service.UpdateMember(_userId, dto, _userId, CancellationToken.None);
+
+        // Assert
+        _db.ChangeTracker.Clear();
+        var updated = await _db.Members.FindAsync(_userId);
+        Assert.NotNull(updated);
+        Assert.Equal("Test", updated.FirstName);
+        Assert.Equal("0698765432", updated.PhoneNumber);
     }
 
     [Fact]
@@ -817,6 +1051,10 @@ public class MemberServiceTests : IDisposable
         var member = CreateTestMember(_userId);
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
+
+        // Only board members can change StudentNumber - use a board member here so the invalid
+        // value actually reaches validation, instead of being silently ignored.
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
 
         var dto = new MemberUpdateDTO
         {
@@ -862,23 +1100,22 @@ public class MemberServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task RefreshEmail_ValidRequest_SyncsWithAuthSystem()
+    public async Task RefreshEmail_ValidRequest_EnqueuesRefreshEmailTask()
     {
-        // Arrange
+        // Arrange - this is called from an anonymous webhook Keycloak itself invokes on email
+        // change, so the actual Keycloak call and the DB/Mailchimp update are deferred to the
+        // outbox task (KeycloakAPIService.RefreshEmail), which retries with backoff on failure.
         var authUserId = Guid.NewGuid();
         var member = CreateTestMember(Guid.NewGuid());
         member.AuthSystemUserId = authUserId;
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
-        _authService.GetEmail(authUserId).Returns(Task.FromResult("new-email@example.com"));
-
         // Act
         await _service.RefreshEmail(authUserId, CancellationToken.None);
 
         // Assert
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, authUserId, Arg.Any<PostgresDbContext>());
-        _mailSubscriptionOutboxWorker.Received(1).EnqueueMigrateEmailTask(member.Email, "new-email@example.com", _db);
+        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.RefreshEmail, member.Id, Arg.Any<PostgresDbContext>());
     }
 
     [Fact]
@@ -1049,7 +1286,7 @@ public class MemberServiceTests : IDisposable
         // Arrange
         var study = new Study { Id = 10, Title = "Master Study", NominalDurationYears = 2, Type = StudyType.Master };
         _db.Studies.Add(study);
-        
+
         var existing = CreateTestMember(Guid.NewGuid(), "dup@example.com");
         _db.Members.Add(existing);
         await _db.SaveChangesAsync();
@@ -1199,7 +1436,7 @@ public class MemberServiceTests : IDisposable
         // Arrange
         var existing = CreateTestMember(Guid.NewGuid(), "dup5@example.com");
         _db.Members.Add(existing);
-        
+
         var payment = new MembershipPayment
         {
             MemberId = existing.Id,
@@ -1304,7 +1541,7 @@ public class MemberServiceTests : IDisposable
         // Arrange
         var existing = CreateTestMember(Guid.NewGuid(), "dup6@example.com");
         _db.Members.Add(existing);
-        
+
         var payment = new MembershipPayment
         {
             MemberId = existing.Id,
@@ -1418,10 +1655,14 @@ public class MemberServiceTests : IDisposable
 
         // Assert
         _permissionService.DidNotReceive().EnsureBoardOrCandidateBoardMember(_userId);
+        // The member's name goes in the same call, so a first-time subscribe (which can be what
+        // creates the Mailchimp record) already carries it.
         _mailSubscriptionOutboxWorker.Received(1).EnqueueUpdateSubscriptionsTask(
             "self@example.com",
             Arg.Is<IEnumerable<string>>(actual => actual.OrderBy(x => x).SequenceEqual(ids.OrderBy(x => x))),
-            _db);
+            _db,
+            "Test",
+            "User");
     }
 
     [Fact]
@@ -1472,7 +1713,9 @@ public class MemberServiceTests : IDisposable
             "self@example.com",
             Arg.Is<IEnumerable<string>>(actual =>
                 actual.OrderBy(x => x).SequenceEqual(new[] { "id_alumni", "id_uncurated" }.OrderBy(x => x))),
-            _db);
+            _db,
+            "Test",
+            "User");
     }
 
     [Fact]
@@ -1507,7 +1750,9 @@ public class MemberServiceTests : IDisposable
             "self@example.com",
             Arg.Is<IEnumerable<string>>(actual =>
                 actual.OrderBy(x => x).SequenceEqual(new[] { "id_news", "id_alumni", "id_uncurated" }.OrderBy(x => x))),
-            _db);
+            _db,
+            "Test",
+            "User");
     }
 
     [Fact]
@@ -1518,15 +1763,32 @@ public class MemberServiceTests : IDisposable
         _db.Members.Add(member);
         await _db.SaveChangesAsync();
 
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(true);
+
         // Act
         var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
 
         // Assert
         Assert.Equal(ActivationEmailStatus.Sent, status);
-        _authOutboxWorker.Received(1).EnqueueTask(AuthTaskType.SendActivationEmail, member.AuthSystemUserId!.Value, _db);
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
+    }
 
-        var updated = await _db.Members.FindAsync(member.Id);
-        Assert.NotNull(updated!.ActivationEmailSentAt);
+    [Fact]
+    public async Task SendActivationEmail_LostRaceToQueueEmail_ReturnsAlreadySent()
+    {
+        // Arrange - the webhook or PaymentSyncService claimed it for this member first (see
+        // AbstractPaymentService.TryQueueActivationEmailAsync's atomic check-and-set).
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        await _db.SaveChangesAsync();
+
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(false);
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.AlreadySent, status);
     }
 
     [Fact]
@@ -1572,5 +1834,122 @@ public class MemberServiceTests : IDisposable
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _service.SendActivationEmail(Guid.NewGuid(), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentCancelledAtMollie_ReturnsPaymentRequired()
+    {
+        // Arrange - simulates a member redirected back from Mollie after cancelling: Mollie's
+        // redirect fires regardless of outcome, so a MembershipPayment row exists but was never paid,
+        // and Mollie's own live status for it is definitively Failed (cancelled/expired/failed).
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_cancelled",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_cancelled")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_cancelled", PaymentStatus.Failed, null)));
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.PaymentRequired, status);
+        _authOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
+
+        var updated = await _db.Members.FindAsync(member.Id);
+        Assert.Null(updated!.ActivationEmailSentAt);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentStillPendingAtMollie_ReturnsPendingForRetry()
+    {
+        // Arrange - the payment hasn't resolved yet at Mollie (e.g. a bank transfer still settling).
+        // This must not be treated the same as a failed payment: the caller should retry rather than
+        // tell the member to register again.
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_pending",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_pending")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_pending", PaymentStatus.Pending, null)));
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Pending, status);
+        _authOutboxWorker.DidNotReceiveWithAnyArgs().EnqueueTask(default, default, default!);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentPaidAtMollieButNotLocallyYet_QueuesEmailWithoutWaitingForSync()
+    {
+        // Arrange - the local record isn't marked paid yet (the webhook hasn't landed, or previously
+        // failed to process, as happened with the Mollie status-spelling bug), but Mollie's live status
+        // is already Paid. Activation should proceed immediately rather than making the member wait for
+        // the webhook retry or the next PaymentSyncService pass to mark PaidAt locally - those still
+        // own catching up PaidAt/Sync/Accounting, this only needs to know it's safe to send the email.
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_actually_paid",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.GetPaymentAsync("pay_actually_paid")
+            .Returns(Task.FromResult(new GetPaymentResponse("pay_actually_paid", PaymentStatus.Paid, DateTimeOffset.UtcNow)));
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(true);
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Sent, status);
+        await _paymentService.DidNotReceiveWithAnyArgs().HandleWebhookAsync(default!);
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
+    }
+
+    [Fact]
+    public async Task SendActivationEmail_MembershipPaymentPaid_QueuesEmail()
+    {
+        // Arrange
+        var member = CreateTestMember(Guid.NewGuid());
+        _db.Members.Add(member);
+        _db.MembershipPayments.Add(new MembershipPayment
+        {
+            MemberId = member.Id,
+            PaymentServiceId = "pay_paid",
+            PaymentIntentUrl = "http://intent",
+            Price = 7.50m,
+            PaidAt = DateTimeOffset.UtcNow
+        });
+        await _db.SaveChangesAsync();
+
+        _paymentService.TryQueueActivationEmailAsync(member.Id).Returns(true);
+
+        // Act
+        var status = await _service.SendActivationEmail(member.Id, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(ActivationEmailStatus.Sent, status);
+        await _paymentService.Received(1).TryQueueActivationEmailAsync(member.Id);
     }
 }

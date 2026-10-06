@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Backend.Database;
 using Backend.Models.Domain;
 using Backend.Services;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.AccountingToolServices;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -373,7 +374,7 @@ public class AccountingToolOutboxWorkerTests
 
         // Assert
         Assert.True(result);
-        
+
         var updatedTasks = await db.AccountingToolOutboxTasks.ToListAsync();
         Assert.Single(updatedTasks);
         Assert.Equal(2, updatedTasks[0].RetryCount); // RetryCount incremented
@@ -396,10 +397,10 @@ public class AccountingToolOutboxWorkerTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_Enabled_ProcessesTasksAndDelays()
+    public async Task ExecuteAsync_AccountingDisabledByEnv_SkipsProcessingAndDelays()
     {
         // Arrange
-        Environment.SetEnvironmentVariable("ACCOUNTING_SERVICE", "True");
+        Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", "false");
         try
         {
             using var db = new PostgresDbContext(_dbOptions);
@@ -410,9 +411,81 @@ public class AccountingToolOutboxWorkerTests
             // Act
             var cts = new CancellationTokenSource();
             var startTask = worker.StartAsync(cts.Token);
-            
+
             await Task.Delay(100);
-            
+
+            cts.Cancel();
+            await worker.StopAsync(CancellationToken.None);
+            await startTask;
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ACCOUNTING_ENABLED", null);
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_NoAccountingServiceConfigured_SkipsProcessingAndDelays()
+    {
+        // Arrange - no "AccountingService" setting row
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        var provider = CreateServiceProvider(db);
+        var worker = new AccountingToolOutboxWorker(provider, _logger);
+
+        // Act
+        var cts = new CancellationTokenSource();
+        var startTask = worker.StartAsync(cts.Token);
+
+        await Task.Delay(100);
+
+        cts.Cancel();
+        await worker.StopAsync(CancellationToken.None);
+        await startTask;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Enabled_ProcessesTasksAndDelays()
+    {
+        // Arrange - "AccountingService" is read from the Settings table, not an env var
+        using var db = new PostgresDbContext(_dbOptions);
+        db.Database.EnsureCreated();
+        db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+        db.SaveChanges();
+        var provider = CreateServiceProvider(db);
+        var worker = new AccountingToolOutboxWorker(provider, _logger);
+
+        // Act
+        var cts = new CancellationTokenSource();
+        var startTask = worker.StartAsync(cts.Token);
+
+        await Task.Delay(100);
+
+        cts.Cancel();
+        await worker.StopAsync(CancellationToken.None);
+        await startTask;
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_EnabledWithEnvVarTrue_ProcessesTasksAndDelays()
+    {
+        // Arrange
+        Environment.SetEnvironmentVariable("ACCOUNTING_SERVICE", "True");
+        try
+        {
+            using var db = new PostgresDbContext(_dbOptions);
+            db.Database.EnsureCreated();
+            db.Settings.Add(new Setting { Name = "AccountingService", Value = "EXACT" });
+            db.SaveChanges();
+            var provider = CreateServiceProvider(db);
+            var worker = new AccountingToolOutboxWorker(provider, _logger);
+
+            // Act
+            var cts = new CancellationTokenSource();
+            var startTask = worker.StartAsync(cts.Token);
+
+            await Task.Delay(100);
+
             cts.Cancel();
             await worker.StopAsync(CancellationToken.None);
             await startTask;

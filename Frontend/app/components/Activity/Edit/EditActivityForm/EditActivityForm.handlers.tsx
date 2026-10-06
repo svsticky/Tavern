@@ -3,6 +3,7 @@ import type React from "react";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
+  deleteActivitiesById,
   type GetSpecificationQuestionResponseDto,
   type GroupResponseDto,
   getGroups,
@@ -11,7 +12,10 @@ import {
   postActivitiesByIdPoster,
 } from "~/api";
 import { getAudienceString } from "~/types/AudienceMap";
-import { getCommitteeYear } from "~/util/date.util";
+import {
+  getCommitteeYear,
+  parseInputAsAssociationTime,
+} from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 
 export { formatDateOnly, formatForInput } from "~/util/date.util";
@@ -85,6 +89,7 @@ export const addQuestion = (
       isMandatory: false,
       isPublic: true,
       options: [],
+      closeOnUnenrollmentDeadline: false,
     },
   ]);
 };
@@ -161,21 +166,31 @@ export const handleActivitySubmit = async ({
 
   const fd = new FormData(e.currentTarget);
 
-  const dateTimeStart = new Date(fd.get("DateTimeStart") as string);
-  const dateTimeEnd = new Date(fd.get("DateTimeEnd") as string);
+  const dateTimeStart = parseInputAsAssociationTime(
+    fd.get("DateTimeStart") as string,
+  );
+  const dateTimeEnd = parseInputAsAssociationTime(
+    fd.get("DateTimeEnd") as string,
+  );
   if (dateTimeEnd < dateTimeStart) {
     toast.error(t("activity_end_before_start"));
     return;
   }
 
   const enrollmentDeadline = fd.get("EnrollmentDeadline") as string;
-  if (enrollmentDeadline && new Date(enrollmentDeadline) > dateTimeEnd) {
+  if (
+    enrollmentDeadline &&
+    parseInputAsAssociationTime(enrollmentDeadline) > dateTimeEnd
+  ) {
     toast.error(t("activity_enrollment_deadline_after_end"));
     return;
   }
 
   const unenrollmentDeadline = fd.get("UnenrollmentDeadline") as string;
-  if (unenrollmentDeadline && new Date(unenrollmentDeadline) > dateTimeEnd) {
+  if (
+    unenrollmentDeadline &&
+    parseInputAsAssociationTime(unenrollmentDeadline) > dateTimeEnd
+  ) {
     toast.error(t("activity_unenrollment_deadline_after_end"));
     return;
   }
@@ -199,16 +214,18 @@ export const handleActivitySubmit = async ({
       OrganizerId: fd.get("OrganizerId")
         ? Number(fd.get("OrganizerId"))
         : undefined,
-      DateTimeStart: new Date(fd.get("DateTimeStart") as string).toISOString(),
-      DateTimeEnd: new Date(fd.get("DateTimeEnd") as string).toISOString(),
-      EnrollmentDeadline: fd.get("EnrollmentDeadline")
-        ? new Date(fd.get("EnrollmentDeadline") as string).toISOString()
+      DateTimeStart: dateTimeStart.toISOString(),
+      DateTimeEnd: dateTimeEnd.toISOString(),
+      EnrollmentDeadline: enrollmentDeadline
+        ? parseInputAsAssociationTime(enrollmentDeadline).toISOString()
         : undefined,
-      UnenrollmentDeadline: fd.get("UnenrollmentDeadline")
-        ? new Date(fd.get("UnenrollmentDeadline") as string).toISOString()
+      UnenrollmentDeadline: unenrollmentDeadline
+        ? parseInputAsAssociationTime(unenrollmentDeadline).toISOString()
         : undefined,
       EnrollOpenDate: fd.get("EnrollOpenDate")
-        ? new Date(fd.get("EnrollOpenDate") as string).toISOString()
+        ? parseInputAsAssociationTime(
+            fd.get("EnrollOpenDate") as string,
+          ).toISOString()
         : undefined,
 
       ShowInKoala: isBoard ? fd.get("ShowInKoala") === "on" : false,
@@ -244,7 +261,9 @@ export const handleActivitySubmit = async ({
 
       PaymentDeadline: isBoard
         ? fd.get("PaymentDeadline")
-          ? new Date(fd.get("PaymentDeadline") as string).toISOString()
+          ? parseInputAsAssociationTime(
+              fd.get("PaymentDeadline") as string,
+            ).toISOString()
           : undefined
         : undefined,
       IsOpenForPayment: isBoard
@@ -294,32 +313,25 @@ export const handleActivitySubmit = async ({
           {
             op: "replace",
             path: "/DateTimeStart",
-            value: new Date(fd.get("DateTimeStart") as string).toISOString(),
+            value: dateTimeStart.toISOString(),
           },
           {
             op: "replace",
             path: "/DateTimeEnd",
-            value: new Date(fd.get("DateTimeEnd") as string).toISOString(),
+            value: dateTimeEnd.toISOString(),
           },
           {
             op: "replace",
             path: "/EnrollmentDeadline",
-            value: fd.get("EnrollmentDeadline")
-              ? new Date(fd.get("EnrollmentDeadline") as string).toISOString()
+            value: enrollmentDeadline
+              ? parseInputAsAssociationTime(enrollmentDeadline).toISOString()
               : null,
           },
           {
             op: "replace",
             path: "/UnenrollmentDeadline",
-            value: fd.get("UnenrollmentDeadline")
-              ? new Date(fd.get("UnenrollmentDeadline") as string).toISOString()
-              : null,
-          },
-          {
-            op: "replace",
-            path: "/EnrollOpenDate",
-            value: fd.get("EnrollOpenDate")
-              ? new Date(fd.get("EnrollOpenDate") as string).toISOString()
+            value: unenrollmentDeadline
+              ? parseInputAsAssociationTime(unenrollmentDeadline).toISOString()
               : null,
           },
           {
@@ -351,6 +363,15 @@ export const handleActivitySubmit = async ({
 
         if (isBoard) {
           patchOperations.push(
+            {
+              op: "replace",
+              path: "/EnrollOpenDate",
+              value: fd.get("EnrollOpenDate")
+                ? parseInputAsAssociationTime(
+                    fd.get("EnrollOpenDate") as string,
+                  ).toISOString()
+                : null,
+            },
             {
               op: "replace",
               path: "/ShowInKoala",
@@ -390,7 +411,9 @@ export const handleActivitySubmit = async ({
               op: "replace",
               path: "/PaymentDeadline",
               value: fd.get("PaymentDeadline")
-                ? new Date(fd.get("PaymentDeadline") as string).toISOString()
+                ? parseInputAsAssociationTime(
+                    fd.get("PaymentDeadline") as string,
+                  ).toISOString()
                 : null,
             },
             {
@@ -446,5 +469,33 @@ export const handleActivitySubmit = async ({
         isEdit ? t("activity_update_failed") : t("activity_creation_failed"),
         error,
       ),
+  });
+};
+
+/**
+ * Deletes an activity, then navigates away on success.
+ *
+ * @async
+ * @param {number} activityId - The ID of the activity to delete.
+ * @param {() => void} onSuccess - Callback invoked once the activity has been deleted.
+ */
+export const handleDeleteActivity = async (
+  activityId: number,
+  onSuccess: () => void,
+) => {
+  const deleteProcess = async () => {
+    const response = await deleteActivitiesById({ path: { id: activityId } });
+
+    if (response.error) {
+      throw response.error ?? new Error("Failed to delete activity");
+    }
+
+    onSuccess();
+  };
+
+  toast.promise(deleteProcess(), {
+    loading: t("deleting"),
+    success: t("delete_success"),
+    error: (error) => appendErrorMessage(t("delete_error"), error),
   });
 };

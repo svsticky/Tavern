@@ -2,7 +2,9 @@ using Backend.Controllers.DTOs;
 using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
+using Backend.Utils;
 using Backend.Validators;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
@@ -91,7 +93,7 @@ namespace Backend.Services.Domain
                     StateValidator.Validate(manualPayment);
 
                     db.MembershipPayments.Add(manualPayment);
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -121,15 +123,15 @@ namespace Backend.Services.Domain
         }
 
         /// <inheritdoc />
-        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid? userId)
+        public async Task<PostPaymentResponse> CreateBegunstigerPayment(PostBegunstigerPaymentDTO dto, Guid userId)
         {
             logger.LogInformation("Creating begunstiger payment for member {MemberId}. Manual: {Manual}", dto.MemberId, dto.ManuallyMarkedAsPaid);
 
             var member = await GetMemberOrThrow(dto.MemberId);
 
-            if (userId != dto.MemberId)
+            if (userId != dto.MemberId || dto.ManuallyMarkedAsPaid)
             {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId ?? throw new UnauthorizedAccessException("Authentication required."));
+                permissionService.EnsureBoardOrCandidateBoardMember(userId);
             }
 
             using var transaction = await db.Database.BeginTransactionAsync();
@@ -149,7 +151,7 @@ namespace Backend.Services.Domain
                     StateValidator.Validate(manualPayment);
 
                     db.BegunstigerPayments.Add(manualPayment);
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -183,8 +185,10 @@ namespace Backend.Services.Domain
         {
             permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-            var startDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, "W. Europe Standard Time").Date.ToUniversalTime();
-            var endDateInNL = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, "W. Europe Standard Time").Date.ToUniversalTime();
+            string timezoneId = Environment.GetEnvironmentVariable("AssociationTimeZone") ?? "Europe/Amsterdam";
+
+            var startDateInTimeZone = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(startDate, timezoneId).Date.ToUniversalTime();
+            var endDateInTimeZone = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(endDate, timezoneId).Date.ToUniversalTime();
 
             var enrollmentPayments = await db.EnrollmentPayments
                 .Include(p => p.Activity)
@@ -193,6 +197,7 @@ namespace Backend.Services.Domain
                 .ToListAsync(ct);
 
             var membershipPayments = await db.MembershipPayments
+                .Include(p => p.Member)
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
@@ -204,9 +209,9 @@ namespace Backend.Services.Domain
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var csv = BuildExportCsv(startDate, endDate, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
-            logger.LogInformation("Exported payments CSV for period {StartDate} - {EndDate}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
-                startDate, endDate, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
+            var csv = BuildExportCsv(startDateInTimeZone, endDateInTimeZone, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
+            logger.LogInformation("Exported payments CSV for period {StartDateInTimeZone} - {EndDateInTimeZone}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
+                startDateInTimeZone, endDateInTimeZone, enrollmentPayments.Count, membershipPayments.Count, paymentServiceFeePayments.Count, begunstigerPayments.Count);
 
             var fileName = $"payments_{startDate:yyyyMMdd}_{endDate:yyyyMMdd}.csv";
             return (Encoding.UTF8.GetBytes(csv.ToString()), fileName);
@@ -319,10 +324,7 @@ namespace Backend.Services.Domain
         /// <inheritdoc />
         public IEnumerable<EnrollmentBalance> GetOverpaid(Guid userId)
         {
-            if (userId != Guid.Empty)
-            {
-                permissionService.EnsureBoardOrCandidateBoardMember(userId);
-            }
+            permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
             return paymentValidationService.GetAllOverpaidEnrollments();
         }
@@ -425,7 +427,7 @@ namespace Backend.Services.Domain
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidMembership(memberId);
@@ -458,7 +460,7 @@ namespace Backend.Services.Domain
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
-                    EnqueueAuthSyncOrWarnForPaidMembership(member);
+                    EnqueueAuthSyncForPaidMembership(member);
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidBegunstigerFee(memberId);
@@ -607,16 +609,9 @@ namespace Backend.Services.Domain
         /// linked to the auth system yet in some cases; don't let that block marking the payment as paid,
         /// AuthOutboxWorker queues a catch-up Sync task once they do get linked.
         /// </summary>
-        private void EnqueueAuthSyncOrWarnForPaidMembership(Member member)
+        private void EnqueueAuthSyncForPaidMembership(Member member)
         {
-            if (member.AuthSystemUserId == null)
-            {
-                logger.LogWarning("Member {MemberId} isn't synced with the authentication system yet. Marking membership payment paid without queuing an auth sync.", member.Id);
-            }
-            else
-            {
-                authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.AuthSystemUserId.Value, db);
-            }
+            authOutboxWorker.EnqueueTask(AuthTaskType.Sync, member.Id, db);
         }
 
         private static PostPaymentResponse ToCheckoutResponse(string checkoutUrl)
@@ -663,7 +658,8 @@ namespace Backend.Services.Domain
                     throw new Exception($"Activity {enrollment.Activity.Name} is not open for payment");
 
                 var price = paymentValidationService.GetUnpaidAmountForEnrollment(enrollment);
-                if (price <= 0) continue;
+                // A negative manual amount records the refund of an overpaid enrollment
+                if (price == 0 || (price < 0 && !manuallyMarkedAsPaid)) continue;
 
                 var payment = new EnrollmentPayment
                 {
@@ -672,7 +668,8 @@ namespace Backend.Services.Domain
                     Price = price,
                     PaymentServiceId = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentId ?? "",
                     PaymentIntentUrl = manuallyMarkedAsPaid ? "" : paymentResponse?.PaymentUrl ?? "",
-                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null
+                    PaidAt = manuallyMarkedAsPaid ? DateTime.UtcNow : (DateTime?)null,
+                    ManuallyMarkedAsPaid = manuallyMarkedAsPaid
                 };
 
                 StateValidator.Validate(payment);
@@ -682,50 +679,69 @@ namespace Backend.Services.Domain
         }
 
 
-        private StringBuilder BuildExportCsv(DateTime startDate, DateTime endDate, List<EnrollmentPayment> enrollmentPayments, List<MembershipPayment> membershipPayments, List<PaymentServiceFeePayment> paymentServiceFeePayments, List<BegunstigerPayment> begunstigerPayments)
+        /// <summary>
+        /// Cost centers/units are optional; a whitespace-only value is treated the same as "not set".
+        /// </summary>
+        private static string BlankIfWhitespace(string? value) => string.IsNullOrWhiteSpace(value) ? "" : value;
+
+        private StringBuilder BuildExportCsv(
+    DateTime startDateInNL,
+    DateTime endDateInNL,
+    List<EnrollmentPayment> enrollmentPayments,
+    List<MembershipPayment> membershipPayments,
+    List<PaymentServiceFeePayment> paymentServiceFeePayments,
+    List<BegunstigerPayment> begunstigerPayments)
         {
             var csv = new StringBuilder();
 
-            var invoiceDate = endDate.AddDays(-1).ToString("dd-MM-yyyy");
-            var periodLabel = $"ideal - {startDate:dd-MM-yyyy} / {endDate:dd-MM-yyyy}";
+            var invoiceDate = endDateInNL.AddDays(-1).ToString("yyyy-MM-dd");
+            var periodLabel = $"ideal - {startDateInNL:yyyy-MM-dd} / {endDateInNL:yyyy-MM-dd}";
             var paymentsCondition = db.Settings.Where(s => s.Name == "PaymentServicePaymentsCondition").Select(s => s.Value).FirstOrDefault() ?? "2";
             var paymentServiceRelationalCode = db.Settings.Where(s => s.Name == "PaymentServiceRelationCode").Select(s => s.Value).FirstOrDefault() ?? "473";
-            csv.AppendLine($"factuurdatum;{invoiceDate};{periodLabel};{paymentsCondition};{paymentServiceRelationalCode}");
+
+            // Header line
+            csv.AppendLine(CsvUtils.FormatLine("Factuurdatum", invoiceDate, periodLabel, paymentsCondition, paymentServiceRelationalCode));
+
+            var activityGLAccountFallback = db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
 
             foreach (var p in enrollmentPayments)
             {
-                var glAccount = p.Activity?.GLAccountId ?? p.Activity?.Organizer?.DefaultGLAccount ?? db.Settings.Where(s => s.Name == "ActivityGLAccount").Select(s => s.Value).FirstOrDefault() ?? "7001";
+                var glAccount = StringUtils.NullIfBlank(p.Activity?.GLAccountId) ?? StringUtils.NullIfBlank(p.Activity?.Organizer?.DefaultGLAccount) ?? activityGLAccountFallback;
                 var groupName = p.Activity?.Organizer?.Name ?? "Unknown Organizer";
                 var activityName = p.Activity?.Name ?? "Unknown Activity";
-                var costCenter = p.Activity?.CostCenterId ?? p.Activity?.Organizer?.DefaultCostCenter ?? "";
-                var costUnit = p.Activity?.CostUnitId ?? "";
-                var VATCode = p.Activity?.VatRate?.ToString() ?? "";
+                var costCenter = StringUtils.NullIfBlank(p.Activity?.CostCenterId) ?? BlankIfWhitespace(p.Activity?.Organizer?.DefaultCostCenter);
+                var costUnit = StringUtils.NullIfBlank(p.Activity?.CostUnitId) ?? BlankIfWhitespace(p.Activity?.Organizer?.DefaultCostUnit);
+                var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 
                 var description = $"{groupName} | {activityName}";
-                csv.AppendLine($";{glAccount};{description};{VATCode};{price};{costCenter};{costUnit}");
+                csv.AppendLine(CsvUtils.FormatLine("", glAccount, description, vatCode, price, costCenter, costUnit));
             }
+
+            var membershipGLAccount = db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault() ?? "8000";
+            var membershipVatCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+            var membershipCostCenter = BlankIfWhitespace(db.Settings.Where(s => s.Name == "MembershipCostCenter").Select(s => s.Value).FirstOrDefault());
+            var membershipCostUnit = BlankIfWhitespace(db.Settings.Where(s => s.Name == "MembershipCostUnit").Select(s => s.Value).FirstOrDefault());
 
             foreach (var p in membershipPayments)
             {
-                var glAccount = db.Settings.Where(s => s.Name == "MembershipGLAccount").Select(s => s.Value).FirstOrDefault() ?? "8000";
-                var description = "Lidmaatschap";
-                var VATCode = db.Settings.Where(s => s.Name == "MembershipVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+                var description = p.Member != null ? $"Lidmaatschap - {p.Member.FirstName} {p.Member.LastName}" : "Lidmaatschap";
                 var price = p.Price;
 
-                csv.AppendLine($";{glAccount};{description};{VATCode};{price};;");
+                csv.AppendLine(CsvUtils.FormatLine("", membershipGLAccount, description, membershipVatCode, price, membershipCostCenter, membershipCostUnit));
             }
+
+            var begunstigerGLAccount = db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault() ?? "";
+            var begunstigerVatCode = db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
+            var begunstigerCostCenter = BlankIfWhitespace(db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault());
+            var begunstigerCostUnit = BlankIfWhitespace(db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault());
 
             foreach (var p in begunstigerPayments)
             {
-                var glAccount = db.Settings.Where(s => s.Name == "BegunstigerGLAccount").Select(s => s.Value).FirstOrDefault() ?? "";
                 var description = "Begunstiger";
-                var VATCode = db.Settings.Where(s => s.Name == "BegunstigerVATCode").Select(s => s.Value).FirstOrDefault() ?? "0";
-                var costCenter = db.Settings.Where(s => s.Name == "BegunstigerCostCenter").Select(s => s.Value).FirstOrDefault() ?? "";
-                var costUnit = db.Settings.Where(s => s.Name == "BegunstigerCostUnit").Select(s => s.Value).FirstOrDefault() ?? "";
                 var price = p.Price;
 
-                csv.AppendLine($";{glAccount};{description};{VATCode};{price};{costCenter};{costUnit}");
+                csv.AppendLine(CsvUtils.FormatLine("", begunstigerGLAccount, description, begunstigerVatCode, price, begunstigerCostCenter, begunstigerCostUnit));
             }
 
             var groupedFees = paymentServiceFeePayments
@@ -738,16 +754,16 @@ namespace Backend.Services.Domain
                 });
 
             var paymentServiceFeeGLAccount = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeGLAccount")?.Value ?? "5007";
-            var paymentServiceFeeCostCenter = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value ?? "TRX";
-            var vatCode = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeVATCode")?.Value ?? "21";
+            var paymentServiceFeeCostCenter = BlankIfWhitespace(db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostCenter")?.Value);
+            var paymentServiceFeeCostUnit = BlankIfWhitespace(db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeCostUnit")?.Value ?? "TRX");
+            var feeVatCode = db.Settings.FirstOrDefault(s => s.Name == "PaymentServiceFeeVATCode")?.Value ?? "21";
 
             foreach (var group in groupedFees)
             {
                 var description = $"Transaction costs {group.UnitPrice:N2} x {group.Count}";
-
                 var totalPrice = group.TotalPrice;
 
-                csv.AppendLine($";{paymentServiceFeeGLAccount};{description};{vatCode};{totalPrice};{paymentServiceFeeCostCenter};;");
+                csv.AppendLine(CsvUtils.FormatLine("", paymentServiceFeeGLAccount, description, feeVatCode, totalPrice, paymentServiceFeeCostCenter, paymentServiceFeeCostUnit));
             }
 
             return csv;

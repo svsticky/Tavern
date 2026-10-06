@@ -138,13 +138,13 @@ public class RegisterReasonsController(IRegisterReasonService registerReasonServ
         var reason = await registerReasonService.GetRegisterReason(id, ct);
         if (reason == null || string.IsNullOrEmpty(reason.IconPath))
         {
-            return NotFound("Register reason or icon not found.");
+            return NotFound();
         }
 
         var file = await registerReasonService.GetRegisterReasonIconFile(reason.IconPath);
         if (file == null)
         {
-            return NotFound("File is no longer present on the server.");
+            return NotFound();
         }
 
         return File(file.Stream, file.ContentType);
