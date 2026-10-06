@@ -1,5 +1,6 @@
 using Backend.Controllers.DTOs;
 using Backend.Models.Domain;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.AspNetCore.JsonPatch;
 
 namespace Backend.Interfaces

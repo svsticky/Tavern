@@ -1,4 +1,9 @@
-namespace Backend.Interfaces;
+using Backend.Database;
+using Backend.Interfaces;
+using Backend.Models.Domain;
+using Backend.Services.OutboxWorkers;
+
+namespace Backend.Services.MailSubscriptionServices;
 
 /// <summary>
 /// Signals that a mail subscription outbox task can never succeed, no matter how many times it's
@@ -26,14 +31,48 @@ public record MemberMailinglistDto(string Id, string Name, bool Subscribed);
 /// Defines the contract for a mail subscription service that manages mailing lists and member subscriptions against an external provider (such as Mailchimp). Implementations are the sole source of truth for which lists exist and which members are subscribed to them - no subscription state is mirrored locally.
 /// Also implements <see cref="INameChangedListener"/> and <see cref="IMailChangedListener"/>.
 /// </summary>
-public interface IMailSubscriptionService : INameChangedListener, IMailChangedListener
+public abstract class AbstractMailSubscriptionService : INameChangedListener, IMailChangedListener
 {
+    private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
+
+    /// <inheritdoc />
+    void INameChangedListener.OnNameChanged(Member member, PostgresDbContext db) =>
+        _mailSubscriptionOutboxWorker.EnqueueUpdateNameTask(member.Email, member.FirstName, member.LastName, db);
+
+    /// <inheritdoc />
+    void IMailChangedListener.OnMailChanged(Guid memberId, string oldEmail, string newEmail, PostgresDbContext db)
+    {
+        // Carries the name over so an email-only change doesn't leave the migrated record blank.
+        var member = db.Members.Find(memberId);
+        _mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(oldEmail, newEmail, db, member?.FirstName, member?.LastName);
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    public abstract bool IsEnabled { get; }
+
+    /// <inheritdoc />
+    bool INameChangedListener.IsEnabled => IsEnabled;
+
+    /// <inheritdoc />
+    bool IMailChangedListener.IsEnabled => IsEnabled;
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="mailSubscriptionOutboxWorker"></param>
+    protected AbstractMailSubscriptionService(MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker)
+    {
+        _mailSubscriptionOutboxWorker = mailSubscriptionOutboxWorker;
+    }
+
     /// <summary>
     /// Retrieves every mailing list currently available at the provider.
     /// </summary>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The available mailing lists.</returns>
-    Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct);
+    public abstract Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct);
 
     /// <summary>
     /// Retrieves every mailing list together with whether the given member is currently subscribed to it.
@@ -41,7 +80,7 @@ public interface IMailSubscriptionService : INameChangedListener, IMailChangedLi
     /// <param name="email">The email address of the member.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The mailing lists with the member's subscription status.</returns>
-    Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct);
+    public abstract Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct);
 
     /// <summary>
     /// Replaces a member's mailing list subscriptions with the given set of list IDs, pushing
@@ -53,7 +92,7 @@ public interface IMailSubscriptionService : INameChangedListener, IMailChangedLi
     /// <param name="firstName">The member's first name, when known.</param>
     /// <param name="lastName">The member's last name, when known.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? firstName = null, string? lastName = null);
+    public abstract Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? firstName = null, string? lastName = null);
 
     /// <summary>
     /// Removes a member from the mail subscription provider entirely.
@@ -61,7 +100,7 @@ public interface IMailSubscriptionService : INameChangedListener, IMailChangedLi
     /// <param name="email">The email address of the member.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task DeleteMemberAsync(string email, CancellationToken ct);
+    public abstract Task DeleteMemberAsync(string email, CancellationToken ct);
 
     /// <summary>
     /// Moves a member's subscriptions from an old email address to a new one, archiving the old
@@ -73,7 +112,7 @@ public interface IMailSubscriptionService : INameChangedListener, IMailChangedLi
     /// <param name="firstName">The member's first name, when known.</param>
     /// <param name="lastName">The member's last name, when known.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct, string? firstName = null, string? lastName = null);
+    public abstract Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct, string? firstName = null, string? lastName = null);
 
     /// <summary>
     /// Updates a member's first/last name merge fields, without touching their subscriptions. A
@@ -84,5 +123,5 @@ public interface IMailSubscriptionService : INameChangedListener, IMailChangedLi
     /// <param name="lastName">The member's last name.</param>
     /// <param name="ct">The cancellation token.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    Task UpdateMemberNameAsync(string email, string firstName, string lastName, CancellationToken ct);
+    public abstract Task UpdateMemberNameAsync(string email, string firstName, string lastName, CancellationToken ct);
 }

@@ -1,6 +1,6 @@
 using Backend.Database;
-using Backend.Interfaces;
 using Backend.Models.Domain;
+using Backend.Services.MailSubscriptionServices;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
@@ -159,7 +159,7 @@ public class MailSubscriptionOutboxWorker(
         if (task.NextAttemptAt > DateTimeOffset.UtcNow) return false;
         logger.LogInformation("Processing mail subscription outbox task {TaskType} for email {Email}. Retry {RetryCount}.", task.TaskType, task.Email, task.RetryCount);
 
-        var mailService = scope.ServiceProvider.GetRequiredService<IMailSubscriptionService>();
+        var mailService = scope.ServiceProvider.GetRequiredService<AbstractMailSubscriptionService>();
 
         try
         {
@@ -183,7 +183,7 @@ public class MailSubscriptionOutboxWorker(
         return true;
     }
 
-    private async Task HandleTaskAsync(IMailSubscriptionService service, MailSubscriptionOutboxTask task, CancellationToken ct)
+    private async Task HandleTaskAsync(AbstractMailSubscriptionService service, MailSubscriptionOutboxTask task, CancellationToken ct)
     {
         switch (task.TaskType)
         {

@@ -63,6 +63,10 @@ public class DatabaseSeeder(IServiceScopeFactory scopeFactory, ILogger<DatabaseS
         await EnsureSettingExists(db, "MailchimpListKey", "");
         await EnsureSettingExists(db, "MailchimpApiKey", "");
 
+        await EnsureSettingExists(db, "ListmonkUrl", "");
+        await EnsureSettingExists(db, "ListmonkUser", "");
+        await EnsureSettingExists(db, "ListmonkApiKey", "");
+
         await EnsureSettingExists(db, "PaymentServiceFee", "0.39");
 
         await EnsureSettingExists(db, "PaymentServiceFeeGLAccount", "5007");

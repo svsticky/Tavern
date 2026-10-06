@@ -1,6 +1,4 @@
 using Backend.Database;
-using Backend.Interfaces;
-using Backend.Models.Domain;
 using Backend.Services.OutboxWorkers;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,54 +8,28 @@ using System.Text.Json.Serialization;
 namespace Backend.Services.MailSubscriptionServices;
 
 /// <summary>
-/// Implements <see cref="IMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
-/// Also implements <see cref="INameChangedListener"/> and <see cref="IMailChangedListener"/> explicitly.
+/// Implements <see cref="AbstractMailSubscriptionService"/> against the Mailchimp API. Mailchimp is treated as the sole source of truth for mailing lists and member subscriptions - nothing is mirrored locally.
 /// </summary>
-public class MailChimpSubscriptionService : IMailSubscriptionService
+/// <remarks>
+/// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve Mailchimp settings.
+/// </remarks>
+/// <param name="logger">The logger.</param>
+/// <param name="httpClient">The HTTP client.</param>
+/// <param name="context">The database context.</param>
+/// <param name="mailSubscriptionOutboxWorker">Used to queue outbox tasks from listener notifications.</param>
+public class MailChimpSubscriptionService(
+    ILogger<MailChimpSubscriptionService> logger,
+    HttpClient httpClient,
+    PostgresDbContext context,
+    MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker) : AbstractMailSubscriptionService(mailSubscriptionOutboxWorker)
 {
-    private readonly ILogger<MailChimpSubscriptionService> _logger;
-    private readonly HttpClient _httpClient;
-    private readonly PostgresDbContext _context;
-    private readonly MailSubscriptionOutboxWorker _mailSubscriptionOutboxWorker;
+    private readonly ILogger<MailChimpSubscriptionService> _logger = logger;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly PostgresDbContext _context = context;
     private string ListKey => _context.Settings.Find("MailchimpListKey")?.Value ?? string.Empty;
-    private bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("MAILCHIMP", StringComparison.OrdinalIgnoreCase) ?? false;
 
     /// <inheritdoc />
-    bool INameChangedListener.IsEnabled => IsEnabled;
-
-    /// <inheritdoc />
-    bool IMailChangedListener.IsEnabled => IsEnabled;
-
-    /// <inheritdoc />
-    void INameChangedListener.OnNameChanged(Member member, PostgresDbContext db) =>
-        _mailSubscriptionOutboxWorker.EnqueueUpdateNameTask(member.Email, member.FirstName, member.LastName, db);
-
-    /// <inheritdoc />
-    void IMailChangedListener.OnMailChanged(Guid memberId, string oldEmail, string newEmail, PostgresDbContext db)
-    {
-        // Carries the name over so an email-only change doesn't leave the migrated record blank.
-        var member = db.Members.Find(memberId);
-        _mailSubscriptionOutboxWorker.EnqueueMigrateEmailTask(oldEmail, newEmail, db, member?.FirstName, member?.LastName);
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the MailChimpSubscriptionService class with the specified logger, HTTP client, and database context. The constructor sets up the necessary dependencies for the service to function correctly, allowing it to log important events and errors, make HTTP requests to the MailChimp API, and interact with the database to retrieve Mailchimp settings.
-    /// </summary>
-    /// <param name="logger">The logger.</param>
-    /// <param name="httpClient">The HTTP client.</param>
-    /// <param name="context">The database context.</param>
-    /// <param name="mailSubscriptionOutboxWorker">Used to queue outbox tasks from listener notifications.</param>
-    public MailChimpSubscriptionService(
-        ILogger<MailChimpSubscriptionService> logger,
-        HttpClient httpClient,
-        PostgresDbContext context,
-        MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker)
-    {
-        _logger = logger;
-        _httpClient = httpClient;
-        _context = context;
-        _mailSubscriptionOutboxWorker = mailSubscriptionOutboxWorker;
-    }
+    public override bool IsEnabled => _context.Settings.Find("MailSubscriptionService")?.Value?.Trim().Equals("MAILCHIMP", StringComparison.OrdinalIgnoreCase) ?? false;
 
     private void ConfigureHttpClient()
     {
@@ -83,7 +55,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct)
+    public override async Task<IEnumerable<MailinglistDto>> GetAvailableMailinglistsAsync(CancellationToken ct)
     {
         if (!IsEnabled)
         {
@@ -112,7 +84,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct)
+    public override async Task<IEnumerable<MemberMailinglistDto>> GetMemberMailinglistsAsync(string email, CancellationToken ct)
     {
         if (!IsEnabled)
         {
@@ -151,7 +123,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? firstName = null, string? lastName = null)
+    public override async Task UpdateMemberSubscriptionsAsync(string email, IEnumerable<string> subscribedListIds, CancellationToken ct, string? firstName = null, string? lastName = null)
     {
         if (!IsEnabled)
         {
@@ -219,7 +191,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task DeleteMemberAsync(string email, CancellationToken ct)
+    public override async Task DeleteMemberAsync(string email, CancellationToken ct)
     {
         if (!IsEnabled)
         {
@@ -244,7 +216,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct, string? firstName = null, string? lastName = null)
+    public override async Task MigrateEmailAsync(string oldEmail, string newEmail, CancellationToken ct, string? firstName = null, string? lastName = null)
     {
         if (!IsEnabled)
         {
@@ -263,7 +235,7 @@ public class MailChimpSubscriptionService : IMailSubscriptionService
     }
 
     /// <inheritdoc />
-    public async Task UpdateMemberNameAsync(string email, string firstName, string lastName, CancellationToken ct)
+    public override async Task UpdateMemberNameAsync(string email, string firstName, string lastName, CancellationToken ct)
     {
         if (!IsEnabled)
         {

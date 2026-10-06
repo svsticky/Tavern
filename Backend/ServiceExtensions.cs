@@ -254,14 +254,16 @@ internal static class ServiceExtensions
 
         // Mail Subscription
         services.AddHttpClient<MailChimpSubscriptionService>();
-        services.AddScoped<IMailSubscriptionService>(sp =>
+        services.AddHttpClient<ListmonkSubscriptionService>();
+        services.AddScoped<AbstractMailSubscriptionService>(sp =>
         {
             var db = sp.GetRequiredService<PostgresDbContext>();
             var mailSubscriptionService = db.Settings.FirstOrDefault(s => s.Name == "MailSubscriptionService")?.Value?.Trim().ToUpperInvariant();
             return mailSubscriptionService switch
             {
                 "MAILCHIMP" => sp.GetRequiredService<MailChimpSubscriptionService>(),
-                _ => sp.GetRequiredService<MailChimpSubscriptionService>()
+                "LISTMONK" => sp.GetRequiredService<ListmonkSubscriptionService>(),
+                _ => sp.GetRequiredService<ListmonkSubscriptionService>()
             };
         });
 
@@ -292,8 +294,8 @@ internal static class ServiceExtensions
         services.AddScoped<IRegisterSlideService, RegisterSlideService>();
         services.AddScoped<IExternalLinkService, ExternalLinkService>();
 
-        services.AddScoped<INameChangedListener>(sp => sp.GetRequiredService<IMailSubscriptionService>());
-        services.AddScoped<IMailChangedListener>(sp => sp.GetRequiredService<IMailSubscriptionService>());
+        services.AddScoped<INameChangedListener>(sp => sp.GetRequiredService<AbstractMailSubscriptionService>());
+        services.AddScoped<IMailChangedListener>(sp => sp.GetRequiredService<AbstractMailSubscriptionService>());
 
         return services;
     }

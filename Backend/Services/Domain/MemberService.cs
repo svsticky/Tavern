@@ -3,6 +3,7 @@ using Backend.Database;
 using Backend.Interfaces;
 using Backend.Models.Domain;
 using Backend.QueryExtensions;
+using Backend.Services.MailSubscriptionServices;
 using Backend.Services.OutboxWorkers;
 using Backend.Services.PaymentServices;
 using Backend.Validators;
@@ -23,7 +24,7 @@ namespace Backend.Services.Domain
         AbstractPaymentService paymentService,
         AuthOutboxWorker authOutboxWorker,
         MailSubscriptionOutboxWorker mailSubscriptionOutboxWorker,
-        IMailSubscriptionService mailSubscriptionService,
+        AbstractMailSubscriptionService mailSubscriptionService,
         IMailinglistCurationService mailinglistCurationService,
         IMemoryCache memoryCache,
         ILogger<MemberService> logger,
