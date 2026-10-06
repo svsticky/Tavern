@@ -15,6 +15,19 @@ export type TypeItem = {
     links: string[];
 };
 
+// Descriptions are plain strings, so render `inline code` from the XML docs ourselves
+function Description({ text }: { text: string }) {
+    return text
+        .split(/(`[^`]+`)/)
+        .map((part, i) =>
+            part.startsWith("`") && part.endsWith("`") && part.length > 1 ? (
+                <code key={i}>{part.slice(1, -1)}</code>
+            ) : (
+                part
+            ),
+        );
+}
+
 export function TypeTable({
     types,
     fieldsTable = false,
@@ -62,7 +75,9 @@ export function TypeTable({
                             <CSharpType type={type.type} links={type.links} />
                         </TableCell>
                         {includeDescription ? (
-                            <TableCell>{type.description}</TableCell>
+                            <TableCell>
+                                <Description text={type.description} />
+                            </TableCell>
                         ) : (
                             ""
                         )}

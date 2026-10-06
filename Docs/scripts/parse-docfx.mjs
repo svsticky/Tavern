@@ -85,6 +85,32 @@ function extractTypeWithLinks(line) {
     }
 }
 
+// DocFX renders <see cref/> as <xref href="Uid" ...></xref> and <c> as <code>, which would
+// otherwise be escaped into literal text. Turn them into markdown before escaping.
+function convertInlineDocTags(content, fileLocations) {
+    content = content.replace(
+        /<xref\s+href="([^"]+)"[^>]*>(?:<\/xref>)?/g,
+        (_, uid) => {
+            // Strip method parameters and generic arguments/arity, e.g. Foo.Bar(System.String) -> Foo.Bar
+            // and IQueryable%601 (IQueryable`1) -> IQueryable
+            const target = uid
+                .replace(/\(.*$/, "")
+                .replace(/\{.*$/, "")
+                .replace(/(%60|`)\d+/g, "");
+            const name = target.split(".").at(-1);
+
+            // Link to the type itself, or to the declaring type for members
+            const owner = target.split(".").slice(0, -1).join(".");
+            const linkTarget =
+                target in fileLocations ? target : owner in fileLocations ? owner : null;
+
+            return linkTarget ? `[${name}](${linkTarget}.md)` : `\`${name}\``;
+        },
+    );
+
+    return content.replace(/<code\b[^>]*>(.*?)<\/code>/g, "`$1`");
+}
+
 function escapeHTMLExceptCodeBlocks(content) {
     const codeBlockRegex = /```[\s\S]*?```/g;
 
@@ -96,11 +122,7 @@ function escapeHTMLExceptCodeBlocks(content) {
     while ((match = codeBlockRegex.exec(content)) !== null) {
         // Add text before the code block (with < escaped)
         if (match.index > lastIndex) {
-            let textPart = content.substring(lastIndex, match.index);
-            textPart = textPart
-                .replace(/</g, "\\<")
-                .replace(/<([^>]+)>/g, (_, inner) => `&lt;${inner}&gt;`);
-            parts.push(textPart);
+            parts.push(content.substring(lastIndex, match.index).replace(/</g, "\\<"));
         }
 
         // Add the code block (unchanged)
@@ -111,11 +133,7 @@ function escapeHTMLExceptCodeBlocks(content) {
 
     // Add any remaining text after the last code block (with < escaped)
     if (lastIndex < content.length) {
-        let textPart = content.substring(lastIndex);
-        textPart = textPart
-            .replace(/</g, "\\<")
-            .replace(/<([^>]+)>/g, (_, inner) => `&lt;${inner}&gt;`);
-        parts.push(textPart);
+        parts.push(content.substring(lastIndex).replace(/</g, "\\<"));
     }
 
     return parts.join("");
@@ -185,6 +203,8 @@ Object.entries(fileLocations).forEach(([className, file]) => {
     // Remove the big heading (single #)
     content = content.replace(/^#(?![#]).*$/m, "");
 
+    content = convertInlineDocTags(content, fileLocations);
+
     // Escape all other < characters outside code blocks
     content = escapeHTMLExceptCodeBlocks(content);
 
@@ -203,7 +223,13 @@ Object.entries(fileLocations).forEach(([className, file]) => {
         if (file.includes("index"))
             relativePath = className.split(".").at(-1) + "/" + relativePath;
 
-        return `<a href='./${relativePath}'>${p1.replace(/\\/g, "")}</a>`;
+        // Inside JSX a bare < would open a tag (e.g. BaseActivityDTO<TQuestion>), so use entities
+        const linkText = p1
+            .replace(/\\/g, "")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+
+        return `<a href='./${relativePath}'>${linkText}</a>`;
     });
 
     // Process the content to place it in nice components
