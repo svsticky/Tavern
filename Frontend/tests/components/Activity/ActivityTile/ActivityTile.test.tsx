@@ -216,4 +216,90 @@ describe("ActivityTile", () => {
 
     expect(img).toHaveClass("opacity-100");
   });
+
+  it("shows enrolled status bar when user is enrolled", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => boardToken),
+    });
+    renderWithProviders(
+      <ActivityTile
+        activity={buildActivity({
+          enrollments: [
+            {
+              member: { id: boardToken.UserId },
+              isOnWaitingList: false,
+            },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("enrolled")).toBeInTheDocument(),
+    );
+  });
+
+  it("shows waiting list status bar when user is on the waiting list", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => boardToken),
+    });
+    renderWithProviders(
+      <ActivityTile
+        activity={buildActivity({
+          enrollments: [
+            {
+              member: { id: boardToken.UserId },
+              isOnWaitingList: true,
+            },
+          ] as unknown as ActivityResponseDto["enrollments"],
+        })}
+      />,
+      { authService },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("waiting_list")).toBeInTheDocument(),
+    );
+  });
+
+  it("shows not enrolled status bar when enrollment is open and user is not enrolled", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => boardToken),
+    });
+    renderWithProviders(
+      <ActivityTile
+        activity={buildActivity({
+          isEnrollable: true,
+          enrollments: [],
+        })}
+      />,
+      { authService },
+    );
+
+    await waitFor(() =>
+      expect(screen.getByText("not_enrolled")).toBeInTheDocument(),
+    );
+  });
+
+  it("does not show enrollment status bar when enrollment has not opened and user is not enrolled", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => boardToken),
+    });
+    renderWithProviders(
+      <ActivityTile
+        activity={buildActivity({
+          isEnrollable: false,
+          enrollOpenDate: undefined,
+          enrollments: [],
+        })}
+      />,
+      { authService },
+    );
+
+    await waitFor(() => expect(authService.getTokenParsed).toHaveBeenCalled());
+    expect(screen.queryByText("not_enrolled")).not.toBeInTheDocument();
+    expect(screen.queryByText("enrolled")).not.toBeInTheDocument();
+    expect(screen.queryByText("waiting_list")).not.toBeInTheDocument();
+  });
 });
