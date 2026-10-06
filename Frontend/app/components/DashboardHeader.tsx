@@ -21,10 +21,9 @@ import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
-import ActivityPriceList from "./Activity/ActivityPriceList";
+import ActivityListModal from "./Activity/ActivityListModal";
 import Tile from "./Tiles/Tile";
 import Button from "./UI/Button";
-import Modal from "./UI/Modal/Modal";
 
 /**
  * Props for the DashboardHeader component.
@@ -395,47 +394,45 @@ export default function DashboardHeader({
         )}
       </div>
 
-      <Modal
+      <ActivityListModal
         isOpen={enrollmentsModalIsOpen}
         onClose={() => setEnrollmentsModalIsOpen(false)}
         title={t("enrolled_activities")}
-      >
-        <ActivityPriceList
-          items={comingEnrollments.map((enrollment) => ({
-            name: enrollment.activity.name,
-            price: enrollment.price ?? enrollment.activity.price,
-          }))}
-          emptyText={t("no_enrollments")}
-        />
-      </Modal>
+        items={comingEnrollments.map(({ activity }) => ({
+          id: activity.id,
+          name: activity.name,
+          dateTimeStart: activity.dateTimeStart,
+          dateTimeEnd: activity.dateTimeEnd,
+        }))}
+        emptyText={t("no_enrollments")}
+      />
 
-      <Modal
+      <ActivityListModal
         isOpen={attendedModalIsOpen}
         onClose={() => setAttendedModalIsOpen(false)}
         title={t("attended_activities")}
-      >
-        <ActivityPriceList
-          items={pastEnrollments.map((enrollment) => ({
-            name: enrollment.activity.name,
-            price: enrollment.price ?? enrollment.activity.price,
-          }))}
-          emptyText={t("no_attended_activities")}
-        />
-      </Modal>
+        items={pastEnrollments.map(({ activity }) => ({
+          id: activity.id,
+          name: activity.name,
+          dateTimeStart: activity.dateTimeStart,
+          dateTimeEnd: activity.dateTimeEnd,
+        }))}
+        emptyText={t("no_attended_activities")}
+      />
 
-      <Modal
+      <ActivityListModal
         isOpen={paymentsModalIsOpen}
         onClose={() => setPaymentsModalIsOpen(false)}
         title={t("outstanding_payments")}
-      >
-        <ActivityPriceList
-          items={unpaidEnrollments.map((payment) => ({
-            name: payment.enrollment.activity?.name ?? "",
-            price: payment.balance,
-          }))}
-          emptyText={t("no_outstanding_payments")}
-        />
-      </Modal>
+        items={unpaidEnrollments.map((payment) => ({
+          id: payment.enrollment.activityId,
+          name: payment.enrollment.activity?.name ?? "",
+          dateTimeStart: payment.enrollment.activity?.dateTimeStart,
+          dateTimeEnd: payment.enrollment.activity?.dateTimeEnd,
+          price: payment.balance,
+        }))}
+        emptyText={t("no_outstanding_payments")}
+      />
     </Tile>
   );
 }
