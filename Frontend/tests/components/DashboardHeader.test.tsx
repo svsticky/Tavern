@@ -4,6 +4,7 @@ import type { ActivityResponseDto } from "~/api";
 import DashboardHeader from "~/components/DashboardHeader";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { formatDate } from "~/util/date.util";
 
 const { getEnrollments, getPaymentsUnpaid, postPaymentsActivity } = vi.hoisted(
   () => ({
@@ -270,7 +271,11 @@ describe("DashboardHeader", () => {
       data: [
         {
           price: 4,
-          activity: { name: "Borrel", dateTimeEnd: "2020-01-01T00:00:00Z" },
+          activity: {
+            name: "Borrel",
+            dateTimeStart: "2019-12-31T20:00:00Z",
+            dateTimeEnd: "2020-01-01T00:00:00Z",
+          },
         },
         {
           activity: {
@@ -291,7 +296,12 @@ describe("DashboardHeader", () => {
 
     expect(screen.getByText("attended_activities")).toBeInTheDocument();
     expect(screen.getByText("Borrel")).toBeInTheDocument();
-    expect(screen.getByText("€4.00")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        formatDate(new Date("2019-12-31T20:00:00Z"), "dateOnly"),
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("€4.00")).not.toBeInTheDocument();
     expect(screen.queryByText("Future")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("close_modal"));
@@ -326,7 +336,12 @@ describe("DashboardHeader", () => {
       data: [
         {
           price: 3,
-          activity: { name: "Lunch", dateTimeEnd: "2099-01-01T00:00:00Z" },
+          activity: {
+            id: 2,
+            name: "Lunch",
+            dateTimeStart: "2098-12-31T12:00:00Z",
+            dateTimeEnd: "2099-01-01T00:00:00Z",
+          },
         },
         {
           activity: {
@@ -347,7 +362,16 @@ describe("DashboardHeader", () => {
 
     expect(screen.getByText("enrolled_activities")).toBeInTheDocument();
     expect(screen.getByText("Lunch")).toBeInTheDocument();
-    expect(screen.getByText("€3.00")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        formatDate(new Date("2098-12-31T12:00:00Z"), "dateOnly"),
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("€3.00")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Lunch/ })).toHaveAttribute(
+      "href",
+      "/activities/2",
+    );
     expect(screen.queryByText("Past")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("close_modal"));
