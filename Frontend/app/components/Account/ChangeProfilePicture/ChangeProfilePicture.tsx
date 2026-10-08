@@ -1,7 +1,11 @@
 import { t } from "i18next";
 import { useEffect, useRef, useState } from "react";
 import { getMembersByIdProfilePicture } from "~/api";
-import { handleProfilePictureUpload } from "./ChangeProfilePicture.handlers";
+import Button from "~/components/UI/Button";
+import {
+  handleProfilePictureDelete,
+  handleProfilePictureUpload,
+} from "./ChangeProfilePicture.handlers";
 
 /**
  * Renders a component for changing a user's profile picture.
@@ -89,6 +93,19 @@ export default function ChangeProfilePicture({
           )
         }
       />
+
+      {profilePictureSrc && profilePictureSrc !== "/profile-picture.svg" && (
+        <Button
+          variant="secondary"
+          className="mt-3 text-xs py-1.5 px-3 border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          onClick={() =>
+            handleProfilePictureDelete(userId, setProfilePictureSrc)
+          }
+          type="button"
+        >
+          {t("remove")}
+        </Button>
+      )}
 
       <div className="mt-6 text-center">{children}</div>
     </div>
