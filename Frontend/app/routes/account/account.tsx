@@ -47,13 +47,32 @@ export default function AccountPage() {
 
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Left: Profile Picture */}
-        <ChangeProfilePicture userId={userId}>
-          <h2 className="font-bold text-l">
-            {member?.firstName} {member?.lastName}
-          </h2>
-          <p className="text-gray-500 font-mono text-sm">
-            {member?.studentNumber}
-          </p>
+        <ChangeProfilePicture
+          userId={userId}
+          isHonoraryOrMerit={Boolean(
+            member?.ereLid || member?.lidVanVerdienste,
+          )}
+        >
+          <div className="flex flex-col items-center gap-1 mt-2">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center">
+              <h2 className="font-bold text-l">
+                {member?.firstName} {member?.lastName}
+              </h2>
+              {member?.ereLid && (
+                <span className="shrink-0 px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-400">
+                  {t("ere_lid")}
+                </span>
+              )}
+              {!member?.ereLid && member?.lidVanVerdienste && (
+                <span className="shrink-0 px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-400">
+                  {t("lid_van_verdienste")}
+                </span>
+              )}
+            </div>
+            <p className="text-gray-500 font-mono text-sm">
+              {member?.studentNumber}
+            </p>
+          </div>
         </ChangeProfilePicture>
 
         {/* Right: Forms */}

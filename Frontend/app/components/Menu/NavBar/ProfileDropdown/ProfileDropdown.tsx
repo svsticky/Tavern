@@ -32,6 +32,7 @@ export type ProfileOptions = {
   options?: ProfileDropdownOption[];
   onOptionSelect?: (option: ProfileDropdownOption) => void;
   onClose?: () => void;
+  isHonoraryOrMerit?: boolean;
 };
 
 /**
@@ -53,6 +54,7 @@ export default function ProfileDropdown({
   options = [],
   onOptionSelect,
   onClose,
+  isHonoraryOrMerit = false,
 }: ProfileOptions) {
   const [isOpen, setIsOpen] = useState(false);
   const compact = React.useContext(context).compact;
@@ -86,7 +88,11 @@ export default function ProfileDropdown({
         <img
           src={avatarUrl}
           alt={`${username} avatar`}
-          className="w-8 h-8 rounded-full object-cover"
+          className={`w-8 h-8 rounded-full object-cover ${
+            isHonoraryOrMerit
+              ? "ring-2 ring-amber-400 ring-offset-1 ring-offset-(--board-primary)"
+              : ""
+          }`}
         />
         <span className="text-white font-bold text-sm">{username}</span>
       </button>

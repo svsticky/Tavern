@@ -131,9 +131,25 @@ export default function Members() {
       header: t("name"),
       render: (m) => (
         <div className="flex items-center gap-2 text-slate-500">
-          <span>
+          <span
+            className={
+              m.ereLid || m.lidVanVerdienste
+                ? "font-semibold text-slate-800"
+                : undefined
+            }
+          >
             {m.firstName} {m.lastName}
           </span>
+          {m.ereLid && (
+            <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-400">
+              {t("ere_lid")}
+            </span>
+          )}
+          {!m.ereLid && m.lidVanVerdienste && (
+            <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-400">
+              {t("lid_van_verdienste")}
+            </span>
+          )}
         </div>
       ),
     },
