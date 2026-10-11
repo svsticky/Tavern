@@ -764,7 +764,8 @@ public class PaymentServiceTests : IDisposable
         Assert.NotNull(result.Content);
         var csvStr = Encoding.UTF8.GetString(result.Content);
         Assert.Contains(",8000,Lidmaatschap - John Doe,0,7.50,,", csvStr);
-        Assert.Contains("Test Organizer | Test Activity", csvStr);
+        Assert.Contains(",7001,Test Activity,21,15.00,CC1,", csvStr);
+        Assert.DoesNotContain("Test Organizer", csvStr);
         Assert.Contains("Transaction costs 0.50 x 1", csvStr);
         Assert.Contains(",8010,Begunstiger,0,10.00,BEG,BU1", csvStr);
     }
@@ -822,7 +823,7 @@ public class PaymentServiceTests : IDisposable
         var result = await _service.ExportPaymentsToCsv(DateTime.UtcNow.AddDays(-1), DateTime.UtcNow.AddDays(1), _userId, CancellationToken.None);
 
         var csvStr = Encoding.UTF8.GetString(result.Content);
-        Assert.Contains(",7001,Organizer | Act,,15.00,CC1,", csvStr);
+        Assert.Contains(",7001,Act,,15.00,CC1,", csvStr);
     }
 
     [Fact]

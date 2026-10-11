@@ -122,7 +122,7 @@ namespace Backend.Services.AccountingToolServices
             return new
             {
                 GLAccount = StringUtils.NullIfBlank(payment.Activity?.GLAccountId) ?? StringUtils.NullIfBlank(payment.Activity?.Organizer?.DefaultGLAccount),
-                Description = $"{payment.Activity?.Organizer?.Name ?? ""} | {payment.Activity?.Name}",
+                Description = $"{payment.Activity?.Name}",
                 VATCode = MapVat(payment.Activity?.VatRate),
                 CostCenter = StringUtils.NullIfBlank(payment.Activity?.CostCenterId) ?? StringUtils.NullIfBlank(payment.Activity?.Organizer?.DefaultCostCenter),
                 CostUnit = StringUtils.NullIfBlank(payment.Activity?.CostUnitId) ?? StringUtils.NullIfBlank(payment.Activity?.Organizer?.DefaultCostUnit),

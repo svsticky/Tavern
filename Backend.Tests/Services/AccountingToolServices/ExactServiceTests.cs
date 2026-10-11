@@ -191,7 +191,8 @@ public class ExactServiceTests : IDisposable
             Location = "Taverndo",
             AllowedAudience = Backend.Models.TargetAudience.All,
             PaymentDeadline = DateTimeOffset.UtcNow,
-            VatRate = 9
+            VatRate = 9,
+            Organizer = new Group { Name = "Borrelcommissie", Active = true, Type = GroupType.Committee }
         };
 
         var payment = new EnrollmentPayment
@@ -205,6 +206,7 @@ public class ExactServiceTests : IDisposable
         };
 
         var expectedGuid = Guid.NewGuid();
+        string? postedBody = null;
 
         _handler.SendAsyncFunc = (req, ct) =>
         {
@@ -218,6 +220,7 @@ public class ExactServiceTests : IDisposable
             }
             else if (req.Method == HttpMethod.Post)
             {
+                postedBody = req.Content?.ReadAsStringAsync(ct).Result;
                 var createdResponse = new { ID = expectedGuid };
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Created)
                 {
@@ -233,6 +236,9 @@ public class ExactServiceTests : IDisposable
 
         // Assert
         Assert.Equal(expectedGuid, result);
+        Assert.NotNull(postedBody);
+        Assert.Contains("\"Description\":\"Borrel\"", postedBody);
+        Assert.DoesNotContain("Borrelcommissie", postedBody);
     }
 
     [Fact]

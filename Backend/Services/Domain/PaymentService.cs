@@ -714,7 +714,7 @@ namespace Backend.Services.Domain
                 var vatCode = p.Activity?.VatRate?.ToString() ?? "";
                 var price = p.Price;
 
-                var description = $"{groupName} | {activityName}";
+                var description = $"{activityName}";
                 csv.AppendLine(CsvUtils.FormatLine("", glAccount, description, vatCode, price, costCenter, costUnit));
             }
 
