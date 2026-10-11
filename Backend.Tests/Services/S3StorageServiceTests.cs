@@ -10,8 +10,8 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using NetVips;
 using Xunit;
-using SixLabors.ImageSharp;
 
 namespace Backend.Tests.Services;
 
@@ -25,10 +25,8 @@ public class S3StorageServiceTests
 
     static S3StorageServiceTests()
     {
-        using var image = new Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(1, 1);
-        using var ms = new MemoryStream();
-        image.SaveAsPng(ms);
-        SmallPng = ms.ToArray();
+        using var image = Image.Black(1, 1);
+        SmallPng = image.PngsaveBuffer();
     }
 
     public S3StorageServiceTests()

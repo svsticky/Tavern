@@ -1,9 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Backend.Interfaces;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
+using Backend.Services.FileCompressServices;
 
 namespace Backend.Services.StorageServices;
 
@@ -19,24 +17,14 @@ public class S3StorageService(
     {
         var fileKey = Guid.NewGuid().ToString();
 
-        using var outputStream = new MemoryStream();
+        using var inputBuffer = new MemoryStream();
         using (var inputStream = file.OpenReadStream())
         {
-            using var image = await Image.LoadAsync(inputStream);
-
-            image.Mutate(x => x.Resize(new ResizeOptions
-            {
-                Size = new Size(1200, 0),
-                Mode = ResizeMode.Max
-            }));
-
-            await image.SaveAsWebpAsync(outputStream, new WebpEncoder
-            {
-                Quality = 75
-            });
+            await inputStream.CopyToAsync(inputBuffer);
         }
 
-        outputStream.Position = 0;
+        var (data, _) = FileCompressService.Compress(inputBuffer.ToArray(), 1200, keepGif: false);
+        using var outputStream = new MemoryStream(data);
 
         var request = new PutObjectRequest
         {
