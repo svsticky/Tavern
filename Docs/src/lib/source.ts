@@ -8,5 +8,5 @@ export const docsSource = loader({
 });
 
 export const openapi = createOpenAPI({
-    disablePlayground: true,
+    input: ["./swagger.json"],
 });

@@ -22,7 +22,7 @@
     "clsx": "^2.1.1",
     "i18next": "^25.7.2",
     "i18next-browser-languagedetector": "^8.2.0",
-    "i18next-http-backend": "^3.0.2",
+    "i18next-http-backend": "^4.0.2",
     "isbot": "^5.1.31",
     "js-cookie": "^3.0.5",
     "jspdf": "^4.2.1",
@@ -61,6 +61,7 @@
     "vitest": "^5.0.1"
   },
   "overrides": {
-    "js-yaml": "^4.3.1"
+    "js-yaml": "^4.3.1",
+    "postcss-selector-parser": "^7.1.6"
   }
 }

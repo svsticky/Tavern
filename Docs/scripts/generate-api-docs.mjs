@@ -1,5 +1,6 @@
 import { readdir, readFile, writeFile, rename, rm } from "fs/promises";
 import * as OpenAPI from "fumadocs-openapi";
+import { createOpenAPI } from "fumadocs-openapi/server";
 import path from "path";
 import { generateIndexFiles } from "./generate-index-files.mjs";
 
@@ -48,7 +49,7 @@ async function main() {
     const xmlSummaries = {};
 
     await OpenAPI.generateFiles({
-        input: [swaggerFilePath],
+        input: createOpenAPI({ input: [swaggerFilePath] }),
         output: out,
         per: "operation",
         groupBy: "tag",

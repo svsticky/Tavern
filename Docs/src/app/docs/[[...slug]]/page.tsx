@@ -1,6 +1,6 @@
+import { OpenAPIPage } from "@/components/openapi-page";
 import { docsSource, openapi } from "@/lib/source";
 
-import { APIPage } from "fumadocs-openapi/ui";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import {
     DocsBody,
@@ -30,9 +30,21 @@ export default async function Page(props: {
                 <MDX
                     components={{
                         ...defaultMdxComponents,
-                        APIPage: (props: any) => (
-                            <APIPage {...props} disablePlayground />
-                        ),
+                        OpenAPIPage: async (props: any) => {
+                            // The page renders on the client, so hand it the schema it refers to.
+                            const { bundled } = await openapi.getSchema(
+                                props.document,
+                            );
+
+                            return (
+                                <OpenAPIPage
+                                    {...props}
+                                    preloaded={{
+                                        docs: { [props.document]: bundled },
+                                    }}
+                                />
+                            );
+                        },
                     }}
                 />
             </DocsBody>
