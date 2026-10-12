@@ -417,13 +417,7 @@ namespace Backend.Services.Domain
             foreach (var existingPayment in existingPayments)
             {
                 var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
-                if (paymentResponse.Status == PaymentStatus.Pending)
-                {
-                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
-                    db.MembershipPayments.Remove(existingPayment);
-                    await db.SaveChangesAsync();
-                }
-                else if (paymentResponse.Status == PaymentStatus.Paid)
+                if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
@@ -431,6 +425,23 @@ namespace Backend.Services.Domain
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidMembership(memberId);
+                }
+                else
+                {
+                    if (paymentResponse.Status == PaymentStatus.Pending)
+                    {
+                        try
+                        {
+                            await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Failed to cancel payment {PaymentServiceId} at provider", existingPayment.PaymentServiceId);
+                        }
+                    }
+
+                    db.MembershipPayments.Remove(existingPayment);
+                    await db.SaveChangesAsync();
                 }
             }
         }
@@ -450,13 +461,7 @@ namespace Backend.Services.Domain
             foreach (var existingPayment in existingPayments)
             {
                 var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
-                if (paymentResponse.Status == PaymentStatus.Pending)
-                {
-                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
-                    db.BegunstigerPayments.Remove(existingPayment);
-                    await db.SaveChangesAsync();
-                }
-                else if (paymentResponse.Status == PaymentStatus.Paid)
+                if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     existingPayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
 
@@ -464,6 +469,23 @@ namespace Backend.Services.Domain
 
                     await db.SaveChangesAsync();
                     EnsureMemberHasNoPaidBegunstigerFee(memberId);
+                }
+                else
+                {
+                    if (paymentResponse.Status == PaymentStatus.Pending)
+                    {
+                        try
+                        {
+                            await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Failed to cancel payment {PaymentServiceId} at provider", existingPayment.PaymentServiceId);
+                        }
+                    }
+
+                    db.BegunstigerPayments.Remove(existingPayment);
+                    await db.SaveChangesAsync();
                 }
             }
         }
@@ -515,13 +537,6 @@ namespace Backend.Services.Domain
             {
                 var paymentResponse = await paymentService.GetPaymentAsync(payment.PaymentServiceId);
                 var paymentsInSameMollieUrl = pendingPayments.Where(p => p.PaymentServiceId == payment.PaymentServiceId).ToList();
-                if (paymentResponse.Status == PaymentStatus.Pending)
-                {
-                    // try to cancel the payment, so a new one can be created
-                    await paymentService.CancelPaymentAsync(payment.PaymentServiceId);
-                    db.EnrollmentPayments.Remove(payment);
-                }
-
                 if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     payment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
@@ -533,7 +548,6 @@ namespace Backend.Services.Domain
                         feePayment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
                     }
                     await db.SaveChangesAsync();
-
 
                     var coveredActivityIds = paymentsInSameMollieUrl.Select(p => p.ActivityId!.Value);
 
@@ -555,6 +569,30 @@ namespace Backend.Services.Domain
                             activityIds.Remove(activityId);
                         }
                     }
+                }
+                else
+                {
+                    if (paymentResponse.Status == PaymentStatus.Pending)
+                    {
+                        try
+                        {
+                            await paymentService.CancelPaymentAsync(payment.PaymentServiceId);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Failed to cancel payment {PaymentServiceId} at provider", payment.PaymentServiceId);
+                        }
+                    }
+
+                    db.EnrollmentPayments.Remove(payment);
+
+                    var feePayment = await db.PaymentServiceFeePayments
+                        .FirstOrDefaultAsync(p => p.MemberId == memberId && p.PaymentServiceId == payment.PaymentServiceId && p.PaidAt == null);
+                    if (feePayment != null)
+                    {
+                        db.PaymentServiceFeePayments.Remove(feePayment);
+                    }
+                    await db.SaveChangesAsync();
                 }
             }
         }
