@@ -83,6 +83,7 @@ public class EnrollmentResponseDTO
                 AreParticipantsVisible = e.Activity.AreParticipantsVisible,
                 IsAdultOnly = e.Activity.IsAdultOnly,
                 IsWeeklyDrinks = e.Activity.IsWeeklyDrinks,
+                IsArchived = e.Activity.IsArchived,
                 AllowedAudience = e.Activity.AllowedAudience,
                 VatRate = e.Activity.VatRate,
                 GLAccountId = e.Activity.GLAccountId,

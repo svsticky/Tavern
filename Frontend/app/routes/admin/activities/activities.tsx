@@ -1,15 +1,21 @@
 import { t } from "i18next";
+import { Archive, ArchiveRestore } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
-import type { ActivityResponseDto } from "~/api";
+import { type ActivityResponseDto, patchActivitiesById } from "~/api";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
+import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useAuth } from "~/context/AuthContext";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
 /** The number of activities to fetch per page for infinite scrolling. */
@@ -34,9 +40,17 @@ const PAGE_SIZE = 15;
 export default function Activities() {
   const navigate = useNavigate();
 
+  const authService = useAuth();
+  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [confirmModal, confirm] = useConfirm();
+
   const [loading, setLoading] = useState(false);
   const currentYear = getCommitteeYear();
   const [year, setYear] = useState(currentYear);
+  const [statusFilter, setStatusFilter] = useState<"active" | "archived">(
+    "active",
+  );
+  const isArchivedQuery = statusFilter === "archived";
   const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -44,6 +58,12 @@ export default function Activities() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const loaderRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    authService.getTokenParsed().then(setTokenParsed);
+  }, [authService]);
+
+  const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   const yearsSince2007 = Array.from(
     { length: currentYear - 2007 + 1 },
@@ -56,6 +76,7 @@ export default function Activities() {
       isInitial: boolean,
       targetYear: number,
       search: string,
+      isArchived: boolean,
     ) => {
       loadAdminActivities(
         targetYear,
@@ -71,6 +92,7 @@ export default function Activities() {
         pageNum,
         PAGE_SIZE,
         search,
+        isArchived,
       );
     },
     [],
@@ -87,8 +109,8 @@ export default function Activities() {
   useEffect(() => {
     setPage(1);
     setHasMore(true);
-    fetchActivities(1, true, year, debouncedSearchQuery);
-  }, [year, debouncedSearchQuery, fetchActivities]);
+    fetchActivities(1, true, year, debouncedSearchQuery, isArchivedQuery);
+  }, [year, debouncedSearchQuery, isArchivedQuery, fetchActivities]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -96,7 +118,13 @@ export default function Activities() {
         if (entries[0].isIntersecting && hasMore && !loading) {
           const nextPage = page + 1;
           setPage(nextPage);
-          fetchActivities(nextPage, false, year, debouncedSearchQuery);
+          fetchActivities(
+            nextPage,
+            false,
+            year,
+            debouncedSearchQuery,
+            isArchivedQuery,
+          );
         }
       },
       { threshold: 1.0 },
@@ -107,7 +135,15 @@ export default function Activities() {
     }
 
     return () => observer.disconnect();
-  }, [hasMore, loading, page, year, debouncedSearchQuery, fetchActivities]);
+  }, [
+    hasMore,
+    loading,
+    page,
+    year,
+    debouncedSearchQuery,
+    isArchivedQuery,
+    fetchActivities,
+  ]);
 
   const columns: Column<ActivityResponseDto>[] = [
     {
@@ -156,16 +192,73 @@ export default function Activities() {
       header: "",
       className: "w-full sm:w-px whitespace-nowrap text-right",
       render: (act) => (
-        <Button
-          variant="secondary"
-          className="w-full sm:w-auto"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleViewActivity(navigate, act.id);
-          }}
-        >
-          {t("view_activity")}
-        </Button>
+        <div className="flex items-center justify-end gap-2">
+          {isBoard && (
+            <Button
+              variant="secondary"
+              className="px-2"
+              aria-label={
+                act.isArchived ? t("unarchive_activity") : t("archive_activity")
+              }
+              title={
+                act.isArchived ? t("unarchive_activity") : t("archive_activity")
+              }
+              onClick={async (e) => {
+                e.stopPropagation();
+                const confirmed = await confirm(
+                  act.isArchived
+                    ? t("confirm_unarchive_activity")
+                    : t("confirm_archive_activity"),
+                  {
+                    title: act.isArchived
+                      ? t("unarchive_activity")
+                      : t("archive_activity"),
+                    variant: "secondary",
+                  },
+                );
+                if (!confirmed) return;
+
+                const nextArchived = !act.isArchived;
+                const res = await patchActivitiesById({
+                  path: { id: act.id },
+                  body: [
+                    {
+                      op: "replace",
+                      path: "/isarchived",
+                      value: nextArchived,
+                    },
+                  ],
+                });
+                if (res.error) {
+                  toast.error(t("failed_updating"));
+                  return;
+                }
+                setActivities((prev) => prev.filter((a) => a.id !== act.id));
+                toast.success(
+                  nextArchived
+                    ? t("activity_archived")
+                    : t("activity_unarchived"),
+                );
+              }}
+            >
+              {act.isArchived ? (
+                <ArchiveRestore size={16} />
+              ) : (
+                <Archive size={16} />
+              )}
+            </Button>
+          )}
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleViewActivity(navigate, act.id);
+            }}
+          >
+            {t("view_activity")}
+          </Button>
+        </div>
       ),
     },
   ];
@@ -187,6 +280,20 @@ export default function Activities() {
           </div>
           <div className="flex flex-col w-full sm:w-auto">
             <Select
+              options={[
+                { label: t("active_activities"), value: "active" },
+                { label: t("archived_activities"), value: "archived" },
+              ]}
+              label={t("status")}
+              style={{ minWidth: "160px" }}
+              value={statusFilter}
+              onChange={(e) =>
+                setStatusFilter(e.target.value as "active" | "archived")
+              }
+            />
+          </div>
+          <div className="flex flex-col w-full sm:w-auto">
+            <Select
               options={yearsSince2007.map((y) => ({
                 label: `${y - 1}/${y}`,
                 value: y,
@@ -201,7 +308,13 @@ export default function Activities() {
       </BorderedTile>
 
       <BorderedTile className="bg-white p-0">
-        <DataTable data={activities} columns={columns} emptyText="" />
+        <DataTable
+          data={activities}
+          columns={columns}
+          emptyText={
+            statusFilter === "archived" ? t("no_archived_activities") : ""
+          }
+        />
 
         <div ref={loaderRef} className="h-10 flex items-center justify-center">
           <span className="text-slate-400 text-sm">
@@ -215,6 +328,7 @@ export default function Activities() {
           </span>
         </div>
       </BorderedTile>
+      {confirmModal}
     </div>
   );
 }
