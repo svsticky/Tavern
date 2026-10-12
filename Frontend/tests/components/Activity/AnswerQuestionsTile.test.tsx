@@ -1,5 +1,6 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import i18next from "i18next";
 import { describe, expect, it, vi } from "vitest";
 import type {
   ActivityResponseDto,
@@ -108,6 +109,32 @@ describe("AnswerQuestionsTile", () => {
       { authService },
     );
     expect(await screen.findByText("Vraag")).toBeInTheDocument();
+  });
+
+  it("updates question text immediately when language is changed", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    renderWithProviders(
+      <AnswerQuestionsTile
+        questions={[question({})]}
+        activity={activity()}
+        answers={{}}
+        onChange={vi.fn()}
+      />,
+      { authService },
+    );
+    expect(await screen.findByText("Question")).toBeInTheDocument();
+
+    await act(async () => {
+      await i18next.changeLanguage("nl");
+    });
+
+    expect(await screen.findByText("Vraag")).toBeInTheDocument();
+
+    await act(async () => {
+      await i18next.changeLanguage("en");
+    });
   });
 
   it("shows a required asterisk for mandatory questions", async () => {
