@@ -21,6 +21,7 @@ import type { ReactElement, ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { vi } from "vitest";
 import type { IAuthService } from "~/auth/IAuthService";
+import { AdminModeProvider } from "~/context/AdminModeContext";
 import { AppProvider } from "~/context/AppContext";
 import AuthContext from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
@@ -82,7 +83,7 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: ReactNode }) {
     const withAuth = (
       <AuthContext.Provider value={authService}>
-        {children}
+        <AdminModeProvider>{children}</AdminModeProvider>
       </AuthContext.Provider>
     );
     const inner = withAppProvider ? (
