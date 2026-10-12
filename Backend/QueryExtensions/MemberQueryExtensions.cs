@@ -78,6 +78,37 @@ public static class MemberQueryExtensions
     }
 
     /// <summary>
+    /// Orders a queryable collection of Member entities based on search relevance when a search term is provided,
+    /// or by last name and first name when browsing without search.
+    /// </summary>
+    /// <param name="query">The queryable collection of Member entities to order.</param>
+    /// <param name="dto">The data transfer object containing the search criteria.</param>
+    /// <returns>The ordered queryable collection of Member entities.</returns>
+    public static IQueryable<Member> ApplyOrdering(
+        this IQueryable<Member> query,
+        GetMembersDto dto)
+    {
+        if (!string.IsNullOrWhiteSpace(dto.Search))
+        {
+            var search = dto.Search.Trim().ToLower();
+
+            return query
+                .OrderByDescending(m => (m.FirstName + " " + m.LastName).ToLower() == search || m.FirstName.ToLower() == search)
+                .ThenByDescending(m => m.FirstName.ToLower().StartsWith(search))
+                .ThenByDescending(m => (m.FirstName + " " + m.LastName).ToLower().StartsWith(search))
+                .ThenByDescending(m => m.LastName.ToLower().StartsWith(search))
+                .ThenByDescending(m => (m.FirstName + " " + m.LastName).ToLower().Contains(search))
+                .ThenByDescending(m => m.Email.ToLower().StartsWith(search))
+                .ThenBy(m => m.FirstName)
+                .ThenBy(m => m.LastName);
+        }
+
+        return query
+            .OrderBy(m => m.LastName)
+            .ThenBy(m => m.FirstName);
+    }
+
+    /// <summary>
     /// Applies pagination to a queryable collection of Member entities based on the page number and page size specified in a GetMembersDto object. The ApplyPaging method calculates the number of records to skip based on the current page and page size, and then takes the specified number of records for the current page. This method centralizes the logic for applying pagination to an <see cref="IQueryable{Member}"/>, ensuring that the results are returned in manageable chunks based on the client's request while maintaining efficient querying of the underlying data source.
     /// </summary>
     /// <param name="query">The queryable collection of Member entities to paginate.</param>
