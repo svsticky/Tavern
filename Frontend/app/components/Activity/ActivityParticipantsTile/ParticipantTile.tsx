@@ -1,7 +1,9 @@
 import { useState, useSyncExternalStore } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import type { EnrollmentResponseDto } from "~/api/types.gen";
 import { getEnv } from "~/util/config.utils";
+import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
 
 const ANSWER_CYCLE_INTERVAL_MS = 3000;
@@ -58,6 +60,7 @@ function useAnswerCycleTick() {
  *   mounted ParticipantTile via a shared heartbeat.
  * - **Hover Effects**: Includes subtle scaling and color transitions for better interactivity.
  * - **Board Navigation**: Board members can click a tile to open that member's admin profile.
+ * - **Honorary / Merit Recognition**: Displays a gold border and badge for honorary members and members of merit.
  *
  * @component
  * @param {Object} props - The component props.
@@ -79,6 +82,7 @@ export default function ParticipantTile({
   enrollment: EnrollmentResponseDto;
   isBoard?: boolean;
 }) {
+  const { t } = useTranslation();
   const imageUrl = `${getEnv("ApiUrl")}/profilepicture/view/${enrollment.member.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 
@@ -89,6 +93,9 @@ export default function ParticipantTile({
     (answer) => answer.isPublic,
   );
   const hasAnswers = answers.length > 0;
+  const isHonoraryOrMerit = Boolean(
+    enrollment.member.ereLid || enrollment.member.lidVanVerdienste,
+  );
 
   const cycleTick = useAnswerCycleTick();
   const currentAnswerIndex =
@@ -98,10 +105,21 @@ export default function ParticipantTile({
 
   const tile = (
     <Tile
-      className={`bg-slate-50 flex items-center gap-4 border border-transparent hover:border-slate-200 hover:bg-white transition-all group ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+      className={cn(
+        "bg-slate-50 flex items-center gap-4 border transition-all group",
+        isClickable ? "cursor-pointer" : "cursor-default",
+        isHonoraryOrMerit
+          ? "border-amber-400 bg-amber-50/20 shadow-[0_0_0_1px_rgba(251,191,36,0.5)] hover:border-amber-500 hover:bg-amber-50/40"
+          : "border-transparent hover:border-slate-200 hover:bg-white",
+      )}
     >
       <div className="relative flex-shrink-0">
-        <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-200 bg-(--board-primary)">
+        <div
+          className={cn(
+            "w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-200 bg-(--board-primary)",
+            isHonoraryOrMerit && "ring-2 ring-amber-400 ring-offset-2",
+          )}
+        >
           <img
             src={isFallback ? fallbackUrl : imageUrl}
             alt="Profile"
@@ -118,9 +136,27 @@ export default function ParticipantTile({
       </div>
 
       <div className="overflow-hidden flex flex-col justify-center min-w-0">
-        <p className="font-bold text-slate-900 truncate leading-tight group-hover:text-(--board-primary-dark) transition-colors">
-          {enrollment.member.firstName} {enrollment.member.lastName}
-        </p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="font-bold text-slate-900 truncate leading-tight group-hover:text-(--board-primary-dark) transition-colors">
+            {enrollment.member.firstName} {enrollment.member.lastName}
+          </p>
+          {enrollment.member.ereLid && (
+            <span
+              className="shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-400"
+              title={t("ere_lid")}
+            >
+              {t("ere_lid")}
+            </span>
+          )}
+          {!enrollment.member.ereLid && enrollment.member.lidVanVerdienste && (
+            <span
+              className="shrink-0 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-400"
+              title={t("lid_van_verdienste")}
+            >
+              {t("lid_van_verdienste")}
+            </span>
+          )}
+        </div>
 
         {hasAnswers && (
           <div className="relative h-4 overflow-hidden mt-0.5">
