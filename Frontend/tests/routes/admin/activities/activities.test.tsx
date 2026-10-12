@@ -39,6 +39,7 @@ function makeActivity(
     price: 5,
     participantLimit: 50,
     enrollments: [],
+    showInKoala: true,
     ...overrides,
   } as ActivityResponseDto;
 }
@@ -325,5 +326,43 @@ describe("Activities (admin)", () => {
     renderWithProviders(<Activities />);
 
     expect(await screen.findByText("no_more_activities")).toBeInTheDocument();
+  });
+
+  it("renders a draft badge when the activity is not published (showInKoala is false)", async () => {
+    loadAdminActivities.mockImplementation(
+      async (_year, setLoading, setActivities) => {
+        setLoading(true);
+        setActivities([
+          makeActivity({ id: 1, name: "Draft Event", showInKoala: false }),
+        ]);
+        setLoading(false);
+      },
+    );
+
+    renderWithProviders(<Activities />);
+
+    expect(await screen.findByText("Draft Event")).toBeInTheDocument();
+    expect(screen.getByText("draft")).toBeInTheDocument();
+  });
+
+  it("does not render a draft badge when the activity is published (showInKoala is true)", async () => {
+    loadAdminActivities.mockImplementation(
+      async (_year, setLoading, setActivities) => {
+        setLoading(true);
+        setActivities([
+          makeActivity({
+            id: 1,
+            name: "Published Event",
+            showInKoala: true,
+          }),
+        ]);
+        setLoading(false);
+      },
+    );
+
+    renderWithProviders(<Activities />);
+
+    expect(await screen.findByText("Published Event")).toBeInTheDocument();
+    expect(screen.queryByText("draft")).not.toBeInTheDocument();
   });
 });
