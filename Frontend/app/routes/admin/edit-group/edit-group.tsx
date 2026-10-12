@@ -23,6 +23,7 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useApp } from "~/context/AppContext";
 import { getCommitteeYear } from "~/util/date.util";
+import Activities from "../activities/activities";
 import {
   type EditGroupFormData,
   handleAddGroupEnrollment,
@@ -318,6 +319,13 @@ export default function EditGroupPage() {
               />
             </BorderedTile>
           </section>
+
+          {id && (
+            <section className="space-y-4">
+              <FormHeader title={t("activities")} />
+              <Activities organizerId={id} hideHeader />
+            </section>
+          )}
         </Form>
 
         <Modal

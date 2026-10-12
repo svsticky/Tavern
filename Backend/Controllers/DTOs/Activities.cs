@@ -310,4 +310,9 @@ public class GetActivitiesDTO
     /// A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
     /// </summary>
     public string? Search { get; set; }
+
+    /// <summary>
+    /// Indicates the organizer group ID for which to retrieve activities. If specified, only activities organized by this group will be included in the response.
+    /// </summary>
+    public uint? OrganizerId { get; set; }
 }

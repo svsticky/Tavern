@@ -326,4 +326,29 @@ describe("Activities (admin)", () => {
 
     expect(await screen.findByText("no_more_activities")).toBeInTheDocument();
   });
+
+  it("passes organizerId to loadAdminActivities when provided", async () => {
+    renderWithProviders(<Activities organizerId={42} />);
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalled());
+
+    const currentYear = getCommitteeYear();
+    expect(loadAdminActivities).toHaveBeenCalledWith(
+      currentYear,
+      expect.any(Function),
+      expect.any(Function),
+      1,
+      15,
+      "",
+      42,
+    );
+  });
+
+  it("does not render PageHeader when hideHeader is true", async () => {
+    const { container } = renderWithProviders(<Activities hideHeader />);
+
+    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalled());
+
+    expect(container.querySelector("h1")).not.toBeInTheDocument();
+  });
 });
