@@ -48,13 +48,6 @@ export function getActivityEnrollmentStatus(
   return { canEnroll, canUnenroll };
 }
 
-/**
- * Determines whether an activity is configured to support enrollments at all.
- * An activity is enrollable if `isEnrollable` is true OR `enrollOpenDate` is defined.
- *
- * @param activity The activity object.
- * @returns `true` if the activity is configured for enrollments, `false` otherwise.
- */
 export function isActivityEnrollable(
   activity?: ActivityResponseDto | null,
 ): boolean {
@@ -81,4 +74,25 @@ export function hasEnrollmentOpened(
     : null;
   const afterEnrollOpenDate = enrollOpenDate ? now >= enrollOpenDate : false;
   return Boolean(activity.isEnrollable || afterEnrollOpenDate);
+}
+
+/**
+ * Determines whether the user should be shown Dutch or English activity texts.
+ * Prioritizes the active member profile language, then fallback token claim or i18n language.
+ */
+export function isDutchLocale(
+  preferredLanguage?: string | null,
+  i18nLanguage?: string | null,
+  tokenLocale?: string | null,
+): boolean {
+  if (preferredLanguage) {
+    return preferredLanguage.toUpperCase() === "NL";
+  }
+  if (tokenLocale) {
+    return tokenLocale.toUpperCase() === "NL";
+  }
+  if (i18nLanguage) {
+    return i18nLanguage.toLowerCase().startsWith("nl");
+  }
+  return true;
 }
