@@ -110,6 +110,17 @@ describe("getFriendlyErrorMessage", () => {
     ).toBe("student_number_already_registered");
   });
 
+  it("maps a known duplicate-group-membership backend message to its translation key", () => {
+    expect(
+      getFriendlyErrorMessage(
+        "Add failed",
+        new Error(
+          "Member is already enrolled in this group for the specified year.",
+        ),
+      ),
+    ).toBe("member_already_enrolled_in_group");
+  });
+
   it("falls back to appending the raw message for unknown errors", () => {
     expect(
       getFriendlyErrorMessage("Registration failed", new Error("boom")),
