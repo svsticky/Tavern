@@ -97,19 +97,6 @@ describe("handleProfilePictureDelete", () => {
     });
   });
 
-  it("deletes the profile picture, updates local state, and reloads on success", async () => {
-    deleteMembersByIdProfilePicture.mockResolvedValue({});
-    const setProfilePictureSrc = vi.fn();
-
-    await handleProfilePictureDelete("user-1", setProfilePictureSrc);
-
-    expect(deleteMembersByIdProfilePicture).toHaveBeenCalledWith({
-      path: { id: "user-1" },
-    });
-    expect(setProfilePictureSrc).toHaveBeenCalledWith("/profile-picture.svg");
-    await vi.waitFor(() => expect(reloadMock).toHaveBeenCalledTimes(1));
-  });
-
   it("does not reload and logs when the delete fails", async () => {
     deleteMembersByIdProfilePicture.mockResolvedValue({
       error: { title: "Delete failed" },

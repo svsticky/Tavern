@@ -59,7 +59,6 @@ export const handleProfilePictureDelete = async (
         throw response.error ?? new Error("Failed to delete profile picture");
       }
       setProfilePictureSrc?.("/profile-picture.svg");
-      window.location.reload();
     } catch (err) {
       console.error("Failed to delete profile picture:", err);
       throw err;
