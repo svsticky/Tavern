@@ -22,8 +22,8 @@ describe("GroupMembershipItem", () => {
       />,
     );
 
-    expect(screen.getByText("Web Committee - 2025/2026")).toBeInTheDocument();
-    expect(screen.getByText("Chair")).toBeInTheDocument();
+    expect(screen.getByText("Web Committee")).toBeInTheDocument();
+    expect(screen.getByText("Chair 2025/2026")).toBeInTheDocument();
   });
 
   it("falls back to the provided fallback image when the group picture fails to load", () => {
