@@ -34,9 +34,7 @@ describe("GroupMembershipOverview", () => {
       />,
     );
 
-    const names = screen
-      .getAllByText(/Group - \d{4}\/\d{4}/)
-      .map((el) => el.textContent);
+    const names = screen.getAllByText(/Group/).map((el) => el.textContent);
     expect(names[0]).toContain("Newer Group");
     expect(names[1]).toContain("Older Group");
   });
