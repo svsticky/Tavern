@@ -3,18 +3,22 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 
-const { getMembersByIdProfilePicture, handleProfilePictureUpload } = vi.hoisted(
-  () => ({
-    getMembersByIdProfilePicture: vi.fn(),
-    handleProfilePictureUpload: vi.fn(),
-  }),
-);
+const {
+  getMembersByIdProfilePicture,
+  handleProfilePictureUpload,
+  handleProfilePictureDelete,
+} = vi.hoisted(() => ({
+  getMembersByIdProfilePicture: vi.fn(),
+  handleProfilePictureUpload: vi.fn(),
+  handleProfilePictureDelete: vi.fn(),
+}));
 
 vi.mock("~/api", () => ({ getMembersByIdProfilePicture }));
 vi.mock(
   "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers",
   () => ({
     handleProfilePictureUpload,
+    handleProfilePictureDelete,
   }),
 );
 
@@ -107,5 +111,40 @@ describe("ChangeProfilePicture", () => {
 
     expect(handleProfilePictureUpload).toHaveBeenCalledTimes(1);
     expect(handleProfilePictureUpload.mock.calls[0][1]).toBe("user-1");
+  });
+
+  it("does not show the remove button when using the default avatar", async () => {
+    getMembersByIdProfilePicture.mockResolvedValue({
+      status: 404,
+      data: undefined,
+    });
+    render(<ChangeProfilePicture userId="user-1" />);
+
+    await waitFor(() =>
+      expect(screen.getByAltText("Profile")).toHaveAttribute(
+        "src",
+        "/profile-picture.svg",
+      ),
+    );
+
+    expect(
+      screen.queryByRole("button", { name: /remove/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the remove button and calls handleProfilePictureDelete when clicked", async () => {
+    getMembersByIdProfilePicture.mockResolvedValue({
+      status: 200,
+      data: new Blob(["fake"], { type: "image/png" }),
+    });
+    const user = userEvent.setup();
+    render(<ChangeProfilePicture userId="user-1" />);
+
+    const removeBtn = await screen.findByRole("button", { name: /remove/i });
+    expect(removeBtn).toBeInTheDocument();
+
+    await user.click(removeBtn);
+    expect(handleProfilePictureDelete).toHaveBeenCalledTimes(1);
+    expect(handleProfilePictureDelete.mock.calls[0][0]).toBe("user-1");
   });
 });

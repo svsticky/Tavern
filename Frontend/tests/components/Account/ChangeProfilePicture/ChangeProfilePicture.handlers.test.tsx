@@ -1,11 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { handleProfilePictureUpload } from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
+import {
+  handleProfilePictureDelete,
+  handleProfilePictureUpload,
+} from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
 
-const { postProfilepictureByIdProfilePicture } = vi.hoisted(() => ({
+const {
+  deleteMembersByIdProfilePicture,
+  postProfilepictureByIdProfilePicture,
+} = vi.hoisted(() => ({
+  deleteMembersByIdProfilePicture: vi.fn(),
   postProfilepictureByIdProfilePicture: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ postProfilepictureByIdProfilePicture }));
+vi.mock("~/api", () => ({
+  deleteMembersByIdProfilePicture,
+  postProfilepictureByIdProfilePicture,
+}));
 
 vi.mock("react-hot-toast", () => ({
   // Mirror react-hot-toast's real behavior of internally handling the promise's rejection
@@ -71,6 +81,35 @@ describe("handleProfilePictureUpload", () => {
     await handleProfilePictureUpload(buildEvent(file), "user-1");
 
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
+    expect(reloadMock).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});
+
+describe("handleProfilePictureDelete", () => {
+  const reloadMock = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    Object.defineProperty(window, "location", {
+      value: { reload: reloadMock },
+      writable: true,
+    });
+  });
+
+  it("does not reload and logs when the delete fails", async () => {
+    deleteMembersByIdProfilePicture.mockResolvedValue({
+      error: { title: "Delete failed" },
+    });
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const setProfilePictureSrc = vi.fn();
+
+    await handleProfilePictureDelete("user-1", setProfilePictureSrc);
+
+    await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
+    expect(setProfilePictureSrc).not.toHaveBeenCalled();
     expect(reloadMock).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
