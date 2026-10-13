@@ -41,14 +41,12 @@ export default function GroupMembershipItem({
       </div>
 
       <div className="flex-1 min-w-0">
-        <p
-          className="truncate mt-[-2.5px]"
-          title={groupMembership.groupName}
-        >
+        <p className="truncate mt-[-2.5px]" title={groupMembership.groupName}>
           {groupMembership.groupName}
         </p>
         <p className="text-gray-500 mt-[-2.5px] truncate">
-          {groupMembership.roleAliasName} {`${groupMembership.membershipYear - 1}/${groupMembership.membershipYear}`}
+          {groupMembership.roleAliasName}{" "}
+          {`${groupMembership.membershipYear - 1}/${groupMembership.membershipYear}`}
         </p>
       </div>
     </div>
