@@ -301,4 +301,36 @@ public class ProjectionsTests
         Assert.Null(nonBoardDto.CostCenterId);
         Assert.Null(nonBoardDto.CostUnitId);
     }
+
+    [Fact]
+    public void ActivityProjections_ToDto_WithoutMembers_KeepsEnrollmentsButOmitsMembers()
+    {
+        var activity = new Activity
+        {
+            Id = 4u,
+            Name = "Party",
+            Price = 5.00m,
+            DateTimeStart = DateTimeOffset.UtcNow,
+            DateTimeEnd = DateTimeOffset.UtcNow.AddHours(3),
+            Location = "Tavern",
+            DutchDescription = "NL desc",
+            EnglishDescription = "EN desc",
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7),
+            AreParticipantsVisible = true,
+            Enrollments = new List<Enrollment>
+            {
+                // Member navigation is not loaded, as in GetActivities
+                new Enrollment { ActivityId = 4u, MemberId = Guid.NewGuid(), RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false },
+                new Enrollment { ActivityId = 4u, MemberId = Guid.NewGuid(), RegisteredOn = DateTime.UtcNow.AddMinutes(-5), IsOnWaitingList = true }
+            },
+            SpecificationQuestions = new List<SpecificationQuestion>()
+        };
+
+        var dto = ActivityResponseDTO.ToDto(_userId, isBoard: true, includeMembers: false).Compile()(activity);
+
+        Assert.Equal(2, dto.Enrollments.Count);
+        Assert.All(dto.Enrollments, e => Assert.Null(e.Member));
+        Assert.True(dto.Enrollments[0].IsOnWaitingList);
+        Assert.False(dto.Enrollments[1].IsOnWaitingList);
+    }
 }

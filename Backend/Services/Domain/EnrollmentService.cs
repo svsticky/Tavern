@@ -58,7 +58,9 @@ public class EnrollmentService : IEnrollmentService
             .Filter(dto)
             .ToListAsync(cancellationToken);
 
-        return enrollments.Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard).Compile()(e));
+        var mapper = EnrollmentResponseDTO.ToDto(userId, isBoard).Compile();
+
+        return enrollments.Select(e => mapper(e));
     }
 
     /// <inheritdoc />

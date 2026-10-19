@@ -46,19 +46,24 @@ public class EnrollmentResponseDTO
     /// <param name="userId">The ID of the user for whom to project the enrollment.</param>
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
     /// <param name="includeActivity">A boolean indicating whether to include activity information.</param>
+    /// <param name="includeMember">A boolean indicating whether to include member information.</param>
     /// <returns>An expression that projects an Enrollment entity into an EnrollmentResponseDTO.</returns>
-    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeActivity = true)
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeActivity = true, bool includeMember = true)
     {
+        // Compile the nested mappers once instead of once per enrollment/answer
+        var toMemberDto = includeMember && userId.HasValue ? MemberResponseDTO.ToDto(userId.Value, isBoard).Compile() : null;
+        var toAnswerDto = SpecificationAnswerResponseDTO.ToDto().Compile();
+
         return e => new EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
             RegisteredOn = e.RegisteredOn,
-            Member = e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
-                        ? MemberResponseDTO.ToDto(userId.Value, isBoard).Compile()(e.Member)
+            Member = includeMember && e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+                        ? toMemberDto!(e.Member)
                         : null,
             SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
                 .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
-                .Select(sa => SpecificationAnswerResponseDTO.ToDto().Compile()(sa)).ToList(),
+                .Select(sa => toAnswerDto(sa)).ToList(),
             Price = isBoard ? e.Price : null,
             Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO
             {

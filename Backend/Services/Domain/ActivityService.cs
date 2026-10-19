@@ -78,9 +78,9 @@ public class ActivityService : IActivityService
             : new List<uint>();
 
         // Filter activities based on the provided criteria and the user's permissions
+        // Lists only need enrollment counts, so members are not loaded or mapped; use GetActivity for participants
         var activities = await _db.Activities
             .Include(a => a.Enrollments)
-                .ThenInclude(e => e.Member)
             .Include(a => a.SpecificationQuestions)
             .AsSplitQuery()
             .AsNoTracking()
@@ -88,7 +88,9 @@ public class ActivityService : IActivityService
             .ApplyPaging(dto)
             .ToListAsync();
 
-        return activities.Select(a => ActivityResponseDTO.ToDto(userId, isBoard).Compile()(a));
+        var mapper = ActivityResponseDTO.ToDto(userId, isBoard, includeMembers: false).Compile();
+
+        return activities.Select(a => mapper(a));
     }
 
     /// <inheritdoc />

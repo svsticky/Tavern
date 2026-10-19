@@ -201,9 +201,14 @@ public class ActivityResponseDTO
     /// </summary>
     /// <param name="userId">The ID of the user for whom to project the activity.</param>
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
+    /// <param name="includeMembers">A boolean indicating whether to include member information in the enrollments.</param>
     /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid? userId, bool isBoard)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeMembers = true)
     {
+        // Compile the nested mappers once instead of once per enrollment/question
+        var toEnrollmentDto = EnrollmentResponseDTO.ToDto(userId, isBoard, false, includeMembers).Compile();
+        var toQuestionDto = GetSpecificationQuestionResponseDTO.ToDto().Compile();
+
         return a => new ActivityResponseDTO
         {
             Id = a.Id,
@@ -233,13 +238,13 @@ public class ActivityResponseDTO
             CostCenterId = isBoard ? a.CostCenterId : null,
             CostUnitId = isBoard ? a.CostUnitId : null,
 
-            Enrollments = a.Enrollments
-                .OrderBy(e => e.Member.FirstName)
-                .ThenBy(e => e.Member.LastName)
-                .Select(e => EnrollmentResponseDTO.ToDto(userId, isBoard, false).Compile()(e))
+            Enrollments = (includeMembers
+                    ? a.Enrollments.OrderBy(e => e.Member.FirstName).ThenBy(e => e.Member.LastName)
+                    : a.Enrollments.OrderBy(e => e.RegisteredOn))
+                .Select(e => toEnrollmentDto(e))
                 .ToList(),
 
-            SpecificationQuestions = a.SpecificationQuestions.Select(q => GetSpecificationQuestionResponseDTO.ToDto().Compile()(q)).ToList(),
+            SpecificationQuestions = a.SpecificationQuestions.Select(q => toQuestionDto(q)).ToList(),
 
             PaymentDeadline = isBoard ? a.PaymentDeadline : default,
             IsOpenForPayment = a.IsOpenForPayment
