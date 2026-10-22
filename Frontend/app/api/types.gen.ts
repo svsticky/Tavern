@@ -2115,6 +2115,10 @@ export type GetActivitiesData = {
          * A search term to filter activities by. If specified, only activities whose name or location contains the search term (case-insensitive) will be included in the response.
          */
         Search?: string;
+        /**
+         * Indicates the organizer group ID for which to retrieve activities. If specified, only activities organized by this group will be included in the response.
+         */
+        OrganizerId?: number;
     };
     url: '/activities';
 };
