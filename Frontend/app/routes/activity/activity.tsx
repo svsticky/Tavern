@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
@@ -10,7 +11,12 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { hasEnrollmentOpened } from "~/util/activity.util";
-import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
+import { downloadActivityEnrollmentsCsv } from "~/util/activityCsv.util";
+import {
+  canEditActivity,
+  isBoardOrCandidateBoard,
+  isInGroupWithId,
+} from "~/util/group.util";
 import type { Route } from "./+types/activity";
 import {
   getActivityBackPath,
@@ -83,6 +89,12 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
   if (activity == null) return t("failed_fetching");
 
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
+  const isOrganizer = Boolean(
+    activity?.organizerId &&
+      tokenParsed !== null &&
+      isInGroupWithId(tokenParsed, activity.organizerId),
+  );
+  const canExport = isBoard || isOrganizer;
 
   return (
     <div className="flex flex-col w-full">
@@ -115,6 +127,19 @@ export default function ActivityPage({ params }: Route.LoaderArgs) {
               }
               isBoard={isBoard}
               showCount={hasEnrollmentOpened(activity)}
+              onExportCsv={
+                canExport
+                  ? () => {
+                      downloadActivityEnrollmentsCsv(
+                        activity,
+                        (tokenParsed?.locale || "nl")
+                          .toLowerCase()
+                          .startsWith("nl"),
+                      );
+                      toast.success(t("csv_exported"));
+                    }
+                  : undefined
+              }
             />
             <ActivityParticipantsTile
               title={t("waiting_list")}
