@@ -31,7 +31,7 @@ export default function GroupMembershipItem({
     <div
       className={`flex p-2 gap-2 rounded-lg transition-colors ${linkToGroup ? "cursor-pointer hover:bg-slate-50" : ""}`}
     >
-      <div className="bg-[color-mix(in_srgb,var(--board-primary),white_80%)] rounded-xl w-10 h-10 p-1 flex items-center justify-center">
+      <div className="bg-[color-mix(in_srgb,var(--board-primary),white_80%)] rounded-xl w-10 h-10 p-1 flex items-center justify-center shrink-0">
         <img
           src={imageUrl}
           onError={() => setImageUrl(fallbackUrl)}
@@ -44,7 +44,10 @@ export default function GroupMembershipItem({
         <p className="truncate mt-[-2.5px]" title={groupMembership.groupName}>
           {groupMembership.groupName}
         </p>
-        <p className="text-gray-500 mt-[-2.5px] truncate">
+        <p
+          className="text-gray-500 mt-[-2.5px] break-words"
+          title={`${groupMembership.roleAliasName} ${groupMembership.membershipYear - 1}/${groupMembership.membershipYear}`}
+        >
           {groupMembership.roleAliasName}{" "}
           {`${groupMembership.membershipYear - 1}/${groupMembership.membershipYear}`}
         </p>
