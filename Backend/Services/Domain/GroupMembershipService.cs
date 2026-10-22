@@ -94,6 +94,14 @@ public class GroupMembershipService : IGroupMembershipService
         var group = await GetGroupOrThrow(dto.GroupId, cancellationToken);
         await EnsureRoleAliasExists(dto.RoleAliasId, cancellationToken);
 
+        var existingMembership = await _db.GroupMemberships
+            .AnyAsync(gm => gm.MemberId == dto.MemberId && gm.GroupId == dto.GroupId && gm.MembershipYear == dto.MembershipYear, cancellationToken);
+
+        if (existingMembership)
+        {
+            throw new InvalidOperationException("Member is already enrolled in this group for the specified year.");
+        }
+
         using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
 
         try
@@ -190,6 +198,11 @@ public class GroupMembershipService : IGroupMembershipService
             patchDoc.ApplyTo(membership);
 
             StateValidator.Validate(membership);
+
+            if (await _db.GroupMemberships.AnyAsync(gm => gm.Id != id && gm.MemberId == membership.MemberId && gm.GroupId == membership.GroupId && gm.MembershipYear == membership.MembershipYear, cancellationToken))
+            {
+                throw new InvalidOperationException("Member is already enrolled in this group for the specified year.");
+            }
 
             await _db.SaveChangesAsync(cancellationToken);
 
