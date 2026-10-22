@@ -205,9 +205,17 @@ namespace Backend.Services.Domain
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
-            var begunstigerPayments = await db.BegunstigerPayments
+            var begunstigerPayments = (await db.BegunstigerPayments
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
-                .ToListAsync(ct);
+                .Select(p => new
+                {
+                    p.Price,
+                    FirstName = p.Member != null ? p.Member.FirstName : null,
+                    LastName = p.Member != null ? p.Member.LastName : null
+                })
+                .ToListAsync(ct))
+                .Select(p => (p.Price, MemberName: p.FirstName != null ? $"{p.FirstName} {p.LastName}" : null))
+                .ToList();
 
             var csv = BuildExportCsv(startDateInTimeZone, endDateInTimeZone, enrollmentPayments, membershipPayments, paymentServiceFeePayments, begunstigerPayments);
             logger.LogInformation("Exported payments CSV for period {StartDateInTimeZone} - {EndDateInTimeZone}. Enrollment: {EnrollmentCount}, Membership: {MembershipCount}, PaymentServiceFee: {PaymentServiceFeeCount}, Begunstiger: {BegunstigerCount}",
@@ -690,7 +698,7 @@ namespace Backend.Services.Domain
     List<EnrollmentPayment> enrollmentPayments,
     List<MembershipPayment> membershipPayments,
     List<PaymentServiceFeePayment> paymentServiceFeePayments,
-    List<BegunstigerPayment> begunstigerPayments)
+    List<(decimal Price, string? MemberName)> begunstigerPayments)
         {
             var csv = new StringBuilder();
 
@@ -738,7 +746,7 @@ namespace Backend.Services.Domain
 
             foreach (var p in begunstigerPayments)
             {
-                var description = "Begunstiger";
+                var description = p.MemberName != null ? $"Begunstigerschap - {p.MemberName}" : "Begunstigerschap";
                 var price = p.Price;
 
                 csv.AppendLine(CsvUtils.FormatLine("", begunstigerGLAccount, description, begunstigerVatCode, price, begunstigerCostCenter, begunstigerCostUnit));
