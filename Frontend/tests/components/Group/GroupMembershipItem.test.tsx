@@ -23,7 +23,9 @@ describe("GroupMembershipItem", () => {
     );
 
     expect(screen.getByText("Web Committee")).toBeInTheDocument();
-    expect(screen.getByText("Chair 2025/2026")).toBeInTheDocument();
+    const roleElement = screen.getByText("Chair 2025/2026");
+    expect(roleElement).toBeInTheDocument();
+    expect(roleElement).toHaveClass("break-words");
   });
 
   it("falls back to the provided fallback image when the group picture fails to load", () => {
