@@ -1,5 +1,7 @@
 import {
   Calendar,
+  Check,
+  Clock,
   FileEditIcon,
   ImageIcon,
   MapPin,
@@ -78,6 +80,20 @@ export default function ActivityTile({
   const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
   const { canEnroll } = getActivityEnrollmentStatus(activity);
 
+  const userEnrollment = tokenParsed?.UserId
+    ? activity.enrollments?.find(
+        (e) =>
+          e.member?.id === tokenParsed.UserId ||
+          e.memberId === tokenParsed.UserId,
+      )
+    : undefined;
+
+  const enrollmentStatus: "enrolled" | "waiting_list" | null = userEnrollment
+    ? userEnrollment.isOnWaitingList
+      ? "waiting_list"
+      : "enrolled"
+    : null;
+
   const navigate = useNavigate();
 
   const [status, setStatus] = useState<"loading" | "loaded" | "error">(
@@ -113,12 +129,32 @@ export default function ActivityTile({
           </button>
         )}
 
-        {/* Draft indicator */}
-        {canEdit && !activity.showInKoala && (
-          <span className="absolute left-2 top-2 z-20 inline-flex items-center gap-1 rounded-full bg-amber-100/90 px-2 py-1 text-xs font-semibold text-amber-700 shadow-sm backdrop-blur-sm">
-            <FileEditIcon size={12} />
-            {t("draft")}
-          </span>
+        {/* Top-left indicators (Draft / Enrollment status) */}
+        {((canEdit && !activity.showInKoala) || enrollmentStatus) && (
+          <div className="absolute left-2 top-2 z-20 flex items-center gap-1.5">
+            {canEdit && !activity.showInKoala && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100/90 px-2 py-1 text-xs font-semibold text-amber-700 shadow-sm backdrop-blur-sm">
+                <FileEditIcon size={12} />
+                {t("draft")}
+              </span>
+            )}
+            {enrollmentStatus === "enrolled" && (
+              <span
+                title={t("enrolled")}
+                className="inline-flex items-center justify-center rounded-full bg-emerald-500/90 p-1.5 text-white shadow-sm backdrop-blur-sm"
+              >
+                <Check size={16} className="stroke-[2.5]" />
+              </span>
+            )}
+            {enrollmentStatus === "waiting_list" && (
+              <span
+                title={t("waiting_list")}
+                className="inline-flex items-center justify-center rounded-full bg-amber-500/90 p-1.5 text-white shadow-sm backdrop-blur-sm"
+              >
+                <Clock size={16} className="stroke-[2.5]" />
+              </span>
+            )}
+          </div>
         )}
 
         {/* Poster image */}
