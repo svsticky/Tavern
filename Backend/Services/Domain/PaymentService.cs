@@ -206,6 +206,7 @@ namespace Backend.Services.Domain
                 .ToListAsync(ct);
 
             var begunstigerPayments = await db.BegunstigerPayments
+                .Include(p => p.Member)
                 .Where(p => p.PaidAt >= startDate && p.PaidAt <= endDate && !p.ManuallyMarkedAsPaid)
                 .ToListAsync(ct);
 
@@ -738,7 +739,7 @@ namespace Backend.Services.Domain
 
             foreach (var p in begunstigerPayments)
             {
-                var description = "Begunstiger";
+                var description = p.Member != null ? $"Begunstigerschap - {p.Member.FirstName} {p.Member.LastName}" : "Begunstigerschap";
                 var price = p.Price;
 
                 csv.AppendLine(CsvUtils.FormatLine("", begunstigerGLAccount, description, begunstigerVatCode, price, begunstigerCostCenter, begunstigerCostUnit));
