@@ -1,7 +1,8 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupResponseDto, Role } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import { getCommitteeYear } from "~/util/date.util";
 
 const {
   loadSettingsPageData,
@@ -352,10 +353,36 @@ describe("SettingsPage", () => {
     expect(await screen.findByLabelText("exact_division")).toBeInTheDocument();
   });
 
+  const boardAuthService = createMockAuthService({
+    getTokenParsed: vi.fn(async () => ({
+      locale: "en",
+      UserId: "00000000-0000-0000-0000-000000000000" as any,
+      access_level: "admin",
+      is_admin: true,
+      given_name: "Board",
+      family_name: "Member",
+      name: "Board Member",
+      group_memberships: [`${getCommitteeYear()}:1;Board:1;Chair`],
+    })),
+  });
+
+  const candidateBoardAuthService = createMockAuthService({
+    getTokenParsed: vi.fn(async () => ({
+      locale: "en",
+      UserId: "00000000-0000-0000-0000-000000000000" as any,
+      access_level: "admin",
+      is_admin: true,
+      given_name: "Candidate",
+      family_name: "Member",
+      name: "Candidate Member",
+      group_memberships: [`${getCommitteeYear()}:2;CandidateBoard:1;Candidate`],
+    })),
+  });
+
   it("promotes the board when confirmed", async () => {
     postGroupsPromoteBoard.mockResolvedValue({});
 
-    renderWithProviders(<SettingsPage />);
+    renderWithProviders(<SettingsPage />, { authService: boardAuthService });
 
     const promoteButton = await screen.findByRole("button", {
       name: "run_board_rotation",
@@ -371,7 +398,7 @@ describe("SettingsPage", () => {
   });
 
   it("does not promote the board when the confirmation is cancelled", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderWithProviders(<SettingsPage />, { authService: boardAuthService });
 
     const promoteButton = await screen.findByRole("button", {
       name: "run_board_rotation",
@@ -390,7 +417,7 @@ describe("SettingsPage", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    renderWithProviders(<SettingsPage />);
+    renderWithProviders(<SettingsPage />, { authService: boardAuthService });
 
     const promoteButton = await screen.findByRole("button", {
       name: "run_board_rotation",
@@ -404,6 +431,17 @@ describe("SettingsPage", () => {
 
     await waitFor(() => expect(consoleError).toHaveBeenCalled());
     consoleError.mockRestore();
+  });
+
+  it("hides the board rotation button for candidate board members", async () => {
+    renderWithProviders(<SettingsPage />, {
+      authService: candidateBoardAuthService,
+    });
+
+    await screen.findByText("studies-datatable");
+    expect(
+      screen.queryByRole("button", { name: "run_board_rotation" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows mailchimp fields when MailSubscriptionService is Mailchimp", async () => {
