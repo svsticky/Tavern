@@ -28,6 +28,9 @@ public class EnrollmentResponseDTO
     /// <inheritdoc cref="Models.Domain.Enrollment.RegisteredOn"/>
     public required DateTime RegisteredOn { get; set; }
 
+    /// <inheritdoc cref="Models.Domain.Enrollment.MemberId"/>
+    public Guid? MemberId { get; set; }
+
     /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
     public required MemberResponseDTO? Member { get; set; }
 
@@ -58,6 +61,9 @@ public class EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
             RegisteredOn = e.RegisteredOn,
+            MemberId = userId.HasValue && (isBoard || e.MemberId == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+                        ? e.MemberId
+                        : null,
             Member = includeMember && e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
                         ? toMemberDto!(e.Member)
                         : null,
