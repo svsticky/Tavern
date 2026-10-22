@@ -168,4 +168,26 @@ describe("ActivityFormPage", () => {
 
     await waitFor(() => expect(getEditActivityBackPath).toHaveBeenCalled());
   });
+
+  it("shows clone_activity title and loads clone data when cloneFrom is in search params", async () => {
+    vi.mocked(loadEditActivityData).mockImplementation(async ({ setLoading }) =>
+      setLoading(false),
+    );
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(
+      <Routes>
+        <Route path="/activities/create" element={<ActivityFormPage />} />
+      </Routes>,
+      { route: "/activities/create?cloneFrom=42", authService },
+    );
+
+    await waitFor(() =>
+      expect(loadEditActivityData).toHaveBeenCalledWith(
+        expect.objectContaining({ cloneFromId: "42" }),
+      ),
+    );
+    expect(screen.getByText("clone_activity")).toBeInTheDocument();
+  });
 });
