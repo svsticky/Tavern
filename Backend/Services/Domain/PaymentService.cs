@@ -419,9 +419,16 @@ namespace Backend.Services.Domain
                 var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
                 if (paymentResponse.Status == PaymentStatus.Pending)
                 {
-                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
-                    db.MembershipPayments.Remove(existingPayment);
-                    await db.SaveChangesAsync();
+                    try
+                    {
+                        await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                        db.MembershipPayments.Remove(existingPayment);
+                        await db.SaveChangesAsync();
+                    }
+                    catch
+                    {
+                        throw new InvalidOperationException("There is already a pending membership payment. Please finish that one or come back later.");
+                    }
                 }
                 else if (paymentResponse.Status == PaymentStatus.Paid)
                 {
@@ -452,9 +459,16 @@ namespace Backend.Services.Domain
                 var paymentResponse = await paymentService.GetPaymentAsync(existingPayment.PaymentServiceId);
                 if (paymentResponse.Status == PaymentStatus.Pending)
                 {
-                    await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
-                    db.BegunstigerPayments.Remove(existingPayment);
-                    await db.SaveChangesAsync();
+                    try
+                    {
+                        await paymentService.CancelPaymentAsync(existingPayment.PaymentServiceId);
+                        db.BegunstigerPayments.Remove(existingPayment);
+                        await db.SaveChangesAsync();
+                    }
+                    catch
+                    {
+                        throw new InvalidOperationException("There is already a pending begunstiger payment. Please finish that one or come back later.");
+                    }
                 }
                 else if (paymentResponse.Status == PaymentStatus.Paid)
                 {
@@ -518,11 +532,18 @@ namespace Backend.Services.Domain
                 if (paymentResponse.Status == PaymentStatus.Pending)
                 {
                     // try to cancel the payment, so a new one can be created
-                    await paymentService.CancelPaymentAsync(payment.PaymentServiceId);
-                    db.EnrollmentPayments.Remove(payment);
+                    try
+                    {
+                        await paymentService.CancelPaymentAsync(payment.PaymentServiceId);
+                        db.EnrollmentPayments.Remove(payment);
+                    }
+                    catch
+                    {
+                        // Might be possible that an activity will be paid twice, but this will be visible on the overpaid part of the finances page.
+                        logger.LogWarning($"Failed to cancel payment with ID {payment.PaymentServiceId}.");
+                    }
                 }
-
-                if (paymentResponse.Status == PaymentStatus.Paid)
+                else if (paymentResponse.Status == PaymentStatus.Paid)
                 {
                     payment.PaidAt = paymentResponse.PaidAt ?? DateTimeOffset.UtcNow;
                     var feePayment = await db.PaymentServiceFeePayments
