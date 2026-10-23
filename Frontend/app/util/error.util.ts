@@ -9,6 +9,11 @@ const KNOWN_ERROR_TRANSLATION_KEYS: Record<string, string> = {
     "email_already_registered",
   "An account with this student number already exists.":
     "student_number_already_registered",
+  "There is already a pending membership payment. Please finish that one or come back later.":
+    "pending_membership_payment",
+  "There is already a pending begunstiger payment. Please finish that one or come back later.":
+    "pending_begunstiger_payment",
+  ""
 };
 
 const getValidationErrorMessage = (errors: unknown): string | undefined => {
