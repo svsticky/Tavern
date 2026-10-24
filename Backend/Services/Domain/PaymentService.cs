@@ -539,8 +539,7 @@ namespace Backend.Services.Domain
                     }
                     catch
                     {
-                        // Might be possible that an activity will be paid twice, but this will be visible on the overpaid part of the finances page.
-                        logger.LogWarning($"Failed to cancel payment with ID {payment.PaymentServiceId}.");
+                        throw new InvalidOperationException("There is already a pending payment. Please finish that one or come back later.");
                     }
                 }
                 else if (paymentResponse.Status == PaymentStatus.Paid)
