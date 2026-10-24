@@ -55,7 +55,7 @@ export default function SendActivityMailComponent({
           label={t("mail_content")}
           value={content}
           onChange={setContent}
-          placeholder={t("write_your_mail_here")}
+          placeholder={t("activity_mail_placeholder")}
         />
 
         <Checkbox
