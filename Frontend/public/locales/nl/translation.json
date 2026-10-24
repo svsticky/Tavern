@@ -655,5 +655,6 @@
   "marked_as_processed": "Gemarkeerd als verwerkt",
   "mark_as_processed_failed": "Markeren als verwerkt mislukt",
   "pending_membership_payment": "Er is al een lopende lidmaatschapsbetaling. Rond deze eerst af of kom later terug.",
-  "pending_begunstiger_payment": "Er is al een lopende begunstigerbetaling. Rond deze eerst af of kom later terug."
+  "pending_begunstiger_payment": "Er is al een lopende begunstigerbetaling. Rond deze eerst af of kom later terug.",
+  "pending_payment": "Er is al een lopende betaling. Rond deze eerst af of kom later terug."
 }

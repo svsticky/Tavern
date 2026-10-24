@@ -15,7 +15,8 @@ const KNOWN_ERROR_TRANSLATION_KEYS: Record<string, string> = {
     "pending_membership_payment",
   "There is already a pending begunstiger payment. Please finish that one or come back later.":
     "pending_begunstiger_payment",
-  ""
+  "There is already a pending payment. Please finish that one or come back later.":
+    "pending_payment",
 };
 
 const getValidationErrorMessage = (errors: unknown): string | undefined => {
