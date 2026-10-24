@@ -1,0 +1,61 @@
+# Fast-forwards passing Dependabot PRs into development and main, so the
+# commit hashes stay the same (GitHub's merge buttons always rewrite them).
+# Major updates are not merged; instead a review is requested from the teams
+# in the MAJOR_UPDATE_REVIEW_TEAMS repository variable (comma-separated team
+# slugs, e.g. "bestuur,voorzitter-commitcrowd"), which makes GitHub email them.
+
+name: Dependabot fast-forward
+
+on:
+  workflow_run:
+    workflows: [Test]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  fast-forward:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for major update
+        id: check
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if git log -1 --format=%B "$SHA" | grep -q 'update-type: version-update:semver-major'; then
+            echo "major=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Request review for major update
+        if: steps.check.outputs.major == 'true' && vars.MAJOR_UPDATE_REVIEW_TEAMS != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.workflow_run.pull_requests[0].number }}
+          TEAMS: ${{ vars.MAJOR_UPDATE_REVIEW_TEAMS }}
+        run: |
+          args=()
+          IFS=',' read -ra teams <<< "$TEAMS"
+          for team in "${teams[@]}"; do
+            args+=(-f "team_reviewers[]=${team// /}")
+          done
+          gh api --method POST "repos/$GITHUB_REPOSITORY/pulls/$PR/requested_reviewers" "${args[@]}"
+
+      # Without --force these pushes only succeed as a fast-forward.
+      - name: Fast-forward development and main
+        if: steps.check.outputs.major != 'true'
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          git push origin "$SHA:refs/heads/development"
+          git push origin "$SHA:refs/heads/main"
