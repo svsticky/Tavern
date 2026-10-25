@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityResponseDto } from "~/api";
+import type { ActivityResponseDto, MemberResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import {
   handleAddToCalendar,
@@ -9,6 +10,7 @@ import {
   handleUnenrollment,
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
+import { useApp } from "~/context/AppContext";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -134,6 +136,21 @@ describe("ActivityDetailsTile", () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
       authService,
     });
+    expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
+  });
+
+  it("updates activity description immediately when member preferredLanguage changes", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    function WrapperWithMemberLanguage() {
+      const { setMember } = useApp();
+      useEffect(() => {
+        setMember({ preferredLanguage: "NL" } as MemberResponseDto);
+      }, [setMember]);
+      return <ActivityDetailsTile activity={buildActivity()} />;
+    }
+    renderWithProviders(<WrapperWithMemberLanguage />, { authService });
     expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
   });
 

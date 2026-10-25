@@ -1,11 +1,14 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type {
   ActivityResponseDto,
   GetSpecificationQuestionResponseDto,
+  MemberResponseDto,
 } from "~/api";
 import AnswerQuestionsTile from "~/components/Activity/AnswerQuestionsTile";
+import { useApp } from "~/context/AppContext";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
@@ -107,6 +110,28 @@ describe("AnswerQuestionsTile", () => {
       />,
       { authService },
     );
+    expect(await screen.findByText("Vraag")).toBeInTheDocument();
+  });
+
+  it("updates question text immediately when member preferredLanguage changes", async () => {
+    const authService = createMockAuthService({
+      getTokenParsed: vi.fn(async () => enToken),
+    });
+    function WrapperWithMemberLanguage() {
+      const { setMember } = useApp();
+      useEffect(() => {
+        setMember({ preferredLanguage: "NL" } as MemberResponseDto);
+      }, [setMember]);
+      return (
+        <AnswerQuestionsTile
+          questions={[question({})]}
+          activity={activity()}
+          answers={{}}
+          onChange={vi.fn()}
+        />
+      );
+    }
+    renderWithProviders(<WrapperWithMemberLanguage />, { authService });
     expect(await screen.findByText("Vraag")).toBeInTheDocument();
   });
 
