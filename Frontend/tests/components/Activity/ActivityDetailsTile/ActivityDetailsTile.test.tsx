@@ -61,6 +61,8 @@ function buildActivity(
     dateTimeEnd: new Date(
       Date.now() + ONE_DAY_MS + 2 * 60 * 60 * 1000,
     ).toISOString(),
+    shortDutchDescription: "Korte beschrijving",
+    shortEnglishDescription: "Short description",
     dutchDescription: "Beschrijving",
     englishDescription: "Description",
     enrollments: [],
@@ -444,5 +446,32 @@ describe("ActivityDetailsTile", () => {
     fireEvent.error(logo);
 
     expect(logo).toHaveAttribute("src", "/profile-picture.svg");
+  });
+
+  it("displays the long description over the short description when long description is present", async () => {
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          englishDescription: "Full English Details",
+          shortEnglishDescription: "Short Promo",
+        })}
+      />,
+    );
+
+    expect(await screen.findByText("Full English Details")).toBeInTheDocument();
+    expect(screen.queryByText("Short Promo")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the short description when the long description is absent", async () => {
+    renderWithProviders(
+      <ActivityDetailsTile
+        activity={buildActivity({
+          englishDescription: undefined,
+          shortEnglishDescription: "Short Promo Only",
+        })}
+      />,
+    );
+
+    expect(await screen.findByText("Short Promo Only")).toBeInTheDocument();
   });
 });

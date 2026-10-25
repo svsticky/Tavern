@@ -139,18 +139,34 @@ export default function EditActivityForm({
               required
             />
             <TextArea
+              label={t("short_dutch_description")}
+              rows={3}
+              maxLength={250}
+              name="ShortDutchDescription"
+              defaultValue={activity?.shortDutchDescription ?? ""}
+              placeholder={t("short_description_char_limit")}
+              required
+            />
+            <TextArea
+              label={t("short_english_description")}
+              rows={3}
+              maxLength={250}
+              name="ShortEnglishDescription"
+              defaultValue={activity?.shortEnglishDescription ?? ""}
+              placeholder={t("short_description_char_limit")}
+              required
+            />
+            <TextArea
               label={t("dutch_description")}
               rows={10}
               name="DutchDescription"
               defaultValue={activity?.dutchDescription}
-              required
             />
             <TextArea
               label={t("english_description")}
               rows={10}
               name="EnglishDescription"
               defaultValue={activity?.englishDescription}
-              required
             />
           </FormSection>
 

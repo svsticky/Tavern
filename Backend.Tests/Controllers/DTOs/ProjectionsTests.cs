@@ -251,6 +251,8 @@ public class ProjectionsTests
             Location = "Tavern",
             DutchDescription = "NL desc",
             EnglishDescription = "EN desc",
+            ShortDutchDescription = "NL short",
+            ShortEnglishDescription = "EN short",
             PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7),
             AreParticipantsVisible = true,
             Enrollments = new List<Enrollment>(),
@@ -262,6 +264,8 @@ public class ProjectionsTests
         Assert.Equal(2u, dto.Id);
         Assert.Equal("Party", dto.Name);
         Assert.Equal(5.00m, dto.Price);
+        Assert.Equal("NL short", dto.ShortDutchDescription);
+        Assert.Equal("EN short", dto.ShortEnglishDescription);
         Assert.True(dto.AreParticipantsVisible);
     }
 
@@ -278,6 +282,8 @@ public class ProjectionsTests
             Location = "Tavern",
             DutchDescription = "NL desc",
             EnglishDescription = "EN desc",
+            ShortDutchDescription = "NL short",
+            ShortEnglishDescription = "EN short",
             PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7),
             AreParticipantsVisible = true,
             Enrollments = new List<Enrollment>(),
@@ -315,6 +321,8 @@ public class ProjectionsTests
             Location = "Tavern",
             DutchDescription = "NL desc",
             EnglishDescription = "EN desc",
+            ShortDutchDescription = "NL short",
+            ShortEnglishDescription = "EN short",
             PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7),
             AreParticipantsVisible = true,
             Enrollments = new List<Enrollment>

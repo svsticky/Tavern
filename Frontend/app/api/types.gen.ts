@@ -36,11 +36,19 @@ export type Activity = {
     /**
      * A dutch description or arbitrary length, explaining everything there is to know about the activity.
      */
-    dutchDescription?: string;
+    dutchDescription?: string | null;
     /**
      * An english description or arbitrary length, explaining everything there is to know about the activity.
      */
-    englishDescription?: string;
+    englishDescription?: string | null;
+    /**
+     * A short Dutch description (max 250 characters) tailored for promotional channels like WhatsApp.
+     */
+    shortDutchDescription: string;
+    /**
+     * A short English description (max 250 characters) tailored for promotional channels like WhatsApp.
+     */
+    shortEnglishDescription: string;
     /**
      * The date and time at which the activity will start.
      */
@@ -160,11 +168,19 @@ export type ActivityResponseDto = {
     /**
      * A dutch description or arbitrary length, explaining everything there is to know about the activity.
      */
-    dutchDescription: string;
+    dutchDescription?: string | null;
     /**
      * An english description or arbitrary length, explaining everything there is to know about the activity.
      */
-    englishDescription: string;
+    englishDescription?: string | null;
+    /**
+     * A short Dutch description (max 250 characters) tailored for promotional channels like WhatsApp.
+     */
+    shortDutchDescription: string;
+    /**
+     * A short English description (max 250 characters) tailored for promotional channels like WhatsApp.
+     */
+    shortEnglishDescription: string;
     /**
      * The date and time at which the activity will start.
      */
@@ -2165,11 +2181,19 @@ export type PostActivitiesData = {
         /**
          * A dutch description or arbitrary length, explaining everything there is to know about the activity.
          */
-        DutchDescription: string;
+        DutchDescription?: string | null;
         /**
          * An english description or arbitrary length, explaining everything there is to know about the activity.
          */
-        EnglishDescription: string;
+        EnglishDescription?: string | null;
+        /**
+         * A short Dutch description (max 250 characters) tailored for promotional channels like WhatsApp.
+         */
+        ShortDutchDescription: string;
+        /**
+         * A short English description (max 250 characters) tailored for promotional channels like WhatsApp.
+         */
+        ShortEnglishDescription: string;
         /**
          * The date and time at which the activity will start.
          */
@@ -2432,11 +2456,19 @@ export type PutActivitiesByIdData = {
         /**
          * A dutch description or arbitrary length, explaining everything there is to know about the activity.
          */
-        DutchDescription: string;
+        DutchDescription?: string | null;
         /**
          * An english description or arbitrary length, explaining everything there is to know about the activity.
          */
-        EnglishDescription: string;
+        EnglishDescription?: string | null;
+        /**
+         * A short Dutch description (max 250 characters) tailored for promotional channels like WhatsApp.
+         */
+        ShortDutchDescription: string;
+        /**
+         * A short English description (max 250 characters) tailored for promotional channels like WhatsApp.
+         */
+        ShortEnglishDescription: string;
         /**
          * The date and time at which the activity will start.
          */
