@@ -9,13 +9,12 @@ import {
   putEnrollmentsByActivityIdByMemberId,
 } from "~/api";
 import type { IAuthService } from "~/auth/IAuthService";
-import { formatDate, isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import {
   formatForGoogleCalendar,
   formatForWhatsApp,
 } from "~/util/markdown.util";
-import { capitalizeFirst } from "~/util/string.util";
+import { formatPromoPrice, formatPromoTimeRange } from "~/util/promo.util";
 
 /**
  * Generates a Google Calendar event link and opens it in a new browser tab.
@@ -33,7 +32,7 @@ export const handleAddToCalendar = (activity: ActivityResponseDto) => {
     datetime: new Date().toISOString(),
   });
   const description = encodeURIComponent(
-    `${formatForGoogleCalendar(activity.dutchDescription) || ""}\n\n[${disclaimer}]`,
+    `${formatForGoogleCalendar(activity.dutchDescription || activity.shortDutchDescription) || ""}\n\n[${disclaimer}]`,
   );
   const location = encodeURIComponent(activity.location || "TBA");
 
@@ -347,19 +346,26 @@ export const handleCopyForWhatsapp = async (
   activity: ActivityResponseDto,
   lang: Language,
 ) => {
+  const isDutch = lang === "NL";
   const startDate = new Date(activity.dateTimeStart);
   const endDate = new Date(activity.dateTimeEnd);
-  const startDateTime = `${capitalizeFirst(formatDate(startDate, "weekdayDate"))} ${formatDate(startDate, "timeOnly")}`;
-  const endDateTime = isSameDayInAssociationTimeZone(startDate, endDate)
-    ? formatDate(endDate, "timeOnly")
-    : `${capitalizeFirst(formatDate(endDate, "weekdayDate"))} ${formatDate(endDate, "timeOnly")}`;
 
+  const timeRange = formatPromoTimeRange(
+    startDate,
+    endDate,
+    isDutch ? "NL" : "EN",
+  );
+  const location = activity.location || "TBA";
+  const price = formatPromoPrice(activity.price, isDutch ? "NL" : "EN");
+
+  const header = `${activity.name} | ${timeRange} | ${location} |  ${price} `;
+  const rawDesc = isDutch
+    ? activity.shortDutchDescription || activity.dutchDescription
+    : activity.shortEnglishDescription || activity.englishDescription;
+  const desc = formatForWhatsApp(rawDesc);
   const activityUrl = `${window.location.origin}/activities/${activity.id}`;
 
-  const text =
-    lang === "NL"
-      ? `*${activity.name} | ${startDateTime} - ${endDateTime} | Locatie: ${activity.location || "TBA"} | Prijs: ${activity.price === 0 || activity.price == null ? "Gratis" : `€ ${activity.price.toFixed(2)}`}* \n\n${activityUrl}\n\n${formatForWhatsApp(activity.dutchDescription)}`
-      : `*${activity.name} | ${startDateTime} - ${endDateTime} | Location: ${activity.location || "TBA"} | Price: ${activity.price === 0 || activity.price == null ? "Free" : `€ ${activity.price.toFixed(2)}`}* \n\n${activityUrl}\n\n${formatForWhatsApp(activity.englishDescription)}`;
+  const text = `${header}\n\n${desc}\n${activityUrl}`;
 
   toast.promise(navigator.clipboard.writeText(text), {
     loading: t("copying"),

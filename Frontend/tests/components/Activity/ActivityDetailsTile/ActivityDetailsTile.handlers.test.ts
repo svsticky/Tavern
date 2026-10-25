@@ -8,8 +8,6 @@ import {
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { createMockAuthService } from "~/testUtils";
-import { formatDate } from "~/util/date.util";
-import { capitalizeFirst } from "~/util/string.util";
 
 const {
   postEnrollments,
@@ -389,7 +387,10 @@ describe("handleCopyForWhatsapp", () => {
     await handleCopyForWhatsapp(buildActivity(), "NL" as any);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("Locatie: Enschede"),
+      expect.stringContaining("Enschede |  € 5.00"),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Beschrijving"),
     );
   });
 
@@ -397,7 +398,27 @@ describe("handleCopyForWhatsapp", () => {
     await handleCopyForWhatsapp(buildActivity(), "EN" as any);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("Location: Enschede"),
+      expect.stringContaining("Enschede |  € 5.00"),
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Description"),
+    );
+  });
+
+  it("prefers short descriptions when available", async () => {
+    const activity = buildActivity({
+      shortDutchDescription: "Korte NL",
+      shortEnglishDescription: "Short EN",
+    });
+
+    await handleCopyForWhatsapp(activity, "NL" as any);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Korte NL"),
+    );
+
+    await handleCopyForWhatsapp(activity, "EN" as any);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Short EN"),
     );
   });
 
@@ -414,7 +435,13 @@ describe("handleCopyForWhatsapp", () => {
     await handleCopyForWhatsapp(buildActivity({ price: 0 }), "EN" as any);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining("Price: Free"),
+      expect.stringContaining("Free"),
+    );
+
+    await handleCopyForWhatsapp(buildActivity({ price: 0 }), "NL" as any);
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining("Gratis"),
     );
   });
 
@@ -440,11 +467,8 @@ describe("handleCopyForWhatsapp", () => {
 
     await handleCopyForWhatsapp(activity, "EN" as any);
 
-    const start = new Date(activity.dateTimeStart);
-    const end = new Date(activity.dateTimeEnd);
-    const expectedRange = `${capitalizeFirst(formatDate(start, "weekdayDate"))} ${formatDate(start, "timeOnly")} - ${formatDate(end, "timeOnly")}`;
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining(expectedRange),
+      expect.stringMatching(/Saturday 1st August \d{2}:\d{2} - \d{2}:\d{2}/),
     );
   });
 
@@ -456,11 +480,10 @@ describe("handleCopyForWhatsapp", () => {
 
     await handleCopyForWhatsapp(activity, "EN" as any);
 
-    const start = new Date(activity.dateTimeStart);
-    const end = new Date(activity.dateTimeEnd);
-    const expectedRange = `${capitalizeFirst(formatDate(start, "weekdayDate"))} ${formatDate(start, "timeOnly")} - ${capitalizeFirst(formatDate(end, "weekdayDate"))} ${formatDate(end, "timeOnly")}`;
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      expect.stringContaining(expectedRange),
+      expect.stringMatching(
+        /Saturday 1st August \d{2}:\d{2} - Monday 3rd August \d{2}:\d{2}/,
+      ),
     );
   });
 });
