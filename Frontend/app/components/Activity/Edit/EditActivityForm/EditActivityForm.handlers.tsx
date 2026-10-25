@@ -205,8 +205,14 @@ export const handleActivitySubmit = async ({
     body: {
       Name: fd.get("Name") as string,
       Location: fd.get("Location") as string,
-      DutchDescription: fd.get("DutchDescription") as string,
-      EnglishDescription: fd.get("EnglishDescription") as string,
+      DutchDescription:
+        (fd.get("DutchDescription") as string)?.trim() || undefined,
+      EnglishDescription:
+        (fd.get("EnglishDescription") as string)?.trim() || undefined,
+      ShortDutchDescription:
+        (fd.get("ShortDutchDescription") as string)?.trim() || "",
+      ShortEnglishDescription:
+        (fd.get("ShortEnglishDescription") as string)?.trim() || "",
       Price: Number(fd.get("Price")) || 0,
       ParticipantLimit: fd.get("ParticipantLimit")
         ? Number(fd.get("ParticipantLimit"))

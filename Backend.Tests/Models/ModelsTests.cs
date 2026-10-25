@@ -175,6 +175,8 @@ public class ModelsTests
             PosterPath = "/path/to/poster.png",
             DutchDescription = "Feest",
             EnglishDescription = "Party",
+            ShortDutchDescription = "Kort feest",
+            ShortEnglishDescription = "Short party",
             DateTimeStart = now,
             DateTimeEnd = now.AddHours(4),
             UnenrollmentDeadline = now.AddDays(-1),
@@ -208,6 +210,32 @@ public class ModelsTests
         Assert.Equal("/path/to/poster.png", activity.PosterPath);
         Assert.Equal("Feest", activity.DutchDescription);
         Assert.Equal("Party", activity.EnglishDescription);
+        Assert.Equal("Kort feest", activity.ShortDutchDescription);
+        Assert.Equal("Short party", activity.ShortEnglishDescription);
+        Assert.Equal("Feest", activity.GetDescription(Language.NL));
+        Assert.Equal("Party", activity.GetDescription(Language.EN));
+        Assert.Equal("Kort feest", activity.GetShortDescription(Language.NL));
+        Assert.Equal("Short party", activity.GetShortDescription(Language.EN));
+
+        var fallbackActivity = new Activity
+        {
+            Name = "Fallback",
+            DateTimeStart = now,
+            DateTimeEnd = now,
+            Location = "Tavern",
+            PaymentDeadline = now,
+            ShortDutchDescription = "Kort NL",
+            ShortEnglishDescription = "Short EN"
+        };
+        // When long description is empty, GetDescription falls back to short description
+        Assert.Equal("Kort NL", fallbackActivity.GetDescription(Language.NL));
+        Assert.Equal("Short EN", fallbackActivity.GetDescription(Language.EN));
+
+        // When long description is provided, it overrides short description
+        fallbackActivity.DutchDescription = "Lange NL";
+        fallbackActivity.EnglishDescription = "Long EN";
+        Assert.Equal("Lange NL", fallbackActivity.GetDescription(Language.NL));
+        Assert.Equal("Long EN", fallbackActivity.GetDescription(Language.EN));
         Assert.Equal(now, activity.DateTimeStart);
         Assert.Equal(now.AddHours(4), activity.DateTimeEnd);
         Assert.Equal(now.AddDays(-1), activity.UnenrollmentDeadline);

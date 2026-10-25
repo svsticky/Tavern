@@ -28,11 +28,21 @@ public abstract class BaseActivityDTO<TQuestion>
 
     /// <inheritdoc cref="Activity.DutchDescription"/>
     [StringLength(2000)]
-    public required string DutchDescription { get; set; }
+    public string? DutchDescription { get; set; }
 
     /// <inheritdoc cref="Activity.EnglishDescription"/>
     [StringLength(2000)]
-    public required string EnglishDescription { get; set; }
+    public string? EnglishDescription { get; set; }
+
+    /// <inheritdoc cref="Activity.ShortDutchDescription"/>
+    [StringLength(250)]
+    [Required(AllowEmptyStrings = false)]
+    public string ShortDutchDescription { get; set; } = string.Empty;
+
+    /// <inheritdoc cref="Activity.ShortEnglishDescription"/>
+    [StringLength(250)]
+    [Required(AllowEmptyStrings = false)]
+    public string ShortEnglishDescription { get; set; } = string.Empty;
 
     /// <inheritdoc cref="Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
@@ -122,10 +132,16 @@ public class ActivityResponseDTO
     public string? PosterFileName { get; set; }
 
     /// <inheritdoc cref="Activity.DutchDescription"/>
-    public required string DutchDescription { get; set; }
+    public string? DutchDescription { get; set; }
 
     /// <inheritdoc cref="Activity.EnglishDescription"/>
-    public required string EnglishDescription { get; set; }
+    public string? EnglishDescription { get; set; }
+
+    /// <inheritdoc cref="Activity.ShortDutchDescription"/>
+    public string ShortDutchDescription { get; set; } = string.Empty;
+
+    /// <inheritdoc cref="Activity.ShortEnglishDescription"/>
+    public string ShortEnglishDescription { get; set; } = string.Empty;
 
     /// <inheritdoc cref="Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
@@ -218,6 +234,8 @@ public class ActivityResponseDTO
             PosterFileName = a.PosterFileName,
             DutchDescription = a.DutchDescription,
             EnglishDescription = a.EnglishDescription,
+            ShortDutchDescription = a.ShortDutchDescription,
+            ShortEnglishDescription = a.ShortEnglishDescription,
             DateTimeStart = a.DateTimeStart,
             DateTimeEnd = a.DateTimeEnd,
             UnenrollmentDeadline = a.UnenrollmentDeadline,
