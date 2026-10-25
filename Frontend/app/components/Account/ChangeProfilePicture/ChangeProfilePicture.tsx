@@ -98,9 +98,7 @@ export default function ChangeProfilePicture({
         <Button
           variant="secondary"
           className="mt-3 text-xs py-1.5 px-3 border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-          onClick={() =>
-            handleProfilePictureDelete(userId, setProfilePictureSrc)
-          }
+          onClick={() => handleProfilePictureDelete(userId)}
           type="button"
         >
           {t("remove")}

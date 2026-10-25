@@ -46,10 +46,7 @@ export const handleProfilePictureUpload = async (
  * @param {string} userId - The ID of the user whose profile picture is being deleted.
  * @param {(url: string) => void} [setProfilePictureSrc] - Optional state setter to update local avatar display.
  */
-export const handleProfilePictureDelete = async (
-  userId: string,
-  setProfilePictureSrc?: (url: string) => void,
-) => {
+export const handleProfilePictureDelete = async (userId: string) => {
   const deleteProcess = async () => {
     try {
       const response = await deleteMembersByIdProfilePicture({
@@ -58,7 +55,7 @@ export const handleProfilePictureDelete = async (
       if (response.error) {
         throw response.error ?? new Error("Failed to delete profile picture");
       }
-      setProfilePictureSrc?.("/profile-picture.svg");
+      window.location.reload();
     } catch (err) {
       console.error("Failed to delete profile picture:", err);
       throw err;
