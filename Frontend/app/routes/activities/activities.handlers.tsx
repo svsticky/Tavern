@@ -3,8 +3,15 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivities } from "~/api";
 import { getEnv } from "~/util/config.utils";
+import { isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
+import { formatForWhatsApp } from "~/util/markdown.util";
 import { generateA3Pdf } from "~/util/pdf.util";
+import {
+  formatPromoPrice,
+  formatPromoTime,
+  formatPromoTimeRange,
+} from "~/util/promo.util";
 
 /**
  * Arguments for the loadActivities handler.
@@ -83,6 +90,9 @@ export const copyWeekOverview = async (
         return d >= startOfWeek && d < endOfWeek;
       }) ?? [];
 
+    const regularActivities = weekActivities.filter((a) => !a.isWeeklyDrinks);
+    const weeklyDrink = weekActivities.find((a) => a.isWeeklyDrinks);
+
     const dutchDays = [
       "Maandag",
       "Dinsdag",
@@ -102,28 +112,49 @@ export const copyWeekOverview = async (
       "Sunday",
     ];
     const isDutch = locale === "NL";
+    const promoLocale = isDutch ? "NL" : "EN";
     const days = isDutch ? dutchDays : englishDays;
-    let message = isDutch ? "*Weekoverzicht*\n\n" : "*Weekly Overview*\n\n";
+    let message = isDutch ? "*Weekoverzicht*\n\n" : "*Week overview*\n\n";
 
+    let hasAnyActivities = false;
     days.forEach((dayName, index) => {
       const dayDate = new Date(startOfWeek);
       dayDate.setDate(startOfWeek.getDate() + index);
 
-      const dayActivities = weekActivities.filter(
+      const dayActivities = regularActivities.filter(
         (a) =>
           new Date(a.dateTimeStart).toDateString() === dayDate.toDateString(),
       );
 
-      message += `*${dayName}*\n`;
       if (dayActivities.length > 0) {
-        message += `${dayActivities.map((a) => `${isDutch ? a.dutchDescription : a.englishDescription || a.name}\n\n${getEnv("HostUrl")}/activities/${a.id}`).join("\n\n&\n\n")}\n\n`;
-      } else {
-        message += isDutch ? "Geen activiteit :(\n\n" : "No activities :(\n\n";
+        hasAnyActivities = true;
+        message += `_${dayName}_\n\n`;
+        dayActivities.forEach((a) => {
+          const startDate = new Date(a.dateTimeStart);
+          const endDate = new Date(a.dateTimeEnd);
+          const timeStr = isSameDayInAssociationTimeZone(startDate, endDate)
+            ? `${formatPromoTime(startDate)} - ${formatPromoTime(endDate)}`
+            : formatPromoTimeRange(startDate, endDate, promoLocale);
+          const locStr = a.location || "TBA";
+          const priceStr = formatPromoPrice(a.price, promoLocale);
+          const summaryLine = `*${a.name} | ${timeStr} | ${locStr} | ${priceStr}*`;
+          const rawDesc = isDutch
+            ? a.shortDutchDescription || a.dutchDescription
+            : a.shortEnglishDescription || a.englishDescription;
+          const desc = formatForWhatsApp(rawDesc);
+          const activityUrl = `${getEnv("HostUrl")}/activities/${a.id}`;
+          message += `${summaryLine}\n${desc}\n${activityUrl}\n\n`;
+        });
       }
     });
 
-    const weeklyDrink = weekActivities.find((a) => a.isWeeklyDrinks);
-    message += isDutch ? "*Wekelijkse borrel*\n" : "*Weekly Drinks*\n";
+    if (!hasAnyActivities) {
+      message += isDutch
+        ? "Geen activiteiten deze week\n\n"
+        : "No activities this week\n\n";
+    }
+
+    message += isDutch ? "_Wekelijkse borrel_\n" : "_Weekly drinks_\n";
     if (weeklyDrink) {
       const drinkDay =
         days[(new Date(weeklyDrink.dateTimeStart).getDay() + 6) % 7];
@@ -132,7 +163,7 @@ export const copyWeekOverview = async (
         : "Unknown location";
       message += `${drinkDay}: ${weeklyDrink.location || locationFallback}\n`;
     } else {
-      message += isDutch ? "Geen borrel deze week" : "No drinks this week";
+      message += isDutch ? "Geen borrel deze week\n" : "No drinks this week\n";
     }
 
     await navigator.clipboard.writeText(message);

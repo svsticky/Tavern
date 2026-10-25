@@ -74,6 +74,8 @@ public class EnrollmentResponseDTO
                 PosterFileName = e.Activity.PosterFileName,
                 DutchDescription = e.Activity.DutchDescription,
                 EnglishDescription = e.Activity.EnglishDescription,
+                ShortDutchDescription = e.Activity.ShortDutchDescription,
+                ShortEnglishDescription = e.Activity.ShortEnglishDescription,
                 DateTimeStart = e.Activity.DateTimeStart,
                 DateTimeEnd = e.Activity.DateTimeEnd,
                 UnenrollmentDeadline = e.Activity.UnenrollmentDeadline,
