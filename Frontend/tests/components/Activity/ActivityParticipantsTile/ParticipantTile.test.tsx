@@ -236,4 +236,36 @@ describe("ParticipantTile", () => {
       expect(screen.getByText("Bob B2")).toBeInTheDocument();
     });
   });
+
+  it("renders gold border and ere_lid badge for honorary members", () => {
+    const { container } = render(
+      <ParticipantTile
+        enrollment={buildEnrollment({
+          member: {
+            firstName: "Bob",
+            lastName: "Jones",
+            ereLid: true,
+          } as any,
+        })}
+      />,
+    );
+    expect(screen.getByText("ere_lid")).toBeInTheDocument();
+    expect(container.querySelector(".border-amber-400")).toBeInTheDocument();
+  });
+
+  it("renders gold border and lid_van_verdienste badge for members of merit", () => {
+    const { container } = render(
+      <ParticipantTile
+        enrollment={buildEnrollment({
+          member: {
+            firstName: "Carol",
+            lastName: "Williams",
+            lidVanVerdienste: true,
+          } as any,
+        })}
+      />,
+    );
+    expect(screen.getByText("lid_van_verdienste")).toBeInTheDocument();
+    expect(container.querySelector(".border-amber-400")).toBeInTheDocument();
+  });
 });
