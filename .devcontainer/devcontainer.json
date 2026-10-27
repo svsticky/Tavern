@@ -9,9 +9,13 @@
 
     // Docker Compose only reads a ".env" file next to compose.yaml for variable
     // interpolation (e.g. ${NGROK_AUTHTOKEN}); the real .env lives at the repo
-    // root. Symlink it in before compose parses the file so values resolve
-    // instead of triggering "variable is not set" warnings.
-    "initializeCommand": "ln -sf ../.env devcontainer.env",
+    // root. Copy it in before compose parses the file so values resolve.
+    "initializeCommand": [
+        "docker", "run", "--rm",
+        "-v", "${localWorkspaceFolder}:/w",
+        "alpine:3.20", "sh", "-c",
+        "rm -f /w/.devcontainer/.env && cp -p /w/.env /w/.devcontainer/.env"
+    ],
 
     "remoteEnv": {
         "DOTNET_ENVIRONMENT": "Development"
