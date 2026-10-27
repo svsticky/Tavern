@@ -653,5 +653,8 @@
   "no_outstanding_payments": "You have no outstanding payments.",
   "marking_as_processed": "Marking as processed...",
   "marked_as_processed": "Marked as processed",
-  "mark_as_processed_failed": "Marking as processed failed"
+  "mark_as_processed_failed": "Marking as processed failed",
+  "pending_membership_payment": "There is already a pending membership payment. Please finish that one or come back later.",
+  "pending_begunstiger_payment": "There is already a pending begunstiger payment. Please finish that one or come back later.",
+  "pending_payment": "There is already a pending payment. Please finish that one or come back later."
 }
