@@ -429,6 +429,10 @@ export type EnrollmentResponseDto = {
     registeredOn: string;
     member: MemberResponseDto;
     /**
+     * Whether the enrolled member chose to be anonymous. When true and member is null, the requester may not see who it is.
+     */
+    isAnonymous?: boolean;
+    /**
      * The answers for the specification questions associated with this enrollment.
      */
     specificationAnswers?: Array<SpecificationAnswerResponseDto> | null;
@@ -1043,6 +1047,11 @@ export type MemberResponseDto = {
      * Indicates whether the member is suspended.
      */
     suspended?: boolean | null;
+    /**
+     * Indicates whether the member wants to appear as anonymous in activity participant lists.
+     * Board members and the activity's organizers still see who it is.
+     */
+    isAnonymous?: boolean | null;
     /**
      * The path to the profile picture of the member.
      */

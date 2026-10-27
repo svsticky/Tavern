@@ -31,6 +31,11 @@ public class EnrollmentResponseDTO
     /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
     public required MemberResponseDTO? Member { get; set; }
 
+    /// <summary>
+    /// Whether the enrolled member chose to be anonymous. When true and <see cref="Member"/> is null, the requester may not see who it is.
+    /// </summary>
+    public bool IsAnonymous { get; set; }
+
     /// <inheritdoc cref="Models.Domain.Enrollment.SpecificationAnswers"/>
     public List<SpecificationAnswerResponseDTO>? SpecificationAnswers { get; set; }
 
@@ -47,9 +52,11 @@ public class EnrollmentResponseDTO
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
     /// <param name="includeActivity">A boolean indicating whether to include activity information.</param>
     /// <param name="includeMember">A boolean indicating whether to include member information.</param>
+    /// <param name="isOrganizer">A boolean indicating whether the requester organizes the activity, which lets them see anonymous members.</param>
     /// <returns>An expression that projects an Enrollment entity into an EnrollmentResponseDTO.</returns>
-    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeActivity = true, bool includeMember = true)
+    public static Expression<Func<Enrollment, EnrollmentResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeActivity = true, bool includeMember = true, bool isOrganizer = false)
     {
+        bool canSeeAnonymous = isBoard || isOrganizer;
         // Compile the nested mappers once instead of once per enrollment/answer
         var toMemberDto = includeMember && userId.HasValue ? MemberResponseDTO.ToDto(userId.Value, isBoard).Compile() : null;
         var toAnswerDto = SpecificationAnswerResponseDTO.ToDto().Compile();
@@ -58,11 +65,12 @@ public class EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
             RegisteredOn = e.RegisteredOn,
-            Member = includeMember && e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
+            IsAnonymous = e.Member != null && e.Member.IsAnonymous,
+            Member = includeMember && e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow && (canSeeAnonymous || !e.Member.IsAnonymous)))
                         ? toMemberDto!(e.Member)
                         : null,
             SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
-                .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
+                .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow && (canSeeAnonymous || e.Member == null || !e.Member.IsAnonymous))
                 .Select(sa => toAnswerDto(sa)).ToList(),
             Price = isBoard ? e.Price : null,
             Activity = e.Activity == null ? null! : includeActivity ? new ActivityResponseDTO

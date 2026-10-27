@@ -333,4 +333,56 @@ public class ProjectionsTests
         Assert.True(dto.Enrollments[0].IsOnWaitingList);
         Assert.False(dto.Enrollments[1].IsOnWaitingList);
     }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void ActivityProjections_ToDto_HidesAnonymousMembersFromRegularMembers(bool isBoard, bool isOrganizer)
+    {
+        var activity = new Activity
+        {
+            Id = 5u,
+            Name = "Party",
+            Price = 5.00m,
+            DateTimeStart = DateTimeOffset.UtcNow,
+            DateTimeEnd = DateTimeOffset.UtcNow.AddHours(3),
+            Location = "Tavern",
+            DutchDescription = "NL desc",
+            EnglishDescription = "EN desc",
+            PaymentDeadline = DateTimeOffset.UtcNow.AddDays(7),
+            AreParticipantsVisible = true,
+            SpecificationQuestions = new List<SpecificationQuestion>()
+        };
+        Enrollment Enroll(string lastName, bool anonymous)
+        {
+            var member = CreateDummyMember();
+            member.FirstName = "Koen";
+            member.LastName = lastName;
+            member.IsAnonymous = anonymous;
+            var question = new SpecificationQuestion { QuestionDutch = "Dieet", QuestionEnglish = "Diet", IsPublic = true, Activity = activity };
+            return new Enrollment
+            {
+                ActivityId = 5u, MemberId = member.Id, Member = member, Activity = activity, RegisteredOn = DateTime.UtcNow,
+                SpecificationAnswers = new List<SpecificationAnswer> { new() { MemberId = member.Id, Answer = "Vegan", Question = question } }
+            };
+        }
+        activity.Enrollments = new List<Enrollment> { Enroll("C", false), Enroll("B", true), Enroll("A", false) };
+
+        var dto = ActivityResponseDTO.ToDto(_userId, isBoard, isOrganizer: isOrganizer).Compile()(activity);
+
+        bool[] expectedAnonymous = isBoard || isOrganizer ? [false, true, false] : [false, false, true];
+        Assert.Equal(expectedAnonymous, dto.Enrollments.ConvertAll(e => e.IsAnonymous));
+        if (isBoard || isOrganizer)
+        {
+            Assert.Equal(["A", "B", "C"], dto.Enrollments.ConvertAll(e => e.Member!.LastName));
+            Assert.All(dto.Enrollments, e => Assert.Single(e.SpecificationAnswers!));
+        }
+        else
+        {
+            Assert.Equal(["A", "C"], dto.Enrollments.GetRange(0, 2).ConvertAll(e => e.Member!.LastName));
+            Assert.Null(dto.Enrollments[2].Member);
+            Assert.Empty(dto.Enrollments[2].SpecificationAnswers!);
+        }
+    }
 }
