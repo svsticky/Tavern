@@ -260,7 +260,7 @@ export default function DashboardHeader({
         });
 
         if (urlResponse.error) {
-          throw new Error("Failed to initiate payment process");
+          throw urlResponse.error;
         }
 
         if (urlResponse.data?.checkoutUrl) {

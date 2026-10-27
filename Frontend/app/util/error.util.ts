@@ -11,6 +11,12 @@ const KNOWN_ERROR_TRANSLATION_KEYS: Record<string, string> = {
     "student_number_already_registered",
   "Member is already enrolled in this group for the specified year.":
     "member_already_enrolled_in_group",
+  "There is already a pending membership payment. Please finish that one or come back later.":
+    "pending_membership_payment",
+  "There is already a pending begunstiger payment. Please finish that one or come back later.":
+    "pending_begunstiger_payment",
+  "There is already a pending payment. Please finish that one or come back later.":
+    "pending_payment",
 };
 
 const getValidationErrorMessage = (errors: unknown): string | undefined => {
