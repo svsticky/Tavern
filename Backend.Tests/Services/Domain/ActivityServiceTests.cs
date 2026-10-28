@@ -541,6 +541,34 @@ public class ActivityServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task PatchActivity_OrganizerChangesShortDescriptions_Succeeds()
+    {
+        var group = new Group { Id = 10, Name = "Organizer", Type = GroupType.Committee };
+        _db.Groups.Add(group);
+
+        var activity = CreateActivity("A1");
+        activity.ShowInKoala = false;
+        activity.IsEnrollable = false;
+        activity.OrganizerId = 10;
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(false);
+        _permissionService.IsInGroupInCurrentYear(_userId, 10).Returns(true);
+
+        var patchDoc = new JsonPatchDocument<Activity>();
+        patchDoc.Replace(a => a.ShortDutchDescription, "Korte NL");
+        patchDoc.Replace(a => a.ShortEnglishDescription, "Short EN");
+
+        await _service.PatchActivity(_userId, activity.Id, patchDoc, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        var saved = await _db.Activities.FindAsync(activity.Id);
+        Assert.Equal("Korte NL", saved?.ShortDutchDescription);
+        Assert.Equal("Short EN", saved?.ShortEnglishDescription);
+    }
+
+    [Fact]
     public async Task PatchActivity_Valid_AppliesPatchAndUpdatesPricesAndWaitingList()
     {
         var activity = CreateActivity("A1");

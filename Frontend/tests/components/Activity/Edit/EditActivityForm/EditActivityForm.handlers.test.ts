@@ -218,6 +218,8 @@ describe("handleActivitySubmit", () => {
   const baseFields = {
     Name: "Party",
     Location: "Enschede",
+    ShortDutchDescription: "Kort feest",
+    ShortEnglishDescription: "Short party",
     DutchDescription: "Feest",
     EnglishDescription: "Party",
     Price: "5",
@@ -256,6 +258,58 @@ describe("handleActivitySubmit", () => {
     expect(payload.ShowInKoala).toBe(false);
     expect(payload.ShowOnWebsite).toBe(false);
     expect(payload.IsEnrollable).toBe(false);
+  });
+
+  it("submits short descriptions in the payload when provided", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+    const navigate = vi.fn();
+
+    await handleActivitySubmit({
+      e: buildFormEvent({
+        ...baseFields,
+        ShortDutchDescription: "Korte beschrijving",
+        ShortEnglishDescription: "Short description",
+      }),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate,
+    });
+
+    const payload = postActivities.mock.calls[0][0].body;
+    expect(payload.ShortDutchDescription).toBe("Korte beschrijving");
+    expect(payload.ShortEnglishDescription).toBe("Short description");
+  });
+
+  it("allows submitting without long descriptions (optional)", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+    const navigate = vi.fn();
+
+    const {
+      DutchDescription: _d,
+      EnglishDescription: _e,
+      ...fieldsWithoutLongDesc
+    } = baseFields;
+
+    await handleActivitySubmit({
+      e: buildFormEvent(fieldsWithoutLongDesc),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate,
+    });
+
+    const payload = postActivities.mock.calls[0][0].body;
+    expect(payload.ShortDutchDescription).toBe("Kort feest");
+    expect(payload.ShortEnglishDescription).toBe("Short party");
+    expect(payload.DutchDescription).toBeUndefined();
+    expect(payload.EnglishDescription).toBeUndefined();
   });
 
   it("creating as a board member includes financial fields in the payload", async () => {
@@ -297,6 +351,16 @@ describe("handleActivitySubmit", () => {
       path: string;
     }[];
     const paths = operations.map((op) => op.path);
+    expect(paths).toContain("/ShortDutchDescription");
+    expect(paths).toContain("/ShortEnglishDescription");
+    const shortDutchOp = operations.find(
+      (op) => op.path === "/ShortDutchDescription",
+    ) as { path: string; value: unknown };
+    expect(shortDutchOp?.value).toBe("Kort feest");
+    const shortEnglishOp = operations.find(
+      (op) => op.path === "/ShortEnglishDescription",
+    ) as { path: string; value: unknown };
+    expect(shortEnglishOp?.value).toBe("Short party");
     expect(paths).not.toContain("/VatRate");
     expect(paths).not.toContain("/GLAccountId");
     expect(paths).not.toContain("/CostUnitId");

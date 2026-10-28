@@ -293,8 +293,11 @@ export default function ActivityDetailsTile({
           >
             <Markdown>
               {(member?.preferredLanguage ?? tokenParsed?.locale) === "NL"
-                ? activity.dutchDescription || t("no_description_available_nl")
+                ? activity.dutchDescription ||
+                  activity.shortDutchDescription ||
+                  t("no_description_available_nl")
                 : activity.englishDescription ||
+                  activity.shortEnglishDescription ||
                   t("no_description_available_en")}
             </Markdown>
           </div>

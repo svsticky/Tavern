@@ -6,6 +6,7 @@ import {
   handleCreateActivityClick,
   loadActivities,
 } from "~/routes/activities/activities.handlers";
+import { formatPromoTime } from "~/util/promo.util";
 
 const { getActivities } = vi.hoisted(() => ({
   getActivities: vi.fn(),
@@ -14,7 +15,9 @@ const { getActivities } = vi.hoisted(() => ({
 vi.mock("~/api", () => ({ getActivities }));
 
 const { getEnv } = vi.hoisted(() => ({
-  getEnv: vi.fn(() => "https://example.com"),
+  getEnv: vi.fn((key?: string) =>
+    key === "AssociationTimeZone" ? "Europe/Amsterdam" : "https://example.com",
+  ),
 }));
 vi.mock("~/util/config.utils", () => ({ getEnv }));
 
@@ -93,6 +96,8 @@ describe("copyWeekOverview", () => {
     await copyWeekOverview("EN", [buildActivity()]);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
+    expect(message).toContain("*Week overview*");
     expect(toastFn).toHaveBeenCalledWith("success", "copied_to_clipboard");
   });
 
@@ -100,16 +105,72 @@ describe("copyWeekOverview", () => {
     await copyWeekOverview("NL", [buildActivity()]);
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
-    expect(message).toContain("Weekoverzicht");
+    expect(message).toContain("*Weekoverzicht*");
+    expect(message).toContain("_Wekelijkse borrel_");
   });
 
-  it("includes the weekly drinks location when present", async () => {
+  it("includes the weekly drinks location when present in the target week", async () => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const targetDate = new Date(now);
+    if (currentDay > 3 || currentDay === 0) {
+      targetDate.setDate(now.getDate() + (8 - (currentDay || 7)));
+    } else {
+      targetDate.setDate(now.getDate() - (currentDay - 1));
+    }
+    const drinkDate = new Date(targetDate);
+    drinkDate.setDate(targetDate.getDate() + 1); // Tuesday
+
     await copyWeekOverview("EN", [
-      buildActivity({ isWeeklyDrinks: true, location: "Café" }),
+      buildActivity({
+        isWeeklyDrinks: true,
+        location: "Café",
+        dateTimeStart: drinkDate.toISOString(),
+        dateTimeEnd: drinkDate.toISOString(),
+      }),
     ]);
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
-    expect(message).toContain("Weekly Drinks");
+    expect(message).toContain("_Weekly drinks_");
+    expect(message).toContain("Tuesday: Café");
+  });
+
+  it("formats day activities with summary, short description, and link, and omits empty days", async () => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const targetDate = new Date(now);
+    if (currentDay > 3 || currentDay === 0) {
+      targetDate.setDate(now.getDate() + (8 - (currentDay || 7)));
+    } else {
+      targetDate.setDate(now.getDate() - (currentDay - 1));
+    }
+    const actDate = new Date(targetDate);
+    actDate.setDate(targetDate.getDate() + 1); // Tuesday
+    actDate.setHours(19, 0, 0, 0);
+    const endDate = new Date(actDate);
+    endDate.setHours(22, 0, 0, 0);
+
+    const activity = buildActivity({
+      name: "BactoberFest",
+      location: "Poema",
+      price: 9.5,
+      shortEnglishDescription: "Short promo description",
+      dateTimeStart: actDate.toISOString(),
+      dateTimeEnd: endDate.toISOString(),
+    });
+
+    await copyWeekOverview("EN", [activity]);
+
+    const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
+    expect(message).toContain("_Tuesday_\n\n*BactoberFest");
+    const expectedTime = `${formatPromoTime(actDate)} - ${formatPromoTime(endDate)}`;
+    expect(message).toContain(
+      `*BactoberFest | ${expectedTime} | Poema | € 9.50*`,
+    );
+    expect(message).toContain("Short promo description");
+    expect(message).toContain("https://example.com/activities/1");
+    // Monday should be omitted since it has no activities
+    expect(message).not.toContain("_Monday_");
   });
 
   it("shows an error toast when the clipboard write fails", async () => {
