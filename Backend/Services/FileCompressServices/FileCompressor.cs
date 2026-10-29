@@ -21,6 +21,7 @@ public class FileCompressService : IFileCompressService
     private static readonly string[] _allowedLoaders =
     [
         "VipsForeignLoadJpeg",
+        "VipsForeignLoadUhdr",
         "VipsForeignLoadPng",
         _webpLoader,
         _gifLoader

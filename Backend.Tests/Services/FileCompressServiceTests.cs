@@ -111,6 +111,23 @@ public class FileCompressServiceTests
     }
 
     [Fact]
+    public async Task CompressFileAsync_WithUltraHdrJpeg_ConvertsToWebp()
+    {
+        // Ultra HDR is a JPEG with an HDR gain map (the default on recent iPhones); libvips reads it with a separate loader.
+        using var hdr = (Image.Black(2560, 1000, 3) + 0.5).Cast(Enums.BandFormat.Float).Copy(interpretation: Enums.Interpretation.Scrgb);
+        var bytes = hdr.UhdrsaveBuffer();
+        Assert.StartsWith("VipsForeignLoadUhdr", Image.FindLoadBuffer(bytes));
+        var file = CreateFile(bytes, "image/jpeg");
+
+        var (stream, contentType) = await _service.CompressFileAsync(file);
+
+        Assert.Equal("image/webp", contentType);
+        using var result = Image.NewFromStream(stream);
+        Assert.Equal(1280, result.Width);
+        Assert.Equal(500, result.Height);
+    }
+
+    [Fact]
     public async Task CompressFileAsync_WithNonImage_ThrowsArgumentException()
     {
         var file = CreateFile([1, 2, 3, 4, 5, 6, 7, 8], "image/png");
