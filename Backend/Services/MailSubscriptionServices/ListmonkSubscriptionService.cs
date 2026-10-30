@@ -97,10 +97,24 @@ public class ListmonkSubscriptionService(
 
         ConfigureHttpClient();
 
-        // If this user has been registered in listmonk already, update the record.
-        if (await GetSubscriberByEmail(email, ct) is Subscriber { Id: var subscriber_id })
+        var list_ids = subscribedListIds.Select(int.Parse).ToList();
+        var existing = await GetSubscriberByEmail(email, ct);
+
+        // No lists selected: remove the subscriber entirely, so "not in Listmonk" always means "no subscriptions".
+        if (list_ids.Count == 0)
         {
-            var payload = new { lists = subscribedListIds.Select(int.Parse).ToList(), name = $"{first_name} {last_name}" };
+            if (existing is { Id: var existing_id })
+            {
+                await DeleteSubscriberAsync(existing_id, ct);
+                _logger.LogInformation($"Member {email} unsubscribed from all lists, removed from Listmonk.");
+            }
+            return;
+        }
+
+        // If this user has been registered in listmonk already, update the record.
+        if (existing is { Id: var subscriber_id })
+        {
+            var payload = new { lists = list_ids, name = $"{first_name} {last_name}" };
             var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber_id}", payload, ct);
             response.EnsureSuccessStatusCode();
         }
@@ -111,7 +125,7 @@ public class ListmonkSubscriptionService(
                 email,
                 name = $"{first_name} {last_name}",
                 status = "enabled",
-                lists = subscribedListIds.Select(int.Parse).ToList(),
+                lists = list_ids,
             };
             var response = await _httpClient.PostAsJsonAsync($"api/subscribers", payload, ct);
             response.EnsureSuccessStatusCode();
@@ -131,13 +145,18 @@ public class ListmonkSubscriptionService(
 
         ConfigureHttpClient();
 
-        var subscriber = await GetSubscriberByEmail(email, ct);
+        // Member not in Listmonk (no subscriptions) - skip rather than create a bare record.
+        if (await GetSubscriberByEmail(email, ct) is not { Id: var subscriber_id })
+        {
+            _logger.LogInformation($"Member {email} not found in Listmonk. Skipping name update.");
+            return;
+        }
 
         var payload = new { name = $"{first_name} {last_name}" };
-        var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber!.Id}", payload, ct);
+        var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber_id}", payload, ct);
         response.EnsureSuccessStatusCode();
 
-        _logger.LogInformation($"Subscriptions for {email} updated.");
+        _logger.LogInformation($"Name for {email} updated in Listmonk.");
     }
 
     /// <inheritdoc />
@@ -151,10 +170,16 @@ public class ListmonkSubscriptionService(
 
         ConfigureHttpClient();
 
-        var subscriber = await GetSubscriberByEmail(email, ct);
-        await _httpClient.DeleteAsync($"api/subscribers/{subscriber!.Id}", ct);
+        // Member not in Listmonk (never had subscriptions, or already removed) - nothing to delete.
+        if (await GetSubscriberByEmail(email, ct) is not { Id: var subscriber_id })
+        {
+            _logger.LogInformation($"Member {email} not found in Listmonk. Nothing to delete.");
+            return;
+        }
 
-        _logger.LogInformation($"Member {email} removed from Mailchimp.");
+        await DeleteSubscriberAsync(subscriber_id, ct);
+
+        _logger.LogInformation($"Member {email} removed from Listmonk.");
     }
 
     /// <inheritdoc />
@@ -168,18 +193,35 @@ public class ListmonkSubscriptionService(
 
         ConfigureHttpClient();
 
-        var subscriber = await GetSubscriberByEmail(old_email, ct);
+        // Old address not in Listmonk means it had no subscriptions, so the new address shouldn't have any either.
+        if (await GetSubscriberByEmail(old_email, ct) is not { Id: var subscriber_id })
+        {
+            _logger.LogInformation($"Member {old_email} not found in Listmonk. Applying empty subscriptions to {new_email}.");
+            await UpdateMemberSubscriptionsAsync(new_email, [], ct, first_name, last_name);
+            return;
+        }
+
         var payload = new { email = new_email };
-        var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber!.Id}", payload, ct);
+        var response = await _httpClient.PatchAsJsonAsync($"api/subscribers/{subscriber_id}", payload, ct);
         response.EnsureSuccessStatusCode();
 
-        _logger.LogInformation($"Migrated Mailchimp subscriptions from {old_email} to {new_email}.");
+        _logger.LogInformation($"Migrated Listmonk subscriptions from {old_email} to {new_email}.");
+    }
+
+    private async Task DeleteSubscriberAsync(int subscriber_id, CancellationToken ct)
+    {
+        var response = await _httpClient.DeleteAsync($"api/subscribers/{subscriber_id}", ct);
+        // Already gone is fine.
+        if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
+            response.EnsureSuccessStatusCode();
     }
 
     private async Task<Subscriber?> GetSubscriberByEmail(string email, CancellationToken ct)
     {
+        // Case-insensitive match. Quotes are escaped for Listmonk's SQL expression and the value is URL-encoded, so e.g. a '+' isn't read as a space.
+        var query = Uri.EscapeDataString($"LOWER(subscribers.email) = LOWER('{email.Replace("'", "''")}')");
         var subscriber_response = await _httpClient.GetFromJsonAsync<ListmonkResponse<Paginated<Subscriber>>>(
-            $"api/subscribers?per_page=1&query=subscribers.email = '{email}'", ct);
+            $"api/subscribers?per_page=1&query={query}", ct);
         return subscriber_response?.Data?.Results switch
         {
             [var subscriber, ..] => subscriber,
