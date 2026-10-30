@@ -109,6 +109,7 @@ export const handleSaveAccount = async (
             path: "/preferredLanguage",
             value: formData.preferredLanguage,
           },
+          { op: "replace", path: "/isAnonymous", value: formData.isAnonymous },
         ],
       });
       if (response.error) {

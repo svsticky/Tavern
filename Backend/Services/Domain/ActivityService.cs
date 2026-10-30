@@ -121,10 +121,12 @@ public class ActivityService : IActivityService
         if (activity.DateTimeEnd.UtcDateTime < DateTime.UtcNow && !isBoard)
             throw new UnauthorizedAccessException();
 
-        if (!activity.ShowInKoala && !isBoard && (activity.OrganizerId == null || !_permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value)))
+        bool isOrganizer = activity.OrganizerId.HasValue && _permissionService.IsInGroupInCurrentYear(userId, activity.OrganizerId.Value);
+
+        if (!activity.ShowInKoala && !isBoard && !isOrganizer)
             throw new UnauthorizedAccessException();
 
-        return ActivityResponseDTO.ToDto(userId, isBoard).Compile()(activity);
+        return ActivityResponseDTO.ToDto(userId, isBoard, isOrganizer: isOrganizer).Compile()(activity);
     }
 
     /// <inheritdoc />
