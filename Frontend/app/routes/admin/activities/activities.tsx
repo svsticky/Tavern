@@ -10,10 +10,16 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate, getCommitteeYear } from "~/util/date.util";
+import { cn } from "~/util/tailwind.util";
 import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
 
 /** The number of activities to fetch per page for infinite scrolling. */
 const PAGE_SIZE = 15;
+
+export type ActivitiesProps = {
+  organizerId?: number;
+  hideHeader?: boolean;
+};
 
 /**
  * An administrative management page for viewing and filtering all association activities.
@@ -31,7 +37,10 @@ const PAGE_SIZE = 15;
  * @page
  * @component
  */
-export default function Activities() {
+export default function Activities({
+  organizerId,
+  hideHeader = false,
+}: ActivitiesProps = {}) {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
@@ -71,9 +80,10 @@ export default function Activities() {
         pageNum,
         PAGE_SIZE,
         search,
+        ...(organizerId !== undefined ? [organizerId] : []),
       );
     },
-    [],
+    [organizerId],
   );
 
   useEffect(() => {
@@ -91,6 +101,10 @@ export default function Activities() {
   }, [year, debouncedSearchQuery, fetchActivities]);
 
   useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") {
+      return;
+    }
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !loading) {
@@ -171,8 +185,8 @@ export default function Activities() {
   ];
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <PageHeader title={t("activities")} backTo="/" />
+    <div className={cn("flex flex-col gap-4", !hideHeader && "p-4")}>
+      {!hideHeader && <PageHeader title={t("activities")} backTo="/" />}
 
       <BorderedTile>
         <div className="flex flex-col sm:flex-row items-center w-full gap-4">
