@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
-import type {
-  MailinglistDto,
-  RegistrationDocumentResponseDto,
-  Study,
-} from "~/api";
 import { calculateAge } from "~/util/date.util";
 import { cn } from "~/util/tailwind.util";
 import Tile from "../../Tiles/Tile";
@@ -19,29 +14,36 @@ import {
   handleRegisterInputChange,
   handleRegisterSubmit,
   handleStudyToggle,
-  loadMailingLists,
-  loadMastersMustPay,
-  loadPrice,
-  loadRegistrationDocuments,
-  loadStudies,
-  loadStudyStartDates,
+  type RegisterFormLoaderData,
 } from "./RegisterForm.handlers";
 
-export default function RegisterForm({ className }: { className?: string }) {
+/**
+ * The membership registration form.
+ * @param {Object} props - The component props.
+ * @param {RegisterFormLoaderData} props.data - The studies, settings, mailing lists and documents, loaded by the route (see `loadRegisterFormData`).
+ * @param {string} [props.className] - Optional extra classes for the outer tile.
+ * @returns {JSX.Element} - The rendered form.
+ */
+export default function RegisterForm({
+  data,
+  className,
+}: {
+  data: RegisterFormLoaderData;
+  className?: string;
+}) {
   const { t, i18n } = useTranslation();
   const isDutch = i18n.language.startsWith("nl");
-  const [loading, setLoading] = useState(true);
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [mailingLists, setMailingLists] = useState<MailinglistDto[]>([]);
-  const [documents, setDocuments] = useState<RegistrationDocumentResponseDto[]>(
-    [],
-  );
+  const {
+    studies,
+    mastersMustPay,
+    price,
+    membershipPaymentExpirationTime,
+    mailingLists,
+    documents,
+  } = data;
+  const startDatesRaw = data.studyStartDates ?? "09-01,02-01";
+  const [loading, setLoading] = useState(false);
   const [agreedDocumentIds, setAgreedDocumentIds] = useState<number[]>([]);
-  const [mastersMustPay, setMastersMustPay] = useState<boolean | null>(null);
-  const [price, setPrice] = useState<number | null>(null);
-  const [membershipPaymentExpirationTime, setMembershipPaymentExpirationTime] =
-    useState<number | null>(null);
-  const [startDatesRaw, setStartDatesRaw] = useState<string>("09-01,02-01");
   const [selectedStartDate, setSelectedStartDate] = useState<string>("");
 
   const navigate = useNavigate();
@@ -61,20 +63,6 @@ export default function RegisterForm({ className }: { className?: string }) {
   });
 
   const [selectedStudies, setSelectedStudies] = useState<number[]>([]);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await loadStudies(setStudies);
-      await loadMastersMustPay(setMastersMustPay);
-      await loadPrice(setPrice, setMembershipPaymentExpirationTime);
-      await loadMailingLists(setMailingLists);
-      await loadRegistrationDocuments(setDocuments);
-      await loadStudyStartDates(setStartDatesRaw);
-      setLoading(false);
-    };
-    loadData();
-  }, []);
 
   const startDateOptions = useMemo(() => {
     const configured = startDatesRaw
@@ -183,11 +171,7 @@ export default function RegisterForm({ className }: { className?: string }) {
     string[]
   >([]);
 
-  if (!loading && mastersMustPay === null) {
-    return t("error_loading_page");
-  }
-
-  if (!loading && mastersMustPay === null) {
+  if (mastersMustPay === null) {
     return t("error_loading_page");
   }
 
@@ -340,49 +324,41 @@ export default function RegisterForm({ className }: { className?: string }) {
             <span className="text-sm font-medium text-gray-700 block mb-2">
               {t("studies")}
             </span>
-            {loading ? (
-              t("loading")
-            ) : (
-              <div className="space-y-2">
-                {studies.map((study) => (
-                  <Checkbox
-                    key={study.id}
-                    label={study.title}
-                    checked={selectedStudies.includes(study.id!)}
-                    onChange={() =>
-                      handleStudyToggle(study.id!, setSelectedStudies)
-                    }
-                    disabled={loading}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="space-y-2">
+              {studies.map((study) => (
+                <Checkbox
+                  key={study.id}
+                  label={study.title}
+                  checked={selectedStudies.includes(study.id!)}
+                  onChange={() =>
+                    handleStudyToggle(study.id!, setSelectedStudies)
+                  }
+                  disabled={loading}
+                />
+              ))}
+            </div>
           </div>
         </FormSection>
 
         {mailingLists.length > 0 && (
           <FormSection title={t("mail_subscriptions")}>
-            {loading ? (
-              t("loading")
-            ) : (
-              <div className="space-y-2">
-                {mailingLists.map((list) => (
-                  <Checkbox
-                    key={list.id}
-                    label={list.name}
-                    disabled={loading}
-                    checked={subscribedMailinglistIds.includes(list.id!)}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                      setSubscribedMailinglistIds((prev) =>
-                        e.target.checked
-                          ? [...prev, list.id!]
-                          : prev.filter((id) => id !== list.id),
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-            )}
+            <div className="space-y-2">
+              {mailingLists.map((list) => (
+                <Checkbox
+                  key={list.id}
+                  label={list.name}
+                  disabled={loading}
+                  checked={subscribedMailinglistIds.includes(list.id!)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setSubscribedMailinglistIds((prev) =>
+                      e.target.checked
+                        ? [...prev, list.id!]
+                        : prev.filter((id) => id !== list.id),
+                    );
+                  }}
+                />
+              ))}
+            </div>
           </FormSection>
         )}
 

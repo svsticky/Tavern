@@ -21,6 +21,13 @@ const BOARD_COLOR_SETTINGS = new Set([
   "BoardPrimaryDark",
 ]);
 
+/**
+ * Strips the alpha channel from an 8-digit hex color (`#RRGGBBAA` to `#RRGGBB`),
+ * since the color inputs only support 6 digits. Other values are only trimmed.
+ *
+ * @param {string} value - The stored color value.
+ * @returns {string} The normalized color value.
+ */
 const normalizeColorValue = (value: string) => {
   const trimmed = value.trim();
 
@@ -32,61 +39,54 @@ const normalizeColorValue = (value: string) => {
 };
 
 /**
- * Arguments for the loadSettingsPageData handler.
+ * The data the settings page's `clientLoader` provides.
+ * @typedef {Object} SettingsLoaderData
+ * @property {Record<string, string>} settings - All settings, keyed by name. Board colors are normalized to `#RRGGBB`.
+ * @property {GroupResponseDto[]} availableGroups - All groups, inactive ones too.
+ * @property {Role[]} availableRoles - All roles.
  */
-type LoadSettingsArgs = {
-  setSettings: (settings: Record<string, string>) => void;
-  setAvailableGroups: (groups: GroupResponseDto[]) => void;
-  setAvailableRoles: (roles: Role[]) => void;
-  setLoading: (loading: boolean) => void;
+export type SettingsLoaderData = {
+  settings: Record<string, string>;
+  availableGroups: GroupResponseDto[];
+  availableRoles: Role[];
 };
 
 /**
- * Fetches and synchronizes all data required for the settings dashboard.
- * Orchestrates parallel requests for settings, groups, and roles.
+ * Fetches all data required for the settings dashboard: the settings, groups and roles.
  *
- * @async
- * @param {LoadSettingsArgs} args - Configuration object and state setters.
+ * @returns {Promise<SettingsLoaderData>} The loader data for the settings page.
+ * @throws {Error} When any of the requests fail, which shows the route's error page.
  */
-export const loadSettingsPageData = async ({
-  setSettings,
-  setAvailableGroups,
-  setAvailableRoles,
-  setLoading,
-}: LoadSettingsArgs) => {
-  try {
-    const [settingsRes, groupsRes, rolesRes] = await Promise.all([
-      getSettings(),
-      getGroups({ query: { IncludeInactive: true } }),
-      getRoles(),
-    ]);
+export const loadSettingsLoaderData = async (): Promise<SettingsLoaderData> => {
+  const [settingsRes, groupsRes, rolesRes] = await Promise.all([
+    getSettings(),
+    getGroups({ query: { IncludeInactive: true } }),
+    getRoles(),
+  ]);
 
-    if (settingsRes.error || !settingsRes.data)
-      throw new Error("Failed to load settings");
-    if (groupsRes.error || !groupsRes.data)
-      throw new Error("Failed to load groups");
-    if (rolesRes.error || !rolesRes.data)
-      throw new Error("Failed to load roles");
+  if (settingsRes.error || !settingsRes.data)
+    throw settingsRes.error ?? new Error("Failed to load settings");
+  if (groupsRes.error || !groupsRes.data)
+    throw groupsRes.error ?? new Error("Failed to load groups");
+  if (rolesRes.error || !rolesRes.data)
+    throw rolesRes.error ?? new Error("Failed to load roles");
 
-    const settingsObj = settingsRes.data.reduce(
-      (acc: Record<string, string>, s: Setting) => {
-        if (s.name)
-          acc[s.name] = BOARD_COLOR_SETTINGS.has(s.name)
-            ? normalizeColorValue(s.value || "")
-            : s.value || "";
-        return acc;
-      },
-      {},
-    );
-    setSettings(settingsObj);
-    setAvailableGroups(groupsRes.data);
-    setAvailableRoles(rolesRes.data);
-  } catch (error) {
-    console.error("Error loading settings page data:", error);
-    toast.error(appendErrorMessage(t("failed_to_load_settings"), error));
-  } finally {
-    setLoading(false);
-  }
+  const settings = settingsRes.data.reduce(
+    (acc: Record<string, string>, s: Setting) => {
+      if (s.name)
+        acc[s.name] = BOARD_COLOR_SETTINGS.has(s.name)
+          ? normalizeColorValue(s.value || "")
+          : s.value || "";
+      return acc;
+    },
+    {},
+  );
+
+  return {
+    settings,
+    availableGroups: groupsRes.data,
+    availableRoles: rolesRes.data,
+  };
 };
 
 /**
@@ -106,6 +106,13 @@ export const handleSettingsChange = (
 
 /**
  * Arguments for the handleAddRoleMapping handler.
+ * @typedef {Object} AddRoleMappingArgs
+ * @property {string} selectedRoleId - The ID of the role to add a mapping for.
+ * @property {Record<string, string>} settings - The current settings, keyed by name.
+ * @property {React.Dispatch<React.SetStateAction<Record<string, string>>>} setSettings - Setter for the settings record.
+ * @property {React.Dispatch<React.SetStateAction<Set<string>>>} setNewSettings - Setter for the names of settings that still have to be created.
+ * @property {React.Dispatch<React.SetStateAction<Set<string>>>} setDeletedSettings - Setter for the names of settings that still have to be deleted.
+ * @property {(value: string) => void} setSelectedRoleId - Setter for the selected role, cleared after adding.
  */
 type AddRoleMappingArgs = {
   selectedRoleId: string;
@@ -150,6 +157,12 @@ export const handleAddRoleMapping = ({
 
 /**
  * Arguments for the handleRemoveRoleMapping handler.
+ * @typedef {Object} RemoveRoleMappingArgs
+ * @property {string} name - The name of the role mapping setting to remove.
+ * @property {Set<string>} newSettings - The names of settings that haven't been created on the server yet.
+ * @property {React.Dispatch<React.SetStateAction<Record<string, string>>>} setSettings - Setter for the settings record.
+ * @property {React.Dispatch<React.SetStateAction<Set<string>>>} setNewSettings - Setter for the names of settings that still have to be created.
+ * @property {React.Dispatch<React.SetStateAction<Set<string>>>} setDeletedSettings - Setter for the names of settings that still have to be deleted.
  */
 type RemoveRoleMappingArgs = {
   name: string;
@@ -190,6 +203,12 @@ export const handleRemoveRoleMapping = ({
 
 /**
  * Arguments for the handleSaveSettings handler.
+ * @typedef {Object} SaveSettingsArgs
+ * @property {Set<string>} deletedSettings - The names of settings to delete.
+ * @property {Record<string, string>} settings - All settings, keyed by name.
+ * @property {Set<string>} newSettings - The names of settings to create instead of update.
+ * @property {(saving: boolean) => void} setSaving - Setter for the saving state.
+ * @property {() => void} clearTracking - Clears the new and deleted settings after saving.
  */
 type SaveSettingsArgs = {
   deletedSettings: Set<string>;

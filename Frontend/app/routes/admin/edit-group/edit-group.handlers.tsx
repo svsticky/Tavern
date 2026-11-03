@@ -1,6 +1,7 @@
 import { t } from "i18next";
 import type React from "react";
 import toast from "react-hot-toast";
+import { data } from "react-router";
 import {
   deleteGroupmembershipsById,
   type GroupMembershipResponseDto,
@@ -16,9 +17,17 @@ import {
   type RoleAlias,
 } from "~/api";
 import { appendErrorMessage, getFriendlyErrorMessage } from "~/util/error.util";
+import { loadCommitteeYear } from "~/util/loaderAuth.util";
 
 /**
  * Interface representing the editable fields of a group.
+ * @typedef {Object} EditGroupFormData
+ * @property {string} Name - The group's name.
+ * @property {string} Type - The group's type, e.g. committee or working group.
+ * @property {string} DefaultGLAccount - The default general ledger account for the group's activities.
+ * @property {string} DefaultCostCenter - The default cost center for the group's activities.
+ * @property {string} DefaultCostUnit - The default cost unit for the group's activities.
+ * @property {boolean} Active - Whether the group is active.
  */
 export type EditGroupFormData = {
   Name: string;
@@ -30,82 +39,104 @@ export type EditGroupFormData = {
 };
 
 /**
- * Arguments for the loadGroupData handler.
+ * The data the group editor's `clientLoader` provides.
+ * @typedef {Object} EditGroupLoaderData
+ * @property {number} groupId - The ID of the group being edited.
+ * @property {EditGroupFormData} formData - The group's editable fields.
+ * @property {RoleAlias[]} roleAliases - All role aliases that can be assigned to members.
+ * @property {string | null} groupPictureSrc - The group picture's object URL, or `null` when it has none.
+ * @property {number} committeeYear - The current committee year, the default year for the memberships table.
+ * @property {GroupMembershipResponseDto[]} enrollments - The group's memberships in `committeeYear`.
  */
-type LoadGroupArgs = {
-  id: number | null;
-  setFormData: React.Dispatch<React.SetStateAction<EditGroupFormData>>;
-  setGroupPictureSrc: (value: string | null) => void;
-  setRoleAliases: React.Dispatch<React.SetStateAction<RoleAlias[]>>;
-  setLoading: (value: boolean) => void;
+export type EditGroupLoaderData = {
+  groupId: number;
+  formData: EditGroupFormData;
+  roleAliases: RoleAlias[];
+  groupPictureSrc: string | null;
+  committeeYear: number;
+  enrollments: GroupMembershipResponseDto[];
 };
 
 /**
- * Initializes the edit page by fetching the group profile, group picture, and available role aliases.
+ * Loads a group's picture as an object URL.
  *
- * @async
- * @param {LoadGroupArgs} args - Configuration object containing:
- * @param {number | null} args.id - The ID of the group to load.
- * @param {Function} args.setFormData - Setter for the group's basic info form state.
- * @param {Function} args.setGroupPictureSrc - Setter for the group's profile image source URL.
- * @param {Function} args.setRoleAliases - Setter for the global list of selectable role aliases.
- * @param {Function} args.setLoading - Setter for the component's main loading state.
- * @returns {Promise<Function | undefined>} A cleanup function to revoke the generated Object URL for the image.
+ * @param {number} id - The ID of the group.
+ * @returns {Promise<string | null>} The picture's object URL, or `null` when the group has none or it fails to load.
  */
-export const loadGroupData = async ({
-  id,
-  setFormData,
-  setGroupPictureSrc,
-  setRoleAliases,
-  setLoading,
-}: LoadGroupArgs) => {
-  if (!id) return;
-  let url = null as string | null;
-
+const loadGroupPictureSrc = async (id: number): Promise<string | null> => {
   try {
-    const groupResponse = await getGroupsById({ path: { id } });
-
-    if (groupResponse.error || !groupResponse.data)
-      throw new Error("Failed to load group data");
-
-    setFormData({
-      Name: groupResponse.data.name,
-      Type: groupResponse.data.type,
-      Active: groupResponse.data.active,
-      DefaultGLAccount: groupResponse.data.glAccountId ?? "",
-      DefaultCostCenter: groupResponse.data.costCenterId ?? "",
-      DefaultCostUnit: groupResponse.data.costUnitId ?? "",
-    });
-
-    const roleAliasesResponse = await getRolealiases();
-    if (roleAliasesResponse.error || !roleAliasesResponse.data)
-      throw new Error("Failed to load role aliases");
-    setRoleAliases(roleAliasesResponse.data);
-
-    const groupPictureResponse = await getGroupsByIdGroupPicture({
+    const response = await getGroupsByIdGroupPicture({
       path: { id },
       responseType: "blob",
     });
-
-    if (
-      groupPictureResponse.error ||
-      !(groupPictureResponse.data instanceof Blob)
-    ) {
+    if (response.error || !(response.data instanceof Blob)) {
       console.warn("Failed to load group picture, using default avatar");
-      return;
+      return null;
     }
+    return URL.createObjectURL(response.data);
+  } catch (error) {
+    console.warn("Failed to load group picture, using default avatar", error);
+    return null;
+  }
+};
 
-    url = URL.createObjectURL(groupPictureResponse.data);
-    setGroupPictureSrc(url);
-  } catch (err) {
-    console.log("Failed to load group data:", err);
-    toast.error(appendErrorMessage(t("loading_failed"), err));
-  } finally {
-    setLoading(false);
+/**
+ * Loads everything the group editor needs: the group's details and picture, the
+ * role aliases, and the group's memberships in the current committee year.
+ *
+ * @param {{ id?: string }} params - The route parameters, containing the group ID.
+ * @returns {Promise<EditGroupLoaderData>} The loader data for the group editor.
+ * @throws {Response} A 404 response when the ID isn't a number.
+ * @throws {Error} When the group, role aliases or memberships fail to load, which shows the route's error page.
+ */
+export const loadEditGroupLoaderData = async (params: {
+  id?: string;
+}): Promise<EditGroupLoaderData> => {
+  const groupId = Number(params.id);
+  if (!params.id || !Number.isInteger(groupId)) {
+    throw data("Not Found", { status: 404 });
   }
 
-  return () => {
-    if (url) URL.revokeObjectURL(url);
+  const committeeYear = await loadCommitteeYear();
+
+  const [
+    groupResponse,
+    roleAliasesResponse,
+    membershipsResponse,
+    groupPictureSrc,
+  ] = await Promise.all([
+    getGroupsById({ path: { id: groupId } }),
+    getRolealiases(),
+    getGroupmemberships({
+      query: { GroupId: groupId, MembershipYear: committeeYear },
+    }),
+    loadGroupPictureSrc(groupId),
+  ]);
+
+  if (groupResponse.error || !groupResponse.data)
+    throw groupResponse.error ?? new Error("Failed to load group data");
+  if (roleAliasesResponse.error || !roleAliasesResponse.data)
+    throw roleAliasesResponse.error ?? new Error("Failed to load role aliases");
+  if (membershipsResponse.error || !membershipsResponse.data)
+    throw (
+      membershipsResponse.error ?? new Error("Failed to load group memberships")
+    );
+
+  const group = groupResponse.data;
+  return {
+    groupId,
+    formData: {
+      Name: group.name,
+      Type: group.type,
+      Active: group.active,
+      DefaultGLAccount: group.glAccountId ?? "",
+      DefaultCostCenter: group.costCenterId ?? "",
+      DefaultCostUnit: group.costUnitId ?? "",
+    },
+    roleAliases: roleAliasesResponse.data,
+    groupPictureSrc,
+    committeeYear,
+    enrollments: membershipsResponse.data,
   };
 };
 

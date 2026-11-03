@@ -66,7 +66,7 @@ export const handleEnrollment = async (
   authService: IAuthService,
   activity: ActivityResponseDto,
   setActivity:
-    | React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>
+    | React.Dispatch<React.SetStateAction<ActivityResponseDto>>
     | undefined,
   answers: Record<number, string>,
   setSubmitting: (submitting: boolean) => void,
@@ -189,7 +189,7 @@ export const handleUpdateEnrollment = async (
   authService: IAuthService,
   activity: ActivityResponseDto,
   setActivity:
-    | React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>
+    | React.Dispatch<React.SetStateAction<ActivityResponseDto>>
     | undefined,
   answers: Record<number, string>,
   setSubmitting: (submitting: boolean) => void,
