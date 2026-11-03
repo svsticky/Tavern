@@ -1,8 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
 import i18next from "i18next";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExternalLinkResponseDto } from "~/api";
-import ExternalLinksPage from "~/routes/external-links";
+import * as route from "~/routes/external-links";
+import { renderRoute, screen } from "~/testUtils";
 
 const { getExternallinks } = vi.hoisted(() => ({
   getExternallinks: vi.fn(),
@@ -35,9 +35,9 @@ describe("ExternalLinksPage", () => {
     await i18next.changeLanguage("en");
   });
 
-  it("falls back to an empty list when the response has no data", async () => {
-    getExternallinks.mockResolvedValue({ data: undefined });
-    render(<ExternalLinksPage />);
+  it("shows the no-links message when there are no links", async () => {
+    getExternallinks.mockResolvedValue({ data: [] });
+    renderRoute(route);
 
     expect(await screen.findByText("no_external_links")).toBeInTheDocument();
   });
@@ -45,28 +45,20 @@ describe("ExternalLinksPage", () => {
   it("renders Dutch titles and descriptions for a Dutch-locale user", async () => {
     await i18next.changeLanguage("nl");
     getExternallinks.mockResolvedValue({ data: [makeLink()] });
-    render(<ExternalLinksPage />);
+    renderRoute(route);
 
     expect(await screen.findByText("Koala NL")).toBeInTheDocument();
     expect(screen.getByText("Ledenadministratie")).toBeInTheDocument();
   });
 
-  it("shows a loading state, then the no-links message when empty", async () => {
-    getExternallinks.mockResolvedValue({ data: [] });
-    render(<ExternalLinksPage />);
-
-    expect(screen.getByText("loading")).toBeInTheDocument();
-    expect(await screen.findByText("no_external_links")).toBeInTheDocument();
-  });
-
-  it("renders links sorted by sortOrder", async () => {
+  it("renders the links in the order the API returns them", async () => {
     getExternallinks.mockResolvedValue({
       data: [
-        makeLink({ id: 2, titleEnglish: "Second", sortOrder: 2 }),
         makeLink({ id: 1, titleEnglish: "First", sortOrder: 1 }),
+        makeLink({ id: 2, titleEnglish: "Second", sortOrder: 2 }),
       ],
     });
-    render(<ExternalLinksPage />);
+    renderRoute(route);
 
     const headings = await screen.findAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.textContent)).toEqual(["First", "Second"]);
@@ -76,21 +68,27 @@ describe("ExternalLinksPage", () => {
     getExternallinks.mockResolvedValue({
       data: [makeLink({ iconPath: "icon.png" })],
     });
-    render(<ExternalLinksPage />);
+    renderRoute(route);
 
     await screen.findByText("Koala");
-    expect(document.querySelector("img")).toBeTruthy();
+    expect(
+      document.querySelector("img[src$='/externallinks/1/icon']"),
+    ).toBeTruthy();
   });
 
-  it("logs an error when fetching fails", async () => {
+  it("shows the error page when the links fail to load", async () => {
+    getExternallinks.mockResolvedValue({ error: "boom" });
+    renderRoute(route);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load external links",
+    );
+  });
+
+  it("shows the error page when the request throws", async () => {
     getExternallinks.mockRejectedValue(new Error("boom"));
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+    renderRoute(route);
 
-    render(<ExternalLinksPage />);
-
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
+    expect(await screen.findByRole("alert")).toHaveTextContent("boom");
   });
 });

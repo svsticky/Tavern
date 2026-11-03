@@ -1,11 +1,12 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StudyEnrollmentResponseDto } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import type { EditMemberLoaderData } from "~/routes/admin/edit-member/edit-member.handlers";
+import { renderRoute } from "~/testUtils";
 
 const {
-  loadMemberData,
+  loadEditMemberLoaderData,
+  requireBoardOrCandidateBoard,
   handleSaveMember,
   handleDeleteMember,
   handleDeleteEnrollment,
@@ -14,7 +15,8 @@ const {
   handleMarkMembershipAsPaid,
   handleMarkBegunstigerFeeAsPaid,
 } = vi.hoisted(() => ({
-  loadMemberData: vi.fn(),
+  loadEditMemberLoaderData: vi.fn(),
+  requireBoardOrCandidateBoard: vi.fn(),
   handleSaveMember: vi.fn(),
   handleDeleteMember: vi.fn(),
   handleDeleteEnrollment: vi.fn(),
@@ -24,8 +26,10 @@ const {
   handleMarkBegunstigerFeeAsPaid: vi.fn(),
 }));
 
+vi.mock("~/util/loaderAuth.util", () => ({ requireBoardOrCandidateBoard }));
+
 vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
-  loadMemberData,
+  loadEditMemberLoaderData,
   handleSaveMember,
   handleDeleteMember,
   handleDeleteEnrollment,
@@ -35,24 +39,23 @@ vi.mock("~/routes/admin/edit-member/edit-member.handlers", () => ({
   handleMarkBegunstigerFeeAsPaid,
 }));
 
-// ChangeProfilePicture makes its own ~/api call (getMembersByIdProfilePicture) - it's not part
-// of this batch, so stub it out to keep this route test focused on edit-member's own logic.
+// Stub ChangeProfilePicture to keep this route test focused on edit-member's own logic.
 vi.mock(
   "~/components/Account/ChangeProfilePicture/ChangeProfilePicture",
   () => ({
-    default: () => <div>change-profile-picture</div>,
+    default: ({ profilePictureSrc }: { profilePictureSrc: string }) => (
+      <div>change-profile-picture-{profilePictureSrc}</div>
+    ),
   }),
 );
 
-import EditMemberPage from "~/routes/admin/edit-member/edit-member";
+import * as route from "~/routes/admin/edit-member/edit-member";
 
 function renderPage(id = "m1") {
-  return renderWithProviders(
-    <Routes>
-      <Route path="/admin/members/:id" element={<EditMemberPage />} />
-    </Routes>,
-    { route: `/admin/members/${id}` },
-  );
+  return renderRoute(route, {
+    path: "/admin/members/:id",
+    route: `/admin/members/${id}`,
+  });
 }
 
 function enrollment(
@@ -67,53 +70,65 @@ function enrollment(
   } as StudyEnrollmentResponseDto;
 }
 
+/** Makes the loader return member m1 (Jane) with the given changes. */
+function mockLoaderData(overrides: Partial<EditMemberLoaderData> = {}) {
+  loadEditMemberLoaderData.mockResolvedValue({
+    memberId: "m1",
+    formData: {
+      firstName: "Jane",
+      lastName: "",
+      studentNumber: "",
+      phoneNumber: "",
+      street: "",
+      houseNumber: "",
+      postalCode: "",
+      city: "",
+      parentPhoneNumber: "",
+      preferredLanguage: "NL",
+      notes: "",
+      gratie: false,
+      lidVanVerdienste: false,
+      ereLid: false,
+      begunstiger: false,
+      suspended: false,
+      dateOfBirth: "",
+    },
+    email: "jane@example.com",
+    enrollments: [enrollment()],
+    groupMemberships: [],
+    availableStudies: [],
+    profilePictureSrc: "blob:picture",
+    hasPaidMembership: false,
+    isBegunstiger: false,
+    ...overrides,
+  });
+}
+
 describe("EditMemberPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loadMemberData.mockImplementation(
-      async ({
-        setFormData,
-        setEnrollments,
-        setHasPaidMembership,
-        setLoading,
-      }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setEnrollments([enrollment()]);
-        setHasPaidMembership(false);
-        setLoading(false);
-      },
-    );
-  });
-
-  it("shows a loading indicator while loading, then renders the form", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadMemberData.mockImplementation(
-      ({ setLoading }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
-    renderPage();
-
-    expect(screen.getByText("loading")).toBeInTheDocument();
-    resolveLoad?.();
-
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
-    );
+    requireBoardOrCandidateBoard.mockResolvedValue({});
+    mockLoaderData();
   });
 
   it("loads member data for the given member id", async () => {
     renderPage("m42");
 
-    await waitFor(() => expect(loadMemberData).toHaveBeenCalled());
-    expect(loadMemberData.mock.calls[0][0]).toMatchObject({
-      memberId: "m42",
-    });
+    await screen.findByDisplayValue("Jane");
+    expect(loadEditMemberLoaderData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "m42" }),
+    );
+  });
+
+  it("shows the error page when the member fails to load", async () => {
+    loadEditMemberLoaderData.mockRejectedValue(
+      new Error("Failed to load member data"),
+    );
+    renderPage();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load member data",
+    );
   });
 
   it("renders loaded form data and study enrollments", async () => {
@@ -124,22 +139,18 @@ describe("EditMemberPage", () => {
   });
 
   it("links a group membership to the group's admin page", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setFormData, setGroupMemberships, setLoading }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setGroupMemberships([
-          {
-            id: 1,
-            groupId: 5,
-            groupName: "Board",
-            membershipYear: 2026,
-            roleAliasName: "Chair",
-            memberName: "Jane",
-          },
-        ]);
-        setLoading(false);
-      },
-    );
+    mockLoaderData({
+      groupMemberships: [
+        {
+          id: 1,
+          groupId: 5,
+          groupName: "Board",
+          membershipYear: 2026,
+          roleAliasName: "Chair",
+          memberName: "Jane",
+        },
+      ] as EditMemberLoaderData["groupMemberships"],
+    });
 
     renderPage();
 
@@ -234,21 +245,7 @@ describe("EditMemberPage", () => {
   });
 
   it("shows the begunstiger-fee action instead of the membership one for a begunstiger", async () => {
-    loadMemberData.mockImplementation(
-      async ({
-        setFormData,
-        setEnrollments,
-        setHasPaidMembership,
-        setIsBegunstiger,
-        setLoading,
-      }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setEnrollments([]);
-        setHasPaidMembership(false);
-        setIsBegunstiger(true);
-        setLoading(false);
-      },
-    );
+    mockLoaderData({ enrollments: [], isBegunstiger: true });
 
     renderPage();
 
@@ -281,13 +278,7 @@ describe("EditMemberPage", () => {
   });
 
   it("hides the mark-membership-as-paid action once the membership is paid", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setEnrollments, setHasPaidMembership, setLoading }: any) => {
-        setEnrollments([]);
-        setHasPaidMembership(true);
-        setLoading(false);
-      },
-    );
+    mockLoaderData({ enrollments: [], hasPaidMembership: true });
 
     renderPage();
 
@@ -352,13 +343,12 @@ describe("EditMemberPage", () => {
   });
 
   it("adds a new study enrollment once a study is selected", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setEnrollments, setAvailableStudies, setLoading }: any) => {
-        setEnrollments([]);
-        setAvailableStudies([{ id: 3, title: "Physics" }]);
-        setLoading(false);
-      },
-    );
+    mockLoaderData({
+      enrollments: [],
+      availableStudies: [
+        { id: 3, title: "Physics" },
+      ] as EditMemberLoaderData["availableStudies"],
+    });
 
     renderPage();
 
@@ -379,10 +369,10 @@ describe("EditMemberPage", () => {
     );
   });
 
-  it("renders the ChangeProfilePicture child component", async () => {
+  it("renders the ChangeProfilePicture child component with the loaded picture", async () => {
     renderPage();
     expect(
-      await screen.findByText("change-profile-picture"),
+      await screen.findByText("change-profile-picture-blob:picture"),
     ).toBeInTheDocument();
   });
 
@@ -428,24 +418,20 @@ describe("EditMemberPage", () => {
   });
 
   it("styles completed and dropped-out enrollments differently", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setFormData, setEnrollments, setLoading }: any) => {
-        setFormData((prev: any) => ({ ...prev, firstName: "Jane" }));
-        setEnrollments([
-          enrollment({
-            id: 1,
-            studyTitle: "Completed Study",
-            status: "Completed",
-          }),
-          enrollment({
-            id: 2,
-            studyTitle: "Dropped Study",
-            status: "DroppedOut",
-          }),
-        ]);
-        setLoading(false);
-      },
-    );
+    mockLoaderData({
+      enrollments: [
+        enrollment({
+          id: 1,
+          studyTitle: "Completed Study",
+          status: "Completed",
+        }),
+        enrollment({
+          id: 2,
+          studyTitle: "Dropped Study",
+          status: "DroppedOut",
+        }),
+      ],
+    });
 
     renderPage();
 
@@ -473,13 +459,12 @@ describe("EditMemberPage", () => {
   });
 
   it("clears the selected study when the placeholder option is chosen again", async () => {
-    loadMemberData.mockImplementation(
-      async ({ setEnrollments, setAvailableStudies, setLoading }: any) => {
-        setEnrollments([]);
-        setAvailableStudies([{ id: 3, title: "Physics" }]);
-        setLoading(false);
-      },
-    );
+    mockLoaderData({
+      enrollments: [],
+      availableStudies: [
+        { id: 3, title: "Physics" },
+      ] as EditMemberLoaderData["availableStudies"],
+    });
 
     renderPage();
 

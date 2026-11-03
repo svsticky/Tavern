@@ -5,7 +5,7 @@ import {
   getGroups,
 } from "~/api";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { requireTokenParsed } from "~/util/loaderAuth.util";
+import { loadCommitteeYear, requireTokenParsed } from "~/util/loaderAuth.util";
 
 /**
  * The data the activity editor's `clientLoader` provides.
@@ -31,7 +31,14 @@ export type EditActivityLoaderData = {
  */
 export const loadEditActivityLoaderData = async (params: { id?: string }) => {
   const tokenParsed = await requireTokenParsed();
-  const groupsResponse = await getGroups();
+  // Without a membership year only board members may list groups, so pass the
+  // current year to let committee members load the groups they can pick.
+  const groupsResponse = await getGroups({
+    query: {
+      IncludeInactive: false,
+      MembershipYear: await loadCommitteeYear(),
+    },
+  });
   if (groupsResponse.error || !groupsResponse.data)
     throw new Error("Failed to load groups");
 

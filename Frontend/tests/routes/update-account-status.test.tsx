@@ -5,9 +5,12 @@ import {
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
 } from "~/routes/admin/edit-member/edit-member.handlers";
-import UpdateAccountStatus from "~/routes/update-account-status/update-account-status";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
-import type { TokenParsed } from "~/types/TokenParsed";
+import * as route from "~/routes/update-account-status/update-account-status";
+import {
+  createMockAuthService,
+  makeTokenParsed,
+  renderRoute,
+} from "~/testUtils";
 
 const {
   getStudyenrollments,
@@ -31,9 +34,12 @@ vi.mock("~/api", () => ({
   putMembersByIdMailinglists,
 }));
 
-const { loadStudyStartDates } = vi.hoisted(() => ({
-  loadStudyStartDates: vi.fn(async (_setter?: (value: string) => void) => {}),
+const { loadStudyStartDates, requireTokenParsed } = vi.hoisted(() => ({
+  loadStudyStartDates: vi.fn(async (): Promise<string | null> => null),
+  requireTokenParsed: vi.fn(),
 }));
+
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
 
 vi.mock("~/components/Register/RegisterForm/RegisterForm.handlers", () => ({
   loadStudyStartDates,
@@ -58,14 +64,7 @@ vi.mock("react-hot-toast", () => ({
   },
 }));
 
-const token: TokenParsed = {
-  locale: "en",
-  UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
-  access_level: "member",
-  given_name: "Jane",
-  family_name: "Doe",
-  name: "Jane Doe",
-};
+const token = makeTokenParsed({ given_name: "Jane", family_name: "Doe" });
 
 function makeStudy(overrides: Partial<Study> = {}): Study {
   return {
@@ -93,31 +92,16 @@ function makeEnrollment(
 describe("UpdateAccountStatus", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loadStudyStartDates.mockImplementation(async () => {});
+    loadStudyStartDates.mockResolvedValue(null);
+    requireTokenParsed.mockResolvedValue(token);
     getMembersByIdMailinglists.mockResolvedValue({ data: [] });
     putMembersByIdMailinglists.mockResolvedValue({});
-  });
-
-  it("logs an error when there is no parsed token", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => null),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
-
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
   });
 
   it("renders enrolled studies once loaded", async () => {
     getStudyenrollments.mockResolvedValue({ data: [makeEnrollment()] });
     getStudies.mockResolvedValue({ data: [makeStudy()] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     expect(
       (await screen.findAllByText("Computer Science")).length,
@@ -127,10 +111,7 @@ describe("UpdateAccountStatus", () => {
   it("shows the empty-state message when there are no enrollments", async () => {
     getStudyenrollments.mockResolvedValue({ data: [] });
     getStudies.mockResolvedValue({ data: [] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     expect(await screen.findByText("no_enrollments_found")).toBeInTheDocument();
   });
@@ -145,10 +126,7 @@ describe("UpdateAccountStatus", () => {
       ],
     });
     getStudies.mockResolvedValue({ data: [makeStudy()] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     const select = await screen.findByDisplayValue("status_in_progress");
     fireEvent.change(select, { target: { value: "Completed" } });
@@ -164,10 +142,7 @@ describe("UpdateAccountStatus", () => {
   it("enables and wires up the add-enrollment button once a study and date are chosen", async () => {
     getStudyenrollments.mockResolvedValue({ data: [makeEnrollment()] });
     getStudies.mockResolvedValue({ data: [makeStudy()] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     await screen.findAllByText("Computer Science");
     expect(screen.getByText("add")).toBeDisabled();
@@ -176,10 +151,7 @@ describe("UpdateAccountStatus", () => {
   it("hides the add-study controls entirely for a member with no enrollment history", async () => {
     getStudyenrollments.mockResolvedValue({ data: [] });
     getStudies.mockResolvedValue({ data: [makeStudy()] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     await screen.findByText("no_enrollments_found");
     expect(screen.queryByLabelText("add_study_enrollment")).toBeNull();
@@ -191,10 +163,9 @@ describe("UpdateAccountStatus", () => {
     getStudies.mockResolvedValue({ data: [] });
     deleteMembersById.mockResolvedValue({});
     const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
       logout: vi.fn(async () => {}),
     });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route, { authService });
 
     await screen.findByText("no_enrollments_found");
     fireEvent.click(
@@ -212,13 +183,8 @@ describe("UpdateAccountStatus", () => {
   it("generates start-date options and preselects the closest one, allowing the study and date selects to be changed", async () => {
     getStudyenrollments.mockResolvedValue({ data: [makeEnrollment()] });
     getStudies.mockResolvedValue({ data: [makeStudy()] });
-    loadStudyStartDates.mockImplementation(async (setter: any) => {
-      setter("09-01, 03-15");
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    loadStudyStartDates.mockResolvedValue("09-01, 03-15");
+    renderRoute(route);
 
     await screen.findAllByText("Computer Science");
 
@@ -252,23 +218,41 @@ describe("UpdateAccountStatus", () => {
       data: [makeEnrollment({ studyId: 999 })],
     });
     getStudies.mockResolvedValue({ data: [makeStudy({ id: 1 })] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     expect(
       (await screen.findAllByText("status_dropped_out")).length,
     ).toBeGreaterThan(0);
   });
 
+  it("shows the error page when the study enrollments fail to load", async () => {
+    getStudyenrollments.mockResolvedValue({
+      error: new Error("Failed to load study enrollments"),
+    });
+    getStudies.mockResolvedValue({ data: [] });
+    renderRoute(route);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load study enrollments",
+    );
+  });
+
+  it("shows the error page when the studies fail to load", async () => {
+    getStudyenrollments.mockResolvedValue({ data: [] });
+    getStudies.mockResolvedValue({
+      error: new Error("Failed to load studies"),
+    });
+    renderRoute(route);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load studies",
+    );
+  });
+
   it("fetches studies including inactive ones so deadline calculations still work for deactivated studies", async () => {
     getStudyenrollments.mockResolvedValue({ data: [] });
     getStudies.mockResolvedValue({ data: [] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     await waitFor(() =>
       expect(getStudies).toHaveBeenCalledWith({
@@ -277,7 +261,7 @@ describe("UpdateAccountStatus", () => {
     );
   });
 
-  it("shows a loading placeholder in the status column while studies haven't loaded, and a dropped-out label once the deadline has passed", async () => {
+  it("shows a dropped-out label once the deadline has passed", async () => {
     getStudyenrollments.mockResolvedValue({
       data: [
         makeEnrollment({
@@ -287,10 +271,7 @@ describe("UpdateAccountStatus", () => {
       ],
     });
     getStudies.mockResolvedValue({ data: [makeStudy()] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     expect(
       (await screen.findAllByText("status_dropped_out")).length,
@@ -304,10 +285,7 @@ describe("UpdateAccountStatus", () => {
       error: "fail",
       message: "delete failed",
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     await screen.findByText("no_enrollments_found");
     fireEvent.click(
@@ -321,10 +299,7 @@ describe("UpdateAccountStatus", () => {
   it("closes the delete-account modal via the cancel button", async () => {
     getStudyenrollments.mockResolvedValue({ data: [] });
     getStudies.mockResolvedValue({ data: [] });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     await screen.findByText("no_enrollments_found");
     fireEvent.click(
@@ -349,10 +324,7 @@ describe("UpdateAccountStatus", () => {
         { id: "alumni", name: "Alumni", subscribed: true },
       ],
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     await waitFor(() =>
       expect(getMembersByIdMailinglists).toHaveBeenCalledWith({
@@ -372,10 +344,7 @@ describe("UpdateAccountStatus", () => {
     getMembersByIdMailinglists.mockResolvedValue({
       data: [{ id: "alumni", name: "Alumni", subscribed: false }],
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     const checkbox = await screen.findByLabelText("Alumni");
     fireEvent.click(checkbox);
@@ -400,10 +369,7 @@ describe("UpdateAccountStatus", () => {
     getMembersByIdMailinglists.mockResolvedValue({
       error: { title: "Boom" },
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<UpdateAccountStatus />, { authService });
+    renderRoute(route);
 
     expect(
       await screen.findByText("mailinglists_unavailable"),
