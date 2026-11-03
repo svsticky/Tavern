@@ -19,7 +19,7 @@
         "fumadocs-mdx": "^14.2.4",
         "fumadocs-openapi": "^12.4.1",
         "fumadocs-ui": "^16.17.1",
-        "glob": "^11.0.1",
+        "glob": "^14.0.2",
         "lucide-react": "^0.479.0",
         "next": "^16.1.1",
         "react": "19.2.3",
