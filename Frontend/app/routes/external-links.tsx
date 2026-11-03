@@ -1,8 +1,7 @@
 import * as Icons from "lucide-react";
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLoaderData } from "react-router";
-import { type ExternalLinkResponseDto, getExternallinks } from "~/api";
+import { getExternallinks } from "~/api";
 import ExternalLinkTile from "~/components/ExternalLinkTile";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { PageHeader } from "~/components/UI/PageHeader";

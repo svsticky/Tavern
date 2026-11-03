@@ -1,19 +1,19 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLoaderData, useNavigate, useParams } from "react-router";
+import { getAnnouncementsById } from "~/api";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import Button from "~/components/UI/Button";
 import Form from "~/components/UI/Form/Form";
 import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import TextArea from "~/components/UI/TextArea";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
   handleAnnouncementSubmit,
   handleDeleteAnnouncement,
 } from "./edit-announcement.handlers";
-import { requireTokenParsed } from "~/util/loaderAuth.util";
-import { getAnnouncements, getAnnouncementsById } from "~/api";
-import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 
 /**
  * Loads the user's token and, when an `id` route parameter is given, the announcement being edited.
@@ -23,13 +23,16 @@ import StickyLoadingLogo from "~/components/StickyLoadingLogo";
  * @param {{ id?: string }} args.params - The route parameters; `id` is set when editing an existing announcement.
  * @throws {Error} When the announcement fails to load, which shows the route's error page.
  */
-export async function clientLoader( { params }: { params: { id?: string } }) {
+export async function clientLoader({ params }: { params: { id?: string } }) {
   const tokenParsed = await requireTokenParsed();
   if (!params.id) {
     return { tokenParsed, announcement: null };
   }
-  const announcementsResponse = await getAnnouncementsById({ path: { id: Number(params.id) } });
-  if (announcementsResponse.error || !announcementsResponse.data) throw new Error("Failed to load announcements");
+  const announcementsResponse = await getAnnouncementsById({
+    path: { id: Number(params.id) },
+  });
+  if (announcementsResponse.error || !announcementsResponse.data)
+    throw new Error("Failed to load announcements");
   return { tokenParsed, announcement: announcementsResponse.data };
 }
 
@@ -69,7 +72,7 @@ export default function AnnouncementFormPage() {
   const [deleting, setDeleting] = useState(false);
 
   const { announcement } = useLoaderData<typeof clientLoader>();
-  const [ initialData ] = useState({
+  const [initialData] = useState({
     TitleDutch: announcement?.titleDutch || "",
     TitleEnglish: announcement?.titleEnglish || "",
     ContentDutch: announcement?.contentDutch || "",

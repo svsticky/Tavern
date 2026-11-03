@@ -1,4 +1,9 @@
-import { getActivitiesById, getGroups, type ActivityResponseDto, type GroupResponseDto } from "~/api";
+import {
+  type ActivityResponseDto,
+  type GroupResponseDto,
+  getActivitiesById,
+  getGroups,
+} from "~/api";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
 
@@ -13,7 +18,7 @@ export type EditActivityLoaderData = {
   tokenParsed: TokenParsed;
   activity: ActivityResponseDto | null;
   groups: GroupResponseDto[];
-}
+};
 
 /**
  * Loads everything the activity editor needs: the user's token, all groups and,
@@ -27,19 +32,25 @@ export type EditActivityLoaderData = {
 export const loadEditActivityLoaderData = async (params: { id?: string }) => {
   const tokenParsed = await requireTokenParsed();
   const groupsResponse = await getGroups();
-  if (groupsResponse.error || !groupsResponse.data) throw new Error("Failed to load groups");
+  if (groupsResponse.error || !groupsResponse.data)
+    throw new Error("Failed to load groups");
 
   if (!params.id) {
     return { tokenParsed, activity: null, groups: groupsResponse.data };
   }
 
   const activitiesResponse = await getActivitiesById({
-      path: { id: Number(params.id) },
+    path: { id: Number(params.id) },
   });
-  if (activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+  if (activitiesResponse.error || !activitiesResponse.data)
+    throw new Error("Failed to load activities");
 
-  return { tokenParsed, activity: activitiesResponse.data, groups: groupsResponse.data };
-}
+  return {
+    tokenParsed,
+    activity: activitiesResponse.data,
+    groups: groupsResponse.data,
+  };
+};
 
 /**
  * Calculates the appropriate 'Back' navigation path based on the user's current context.

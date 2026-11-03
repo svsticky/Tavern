@@ -13,12 +13,10 @@ import {
   type ActivityResponseDto,
   type EnrollmentBalance,
   type EnrollmentResponseDto,
-  getEnrollments,
   getPaymentsUnpaid,
   postPaymentsActivity,
 } from "~/api";
-import { useAuth, useTokenParsed } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
+import { useTokenParsed } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
 import ActivityListModal from "./Activity/ActivityListModal";
@@ -32,7 +30,7 @@ import Button from "./UI/Button";
  * @property {ActivityResponseDto} nextActivity - Data for the user's next scheduled activity.
  * @property {EnrollmentBalance[]} unpaidBalances - List of the user's unpaid activity balances.
  * @property {EnrollmentResponseDto[]} enrollments - List of the user's activity enrollments.
- * 
+ *
  */
 type DashboardHeaderProps = {
   name: string;
@@ -95,72 +93,80 @@ export default function DashboardHeader({
   const navigate = useNavigate();
 
   const [confirmingPayment, setConfirmingPayment] = useState(false);
-  const [unpaidBalances, setUnpaidBalances] = useState<EnrollmentBalance[]>(initialUnpaidBalances);
+  const [unpaidBalances, setUnpaidBalances] = useState<EnrollmentBalance[]>(
+    initialUnpaidBalances,
+  );
   const [enrollmentsModalIsOpen, setEnrollmentsModalIsOpen] = useState(false);
   const [attendedModalIsOpen, setAttendedModalIsOpen] = useState(false);
   const [paymentsModalIsOpen, setPaymentsModalIsOpen] = useState(false);
 
   const pastEnrollments = enrollments.filter(
-    (enrollment: EnrollmentResponseDto) => new Date(enrollment.activity.dateTimeEnd) < new Date(Date.now())
+    (enrollment: EnrollmentResponseDto) =>
+      new Date(enrollment.activity.dateTimeEnd) < new Date(Date.now()),
   );
   const comingEnrollments = enrollments.filter(
-    (enrollment: EnrollmentResponseDto) => new Date(enrollment.activity.dateTimeEnd) >= new Date(Date.now())
+    (enrollment: EnrollmentResponseDto) =>
+      new Date(enrollment.activity.dateTimeEnd) >= new Date(Date.now()),
   );
 
   useEffect(() => {
-    const returningFromPayment = 
-      new URLSearchParams(window.location.search).get("paymentReturn") === "activity";
-      if (!returningFromPayment) return;
+    const returningFromPayment =
+      new URLSearchParams(window.location.search).get("paymentReturn") ===
+      "activity";
+    if (!returningFromPayment) return;
 
-      const controller = new AbortController();
-      const { signal } = controller;
+    const controller = new AbortController();
+    const { signal } = controller;
 
-      async function pollUntilSettled() {
-        try {
-          let attempt = 0;
+    async function pollUntilSettled() {
+      try {
+        let attempt = 0;
 
-          while (true) {
-            const outstandingPaymentsResponse = await getPaymentsUnpaid({
-              signal,
-            });
+        while (true) {
+          const outstandingPaymentsResponse = await getPaymentsUnpaid({
+            signal,
+          });
 
-            if (outstandingPaymentsResponse.error) {
-              throw new Error(String(outstandingPaymentsResponse.error) || "Failed to fetch outstanding payments");
-            }
-
-            attempt++;
-
-            const stillUnpaid =
-              (outstandingPaymentsResponse.data?.length ?? 0) > 0;
-            const lastAttempt = !stillUnpaid || attempt >= PAYMENT_RETURN_MAX_POLL_ATTEMPTS;
-
-            if (lastAttempt) {
-              if (outstandingPaymentsResponse.data) {
-                setUnpaidBalances(outstandingPaymentsResponse.data);
-              }
-              break;
-            }
-
-            setConfirmingPayment(true);
-            await sleep(PAYMENT_RETURN_POLL_INTERVAL_MS, signal);
+          if (outstandingPaymentsResponse.error) {
+            throw new Error(
+              String(outstandingPaymentsResponse.error) ||
+                "Failed to fetch outstanding payments",
+            );
           }
 
-          const url = new URL(window.location.href);
-          url.searchParams.delete("paymentReturn");
-          window.history.replaceState({}, "", url.toString());
+          attempt++;
+
+          const stillUnpaid =
+            (outstandingPaymentsResponse.data?.length ?? 0) > 0;
+          const lastAttempt =
+            !stillUnpaid || attempt >= PAYMENT_RETURN_MAX_POLL_ATTEMPTS;
+
+          if (lastAttempt) {
+            if (outstandingPaymentsResponse.data) {
+              setUnpaidBalances(outstandingPaymentsResponse.data);
+            }
+            break;
+          }
+
+          setConfirmingPayment(true);
+          await sleep(PAYMENT_RETURN_POLL_INTERVAL_MS, signal);
         }
-        catch (error) {
-          if (signal.aborted) {
-            setConfirmingPayment(false);
-          }
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete("paymentReturn");
+        window.history.replaceState({}, "", url.toString());
+      } catch {
+        if (signal.aborted) {
+          setConfirmingPayment(false);
         }
       }
+    }
 
-      pollUntilSettled();
+    pollUntilSettled();
 
-      return () => {
-        controller.abort();
-      };
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
@@ -174,7 +180,9 @@ export default function DashboardHeader({
         const urlResponse = await postPaymentsActivity({
           body: {
             memberId: tokenParsed.UserId,
-            activityIds: unpaidBalances.map((balance) => balance.enrollment.activityId),
+            activityIds: unpaidBalances.map(
+              (balance) => balance.enrollment.activityId,
+            ),
           },
         });
 
@@ -219,9 +227,7 @@ export default function DashboardHeader({
               <Tile className="bg-(--board-primary-light) border-2 border-white/20 h-full hover:border-white/50 transition-colors">
                 <p>{t("enrollments")}</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl">
-                    {comingEnrollments.length}
-                  </p>
+                  <p className="text-2xl">{comingEnrollments.length}</p>
                   <CircleCheckBig />
                 </div>
               </Tile>
@@ -236,9 +242,7 @@ export default function DashboardHeader({
               <Tile className="bg-(--board-primary-light) border-2 border-white/20 h-full hover:border-white/50 transition-colors">
                 <p>{t("attended")}</p>
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl">
-                    {pastEnrollments.length}
-                  </p>
+                  <p className="text-2xl">{pastEnrollments.length}</p>
                   <TrendingUp />
                 </div>
               </Tile>
@@ -263,7 +267,7 @@ export default function DashboardHeader({
                 <p>{t("outstanding_payments")}</p>
                 <p>
                   {confirmingPayment
-                      ? t("confirming_payment")
+                    ? t("confirming_payment")
                     : `€${unpaidBalances.reduce((sum, balance) => sum + (balance.balance || 0), 0).toFixed(2)}`}
                 </p>
               </div>
@@ -274,7 +278,9 @@ export default function DashboardHeader({
                 }}
                 variant="secondary"
                 disabled={
-                  confirmingPayment || loadingPayments || unpaidBalances.length === 0
+                  confirmingPayment ||
+                  loadingPayments ||
+                  unpaidBalances.length === 0
                 }
               >
                 {loadingPayments ? t("paying") : t("pay")}
