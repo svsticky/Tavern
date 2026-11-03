@@ -1,8 +1,8 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { useEffect } from "react";
+import { fireEvent, screen } from "@testing-library/react";
+import { type ComponentProps, useEffect } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto, MemberResponseDto } from "~/api";
-import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
+import RealActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import {
   handleAddToCalendar,
   handleCopyForWhatsapp,
@@ -11,15 +11,7 @@ import {
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { useApp } from "~/context/AppContext";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
-import type { TokenParsed } from "~/types/TokenParsed";
-
-const { getGroupsById } = vi.hoisted(() => ({ getGroupsById: vi.fn() }));
-
-vi.mock("~/api", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("~/api")>()),
-  getGroupsById,
-}));
+import { makeTokenParsed, renderWithProviders } from "~/testUtils";
 
 vi.mock(
   "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers",
@@ -73,28 +65,32 @@ function buildActivity(
   } as ActivityResponseDto;
 }
 
-const memberToken: TokenParsed = {
-  locale: "en",
-  UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
-  access_level: "member",
-  given_name: "Test",
-  family_name: "User",
-  name: "Test User",
-};
+const memberToken = makeTokenParsed();
+
+/** The tile with a member's token and no organizer, unless the test passes others. */
+function ActivityDetailsTile(
+  props: Omit<
+    ComponentProps<typeof RealActivityDetailsTile>,
+    "tokenParsed" | "organizerName"
+  > &
+    Partial<ComponentProps<typeof RealActivityDetailsTile>>,
+) {
+  return (
+    <RealActivityDetailsTile
+      tokenParsed={memberToken}
+      organizerName={null}
+      {...props}
+    />
+  );
+}
 
 describe("ActivityDetailsTile", () => {
   beforeEach(() => {
-    getGroupsById.mockReset();
+    vi.clearAllMocks();
   });
 
   it("shows the no-poster placeholder when there is no poster", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
-    await waitFor(() => expect(authService.getTokenParsed).toHaveBeenCalled());
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
     expect(screen.getByText("no_poster")).toBeInTheDocument();
   });
 
@@ -122,29 +118,21 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("shows the English description for an English-locale user", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
+    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
     expect(await screen.findByText("Description")).toBeInTheDocument();
   });
 
   it("shows the Dutch description for a Dutch-locale user", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({ ...memberToken, locale: "NL" })),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        tokenParsed={{ ...memberToken, locale: "NL" }}
+        activity={buildActivity()}
+      />,
+    );
     expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
   });
 
   it("updates activity description immediately when member preferredLanguage changes", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
     function WrapperWithMemberLanguage() {
       const { setMember } = useApp();
       useEffect(() => {
@@ -152,7 +140,7 @@ describe("ActivityDetailsTile", () => {
       }, [setMember]);
       return <ActivityDetailsTile activity={buildActivity()} />;
     }
-    renderWithProviders(<WrapperWithMemberLanguage />, { authService });
+    renderWithProviders(<WrapperWithMemberLanguage />);
     expect(await screen.findByText("Beschrijving")).toBeInTheDocument();
   });
 
@@ -172,9 +160,6 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("shows sign-out and unenroll actions when the user is already enrolled", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -184,7 +169,6 @@ describe("ActivityDetailsTile", () => {
           ] as unknown as ActivityResponseDto["enrollments"],
         })}
       />,
-      { authService },
     );
 
     fireEvent.click(await screen.findByText("sign_out"));
@@ -192,9 +176,6 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("calls handleUpdateEnrollment when updating answers for an enrolled member with questions", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -212,7 +193,6 @@ describe("ActivityDetailsTile", () => {
           ] as unknown as ActivityResponseDto["enrollments"],
         })}
       />,
-      { authService },
     );
 
     fireEvent.click(await screen.findByText("update_answers"));
@@ -220,9 +200,6 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("shows the update-answers button and the enrolled badge once the unenrollment deadline has passed but the question's closeOnUnenrollmentDeadline is false", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -242,7 +219,6 @@ describe("ActivityDetailsTile", () => {
           ] as unknown as ActivityResponseDto["enrollments"],
         })}
       />,
-      { authService },
     );
 
     expect(await screen.findByText("update_answers")).toBeInTheDocument();
@@ -251,9 +227,6 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("hides the update-answers button once the unenrollment deadline has passed and the question's closeOnUnenrollmentDeadline is true", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -273,7 +246,6 @@ describe("ActivityDetailsTile", () => {
           ] as unknown as ActivityResponseDto["enrollments"],
         })}
       />,
-      { authService },
     );
 
     expect(await screen.findByText("you_are_enrolled")).toBeInTheDocument();
@@ -287,23 +259,22 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("does not show the WhatsApp copy buttons for a non-board user", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({ ...memberToken, is_admin: false })),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
-    await waitFor(() => expect(authService.getTokenParsed).toHaveBeenCalled());
+    renderWithProviders(
+      <ActivityDetailsTile
+        tokenParsed={{ ...memberToken, is_admin: false }}
+        activity={buildActivity()}
+      />,
+    );
     expect(screen.queryByText("copy NL")).not.toBeInTheDocument();
   });
 
   it("shows and wires up the WhatsApp copy buttons for a board user", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({ ...memberToken, is_admin: true })),
-    });
-    renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />, {
-      authService,
-    });
+    renderWithProviders(
+      <ActivityDetailsTile
+        tokenParsed={{ ...memberToken, is_admin: true }}
+        activity={buildActivity()}
+      />,
+    );
 
     const copyNl = await screen.findByText("copy NL");
     fireEvent.click(copyNl);
@@ -338,9 +309,6 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("initializes answers from the current enrollment's specification answers", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
     renderWithProviders(
       <ActivityDetailsTile
         activity={buildActivity({
@@ -353,7 +321,6 @@ describe("ActivityDetailsTile", () => {
           ] as unknown as ActivityResponseDto["enrollments"],
         })}
       />,
-      { authService },
     );
 
     expect(
@@ -412,12 +379,13 @@ describe("ActivityDetailsTile", () => {
   });
 
   it("shows the organizer's name and logo when the activity has an organizer", async () => {
-    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
     const { container } = renderWithProviders(
-      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+      <ActivityDetailsTile
+        activity={buildActivity({ organizerId: 5 })}
+        organizerName="BaCo"
+      />,
     );
 
-    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
     expect(await screen.findByText("organizer")).toBeInTheDocument();
     expect(screen.getByText("BaCo")).toBeInTheDocument();
     // Decorative logo (alt="") - not exposed via role "img", so query the DOM directly.
@@ -431,14 +399,15 @@ describe("ActivityDetailsTile", () => {
     renderWithProviders(<ActivityDetailsTile activity={buildActivity()} />);
 
     await screen.findByText("copy_once_to_calendar");
-    expect(getGroupsById).not.toHaveBeenCalled();
     expect(screen.queryByText("organizer")).not.toBeInTheDocument();
   });
 
   it("falls back to the default avatar when the organizer's logo fails to load", async () => {
-    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
     const { container } = renderWithProviders(
-      <ActivityDetailsTile activity={buildActivity({ organizerId: 5 })} />,
+      <ActivityDetailsTile
+        activity={buildActivity({ organizerId: 5 })}
+        organizerName="BaCo"
+      />,
     );
 
     await screen.findByText("BaCo");

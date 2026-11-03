@@ -1,56 +1,49 @@
-import { t } from "i18next";
-import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import { type ActivityResponseDto, getActivities } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
+
+/** The number of activities to fetch per page for infinite scrolling. */
+export const ACTIVITIES_PAGE_SIZE = 15;
 
 /**
- * Fetches all activities for a specific year for administrative purposes.
+ * Fetches one page of the activities of an association year, for administrative purposes.
  *
- * Unlike the standard member view, this handler explicitly requests both
- * past and future activities to ensure board members have a complete
- * historical and upcoming record for the selected year.
+ * Unlike the standard member view, this explicitly requests both past and future
+ * activities so board members have a complete record for the selected year.
  *
- * @async
- * @param {number} year - The calendar year for which to retrieve activities.
- * @param {(loading: boolean) => void} setLoading - State setter to track the network request.
- * @param {(activities: ActivityResponseDto[]) => void} setActivities - State setter to store the retrieved activity list.
- * @param {number} [page] - The page number to fetch.
- * @param {number} [pageSize] - The number of activities to fetch per page.
- * @param {string} [search] - A search term to filter activities by name or location, applied server-side.
+ * @param {Object} args - The query.
+ * @param {number} args.year - The association year to fetch the activities of.
+ * @param {string} args.search - A search term to filter activities by name or location, applied server-side.
+ * @param {number} args.page - The page to fetch (1-indexed).
+ * @param {number} args.pageSize - The number of activities per page.
+ * @returns {Promise<ActivityResponseDto[]>} The activities on that page.
+ * @throws {Error} When the activities fail to load.
  */
-export const loadAdminActivities = async (
-  year: number,
-  setLoading: (loading: boolean) => void,
-  setActivities: (activities: ActivityResponseDto[]) => void,
-  page?: number,
-  pageSize?: number,
-  search?: string,
-) => {
-  try {
-    setLoading(true);
-    const response = await getActivities({
-      query: {
-        IncludePast: true,
-        IncludeFuture: true,
-        Year: year,
-        Page: page,
-        PageSize: pageSize,
-        Search: search || undefined,
-      },
-    });
+export const fetchAdminActivities = async ({
+  year,
+  search,
+  page,
+  pageSize,
+}: {
+  year: number;
+  search: string;
+  page: number;
+  pageSize: number;
+}): Promise<ActivityResponseDto[]> => {
+  const response = await getActivities({
+    query: {
+      IncludePast: true,
+      IncludeFuture: true,
+      Year: year,
+      Page: page,
+      PageSize: pageSize,
+      Search: search || undefined,
+    },
+  });
 
-    if (response.error || !response.data) {
-      throw response.error ?? new Error("Failed to load activities");
-    }
-
-    setActivities(response.data);
-  } catch (error) {
-    console.error("Error fetching activities:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
+  if (response.error || !response.data) {
+    throw response.error ?? new Error("Failed to load activities");
   }
+  return response.data;
 };
 
 /**

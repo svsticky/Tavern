@@ -1,15 +1,11 @@
 import { t } from "i18next";
 import { CircleAlert } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import type {
-  GroupMembershipResponseDto,
-  Study,
-  StudyEnrollmentResponseDto,
-  StudyStatus,
-} from "~/api";
+import { useState } from "react";
+import { useLoaderData, useNavigate } from "react-router";
+import type { StudyEnrollmentResponseDto, StudyStatus } from "~/api";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
@@ -24,6 +20,8 @@ import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { formatDate } from "~/util/date.util";
+import { requireBoardOrCandidateBoard } from "~/util/loaderAuth.util";
+import type { Route } from "./+types/edit-member";
 import {
   handleAddEnrollment,
   handleDeleteEnrollment,
@@ -32,8 +30,28 @@ import {
   handleMarkMembershipAsPaid,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
-  loadMemberData,
+  loadEditMemberLoaderData,
 } from "./edit-member.handlers";
+
+/**
+ * Loads the member from the `id` route parameter (see `loadEditMemberLoaderData`).
+ * Only board and candidate board members can open this page.
+ *
+ * @param {Route.ClientLoaderArgs} args - The loader arguments, containing the route parameters.
+ */
+export async function clientLoader({ params }: Route.ClientLoaderArgs) {
+  await requireBoardOrCandidateBoard();
+  return loadEditMemberLoaderData(params);
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative page for viewing and editing a member's complete profile.
@@ -55,45 +73,28 @@ import {
  */
 export default function EditMemberPage() {
   const navigate = useNavigate();
-  const { id: memberId } = useParams<{ id: string }>();
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const {
+    memberId,
+    email,
+    groupMemberships,
+    availableStudies,
+    profilePictureSrc,
+    isBegunstiger,
+  } = loaderData;
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [confirmModal, confirm] = useConfirm();
   const [markingPaid, setMarkingPaid] = useState(false);
-  const [hasPaidMembership, setHasPaidMembership] = useState(true);
-  const [isBegunstiger, setIsBegunstiger] = useState(false);
-  const [_profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
-    null,
+  const [hasPaidMembership, setHasPaidMembership] = useState(
+    loaderData.hasPaidMembership,
   );
   const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>(
-    [],
+    loaderData.enrollments,
   );
-  const [groupMemberships, setGroupMemberships] = useState<
-    GroupMembershipResponseDto[]
-  >([]);
-  const [availableStudies, setAvailableStudies] = useState<Study[]>([]);
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
-  const [email, setEmail] = useState("");
 
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    studentNumber: "",
-    phoneNumber: "",
-    street: "",
-    houseNumber: "",
-    postalCode: "",
-    city: "",
-    parentPhoneNumber: "",
-    preferredLanguage: "NL",
-    notes: "",
-    gratie: false,
-    lidVanVerdienste: false,
-    ereLid: false,
-    begunstiger: false,
-    suspended: false,
-    dateOfBirth: "",
-  });
+  const [formData, setFormData] = useState(loaderData.formData);
 
   const enrollmentColumns: Column<StudyEnrollmentResponseDto>[] = [
     {
@@ -151,31 +152,14 @@ export default function EditMemberPage() {
     },
   ];
 
-  useEffect(() => {
-    const cleanupPromise = loadMemberData({
-      memberId,
-      setFormData,
-      setEmail,
-      setEnrollments,
-      setGroupMemberships,
-      setAvailableStudies,
-      setProfilePictureSrc,
-      setHasPaidMembership,
-      setIsBegunstiger,
-      setLoading,
-    });
-    return () => {
-      cleanupPromise.then((cleanup) => cleanup?.());
-    };
-  }, [memberId]);
-
-  if (loading) return t("loading");
-
   return (
     <>
       <PageHeader title="" backTo="/admin/members" />
       <div className="flex flex-col lg:flex-row gap-12">
-        <ChangeProfilePicture userId={memberId!} />
+        <ChangeProfilePicture
+          userId={memberId!}
+          profilePictureSrc={profilePictureSrc}
+        />
 
         <Form className="w-full space-y-8">
           <FormSection title={t("personal_info")} columns={2}>

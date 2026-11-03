@@ -1,19 +1,15 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
 
-const {
-  getMembersByIdProfilePicture,
-  handleProfilePictureUpload,
-  handleProfilePictureDelete,
-} = vi.hoisted(() => ({
-  getMembersByIdProfilePicture: vi.fn(),
-  handleProfilePictureUpload: vi.fn(),
-  handleProfilePictureDelete: vi.fn(),
-}));
+const { handleProfilePictureUpload, handleProfilePictureDelete } = vi.hoisted(
+  () => ({
+    handleProfilePictureUpload: vi.fn(),
+    handleProfilePictureDelete: vi.fn(),
+  }),
+);
 
-vi.mock("~/api", () => ({ getMembersByIdProfilePicture }));
 vi.mock(
   "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers",
   () => ({
@@ -23,60 +19,33 @@ vi.mock(
 );
 
 describe("ChangeProfilePicture", () => {
-  it("shows the default avatar while no profile picture is available", async () => {
-    getMembersByIdProfilePicture.mockResolvedValue({
-      status: 404,
-      data: undefined,
-    });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-    render(<ChangeProfilePicture userId="user-1" />);
+  it("shows the default avatar when there is no profile picture", () => {
+    render(<ChangeProfilePicture userId="user-1" profilePictureSrc={null} />);
 
-    await waitFor(() =>
-      expect(screen.getByAltText("Profile")).toHaveAttribute(
-        "src",
-        "/profile-picture.svg",
-      ),
+    expect(screen.getByAltText("Profile")).toHaveAttribute(
+      "src",
+      "/profile-picture.svg",
     );
   });
 
-  it("logs an error and falls back to the default avatar when the fetch fails", async () => {
-    getMembersByIdProfilePicture.mockRejectedValue(new Error("boom"));
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    render(<ChangeProfilePicture userId="user-1" />);
-
-    await waitFor(() =>
-      expect(screen.getByAltText("Profile")).toHaveAttribute(
-        "src",
-        "/profile-picture.svg",
-      ),
+  it("shows the given profile picture", () => {
+    render(
+      <ChangeProfilePicture userId="user-1" profilePictureSrc="blob:picture" />,
     );
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
 
-  it("shows the fetched profile picture as an object URL", async () => {
-    getMembersByIdProfilePicture.mockResolvedValue({
-      status: 200,
-      data: new Blob(["fake"], { type: "image/png" }),
-    });
-
-    render(<ChangeProfilePicture userId="user-1" />);
-
-    await waitFor(() =>
-      expect(screen.getByAltText("Profile")).toHaveAttribute(
-        "src",
-        expect.stringContaining("blob:"),
-      ),
+    expect(screen.getByAltText("Profile")).toHaveAttribute(
+      "src",
+      "blob:picture",
     );
   });
 
   it("renders children below the avatar", () => {
-    getMembersByIdProfilePicture.mockResolvedValue({ status: 404 });
     render(
-      <ChangeProfilePicture userId="user-1">
+      <ChangeProfilePicture userId="user-1" profilePictureSrc={null}>
         <span>Change photo</span>
       </ChangeProfilePicture>,
     );
@@ -84,9 +53,8 @@ describe("ChangeProfilePicture", () => {
   });
 
   it("triggers the hidden file input when the avatar is clicked", async () => {
-    getMembersByIdProfilePicture.mockResolvedValue({ status: 404 });
     const user = userEvent.setup();
-    render(<ChangeProfilePicture userId="user-1" />);
+    render(<ChangeProfilePicture userId="user-1" profilePictureSrc={null} />);
 
     const fileInput = document.querySelector(
       "input[type='file']",
@@ -99,9 +67,8 @@ describe("ChangeProfilePicture", () => {
   });
 
   it("calls handleProfilePictureUpload when a file is chosen", async () => {
-    getMembersByIdProfilePicture.mockResolvedValue({ status: 404 });
     const user = userEvent.setup();
-    render(<ChangeProfilePicture userId="user-1" />);
+    render(<ChangeProfilePicture userId="user-1" profilePictureSrc={null} />);
 
     const fileInput = document.querySelector(
       "input[type='file']",
@@ -113,18 +80,15 @@ describe("ChangeProfilePicture", () => {
     expect(handleProfilePictureUpload.mock.calls[0][1]).toBe("user-1");
   });
 
-  it("does not show the remove button when using the default avatar", async () => {
-    getMembersByIdProfilePicture.mockResolvedValue({
-      status: 404,
-      data: undefined,
-    });
-    render(<ChangeProfilePicture userId="user-1" />);
-
-    await waitFor(() =>
-      expect(screen.getByAltText("Profile")).toHaveAttribute(
-        "src",
-        "/profile-picture.svg",
-      ),
+  it.each([
+    ["there is no profile picture", null],
+    ["the default avatar is shown", "/profile-picture.svg"],
+  ])("does not show the remove button when %s", (_, profilePictureSrc) => {
+    render(
+      <ChangeProfilePicture
+        userId="user-1"
+        profilePictureSrc={profilePictureSrc}
+      />,
     );
 
     expect(
@@ -133,18 +97,13 @@ describe("ChangeProfilePicture", () => {
   });
 
   it("shows the remove button and calls handleProfilePictureDelete when clicked", async () => {
-    getMembersByIdProfilePicture.mockResolvedValue({
-      status: 200,
-      data: new Blob(["fake"], { type: "image/png" }),
-    });
     const user = userEvent.setup();
-    render(<ChangeProfilePicture userId="user-1" />);
+    render(
+      <ChangeProfilePicture userId="user-1" profilePictureSrc="blob:picture" />,
+    );
 
-    const removeBtn = await screen.findByRole("button", { name: /remove/i });
-    expect(removeBtn).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /remove/i }));
 
-    await user.click(removeBtn);
-    expect(handleProfilePictureDelete).toHaveBeenCalledTimes(1);
-    expect(handleProfilePictureDelete.mock.calls[0][0]).toBe("user-1");
+    expect(handleProfilePictureDelete).toHaveBeenCalledWith("user-1");
   });
 });

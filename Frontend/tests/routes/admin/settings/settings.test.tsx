@@ -1,10 +1,11 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupResponseDto, Role } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import { renderRoute } from "~/testUtils";
 
 const {
-  loadSettingsPageData,
+  loadSettingsLoaderData,
+  requireBoardOrCandidateBoard,
   handleSettingsChange,
   handleAddRoleMapping,
   handleRemoveRoleMapping,
@@ -15,7 +16,8 @@ const {
   postGroupsPromoteBoard,
   getEnv,
 } = vi.hoisted(() => ({
-  loadSettingsPageData: vi.fn(),
+  loadSettingsLoaderData: vi.fn(),
+  requireBoardOrCandidateBoard: vi.fn(),
   handleSettingsChange: vi.fn(),
   handleAddRoleMapping: vi.fn(),
   handleRemoveRoleMapping: vi.fn(),
@@ -38,8 +40,10 @@ const {
   getEnv: vi.fn((): string | undefined => undefined),
 }));
 
+vi.mock("~/util/loaderAuth.util", () => ({ requireBoardOrCandidateBoard }));
+
 vi.mock("~/routes/admin/settings/settings.handlers", () => ({
-  loadSettingsPageData,
+  loadSettingsLoaderData,
   handleSettingsChange,
   handleAddRoleMapping,
   handleRemoveRoleMapping,
@@ -85,7 +89,12 @@ vi.mock(
   }),
 );
 
-import SettingsPage from "~/routes/admin/settings/settings";
+import * as route from "~/routes/admin/settings/settings";
+
+/** Renders the settings page. */
+function renderSettings() {
+  return renderRoute(route, { path: "/admin/settings" });
+}
 
 function defaultSettings(overrides: Record<string, string> = {}) {
   return {
@@ -112,62 +121,35 @@ function loadWith(
   groups: GroupResponseDto[] = [{ id: 1, name: "Board" } as GroupResponseDto],
   roles: Role[] = [{ id: 1, name: "Chair" } as Role],
 ) {
-  loadSettingsPageData.mockImplementation(
-    async ({
-      setSettings,
-      setAvailableGroups,
-      setAvailableRoles,
-      setLoading,
-    }: any) => {
-      setSettings(settings);
-      setAvailableGroups(groups);
-      setAvailableRoles(roles);
-      setLoading(false);
-    },
-  );
+  loadSettingsLoaderData.mockResolvedValue({
+    settings,
+    availableGroups: groups,
+    availableRoles: roles,
+  });
 }
 
 describe("SettingsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getEnv.mockReturnValue(undefined);
+    requireBoardOrCandidateBoard.mockResolvedValue({});
     loadWith(defaultSettings());
   });
 
-  it("shows a loading indicator while loading, then renders the form", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadSettingsPageData.mockImplementation(
-      ({
-        setSettings,
-        setAvailableGroups,
-        setAvailableRoles,
-        setLoading,
-      }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            // Mirror the real handler: settings/groups/roles are populated before loading
-            // flips to false, so the form never renders with an incomplete settings object
-            // (settings.PaymentProvider.toUpperCase() etc. assume it's always a string).
-            setSettings(defaultSettings());
-            setAvailableGroups([]);
-            setAvailableRoles([]);
-            setLoading(false);
-            resolve();
-          };
-        }),
+  it("shows the error page when the settings fail to load", async () => {
+    loadSettingsLoaderData.mockRejectedValue(
+      new Error("Failed to load settings"),
     );
 
-    renderWithProviders(<SettingsPage />);
-    expect(screen.getByText("loading")).toBeInTheDocument();
+    renderSettings();
 
-    resolveLoad?.();
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load settings",
     );
   });
 
   it("renders the child management datatables", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(await screen.findByText("studies-datatable")).toBeInTheDocument();
     expect(
@@ -181,7 +163,7 @@ describe("SettingsPage", () => {
   it("disables save while a required field is missing", async () => {
     loadWith(defaultSettings({ BoardGroupId: "" }));
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const saveButton = await screen.findByRole("button", {
       name: "save_all_settings",
@@ -190,7 +172,7 @@ describe("SettingsPage", () => {
   });
 
   it("enables save once all required fields are present and calls handleSaveSettings", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const saveButton = await screen.findByRole("button", {
       name: "save_all_settings",
@@ -211,7 +193,7 @@ describe("SettingsPage", () => {
   });
 
   it("delegates a settings field change to handleSettingsChange", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const membershipPriceInput =
       await screen.findByLabelText(/membership_price/);
@@ -225,7 +207,7 @@ describe("SettingsPage", () => {
   });
 
   it("delegates a begunstiger price change to handleSettingsChange", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const begunstigerPriceInput =
       await screen.findByLabelText(/begunstiger_price/);
@@ -241,7 +223,7 @@ describe("SettingsPage", () => {
   it("disables save while the begunstiger price is missing", async () => {
     loadWith(defaultSettings({ BegunstigerPrice: "" }));
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const saveButton = await screen.findByRole("button", {
       name: "save_all_settings",
@@ -252,7 +234,7 @@ describe("SettingsPage", () => {
   it("renders the begunstiger accounting fields when ACCOUNTING_ENABLED is true", async () => {
     getEnv.mockReturnValue("true");
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(
       await screen.findByLabelText("begunstiger_gl_account"),
@@ -265,14 +247,14 @@ describe("SettingsPage", () => {
   });
 
   it("shows the mollie api key field only when Mollie is the payment provider", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
     expect(await screen.findByLabelText("mollie_api_key")).toBeInTheDocument();
   });
 
   it("shows SMTP fields by default and mailgun fields when MailService is MAILGUN", async () => {
     loadWith(defaultSettings({ MailService: "MAILGUN" }));
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(await screen.findByLabelText("mailgun_token")).toBeInTheDocument();
     expect(screen.queryByLabelText("smtp_host")).not.toBeInTheDocument();
@@ -285,7 +267,7 @@ describe("SettingsPage", () => {
       [{ id: 1, name: "Chair" } as Role, { id: 2, name: "Secretary" } as Role],
     );
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(
       await screen.findByLabelText(/email_address_for Chair/),
@@ -312,21 +294,21 @@ describe("SettingsPage", () => {
   });
 
   it("shows a no-mappings message when there are no role mappings", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
     expect(
       await screen.findByText("no_role_email_mappings"),
     ).toBeInTheDocument();
   });
 
   it("always renders the accounting section, with GL/cost fields, regardless of ACCOUNTING_ENABLED", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
     await screen.findByText("studies-datatable");
     expect(screen.getByText("accounting")).toBeInTheDocument();
     expect(screen.getByLabelText("membership_gl_account")).toBeInTheDocument();
   });
 
   it("does not render the Exact Online connector fields unless ACCOUNTING_ENABLED is true", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
     await screen.findByText("studies-datatable");
     expect(
       screen.queryByLabelText("accounting_service"),
@@ -336,7 +318,7 @@ describe("SettingsPage", () => {
   it("renders the Exact Online connector field when ACCOUNTING_ENABLED is true", async () => {
     getEnv.mockReturnValue("true");
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(
       await screen.findByLabelText("accounting_service"),
@@ -347,7 +329,7 @@ describe("SettingsPage", () => {
     getEnv.mockReturnValue("true");
     loadWith(defaultSettings({ AccountingService: "EXACT" }));
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(await screen.findByLabelText("exact_division")).toBeInTheDocument();
   });
@@ -355,7 +337,7 @@ describe("SettingsPage", () => {
   it("promotes the board when confirmed", async () => {
     postGroupsPromoteBoard.mockResolvedValue({});
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const promoteButton = await screen.findByRole("button", {
       name: "run_board_rotation",
@@ -371,7 +353,7 @@ describe("SettingsPage", () => {
   });
 
   it("does not promote the board when the confirmation is cancelled", async () => {
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const promoteButton = await screen.findByRole("button", {
       name: "run_board_rotation",
@@ -390,7 +372,7 @@ describe("SettingsPage", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const promoteButton = await screen.findByRole("button", {
       name: "run_board_rotation",
@@ -409,7 +391,7 @@ describe("SettingsPage", () => {
   it("shows mailchimp fields when MailSubscriptionService is Mailchimp", async () => {
     loadWith(defaultSettings({ MailSubscriptionService: "MAILCHIMP" }));
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(
       await screen.findByLabelText("mailchimp_list_key"),
@@ -420,7 +402,7 @@ describe("SettingsPage", () => {
   it("shows listmonk fields when MailSubscriptionService is Listmonk", async () => {
     loadWith(defaultSettings({ MailSubscriptionService: "LISTMONK" }));
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     expect(await screen.findByLabelText("listmonk_url")).toBeInTheDocument();
     expect(screen.getByLabelText("listmonk_user")).toBeInTheDocument();
@@ -462,7 +444,7 @@ describe("SettingsPage", () => {
       [{ id: 1, name: "Chair" } as Role],
     );
 
-    const { container } = renderWithProviders(<SettingsPage />);
+    const { container } = renderSettings();
     await screen.findByText("studies-datatable");
 
     const count = fireAllFieldChanges(container);
@@ -480,7 +462,7 @@ describe("SettingsPage", () => {
       }),
     );
 
-    const { container } = renderWithProviders(<SettingsPage />);
+    const { container } = renderSettings();
     await screen.findByText("studies-datatable");
 
     const count = fireAllFieldChanges(container);
@@ -496,7 +478,7 @@ describe("SettingsPage", () => {
       }),
     );
 
-    const { container } = renderWithProviders(<SettingsPage />);
+    const { container } = renderSettings();
     await screen.findByText("studies-datatable");
 
     const count = fireAllFieldChanges(container);
@@ -523,7 +505,7 @@ describe("SettingsPage", () => {
       ROLEMAILMAP_99: "unknown@example.com",
     });
 
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     await screen.findByText("studies-datatable");
     expect(screen.queryByLabelText("mollie_api_key")).not.toBeInTheDocument();
@@ -546,7 +528,7 @@ describe("SettingsPage", () => {
           };
         }),
     );
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const saveButton = await screen.findByRole("button", {
       name: "save_all_settings",
@@ -564,7 +546,7 @@ describe("SettingsPage", () => {
     handleSaveSettings.mockImplementation(async ({ clearTracking }) => {
       clearTracking();
     });
-    renderWithProviders(<SettingsPage />);
+    renderSettings();
 
     const saveButton = await screen.findByRole("button", {
       name: "save_all_settings",

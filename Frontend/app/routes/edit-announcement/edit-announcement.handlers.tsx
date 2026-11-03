@@ -4,49 +4,20 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
   deleteAnnouncementsById,
-  getAnnouncementsById,
   postAnnouncements,
   putAnnouncementsById,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
 
 /**
- * Arguments for the loadAnnouncementData handler.
+ * Arguments for the handleAnnouncementSubmit handler.
+ * @typedef {Object} SubmitAnnouncementArgs
+ * @property {React.FormEvent<HTMLFormElement>} e - The submit event of the announcement form.
+ * @property {boolean} isEdit - Whether an existing announcement is being edited.
+ * @property {string | undefined} id - The ID of the announcement being edited.
+ * @property {(value: boolean) => void} setSaving - A function to update the saving state.
+ * @property {NavigateFunction} navigate - The navigate function from react-router.
  */
-type LoadAnnouncementArgs = {
-  isEdit: boolean;
-  id: string | undefined;
-  setInitialData: (value: {
-    TitleDutch: string;
-    TitleEnglish: string;
-    ContentDutch: string;
-    ContentEnglish: string;
-  }) => void;
-  setLoading: (value: boolean) => void;
-};
-
-export const loadAnnouncementData = async ({
-  isEdit,
-  id,
-  setInitialData,
-  setLoading,
-}: LoadAnnouncementArgs) => {
-  if (!isEdit || !id) return;
-
-  await getAnnouncementsById({ path: { id: Number(id) } })
-    .then((res) => {
-      if (res.data) {
-        setInitialData({
-          TitleDutch: res.data.titleDutch,
-          TitleEnglish: res.data.titleEnglish,
-          ContentDutch: res.data.contentDutch,
-          ContentEnglish: res.data.contentEnglish,
-        });
-      }
-    })
-    .finally(() => setLoading(false));
-};
-
 type SubmitAnnouncementArgs = {
   e: React.FormEvent<HTMLFormElement>;
   isEdit: boolean;
@@ -55,6 +26,12 @@ type SubmitAnnouncementArgs = {
   navigate: NavigateFunction;
 };
 
+/**
+ * Creates a new announcement or updates the existing one from the submitted form,
+ * shows a toast with the result and navigates back to the announcements overview.
+ *
+ * @param {SubmitAnnouncementArgs} args - The form event, edit mode, announcement ID, saving state setter and navigate function.
+ */
 export const handleAnnouncementSubmit = async ({
   e,
   isEdit,

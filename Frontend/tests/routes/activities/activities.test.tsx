@@ -1,18 +1,24 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
-import ActivitiesPage from "~/routes/activities/activities";
+import * as route from "~/routes/activities/activities";
 import {
   copyWeekOverview,
   downloadPosters,
   handleCreateActivityClick,
-  loadActivities,
 } from "~/routes/activities/activities.handlers";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import { createMockAuthService, renderRoute } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
+const { getActivities, requireTokenParsed } = vi.hoisted(() => ({
+  getActivities: vi.fn(),
+  requireTokenParsed: vi.fn(),
+}));
+
+vi.mock("~/api", () => ({ getActivities }));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
 vi.mock("~/routes/activities/activities.handlers", () => ({
-  loadActivities: vi.fn(),
   copyWeekOverview: vi.fn(),
   downloadPosters: vi.fn(),
   handleCreateActivityClick: vi.fn(),
@@ -40,59 +46,21 @@ const memberToken: TokenParsed = {
   name: "Test User",
 };
 
+const boardToken = { ...memberToken, is_admin: true } as TokenParsed;
+
 function makeActivity(id: number): ActivityResponseDto {
   return { id, name: `Activity ${id}` } as ActivityResponseDto;
 }
 
 describe("ActivitiesPage", () => {
   beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it("renders nothing while the token has not loaded", () => {
-    const authService = createMockAuthService({
-      getToken: vi.fn(() => new Promise<string | null>(() => {})),
-      getTokenParsed: vi.fn(() => new Promise<TokenParsed | null>(() => {})),
-    });
-    const { container } = renderWithProviders(<ActivitiesPage />, {
-      authService,
-    });
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it("logs an error when there is no parsed token", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => null),
-      getTokenParsed: vi.fn(async () => null),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
-
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
-  });
-
-  it("calls loadActivities once the token is loaded", async () => {
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
-
-    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
+    vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue(memberToken);
+    getActivities.mockResolvedValue({ data: [] });
   });
 
   it("shows the no-content tile when there are no activities", async () => {
-    vi.mocked(loadActivities).mockImplementation(async ({ setLoading }) => {
-      setLoading(false);
-    });
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
+    renderRoute(route);
 
     expect(
       await screen.findByText("no_upcoming_activities"),
@@ -100,96 +68,80 @@ describe("ActivitiesPage", () => {
   });
 
   it("renders an ActivityTile for each loaded activity", async () => {
-    vi.mocked(loadActivities).mockImplementation(
-      async ({ setLoading, setActivities }) => {
-        setActivities([makeActivity(1), makeActivity(2)]);
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => memberToken),
+    getActivities.mockResolvedValue({
+      data: [makeActivity(1), makeActivity(2)],
     });
-    renderWithProviders(<ActivitiesPage />, { authService });
+    renderRoute(route);
 
     expect(await screen.findByText("activity-tile-1")).toBeInTheDocument();
     expect(screen.getByText("activity-tile-2")).toBeInTheDocument();
   });
 
-  it("does not show board-only actions for a non-board user", async () => {
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: false,
-      })),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
+  it("shows the error page when the activities fail to load", async () => {
+    getActivities.mockResolvedValue({ error: "fail" });
+    renderRoute(route);
 
-    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load activities",
+    );
+  });
+
+  it("does not show board-only actions for a non-board user", async () => {
+    renderRoute(route);
+
+    await screen.findByText("personal_calendar");
     expect(screen.queryByText("download_posters")).not.toBeInTheDocument();
   });
 
   it("shows and wires up board-only actions for a board user", async () => {
+    requireTokenParsed.mockResolvedValue(boardToken);
+    const activities = [makeActivity(1)];
+    getActivities.mockResolvedValue({ data: activities });
     const authService = createMockAuthService({
       getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: true,
-      })),
     });
-    renderWithProviders(<ActivitiesPage />, { authService });
+    renderRoute(route, { authService });
 
-    const downloadButton = await screen.findByText("download_posters");
-    fireEvent.click(downloadButton);
-    expect(downloadPosters).toHaveBeenCalledWith([], "tok");
+    fireEvent.click(await screen.findByText("download_posters"));
+    await vi.waitFor(() =>
+      expect(downloadPosters).toHaveBeenCalledWith(activities, "tok"),
+    );
 
     fireEvent.click(screen.getByText(/copy.*NL/));
-    expect(copyWeekOverview).toHaveBeenCalledWith("NL", []);
+    expect(copyWeekOverview).toHaveBeenCalledWith("NL", activities);
 
     fireEvent.click(screen.getByText(/copy.*EN/));
-    expect(copyWeekOverview).toHaveBeenCalledWith("EN", []);
+    expect(copyWeekOverview).toHaveBeenCalledWith("EN", activities);
   });
 
-  it("shows a create-activity button for a group member and wires it up", async () => {
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: true,
-      })),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
+  it("shows a create-activity button for a board member and wires it up", async () => {
+    requireTokenParsed.mockResolvedValue(boardToken);
+    renderRoute(route);
 
-    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
-    const buttons = screen.getAllByRole("button");
-    const createButton = buttons.find((b) =>
-      b.querySelector("svg.lucide-plus"),
-    );
+    await screen.findByText("download_posters");
+    const createButton = screen
+      .getAllByRole("button")
+      .find((b) => b.querySelector("svg.lucide-plus"));
     expect(createButton).toBeTruthy();
     fireEvent.click(createButton!);
     expect(handleCreateActivityClick).toHaveBeenCalled();
   });
+
+  it("does not show the create-activity button for a member outside any group", async () => {
+    renderRoute(route);
+
+    await screen.findByText("personal_calendar");
+    expect(document.querySelector("svg.lucide-plus")).toBeNull();
+  });
+
   it("offers the personal calendar to any member, not just the board", async () => {
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
+    renderRoute(route);
 
     expect(await screen.findByText("personal_calendar")).toBeInTheDocument();
   });
 
   it("opens the personal calendar tile in a modal when the button is clicked", async () => {
-    const authService = createMockAuthService({
-      getToken: vi.fn(async () => "tok"),
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(<ActivitiesPage />, { authService });
-
-    expect(
-      screen.queryByText("personal-calendar-tile"),
-    ).not.toBeInTheDocument();
+    renderRoute(route);
 
     fireEvent.click(await screen.findByText("personal_calendar"));
 

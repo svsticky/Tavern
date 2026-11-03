@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivities } from "~/api";
+import type { ActivityResponseDto } from "~/api";
 import { getEnv } from "~/util/config.utils";
 import { isSameDayInAssociationTimeZone } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
@@ -12,45 +12,6 @@ import {
   formatPromoTime,
   formatPromoTimeRange,
 } from "~/util/promo.util";
-
-/**
- * Arguments for the loadActivities handler.
- */
-type LoadActivitiesArgs = {
-  setLoading: (loading: boolean) => void;
-  setActivities: (activities: ActivityResponseDto[]) => void;
-};
-
-/**
- * Fetches the list of current and future activities from the API.
- *
- * @async
- * @param {LoadActivitiesArgs} args - Configuration and state setter functions.
- */
-export const loadActivities = async ({
-  setLoading,
-  setActivities,
-}: LoadActivitiesArgs) => {
-  try {
-    setLoading(true);
-    const activitiesResponse = await getActivities({
-      query: {
-        IncludePast: false,
-        IncludeFuture: true,
-      },
-    });
-
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activities");
-
-    setActivities(activitiesResponse.data as ActivityResponseDto[]);
-  } catch (error) {
-    console.error("Error while loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
-};
 
 /**
  * Generates a formatted text overview of the current/next week's activities
@@ -173,6 +134,13 @@ export const copyWeekOverview = async (
   }
 };
 
+/**
+ * Generates and downloads an A3 PDF of the posters of all activities shown in Koala.
+ * Shows a toast with the progress, or an error toast when there are no posters or generating fails.
+ *
+ * @param {ActivityResponseDto[]} activities - The activities whose posters are included.
+ * @param {string} token - The access token used to fetch the poster images.
+ */
 export const downloadPosters = async (
   activities: ActivityResponseDto[],
   token: string,
@@ -197,6 +165,11 @@ export const downloadPosters = async (
   }
 };
 
+/**
+ * Navigates the user to the activity creation form.
+ *
+ * @param {NavigateFunction} navigate - The navigate function from react-router.
+ */
 export const handleCreateActivityClick = (navigate: NavigateFunction) => {
   navigate("/activities/create");
 };

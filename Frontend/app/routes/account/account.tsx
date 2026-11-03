@@ -1,10 +1,35 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
+import { useLoaderData } from "react-router";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
+import { loadMemberMailinglists } from "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers";
 import ChangeProfilePicture from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture";
+import { loadProfilePictureSrc } from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+
+/**
+ * Loads the logged-in user's ID, profile picture and mailing lists.
+ * Redirects to the login page when the user isn't logged in.
+ */
+export async function clientLoader() {
+  const tokenParsed = await requireTokenParsed();
+  const [profilePictureSrc, mailingListsData] = await Promise.all([
+    loadProfilePictureSrc(tokenParsed.UserId),
+    loadMemberMailinglists(tokenParsed.UserId),
+  ]);
+  return { userId: tokenParsed.UserId, profilePictureSrc, ...mailingListsData };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The primary profile management page for the authenticated user.
@@ -15,31 +40,17 @@ import { useAuth } from "~/context/AuthContext";
  * - **Edit Information**: Provides a form to modify account details (email, phone, etc.)
  *   via the `ChangeAccountForm` component.
  *
- * The component relies on the global `useApp` context for current member data
- * and the `useAuth` context for identifying the logged-in user's ID.
+ * The component relies on the global `useApp` context for current member data;
+ * its `clientLoader` provides the logged-in user's ID, profile picture and mailing lists.
  *
  * @page
  * @component
  */
 export default function AccountPage() {
-  const authService = useAuth();
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadUserId = async () => {
-      const tokenParsed = await authService.getTokenParsed();
-      setUserId(tokenParsed?.UserId || null);
-      if (!tokenParsed?.UserId) {
-        console.error("User not authenticated");
-        return;
-      }
-    };
-    loadUserId();
-  }, [authService]);
-
   const { member } = useApp();
-
-  if (!userId) return null;
+  const { userId, profilePictureSrc, mailingLists, mailingListsUnavailable } =
+    useLoaderData<typeof clientLoader>();
+  if (!member?.id) return null;
 
   return (
     <>
@@ -47,7 +58,10 @@ export default function AccountPage() {
 
       <div className="flex flex-col lg:flex-row gap-12">
         {/* Left: Profile Picture */}
-        <ChangeProfilePicture userId={userId}>
+        <ChangeProfilePicture
+          userId={userId}
+          profilePictureSrc={profilePictureSrc}
+        >
           <h2 className="font-bold text-l">
             {member?.firstName} {member?.lastName}
           </h2>
@@ -57,7 +71,13 @@ export default function AccountPage() {
         </ChangeProfilePicture>
 
         {/* Right: Forms */}
-        {member && <ChangeAccountForm member={member} />}
+        {member && (
+          <ChangeAccountForm
+            member={member}
+            mailingLists={mailingLists}
+            mailingListsUnavailable={mailingListsUnavailable}
+          />
+        )}
       </div>
     </>
   );

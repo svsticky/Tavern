@@ -2,6 +2,8 @@ import { t } from "i18next";
 import type { Dispatch, SetStateAction } from "react";
 import toast from "react-hot-toast";
 import {
+  getMembersByIdMailinglists,
+  type MemberMailinglistDto,
   type MemberResponseDto,
   patchMembersById,
   putMembersByIdMailinglists,
@@ -10,6 +12,56 @@ import type { IAuthService } from "~/auth/IAuthService";
 import i18n from "~/i18n";
 import { appendErrorMessage } from "~/util/error.util";
 import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
+
+/**
+ * A member's mailing lists, as loaded by `loadMemberMailinglists`.
+ * @typedef {Object} MemberMailinglistsLoaderData
+ * @property {MemberMailinglistDto[]} mailingLists - The member's mailing lists, with whether they're subscribed.
+ * @property {boolean} mailingListsUnavailable - Whether loading the mailing lists failed.
+ */
+export type MemberMailinglistsLoaderData = {
+  mailingLists: MemberMailinglistDto[];
+  mailingListsUnavailable: boolean;
+};
+
+/**
+ * Loads a member's mailing lists, including the yearly-renewal ones, for use in route loaders.
+ * A failure doesn't fail the page: it shows a toast and reports the lists as unavailable.
+ * @param {string} memberId - The ID of the member whose mailing lists are loaded.
+ * @returns {Promise<MemberMailinglistsLoaderData>} The mailing lists, or none and `mailingListsUnavailable` on failure.
+ */
+export const loadMemberMailinglists = async (
+  memberId: string,
+): Promise<MemberMailinglistsLoaderData> => {
+  try {
+    const response = await getMembersByIdMailinglists({
+      path: { id: memberId },
+      query: { includeYearlyRenewal: true },
+    });
+
+    if (response.error || !response.data) {
+      throw response.error ?? new Error("Failed to fetch mailing lists");
+    }
+
+    return { mailingLists: response.data, mailingListsUnavailable: false };
+  } catch (error) {
+    console.error("Error fetching mailing lists:", error);
+    toast.error(appendErrorMessage(t("fetch_mailinglists_failed"), error));
+    return { mailingLists: [], mailingListsUnavailable: true };
+  }
+};
+
+/**
+ * Returns the ids of the mailing lists the member is subscribed to.
+ * @param {MemberMailinglistDto[]} mailingLists - The member's mailing lists.
+ * @returns {Set<string>} The ids of the subscribed lists.
+ */
+export const getSubscribedMailinglistIds = (
+  mailingLists: MemberMailinglistDto[],
+): Set<string> =>
+  new Set(
+    mailingLists.filter((list) => list.subscribed).map((list) => list.id!),
+  );
 
 /**
  * Toggles a mailing list's membership in the set of subscribed list ids.

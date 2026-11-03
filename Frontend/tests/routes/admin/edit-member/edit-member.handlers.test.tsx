@@ -6,7 +6,6 @@ const {
   deleteStudyenrollmentsById,
   getGroupmemberships,
   getMembersById,
-  getMembersByIdProfilePicture,
   getPaymentsMemberByFromUserIdStatus,
   getStudies,
   getStudyenrollments,
@@ -20,7 +19,6 @@ const {
   deleteStudyenrollmentsById: vi.fn(),
   getGroupmemberships: vi.fn(),
   getMembersById: vi.fn(),
-  getMembersByIdProfilePicture: vi.fn(),
   getPaymentsMemberByFromUserIdStatus: vi.fn(),
   getStudies: vi.fn(),
   getStudyenrollments: vi.fn(),
@@ -36,7 +34,6 @@ vi.mock("~/api", () => ({
   deleteStudyenrollmentsById,
   getGroupmemberships,
   getMembersById,
-  getMembersByIdProfilePicture,
   getPaymentsMemberByFromUserIdStatus,
   getStudies,
   getStudyenrollments,
@@ -46,6 +43,15 @@ vi.mock("~/api", () => ({
   postPaymentsMembership,
   postStudyenrollments,
 }));
+
+const { loadProfilePictureSrc } = vi.hoisted(() => ({
+  loadProfilePictureSrc: vi.fn(),
+}));
+
+vi.mock(
+  "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers",
+  () => ({ loadProfilePictureSrc }),
+);
 
 vi.mock("react-hot-toast", () => ({
   default: {
@@ -64,244 +70,142 @@ import {
   handleMarkMembershipAsPaid,
   handleSaveMember,
   handleUpdateEnrollmentStatus,
-  loadMemberData,
+  loadEditMemberLoaderData,
 } from "~/routes/admin/edit-member/edit-member.handlers";
 
-describe("loadMemberData", () => {
+describe("loadEditMemberLoaderData", () => {
+  const member = {
+    id: "m1",
+    firstName: "Jane",
+    lastName: "Doe",
+    email: "jane@example.com",
+    studentNumber: "s1",
+    phoneNumber: "0612345678",
+    street: "Street",
+    houseNumber: "1",
+    postalCode: "1234AB",
+    city: "Enschede",
+    parentPhoneNumber: "0687654321",
+    preferredLanguage: "EN",
+    notes: "Note",
+    gratie: true,
+    lidVanVerdienste: false,
+    ereLid: false,
+    begunstiger: false,
+    suspended: false,
+    dateOfBirth: "2000-05-06T00:00:00Z",
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.stubGlobal("URL", {
-      ...URL,
-      createObjectURL: vi.fn(() => "blob:mock-url"),
-      revokeObjectURL: vi.fn(),
-    });
-    getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
-      data: { hasPaidMembershipBeforeExpirationTime: true },
-    });
-    getGroupmemberships.mockResolvedValue({ data: [] });
-  });
-
-  it("returns immediately when memberId is undefined", async () => {
-    const setLoading = vi.fn();
-    await loadMemberData({
-      memberId: undefined,
-      setFormData: vi.fn(),
-      setEmail: vi.fn(),
-      setEnrollments: vi.fn(),
-      setGroupMemberships: vi.fn(),
-      setAvailableStudies: vi.fn(),
-      setProfilePictureSrc: vi.fn(),
-      setHasPaidMembership: vi.fn(),
-      setIsBegunstiger: vi.fn(),
-      setLoading,
-    });
-    expect(setLoading).not.toHaveBeenCalled();
-  });
-
-  it("loads member data, enrollments, studies, and picture on success", async () => {
-    getMembersById.mockResolvedValue({
-      data: {
-        firstName: "Jane",
-        lastName: "Doe",
-        studentNumber: "s1",
-        phoneNumber: "0600",
-        street: "Main",
-        houseNumber: "1",
-        postalCode: "1234AB",
-        city: "Enschede",
-        parentPhoneNumber: null,
-        preferredLanguage: "NL",
-        notes: "note",
-        gratie: true,
-        lidVanVerdienste: false,
-        ereLid: false,
-        begunstiger: false,
-        suspended: false,
-        dateOfBirth: "2000-01-01T00:00:00Z",
-        email: "jane@example.com",
-      },
-    });
+    getMembersById.mockResolvedValue({ data: member });
     getStudyenrollments.mockResolvedValue({ data: [{ id: 1 }] });
-    getStudies.mockResolvedValue({ data: [{ id: 1, title: "CS" }] });
+    getGroupmemberships.mockResolvedValue({ data: [{ id: 2 }] });
+    getStudies.mockResolvedValue({ data: [{ id: 3 }] });
     getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
       data: {
         hasPaidMembershipBeforeExpirationTime: false,
         isBegunstiger: true,
       },
     });
-    getMembersByIdProfilePicture.mockResolvedValue({ data: new Blob(["x"]) });
+    loadProfilePictureSrc.mockResolvedValue("blob:picture");
+  });
 
-    getGroupmemberships.mockResolvedValue({ data: [{ id: 1, groupId: 1 }] });
-
-    const setFormData = vi.fn();
-    const setEmail = vi.fn();
-    const setEnrollments = vi.fn();
-    const setGroupMemberships = vi.fn();
-    const setAvailableStudies = vi.fn();
-    const setProfilePictureSrc = vi.fn();
-    const setHasPaidMembership = vi.fn();
-    const setIsBegunstiger = vi.fn();
-    const setLoading = vi.fn();
-
-    const cleanup = await loadMemberData({
-      memberId: "m1",
-      setFormData,
-      setEmail,
-      setEnrollments,
-      setGroupMemberships,
-      setAvailableStudies,
-      setProfilePictureSrc,
-      setHasPaidMembership,
-      setIsBegunstiger,
-      setLoading,
+  it("throws a 404 response when there is no id", async () => {
+    await expect(loadEditMemberLoaderData({})).rejects.toMatchObject({
+      init: { status: 404 },
     });
+    expect(getMembersById).not.toHaveBeenCalled();
+  });
 
-    expect(setFormData).toHaveBeenCalledWith(
-      expect.objectContaining({
+  it("returns the member's details, enrollments, groups, studies and payment status", async () => {
+    await expect(loadEditMemberLoaderData({ id: "m1" })).resolves.toEqual({
+      memberId: "m1",
+      formData: {
         firstName: "Jane",
         lastName: "Doe",
-        dateOfBirth: "2000-01-01",
+        studentNumber: "s1",
+        phoneNumber: "0612345678",
+        street: "Street",
+        houseNumber: "1",
+        postalCode: "1234AB",
+        city: "Enschede",
+        parentPhoneNumber: "0687654321",
+        preferredLanguage: "EN",
+        notes: "Note",
         gratie: true,
-      }),
-    );
-    expect(setEmail).toHaveBeenCalledWith("jane@example.com");
-    expect(setEnrollments).toHaveBeenCalledWith([{ id: 1 }]);
-    expect(setGroupMemberships).toHaveBeenCalledWith([{ id: 1, groupId: 1 }]);
-    expect(setAvailableStudies).toHaveBeenCalledWith([{ id: 1, title: "CS" }]);
+        lidVanVerdienste: false,
+        ereLid: false,
+        begunstiger: false,
+        suspended: false,
+        dateOfBirth: "2000-05-06",
+      },
+      email: "jane@example.com",
+      enrollments: [{ id: 1 }],
+      groupMemberships: [{ id: 2 }],
+      availableStudies: [{ id: 3 }],
+      profilePictureSrc: "blob:picture",
+      hasPaidMembership: false,
+      isBegunstiger: true,
+    });
+    expect(getStudyenrollments).toHaveBeenCalledWith({
+      query: { MemberId: "m1" },
+    });
+    expect(getGroupmemberships).toHaveBeenCalledWith({
+      query: { MemberId: "m1" },
+    });
     expect(getPaymentsMemberByFromUserIdStatus).toHaveBeenCalledWith({
       path: { fromUserId: "m1" },
     });
-    expect(setHasPaidMembership).toHaveBeenCalledWith(false);
-    expect(setIsBegunstiger).toHaveBeenCalledWith(true);
-    expect(setProfilePictureSrc).toHaveBeenCalledWith("blob:mock-url");
-    expect(setLoading).toHaveBeenCalledWith(false);
-
-    cleanup?.();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
+    expect(loadProfilePictureSrc).toHaveBeenCalledWith("m1");
   });
 
-  it("defaults hasPaidMembership to true when the status lookup fails", async () => {
-    getMembersById.mockResolvedValue({ data: { email: "a@b.com" } });
-    getStudyenrollments.mockResolvedValue({ data: [] });
-    getStudies.mockResolvedValue({ data: [] });
-    getPaymentsMemberByFromUserIdStatus.mockResolvedValue({
-      error: { title: "bad" },
-    });
-    getMembersByIdProfilePicture.mockResolvedValue({ error: "no picture" });
+  it("defaults missing fields sensibly", async () => {
+    getMembersById.mockResolvedValue({ data: { id: "m1" } });
 
-    const setHasPaidMembership = vi.fn();
+    const data = await loadEditMemberLoaderData({ id: "m1" });
 
-    await loadMemberData({
-      memberId: "m1",
-      setFormData: vi.fn(),
-      setEmail: vi.fn(),
-      setEnrollments: vi.fn(),
-      setGroupMemberships: vi.fn(),
-      setAvailableStudies: vi.fn(),
-      setProfilePictureSrc: vi.fn(),
-      setHasPaidMembership,
-      setIsBegunstiger: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(setHasPaidMembership).toHaveBeenCalledWith(true);
-  });
-
-  it("defaults missing/nullish fields sensibly", async () => {
-    getMembersById.mockResolvedValue({
-      data: { email: "jane@example.com" },
-    });
-    getStudyenrollments.mockResolvedValue({ data: [] });
-    getStudies.mockResolvedValue({ data: [] });
-    getMembersByIdProfilePicture.mockResolvedValue({ error: "no picture" });
-
-    const setFormData = vi.fn();
-
-    await loadMemberData({
-      memberId: "m1",
-      setFormData,
-      setEmail: vi.fn(),
-      setEnrollments: vi.fn(),
-      setGroupMemberships: vi.fn(),
-      setAvailableStudies: vi.fn(),
-      setProfilePictureSrc: vi.fn(),
-      setHasPaidMembership: vi.fn(),
-      setIsBegunstiger: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(setFormData).toHaveBeenCalledWith(
+    expect(data.formData).toEqual(
       expect.objectContaining({
         firstName: "",
         preferredLanguage: "NL",
-        dateOfBirth: "",
         gratie: false,
+        dateOfBirth: "",
       }),
     );
+    expect(data.email).toBe("");
   });
 
-  it("shows an error toast when the member request fails", async () => {
-    getMembersById.mockResolvedValue({ error: { title: "bad" } });
-    const setLoading = vi.fn();
+  it("assumes the fee is paid when the payment status fails to load", async () => {
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    getPaymentsMemberByFromUserIdStatus.mockRejectedValue(new Error("boom"));
 
-    await loadMemberData({
-      memberId: "m1",
-      setFormData: vi.fn(),
-      setEmail: vi.fn(),
-      setEnrollments: vi.fn(),
-      setGroupMemberships: vi.fn(),
-      setAvailableStudies: vi.fn(),
-      setProfilePictureSrc: vi.fn(),
-      setHasPaidMembership: vi.fn(),
-      setIsBegunstiger: vi.fn(),
-      setLoading,
-    });
+    const data = await loadEditMemberLoaderData({ id: "m1" });
 
-    expect(toast.error).toHaveBeenCalledWith("loading_failed: bad");
-    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(data.hasPaidMembership).toBe(true);
+    expect(data.isBegunstiger).toBe(false);
+    consoleError.mockRestore();
   });
 
-  it("shows an error toast when study enrollments fail to load", async () => {
-    getMembersById.mockResolvedValue({ data: { email: "a@b.com" } });
-    getStudyenrollments.mockResolvedValue({
-      error: { title: "bad enrollments" },
-    });
+  it.each([
+    ["member data", () => getMembersById.mockResolvedValue({ data: null })],
+    [
+      "study enrollments",
+      () => getStudyenrollments.mockResolvedValue({ data: null }),
+    ],
+    [
+      "group memberships",
+      () => getGroupmemberships.mockResolvedValue({ data: null }),
+    ],
+    ["available studies", () => getStudies.mockResolvedValue({ data: null })],
+  ])("throws when the %s fail to load", async (name, mockFailure) => {
+    mockFailure();
 
-    await loadMemberData({
-      memberId: "m1",
-      setFormData: vi.fn(),
-      setEmail: vi.fn(),
-      setEnrollments: vi.fn(),
-      setGroupMemberships: vi.fn(),
-      setAvailableStudies: vi.fn(),
-      setProfilePictureSrc: vi.fn(),
-      setHasPaidMembership: vi.fn(),
-      setIsBegunstiger: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(toast.error).toHaveBeenCalledWith("loading_failed: bad enrollments");
-  });
-
-  it("shows an error toast when studies fail to load", async () => {
-    getMembersById.mockResolvedValue({ data: { email: "a@b.com" } });
-    getStudyenrollments.mockResolvedValue({ data: [] });
-    getStudies.mockResolvedValue({ error: { title: "bad studies" } });
-
-    await loadMemberData({
-      memberId: "m1",
-      setFormData: vi.fn(),
-      setEmail: vi.fn(),
-      setEnrollments: vi.fn(),
-      setGroupMemberships: vi.fn(),
-      setAvailableStudies: vi.fn(),
-      setProfilePictureSrc: vi.fn(),
-      setHasPaidMembership: vi.fn(),
-      setIsBegunstiger: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(toast.error).toHaveBeenCalledWith("loading_failed: bad studies");
+    await expect(loadEditMemberLoaderData({ id: "m1" })).rejects.toThrow(
+      `Failed to load ${name}`,
+    );
   });
 });
 

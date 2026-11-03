@@ -11,27 +11,11 @@ import {
   handleRegisterInputChange,
   handleRegisterSubmit,
   handleStudyToggle,
-  loadMailingLists,
-  loadMastersMustPay,
-  loadPrice,
-  loadRegistrationDocuments,
-  loadStudies,
-  loadStudyStartDates,
+  type RegisterFormLoaderData,
 } from "~/components/Register/RegisterForm/RegisterForm.handlers";
 import { renderWithProviders } from "~/testUtils";
 
 vi.mock("~/components/Register/RegisterForm/RegisterForm.handlers", () => ({
-  loadStudies: vi.fn(async (setStudies) => setStudies([])),
-  loadMastersMustPay: vi.fn(async (setMastersMustPay) =>
-    setMastersMustPay(false),
-  ),
-  loadPrice: vi.fn(async (setPrice, setExpiration) => {
-    setPrice(10);
-    setExpiration(1);
-  }),
-  loadMailingLists: vi.fn(async (setMailingLists) => setMailingLists([])),
-  loadRegistrationDocuments: vi.fn(async (setDocuments) => setDocuments([])),
-  loadStudyStartDates: vi.fn(async () => {}),
   handleRegisterInputChange: vi.fn(),
   handleStudyToggle: vi.fn(),
   handleRegisterSubmit: vi.fn(),
@@ -46,46 +30,42 @@ function makeStudy(overrides: Partial<Study> = {}): Study {
   } as Study;
 }
 
+/** The form's data; tests change it before rendering. */
+let data: RegisterFormLoaderData;
+
+/** Renders the form with the current `data`. */
+function renderForm() {
+  return renderWithProviders(<RegisterForm data={data} />);
+}
+
 describe("RegisterForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(loadStudies).mockImplementation(async (setStudies) =>
-      setStudies([]),
-    );
-    vi.mocked(loadMastersMustPay).mockImplementation(
-      async (setMastersMustPay) => setMastersMustPay(false),
-    );
-    vi.mocked(loadPrice).mockImplementation(async (setPrice, setExpiration) => {
-      setPrice(10);
-      setExpiration(1);
-    });
-    vi.mocked(loadMailingLists).mockImplementation(async (setMailingLists) =>
-      setMailingLists([]),
-    );
-    vi.mocked(loadRegistrationDocuments).mockImplementation(
-      async (setDocuments) => setDocuments([]),
-    );
-    vi.mocked(loadStudyStartDates).mockImplementation(async () => {});
+    data = {
+      studies: [],
+      mastersMustPay: false,
+      price: 10,
+      membershipPaymentExpirationTime: 1,
+      mailingLists: [],
+      documents: [],
+      studyStartDates: null,
+    };
   });
 
-  it("renders form fields once loading finishes", async () => {
-    renderWithProviders(<RegisterForm />);
+  it("renders the form fields", async () => {
+    renderForm();
     expect(await screen.findByLabelText(/first_name/)).toBeInTheDocument();
   });
 
   it("shows an error message when mastersMustPay could not be loaded", async () => {
-    vi.mocked(loadMastersMustPay).mockImplementation(
-      async (setMastersMustPay) => (setMastersMustPay as any)(null),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.mastersMustPay = null;
+    renderForm();
     expect(await screen.findByText("error_loading_page")).toBeInTheDocument();
   });
 
   it("renders a checkbox for each loaded study and toggles selection", async () => {
-    vi.mocked(loadStudies).mockImplementation(async (setStudies) =>
-      setStudies([makeStudy()]),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.studies = [makeStudy()];
+    renderForm();
 
     const checkbox = await screen.findByLabelText("Computer Science");
     fireEvent.click(checkbox);
@@ -96,10 +76,8 @@ describe("RegisterForm", () => {
     const lists: MailinglistDto[] = [
       { id: "list-1", name: "Newsletter" } as MailinglistDto,
     ];
-    vi.mocked(loadMailingLists).mockImplementation(async (setLists) =>
-      setLists(lists),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.mailingLists = lists;
+    renderForm();
     expect(await screen.findByLabelText("Newsletter")).toBeInTheDocument();
   });
 
@@ -113,10 +91,8 @@ describe("RegisterForm", () => {
         urlEnglish: "https://example.com/en/doc.pdf",
       } as RegistrationDocumentResponseDto,
     ];
-    vi.mocked(loadRegistrationDocuments).mockImplementation(
-      async (setDocuments) => setDocuments(docs),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.documents = docs;
+    renderForm();
 
     expect(await screen.findByText("Statutes")).toBeInTheDocument();
     const checkbox = document.querySelector(
@@ -135,12 +111,10 @@ describe("RegisterForm", () => {
         urlEnglish: "https://example.com/en/doc.pdf",
       } as RegistrationDocumentResponseDto,
     ];
-    vi.mocked(loadRegistrationDocuments).mockImplementation(
-      async (setDocuments) => setDocuments(docs),
-    );
+    data.documents = docs;
 
     await i18next.changeLanguage("en");
-    const { unmount } = renderWithProviders(<RegisterForm />);
+    const { unmount } = renderForm();
     expect(
       await screen.findByRole("link", { name: "Statutes" }),
     ).toHaveAttribute("href", "https://example.com/en/doc.pdf");
@@ -148,7 +122,7 @@ describe("RegisterForm", () => {
 
     await i18next.changeLanguage("nl");
     try {
-      renderWithProviders(<RegisterForm />);
+      renderForm();
       expect(
         await screen.findByRole("link", { name: "Statuten" }),
       ).toHaveAttribute("href", "https://example.com/nl/doc.pdf");
@@ -158,20 +132,20 @@ describe("RegisterForm", () => {
   });
 
   it("calls handleRegisterInputChange when a text field changes", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     const firstNameInput = await screen.findByLabelText(/first_name/);
     fireEvent.change(firstNameInput, { target: { value: "Jane" } });
     expect(handleRegisterInputChange).toHaveBeenCalled();
   });
 
   it("disables the submit button until the form is valid", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     await screen.findByLabelText(/first_name/);
     expect(screen.getByText("become_member")).toBeDisabled();
   });
 
   it("calls handleRegisterSubmit on form submission", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     await screen.findByLabelText(/first_name/);
     fireEvent.click(screen.getByText("become_member"));
     // The button is disabled while the form is incomplete, but the submit handler
@@ -181,28 +155,25 @@ describe("RegisterForm", () => {
   });
 
   it("shows the membership price with the expiration copy", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     expect(await screen.findByText(/for_1_year/)).toBeInTheDocument();
   });
 
   it("shows a multi-year expiration copy when the expiration time is not 1", async () => {
-    vi.mocked(loadPrice).mockImplementation(async (setPrice, setExpiration) => {
-      setPrice(10);
-      setExpiration(3);
-    });
-    renderWithProviders(<RegisterForm />);
+    data.membershipPaymentExpirationTime = 3;
+    renderForm();
     expect(await screen.findByText(/for_x_years/)).toBeInTheDocument();
   });
 
   it("shows the masters-free copy when masters do not have to pay", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     expect(
       await screen.findByText(/membership_free_for_masters/),
     ).toBeInTheDocument();
   });
 
   it("calls handleRegisterInputChange for every remaining personal-info field", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     await screen.findByLabelText(/first_name/);
 
     const fields: [RegExp, string][] = [
@@ -228,10 +199,8 @@ describe("RegisterForm", () => {
     const lists: MailinglistDto[] = [
       { id: "list-1", name: "Newsletter" } as MailinglistDto,
     ];
-    vi.mocked(loadMailingLists).mockImplementation(async (setLists) =>
-      setLists(lists),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.mailingLists = lists;
+    renderForm();
 
     const checkbox = await screen.findByLabelText("Newsletter");
     fireEvent.click(checkbox);
@@ -242,17 +211,15 @@ describe("RegisterForm", () => {
   });
 
   it("changes the study start date select", async () => {
-    renderWithProviders(<RegisterForm />);
+    renderForm();
     const select = await screen.findByLabelText(/study_start_date/);
     fireEvent.change(select, { target: { value: "2020-09-01" } });
     expect(select).toHaveValue("2020-09-01");
   });
 
   it("does not render the study start date select when no dates are configured", async () => {
-    vi.mocked(loadStudyStartDates).mockImplementation(
-      async (setStartDatesRaw: any) => setStartDatesRaw(""),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.studyStartDates = "";
+    renderForm();
     await screen.findByLabelText(/first_name/);
     expect(screen.queryByLabelText("study_start_date")).not.toBeInTheDocument();
   });
@@ -264,7 +231,7 @@ describe("RegisterForm", () => {
         setFormData((prev: any) => ({ ...prev, [name]: value }));
       },
     );
-    renderWithProviders(<RegisterForm />);
+    renderForm();
 
     const birthDateInput = await screen.findByLabelText(/birth_date/);
     const today = new Date();
@@ -292,10 +259,8 @@ describe("RegisterForm", () => {
         urlEnglish: "https://example.com/en/doc.pdf",
       } as RegistrationDocumentResponseDto,
     ];
-    vi.mocked(loadRegistrationDocuments).mockImplementation(
-      async (setDocuments) => setDocuments(docs),
-    );
-    renderWithProviders(<RegisterForm />);
+    data.documents = docs;
+    renderForm();
 
     await screen.findByText("Statutes");
     const checkbox = document.querySelector(

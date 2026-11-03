@@ -3,56 +3,73 @@ import type { ActivityResponseDto } from "~/api";
 import {
   getActivityBackPath,
   handleEditActivityClick,
-  loadActivityData,
+  loadActivityLoaderData,
 } from "~/routes/activity/activity.handlers";
+import { makeTokenParsed } from "~/testUtils";
 
-const { getActivitiesById } = vi.hoisted(() => ({
-  getActivitiesById: vi.fn(),
-}));
+const { getActivitiesById, getGroupsById, requireTokenParsed } = vi.hoisted(
+  () => ({
+    getActivitiesById: vi.fn(),
+    getGroupsById: vi.fn(),
+    requireTokenParsed: vi.fn(),
+  }),
+);
 
-vi.mock("~/api", () => ({ getActivitiesById }));
+vi.mock("~/api", () => ({ getActivitiesById, getGroupsById }));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
+const token = makeTokenParsed();
 
-describe("loadActivityData", () => {
+describe("loadActivityLoaderData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue(token);
   });
 
-  it("sets the activity on success", async () => {
-    const activity = { id: 1, name: "Party" } as ActivityResponseDto;
+  it("returns the token, the activity and its organizer's name", async () => {
+    const activity = {
+      id: 1,
+      name: "Party",
+      organizerId: 7,
+    } as ActivityResponseDto;
     getActivitiesById.mockResolvedValue({ data: activity });
-    const setActivity = vi.fn();
-    const setLoading = vi.fn();
+    getGroupsById.mockResolvedValue({ data: { name: "Feestcie" } });
 
-    await loadActivityData({ activityId: 1, setLoading, setActivity });
-
+    await expect(loadActivityLoaderData({ id: "1" })).resolves.toEqual({
+      tokenParsed: token,
+      activity,
+      organizerName: "Feestcie",
+    });
     expect(getActivitiesById).toHaveBeenCalledWith({ path: { id: 1 } });
-    expect(setActivity).toHaveBeenCalledWith(activity);
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
+    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 7 } });
   });
 
-  it("logs and shows an error toast on failure", async () => {
-    getActivitiesById.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const setActivity = vi.fn();
-
-    await loadActivityData({
-      activityId: 1,
-      setLoading: vi.fn(),
-      setActivity,
+  it("returns no organizer name when the activity has no organizer", async () => {
+    getActivitiesById.mockResolvedValue({
+      data: { id: 1, organizerId: null },
     });
 
-    expect(setActivity).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
+    const data = await loadActivityLoaderData({ id: "1" });
+
+    expect(data.organizerName).toBeNull();
+    expect(getGroupsById).not.toHaveBeenCalled();
+  });
+
+  it("returns no organizer name when the organizer fails to load", async () => {
+    getActivitiesById.mockResolvedValue({ data: { id: 1, organizerId: 7 } });
+    getGroupsById.mockResolvedValue({ error: "fail" });
+
+    const data = await loadActivityLoaderData({ id: "1" });
+
+    expect(data.organizerName).toBeNull();
+  });
+
+  it("throws when the activity fails to load", async () => {
+    getActivitiesById.mockResolvedValue({ error: "fail" });
+
+    await expect(loadActivityLoaderData({ id: "1" })).rejects.toThrow(
+      "Failed to load activities",
+    );
   });
 });
 
