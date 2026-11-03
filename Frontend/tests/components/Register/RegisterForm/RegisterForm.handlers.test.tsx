@@ -42,6 +42,7 @@ import {
   loadMailingLists,
   loadMastersMustPay,
   loadPrice,
+  loadRegisterFormData,
   loadRegistrationDocuments,
   loadStudies,
   loadStudyStartDates,
@@ -73,189 +74,203 @@ describe("RegisterForm.handlers", () => {
   });
 
   describe("loadStudies", () => {
-    it("sets the studies on success", async () => {
+    it("returns the studies on success", async () => {
       const studies: Study[] = [{ id: 1, title: "CS" } as Study];
       getStudies.mockResolvedValue({ data: studies });
-      const setStudies = vi.fn();
 
-      await loadStudies(setStudies);
-
-      expect(setStudies).toHaveBeenCalledWith(studies);
+      await expect(loadStudies()).resolves.toEqual(studies);
     });
 
-    it("shows an error toast and does not set studies on failure", async () => {
+    it("shows an error toast and returns no studies on failure", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       getStudies.mockResolvedValue({ error: true, message: "boom" });
-      const setStudies = vi.fn();
 
-      await loadStudies(setStudies);
-
-      expect(setStudies).not.toHaveBeenCalled();
+      await expect(loadStudies()).resolves.toEqual([]);
       expect(toast.error).toHaveBeenCalled();
       consoleError.mockRestore();
     });
   });
 
   describe("loadMastersMustPay", () => {
-    it("sets true when the setting value is '1'", async () => {
+    it("returns true when the setting value is '1'", async () => {
       getSettingsById.mockResolvedValue({ data: { value: "1" } });
-      const setMastersMustPay = vi.fn();
 
-      await loadMastersMustPay(setMastersMustPay);
-
-      expect(setMastersMustPay).toHaveBeenCalledWith(true);
+      await expect(loadMastersMustPay()).resolves.toBe(true);
+      expect(getSettingsById).toHaveBeenCalledWith({
+        path: { id: "MastersShouldPayMembership" },
+      });
     });
 
-    it("sets false when the setting value is anything else", async () => {
+    it("returns false when the setting value is anything else", async () => {
       getSettingsById.mockResolvedValue({ data: { value: "0" } });
-      const setMastersMustPay = vi.fn();
 
-      await loadMastersMustPay(setMastersMustPay);
-
-      expect(setMastersMustPay).toHaveBeenCalledWith(false);
+      await expect(loadMastersMustPay()).resolves.toBe(false);
     });
 
-    it("shows an error toast on failure", async () => {
+    it("shows an error toast and returns null on failure", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       getSettingsById.mockResolvedValue({ error: true });
-      const setMastersMustPay = vi.fn();
 
-      await loadMastersMustPay(setMastersMustPay);
-
-      expect(setMastersMustPay).not.toHaveBeenCalled();
+      await expect(loadMastersMustPay()).resolves.toBeNull();
       expect(toast.error).toHaveBeenCalled();
       consoleError.mockRestore();
     });
   });
 
   describe("loadPrice", () => {
-    it("sets price and expiration time when both are returned", async () => {
+    it("returns the price and expiration time when both are set", async () => {
       getSettingsById.mockImplementation(({ path }: any) => {
         if (path.id === "MembershipPrice") {
           return Promise.resolve({ data: { value: "42.5" } });
         }
         return Promise.resolve({ data: { value: "2" } });
       });
-      const setPrice = vi.fn();
-      const setExpiration = vi.fn();
 
-      await loadPrice(setPrice, setExpiration);
-
-      expect(setPrice).toHaveBeenCalledWith(42.5);
-      expect(setExpiration).toHaveBeenCalledWith(2);
+      await expect(loadPrice()).resolves.toEqual({
+        price: 42.5,
+        membershipPaymentExpirationTime: 2,
+      });
     });
 
-    it("skips setting the expiration time when it is blank", async () => {
+    it("returns no expiration time when it is blank", async () => {
       getSettingsById.mockImplementation(({ path }: any) => {
         if (path.id === "MembershipPrice") {
           return Promise.resolve({ data: { value: "10" } });
         }
         return Promise.resolve({ data: { value: "   " } });
       });
-      const setPrice = vi.fn();
-      const setExpiration = vi.fn();
 
-      await loadPrice(setPrice, setExpiration);
-
-      expect(setPrice).toHaveBeenCalledWith(10);
-      expect(setExpiration).not.toHaveBeenCalled();
+      await expect(loadPrice()).resolves.toEqual({
+        price: 10,
+        membershipPaymentExpirationTime: null,
+      });
     });
 
-    it("shows an error toast when required values are missing", async () => {
+    it("shows an error toast and returns nulls when required values are missing", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       getSettingsById.mockResolvedValue({ data: {} });
-      const setPrice = vi.fn();
-      const setExpiration = vi.fn();
 
-      await loadPrice(setPrice, setExpiration);
-
-      expect(setPrice).not.toHaveBeenCalled();
+      await expect(loadPrice()).resolves.toEqual({
+        price: null,
+        membershipPaymentExpirationTime: null,
+      });
       expect(toast.error).toHaveBeenCalled();
       consoleError.mockRestore();
     });
   });
 
   describe("loadMailingLists", () => {
-    it("sets the mailing lists on success", async () => {
+    it("returns the mailing lists on success", async () => {
       const lists = [{ id: "list-1", name: "News" }];
       getMailinglists.mockResolvedValue({ data: lists });
-      const setMailingLists = vi.fn();
 
-      await loadMailingLists(setMailingLists);
-
-      expect(setMailingLists).toHaveBeenCalledWith(lists);
+      await expect(loadMailingLists()).resolves.toEqual(lists);
     });
 
-    it("shows an error toast on failure", async () => {
+    it("shows an error toast and returns no lists on failure", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       getMailinglists.mockResolvedValue({ error: true });
-      const setMailingLists = vi.fn();
 
-      await loadMailingLists(setMailingLists);
-
-      expect(setMailingLists).not.toHaveBeenCalled();
+      await expect(loadMailingLists()).resolves.toEqual([]);
       expect(toast.error).toHaveBeenCalled();
       consoleError.mockRestore();
     });
   });
 
   describe("loadRegistrationDocuments", () => {
-    it("sorts the returned documents by sortOrder", async () => {
+    it("returns the documents sorted by sortOrder", async () => {
       getRegistrationdocuments.mockResolvedValue({
         data: [
           { id: 1, sortOrder: 2 },
           { id: 2, sortOrder: 1 },
         ],
       });
-      const setDocuments = vi.fn();
 
-      await loadRegistrationDocuments(setDocuments);
-
-      expect(setDocuments).toHaveBeenCalledWith([
+      await expect(loadRegistrationDocuments()).resolves.toEqual([
         { id: 2, sortOrder: 1 },
         { id: 1, sortOrder: 2 },
       ]);
     });
 
-    it("swallows errors without calling setDocuments", async () => {
+    it("returns no documents when there is no data", async () => {
+      getRegistrationdocuments.mockResolvedValue({ data: undefined });
+
+      await expect(loadRegistrationDocuments()).resolves.toEqual([]);
+    });
+
+    it("logs errors and returns no documents", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       getRegistrationdocuments.mockRejectedValue(new Error("fail"));
-      const setDocuments = vi.fn();
 
-      await loadRegistrationDocuments(setDocuments);
-
-      expect(setDocuments).not.toHaveBeenCalled();
+      await expect(loadRegistrationDocuments()).resolves.toEqual([]);
+      expect(consoleError).toHaveBeenCalled();
       consoleError.mockRestore();
     });
   });
 
   describe("loadStudyStartDates", () => {
-    it("sets the start dates when a value is returned", async () => {
+    it("returns the start dates when a value is set", async () => {
       getSettingsById.mockResolvedValue({ data: { value: "09-01,02-01" } });
-      const setStartDates = vi.fn();
 
-      await loadStudyStartDates(setStartDates);
-
-      expect(setStartDates).toHaveBeenCalledWith("09-01,02-01");
+      await expect(loadStudyStartDates()).resolves.toBe("09-01,02-01");
     });
 
-    it("does not call setStartDates when there is no value", async () => {
+    it("returns null when there is no value", async () => {
       getSettingsById.mockResolvedValue({ data: {} });
-      const setStartDates = vi.fn();
 
-      await loadStudyStartDates(setStartDates);
+      await expect(loadStudyStartDates()).resolves.toBeNull();
+    });
 
-      expect(setStartDates).not.toHaveBeenCalled();
+    it("logs errors and returns null", async () => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      getSettingsById.mockRejectedValue(new Error("fail"));
+
+      await expect(loadStudyStartDates()).resolves.toBeNull();
+      consoleError.mockRestore();
+    });
+  });
+
+  describe("loadRegisterFormData", () => {
+    it("combines all the form's data", async () => {
+      getStudies.mockResolvedValue({ data: [{ id: 1 }] });
+      getMailinglists.mockResolvedValue({ data: [{ id: "list-1" }] });
+      getRegistrationdocuments.mockResolvedValue({
+        data: [{ id: 3, sortOrder: 1 }],
+      });
+      getSettingsById.mockImplementation(({ path }: any) =>
+        Promise.resolve({
+          data: {
+            value: {
+              MastersShouldPayMembership: "1",
+              MembershipPrice: "25",
+              MembershipPaymentExpirationTime: "7",
+              StudyStartDates: "09-01",
+            }[path.id as string],
+          },
+        }),
+      );
+
+      await expect(loadRegisterFormData()).resolves.toEqual({
+        studies: [{ id: 1 }],
+        mastersMustPay: true,
+        price: 25,
+        membershipPaymentExpirationTime: 7,
+        mailingLists: [{ id: "list-1" }],
+        documents: [{ id: 3, sortOrder: 1 }],
+        studyStartDates: "09-01",
+      });
     });
   });
 

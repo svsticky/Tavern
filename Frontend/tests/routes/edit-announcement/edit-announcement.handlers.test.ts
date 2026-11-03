@@ -2,24 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   handleAnnouncementSubmit,
   handleDeleteAnnouncement,
-  loadAnnouncementData,
 } from "~/routes/edit-announcement/edit-announcement.handlers";
 
-const {
-  deleteAnnouncementsById,
-  getAnnouncementsById,
-  postAnnouncements,
-  putAnnouncementsById,
-} = vi.hoisted(() => ({
-  deleteAnnouncementsById: vi.fn(),
-  getAnnouncementsById: vi.fn(),
-  postAnnouncements: vi.fn(),
-  putAnnouncementsById: vi.fn(),
-}));
+const { deleteAnnouncementsById, postAnnouncements, putAnnouncementsById } =
+  vi.hoisted(() => ({
+    deleteAnnouncementsById: vi.fn(),
+    postAnnouncements: vi.fn(),
+    putAnnouncementsById: vi.fn(),
+  }));
 
 vi.mock("~/api", () => ({
   deleteAnnouncementsById,
-  getAnnouncementsById,
   postAnnouncements,
   putAnnouncementsById,
 }));
@@ -49,79 +42,6 @@ function makeEvent(fields: Record<string, string>) {
     currentTarget: form,
   } as unknown as React.FormEvent<HTMLFormElement>;
 }
-
-describe("loadAnnouncementData", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("does nothing when not editing", async () => {
-    const setLoading = vi.fn();
-    await loadAnnouncementData({
-      isEdit: false,
-      id: undefined,
-      setInitialData: vi.fn(),
-      setLoading,
-    });
-    expect(getAnnouncementsById).not.toHaveBeenCalled();
-    expect(setLoading).not.toHaveBeenCalled();
-  });
-
-  it("does nothing when editing but id is missing", async () => {
-    await loadAnnouncementData({
-      isEdit: true,
-      id: undefined,
-      setInitialData: vi.fn(),
-      setLoading: vi.fn(),
-    });
-    expect(getAnnouncementsById).not.toHaveBeenCalled();
-  });
-
-  it("populates initial data and stops loading on success", async () => {
-    getAnnouncementsById.mockResolvedValue({
-      data: {
-        titleDutch: "Titel",
-        titleEnglish: "Title",
-        contentDutch: "Inhoud",
-        contentEnglish: "Content",
-      },
-    });
-    const setInitialData = vi.fn();
-    const setLoading = vi.fn();
-
-    await loadAnnouncementData({
-      isEdit: true,
-      id: "1",
-      setInitialData,
-      setLoading,
-    });
-
-    expect(getAnnouncementsById).toHaveBeenCalledWith({ path: { id: 1 } });
-    expect(setInitialData).toHaveBeenCalledWith({
-      TitleDutch: "Titel",
-      TitleEnglish: "Title",
-      ContentDutch: "Inhoud",
-      ContentEnglish: "Content",
-    });
-    expect(setLoading).toHaveBeenCalledWith(false);
-  });
-
-  it("stops loading without setting data when the response has no data", async () => {
-    getAnnouncementsById.mockResolvedValue({});
-    const setInitialData = vi.fn();
-    const setLoading = vi.fn();
-
-    await loadAnnouncementData({
-      isEdit: true,
-      id: "1",
-      setInitialData,
-      setLoading,
-    });
-
-    expect(setInitialData).not.toHaveBeenCalled();
-    expect(setLoading).toHaveBeenCalledWith(false);
-  });
-});
 
 describe("handleAnnouncementSubmit", () => {
   beforeEach(() => {

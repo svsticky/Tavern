@@ -1,25 +1,16 @@
-import { configure } from "@testing-library/dom";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { MemberResponseDto } from "~/api";
-import Members from "~/routes/admin/members";
-import { renderWithProviders } from "~/testUtils";
+import * as route from "~/routes/admin/members";
+import { renderRoute } from "~/testUtils";
 
-// The component debounces its initial fetch by 300ms; under full-suite parallel load the
-// default 1000ms async-query timeout can be too tight, so give these queries more headroom.
-configure({ asyncUtilTimeout: 20000 });
-vi.setConfig({ testTimeout: 25000 });
-
-const { getMembers } = vi.hoisted(() => ({
+const { getMembers, requireBoardOrCandidateBoard } = vi.hoisted(() => ({
   getMembers: vi.fn(),
+  requireBoardOrCandidateBoard: vi.fn(),
 }));
 
 vi.mock("~/api", () => ({ getMembers }));
-
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireBoardOrCandidateBoard }));
 
 vi.mock("~/components/Member/FilterMemberOverlay/FilterMemberOverlay", () => ({
   default: ({ onFilter }: { onFilter: (f: any) => void }) => (
@@ -29,8 +20,8 @@ vi.mock("~/components/Member/FilterMemberOverlay/FilterMemberOverlay", () => ({
   ),
 }));
 
-// jsdom does not implement IntersectionObserver. Stub it locally (not touching the shared
-// vitest.setup.ts) and capture the callback so tests can simulate the loader coming into view.
+// jsdom does not implement IntersectionObserver. Capture the callback so tests
+// can simulate the end of the list coming into view.
 let intersectionCallback: IntersectionObserverCallback | null = null;
 class IntersectionObserverStub {
   constructor(callback: IntersectionObserverCallback) {
@@ -51,47 +42,87 @@ function makeMembers(count: number, offset = 0): MemberResponseDto[] {
   })) as MemberResponseDto[];
 }
 
+/** Renders the members page at the given URL, with stubs for the pages it opens. */
+function renderMembers(url = "/admin/members") {
+  return renderRoute(route, {
+    path: "/admin/members",
+    route: url,
+    otherRoutes: [
+      {
+        path: "/admin/members/create-member",
+        Component: () => <div>create-member-page</div>,
+      },
+      { path: "/admin/members/:id", Component: () => <div>member-page</div> },
+    ],
+  });
+}
+
 describe("Members", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
     intersectionCallback = null;
+    requireBoardOrCandidateBoard.mockResolvedValue({});
+    getMembers.mockResolvedValue({ data: [] });
   });
 
-  it("fetches the first page of members on mount", async () => {
+  it("loads the first page of members", async () => {
     getMembers.mockResolvedValue({ data: makeMembers(20) });
-    renderWithProviders(<Members />);
+    renderMembers();
 
     expect(await screen.findByText("First0 Last0")).toBeInTheDocument();
     expect(getMembers).toHaveBeenCalledWith(
       expect.objectContaining({
-        query: expect.objectContaining({ Page: 1, Search: "" }),
+        query: expect.objectContaining({ Page: 1, PageSize: 20, Search: "" }),
       }),
     );
   });
 
-  it("shows an error toast when fetching members fails", async () => {
-    getMembers.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  it("restores all loaded pages from the URL in one request", async () => {
+    renderMembers("/admin/members?pages=3");
 
-    renderWithProviders(<Members />);
-
-    await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
-    consoleError.mockRestore();
+    await screen.findByText("no_data");
+    expect(getMembers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({ Page: 1, PageSize: 60 }),
+      }),
+    );
   });
 
-  it("shows 'no_data' when there are no members and no more pages", async () => {
-    getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+  it("uses the search and filters from the URL", async () => {
+    renderMembers("/admin/members?search=jane&studyId=5&gratie=true");
+
+    expect(await screen.findByLabelText("search")).toHaveValue("jane");
+    expect(getMembers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({
+          Search: "jane",
+          StudyId: 5,
+          Gratie: true,
+        }),
+      }),
+    );
+  });
+
+  it("shows the error page when the members fail to load", async () => {
+    getMembers.mockResolvedValue({
+      error: new Error("Failed to fetch members"),
+    });
+    renderMembers();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to fetch members",
+    );
+  });
+
+  it("shows 'no_data' when there are no members", async () => {
+    renderMembers();
 
     expect(await screen.findByText("no_data")).toBeInTheDocument();
   });
 
-  it("debounces the search query before refetching", async () => {
-    getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+  it("reloads the list with the search term after typing", async () => {
+    renderMembers();
     await screen.findByText("no_data");
 
     getMembers.mockClear();
@@ -103,18 +134,18 @@ describe("Members", () => {
       () =>
         expect(getMembers).toHaveBeenCalledWith(
           expect.objectContaining({
-            query: expect.objectContaining({ Search: "jane" }),
+            query: expect.objectContaining({ Search: "jane", Page: 1 }),
           }),
         ),
       { timeout: 2000 },
     );
   });
 
-  it("loads more members when the loader comes into view", async () => {
+  it("loads more members when the end of the list comes into view", async () => {
     getMembers
       .mockResolvedValueOnce({ data: makeMembers(20, 0) })
       .mockResolvedValueOnce({ data: makeMembers(5, 20) });
-    renderWithProviders(<Members />);
+    renderMembers();
 
     await screen.findByText("First0 Last0");
     expect(intersectionCallback).toBeTruthy();
@@ -125,11 +156,18 @@ describe("Members", () => {
     );
 
     expect(await screen.findByText("First20 Last20")).toBeInTheDocument();
+    expect(getMembers).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        query: expect.objectContaining({ Page: 2, PageSize: 20 }),
+      }),
+    );
+    // Loading more pages must not rerun the loader.
+    expect(getMembers).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("First0 Last0")).toBeInTheDocument();
   });
 
-  it("opens the filters modal and applies filters", async () => {
-    getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+  it("reloads the list with the chosen filters", async () => {
+    renderMembers();
 
     await screen.findByText("no_data");
     fireEvent.click(screen.getByText("filters"));
@@ -138,15 +176,24 @@ describe("Members", () => {
     await waitFor(() =>
       expect(getMembers).toHaveBeenCalledWith(
         expect.objectContaining({
-          query: expect.objectContaining({ StudyId: 5 }),
+          query: expect.objectContaining({ StudyId: 5, Page: 1 }),
         }),
       ),
     );
   });
 
+  it("navigates to a member's page", async () => {
+    getMembers.mockResolvedValue({ data: makeMembers(1) });
+    renderMembers();
+
+    await screen.findByText("First0 Last0");
+    fireEvent.click(screen.getByText("view_member"));
+
+    expect(await screen.findByText("member-page")).toBeInTheDocument();
+  });
+
   it("navigates to create-member when the plus button is clicked", async () => {
-    getMembers.mockResolvedValue({ data: [] });
-    renderWithProviders(<Members />);
+    renderMembers();
 
     await screen.findByText("no_data");
     const plusButton = document
@@ -154,5 +201,7 @@ describe("Members", () => {
       ?.closest("button");
     expect(plusButton).toBeTruthy();
     fireEvent.click(plusButton!);
+
+    expect(await screen.findByText("create-member-page")).toBeInTheDocument();
   });
 });

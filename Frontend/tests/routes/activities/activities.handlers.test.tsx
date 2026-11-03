@@ -4,14 +4,7 @@ import {
   copyWeekOverview,
   downloadPosters,
   handleCreateActivityClick,
-  loadActivities,
 } from "~/routes/activities/activities.handlers";
-
-const { getActivities } = vi.hoisted(() => ({
-  getActivities: vi.fn(),
-}));
-
-vi.mock("~/api", () => ({ getActivities }));
 
 const { getEnv } = vi.hoisted(() => ({
   getEnv: vi.fn(() => "https://example.com"),
@@ -46,40 +39,6 @@ function buildActivity(
     ...overrides,
   } as ActivityResponseDto;
 }
-
-describe("loadActivities", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("sets activities on success", async () => {
-    getActivities.mockResolvedValue({ data: [buildActivity()] });
-    const setActivities = vi.fn();
-    const setLoading = vi.fn();
-
-    await loadActivities({ setLoading, setActivities });
-
-    expect(setActivities).toHaveBeenCalledWith([
-      expect.objectContaining({ id: 1 }),
-    ]);
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
-  });
-
-  it("shows an error toast on failure", async () => {
-    getActivities.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const setActivities = vi.fn();
-
-    await loadActivities({ setLoading: vi.fn(), setActivities });
-
-    expect(setActivities).not.toHaveBeenCalled();
-    expect(toastFn).toHaveBeenCalledWith("error", expect.anything());
-    consoleError.mockRestore();
-  });
-});
 
 describe("copyWeekOverview", () => {
   beforeEach(() => {

@@ -12,6 +12,7 @@ import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { DateRowHeightGroup } from "~/components/Activity/ActivityTile/DateRowHeightGroup";
 import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
@@ -163,17 +164,21 @@ export default function ActivitiesPage() {
         <PersonalCalendarTile />
       </Modal>
 
-      <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
-        <DateRowHeightGroup>
-          {activities.map((activity) => (
-            <ActivityTile
-              key={activity.id}
-              className="w-auto"
-              activity={activity}
-            />
-          ))}
-        </DateRowHeightGroup>
-      </div>
+      {activities.length === 0 ? (
+        <NoContentTile text={t("no_upcoming_activities")} />
+      ) : (
+        <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
+          <DateRowHeightGroup>
+            {activities.map((activity) => (
+              <ActivityTile
+                key={activity.id}
+                className="w-auto"
+                activity={activity}
+              />
+            ))}
+          </DateRowHeightGroup>
+        </div>
+      )}
     </>
   );
 }

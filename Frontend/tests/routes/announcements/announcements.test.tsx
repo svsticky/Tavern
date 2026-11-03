@@ -1,24 +1,20 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import i18next from "i18next";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import AnnouncementsPage from "~/routes/announcements/announcements";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import * as route from "~/routes/announcements/announcements";
+import { renderRoute } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
-// This route reads `t` directly from the bare "i18next" singleton (not the `useTranslation()`
-// hook), which returns `undefined` for every key until the instance is initialized. Give it a
-// minimal local-only init (no resources, no backend/network) so `t("key")` falls back to
-// returning the key itself, matching the convention documented in ~/testUtils.
-i18next.init({ lng: "en", resources: {} });
+const { getAnnouncements, requireTokenParsed, handleCreateAnnouncementClick } =
+  vi.hoisted(() => ({
+    getAnnouncements: vi.fn(),
+    requireTokenParsed: vi.fn(),
+    handleCreateAnnouncementClick: vi.fn(),
+  }));
 
-const { loadAnnouncements, handleCreateAnnouncementClick } = vi.hoisted(() => ({
-  loadAnnouncements: vi.fn(),
-  handleCreateAnnouncementClick: vi.fn(),
-}));
-
+vi.mock("~/api", () => ({ getAnnouncements }));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
 vi.mock("~/routes/announcements/announcements.handlers", () => ({
-  loadAnnouncements,
   handleCreateAnnouncementClick,
 }));
 
@@ -37,106 +33,59 @@ function baseToken(overrides: Partial<TokenParsed> = {}): TokenParsed {
 describe("AnnouncementsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("shows the loading text while waiting for the announcements to load", () => {
-    loadAnnouncements.mockImplementation(() => new Promise(() => {}));
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => baseToken()),
-    });
-
-    renderWithProviders(<AnnouncementsPage />, { authService });
-
-    expect(screen.getByText("loading")).toBeInTheDocument();
+    requireTokenParsed.mockResolvedValue(baseToken());
+    getAnnouncements.mockResolvedValue({ data: [] });
   });
 
   it("renders the empty state when there are no announcements", async () => {
-    loadAnnouncements.mockImplementation(async ({ setLoading }) => {
-      setLoading(false);
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => baseToken()),
-    });
+    renderRoute(route);
 
-    renderWithProviders(<AnnouncementsPage />, { authService });
-
-    await waitFor(() =>
-      expect(screen.getByText("no_announcements")).toBeInTheDocument(),
-    );
+    expect(await screen.findByText("no_announcements")).toBeInTheDocument();
   });
 
   it("renders the announcements list once data has loaded", async () => {
-    loadAnnouncements.mockImplementation(
-      async ({ setLoading, setAnnouncements }) => {
-        setAnnouncements([
-          {
-            id: 1,
-            titleDutch: "Titel",
-            titleEnglish: "Title",
-            contentDutch: "Inhoud",
-            contentEnglish: "Content",
-          },
-        ]);
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => baseToken()),
+    getAnnouncements.mockResolvedValue({
+      data: [
+        {
+          id: 1,
+          titleDutch: "Titel",
+          titleEnglish: "Title",
+          contentDutch: "Inhoud",
+          contentEnglish: "Content",
+        },
+      ],
     });
+    renderRoute(route);
 
-    renderWithProviders(<AnnouncementsPage />, { authService });
+    expect(await screen.findByText("Title")).toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(screen.getByText("Title")).toBeInTheDocument());
+  it.each([
+    ["returns an error", { error: "boom" }],
+    ["returns no data", {}],
+  ])("shows the error page when the API %s", async (_, response) => {
+    getAnnouncements.mockResolvedValue(response);
+    renderRoute(route);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load announcements",
+    );
   });
 
   it("does not show the create button for a non-board member", async () => {
-    loadAnnouncements.mockImplementation(async ({ setLoading }) => {
-      setLoading(false);
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => baseToken({ is_admin: false })),
-    });
+    renderRoute(route);
 
-    renderWithProviders(<AnnouncementsPage />, { authService });
-
-    await waitFor(() =>
-      expect(screen.getByText("no_announcements")).toBeInTheDocument(),
-    );
+    await screen.findByText("no_announcements");
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   it("shows the create button for a board member and navigates on click", async () => {
-    loadAnnouncements.mockImplementation(async ({ setLoading }) => {
-      setLoading(false);
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => baseToken({ is_admin: true })),
-    });
+    requireTokenParsed.mockResolvedValue(baseToken({ is_admin: true }));
     const user = userEvent.setup();
+    renderRoute(route);
 
-    renderWithProviders(<AnnouncementsPage />, { authService });
-
-    const button = await screen.findByRole("button");
-    await user.click(button);
+    await user.click(await screen.findByRole("button"));
 
     expect(handleCreateAnnouncementClick).toHaveBeenCalledTimes(1);
-  });
-
-  it("logs an error and does not load announcements when the user is not authenticated", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => null),
-    });
-
-    renderWithProviders(<AnnouncementsPage />, { authService });
-
-    await waitFor(() =>
-      expect(consoleError).toHaveBeenCalledWith("User not authenticated"),
-    );
-    expect(loadAnnouncements).not.toHaveBeenCalled();
-
-    consoleError.mockRestore();
   });
 });

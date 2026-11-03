@@ -1,32 +1,55 @@
-import { screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import DashboardPage from "~/routes/home/home";
-import { loadHomePageData } from "~/routes/home/home.handlers";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import * as route from "~/routes/home/home";
+import { loadHomeLoaderData } from "~/routes/home/home.handlers";
+import { renderRoute, screen } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
+const { requireTokenParsed } = vi.hoisted(() => ({
+  requireTokenParsed: vi.fn(),
+}));
+
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
 vi.mock("~/routes/home/home.handlers", () => ({
-  loadHomePageData: vi.fn(),
+  loadHomeLoaderData: vi.fn(),
 }));
 
 vi.mock("~/components/DashboardHeader", () => ({
-  default: ({ name }: { name: string }) => <div>dashboard-header-{name}</div>,
+  default: ({
+    name,
+    nextActivity,
+  }: {
+    name: string;
+    nextActivity?: { name: string };
+  }) => (
+    <div>
+      dashboard-header-{name}-{nextActivity?.name ?? "none"}
+    </div>
+  ),
 }));
 
 vi.mock("~/components/Activity/UpcomingActivities", () => ({
-  default: () => <div>upcoming-activities</div>,
+  default: ({ activities }: { activities: unknown[] }) => (
+    <div>upcoming-activities-{activities.length}</div>
+  ),
 }));
 
 vi.mock("~/components/Activity/ActivityEnrollmentOverview", () => ({
-  default: () => <div>enrollment-overview</div>,
+  default: ({ enrolledActivities }: { enrolledActivities: unknown[] }) => (
+    <div>enrollment-overview-{enrolledActivities.length}</div>
+  ),
 }));
 
 vi.mock("~/components/Announcement/AnnouncementsList", () => ({
-  default: () => <div>announcements-list</div>,
+  default: ({ announcements }: { announcements: unknown[] }) => (
+    <div>announcements-list-{announcements.length}</div>
+  ),
 }));
 
 vi.mock("~/components/Group/GroupMembershipOverview", () => ({
-  default: () => <div>group-membership-overview</div>,
+  default: ({ groupMemberships }: { groupMemberships: unknown[] }) => (
+    <div>group-membership-overview-{groupMemberships.length}</div>
+  ),
 }));
 
 const token: TokenParsed = {
@@ -41,75 +64,42 @@ const token: TokenParsed = {
 describe("DashboardPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue(token);
+    vi.mocked(loadHomeLoaderData).mockResolvedValue({
+      activities: [{ name: "Borrel" }, { name: "Lezing" }],
+      futureEnrollments: [{}],
+      announcements: [{}, {}],
+      groupMemberships: [{}, {}, {}],
+      unpaidBalances: [],
+      enrollments: [],
+    } as never);
   });
 
-  it("renders nothing while the token has not loaded", () => {
-    const authService = createMockAuthService({
-      isReady: vi.fn(() => true),
-      getTokenParsed: vi.fn(() => new Promise<TokenParsed | null>(() => {})),
-    });
-    const { container } = renderWithProviders(<DashboardPage />, {
-      authService,
-    });
-    expect(container).toBeEmptyDOMElement();
+  it("loads the dashboard data for the logged-in user", async () => {
+    renderRoute(route);
+
+    await screen.findByText("dashboard-header-Jane-Borrel");
+    expect(loadHomeLoaderData).toHaveBeenCalledWith(token.UserId);
   });
 
-  it("does not load token/auth when the auth service is not ready", async () => {
-    const authService = createMockAuthService({
-      isReady: vi.fn(() => false),
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardPage />, { authService });
+  it("renders the dashboard sections with the loaded data", async () => {
+    renderRoute(route);
 
-    await new Promise((r) => setTimeout(r, 0));
-    expect(authService.getTokenParsed).not.toHaveBeenCalled();
+    expect(await screen.findByText("announcements-list-2")).toBeInTheDocument();
+    expect(screen.getByText("upcoming-activities-2")).toBeInTheDocument();
+    expect(screen.getByText("enrollment-overview-1")).toBeInTheDocument();
+    expect(screen.getByText("group-membership-overview-3")).toBeInTheDocument();
+    expect(screen.getAllByText("show_all")).toHaveLength(2);
   });
 
-  it("shows a loading indicator once the token is available and data is loading", async () => {
-    const authService = createMockAuthService({
-      isReady: vi.fn(() => true),
-      getTokenParsed: vi.fn(async () => token),
-      isAuthenticated: vi.fn(() => true),
-    });
-    renderWithProviders(<DashboardPage />, { authService });
-
-    expect(
-      await screen.findByText(/dashboard-header-Jane/),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/loading_dashboard/)).toBeInTheDocument();
-    await waitFor(() => expect(loadHomePageData).toHaveBeenCalled());
-  });
-
-  it("does not call loadHomePageData when the user is not authenticated", async () => {
-    const authService = createMockAuthService({
-      isReady: vi.fn(() => true),
-      getTokenParsed: vi.fn(async () => token),
-      isAuthenticated: vi.fn(() => false),
-    });
-    renderWithProviders(<DashboardPage />, { authService });
-
-    await screen.findByText(/dashboard-header-Jane/);
-    await new Promise((r) => setTimeout(r, 0));
-    expect(loadHomePageData).not.toHaveBeenCalled();
-  });
-
-  it("renders the dashboard content once loading completes", async () => {
-    vi.mocked(loadHomePageData).mockImplementation(async ({ setLoading }) => {
-      setLoading(false);
-    });
-    const authService = createMockAuthService({
-      isReady: vi.fn(() => true),
-      getTokenParsed: vi.fn(async () => token),
-      isAuthenticated: vi.fn(() => true),
-    });
-    renderWithProviders(<DashboardPage />, { authService });
-
-    await waitFor(() =>
-      expect(screen.getByText("announcements-list")).toBeInTheDocument(),
+  it("shows the error page when the data fails to load", async () => {
+    vi.mocked(loadHomeLoaderData).mockRejectedValue(
+      new Error("Failed to load activities"),
     );
-    expect(screen.getByText("upcoming-activities")).toBeInTheDocument();
-    expect(screen.getByText("enrollment-overview")).toBeInTheDocument();
-    expect(screen.getByText("group-membership-overview")).toBeInTheDocument();
-    expect(screen.getAllByText("show_all").length).toBeGreaterThan(0);
+    renderRoute(route);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load activities",
+    );
   });
 });

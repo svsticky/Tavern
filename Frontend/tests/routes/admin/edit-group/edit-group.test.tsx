@@ -1,11 +1,13 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
-import { Route, Routes, useParams } from "react-router";
+import { useParams } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupMembershipResponseDto } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import type { EditGroupLoaderData } from "~/routes/admin/edit-group/edit-group.handlers";
+import { renderRoute } from "~/testUtils";
 
 const {
-  loadGroupData,
+  loadEditGroupLoaderData,
+  requireBoardOrCandidateBoard,
   loadGroupMemberships,
   handleSaveGroup,
   handleGroupProfilePictureUpload,
@@ -14,9 +16,8 @@ const {
   handleUpdateGroupRole,
   handleRoleAliasAdded,
 } = vi.hoisted(() => ({
-  loadGroupData: vi.fn(async ({ setLoading }: any) => {
-    setLoading(false);
-  }),
+  loadEditGroupLoaderData: vi.fn(),
+  requireBoardOrCandidateBoard: vi.fn(),
   loadGroupMemberships: vi.fn(),
   handleSaveGroup: vi.fn(),
   handleGroupProfilePictureUpload: vi.fn(),
@@ -26,8 +27,10 @@ const {
   handleRoleAliasAdded: vi.fn(),
 }));
 
+vi.mock("~/util/loaderAuth.util", () => ({ requireBoardOrCandidateBoard }));
+
 vi.mock("~/routes/admin/edit-group/edit-group.handlers", () => ({
-  loadGroupData,
+  loadEditGroupLoaderData,
   loadGroupMemberships,
   handleSaveGroup,
   handleGroupProfilePictureUpload,
@@ -70,7 +73,7 @@ vi.mock("~/components/Roles/CreateRoleOverlay/CreateRoleOverlay", () => ({
   ),
 }));
 
-import EditGroupPage from "~/routes/admin/edit-group/edit-group";
+import * as route from "~/routes/admin/edit-group/edit-group";
 
 function MemberPageStub() {
   const { id } = useParams();
@@ -78,13 +81,31 @@ function MemberPageStub() {
 }
 
 function renderPage(id = 1) {
-  return renderWithProviders(
-    <Routes>
-      <Route path="/admin/groups/:id" element={<EditGroupPage />} />
-      <Route path="/admin/members/:id" element={<MemberPageStub />} />
-    </Routes>,
-    { route: `/admin/groups/${id}` },
-  );
+  return renderRoute(route, {
+    path: "/admin/groups/:id",
+    route: `/admin/groups/${id}`,
+    otherRoutes: [{ path: "/admin/members/:id", Component: MemberPageStub }],
+  });
+}
+
+/** Makes the loader return group 1 with the given changes. */
+function mockLoaderData(overrides: Partial<EditGroupLoaderData> = {}) {
+  loadEditGroupLoaderData.mockResolvedValue({
+    groupId: 1,
+    formData: {
+      Name: "Board",
+      Type: "Committee",
+      Active: true,
+      DefaultGLAccount: "",
+      DefaultCostCenter: "",
+      DefaultCostUnit: "",
+    },
+    roleAliases: [{ id: 2, name: "Chair" }],
+    groupPictureSrc: null,
+    committeeYear: 2026,
+    enrollments: [enrollment()],
+    ...overrides,
+  });
 }
 
 function enrollment(
@@ -106,12 +127,8 @@ function enrollment(
 describe("EditGroupPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    loadGroupData.mockImplementation(
-      async ({ setLoading, setRoleAliases }: any) => {
-        setRoleAliases([{ id: 2, name: "Chair" }]);
-        setLoading(false);
-      },
-    );
+    requireBoardOrCandidateBoard.mockResolvedValue({});
+    mockLoaderData();
     loadGroupMemberships.mockImplementation(
       async (
         _id: number,
@@ -119,45 +136,39 @@ describe("EditGroupPage", () => {
         setLoadingMemberships: (v: boolean) => void,
         setEnrollments: (v: GroupMembershipResponseDto[]) => void,
       ) => {
-        setEnrollments([enrollment()]);
+        setEnrollments([enrollment({ memberName: "John Smith" })]);
         setLoadingMemberships(false);
       },
     );
   });
 
-  it("shows a loading indicator while loading, then renders the form", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadGroupData.mockImplementation(
-      ({ setLoading }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
-    renderPage(1);
-
-    expect(screen.getByText("loading")).toBeInTheDocument();
-
-    resolveLoad?.();
-
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
-    );
-  });
-
-  it("loads group data and memberships for the given id", async () => {
+  it("loads the group from the id in the URL", async () => {
     renderPage(7);
 
-    await waitFor(() => expect(loadGroupData).toHaveBeenCalled());
-    expect(loadGroupData.mock.calls[0][0]).toMatchObject({ id: 7 });
-    expect(loadGroupMemberships).toHaveBeenCalledWith(
-      7,
-      expect.any(Number),
-      expect.any(Function),
-      expect.any(Function),
+    await screen.findByText("Jane Doe");
+    expect(loadEditGroupLoaderData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "7" }),
+    );
+    // The loader already includes this year's memberships.
+    expect(loadGroupMemberships).not.toHaveBeenCalled();
+  });
+
+  it("fills the form with the group's details", async () => {
+    renderPage(1);
+
+    expect(
+      await screen.findByLabelText("group_name", { exact: false }),
+    ).toHaveValue("Board");
+  });
+
+  it("shows the error page when the group fails to load", async () => {
+    loadEditGroupLoaderData.mockRejectedValue(
+      new Error("Failed to load group data"),
+    );
+    renderPage(1);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load group data",
     );
   });
 
@@ -280,7 +291,7 @@ describe("EditGroupPage", () => {
   it("uploads a profile picture when a file is chosen", async () => {
     renderPage(1);
 
-    await waitFor(() => expect(loadGroupData).toHaveBeenCalled());
+    await screen.findByText("Jane Doe");
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -293,7 +304,7 @@ describe("EditGroupPage", () => {
   it("opens the file picker when the profile picture is clicked", async () => {
     renderPage(1);
 
-    await waitFor(() => expect(loadGroupData).toHaveBeenCalled());
+    await screen.findByText("Jane Doe");
     const fileInput = document.querySelector(
       'input[type="file"]',
     ) as HTMLInputElement;
@@ -325,7 +336,15 @@ describe("EditGroupPage", () => {
       target: { value: otherOption?.value ?? "" },
     });
 
-    await waitFor(() => expect(loadGroupMemberships).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(loadGroupMemberships).toHaveBeenCalledWith(
+        1,
+        Number(otherOption?.value),
+        expect.any(Function),
+        expect.any(Function),
+      ),
+    );
+    expect(await screen.findByText("John Smith")).toBeInTheDocument();
   });
 
   it("updates group info fields as the user edits them", async () => {
@@ -365,17 +384,7 @@ describe("EditGroupPage", () => {
   });
 
   it("shows a numeric role select value when the enrollment has a role alias", async () => {
-    loadGroupMemberships.mockImplementation(
-      async (
-        _id: number,
-        _year: number,
-        setLoadingMemberships: (v: boolean) => void,
-        setEnrollments: (v: GroupMembershipResponseDto[]) => void,
-      ) => {
-        setEnrollments([enrollment({ roleAliasId: 2 })]);
-        setLoadingMemberships(false);
-      },
-    );
+    mockLoaderData({ enrollments: [enrollment({ roleAliasId: 2 })] });
     renderPage(1);
 
     await screen.findByText("Jane Doe");
@@ -386,13 +395,7 @@ describe("EditGroupPage", () => {
   });
 
   it("shows a full-size profile picture once one has loaded", async () => {
-    loadGroupData.mockImplementation(
-      async ({ setLoading, setRoleAliases, setGroupPictureSrc }: any) => {
-        setRoleAliases([{ id: 2, name: "Chair" }]);
-        setGroupPictureSrc("blob:group-picture");
-        setLoading(false);
-      },
-    );
+    mockLoaderData({ groupPictureSrc: "blob:group-picture" });
     renderPage(1);
 
     const img = await screen.findByAltText("Profile");
@@ -414,28 +417,33 @@ describe("EditGroupPage", () => {
     expect(await screen.findByText("saving")).toBeInTheDocument();
   });
 
-  it("shows an empty memberships table while memberships are loading", async () => {
-    let resolveMemberships: (() => void) | undefined;
+  it("shows an empty memberships table while another year's memberships are loading", async () => {
     loadGroupMemberships.mockImplementation(
       (
         _id: number,
         _year: number,
         setLoadingMemberships: (v: boolean) => void,
-      ) =>
-        new Promise<void>((resolve) => {
-          setLoadingMemberships(true);
-          resolveMemberships = () => {
-            setLoadingMemberships(false);
-            resolve();
-          };
-        }),
+      ) => {
+        setLoadingMemberships(true);
+        return new Promise<void>(() => {});
+      },
     );
     renderPage(1);
 
-    await waitFor(() =>
-      expect(screen.getByText("no_enrollments_found")).toBeInTheDocument(),
+    await screen.findByText("Jane Doe");
+    const yearSelect = screen
+      .getAllByRole("combobox")
+      .find((el) =>
+        Array.from((el as HTMLSelectElement).options).some((o) =>
+          /^\d{4}-\d{4}$/.test(o.textContent ?? ""),
+        ),
+      ) as HTMLSelectElement;
+    fireEvent.change(yearSelect, { target: { value: "2024" } });
+
+    expect(await screen.findAllByText("no_enrollments_found")).not.toHaveLength(
+      0,
     );
-    resolveMemberships?.();
+    expect(screen.queryByText("Jane Doe")).not.toBeInTheDocument();
   });
 
   it("closes the add-enrollment modal without adding a member", async () => {

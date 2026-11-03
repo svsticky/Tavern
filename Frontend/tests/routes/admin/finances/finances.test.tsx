@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   Activity,
@@ -6,10 +6,11 @@ import type {
   EnrollmentBalance,
   Member,
 } from "~/api";
-import { renderWithProviders } from "~/testUtils";
+import { renderRoute } from "~/testUtils";
 
 const {
-  loadFinancesData,
+  loadFinancesLoaderData,
+  requireBoardOrCandidateBoard,
   loadExpiredActivities,
   handleMarkAsPaid,
   handleOverpaidProcessed,
@@ -17,7 +18,8 @@ const {
   handleWhatsAppClick,
   refreshUnpaidPayments,
 } = vi.hoisted(() => ({
-  loadFinancesData: vi.fn(),
+  loadFinancesLoaderData: vi.fn(),
+  requireBoardOrCandidateBoard: vi.fn(),
   loadExpiredActivities: vi.fn(),
   handleMarkAsPaid: vi.fn(),
   handleOverpaidProcessed: vi.fn(),
@@ -26,8 +28,10 @@ const {
   refreshUnpaidPayments: vi.fn(),
 }));
 
+vi.mock("~/util/loaderAuth.util", () => ({ requireBoardOrCandidateBoard }));
+
 vi.mock("~/routes/admin/finances/finances.handlers", () => ({
-  loadFinancesData,
+  loadFinancesLoaderData,
   loadExpiredActivities,
   handleMarkAsPaid,
   handleOverpaidProcessed,
@@ -36,7 +40,12 @@ vi.mock("~/routes/admin/finances/finances.handlers", () => ({
   refreshUnpaidPayments,
 }));
 
-import Finances from "~/routes/admin/finances/finances";
+import * as route from "~/routes/admin/finances/finances";
+
+/** Renders the finances page. */
+function renderFinances() {
+  return renderRoute(route, { path: "/admin/finances" });
+}
 
 const member: Member = {
   id: "m1",
@@ -75,25 +84,16 @@ function loadWith(overrides: {
   unpaidBalances?: EnrollmentBalance[];
   overpaidBalances?: EnrollmentBalance[];
 }) {
-  loadFinancesData.mockImplementation(
-    async ({
-      setLoading,
-      setTotalUnpaid,
-      setOpenPayments,
-      setUnpaidActivities,
-      setMembersWithOverduePayment,
-      setUnpaidBalances,
-      setOverpaidBalances,
-    }: any) => {
-      setTotalUnpaid(overrides.totalUnpaid ?? 0);
-      setOpenPayments(overrides.openPayments ?? 0);
-      setUnpaidActivities(overrides.unpaidActivities ?? []);
-      setMembersWithOverduePayment(overrides.membersWithOverduePayment ?? []);
-      setUnpaidBalances(overrides.unpaidBalances ?? []);
-      setOverpaidBalances(overrides.overpaidBalances ?? []);
-      setLoading(false);
-    },
-  );
+  loadFinancesLoaderData.mockResolvedValue({
+    totalUnpaid: overrides.totalUnpaid ?? 0,
+    openPayments: overrides.openPayments ?? 0,
+    unpaidActivities: overrides.unpaidActivities ?? [],
+    membersWithOverduePayment: overrides.membersWithOverduePayment ?? [],
+    unpaidBalances: overrides.unpaidBalances ?? [],
+    overpaidBalances: overrides.overpaidBalances ?? [],
+    committeeYear: 2026,
+    expiredActivities: overrides.expiredActivities ?? [],
+  });
 
   loadExpiredActivities.mockImplementation(
     async ({ setLoadingExpiredActivities, setExpiredActivities }: any) => {
@@ -106,34 +106,26 @@ function loadWith(overrides: {
 describe("Finances (admin)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireBoardOrCandidateBoard.mockResolvedValue({});
     loadWith({});
   });
 
-  it("shows a loading indicator while data loads", async () => {
-    let resolveLoad: (() => void) | undefined;
-    loadFinancesData.mockImplementation(
-      ({ setLoading }: any) =>
-        new Promise<void>((resolve) => {
-          resolveLoad = () => {
-            setLoading(false);
-            resolve();
-          };
-        }),
+  it("shows the error page when the data fails to load", async () => {
+    loadFinancesLoaderData.mockRejectedValue(
+      new Error("Failed to load unpaid balances"),
     );
 
-    renderWithProviders(<Finances />);
-    expect(screen.getByText("loading")).toBeInTheDocument();
+    renderFinances();
 
-    resolveLoad?.();
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load unpaid balances",
     );
   });
 
   it("renders the total unpaid and open payments KPI", async () => {
     loadWith({ totalUnpaid: 42, openPayments: 3 });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     expect(await screen.findByText("3 open_payments")).toBeInTheDocument();
     expect(screen.getByText(/42/)).toBeInTheDocument();
@@ -142,7 +134,7 @@ describe("Finances (admin)", () => {
   it("shows the overpaid empty state when there are no overpaid balances", async () => {
     loadWith({ overpaidBalances: [] });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     expect(await screen.findByText("no_overpaid_balances")).toBeInTheDocument();
   });
@@ -160,7 +152,7 @@ describe("Finances (admin)", () => {
       ],
     });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     expect(await screen.findByText("John Smith")).toBeInTheDocument();
     expect(screen.getByText("€20.00")).toBeInTheDocument();
@@ -178,7 +170,7 @@ describe("Finances (admin)", () => {
     } as EnrollmentBalance;
     loadWith({ overpaidBalances: [overpaid] });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     fireEvent.click(await screen.findByText("processed"));
     expect(handleOverpaidProcessed).toHaveBeenCalledWith(
@@ -199,10 +191,23 @@ describe("Finances (admin)", () => {
       ],
     });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     expect(await screen.findByText("Old Party")).toBeInTheDocument();
     expect(screen.getByText("go_to_activity")).toBeInTheDocument();
+  });
+
+  it("loads the expired activities of another year when the year changes", async () => {
+    renderFinances();
+
+    fireEvent.change(await screen.findByLabelText("year"), {
+      target: { value: "2024" },
+    });
+
+    expect(loadExpiredActivities).toHaveBeenCalledWith(
+      expect.objectContaining({ year: 2024 }),
+    );
+    expect(screen.getByLabelText("year")).toHaveValue("2024");
   });
 
   it("renders unpaid activities with an expandable member list and marks as paid", async () => {
@@ -212,7 +217,7 @@ describe("Finances (admin)", () => {
       unpaidBalances: [unpaidBalance()],
     });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     expect(await screen.findByText("Feest")).toBeInTheDocument();
     // "Jane Doe" appears both in the unpaid-activities breakdown and the overdue-payment
@@ -266,7 +271,7 @@ describe("Finances (admin)", () => {
       unpaidBalances: [feest, janeBorrel, borrel],
     });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     expect(await screen.findByText("Feest")).toBeInTheDocument();
     expect(screen.getByText("unpaid_members (1)")).toBeInTheDocument();
@@ -286,7 +291,7 @@ describe("Finances (admin)", () => {
       membersWithOverduePayment: [{ member, enrollments: [unpaidBalance()] }],
     });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     const whatsappButton = await screen.findByText("WhatsApp");
     fireEvent.click(whatsappButton);
@@ -319,15 +324,15 @@ describe("Finances (admin)", () => {
       ],
     });
 
-    renderWithProviders(<Finances />);
+    renderFinances();
 
     await screen.findByText("overdue_payment");
     expect(screen.queryByText("WhatsApp")).not.toBeInTheDocument();
   });
 
   it("enables export only once both dates are filled and calls the export handler", async () => {
-    renderWithProviders(<Finances />);
-    await waitFor(() => expect(loadFinancesData).toHaveBeenCalled());
+    renderFinances();
+    await screen.findByText("no_overpaid_balances");
 
     const exportButton = screen.getByText("export").closest("button");
     expect(exportButton).toBeDisabled();
