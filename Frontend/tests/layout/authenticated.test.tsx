@@ -87,10 +87,7 @@ describe("AuthenticatedLayout", () => {
   });
 
   it("does not redirect to login when the access token's clock has elapsed but a refresh still succeeds", async () => {
-    // isAuthenticated() only checks the access token's clock, with no
-    // refresh attempt - it can say "expired" for a token getTokenParsed()
-    // (which does refresh) can still successfully renew. That must not
-    // force a login() redirect on an ordinary navigation.
+    // isAuthenticated() only checks the clock, so it can say "expired" while a refresh still works.
     const authService = createMockAuthService({
       isReady: () => true,
       isAuthenticated: () => false,
