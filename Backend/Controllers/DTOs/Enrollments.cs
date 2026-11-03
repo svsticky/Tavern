@@ -32,7 +32,7 @@ public class EnrollmentResponseDTO
     public required MemberResponseDTO? Member { get; set; }
 
     /// <summary>
-    /// Whether the enrolled member chose to be anonymous. When true and <see cref="Member"/> is null, the requester may not see who it is.
+    /// Whether the enrolled member chose to be anonymous. When true and member is null, the requester may not see who it is.
     /// </summary>
     public bool IsAnonymous { get; set; }
 

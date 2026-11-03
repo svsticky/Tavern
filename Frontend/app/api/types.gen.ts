@@ -587,7 +587,7 @@ export type GetSpecificationQuestionResponseDto = {
     /**
      * Whether this question's answer closes at the activity's unenrollment deadline instead of its enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no longer be given or changed once that deadline passes. Otherwise - or when this is false - the answer remains open until the activity's enrollment deadline, falling back to the activity's end date and time if neither deadline is set.
      */
-    closeOnUnenrollmentDeadline: boolean;
+    closeOnUnenrollmentDeadline?: boolean;
     /**
      * The unique identifier of a specification question, assigned incrementally.
      */
@@ -838,6 +838,23 @@ export type Member = {
      */
     activationEmailSentAt?: string | null;
     /**
+     * When the annual study-status update email was last sent to this member, if ever. Used to make
+     * sending it idempotent across retries of the yearly Hangfire job: a run only mails members whose
+     * value is null or older than 24 hours, so a Hangfire retry after a partial failure never re-mails
+     * someone already notified earlier in the same run. A 24-hour window (rather than "same calendar
+     * year") is used deliberately so that changing the configured send date to re-trigger the job later
+     * in the same year is not silently skipped for everyone.
+     */
+    studyStatusMailSentAt?: string | null;
+    /**
+     * When the outstanding-payment reminder email was last sent to this member, if ever. Used to make
+     * sending it idempotent across retries of the weekly Hangfire job: a run only mails members whose
+     * value is null or older than 24 hours, so a Hangfire retry after a partial failure never re-mails
+     * someone already notified earlier in the same run, while still allowing next week's run to mail
+     * them again if their balance is still outstanding.
+     */
+    outstandingPaymentMailSentAt?: string | null;
+    /**
      * The student number of the member.
      */
     studentNumber: string;
@@ -922,6 +939,11 @@ export type Member = {
      * Indicates whether the member is suspended.
      */
     suspended?: boolean;
+    /**
+     * Indicates whether the member wants to appear as anonymous in activity participant lists.
+     * Board members and the activity's organizers still see who it is.
+     */
+    isAnonymous?: boolean;
     /**
      * Indicates whether the member account is soft-deleted and anonymized.
      */
@@ -1048,8 +1070,7 @@ export type MemberResponseDto = {
      */
     suspended?: boolean | null;
     /**
-     * Indicates whether the member wants to appear as anonymous in activity participant lists.
-     * Board members and the activity's organizers still see who it is.
+     * Indicates whether the member wants to appear as anonymous in activity participant lists. Board members and the activity's organizers still see who it is.
      */
     isAnonymous?: boolean | null;
     /**
@@ -1923,6 +1944,14 @@ export type SpecificationQuestion = {
      * The options for this specification question, applicable only if the type of this specification question is MultipleChoice. The content of this field is a list of strings representing the available options seperated by semicolons. For example: "Option 1;Option 2;Option 3".
      */
     options?: string | null;
+    /**
+     * Whether this question's answer closes at the activity's unenrollment deadline instead of its
+     * enrollment deadline. When true and the activity has an unenrollment deadline, the answer can no
+     * longer be given or changed once that deadline passes. Otherwise - or when this is false - the
+     * answer remains open until the activity's enrollment deadline, falling back to the activity's end
+     * date and time if neither deadline is set.
+     */
+    closeOnUnenrollmentDeadline?: boolean;
 };
 
 /**
