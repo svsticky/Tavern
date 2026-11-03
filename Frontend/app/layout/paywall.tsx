@@ -10,6 +10,7 @@ import {
   postPaymentsBegunstiger,
   postPaymentsMembership,
 } from "~/api/sdk.gen";
+import RouteErrorBoundary from "~/components/ErrorPage/RouteErrorBoundary";
 import Button from "~/components/UI/Button";
 import { useConfirm } from "~/components/UI/ConfirmModal/useConfirm";
 import { useAuth } from "~/context/AuthContext";
@@ -222,4 +223,13 @@ export default function PaywallLayout() {
   }
 
   return <Outlet />;
+}
+
+/**
+ * Shows a route's failure inside the navbar layout instead of replacing the whole page.
+ *
+ * @component
+ */
+export function ErrorBoundary() {
+  return <RouteErrorBoundary />;
 }

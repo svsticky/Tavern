@@ -5,7 +5,7 @@ import {
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
 } from "~/routes/admin/edit-member/edit-member.handlers";
-import UpdateAccountStatus from "~/routes/update-account-status";
+import UpdateAccountStatus from "~/routes/update-account-status/update-account-status";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 

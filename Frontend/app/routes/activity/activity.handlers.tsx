@@ -1,45 +1,52 @@
 import { t } from "i18next";
 import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivitiesById } from "~/api";
+import { type ActivityResponseDto, getActivitiesById, getGroupsById } from "~/api";
+import type { TokenParsed } from "~/types/TokenParsed";
 import { appendErrorMessage } from "~/util/error.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 
 /**
- * Arguments for the loadActivityData handler.
+ * The data the activity detail page's `clientLoader` provides.
+ * @typedef {Object} ActivityLoaderData
+ * @property {TokenParsed} tokenParsed - The parsed token of the logged-in user.
+ * @property {ActivityResponseDto} activity - The activity being shown.
+ * @property {string | null} organizerName - The name of the organizing group, or `null` when it has none.
  */
-type LoadActivityArgs = {
-  activityId: number;
-  setLoading: (loading: boolean) => void;
-  setActivity: (activity: ActivityResponseDto) => void;
+export type ActivityLoaderData = {
+  tokenParsed: TokenParsed;
+  activity: ActivityResponseDto;
+  organizerName: string | null;
 };
 
 /**
- * Fetches the details of a specific activity by its ID.
+ * Loads everything the activity detail page needs: the user's token, the activity
+ * and the name of its organizing group.
  *
- * @async
- * @param {LoadActivityArgs} args - Configuration, activity ID, and state setter functions.
+ * @param {{ id?: string }} params - The route parameters, containing the activity ID.
+ * @returns {Promise<ActivityLoaderData>} The loader data for the activity page.
  */
-export const loadActivityData = async ({
-  activityId,
-  setLoading,
-  setActivity,
-}: LoadActivityArgs) => {
-  try {
-    setLoading(true);
-    const activitiesResponse = await getActivitiesById({
-      path: { id: activityId },
-    });
+export const loadActivityLoaderData = async (params: {
+  id?: string;
+}): Promise<ActivityLoaderData> => {
+  const tokenParsed = await requireTokenParsed();
+  const activitiesResponse = await getActivitiesById({
+    path: { id: Number(params.id) },
+  });
+  if (activitiesResponse.error || !activitiesResponse.data)
+    throw new Error("Failed to load activities");
 
-    if (activitiesResponse.error || !activitiesResponse.data)
-      throw new Error("Failed to load activity");
+  // A missing organizer name shouldn't break the page, so this one doesn't throw
+  const organizerId = activitiesResponse.data.organizerId;
+  const organizerResponse = organizerId
+    ? await getGroupsById({ path: { id: organizerId } })
+    : null;
 
-    setActivity(activitiesResponse.data);
-  } catch (error) {
-    console.error("Error while loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
-  }
+  return {
+    tokenParsed,
+    activity: activitiesResponse.data,
+    organizerName: organizerResponse?.data?.name ?? null,
+  };
 };
 
 /**

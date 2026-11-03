@@ -1,14 +1,15 @@
 import { t } from "i18next";
 import { PlusIcon, TrashIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import toast from "react-hot-toast";
-import type { GroupResponseDto, Role } from "~/api";
+import { useLoaderData } from "react-router";
 import { postGroupsPromoteBoard } from "~/api/sdk.gen";
 import ManageExternalLinksDatatable from "~/components/Admin/ManageExternalLinksDatatable/ManageExternalLinksDatatable";
 import ManageMailinglistsDatatable from "~/components/Mailinglist/ManageMailinglistsDatatable/ManageMailinglistsDatatable";
 import ManageRegisterReasonsDatatable from "~/components/Register/ManageRegisterReasonsDatatable/ManageRegisterReasonsDatatable";
 import ManageRegisterSlidesDatatable from "~/components/Register/ManageRegisterSlidesDatatable/ManageRegisterSlidesDatatable";
 import ManageRegistrationDocumentsDatatable from "~/components/Register/ManageRegistrationDocumentsDatatable/ManageRegistrationDocumentsDatatable";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import ManageStudiesDatatable from "~/components/Study/ManageStudiesDatatable/ManageStudiesDatatable";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Tile from "~/components/Tiles/Tile";
@@ -23,6 +24,7 @@ import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
+import { requireBoardOrCandidateBoard } from "~/util/loaderAuth.util";
 import {
   getCurrentRoleMappings,
   getGroupOptions,
@@ -31,8 +33,26 @@ import {
   handleRemoveRoleMapping,
   handleSaveSettings,
   handleSettingsChange,
-  loadSettingsPageData,
+  loadSettingsLoaderData,
 } from "./settings.handlers";
+
+/**
+ * Loads the settings, groups and roles (see `loadSettingsLoaderData`).
+ * Only board and candidate board members can open this page.
+ */
+export async function clientLoader() {
+  await requireBoardOrCandidateBoard();
+  return loadSettingsLoaderData();
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The primary configuration dashboard for the application's global settings.
@@ -54,29 +74,19 @@ import {
  * @component
  */
 export default function SettingsPage() {
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const { availableGroups, availableRoles } = loaderData;
   const [saving, setSaving] = useState(false);
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, string>>(
+    loaderData.settings,
+  );
 
   const [newSettings, setNewSettings] = useState<Set<string>>(new Set());
   const [deletedSettings, setDeletedSettings] = useState<Set<string>>(
     new Set(),
   );
 
-  const [availableGroups, setAvailableGroups] = useState<GroupResponseDto[]>(
-    [],
-  );
-  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState("");
-
-  useEffect(() => {
-    loadSettingsPageData({
-      setSettings,
-      setAvailableGroups,
-      setAvailableRoles,
-      setLoading,
-    });
-  }, []);
 
   const [isPromotingBoard, setIsPromotingBoard] = useState(false);
   const [confirmModal, confirm] = useConfirm();
@@ -113,8 +123,6 @@ export default function SettingsPage() {
       setIsPromotingBoard(false);
     }
   };
-
-  if (loading) return t("loading");
 
   return (
     <div className="flex flex-col max-w-4xl mx-auto w-full">

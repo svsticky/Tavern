@@ -28,11 +28,15 @@ import type { TokenParsed } from "~/types/TokenParsed";
 /**
  * Builds a fully-stubbed IAuthService. All methods are vi.fn() so call assertions work
  * out of the box; override only the methods a given test cares about.
+ *
+ * @param {Partial<IAuthService>} [overrides] - The methods to replace on the mock.
+ * @returns {IAuthService} The mock auth service.
  */
 export function createMockAuthService(
   overrides: Partial<IAuthService> = {},
 ): IAuthService {
   return {
+    init: vi.fn(async () => {}),
     login: vi.fn(async () => {}),
     logout: vi.fn(async () => {}),
     isAuthenticated: vi.fn(() => true),
@@ -69,6 +73,10 @@ type RenderWithProvidersOptions = Omit<RenderOptions, "wrapper"> & {
  * Renders a component wrapped with the same providers the real app tree supplies:
  * a router, AuthContext, and AppContext. Use this for anything that calls useAuth(),
  * useApp(), useNavigate(), useParams(), or renders `<Link>`.
+ *
+ * @param {ReactElement} ui - The component to render.
+ * @param {RenderWithProvidersOptions} [options] - The initial route, auth service, whether to add the AppProvider, and other RTL render options.
+ * @returns The RTL render result, plus the `authService` that was used.
  */
 export function renderWithProviders(
   ui: ReactElement,

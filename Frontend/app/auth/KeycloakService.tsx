@@ -1,10 +1,10 @@
 import Keycloak from "keycloak-js";
 import React from "react";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
-import AuthContext from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { getEnv } from "~/util/config.utils";
 import type { IAuthService } from "./IAuthService";
+import AuthContext from "~/context/AuthContext";
 
 /**
  * Keycloak-backed implementation of the frontend auth service contract.

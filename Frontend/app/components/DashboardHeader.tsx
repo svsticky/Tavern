@@ -17,7 +17,7 @@ import {
   getPaymentsUnpaid,
   postPaymentsActivity,
 } from "~/api";
-import { useAuth } from "~/context/AuthContext";
+import { useAuth, useTokenParsed } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
@@ -29,11 +29,16 @@ import Button from "./UI/Button";
  * Props for the DashboardHeader component.
  * @interface DashboardHeaderProps
  * @property {string} name - The display name of the user to be greeted.
- * @property {ActivityResponseDto} [nextActivity] - Data for the user's next scheduled activity, if one exists.
+ * @property {ActivityResponseDto} nextActivity - Data for the user's next scheduled activity.
+ * @property {EnrollmentBalance[]} unpaidBalances - List of the user's unpaid activity balances.
+ * @property {EnrollmentResponseDto[]} enrollments - List of the user's activity enrollments.
+ * 
  */
 type DashboardHeaderProps = {
   name: string;
-  nextActivity?: ActivityResponseDto;
+  nextActivity: ActivityResponseDto;
+  unpaidBalances: EnrollmentBalance[];
+  enrollments: EnrollmentResponseDto[];
 };
 
 // After returning from a Mollie checkout, the payment webhook may not have landed yet, so a
@@ -43,8 +48,13 @@ type DashboardHeaderProps = {
 const PAYMENT_RETURN_POLL_INTERVAL_MS = 1500;
 const PAYMENT_RETURN_MAX_POLL_ATTEMPTS = 24;
 
-// Rejects with the abort reason if `signal` fires before `ms` elapses, so a superseded
-// effect run doesn't sit out the wait before it can bail out.
+/**
+ * Waits `ms` milliseconds. Rejects with the abort reason if `signal` fires before
+ * then, so a superseded effect run doesn't sit out the wait before it can bail out.
+ *
+ * @param {number} ms - How long to wait, in milliseconds.
+ * @param {AbortSignal} signal - Aborts the wait early.
+ */
 function sleep(ms: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     if (signal.aborted) {
@@ -77,172 +87,81 @@ function sleep(ms: number, signal: AbortSignal) {
 export default function DashboardHeader({
   name,
   nextActivity,
+  unpaidBalances: initialUnpaidBalances,
+  enrollments,
 }: DashboardHeaderProps) {
   const { t } = useTranslation();
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const tokenParsed = useTokenParsed();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState<boolean>(true);
-  const [confirmingPayment, setConfirmingPayment] = useState<boolean>(false);
-
-  const [outstandingPayments, setOutstandingPayments] = useState<number>(0);
-  const [pastEnrollments, setPastEnrollments] = useState<
-    EnrollmentResponseDto[]
-  >([]);
-  const [comingEnrollments, setComingEnrollments] = useState<
-    EnrollmentResponseDto[]
-  >([]);
-  const [unpaidActivityIds, setUnpaidActivityIds] = useState<number[]>([]);
-  const [unpaidEnrollments, setUnpaidEnrollments] = useState<
-    EnrollmentBalance[]
-  >([]);
-
+  const [confirmingPayment, setConfirmingPayment] = useState(false);
+  const [unpaidBalances, setUnpaidBalances] = useState<EnrollmentBalance[]>(initialUnpaidBalances);
   const [enrollmentsModalIsOpen, setEnrollmentsModalIsOpen] = useState(false);
   const [attendedModalIsOpen, setAttendedModalIsOpen] = useState(false);
   const [paymentsModalIsOpen, setPaymentsModalIsOpen] = useState(false);
 
-  // t is intentionally omitted from the deps below: i18next-http-backend loads
-  // translations over HTTP, so t gets a new reference shortly after mount once that
-  // resolves - depending on it here would restart this fetch/poll cycle for an
-  // unrelated reason. t is still used inside via closure for the (rare) error toast.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see comment above
+  const pastEnrollments = enrollments.filter(
+    (enrollment: EnrollmentResponseDto) => new Date(enrollment.activity.dateTimeEnd) < new Date(Date.now())
+  );
+  const comingEnrollments = enrollments.filter(
+    (enrollment: EnrollmentResponseDto) => new Date(enrollment.activity.dateTimeEnd) >= new Date(Date.now())
+  );
+
   useEffect(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
+    const returningFromPayment = 
+      new URLSearchParams(window.location.search).get("paymentReturn") === "activity";
+      if (!returningFromPayment) return;
 
-    async function loadData() {
-      if (!authService.isAuthenticated()) {
-        setLoading(false);
-        return;
-      }
+      const controller = new AbortController();
+      const { signal } = controller;
 
-      const parsedToken = await authService.getTokenParsed();
-      if (signal.aborted) return;
+      async function pollUntilSettled() {
+        try {
+          let attempt = 0;
 
-      setTokenParsed(parsedToken);
+          while (true) {
+            const outstandingPaymentsResponse = await getPaymentsUnpaid({
+              signal,
+            });
 
-      if (!parsedToken) {
-        console.error("Failed to parse token");
-        setLoading(false);
-        return;
-      }
-
-      const returningFromPayment =
-        new URLSearchParams(window.location.search).get("paymentReturn") ===
-        "activity";
-
-      try {
-        let attempt = 0;
-
-        while (true) {
-          const [outstandingPaymentsResponse, enrollmentAmountResponse] =
-            await Promise.all([
-              getPaymentsUnpaid({ signal }),
-              getEnrollments({
-                query: {
-                  FromMemberId: parsedToken.UserId,
-                },
-                signal,
-              }),
-            ]);
-
-          if (outstandingPaymentsResponse.error) {
-            throw new Error(
-              String(outstandingPaymentsResponse.message) ||
-                "Failed to load outstanding payments",
-            );
-          }
-
-          if (enrollmentAmountResponse.error) {
-            throw new Error(
-              String(enrollmentAmountResponse.message) ||
-                "Failed to load enrollments",
-            );
-          }
-
-          attempt++;
-          const stillUnpaid =
-            (outstandingPaymentsResponse.data?.length ?? 0) > 0;
-          const isLastAttempt =
-            !returningFromPayment ||
-            !stillUnpaid ||
-            attempt >= PAYMENT_RETURN_MAX_POLL_ATTEMPTS;
-
-          if (isLastAttempt) {
-            if (outstandingPaymentsResponse.data) {
-              setOutstandingPayments(
-                outstandingPaymentsResponse.data.reduce(
-                  (total, payment) => total + (payment.balance || 0),
-                  0,
-                ),
-              );
-              setUnpaidActivityIds(
-                outstandingPaymentsResponse.data.map(
-                  (payment) => payment.enrollment.activityId,
-                ),
-              );
-              setUnpaidEnrollments(outstandingPaymentsResponse.data);
+            if (outstandingPaymentsResponse.error) {
+              throw new Error(String(outstandingPaymentsResponse.error) || "Failed to fetch outstanding payments");
             }
 
-            if (enrollmentAmountResponse.data) {
-              const now = Date.now();
-              const past: EnrollmentResponseDto[] = [];
-              const coming: EnrollmentResponseDto[] = [];
-              for (let i = 0; i < enrollmentAmountResponse.data.length; i++) {
-                const enrollment = enrollmentAmountResponse.data[i];
-                const activityDate = new Date(
-                  enrollment.activity.dateTimeEnd,
-                ).getTime();
-                if (activityDate < now) {
-                  past.push(enrollment);
-                } else {
-                  coming.push(enrollment);
-                }
+            attempt++;
+
+            const stillUnpaid =
+              (outstandingPaymentsResponse.data?.length ?? 0) > 0;
+            const lastAttempt = !stillUnpaid || attempt >= PAYMENT_RETURN_MAX_POLL_ATTEMPTS;
+
+            if (lastAttempt) {
+              if (outstandingPaymentsResponse.data) {
+                setUnpaidBalances(outstandingPaymentsResponse.data);
               }
-              setPastEnrollments(past);
-              setComingEnrollments(coming);
-            } else {
-              throw new Error("No enrollment data returned from API");
+              break;
             }
 
-            break;
+            setConfirmingPayment(true);
+            await sleep(PAYMENT_RETURN_POLL_INTERVAL_MS, signal);
           }
 
-          setConfirmingPayment(true);
-          await sleep(PAYMENT_RETURN_POLL_INTERVAL_MS, signal);
-        }
-
-        setConfirmingPayment(false);
-
-        if (returningFromPayment) {
           const url = new URL(window.location.href);
           url.searchParams.delete("paymentReturn");
           window.history.replaceState({}, "", url.toString());
         }
-      } catch (error) {
-        // A superseded run (aborted on cleanup) rejects here via the aborted
-        // fetches/sleep - bail out silently instead of writing stale state or an
-        // error toast for a run nobody's waiting on anymore.
-        if (signal.aborted) return;
-
-        console.error("Error while loading outstanding payments:", error);
-        setOutstandingPayments(0);
-
-        toast.error(appendErrorMessage(t("dashboard_data_load_error"), error));
-      } finally {
-        if (!signal.aborted) {
-          setLoading(false);
-          setConfirmingPayment(false);
+        catch (error) {
+          if (signal.aborted) {
+            setConfirmingPayment(false);
+          }
         }
       }
-    }
 
-    loadData();
-    return () => {
-      controller.abort();
-    };
-  }, [authService]);
+      pollUntilSettled();
+
+      return () => {
+        controller.abort();
+      };
+  }, []);
 
   const [loadingPayments, setLoadingPayments] = useState<boolean>(false);
 
@@ -255,7 +174,7 @@ export default function DashboardHeader({
         const urlResponse = await postPaymentsActivity({
           body: {
             memberId: tokenParsed.UserId,
-            activityIds: unpaidActivityIds,
+            activityIds: unpaidBalances.map((balance) => balance.enrollment.activityId),
           },
         });
 
@@ -301,7 +220,7 @@ export default function DashboardHeader({
                 <p>{t("enrollments")}</p>
                 <div className="flex items-center gap-2">
                   <p className="text-2xl">
-                    {loading ? t("loading") : comingEnrollments.length}
+                    {comingEnrollments.length}
                   </p>
                   <CircleCheckBig />
                 </div>
@@ -318,7 +237,7 @@ export default function DashboardHeader({
                 <p>{t("attended")}</p>
                 <div className="flex items-center gap-2">
                   <p className="text-2xl">
-                    {loading ? t("loading") : pastEnrollments.length}
+                    {pastEnrollments.length}
                   </p>
                   <TrendingUp />
                 </div>
@@ -343,11 +262,9 @@ export default function DashboardHeader({
               <div className="grow min-w-0 text-left">
                 <p>{t("outstanding_payments")}</p>
                 <p>
-                  {loading
-                    ? confirmingPayment
+                  {confirmingPayment
                       ? t("confirming_payment")
-                      : t("loading")
-                    : `€${outstandingPayments.toFixed(2)}`}
+                    : `€${unpaidBalances.reduce((sum, balance) => sum + (balance.balance || 0), 0).toFixed(2)}`}
                 </p>
               </div>
               <Button
@@ -357,7 +274,7 @@ export default function DashboardHeader({
                 }}
                 variant="secondary"
                 disabled={
-                  loading || loadingPayments || unpaidActivityIds.length === 0
+                  confirmingPayment || loadingPayments || unpaidBalances.length === 0
                 }
               >
                 {loadingPayments ? t("paying") : t("pay")}
@@ -424,12 +341,12 @@ export default function DashboardHeader({
         isOpen={paymentsModalIsOpen}
         onClose={() => setPaymentsModalIsOpen(false)}
         title={t("outstanding_payments")}
-        items={unpaidEnrollments.map((payment) => ({
-          id: payment.enrollment.activityId,
-          name: payment.enrollment.activity?.name ?? "",
-          dateTimeStart: payment.enrollment.activity?.dateTimeStart,
-          dateTimeEnd: payment.enrollment.activity?.dateTimeEnd,
-          price: payment.balance,
+        items={unpaidBalances.map((balance) => ({
+          id: balance.enrollment.activityId,
+          name: balance.enrollment.activity?.name ?? "",
+          dateTimeStart: balance.enrollment.activity?.dateTimeStart,
+          dateTimeEnd: balance.enrollment.activity?.dateTimeEnd,
+          price: balance.balance,
         }))}
         emptyText={t("no_outstanding_payments")}
       />

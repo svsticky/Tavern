@@ -1,19 +1,79 @@
 import { t } from "i18next";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTable from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
+import InfiniteListFooter from "~/components/UI/InfiniteListFooter";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
-import { formatDate, getCommitteeYear } from "~/util/date.util";
-import { handleViewActivity, loadAdminActivities } from "./activities.handlers";
+import { useInfiniteList } from "~/hooks/useInfiniteList";
+import {
+  useDebouncedSearchParam,
+  useListSearchParams,
+} from "~/hooks/useListSearchParams";
+import { formatDate } from "~/util/date.util";
+import {
+  getLoadedPages,
+  shouldRevalidateIgnoringPages,
+} from "~/util/infiniteList.util";
+import {
+  loadCommitteeYear,
+  requireBoardOrCandidateBoard,
+} from "~/util/loaderAuth.util";
+import type { Route } from "./+types/activities";
+import {
+  ACTIVITIES_PAGE_SIZE,
+  fetchAdminActivities,
+  handleViewActivity,
+} from "./activities.handlers";
 
-/** The number of activities to fetch per page for infinite scrolling. */
-const PAGE_SIZE = 15;
+/**
+ * Loads the activities of the year and search in the URL (the current committee
+ * year when none is set). When the URL says more pages were loaded (after
+ * navigating back), it fetches all of them in one request so the list, and with
+ * it the scroll position, is restored.
+ * Only board and candidate board members can open this page.
+ *
+ * @param {Route.ClientLoaderArgs} args - The loader arguments, containing the request.
+ * @throws {Error} When the activities fail to load, which shows the route's error page.
+ */
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  await requireBoardOrCandidateBoard();
+  const url = new URL(request.url);
+  const pages = getLoadedPages(url);
+  const committeeYear = await loadCommitteeYear();
+  const urlYear = Number.parseInt(url.searchParams.get("year") ?? "", 10);
+  const year =
+    Number.isInteger(urlYear) && urlYear >= 2007 && urlYear <= committeeYear
+      ? urlYear
+      : committeeYear;
+
+  const activities = await fetchAdminActivities({
+    year,
+    search: url.searchParams.get("search") ?? "",
+    page: 1,
+    pageSize: pages * ACTIVITIES_PAGE_SIZE,
+  });
+  return { activities, pages, year, committeeYear };
+}
+
+/**
+ * Loading more activities only updates `pages` in the URL, which must not reload the list.
+ */
+export const shouldRevalidate = shouldRevalidateIgnoringPages;
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative management page for viewing and filtering all association activities.
@@ -21,7 +81,10 @@ const PAGE_SIZE = 15;
  * This component provides a robust interface for board members to track events across
  * different association years. It features:
  * - **Yearly Archiving**: A selector to view activities as far back as 2007.
- * - **Infinite Scrolling**: Automatically loads more activities as the user scrolls down.
+ * - **Infinite Scrolling**: Loads the next page when the user reaches the end of
+ *   the list (see `useInfiniteList`). The number of loaded pages, the search and
+ *   the year are kept in the URL, so going back to this page restores the list
+ *   and its scroll position.
  * - **Debounced Search**: Waits 300ms after the last keystroke before triggering a
  *   server-side search by activity name or location.
  * - **Data Visualization**: A `DataTable` that summarizes key metrics such as
@@ -33,81 +96,33 @@ const PAGE_SIZE = 15;
  */
 export default function Activities() {
   const navigate = useNavigate();
-
-  const [loading, setLoading] = useState(false);
-  const currentYear = getCommitteeYear();
-  const [year, setYear] = useState(currentYear);
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const loaderRef = useRef<HTMLDivElement>(null);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const { searchParams, updateListParams } = useListSearchParams();
+  const [searchQuery, setSearchQuery] = useDebouncedSearchParam();
+  const { year, committeeYear: currentYear } = loaderData;
 
   const yearsSince2007 = Array.from(
     { length: currentYear - 2007 + 1 },
     (_, i) => currentYear - i,
   );
 
-  const fetchActivities = useCallback(
-    async (
-      pageNum: number,
-      isInitial: boolean,
-      targetYear: number,
-      search: string,
-    ) => {
-      loadAdminActivities(
-        targetYear,
-        setLoading,
-        (fetched) => {
-          setActivities((prev) =>
-            isInitial ? fetched : [...prev, ...fetched],
-          );
-          if (fetched.length < PAGE_SIZE) {
-            setHasMore(false);
-          }
-        },
-        pageNum,
-        PAGE_SIZE,
-        search,
-      );
-    },
-    [],
-  );
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 300);
-
-    return () => clearTimeout(handler);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setPage(1);
-    setHasMore(true);
-    fetchActivities(1, true, year, debouncedSearchQuery);
-  }, [year, debouncedSearchQuery, fetchActivities]);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchActivities(nextPage, false, year, debouncedSearchQuery);
-        }
-      },
-      { threshold: 1.0 },
-    );
-
-    if (loaderRef.current) {
-      observer.observe(loaderRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, page, year, debouncedSearchQuery, fetchActivities]);
+  const {
+    items: activities,
+    hasMore,
+    loading,
+    sentinelRef,
+  } = useInfiniteList({
+    initialItems: loaderData.activities,
+    initialPages: loaderData.pages,
+    pageSize: ACTIVITIES_PAGE_SIZE,
+    fetchPage: (page, pageSize) =>
+      fetchAdminActivities({
+        year,
+        search: searchParams.get("search") ?? "",
+        page,
+        pageSize,
+      }),
+  });
 
   const columns: Column<ActivityResponseDto>[] = [
     {
@@ -180,6 +195,7 @@ export default function Activities() {
             <Input
               label={t("search")}
               placeholder={t("search_activities")}
+              value={searchQuery}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                 setSearchQuery(e.target.value)
               }
@@ -194,7 +210,9 @@ export default function Activities() {
               label={t("year")}
               style={{ minWidth: "150px" }}
               value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
+              onChange={(e) =>
+                updateListParams((params) => params.set("year", e.target.value))
+              }
             />
           </div>
         </div>
@@ -203,17 +221,13 @@ export default function Activities() {
       <BorderedTile className="bg-white p-0">
         <DataTable data={activities} columns={columns} emptyText="" />
 
-        <div ref={loaderRef} className="h-10 flex items-center justify-center">
-          <span className="text-slate-400 text-sm">
-            {loading
-              ? t("loading_more")
-              : hasMore
-                ? t("load_more")
-                : activities.length === 0
-                  ? t("no_data")
-                  : t("no_more_activities")}
-          </span>
-        </div>
+        <InfiniteListFooter
+          sentinelRef={sentinelRef}
+          loading={loading}
+          hasMore={hasMore}
+          isEmpty={activities.length === 0}
+          noMoreText={t("no_more_activities")}
+        />
       </BorderedTile>
     </div>
   );

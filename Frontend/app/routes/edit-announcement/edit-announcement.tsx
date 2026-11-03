@@ -1,6 +1,6 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLoaderData, useNavigate, useParams } from "react-router";
 import Button from "~/components/UI/Button";
 import Form from "~/components/UI/Form/Form";
 import { FormSection } from "~/components/UI/Form/FormSection";
@@ -10,8 +10,37 @@ import TextArea from "~/components/UI/TextArea";
 import {
   handleAnnouncementSubmit,
   handleDeleteAnnouncement,
-  loadAnnouncementData,
 } from "./edit-announcement.handlers";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import { getAnnouncements, getAnnouncementsById } from "~/api";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+
+/**
+ * Loads the user's token and, when an `id` route parameter is given, the announcement being edited.
+ * Redirects to the login page when the user isn't logged in.
+ *
+ * @param {Object} args - The loader arguments.
+ * @param {{ id?: string }} args.params - The route parameters; `id` is set when editing an existing announcement.
+ * @throws {Error} When the announcement fails to load, which shows the route's error page.
+ */
+export async function clientLoader( { params }: { params: { id?: string } }) {
+  const tokenParsed = await requireTokenParsed();
+  if (!params.id) {
+    return { tokenParsed, announcement: null };
+  }
+  const announcementsResponse = await getAnnouncementsById({ path: { id: Number(params.id) } });
+  if (announcementsResponse.error || !announcementsResponse.data) throw new Error("Failed to load announcements");
+  return { tokenParsed, announcement: announcementsResponse.data };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative page for creating or editing system-wide announcements.
@@ -36,21 +65,16 @@ export default function AnnouncementFormPage() {
   const navigate = useNavigate();
   const isEdit = !!id;
 
-  const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [initialData, setInitialData] = useState({
-    TitleDutch: "",
-    TitleEnglish: "",
-    ContentDutch: "",
-    ContentEnglish: "",
+
+  const { announcement } = useLoaderData<typeof clientLoader>();
+  const [ initialData ] = useState({
+    TitleDutch: announcement?.titleDutch || "",
+    TitleEnglish: announcement?.titleEnglish || "",
+    ContentDutch: announcement?.contentDutch || "",
+    ContentEnglish: announcement?.contentEnglish || "",
   });
-
-  useEffect(() => {
-    loadAnnouncementData({ isEdit, id, setInitialData, setLoading });
-  }, [id, isEdit]);
-
-  if (loading) return t("loading");
 
   return (
     <div className="max-w-4xl mx-auto">
