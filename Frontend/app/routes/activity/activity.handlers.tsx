@@ -1,9 +1,10 @@
-import { t } from "i18next";
-import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
-import { type ActivityResponseDto, getActivitiesById, getGroupsById } from "~/api";
+import {
+  type ActivityResponseDto,
+  getActivitiesById,
+  getGroupsById,
+} from "~/api";
 import type { TokenParsed } from "~/types/TokenParsed";
-import { appendErrorMessage } from "~/util/error.util";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
 
 /**

@@ -1,12 +1,11 @@
 import { t } from "i18next";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLoaderData, useLocation, useParams } from "react-router";
-import { getActivitiesById, getGroups, type ActivityResponseDto } from "~/api";
+import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import { cn } from "~/util/tailwind.util";
 import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
@@ -14,8 +13,6 @@ import {
   getEditActivityBackPath,
   loadEditActivityLoaderData,
 } from "./edit-activity.handlers";
-import { requireTokenParsed } from "~/util/loaderAuth.util";
-import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 
 /**
  * Loads the groups and, in edit mode, the activity being edited (see `loadEditActivityLoaderData`).
@@ -59,10 +56,13 @@ export default function ActivityFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
   const { pathname } = useLocation();
-  const { tokenParsed, activity, groups } = useLoaderData<typeof clientLoader>();
+  const { tokenParsed, activity, groups } =
+    useLoaderData<typeof clientLoader>();
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
-  
-  const [activityState, setActivity] = useState<ActivityResponseDto | null>(activity);
+
+  const [activityState, setActivity] = useState<ActivityResponseDto | null>(
+    activity,
+  );
 
   if (isEdit && !activity) return t("failed_fetching");
 
@@ -80,7 +80,12 @@ export default function ActivityFormPage() {
         )}
       >
         <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
-          <EditActivityForm activity={activityState} id={id} isBoard={isBoard} groups={groups} />
+          <EditActivityForm
+            activity={activityState}
+            id={id}
+            isBoard={isBoard}
+            groups={groups}
+          />
         </div>
 
         {isBoard && isEdit && activityState && (

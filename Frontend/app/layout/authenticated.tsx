@@ -269,5 +269,5 @@ export default function AuthenticatedLayout() {
     <TokenParsedContext.Provider value={tokenParsed}>
       <Outlet />
     </TokenParsedContext.Provider>
-  )
+  );
 }

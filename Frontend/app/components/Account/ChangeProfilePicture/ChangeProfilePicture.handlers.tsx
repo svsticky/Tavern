@@ -12,7 +12,9 @@ import { appendErrorMessage } from "~/util/error.util";
  * @param {string} userId - The ID of the user whose profile picture is loaded.
  * @returns {Promise<string>} The picture's object URL, or the placeholder when there is none.
  */
-export const loadProfilePictureSrc = async (userId: string): Promise<string> => {
+export const loadProfilePictureSrc = async (
+  userId: string,
+): Promise<string> => {
   try {
     const response = await getMembersByIdProfilePicture({
       path: { id: userId },
