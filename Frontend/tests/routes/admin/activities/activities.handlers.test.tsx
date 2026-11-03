@@ -1,6 +1,10 @@
 import type { NavigateFunction } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
+import {
+  fetchAdminActivities,
+  handleViewActivity,
+} from "~/routes/admin/activities/activities.handlers";
 
 const { getActivities } = vi.hoisted(() => ({
   getActivities: vi.fn(),
@@ -8,31 +12,18 @@ const { getActivities } = vi.hoisted(() => ({
 
 vi.mock("~/api", () => ({ getActivities }));
 
-vi.mock("react-hot-toast", () => ({
-  default: { success: vi.fn(), error: vi.fn(), promise: vi.fn((p) => p) },
-}));
-
-import toast from "react-hot-toast";
-import {
-  handleViewActivity,
-  loadAdminActivities,
-} from "~/routes/admin/activities/activities.handlers";
-
-describe("loadAdminActivities", () => {
+describe("fetchAdminActivities", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("fetches activities for the given year/page and updates state", async () => {
-    const setLoading = vi.fn();
-    const setActivities = vi.fn();
-    const activities: ActivityResponseDto[] = [
-      { id: 1, name: "Feest" } as ActivityResponseDto,
-    ];
+  it("fetches past and future activities of the year for the given page", async () => {
+    const activities = [{ id: 1, name: "Feest" }] as ActivityResponseDto[];
     getActivities.mockResolvedValue({ data: activities });
 
-    await loadAdminActivities(2024, setLoading, setActivities, 2, 15);
-
+    await expect(
+      fetchAdminActivities({ year: 2024, search: "", page: 2, pageSize: 15 }),
+    ).resolves.toEqual(activities);
     expect(getActivities).toHaveBeenCalledWith({
       query: {
         IncludePast: true,
@@ -40,49 +31,40 @@ describe("loadAdminActivities", () => {
         Year: 2024,
         Page: 2,
         PageSize: 15,
+        Search: undefined,
       },
     });
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setActivities).toHaveBeenCalledWith(activities);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
   });
 
-  it("shows an error toast and does not set activities when the response has an error", async () => {
-    const setLoading = vi.fn();
-    const setActivities = vi.fn();
+  it("passes the search term", async () => {
+    getActivities.mockResolvedValue({ data: [] });
+
+    await fetchAdminActivities({
+      year: 2024,
+      search: "borrel",
+      page: 1,
+      pageSize: 15,
+    });
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: expect.objectContaining({ Search: "borrel" }),
+    });
+  });
+
+  it("throws the API error", async () => {
     getActivities.mockResolvedValue({ error: "bad", data: null });
 
-    await loadAdminActivities(2024, setLoading, setActivities);
-
-    expect(setActivities).not.toHaveBeenCalled();
-    // response.error is truthy ("bad"), so the handler throws that directly rather than
-    // falling back to the generic "Failed to load activities" message.
-    expect(toast.error).toHaveBeenCalledWith("loading_failed: bad");
-    expect(setLoading).toHaveBeenLastCalledWith(false);
+    await expect(
+      fetchAdminActivities({ year: 2024, search: "", page: 1, pageSize: 15 }),
+    ).rejects.toBe("bad");
   });
 
-  it("shows an error toast and logs when the response has no data", async () => {
-    const setLoading = vi.fn();
-    const setActivities = vi.fn();
+  it("throws when the response has no data", async () => {
     getActivities.mockResolvedValue({ error: null, data: null });
 
-    await loadAdminActivities(2024, setLoading, setActivities);
-
-    expect(setActivities).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith(
-      "loading_failed: Failed to load activities",
-    );
-  });
-
-  it("catches thrown/rejected errors from the API call", async () => {
-    const setLoading = vi.fn();
-    const setActivities = vi.fn();
-    getActivities.mockRejectedValue(new Error("network down"));
-
-    await loadAdminActivities(2024, setLoading, setActivities);
-
-    expect(toast.error).toHaveBeenCalledWith("loading_failed: network down");
-    expect(setLoading).toHaveBeenLastCalledWith(false);
+    await expect(
+      fetchAdminActivities({ year: 2024, search: "", page: 1, pageSize: 15 }),
+    ).rejects.toThrow("Failed to load activities");
   });
 });
 

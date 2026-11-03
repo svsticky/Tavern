@@ -2,77 +2,78 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import {
   getEditActivityBackPath,
-  loadEditActivityData,
+  loadEditActivityLoaderData,
 } from "~/routes/edit-activity/edit-activity.handlers";
+import { makeTokenParsed } from "~/testUtils";
 
-const { getActivitiesById } = vi.hoisted(() => ({
-  getActivitiesById: vi.fn(),
+const { getActivitiesById, getGroups, requireTokenParsed, loadCommitteeYear } =
+  vi.hoisted(() => ({
+    getActivitiesById: vi.fn(),
+    getGroups: vi.fn(),
+    requireTokenParsed: vi.fn(),
+    loadCommitteeYear: vi.fn(),
+  }));
+
+vi.mock("~/api", () => ({ getActivitiesById, getGroups }));
+vi.mock("~/util/loaderAuth.util", () => ({
+  requireTokenParsed,
+  loadCommitteeYear,
 }));
 
-vi.mock("~/api", () => ({ getActivitiesById }));
+const token = makeTokenParsed();
+const groups = [{ id: 1, name: "Feestcie" }];
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
-
-describe("loadEditActivityData", () => {
+describe("loadEditActivityLoaderData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireTokenParsed.mockResolvedValue(token);
+    loadCommitteeYear.mockResolvedValue(2026);
+    getGroups.mockResolvedValue({ data: groups });
   });
 
-  it("does nothing but stop loading when creating a new activity", async () => {
-    const setActivity = vi.fn();
-    const setLoading = vi.fn();
+  it("loads the active groups of the current committee year", async () => {
+    await loadEditActivityLoaderData({});
 
-    await loadEditActivityData({
-      isEdit: false,
-      id: undefined,
-      setActivity,
-      setLoading,
+    expect(getGroups).toHaveBeenCalledWith({
+      query: { IncludeInactive: false, MembershipYear: 2026 },
     });
-
-    expect(getActivitiesById).not.toHaveBeenCalled();
-    expect(setActivity).not.toHaveBeenCalled();
-    expect(setLoading).toHaveBeenCalledWith(false);
   });
 
-  it("fetches and sets the activity when editing", async () => {
+  it("returns the token and groups without an activity when creating", async () => {
+    await expect(loadEditActivityLoaderData({})).resolves.toEqual({
+      tokenParsed: token,
+      activity: null,
+      groups,
+    });
+    expect(getActivitiesById).not.toHaveBeenCalled();
+  });
+
+  it("loads the activity when editing", async () => {
     const activity = { id: 5, name: "Party" } as ActivityResponseDto;
     getActivitiesById.mockResolvedValue({ data: activity });
-    const setActivity = vi.fn();
-    const setLoading = vi.fn();
 
-    await loadEditActivityData({
-      isEdit: true,
-      id: "5",
-      setActivity,
-      setLoading,
+    await expect(loadEditActivityLoaderData({ id: "5" })).resolves.toEqual({
+      tokenParsed: token,
+      activity,
+      groups,
     });
-
     expect(getActivitiesById).toHaveBeenCalledWith({ path: { id: 5 } });
-    expect(setActivity).toHaveBeenCalledWith(activity);
-    expect(setLoading).toHaveBeenCalledWith(false);
   });
 
-  it("logs and shows an error toast when the fetch fails", async () => {
+  it("throws when the groups fail to load", async () => {
+    getGroups.mockResolvedValue({ error: "fail" });
+
+    await expect(loadEditActivityLoaderData({})).rejects.toThrow(
+      "Failed to load groups",
+    );
+  });
+
+  it("throws when the activity fails to load", async () => {
     getActivitiesById.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const setActivity = vi.fn();
 
-    await loadEditActivityData({
-      isEdit: true,
-      id: "5",
-      setActivity,
-      setLoading: vi.fn(),
-    });
-
-    expect(setActivity).not.toHaveBeenCalled();
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
+    await expect(loadEditActivityLoaderData({ id: "5" })).rejects.toThrow(
+      "Failed to load activities",
+    );
   });
 });
 

@@ -43,13 +43,16 @@ import {
   handleRemoveRoleMapping,
   handleSaveSettings,
   handleSettingsChange,
-  loadSettingsPageData,
+  loadSettingsLoaderData,
 } from "~/routes/admin/settings/settings.handlers";
 import { BOARD_THEME_SETTINGS_UPDATED_EVENT } from "~/util/theme-settings";
 
-describe("loadSettingsPageData", () => {
+describe("loadSettingsLoaderData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getSettings.mockResolvedValue({ data: [] });
+    getGroups.mockResolvedValue({ data: [] });
+    getRoles.mockResolvedValue({ data: [] });
   });
 
   it("loads and merges settings, groups, and roles", async () => {
@@ -63,103 +66,40 @@ describe("loadSettingsPageData", () => {
     getGroups.mockResolvedValue({ data: [{ id: 1, name: "Board" }] });
     getRoles.mockResolvedValue({ data: [{ id: 1, name: "Chair" }] });
 
-    const setSettings = vi.fn();
-    const setAvailableGroups = vi.fn();
-    const setAvailableRoles = vi.fn();
-    const setLoading = vi.fn();
-
-    await loadSettingsPageData({
-      setSettings,
-      setAvailableGroups,
-      setAvailableRoles,
-      setLoading,
+    await expect(loadSettingsLoaderData()).resolves.toEqual({
+      settings: {
+        BoardGroupId: "1",
+        // 8-digit hex color (with alpha) gets normalized down to 6-digit RGB.
+        BoardPrimary: "#ABCDEF",
+        NoValue: "",
+      },
+      availableGroups: [{ id: 1, name: "Board" }],
+      availableRoles: [{ id: 1, name: "Chair" }],
     });
-
     expect(getGroups).toHaveBeenCalledWith({
       query: { IncludeInactive: true },
     });
-    expect(setSettings).toHaveBeenCalledWith({
-      BoardGroupId: "1",
-      // 8-digit hex color (with alpha) gets normalized down to 6-digit RGB.
-      BoardPrimary: "#ABCDEF",
-      NoValue: "",
-    });
-    expect(setAvailableGroups).toHaveBeenCalledWith([{ id: 1, name: "Board" }]);
-    expect(setAvailableRoles).toHaveBeenCalledWith([{ id: 1, name: "Chair" }]);
-    expect(setLoading).toHaveBeenCalledWith(false);
   });
 
   it("leaves non-board-color settings untouched even if they look like colors", async () => {
     getSettings.mockResolvedValue({
       data: [{ name: "SomeOtherColor", value: "#ABCDEF80" }],
     });
-    getGroups.mockResolvedValue({ data: [] });
-    getRoles.mockResolvedValue({ data: [] });
 
-    const setSettings = vi.fn();
+    const { settings } = await loadSettingsLoaderData();
 
-    await loadSettingsPageData({
-      setSettings,
-      setAvailableGroups: vi.fn(),
-      setAvailableRoles: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(setSettings).toHaveBeenCalledWith({
-      SomeOtherColor: "#ABCDEF80",
-    });
+    expect(settings).toEqual({ SomeOtherColor: "#ABCDEF80" });
   });
 
-  it("shows an error toast when any request fails", async () => {
-    getSettings.mockResolvedValue({ error: true, data: null });
-    getGroups.mockResolvedValue({ data: [] });
-    getRoles.mockResolvedValue({ data: [] });
-    const setLoading = vi.fn();
+  it.each([
+    ["settings", () => getSettings.mockResolvedValue({ data: null })],
+    ["groups", () => getGroups.mockResolvedValue({ data: null })],
+    ["roles", () => getRoles.mockResolvedValue({ data: null })],
+  ])("throws when the %s fail to load", async (name, mockFailure) => {
+    mockFailure();
 
-    await loadSettingsPageData({
-      setSettings: vi.fn(),
-      setAvailableGroups: vi.fn(),
-      setAvailableRoles: vi.fn(),
-      setLoading,
-    });
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "failed_to_load_settings: Failed to load settings",
-    );
-    expect(setLoading).toHaveBeenCalledWith(false);
-  });
-
-  it("shows an error toast when groups fail to load", async () => {
-    getSettings.mockResolvedValue({ data: [] });
-    getGroups.mockResolvedValue({ error: true, data: null });
-    getRoles.mockResolvedValue({ data: [] });
-
-    await loadSettingsPageData({
-      setSettings: vi.fn(),
-      setAvailableGroups: vi.fn(),
-      setAvailableRoles: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "failed_to_load_settings: Failed to load groups",
-    );
-  });
-
-  it("shows an error toast when roles fail to load", async () => {
-    getSettings.mockResolvedValue({ data: [] });
-    getGroups.mockResolvedValue({ data: [] });
-    getRoles.mockResolvedValue({ error: true, data: null });
-
-    await loadSettingsPageData({
-      setSettings: vi.fn(),
-      setAvailableGroups: vi.fn(),
-      setAvailableRoles: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "failed_to_load_settings: Failed to load roles",
+    await expect(loadSettingsLoaderData()).rejects.toThrow(
+      `Failed to load ${name}`,
     );
   });
 });

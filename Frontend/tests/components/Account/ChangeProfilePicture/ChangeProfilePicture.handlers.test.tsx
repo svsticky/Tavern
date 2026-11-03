@@ -2,18 +2,22 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   handleProfilePictureDelete,
   handleProfilePictureUpload,
+  loadProfilePictureSrc,
 } from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
 
 const {
   deleteMembersByIdProfilePicture,
+  getMembersByIdProfilePicture,
   postProfilepictureByIdProfilePicture,
 } = vi.hoisted(() => ({
   deleteMembersByIdProfilePicture: vi.fn(),
+  getMembersByIdProfilePicture: vi.fn(),
   postProfilepictureByIdProfilePicture: vi.fn(),
 }));
 
 vi.mock("~/api", () => ({
   deleteMembersByIdProfilePicture,
+  getMembersByIdProfilePicture,
   postProfilepictureByIdProfilePicture,
 }));
 
@@ -39,6 +43,49 @@ function buildEvent(file?: File) {
     target: { files: file ? [file] : [] },
   } as unknown as React.ChangeEvent<HTMLInputElement>;
 }
+
+describe("loadProfilePictureSrc", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns an object URL for the member's profile picture", async () => {
+    getMembersByIdProfilePicture.mockResolvedValue({
+      status: 200,
+      data: new Blob(["fake"], { type: "image/png" }),
+    });
+
+    await expect(loadProfilePictureSrc("user-1")).resolves.toMatch(/^blob:/);
+    expect(getMembersByIdProfilePicture).toHaveBeenCalledWith({
+      path: { id: "user-1" },
+      responseType: "blob",
+    });
+  });
+
+  it("returns the default avatar when the member has no profile picture", async () => {
+    getMembersByIdProfilePicture.mockResolvedValue({
+      status: 404,
+      data: undefined,
+    });
+
+    await expect(loadProfilePictureSrc("user-1")).resolves.toBe(
+      "/profile-picture.svg",
+    );
+  });
+
+  it("logs the error and returns the default avatar when the request fails", async () => {
+    getMembersByIdProfilePicture.mockRejectedValue(new Error("boom"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    await expect(loadProfilePictureSrc("user-1")).resolves.toBe(
+      "/profile-picture.svg",
+    );
+    expect(consoleError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});
 
 describe("handleProfilePictureUpload", () => {
   const reloadMock = vi.fn();

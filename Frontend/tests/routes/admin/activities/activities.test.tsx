@@ -1,21 +1,38 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
-import { renderWithProviders } from "~/testUtils";
-import { getCommitteeYear } from "~/util/date.util";
-
-const { loadAdminActivities, handleViewActivity } = vi.hoisted(() => ({
-  loadAdminActivities: vi.fn(),
-  handleViewActivity: vi.fn(),
-}));
-
-vi.mock("~/routes/admin/activities/activities.handlers", () => ({
-  loadAdminActivities,
+import * as route from "~/routes/admin/activities/activities";
+import {
+  fetchAdminActivities,
   handleViewActivity,
+} from "~/routes/admin/activities/activities.handlers";
+import { renderRoute } from "~/testUtils";
+
+const { requireBoardOrCandidateBoard, loadCommitteeYear } = vi.hoisted(() => ({
+  requireBoardOrCandidateBoard: vi.fn(),
+  loadCommitteeYear: vi.fn(),
 }));
 
-// jsdom does not implement IntersectionObserver. Stub it locally (not touching the shared
-// vitest.setup.ts) and capture the callback so tests can simulate the loader coming into view.
+vi.mock("~/util/loaderAuth.util", () => ({
+  requireBoardOrCandidateBoard,
+  loadCommitteeYear,
+}));
+
+vi.mock(
+  "~/routes/admin/activities/activities.handlers",
+  async (importOriginal) => ({
+    ACTIVITIES_PAGE_SIZE: (
+      await importOriginal<
+        typeof import("~/routes/admin/activities/activities.handlers")
+      >()
+    ).ACTIVITIES_PAGE_SIZE,
+    fetchAdminActivities: vi.fn(),
+    handleViewActivity: vi.fn(),
+  }),
+);
+
+// jsdom does not implement IntersectionObserver. Capture the callback so tests
+// can simulate the end of the list coming into view.
 let intersectionCallback: IntersectionObserverCallback | null = null;
 class IntersectionObserverStub {
   constructor(callback: IntersectionObserverCallback) {
@@ -25,8 +42,6 @@ class IntersectionObserverStub {
   unobserve() {}
   disconnect() {}
 }
-
-import Activities from "~/routes/admin/activities/activities";
 
 function makeActivity(
   overrides: Partial<ActivityResponseDto> = {},
@@ -43,59 +58,87 @@ function makeActivity(
   } as ActivityResponseDto;
 }
 
+function makeActivities(count: number, offset = 0) {
+  return Array.from({ length: count }, (_, i) =>
+    makeActivity({ id: offset + i + 1, name: `Activity ${offset + i + 1}` }),
+  );
+}
+
+/** Renders the admin activities page at the given URL. */
+function renderActivities(url = "/admin/activities") {
+  return renderRoute(route, { path: "/admin/activities", route: url });
+}
+
+const COMMITTEE_YEAR = 2026;
+
 describe("Activities (admin)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
     intersectionCallback = null;
-    // Default: resolve immediately with no activities so most tests don't hang.
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setLoading(true);
-        setActivities([]);
-        setLoading(false);
-      },
+    requireBoardOrCandidateBoard.mockResolvedValue({});
+    loadCommitteeYear.mockResolvedValue(COMMITTEE_YEAR);
+    vi.mocked(fetchAdminActivities).mockResolvedValue([]);
+  });
+
+  it("loads the first page of the current committee year", async () => {
+    renderActivities();
+
+    await screen.findByText("no_data");
+    expect(fetchAdminActivities).toHaveBeenCalledWith({
+      year: COMMITTEE_YEAR,
+      search: "",
+      page: 1,
+      pageSize: 15,
+    });
+  });
+
+  it("uses the year, search and loaded pages from the URL", async () => {
+    renderActivities("/admin/activities?year=2020&search=gala&pages=2");
+
+    expect(await screen.findByLabelText("search")).toHaveValue("gala");
+    expect(fetchAdminActivities).toHaveBeenCalledWith({
+      year: 2020,
+      search: "gala",
+      page: 1,
+      pageSize: 30,
+    });
+  });
+
+  it.each([
+    ["is in the future", "2099"],
+    ["is before 2007", "2006"],
+    ["is not a number", "abc"],
+  ])("falls back to the committee year when the year in the URL %s", async (_, year) => {
+    renderActivities(`/admin/activities?year=${year}`);
+
+    await screen.findByText("no_data");
+    expect(fetchAdminActivities).toHaveBeenCalledWith(
+      expect.objectContaining({ year: COMMITTEE_YEAR }),
     );
   });
 
-  it("loads activities for the current committee year on mount", async () => {
-    renderWithProviders(<Activities />);
+  it("shows the error page when the activities fail to load", async () => {
+    vi.mocked(fetchAdminActivities).mockRejectedValue(
+      new Error("Failed to load activities"),
+    );
+    renderActivities();
 
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalled());
-
-    const currentYear = getCommitteeYear();
-    expect(loadAdminActivities).toHaveBeenCalledWith(
-      currentYear,
-      expect.any(Function),
-      expect.any(Function),
-      1,
-      15,
-      "",
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load activities",
     );
   });
 
-  it("renders fetched activities in the table with formatted price and participants", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setLoading(true);
-        setActivities([
-          makeActivity({
-            id: 1,
-            name: "Feest",
-            location: "Kroeg",
-            price: 5,
-            participantLimit: 50,
-            enrollments: [
-              { isOnWaitingList: false },
-              { isOnWaitingList: true },
-            ] as ActivityResponseDto["enrollments"],
-          }),
-        ]);
-        setLoading(false);
-      },
-    );
-
-    renderWithProviders(<Activities />);
+  it("renders the activities with formatted price and participants", async () => {
+    vi.mocked(fetchAdminActivities).mockResolvedValue([
+      makeActivity({
+        enrollments: [
+          { isOnWaitingList: false },
+          { isOnWaitingList: true },
+        ] as ActivityResponseDto["enrollments"],
+      }),
+    ]);
+    renderActivities();
 
     expect(await screen.findByText("Feest")).toBeInTheDocument();
     expect(screen.getByText("Kroeg")).toBeInTheDocument();
@@ -105,225 +148,154 @@ describe("Activities (admin)", () => {
   });
 
   it("shows 'free' for activities with no price", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([makeActivity({ price: 0 })]);
-        setLoading(false);
-      },
-    );
-
-    renderWithProviders(<Activities />);
+    vi.mocked(fetchAdminActivities).mockResolvedValue([
+      makeActivity({ price: 0 }),
+    ]);
+    renderActivities();
 
     expect(await screen.findByText("free")).toBeInTheDocument();
   });
 
-  it("debounces the search input and triggers a server-side search", async () => {
-    renderWithProviders(<Activities />);
+  it("does not show a participant limit suffix when there is none", async () => {
+    vi.mocked(fetchAdminActivities).mockResolvedValue([
+      makeActivity({ participantLimit: null }),
+    ]);
+    renderActivities();
 
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
+    await screen.findByText("Feest");
+    expect(screen.queryByText(/\/50/)).not.toBeInTheDocument();
+  });
 
-    const searchInput = screen.getByPlaceholderText("search_activities");
-    fireEvent.change(searchInput, { target: { value: "kantine" } });
+  it("reloads the list with the search term after typing", async () => {
+    renderActivities();
+    await screen.findByText("no_data");
+    vi.mocked(fetchAdminActivities).mockClear();
 
-    // No extra request fires immediately - it's debounced.
-    expect(loadAdminActivities).toHaveBeenCalledTimes(1);
-
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2), {
-      timeout: 1000,
+    fireEvent.change(screen.getByLabelText("search"), {
+      target: { value: "gala" },
     });
-    expect(loadAdminActivities).toHaveBeenLastCalledWith(
-      expect.any(Number),
-      expect.any(Function),
-      expect.any(Function),
-      1,
-      15,
-      "kantine",
+
+    await waitFor(() =>
+      expect(fetchAdminActivities).toHaveBeenCalledWith(
+        expect.objectContaining({ search: "gala", page: 1 }),
+      ),
     );
   });
 
-  it("only issues one search request after rapid typing", async () => {
-    renderWithProviders(<Activities />);
+  it("only reloads once after rapid typing", async () => {
+    renderActivities();
+    await screen.findByText("no_data");
+    vi.mocked(fetchAdminActivities).mockClear();
 
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
+    const input = screen.getByLabelText("search");
+    fireEvent.change(input, { target: { value: "g" } });
+    fireEvent.change(input, { target: { value: "ga" } });
+    fireEvent.change(input, { target: { value: "gala" } });
 
-    const searchInput = screen.getByPlaceholderText("search_activities");
-    fireEvent.change(searchInput, { target: { value: "k" } });
-    fireEvent.change(searchInput, { target: { value: "kr" } });
-    fireEvent.change(searchInput, { target: { value: "kro" } });
-    fireEvent.change(searchInput, { target: { value: "kroeg" } });
-
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2), {
-      timeout: 1000,
-    });
-    expect(loadAdminActivities).toHaveBeenLastCalledWith(
-      expect.any(Number),
-      expect.any(Function),
-      expect.any(Function),
-      1,
-      15,
-      "kroeg",
+    await waitFor(() => expect(fetchAdminActivities).toHaveBeenCalled());
+    expect(fetchAdminActivities).toHaveBeenCalledTimes(1);
+    expect(fetchAdminActivities).toHaveBeenCalledWith(
+      expect.objectContaining({ search: "gala" }),
     );
   });
 
-  it("reloads activities when the year selector changes", async () => {
-    renderWithProviders(<Activities />);
+  it("reloads the list when the year changes", async () => {
+    renderActivities();
+    await screen.findByText("no_data");
 
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText("year"), {
+      target: { value: "2024" },
+    });
 
-    const yearSelect = screen.getByLabelText("year");
-    fireEvent.change(yearSelect, { target: { value: "2020" } });
-
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2));
-    expect(loadAdminActivities).toHaveBeenLastCalledWith(
-      2020,
-      expect.any(Function),
-      expect.any(Function),
-      1,
-      15,
-      "",
+    await waitFor(() =>
+      expect(fetchAdminActivities).toHaveBeenCalledWith(
+        expect.objectContaining({ year: 2024, page: 1 }),
+      ),
     );
+  });
+
+  it("keeps the search term when the year changes", async () => {
+    renderActivities("/admin/activities?search=gala");
+    await screen.findByText("no_data");
+
+    fireEvent.change(screen.getByLabelText("year"), {
+      target: { value: "2024" },
+    });
+
+    await waitFor(() =>
+      expect(fetchAdminActivities).toHaveBeenCalledWith(
+        expect.objectContaining({ year: 2024, search: "gala" }),
+      ),
+    );
+    expect(screen.getByLabelText("search")).toHaveValue("gala");
   });
 
   it("calls handleViewActivity with the navigate function and activity id", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([makeActivity({ id: 42, name: "Feest" })]);
-        setLoading(false);
-      },
-    );
+    vi.mocked(fetchAdminActivities).mockResolvedValue([
+      makeActivity({ id: 7 }),
+    ]);
+    renderActivities();
 
-    renderWithProviders(<Activities />);
+    fireEvent.click(await screen.findByText("view_activity"));
 
-    const viewButton = await screen.findByText("view_activity");
-    fireEvent.click(viewButton);
-
-    expect(handleViewActivity).toHaveBeenCalledWith(expect.any(Function), 42);
+    expect(handleViewActivity).toHaveBeenCalledWith(expect.any(Function), 7);
   });
 
-  it("shows 'no_data' when there are no activities and loading has finished", async () => {
-    renderWithProviders(<Activities />);
+  it("shows 'no_data' when there are no activities", async () => {
+    renderActivities();
 
-    await screen.findByText("no_data");
+    expect(await screen.findByText("no_data")).toBeInTheDocument();
   });
 
-  it("fetches the next page when the loader becomes visible and more pages are available", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        // Return a full page so hasMore stays true.
-        const page = Array.from({ length: 15 }, (_, i) =>
-          makeActivity({ id: i + 1, name: `Activity ${i + 1}` }),
-        );
-        setActivities(page);
-        setLoading(false);
-      },
+  it("loads the next page when the end of the list comes into view", async () => {
+    vi.mocked(fetchAdminActivities)
+      .mockResolvedValueOnce(makeActivities(15))
+      .mockResolvedValueOnce(makeActivities(3, 15));
+    renderActivities("/admin/activities?search=gala");
+
+    await screen.findByText("Activity 1");
+    intersectionCallback!(
+      [{ isIntersecting: true } as IntersectionObserverEntry],
+      {} as IntersectionObserver,
     );
 
-    renderWithProviders(<Activities />);
+    expect(await screen.findByText("Activity 16")).toBeInTheDocument();
+    expect(fetchAdminActivities).toHaveBeenLastCalledWith({
+      year: COMMITTEE_YEAR,
+      search: "gala",
+      page: 2,
+      pageSize: 15,
+    });
+    expect(screen.getByText("Activity 1")).toBeInTheDocument();
+    expect(await screen.findByText("no_more_activities")).toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("load_more")).toBeInTheDocument();
+  it("does not load the next page when there are no more pages", async () => {
+    vi.mocked(fetchAdminActivities).mockResolvedValue([makeActivity()]);
+    renderActivities();
 
-    expect(intersectionCallback).not.toBeNull();
+    await screen.findByText("Feest");
     intersectionCallback?.(
       [{ isIntersecting: true } as IntersectionObserverEntry],
       {} as IntersectionObserver,
     );
 
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalledTimes(2));
-    expect(loadAdminActivities).toHaveBeenLastCalledWith(
-      expect.any(Number),
-      expect.any(Function),
-      expect.any(Function),
-      2,
-      15,
-      "",
-    );
+    expect(fetchAdminActivities).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("no_more_activities")).toBeInTheDocument();
   });
 
-  it("does not show a participant limit suffix when there is none", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([
-          makeActivity({ id: 1, name: "Feest", participantLimit: null }),
-        ]);
-        setLoading(false);
-      },
-    );
+  it("shows a loading_more label while the next page is loading", async () => {
+    vi.mocked(fetchAdminActivities)
+      .mockResolvedValueOnce(makeActivities(15))
+      .mockReturnValueOnce(new Promise(() => {}));
+    renderActivities();
 
-    renderWithProviders(<Activities />);
-
-    expect(await screen.findByText("👥 0")).toBeInTheDocument();
-  });
-
-  it("does not fetch the next page when the loader intersects but there are no more pages", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([makeActivity({ id: 1, name: "Feest" })]);
-        setLoading(false);
-      },
-    );
-
-    renderWithProviders(<Activities />);
-
-    await screen.findByText("no_more_activities");
-    expect(intersectionCallback).not.toBeNull();
-    intersectionCallback?.(
+    await screen.findByText("Activity 1");
+    intersectionCallback!(
       [{ isIntersecting: true } as IntersectionObserverEntry],
       {} as IntersectionObserver,
     );
-
-    expect(loadAdminActivities).toHaveBeenCalledTimes(1);
-  });
-
-  it("shows a loading_more label while a page fetch is in flight", async () => {
-    let resolveFetch: (() => void) | undefined;
-    loadAdminActivities.mockImplementation(
-      (_year, setLoading, _setActivities) =>
-        new Promise<void>((resolve) => {
-          setLoading(true);
-          resolveFetch = () => {
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
-    renderWithProviders(<Activities />);
 
     expect(await screen.findByText("loading_more")).toBeInTheDocument();
-    resolveFetch?.();
-  });
-
-  it("does not update activities when unmounted before the fetch resolves", async () => {
-    let resolveFetch: (() => void) | undefined;
-    loadAdminActivities.mockImplementation(
-      (_year, setLoading, setActivities) =>
-        new Promise<void>((resolve) => {
-          resolveFetch = () => {
-            setActivities([makeActivity({ id: 1, name: "Feest" })]);
-            setLoading(false);
-            resolve();
-          };
-        }),
-    );
-
-    const { unmount } = renderWithProviders(<Activities />);
-    await waitFor(() => expect(loadAdminActivities).toHaveBeenCalled());
-
-    unmount();
-    resolveFetch?.();
-  });
-
-  it("shows 'no_more_activities' once a partial page has been loaded", async () => {
-    loadAdminActivities.mockImplementation(
-      async (_year, setLoading, setActivities) => {
-        setActivities([makeActivity({ id: 1, name: "Feest" })]);
-        setLoading(false);
-      },
-    );
-
-    renderWithProviders(<Activities />);
-
-    expect(await screen.findByText("no_more_activities")).toBeInTheDocument();
   });
 });
