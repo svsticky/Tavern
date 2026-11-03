@@ -7,25 +7,24 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { data, useLoaderData, useNavigate } from "react-router";
-import type { ActivityResponseDto } from "~/api";
+import { useLoaderData, useNavigate } from "react-router";
+import { type ActivityResponseDto, getActivities } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { DateRowHeightGroup } from "~/components/Activity/ActivityTile/DateRowHeightGroup";
 import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import Button from "~/components/UI/Button";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
+import { useAuth } from "~/context/AuthContext";
 import { getCommitteeYear } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
   copyWeekOverview,
   downloadPosters,
   handleCreateActivityClick,
 } from "./activities.handlers";
-import { requireTokenParsed } from "~/util/loaderAuth.util";
-import { useAuth } from "~/context/AuthContext";
-import StickyLoadingLogo from "~/components/StickyLoadingLogo";
-import { getActivities } from "~/api";
 
 /**
  * Loads the user's token and all activities.
@@ -33,10 +32,11 @@ import { getActivities } from "~/api";
  *
  * @throws {Error} When the activities fail to load, which shows the route's error page.
  */
-export async function clientLoader(){
+export async function clientLoader() {
   const tokenParsed = await requireTokenParsed();
   const activitiesResponse = await getActivities();
-  if (activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+  if (activitiesResponse.error || !activitiesResponse.data)
+    throw new Error("Failed to load activities");
   return { tokenParsed, activities: activitiesResponse.data };
 }
 
@@ -112,9 +112,7 @@ export default function ActivitiesPage() {
                   <PlusIcon className="w-5 h-5" />
                 </Button>
               )}
-              {isBoard && (
-                <BoardDropdown activities={activities} />
-              )}
+              {isBoard && <BoardDropdown activities={activities} />}
             </div>
           }
         />

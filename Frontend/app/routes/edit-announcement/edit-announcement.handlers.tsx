@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import type { NavigateFunction } from "react-router";
 import {
   deleteAnnouncementsById,
-  getAnnouncementsById,
   postAnnouncements,
   putAnnouncementsById,
 } from "~/api";

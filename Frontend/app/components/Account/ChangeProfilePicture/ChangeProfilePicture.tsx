@@ -1,5 +1,5 @@
 import { t } from "i18next";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import Button from "~/components/UI/Button";
 import {
   handleProfilePictureDelete,
@@ -24,7 +24,6 @@ export default function ChangeProfilePicture({
   children?: React.ReactNode;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profilePictureSrcState, setProfilePictureSrc] = useState<string | null>(profilePictureSrc);
 
   return (
     <div className="flex flex-col items-center lg:w-48">
@@ -34,9 +33,9 @@ export default function ChangeProfilePicture({
       >
         <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-(--board-primary) shadow-md border-4 border-white transition-transform group-hover:scale-105">
           <img
-            src={profilePictureSrcState || "/profile-picture.svg"}
+            src={profilePictureSrc || "/profile-picture.svg"}
             className={
-              profilePictureSrcState && profilePictureSrcState !== "/profile-picture.svg"
+              profilePictureSrc && profilePictureSrc !== "/profile-picture.svg"
                 ? "w-full h-full object-cover"
                 : "w-2/3 h-2/3 opacity-80"
             }
@@ -63,7 +62,7 @@ export default function ChangeProfilePicture({
         }
       />
 
-      {profilePictureSrcState && profilePictureSrcState !== "/profile-picture.svg" && (
+      {profilePictureSrc && profilePictureSrc !== "/profile-picture.svg" && (
         <Button
           variant="secondary"
           className="mt-3 text-xs py-1.5 px-3 border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"

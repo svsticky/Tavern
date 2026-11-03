@@ -1,14 +1,13 @@
 import { t } from "i18next";
 import { PencilIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityDetailsTile from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile";
 import ActivityParticipantsTile from "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { hasEnrollmentOpened } from "~/util/activity.util";
 import { canEditActivity, isBoardOrCandidateBoard } from "~/util/group.util";
 import type { Route } from "./+types/activity";
@@ -17,7 +16,6 @@ import {
   handleEditActivityClick,
   loadActivityLoaderData,
 } from "./activity.handlers";
-import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 
 /**
  * Loads the activity from the `id` route parameter (see `loadActivityLoaderData`).
@@ -59,9 +57,11 @@ export function HydrateFallback() {
 export default function ActivityPage() {
   const navigate = useNavigate();
   const { pathname } = window.location;
-  const { tokenParsed, activity, organizerName } = useLoaderData<typeof clientLoader>();
+  const { tokenParsed, activity, organizerName } =
+    useLoaderData<typeof clientLoader>();
 
-  const [activityState, setActivityState] = useState<ActivityResponseDto>(activity);
+  const [activityState, setActivityState] =
+    useState<ActivityResponseDto>(activity);
 
   const canEdit = canEditActivity(activityState, tokenParsed);
 
@@ -98,7 +98,8 @@ export default function ActivityPage() {
           <>
             <ActivityParticipantsTile
               enrollments={
-                activityState.enrollments.filter((e) => !e.isOnWaitingList) ?? []
+                activityState.enrollments.filter((e) => !e.isOnWaitingList) ??
+                []
               }
               isBoard={isBoard}
               showCount={hasEnrollmentOpened(activityState)}

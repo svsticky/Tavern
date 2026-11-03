@@ -1,12 +1,11 @@
 import { t } from "i18next";
 import { Trash2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useLoaderData, useNavigate } from "react-router";
-import {
-  getGroups,
-  type ActivityResponseDto,
-  type GetSpecificationQuestionResponseDto,
-  type GroupResponseDto,
+import { useNavigate } from "react-router";
+import type {
+  ActivityResponseDto,
+  GetSpecificationQuestionResponseDto,
+  GroupResponseDto,
 } from "~/api";
 import { parseAudience } from "~/types/AudienceMap";
 import { cn } from "~/util/tailwind.util";
@@ -29,11 +28,9 @@ import {
   handleActivityFormChange,
   handleActivitySubmit,
   handleDeleteActivity,
-  loadGroups,
   removeQuestion,
   updateQuestion,
 } from "./EditActivityForm.handlers";
-import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 
 /**
  * A comprehensive form component used to either create a new association activity
@@ -69,7 +66,7 @@ export default function EditActivityForm({
   activity,
   id,
   isBoard,
-  groups
+  groups,
 }: {
   activity: ActivityResponseDto | null;
   id: string | undefined;

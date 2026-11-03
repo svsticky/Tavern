@@ -10,9 +10,9 @@ import {
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import Markdown from "react-markdown";
-import {
-  type ActivityResponseDto,
-  type SpecificationAnswerResponseDto,
+import type {
+  ActivityResponseDto,
+  SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
 import { useAuth } from "~/context/AuthContext";
@@ -116,9 +116,7 @@ export default function ActivityDetailsTile({
   activity: ActivityResponseDto;
   tokenParsed: TokenParsed;
   organizerName: string | null;
-  setActivity?: React.Dispatch<
-    React.SetStateAction<ActivityResponseDto>
-  >;
+  setActivity?: React.Dispatch<React.SetStateAction<ActivityResponseDto>>;
 }) {
   const authService = useAuth();
   const { member } = useApp();

@@ -5,16 +5,16 @@ import UpcomingActivities from "~/components/Activity/UpcomingActivities";
 import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
 import DashboardHeader from "~/components/DashboardHeader";
 import GroupMembershipOverview from "~/components/Group/GroupMembershipOverview";
-import Button from "~/components/UI/Button";
-import { loadHomeLoaderData, type HomeLoaderData } from "./home.handlers";
-import { requireTokenParsed } from "~/util/loaderAuth.util";
 import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+import Button from "~/components/UI/Button";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import { loadHomeLoaderData } from "./home.handlers";
 
 /**
  * Loads the user's token and the dashboard data (see `loadHomeLoaderData`).
  * Redirects to the login page when the user isn't logged in.
  */
-export async function clientLoader(){
+export async function clientLoader() {
   const tokenParsed = await requireTokenParsed();
   const data = await loadHomeLoaderData(tokenParsed.UserId);
   return { tokenParsed, ...data };
@@ -57,7 +57,7 @@ export default function DashboardPage() {
     announcements,
     groupMemberships,
     unpaidBalances,
-    enrollments
+    enrollments,
   } = useLoaderData<typeof clientLoader>();
 
   return (
@@ -70,55 +70,53 @@ export default function DashboardPage() {
         enrollments={enrollments}
       />
 
-        <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
-          <div className="flex flex-col w-full gap-y-8 col-span-4 lg:col-span-3">
-            {/* Announcements */}
-            <div className="flex flex-col w-full gap-y-3">
-              <div className="flex w-full justify-between items-center">
-                <p className="font-semibold text-lg">
-                  {t("latest_announcements")}
-                </p>
-                <Button
-                  showArrow
-                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  href="/announcements"
-                >
-                  {t("show_all")}
-                </Button>
-              </div>
-              <AnnouncementsList announcements={announcements} />
+      <div className="grid grid-cols-4 w-full gap-5 animate-in fade-in duration-500">
+        <div className="flex flex-col w-full gap-y-8 col-span-4 lg:col-span-3">
+          {/* Announcements */}
+          <div className="flex flex-col w-full gap-y-3">
+            <div className="flex w-full justify-between items-center">
+              <p className="font-semibold text-lg">
+                {t("latest_announcements")}
+              </p>
+              <Button
+                showArrow
+                className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
+                href="/announcements"
+              >
+                {t("show_all")}
+              </Button>
             </div>
-
-            {/* Upcoming Activities */}
-            <div className="flex flex-col w-full gap-y-3">
-              {" "}
-              <div className="flex w-full justify-between items-center">
-                <p className="font-semibold text-lg">
-                  {t("upcoming_activities")}
-                </p>
-                <Button
-                  showArrow
-                  className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
-                  href="/activities"
-                >
-                  {t("show_all")}
-                </Button>
-              </div>
-              <UpcomingActivities activities={activities} />
-            </div>
+            <AnnouncementsList announcements={announcements} />
           </div>
 
-          {/* Enrollments and Committees */}
-          <div className="flex flex-col col-span-4 lg:col-span-1 gap-3">
-            <p className="text-md">{t("my_enrollments")}</p>
-            <ActivityEnrollmentOverview
-              enrolledActivities={futureEnrollments}
-            />
-
-            <p className="text-md">{t("my_groups")}</p>
-            <GroupMembershipOverview groupMemberships={groupMemberships} />
+          {/* Upcoming Activities */}
+          <div className="flex flex-col w-full gap-y-3">
+            {" "}
+            <div className="flex w-full justify-between items-center">
+              <p className="font-semibold text-lg">
+                {t("upcoming_activities")}
+              </p>
+              <Button
+                showArrow
+                className="bg-transparent p-0 hover:bg-transparent text-(--board-primary) hover:text-(--board-primary-light) shadow-none"
+                href="/activities"
+              >
+                {t("show_all")}
+              </Button>
+            </div>
+            <UpcomingActivities activities={activities} />
           </div>
         </div>
+
+        {/* Enrollments and Committees */}
+        <div className="flex flex-col col-span-4 lg:col-span-1 gap-3">
+          <p className="text-md">{t("my_enrollments")}</p>
+          <ActivityEnrollmentOverview enrolledActivities={futureEnrollments} />
+
+          <p className="text-md">{t("my_groups")}</p>
+          <GroupMembershipOverview groupMemberships={groupMemberships} />
+        </div>
+      </div>
     </div>
   );
 }

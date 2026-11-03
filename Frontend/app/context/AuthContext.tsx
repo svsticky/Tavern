@@ -38,7 +38,7 @@ export function useTokenParsed(): TokenParsed | null {
 
   useEffect(() => {
     if (inherited) return;
-    
+
     let cancelled = false;
     authService.getTokenParsed().then((tokenParsed) => {
       if (!cancelled) setFetched(tokenParsed);

@@ -1,14 +1,14 @@
 import {
-  getActivities,
-  getAnnouncements,
-  getEnrollments,
-  getGroupmemberships,
-  getPaymentsUnpaid,
   type ActivityResponseDto,
   type EnrollmentBalance,
   type EnrollmentResponseDto,
   type GetAnnouncementResponseDto,
   type GroupMembershipResponseDto,
+  getActivities,
+  getAnnouncements,
+  getEnrollments,
+  getGroupmemberships,
+  getPaymentsUnpaid,
 } from "~/api";
 
 /**
@@ -25,10 +25,10 @@ export type HomeLoaderData = {
   activities: ActivityResponseDto[];
   futureEnrollments: ActivityResponseDto[];
   announcements: GetAnnouncementResponseDto[];
-  groupMemberships: GroupMembershipResponseDto[],
+  groupMemberships: GroupMembershipResponseDto[];
   unpaidBalances: EnrollmentBalance[];
   enrollments: EnrollmentResponseDto[];
-}
+};
 
 /**
  * Loads all data for the home page in parallel: upcoming activities, the user's
@@ -50,32 +50,32 @@ export async function loadHomeLoaderData(
     unpaidBalancesResponse,
     enrollmentsResponse,
   ] = await Promise.all([
-      getActivities({
-        query: {
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
-      getActivities({
-        query: {
-          UserId: userId,
-          IncludePast: false,
-          IncludeFuture: true,
-        },
-      }),
-      getAnnouncements(),
-      getGroupmemberships({
-        query: {
-          MemberId: userId,
-        },
-      }),
-      getPaymentsUnpaid(),
-      getEnrollments({
-        query: {
-          FromMemberId: userId,
-        },
-      })
-    ]);
+    getActivities({
+      query: {
+        IncludePast: false,
+        IncludeFuture: true,
+      },
+    }),
+    getActivities({
+      query: {
+        UserId: userId,
+        IncludePast: false,
+        IncludeFuture: true,
+      },
+    }),
+    getAnnouncements(),
+    getGroupmemberships({
+      query: {
+        MemberId: userId,
+      },
+    }),
+    getPaymentsUnpaid(),
+    getEnrollments({
+      query: {
+        FromMemberId: userId,
+      },
+    }),
+  ]);
 
   if (activitiesResponse.error || !activitiesResponse.data)
     throw new Error("Failed to load activities");
@@ -95,14 +95,15 @@ export async function loadHomeLoaderData(
   if (enrollmentsResponse.error || !enrollmentsResponse.data)
     throw new Error("Failed to load enrollments");
 
-    return {
+  return {
     activities: activitiesResponse.data,
     futureEnrollments: enrolledActivitiesResponse.data.filter(
-      (a: ActivityResponseDto) => new Date(a.dateTimeEnd) >= new Date(Date.now()),
+      (a: ActivityResponseDto) =>
+        new Date(a.dateTimeEnd) >= new Date(Date.now()),
     ),
     announcements: announcementsResponse.data.slice(0, 2),
     groupMemberships: groupMembershipsResponse.data,
     unpaidBalances: unpaidBalancesResponse.data,
     enrollments: enrollmentsResponse.data,
-  }
+  };
 }

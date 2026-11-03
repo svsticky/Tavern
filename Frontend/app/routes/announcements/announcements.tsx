@@ -1,20 +1,15 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
 import { useLoaderData, useNavigate } from "react-router";
-import { getAnnouncements, type GetAnnouncementResponseDto } from "~/api";
+import { getAnnouncements } from "~/api";
 import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
-import {
-  handleCreateAnnouncementClick,
-} from "./announcements.handlers";
 import { requireTokenParsed } from "~/util/loaderAuth.util";
-import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+import { handleCreateAnnouncementClick } from "./announcements.handlers";
 
 /**
  * Loads the user's token and all announcements.
@@ -22,10 +17,11 @@ import StickyLoadingLogo from "~/components/StickyLoadingLogo";
  *
  * @throws {Error} When the announcements fail to load, which shows the route's error page.
  */
-export async function clientLoader(){
+export async function clientLoader() {
   const tokenParsed = await requireTokenParsed();
   const announcements = await getAnnouncements();
-  if (announcements.error || !announcements.data) throw new Error("Failed to load announcements");
+  if (announcements.error || !announcements.data)
+    throw new Error("Failed to load announcements");
   return { tokenParsed, announcements: announcements.data };
 }
 
@@ -76,7 +72,7 @@ export default function AnnouncementsPage() {
           }
         />
       </div>
-      { announcements.length === 0 ? (
+      {announcements.length === 0 ? (
         <NoContentTile text={t("no_announcements")} />
       ) : (
         <AnnouncementsList announcements={announcements} />
