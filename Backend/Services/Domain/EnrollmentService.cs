@@ -52,13 +52,21 @@ public class EnrollmentService : IEnrollmentService
         if (dto.FromMemberId == null || dto.FromMemberId != userId)
             _permissionService.EnsureBoardOrCandidateBoardMember(userId);
 
-        var enrollments = await _db.Enrollments
+        // A single member's enrollments all belong to that member, so the member is not loaded or mapped
+        bool includeMember = dto.FromMemberId == null;
+
+        IQueryable<Enrollment> query = _db.Enrollments
             .Include(e => e.Activity)
-            .Include(e => e.Member)
+            .AsNoTracking();
+
+        if (includeMember)
+            query = query.Include(e => e.Member);
+
+        var enrollments = await query
             .Filter(dto)
             .ToListAsync(cancellationToken);
 
-        var mapper = EnrollmentResponseDTO.ToDto(userId, isBoard).Compile();
+        var mapper = EnrollmentResponseDTO.ToDto(userId, isBoard, includeMember: includeMember).Compile();
 
         return enrollments.Select(e => mapper(e));
     }
