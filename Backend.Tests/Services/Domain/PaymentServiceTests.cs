@@ -767,7 +767,7 @@ public class PaymentServiceTests : IDisposable
         Assert.Contains(",7001,Test Activity,21,15.00,CC1,", csvStr);
         Assert.DoesNotContain("Test Organizer", csvStr);
         Assert.Contains("Transaction costs 0.50 x 1", csvStr);
-        Assert.Contains(",8010,Begunstiger,0,10.00,BEG,BU1", csvStr);
+        Assert.Contains(",8010,Begunstigerschap - John Doe,0,10.00,BEG,BU1", csvStr);
     }
 
     [Fact]
