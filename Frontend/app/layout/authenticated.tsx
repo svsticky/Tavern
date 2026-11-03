@@ -4,7 +4,7 @@ import { Outlet, useLocation } from "react-router";
 import { client } from "~/api/client.gen";
 import { getMembersById, getSettingsById } from "~/api/sdk.gen";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
+import { TokenParsedContext, useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
 import {
@@ -42,14 +42,14 @@ export default function AuthenticatedLayout() {
     let retryTimer: number | undefined;
 
     const loadToken = async () => {
-      if (!authService.isAuthenticated()) {
+      const tokenParsed = await authService.getTokenParsed();
+      if (cancelled) return;
+
+      if (!tokenParsed && !authService.isAuthenticated()) {
         console.error("User not authenticated");
         authService.login(window.location.href);
         return;
       }
-
-      const tokenParsed = await authService.getTokenParsed();
-      if (cancelled) return;
 
       if (!tokenParsed) {
         retryTimer = window.setTimeout(() => {
@@ -265,5 +265,9 @@ export default function AuthenticatedLayout() {
     return null;
   }
 
-  return <Outlet />;
+  return (
+    <TokenParsedContext.Provider value={tokenParsed}>
+      <Outlet />
+    </TokenParsedContext.Provider>
+  )
 }

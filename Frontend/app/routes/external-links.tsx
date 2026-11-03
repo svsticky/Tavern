@@ -1,10 +1,32 @@
 import * as Icons from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLoaderData } from "react-router";
 import { type ExternalLinkResponseDto, getExternallinks } from "~/api";
 import ExternalLinkTile from "~/components/ExternalLinkTile";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { PageHeader } from "~/components/UI/PageHeader";
 import { getEnv } from "~/util/config.utils";
+
+/**
+ * Loads the external links shown on the page.
+ *
+ * @throws {Error} When the links fail to load, which shows the route's error page.
+ */
+export async function clientLoader() {
+  const res = await getExternallinks();
+  if (res.error || !res.data) throw new Error("Failed to load external links");
+  return { links: res.data };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * A directory page providing a curated list of external services and association platforms.
@@ -20,28 +42,7 @@ export default function ExternalLinksPage() {
   const { t, i18n } = useTranslation();
   const isDutch = i18n.language.startsWith("nl");
 
-  const [links, setLinks] = useState<ExternalLinkResponseDto[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchLinks = async () => {
-      try {
-        const res = await getExternallinks();
-        if (res.data) {
-          // Sort by sortOrder ascending
-          const sorted = [...res.data].sort(
-            (a, b) => a.sortOrder - b.sortOrder,
-          );
-          setLinks(sorted);
-        }
-      } catch (e) {
-        console.error("Failed to fetch external links:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLinks();
-  }, []);
+  const { links } = useLoaderData<typeof clientLoader>();
 
   const defaultIcons = [
     Icons.LayoutDashboard, // Mongoose
@@ -75,9 +76,7 @@ export default function ExternalLinksPage() {
     <>
       <PageHeader title={t("external_links")} />
 
-      {loading ? (
-        <div className="text-center text-slate-500 py-12">{t("loading")}</div>
-      ) : links.length === 0 ? (
+      {links.length === 0 ? (
         <div className="text-center text-slate-500 py-12">
           {t("no_external_links")}
         </div>

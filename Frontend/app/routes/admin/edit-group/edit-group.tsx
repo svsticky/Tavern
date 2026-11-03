@@ -1,8 +1,8 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useRef, useState } from "react";
+import { useLoaderData, useNavigate } from "react-router";
 import type {
   GroupMembershipResponseDto,
   MemberResponseDto,
@@ -10,6 +10,7 @@ import type {
 } from "~/api";
 import SearchMemberOverlay from "~/components/Member/SearchMemberOverlay";
 import CreateRoleOverlay from "~/components/Roles/CreateRoleOverlay/CreateRoleOverlay";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import type { Column } from "~/components/Tiles/DataTableTile";
 import DataTableTile from "~/components/Tiles/DataTableTile";
@@ -22,7 +23,8 @@ import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
 import { useApp } from "~/context/AppContext";
-import { getCommitteeYear } from "~/util/date.util";
+import { requireBoardOrCandidateBoard } from "~/util/loaderAuth.util";
+import type { Route } from "./+types/edit-group";
 import {
   type EditGroupFormData,
   handleAddGroupEnrollment,
@@ -31,9 +33,29 @@ import {
   handleRoleAliasAdded,
   handleSaveGroup,
   handleUpdateGroupRole,
-  loadGroupData,
+  loadEditGroupLoaderData,
   loadGroupMemberships,
 } from "./edit-group.handlers";
+
+/**
+ * Loads the group from the `id` route parameter (see `loadEditGroupLoaderData`).
+ * Only board and candidate board members can open this page.
+ *
+ * @param {Route.ClientLoaderArgs} args - The loader arguments, containing the route parameters.
+ */
+export async function clientLoader({ params }: Route.ClientLoaderArgs) {
+  await requireBoardOrCandidateBoard();
+  return loadEditGroupLoaderData(params);
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * An administrative page for managing group details, media, and memberships.
@@ -54,39 +76,44 @@ import {
  * @component
  */
 export default function EditGroupPage() {
-  const params = useParams();
-  const id = params.id ? parseInt(params.id, 10) : null;
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const id = loaderData.groupId;
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [groupPictureSrc, setGroupPictureSrc] = useState<string | null>(null);
+  const groupPictureSrc = loaderData.groupPictureSrc;
   const [enrollments, setEnrollments] = useState<GroupMembershipResponseDto[]>(
-    [],
+    loaderData.enrollments,
   );
-  const [roleAliases, setRoleAliases] = useState<RoleAlias[]>([]);
+  const [roleAliases, setRoleAliases] = useState<RoleAlias[]>(
+    loaderData.roleAliases,
+  );
   const [addEnrollmentModalIsOpen, setAddEnrollmentModalIsOpen] =
     useState(false);
   const [addRoleModalIsOpen, setAddRoleModalIsOpen] = useState(false);
   const [loadingMemberships, setLoadingMemberships] = useState(false);
   const [loadingChangeRole, setLoadingChangeRole] = useState(false);
 
-  const [formData, setFormData] = useState<EditGroupFormData>({
-    Name: "",
-    Type: "",
-    DefaultGLAccount: "",
-    DefaultCostCenter: "",
-    DefaultCostUnit: "",
-    Active: false,
-  });
+  const [formData, setFormData] = useState<EditGroupFormData>(
+    loaderData.formData,
+  );
 
   const navigate = useNavigate();
-  const { committeeCreationDate, boardGroupId } = useApp();
+  const { boardGroupId } = useApp();
 
-  const maxYear = getCommitteeYear(committeeCreationDate);
+  const maxYear = loaderData.committeeYear;
 
-  const [selectedYear, setSelectedYear] = useState(
-    getCommitteeYear(committeeCreationDate),
-  );
+  const [selectedYear, setSelectedYear] = useState(maxYear);
+
+  /**
+   * Shows the memberships of another committee year.
+   *
+   * @param {number} year - The committee year to show.
+   */
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+    loadGroupMemberships(id, year, setLoadingMemberships, setEnrollments);
+  };
 
   const isBoardGroup = boardGroupId === id;
 
@@ -140,7 +167,7 @@ export default function EditGroupPage() {
                 label: `${year - 1}-${year}`,
               }))}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                setSelectedYear(parseInt(e.target.value, 10))
+                handleYearChange(parseInt(e.target.value, 10))
               }
             />
           </div>
@@ -176,30 +203,6 @@ export default function EditGroupPage() {
       ),
     },
   ];
-
-  useEffect(() => {
-    const cleanupPromise = loadGroupData({
-      id,
-      setFormData,
-      setGroupPictureSrc,
-      setRoleAliases,
-      setLoading,
-    });
-    return () => {
-      cleanupPromise.then((cleanup) => cleanup?.());
-    };
-  }, [id]);
-
-  useEffect(() => {
-    loadGroupMemberships(
-      id,
-      selectedYear,
-      setLoadingMemberships,
-      setEnrollments,
-    );
-  }, [id, selectedYear]);
-
-  if (loading) return t("loading");
 
   return (
     <>

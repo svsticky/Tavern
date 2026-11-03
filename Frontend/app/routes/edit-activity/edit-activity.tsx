@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
-import { useLocation, useParams } from "react-router";
-import type { ActivityResponseDto } from "~/api";
+import { useLoaderData, useLocation, useParams } from "react-router";
+import { getActivitiesById, getGroups, type ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
 import SendActivityMailComponent from "~/components/Activity/Edit/SendActivityMailComponent/SendActivityMailComponent";
 import { PageHeader } from "~/components/UI/PageHeader";
@@ -12,8 +12,29 @@ import { cn } from "~/util/tailwind.util";
 import EditParticipantsTile from "../../components/Activity/Edit/EditParticipantsTile/EditParticipantsTile";
 import {
   getEditActivityBackPath,
-  loadEditActivityData,
+  loadEditActivityLoaderData,
 } from "./edit-activity.handlers";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+
+/**
+ * Loads the groups and, in edit mode, the activity being edited (see `loadEditActivityLoaderData`).
+ *
+ * @param {Object} args - The loader arguments.
+ * @param {{ id?: string }} args.params - The route parameters; `id` is set when editing an existing activity.
+ */
+export async function clientLoader({ params }: { params: { id?: string } }) {
+  return loadEditActivityLoaderData(params);
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * A dynamic page for creating new activities or editing existing ones.
@@ -38,44 +59,10 @@ export default function ActivityFormPage() {
   const { id } = useParams();
   const isEdit = !!id;
   const { pathname } = useLocation();
-
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const [activity, setActivity] = useState<ActivityResponseDto | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      if (!cancelled) {
-        setTokenParsed(token);
-        if (!token) {
-          console.error("User not authenticated");
-        }
-      }
-    };
-    loadToken();
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
-
+  const { tokenParsed, activity, groups } = useLoaderData<typeof clientLoader>();
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
-
-  useEffect(() => {
-    if (!tokenParsed) return;
-    loadEditActivityData({
-      isEdit,
-      id,
-      setActivity: (next) => setActivity(next),
-      setLoading,
-    });
-  }, [id, isEdit, tokenParsed]);
-
-  if (loading) return t("loading");
+  
+  const [activityState, setActivity] = useState<ActivityResponseDto | null>(activity);
 
   if (isEdit && !activity) return t("failed_fetching");
 
@@ -93,14 +80,14 @@ export default function ActivityFormPage() {
         )}
       >
         <div className={cn("w-full", isEdit && isBoard && "lg:col-span-2")}>
-          <EditActivityForm activity={activity} id={id} isBoard={isBoard} />
+          <EditActivityForm activity={activityState} id={id} isBoard={isBoard} groups={groups} />
         </div>
 
-        {isBoard && isEdit && activity && (
+        {isBoard && isEdit && activityState && (
           <div className="flex flex-col gap-4">
-            <SendActivityMailComponent activityId={activity.id} />
+            <SendActivityMailComponent activityId={activityState.id} />
             <EditParticipantsTile
-              activity={activity}
+              activity={activityState}
               setActivity={setActivity}
             />
           </div>

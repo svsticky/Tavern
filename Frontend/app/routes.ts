@@ -70,7 +70,7 @@ export default [
             route("admin/settings", "routes/admin/settings/settings.tsx"),
           ]),
         ]),
-        route("update-account-status", "routes/update-account-status.tsx"),
+        route("update-account-status", "routes/update-account-status/update-account-status.tsx"),
         route("403", "routes/forbidden.tsx"),
         route("*", "routes/not-found.tsx"),
       ]),

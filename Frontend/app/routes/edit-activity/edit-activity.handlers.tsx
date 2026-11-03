@@ -1,54 +1,45 @@
-import { t } from "i18next";
-import toast from "react-hot-toast";
-import { type ActivityResponseDto, getActivitiesById } from "~/api";
-import { appendErrorMessage } from "~/util/error.util";
+import { getActivitiesById, getGroups, type ActivityResponseDto, type GroupResponseDto } from "~/api";
+import type { TokenParsed } from "~/types/TokenParsed";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 
 /**
- * Arguments for the loadEditActivityData handler.
+ * The data the activity editor's `clientLoader` provides.
+ * @typedef {Object} EditActivityLoaderData
+ * @property {TokenParsed} tokenParsed - The parsed token of the logged-in user.
+ * @property {ActivityResponseDto | null} activity - The activity being edited, or `null` when creating a new one.
+ * @property {GroupResponseDto[]} groups - All groups that can organize the activity.
  */
-type LoadEditActivityArgs = {
-  isEdit: boolean;
-  id: string | undefined;
-  setActivity: (activity: ActivityResponseDto) => void;
-  setLoading: (loading: boolean) => void;
-};
+export type EditActivityLoaderData = {
+  tokenParsed: TokenParsed;
+  activity: ActivityResponseDto | null;
+  groups: GroupResponseDto[];
+}
 
 /**
- * Hydrates the Activity editor with existing data if the page is in edit mode.
+ * Loads everything the activity editor needs: the user's token, all groups and,
+ * in edit mode, the activity being edited.
+ * Redirects to the login page when the user isn't logged in.
  *
- * If `isEdit` is true, this handler performs a network request to fetch the activity
- * details by ID. If the fetch fails, it triggers an error toast. In creation mode,
- * it simply toggles the loading state off.
- *
- * @async
- * @param {LoadEditActivityArgs} args - Configuration object containing:
- * @param {boolean} args.isEdit - Whether the handler should fetch existing data.
- * @param {string | undefined} args.id - The ID of the activity to retrieve.
- * @param {Function} args.setActivity - Function to update the local activity state.
- * @param {Function} args.setLoading - Function to update the loading indicator state.
+ * @param {{ id?: string }} params - The route parameters; `id` is set when editing an existing activity.
+ * @returns {Promise<EditActivityLoaderData>} The loader data for the activity editor.
+ * @throws {Error} When the groups or the activity fail to load, which shows the route's error page.
  */
-export const loadEditActivityData = async ({
-  isEdit,
-  id,
-  setActivity,
-  setLoading,
-}: LoadEditActivityArgs) => {
-  try {
-    if (isEdit) {
-      const activityRes = await getActivitiesById({
-        path: { id: Number(id) },
-      });
-      if (activityRes.error || !activityRes.data)
-        throw new Error("Failed to load activity");
-      setActivity(activityRes.data);
-    }
-  } catch (error) {
-    console.error("Error loading data:", error);
-    toast.error(appendErrorMessage(t("loading_failed"), error));
-  } finally {
-    setLoading(false);
+export const loadEditActivityLoaderData = async (params: { id?: string }) => {
+  const tokenParsed = await requireTokenParsed();
+  const groupsResponse = await getGroups();
+  if (groupsResponse.error || !groupsResponse.data) throw new Error("Failed to load groups");
+
+  if (!params.id) {
+    return { tokenParsed, activity: null, groups: groupsResponse.data };
   }
-};
+
+  const activitiesResponse = await getActivitiesById({
+      path: { id: Number(params.id) },
+  });
+  if (activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+
+  return { tokenParsed, activity: activitiesResponse.data, groups: groupsResponse.data };
+}
 
 /**
  * Calculates the appropriate 'Back' navigation path based on the user's current context.

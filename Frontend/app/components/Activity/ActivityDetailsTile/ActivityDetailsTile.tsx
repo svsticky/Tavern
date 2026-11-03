@@ -12,7 +12,6 @@ import toast from "react-hot-toast";
 import Markdown from "react-markdown";
 import {
   type ActivityResponseDto,
-  getGroupsById,
   type SpecificationAnswerResponseDto,
 } from "~/api";
 import { useApp } from "~/context/AppContext";
@@ -47,6 +46,10 @@ import InfoItem from "./InfoItem";
  * Renders the organizing group's logo, falling back to the same placeholder used
  * for a member's own group memberships on the home page if the group has no logo
  * (or it fails to load).
+ *
+ * @param {Object} props - The component props.
+ * @param {number} props.groupId - The ID of the organizing group.
+ * @returns {JSX.Element} - The rendered logo.
  */
 function OrganizerIcon({ groupId }: { groupId: number }) {
   const [imageUrl, setImageUrl] = useState(
@@ -63,6 +66,12 @@ function OrganizerIcon({ groupId }: { groupId: number }) {
   );
 }
 
+/**
+ * Turns a list of specification answers into a map from question ID to answer.
+ *
+ * @param {SpecificationAnswerResponseDto[] | null} [answers] - The member's answers.
+ * @returns {Record<number, string>} The answers keyed by question ID.
+ */
 const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
   const mapped: Record<number, string> = {};
   answers?.forEach((answer) => {
@@ -84,67 +93,40 @@ const toAnswerMap = (answers?: SpecificationAnswerResponseDto[] | null) => {
  * @component
  * @param {Object} props - The component props.
  * @param {ActivityResponseDto} props.activity - The activity data to display.
- * @param {React.Dispatch<React.SetStateAction<ActivityResponseDto | null>>} [props.setActivity] - Optional state setter to update activity data (e.g., after enrollment changes) in the parent component.
+ * @param {TokenParsed} props.tokenParsed - The current user's token, loaded by the route.
+ * @param {string | null} props.organizerName - The organizing group's name, loaded by the route.
+ * @param {React.Dispatch<React.SetStateAction<ActivityResponseDto>>} [props.setActivity] - Optional state setter to update activity data (e.g., after enrollment changes) in the parent component.
  *
  * @example
  * ```tsx
  * <ActivityDetailsTile
  *   activity={activityData}
+ *   tokenParsed={tokenParsed}
+ *   organizerName={organizerName}
  *   setActivity={setActivityData}
  * />
  * ```
  */
 export default function ActivityDetailsTile({
   activity,
+  tokenParsed,
+  organizerName,
   setActivity,
 }: {
   activity: ActivityResponseDto;
+  tokenParsed: TokenParsed;
+  organizerName: string | null;
   setActivity?: React.Dispatch<
-    React.SetStateAction<ActivityResponseDto | null>
+    React.SetStateAction<ActivityResponseDto>
   >;
 }) {
   const authService = useAuth();
   const { member } = useApp();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  useEffect(() => {
-    const loadToken = async () => {
-      const parsedToken = await authService.getTokenParsed();
-      if (!parsedToken) {
-        console.error("User not authenticated");
-        return;
-      }
-      setTokenParsed(parsedToken);
-    };
-    loadToken();
-  }, [authService]);
 
   const [submitting, setSubmitting] = useState(false);
   const [posterStatus, setPosterStatus] = useState<
     "loading" | "loaded" | "error"
   >("loading");
-  const [organizerName, setOrganizerName] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!activity.organizerId) {
-      setOrganizerName(null);
-      return;
-    }
-
-    let cancelled = false;
-    const loadOrganizer = async () => {
-      const response = await getGroupsById({
-        path: { id: activity.organizerId! },
-      });
-      if (!cancelled) {
-        setOrganizerName(response.data?.name ?? null);
-      }
-    };
-    loadOrganizer();
-    return () => {
-      cancelled = true;
-    };
-  }, [activity.organizerId]);
 
   const posterUrl = `${getEnv("ApiUrl")}/activities/${activity.id}/poster`;
   const hasPoster = !!activity.posterFileName;

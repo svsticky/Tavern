@@ -1,6 +1,5 @@
 import { t } from "i18next";
-import { useEffect, useRef, useState } from "react";
-import { getMembersByIdProfilePicture } from "~/api";
+import { useRef, useState } from "react";
 import Button from "~/components/UI/Button";
 import {
   handleProfilePictureDelete,
@@ -11,51 +10,21 @@ import {
  * Renders a component for changing a user's profile picture.
  * @param {Object} props - The component props.
  * @param {string} props.userId - The ID of the user whose profile picture is being changed.
+ * @param {string | null} props.profilePictureSrc - The current picture's URL, loaded by the route (see `loadProfilePictureSrc`).
  * @param {React.ReactNode} [props.children] - Optional children to render below the profile picture.
  * @returns {JSX.Element} - The rendered component.
  */
 export default function ChangeProfilePicture({
   userId,
+  profilePictureSrc,
   children,
 }: {
   userId: string;
+  profilePictureSrc: string | null;
   children?: React.ReactNode;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
-    null,
-  );
-
-  useEffect(() => {
-    let url = null as string | null;
-    const loadProfilePicture = async () => {
-      try {
-        const ppRes = await getMembersByIdProfilePicture({
-          path: { id: userId },
-          responseType: "blob",
-        });
-        if (
-          !ppRes.error &&
-          ppRes.data instanceof Blob &&
-          ppRes.status === 200
-        ) {
-          url = URL.createObjectURL(ppRes.data);
-          setProfilePictureSrc(url);
-        } else {
-          setProfilePictureSrc("/profile-picture.svg");
-        }
-      } catch (err) {
-        console.error("Failed to load profile picture:", err);
-        setProfilePictureSrc("/profile-picture.svg");
-      }
-    };
-
-    loadProfilePicture();
-
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [userId]);
+  const [profilePictureSrcState, setProfilePictureSrc] = useState<string | null>(profilePictureSrc);
 
   return (
     <div className="flex flex-col items-center lg:w-48">
@@ -65,9 +34,9 @@ export default function ChangeProfilePicture({
       >
         <div className="w-full h-full rounded-full overflow-hidden flex items-center justify-center bg-(--board-primary) shadow-md border-4 border-white transition-transform group-hover:scale-105">
           <img
-            src={profilePictureSrc || "/profile-picture.svg"}
+            src={profilePictureSrcState || "/profile-picture.svg"}
             className={
-              profilePictureSrc && profilePictureSrc !== "/profile-picture.svg"
+              profilePictureSrcState && profilePictureSrcState !== "/profile-picture.svg"
                 ? "w-full h-full object-cover"
                 : "w-2/3 h-2/3 opacity-80"
             }
@@ -94,7 +63,7 @@ export default function ChangeProfilePicture({
         }
       />
 
-      {profilePictureSrc && profilePictureSrc !== "/profile-picture.svg" && (
+      {profilePictureSrcState && profilePictureSrcState !== "/profile-picture.svg" && (
         <Button
           variant="secondary"
           className="mt-3 text-xs py-1.5 px-3 border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"

@@ -1,16 +1,77 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  getRegisterreasons,
-  getRegisterslides,
-  type RegisterReasonResponseDto,
-  type RegisterSlideResponseDto,
-} from "~/api";
+import { useLoaderData } from "react-router";
+import { getRegisterreasons, getRegisterslides } from "~/api";
 import NavBar from "~/components/Menu/NavBar/NavBar";
 import PhotoSlideshow from "~/components/PhotoSlideShow";
 import RegisterForm from "~/components/Register/RegisterForm/RegisterForm";
+import { loadRegisterFormData } from "~/components/Register/RegisterForm/RegisterForm.handlers";
 import RegisterReasons from "~/components/Register/RegisterReasons";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { getEnv } from "~/util/config.utils";
+
+const defaultImages = [
+  "/register_slide_photos/photo1.png",
+  "/register_slide_photos/photo2.png",
+  "/register_slide_photos/photo3.png",
+];
+
+/**
+ * Loads an image into the browser cache so it displays instantly once rendered.
+ * Resolves on failure too, so one broken image can't block the page.
+ *
+ * @param {string} src - The URL of the image.
+ * @returns {Promise<void>} Resolves once the image has loaded or failed to load.
+ */
+const preloadImage = (src: string) =>
+  new Promise<void>((resolve) => {
+    const img = new globalThis.Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.src = src;
+  });
+
+/**
+ * Loads the slides, reasons and registration form data. The page is public, so
+ * this doesn't require a login. Failing slides or reasons fall back to the
+ * default photos and an empty reasons list instead of failing the page.
+ */
+export async function clientLoader() {
+  const [reasonsRes, slidesRes, formData] = await Promise.all([
+    getRegisterreasons().catch((error) => {
+      console.error("Error loading register reasons:", error);
+      return null;
+    }),
+    getRegisterslides().catch((error) => {
+      console.error("Error loading register slides:", error);
+      return null;
+    }),
+    loadRegisterFormData(),
+  ]);
+
+  const reasons = reasonsRes?.data ?? [];
+  const slides = slidesRes?.data ?? [];
+
+  const slideshowImages =
+    slides.length > 0
+      ? slides.map((s) => `${getEnv("ApiUrl")}/registerslides/${s.id}/image`)
+      : defaultImages;
+  const reasonIcons = reasons
+    .filter((r) => r.iconPath)
+    .map((r) => `${getEnv("ApiUrl")}/registerreasons/${r.id}/icon`);
+
+  await Promise.all([...slideshowImages, ...reasonIcons].map(preloadImage));
+
+  return { reasons, slideshowImages, formData };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The public-facing membership registration landing page.
@@ -35,68 +96,8 @@ import { getEnv } from "~/util/config.utils";
  */
 export default function Register() {
   const { t } = useTranslation();
-  const [reasons, setReasons] = useState<RegisterReasonResponseDto[]>([]);
-  const [slides, setSlides] = useState<RegisterSlideResponseDto[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [reasonsRes, slidesRes] = await Promise.all([
-          getRegisterreasons(),
-          getRegisterslides(),
-        ]);
-
-        const reasonsData = reasonsRes.data ?? [];
-        const slidesData = slidesRes.data ?? [];
-
-        // Preload all slide and reason images so they display instantly without slow rendering
-        const imagesToPreload: string[] = [];
-
-        if (slidesData.length > 0) {
-          slidesData.forEach((s) => {
-            imagesToPreload.push(
-              `${getEnv("ApiUrl")}/registerslides/${s.id}/image`,
-            );
-          });
-        } else {
-          imagesToPreload.push(
-            "/register_slide_photos/photo1.png",
-            "/register_slide_photos/photo2.png",
-            "/register_slide_photos/photo3.png",
-          );
-        }
-
-        reasonsData.forEach((r) => {
-          if (r.iconPath) {
-            imagesToPreload.push(
-              `${getEnv("ApiUrl")}/registerreasons/${r.id}/icon`,
-            );
-          }
-        });
-
-        await Promise.all(
-          imagesToPreload.map(
-            (src) =>
-              new Promise((resolve) => {
-                const img = new globalThis.Image();
-                img.src = src;
-                img.onload = () => resolve(true);
-                img.onerror = () => resolve(true);
-              }),
-          ),
-        );
-
-        setReasons(reasonsData);
-        setSlides(slidesData);
-      } catch (error) {
-        console.error("Error loading registration content:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, []);
+  const { reasons, slideshowImages, formData } =
+    useLoaderData<typeof clientLoader>();
 
   const navBarItems = [
     {
@@ -116,17 +117,6 @@ export default function Register() {
     },
   ];
 
-  const defaultImages = [
-    "/register_slide_photos/photo1.png",
-    "/register_slide_photos/photo2.png",
-    "/register_slide_photos/photo3.png",
-  ];
-
-  const slideshowImages =
-    slides.length > 0
-      ? slides.map((s) => `${getEnv("ApiUrl")}/registerslides/${s.id}/image`)
-      : defaultImages;
-
   return (
     <>
       <section id="home">
@@ -139,21 +129,14 @@ export default function Register() {
       </section>
 
       <div className="flex flex-col min-h-screen w-full gap-6 items-center justify-center p-4 bg-(--board-primary)/5">
-        {loading ? (
-          <div className="w-full max-w-7xl aspect-[16/9] md:aspect-[21/9] bg-slate-200/50 rounded-3xl animate-pulse" />
-        ) : (
-          <PhotoSlideshow
-            images={slideshowImages}
-            className="w-full max-w-7xl"
-          />
-        )}
+        <PhotoSlideshow images={slideshowImages} className="w-full max-w-7xl" />
 
         <section id="reasons" className="w-full max-w-7xl">
-          <RegisterReasons reasons={reasons} loading={loading} />
+          <RegisterReasons reasons={reasons} />
         </section>
 
         <section id="become-member" className="w-full max-w-xl">
-          <RegisterForm />
+          <RegisterForm data={formData} />
         </section>
       </div>
     </>

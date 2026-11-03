@@ -7,25 +7,47 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { data, useLoaderData, useNavigate } from "react-router";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { DateRowHeightGroup } from "~/components/Activity/ActivityTile/DateRowHeightGroup";
 import PersonalCalendarTile from "~/components/Calendar/PersonalCalendarTile/PersonalCalendarTile";
-import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import Modal from "~/components/UI/Modal/Modal";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { getCommitteeYear } from "~/util/date.util";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
 import {
   copyWeekOverview,
   downloadPosters,
   handleCreateActivityClick,
-  loadActivities,
 } from "./activities.handlers";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import { useAuth } from "~/context/AuthContext";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+import { getActivities } from "~/api";
+
+/**
+ * Loads the user's token and all activities.
+ * Redirects to the login page when the user isn't logged in.
+ *
+ * @throws {Error} When the activities fail to load, which shows the route's error page.
+ */
+export async function clientLoader(){
+  const tokenParsed = await requireTokenParsed();
+  const activitiesResponse = await getActivities();
+  if (activitiesResponse.error || !activitiesResponse.data) throw new Error("Failed to load activities");
+  return { tokenParsed, activities: activitiesResponse.data };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The main activities listing page for both members and administrators.
@@ -49,49 +71,17 @@ import {
  * @component
  */
 export default function ActivitiesPage() {
-  const authService = useAuth();
-  const [token, setToken] = useState<string | null>(null);
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadToken = async () => {
-      const tokenVal = await authService.getToken();
-      const tokenParsedVal = await authService.getTokenParsed();
-      if (!cancelled) {
-        setToken(tokenVal);
-        setTokenParsed(tokenParsedVal);
-        if (!tokenParsedVal) {
-          console.error("User not authenticated");
-        }
-      }
-    };
-    loadToken();
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
+  const { tokenParsed, activities } = useLoaderData<typeof clientLoader>();
 
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
 
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [activities, setActivities] = useState<ActivityResponseDto[]>([]);
   const [calendarTileOpen, setCalendarTileOpen] = useState(false);
-  useEffect(() => {
-    if (!tokenParsed) return;
-    loadActivities({
-      setLoading,
-      setActivities,
-    });
-  }, [tokenParsed]);
-
-  if (!tokenParsed) return null;
 
   const isInGroup =
     isBoard ||
-    (tokenParsed?.group_memberships ?? []).filter(
+    (tokenParsed.group_memberships ?? []).filter(
       (g) => g.split(":")[0] === getCommitteeYear().toString(),
     ).length > 0;
 
@@ -123,7 +113,7 @@ export default function ActivitiesPage() {
                 </Button>
               )}
               {isBoard && (
-                <BoardDropdown activities={activities} token={token!} />
+                <BoardDropdown activities={activities} />
               )}
             </div>
           }
@@ -138,33 +128,27 @@ export default function ActivitiesPage() {
         <PersonalCalendarTile />
       </Modal>
 
-      {loading ? (
-        t("loading")
-      ) : activities.length === 0 ? (
-        <NoContentTile text={t("no_upcoming_activities")} />
-      ) : (
-        <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
-          <DateRowHeightGroup>
-            {activities.map((activity) => (
-              <ActivityTile
-                key={activity.id}
-                className="w-auto"
-                activity={activity}
-              />
-            ))}
-          </DateRowHeightGroup>
-        </div>
-      )}
+      <div className="grid gap-4 justify-center grid-cols-[repeat(auto-fill,minmax(250px,1fr))] w-full">
+        <DateRowHeightGroup>
+          {activities.map((activity) => (
+            <ActivityTile
+              key={activity.id}
+              className="w-auto"
+              activity={activity}
+            />
+          ))}
+        </DateRowHeightGroup>
+      </div>
     </>
   );
 }
 
 interface BoardDropdownProps {
   activities: ActivityResponseDto[];
-  token: string;
 }
 
-function BoardDropdown({ activities, token }: BoardDropdownProps) {
+function BoardDropdown({ activities }: BoardDropdownProps) {
+  const authService = useAuth();
   const [isOpen, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
@@ -205,7 +189,9 @@ function BoardDropdown({ activities, token }: BoardDropdownProps) {
       >
         <Button
           variant="secondary"
-          onClick={() => downloadPosters(activities, token ?? "")}
+          onClick={async () =>
+            downloadPosters(activities, (await authService.getToken()) ?? "")
+          }
           className="text-xs px-3 py-1"
           title="Download Koala Posters"
         >
