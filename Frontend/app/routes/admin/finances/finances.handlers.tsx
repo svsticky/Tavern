@@ -128,7 +128,7 @@ export const refreshUnpaidPayments = async ({
  * Generates a WhatsApp message and opens a chat window to remind a member of their debts.
  *
  * Logic:
- * - Filters for activities past their payment deadline.
+ * - Includes all activities with an outstanding balance, regardless of deadline.
  * - Scales the "severity" of the language based on how many days overdue the oldest debt is.
  * - Uses the member's `preferredLanguage` (NL/EN) for the message body.
  * - Formats phone numbers to the international Dutch format (31).
@@ -145,10 +145,7 @@ export const handleWhatsAppClick = ({
   enrollments: EnrollmentBalance[];
 }) => {
   const unpaidEnrollments = enrollments.filter(
-    (e) =>
-      e.balance > 0 &&
-      e.enrollment.activity &&
-      new Date(e.enrollment.activity.paymentDeadline) < new Date(),
+    (e) => e.balance > 0 && e.enrollment.activity,
   );
 
   const totalAmount = unpaidEnrollments
