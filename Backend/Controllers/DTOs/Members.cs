@@ -153,6 +153,9 @@ public class MemberResponseDTO
     /// <inheritdoc cref="Member.Suspended"/>
     public bool? Suspended { get; set; }
 
+    /// <inheritdoc cref="Member.IsAnonymous"/>
+    public bool? IsAnonymous { get; set; }
+
     /// <inheritdoc cref="Member.ProfilePicturePath"/>
     public string? ProfilePicturePath { get; set; }
 
@@ -193,6 +196,7 @@ public class MemberResponseDTO
             LidVanVerdienste = isBoard || userId == m.Id ? m.LidVanVerdienste : (bool?)null,
             EreLid = isBoard || userId == m.Id ? m.EreLid : (bool?)null,
             Begunstiger = isBoard || userId == m.Id ? m.Begunstiger : (bool?)null,
+            IsAnonymous = isBoard || userId == m.Id ? m.IsAnonymous : (bool?)null,
             GroupMemberships = isBoard || userId == m.Id
                 ? m.GroupMemberships
                     .AsQueryable()

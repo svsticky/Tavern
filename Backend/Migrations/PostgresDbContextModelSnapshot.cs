@@ -147,6 +147,16 @@ namespace Backend.Migrations
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<string>("ShortDutchDescription")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
+                    b.Property<string>("ShortEnglishDescription")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("character varying(250)");
+
                     b.Property<bool>("ShowInKoala")
                         .HasColumnType("boolean");
 
@@ -493,6 +503,9 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");

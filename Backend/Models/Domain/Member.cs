@@ -40,7 +40,8 @@ public class Member
         "/housenumber",
         "/postalcode",
         "/city",
-        "/preferredlanguage"
+        "/preferredlanguage",
+        "/isanonymous"
     };
 
     /// <summary>
@@ -217,6 +218,12 @@ public class Member
     /// Indicates whether the member is suspended.
     /// </summary>
     public bool Suspended { get; set; } = false;
+
+    /// <summary>
+    /// Indicates whether the member wants to appear as anonymous in activity participant lists.
+    /// Board members and the activity's organizers still see who it is.
+    /// </summary>
+    public bool IsAnonymous { get; set; } = false;
 
     /// <summary>
     /// Indicates whether the member account is soft-deleted and anonymized.

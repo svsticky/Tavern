@@ -218,11 +218,13 @@ public class ActivityResponseDTO
     /// <param name="userId">The ID of the user for whom to project the activity.</param>
     /// <param name="isBoard">A boolean indicating whether the requester is a board member.</param>
     /// <param name="includeMembers">A boolean indicating whether to include member information in the enrollments.</param>
+    /// <param name="isOrganizer">A boolean indicating whether the requester organizes the activity, which lets them see anonymous members.</param>
     /// <returns>An expression that projects an Activity entity into an ActivityResponseDTO.</returns>
-    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeMembers = true)
+    public static Expression<Func<Activity, ActivityResponseDTO>> ToDto(Guid? userId, bool isBoard, bool includeMembers = true, bool isOrganizer = false)
     {
+        bool canSeeAnonymous = isBoard || isOrganizer;
         // Compile the nested mappers once instead of once per enrollment/question
-        var toEnrollmentDto = EnrollmentResponseDTO.ToDto(userId, isBoard, false, includeMembers).Compile();
+        var toEnrollmentDto = EnrollmentResponseDTO.ToDto(userId, isBoard, false, includeMembers, isOrganizer).Compile();
         var toQuestionDto = GetSpecificationQuestionResponseDTO.ToDto().Compile();
 
         return a => new ActivityResponseDTO
@@ -257,7 +259,11 @@ public class ActivityResponseDTO
             CostUnitId = isBoard ? a.CostUnitId : null,
 
             Enrollments = (includeMembers
-                    ? a.Enrollments.OrderBy(e => e.Member.FirstName).ThenBy(e => e.Member.LastName)
+                    // Hidden anonymous members go last, in random (Guid) order, so their position doesn't reveal their name
+                    ? a.Enrollments
+                        .OrderBy(e => !canSeeAnonymous && e.MemberId != userId && e.Member.IsAnonymous)
+                        .ThenBy(e => !canSeeAnonymous && e.MemberId != userId && e.Member.IsAnonymous ? e.MemberId.ToString() : e.Member.FirstName)
+                        .ThenBy(e => e.Member.LastName)
                     : a.Enrollments.OrderBy(e => e.RegisteredOn))
                 .Select(e => toEnrollmentDto(e))
                 .ToList(),

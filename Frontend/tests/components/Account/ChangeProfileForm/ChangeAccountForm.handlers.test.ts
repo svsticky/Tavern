@@ -107,6 +107,7 @@ describe("handleSaveAccount", () => {
     city: "Enschede",
     parentPhoneNumber: "",
     preferredLanguage: "EN",
+    isAnonymous: false,
   };
 
   beforeEach(() => {
