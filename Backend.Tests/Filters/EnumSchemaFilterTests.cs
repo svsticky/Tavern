@@ -1,6 +1,7 @@
 using Backend.Filters;
 using Backend.Models.Domain;
-using Microsoft.OpenApi.Models;
+using System.Text.Json.Nodes;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Xunit;
 using NSubstitute;
@@ -16,11 +17,10 @@ public class EnumSchemaFilterTests
         var filter = new EnumSchemaFilter();
         var schema = new OpenApiSchema
         {
-            Type = "integer",
-            Format = "int32"
+            Type = JsonSchemaType.Integer,
+            Format = "int32",
+            Enum = [JsonValue.Create(0), JsonValue.Create(1)]
         };
-        schema.Enum.Add(new Microsoft.OpenApi.Any.OpenApiInteger(0));
-        schema.Enum.Add(new Microsoft.OpenApi.Any.OpenApiInteger(1));
 
         var schemaGeneratorMock = Substitute.For<ISchemaGenerator>();
         var schemaRepository = new SchemaRepository();
@@ -35,10 +35,10 @@ public class EnumSchemaFilterTests
         filter.Apply(schema, context);
 
         // Assert
-        Assert.Equal("string", schema.Type);
+        Assert.Equal(JsonSchemaType.String, schema.Type);
+        Assert.NotNull(schema.Enum);
         Assert.Equal(3, schema.Enum.Count); // Enrolled, Completed, DroppedOut
-        var firstVal = (Microsoft.OpenApi.Any.OpenApiString)schema.Enum[0];
-        Assert.Equal("Enrolled", firstVal.Value);
+        Assert.Equal("Enrolled", schema.Enum[0].GetValue<string>());
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public class EnumSchemaFilterTests
         var filter = new EnumSchemaFilter();
         var schema = new OpenApiSchema
         {
-            Type = "object"
+            Type = JsonSchemaType.Object
         };
 
         var schemaGeneratorMock = Substitute.For<ISchemaGenerator>();
@@ -64,7 +64,7 @@ public class EnumSchemaFilterTests
         filter.Apply(schema, context);
 
         // Assert
-        Assert.Equal("object", schema.Type);
-        Assert.Empty(schema.Enum);
+        Assert.Equal(JsonSchemaType.Object, schema.Type);
+        Assert.Null(schema.Enum);
     }
 }
