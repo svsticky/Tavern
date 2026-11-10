@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import {
   copyWeekOverview,
@@ -84,9 +84,17 @@ describe("loadActivities", () => {
 describe("copyWeekOverview", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Pin "today" to the week of the test activity (Tuesday 18 Aug 2026),
+    // otherwise the activity falls outside the overview as time passes.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-08-18T08:00:00Z"));
     Object.assign(navigator, {
       clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("copies an English week overview to the clipboard", async () => {
@@ -101,6 +109,8 @@ describe("copyWeekOverview", () => {
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
     expect(message).toContain("Weekoverzicht");
+    expect(message).toContain("Beschrijving");
+    expect(message).toContain("https://example.com/activities/1");
   });
 
   it("includes the weekly drinks location when present", async () => {
@@ -110,6 +120,19 @@ describe("copyWeekOverview", () => {
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
     expect(message).toContain("Weekly Drinks");
+    expect(message).toContain("Tuesday: Café");
+  });
+
+  it("targets next week from Thursday onwards", async () => {
+    vi.setSystemTime(new Date("2026-08-20T08:00:00Z"));
+
+    await copyWeekOverview("EN", [
+      buildActivity({ dateTimeStart: "2026-08-25T10:00:00Z" }),
+    ]);
+
+    const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
+    expect(message).toContain("Description");
+    expect(message).toContain("No drinks this week");
   });
 
   it("shows an error toast when the clipboard write fails", async () => {
