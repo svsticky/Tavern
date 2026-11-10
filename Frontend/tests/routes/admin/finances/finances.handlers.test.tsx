@@ -242,7 +242,7 @@ describe("handleWhatsAppClick", () => {
     expect(decodeURIComponent(url)).toContain("treasurer");
   });
 
-  it("filters out enrollments that are not yet past their payment deadline", () => {
+  it("includes all activities open for payment, even before their payment deadline", () => {
     const enrollments = [
       balance({
         balance: 15,
@@ -260,8 +260,31 @@ describe("handleWhatsAppClick", () => {
 
     handleWhatsAppClick({ member, enrollments });
 
-    const url = openSpy.mock.calls[0][0] as string;
-    expect(decodeURIComponent(url)).toContain("€0.00");
+    const url = decodeURIComponent(openSpy.mock.calls[0][0] as string);
+    expect(url).toContain("- Future - €15.00");
+    expect(url).toContain("€15.00");
+  });
+
+  it("excludes enrollments without an outstanding balance", () => {
+    const enrollments = [
+      balance({
+        balance: 0,
+        enrollment: {
+          activityId: 1,
+          activity: {
+            id: 1,
+            name: "Paid",
+            paymentDeadline: "2024-05-01T00:00:00Z",
+          },
+          member,
+        },
+      } as EnrollmentBalance),
+    ];
+
+    handleWhatsAppClick({ member, enrollments });
+
+    const url = decodeURIComponent(openSpy.mock.calls[0][0] as string);
+    expect(url).not.toContain("Paid");
   });
 });
 

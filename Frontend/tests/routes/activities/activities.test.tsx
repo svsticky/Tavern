@@ -10,6 +10,7 @@ import {
 } from "~/routes/activities/activities.handlers";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+import { getCommitteeYear } from "~/util/date.util";
 
 vi.mock("~/routes/activities/activities.handlers", () => ({
   loadActivities: vi.fn(),
@@ -196,5 +197,92 @@ describe("ActivitiesPage", () => {
     expect(
       await screen.findByText("personal-calendar-tile"),
     ).toBeInTheDocument();
+  });
+  it("toggles the board dropdown and closes it on Escape or an outside click", async () => {
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => ({ ...memberToken, is_admin: true })),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    await screen.findByText("download_posters");
+    const toggle = screen
+      .getAllByRole("button")
+      .find((b) => b.querySelector("svg.lucide-menu"))!;
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    // Clicks inside the dropdown keep it open
+    fireEvent.mouseDown(screen.getByText("download_posters"));
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(toggle);
+    fireEvent.mouseDown(document.body);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("closes the personal calendar modal", async () => {
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => memberToken),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    fireEvent.click(await screen.findByText("personal_calendar"));
+    expect(
+      await screen.findByText("personal-calendar-tile"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("close_modal"));
+    await waitFor(() =>
+      expect(
+        screen.queryByText("personal-calendar-tile"),
+      ).not.toBeInTheDocument(),
+    );
+  });
+
+  it("shows the create-activity button only for members of a current-year group", async () => {
+    const year = getCommitteeYear();
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        group_memberships: [`${year - 1}:old-committee`, `${year}:committee`],
+      })),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
+    const createButton = screen
+      .getAllByRole("button")
+      .find((b) => b.querySelector("svg.lucide-plus"));
+    expect(createButton).toBeTruthy();
+    expect(screen.queryByText("download_posters")).not.toBeInTheDocument();
+  });
+
+  it("hides the create-activity button for members of only past groups", async () => {
+    const year = getCommitteeYear();
+    const authService = createMockAuthService({
+      getToken: vi.fn(async () => "tok"),
+      getTokenParsed: vi.fn(async () => ({
+        ...memberToken,
+        group_memberships: [`${year - 1}:old-committee`],
+      })),
+    });
+    renderWithProviders(<ActivitiesPage />, { authService });
+
+    await waitFor(() => expect(loadActivities).toHaveBeenCalled());
+    const createButton = screen
+      .getAllByRole("button")
+      .find((b) => b.querySelector("svg.lucide-plus"));
+    expect(createButton).toBeUndefined();
   });
 });
