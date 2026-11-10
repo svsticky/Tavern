@@ -1,6 +1,6 @@
-using Microsoft.OpenApi.Any;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Text.Json.Nodes;
 
 namespace Backend.Filters;
 
@@ -14,16 +14,14 @@ public class EnumSchemaFilter : ISchemaFilter
     /// </summary>
     /// <param name="schema">The OpenAPI schema to modify.</param>
     /// <param name="context">The schema filter context.</param>
-    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
-        if (context.Type.IsEnum)
+        if (context.Type.IsEnum && schema is OpenApiSchema concreteSchema)
         {
-            schema.Type = "string";
-            schema.Enum.Clear();
-            foreach (var name in Enum.GetNames(context.Type))
-            {
-                schema.Enum.Add(new OpenApiString(name));
-            }
+            concreteSchema.Type = JsonSchemaType.String;
+            concreteSchema.Enum = Enum.GetNames(context.Type)
+                .Select(name => (JsonNode)JsonValue.Create(name))
+                .ToList();
         }
     }
 }
