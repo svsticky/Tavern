@@ -143,6 +143,39 @@ public class EnrollmentServiceTests : IDisposable
         // Assert
         var list = result.ToList();
         Assert.Single(list);
+        Assert.Equal(activity.Id, list[0].Activity.Id);
+        // All enrollments belong to the requested member, so the member is left out
+        Assert.Null(list[0].Member);
+    }
+
+    [Fact]
+    public async Task GetEnrollments_WithoutMemberFilter_IncludesMember()
+    {
+        // Arrange
+        var member = CreateMember("1234567");
+        var activity = CreateActivity("Activity 1");
+        _db.Members.Add(member);
+        _db.Activities.Add(activity);
+        await _db.SaveChangesAsync();
+
+        _db.Enrollments.Add(new Enrollment
+        {
+            ActivityId = activity.Id,
+            MemberId = member.Id,
+            Price = 10,
+            RegisteredOn = DateTime.UtcNow,
+            IsOnWaitingList = false
+        });
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        // Act
+        var result = await _service.GetEnrollments(new GetEnrollmentsDTO(), _userId, CancellationToken.None);
+
+        // Assert
+        var list = result.ToList();
+        Assert.Single(list);
         Assert.Equal(member.Id, list[0].Member?.Id);
     }
 
