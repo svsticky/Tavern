@@ -466,4 +466,11 @@ describe("EditGroupPage", () => {
       expect(screen.queryByText("create-parent-role")).not.toBeInTheDocument(),
     );
   });
+
+  it("renders activities section for the group", async () => {
+    renderPage(1);
+
+    await screen.findByText("Jane Doe");
+    expect(screen.getByText("activities")).toBeInTheDocument();
+  });
 });
