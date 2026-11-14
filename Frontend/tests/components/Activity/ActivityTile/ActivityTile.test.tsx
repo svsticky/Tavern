@@ -1,9 +1,16 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import ActivityTile from "~/components/Activity/ActivityTile/ActivityTile";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
+
+const { getGroupsById } = vi.hoisted(() => ({ getGroupsById: vi.fn() }));
+
+vi.mock("~/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("~/api")>()),
+  getGroupsById,
+}));
 
 function buildActivity(
   overrides: Partial<ActivityResponseDto> = {},
@@ -37,6 +44,11 @@ const boardToken: TokenParsed = {
 };
 
 describe("ActivityTile", () => {
+  beforeEach(() => {
+    getGroupsById.mockReset();
+    getGroupsById.mockResolvedValue({ data: null });
+  });
+
   it("renders the activity name, location, and 'free' when price is 0", () => {
     renderWithProviders(<ActivityTile activity={buildActivity()} />);
 
@@ -215,5 +227,42 @@ describe("ActivityTile", () => {
     fireEvent.error(img);
 
     expect(img).toHaveClass("opacity-100");
+  });
+
+  it("shows the organizing group's name when organizerId is set", async () => {
+    getGroupsById.mockResolvedValue({ data: { name: "BaCo" } });
+    renderWithProviders(
+      <ActivityTile activity={buildActivity({ organizerId: 5 })} />,
+    );
+
+    expect(getGroupsById).toHaveBeenCalledWith({ path: { id: 5 } });
+    expect(await screen.findByText("BaCo")).toBeInTheDocument();
+  });
+
+  it("does not fetch or show an organizer when organizerId is not set", () => {
+    renderWithProviders(
+      <ActivityTile activity={buildActivity({ organizerId: null })} />,
+    );
+
+    expect(getGroupsById).not.toHaveBeenCalled();
+  });
+
+  it("ignores organizer response if unmounted before getGroupsById resolves", async () => {
+    let resolveGroup: (value: { data: { name: string } }) => void = () => {};
+    getGroupsById.mockImplementation(
+      () =>
+        new Promise<{ data: { name: string } }>((resolve) => {
+          resolveGroup = resolve;
+        }),
+    );
+
+    const { unmount } = renderWithProviders(
+      <ActivityTile activity={buildActivity({ organizerId: 5 })} />,
+    );
+
+    unmount();
+    resolveGroup({ data: { name: "BaCo" } });
+
+    await waitFor(() => expect(getGroupsById).toHaveBeenCalled());
   });
 });
