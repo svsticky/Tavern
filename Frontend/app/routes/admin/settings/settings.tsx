@@ -21,8 +21,10 @@ import { FormSection } from "~/components/UI/Form/FormSection";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
+import { useTokenParsed } from "~/context/AuthContext";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
+import { isInGroupWithId } from "~/util/group.util";
 import {
   getCurrentRoleMappings,
   getGroupOptions,
@@ -78,6 +80,12 @@ export default function SettingsPage() {
     });
   }, []);
 
+  const tokenParsed = useTokenParsed();
+  const isBoard =
+    !!tokenParsed &&
+    !!settings.BoardGroupId &&
+    isInGroupWithId(tokenParsed, Number(settings.BoardGroupId));
+
   const [isPromotingBoard, setIsPromotingBoard] = useState(false);
   const [confirmModal, confirm] = useConfirm();
 
@@ -121,28 +129,30 @@ export default function SettingsPage() {
       <PageHeader title={t("system_settings")} />
 
       <div className="space-y-4">
-        <div>
-          <FormHeader title={t("board_rotation")} />
-          <Tile className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6">
-            <div>
-              <h4 className="font-semibold text-slate-800">
-                {t("board_rotation_title")}
-              </h4>
-              <p className="text-sm text-slate-500 max-w-xl">
-                {t("board_rotation_desc")}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handlePromoteBoard}
-              disabled={isPromotingBoard}
-              className="whitespace-nowrap shrink-0"
-            >
-              {isPromotingBoard ? t("loading") : t("run_board_rotation")}
-            </Button>
-          </Tile>
-        </div>
+        {isBoard && (
+          <div>
+            <FormHeader title={t("board_rotation")} />
+            <Tile className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6">
+              <div>
+                <h4 className="font-semibold text-slate-800">
+                  {t("board_rotation_title")}
+                </h4>
+                <p className="text-sm text-slate-500 max-w-xl">
+                  {t("board_rotation_desc")}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handlePromoteBoard}
+                disabled={isPromotingBoard}
+                className="whitespace-nowrap shrink-0"
+              >
+                {isPromotingBoard ? t("loading") : t("run_board_rotation")}
+              </Button>
+            </Tile>
+          </div>
+        )}
 
         <div>
           <FormHeader title={t("studies")} />
