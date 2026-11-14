@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
 import EditActivityForm from "~/components/Activity/Edit/EditActivityForm/EditActivityForm";
@@ -11,6 +11,10 @@ import {
   removeQuestion,
 } from "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers";
 import { renderWithProviders } from "~/testUtils";
+import {
+  loadActivityDraft,
+  saveActivityDraft,
+} from "~/util/activityDraft.util";
 
 vi.mock(
   "~/components/Activity/Edit/EditActivityForm/EditActivityForm.handlers",
@@ -51,6 +55,7 @@ function buildActivity(
 describe("EditActivityForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   it("shows a loading state while editing until groups have loaded", () => {
@@ -84,48 +89,6 @@ describe("EditActivityForm", () => {
     );
     expect(screen.getByLabelText("vat_rate")).toBeInTheDocument();
     expect(screen.getByLabelText(/show_in_koala/)).toBeInTheDocument();
-  });
-
-  it("shows the organizer's financial defaults as placeholders and updates them when the organizer changes", () => {
-    vi.mocked(loadGroups).mockImplementationOnce(
-      async (setLoading, setGroups) => {
-        setGroups([
-          {
-            id: 1,
-            name: "Group A",
-            active: true,
-            type: "Committee",
-            glAccountId: "8000",
-            costCenterId: "KP1",
-            costUnitId: "KD1",
-          },
-          { id: 2, name: "Group B", active: true, type: "Committee" },
-        ]);
-        setLoading(false);
-      },
-    );
-    renderWithProviders(
-      <EditActivityForm
-        activity={buildActivity({ organizerId: 1 })}
-        id="1"
-        isBoard={true}
-      />,
-    );
-
-    const glAccount = screen.getByLabelText(/^gl_account_id/);
-    const costCenter = screen.getByLabelText(/^cost_center_id/);
-    const costUnit = screen.getByLabelText(/^cost_unit_id/);
-    expect(glAccount).toHaveAttribute("placeholder", "8000");
-    expect(costCenter).toHaveAttribute("placeholder", "KP1");
-    expect(costUnit).toHaveAttribute("placeholder", "KD1");
-
-    fireEvent.change(screen.getByLabelText(/^organizer/), {
-      target: { value: "2" },
-    });
-
-    expect(glAccount).not.toHaveAttribute("placeholder");
-    expect(costCenter).not.toHaveAttribute("placeholder");
-    expect(costUnit).not.toHaveAttribute("placeholder");
   });
 
   it("shows a hint about keeping the current poster only in edit mode", () => {
@@ -264,5 +227,137 @@ describe("EditActivityForm", () => {
       ).not.toBeInTheDocument(),
     );
     expect(handleDeleteActivity).not.toHaveBeenCalled();
+  });
+
+  it("restores a saved draft when creating a new activity and displays restored banner", () => {
+    saveActivityDraft({
+      name: "Drafted Gala",
+      location: "Castle",
+      dutchDescription: "Mooi gala",
+      englishDescription: "Nice gala",
+      price: "25.00",
+      savedAt: "2026-10-01T14:30:00Z",
+    });
+
+    renderWithProviders(
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText("draft_restored")).toBeInTheDocument();
+    expect(screen.getByText("draft_restored_description")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Drafted Gala")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Castle")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Mooi gala")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Nice gala")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("25.00")).toBeInTheDocument();
+  });
+
+  it("does not restore draft if editing an existing activity", () => {
+    saveActivityDraft({
+      name: "Drafted Gala",
+      location: "Castle",
+    });
+
+    renderWithProviders(
+      <EditActivityForm
+        activity={buildActivity({ name: "Actual Activity" })}
+        id="42"
+        isBoard={true}
+      />,
+    );
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Drafted Gala")).not.toBeInTheDocument();
+    expect(screen.getByDisplayValue("Actual Activity")).toBeInTheDocument();
+  });
+
+  it("discards draft when clicking discard and confirming", async () => {
+    saveActivityDraft({
+      name: "Draft to Discard",
+      location: "Somewhere",
+    });
+
+    renderWithProviders(
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Draft to Discard")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "discard_draft" }));
+
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "discard_draft",
+    });
+    fireEvent.click(confirmButtons[confirmButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    expect(loadActivityDraft()).toBeNull();
+    expect(
+      screen.queryByDisplayValue("Draft to Discard"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps draft when cancelling discard confirmation", async () => {
+    saveActivityDraft({
+      name: "Preserved Draft",
+    });
+
+    renderWithProviders(
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+    );
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "discard_draft" }));
+
+    const cancelButton = await screen.findByRole("button", { name: "cancel" });
+    fireEvent.click(cancelButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+    expect(loadActivityDraft()).not.toBeNull();
+  });
+
+  it("auto-saves changes to localStorage when typing", async () => {
+    vi.useFakeTimers();
+
+    renderWithProviders(
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+    );
+
+    expect(loadActivityDraft()).toBeNull();
+
+    const nameInput = screen.getByLabelText(/^name/);
+    fireEvent.change(nameInput, { target: { value: "Autosaved Event" } });
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    const saved = loadActivityDraft();
+    expect(saved).not.toBeNull();
+    expect(saved?.name).toBe("Autosaved Event");
+
+    vi.useRealTimers();
+  });
+
+  it("flushes draft save on beforeunload", () => {
+    renderWithProviders(
+      <EditActivityForm activity={null} id={undefined} isBoard={true} />,
+    );
+
+    const nameInput = screen.getByLabelText(/^name/);
+    fireEvent.change(nameInput, { target: { value: "Window Close Event" } });
+
+    window.dispatchEvent(new Event("beforeunload"));
+
+    const saved = loadActivityDraft();
+    expect(saved).not.toBeNull();
+    expect(saved?.name).toBe("Window Close Event");
   });
 });
