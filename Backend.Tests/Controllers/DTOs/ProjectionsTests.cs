@@ -321,16 +321,18 @@ public class ProjectionsTests
             {
                 // Member navigation is not loaded, as in GetActivities
                 new Enrollment { ActivityId = 4u, MemberId = Guid.NewGuid(), RegisteredOn = DateTime.UtcNow, IsOnWaitingList = false },
-                new Enrollment { ActivityId = 4u, MemberId = Guid.NewGuid(), RegisteredOn = DateTime.UtcNow.AddMinutes(-5), IsOnWaitingList = true }
+                new Enrollment { ActivityId = 4u, MemberId = _userId, RegisteredOn = DateTime.UtcNow.AddMinutes(-5), IsOnWaitingList = true }
             },
             SpecificationQuestions = new List<SpecificationQuestion>()
         };
 
-        var dto = ActivityResponseDTO.ToDto(_userId, isBoard: true, includeMembers: false).Compile()(activity);
+        var dto = ActivityResponseDTO.ToDto(_userId, isBoard: false, includeMembers: false).Compile()(activity);
 
         Assert.Equal(2, dto.Enrollments.Count);
         Assert.All(dto.Enrollments, e => Assert.Null(e.Member));
         Assert.True(dto.Enrollments[0].IsOnWaitingList);
+        Assert.Equal(_userId, dto.Enrollments[0].MemberId);
         Assert.False(dto.Enrollments[1].IsOnWaitingList);
+        Assert.Null(dto.Enrollments[1].MemberId);
     }
 }
