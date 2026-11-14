@@ -7,6 +7,7 @@ import MenuItemComponent from "../MenuItem";
 import type {
   ProfileDropdownContextValues,
   ProfileDropdownOption,
+  ProfileOptions,
 } from "./ProfileDropdown/ProfileDropdown";
 import ProfileDropdown from "./ProfileDropdown/ProfileDropdown";
 
@@ -141,12 +142,9 @@ NavBar.Item = MenuItemComponent;
  * @param {ProfileDropdownOption[]} props.options - List of menu options for the dropdown.
  * @param {(option: ProfileDropdownOption) => void} [props.onOptionSelect] - Optional callback triggered when a dropdown option is selected, receiving the selected option as an argument.
  */
-NavBar.ProfileDropdown = function NavBarProfileDropdown(props: {
-  username: string;
-  avatarUrl: string;
-  options: ProfileDropdownOption[];
-  onOptionSelect?: (option: ProfileDropdownOption) => void;
-}) {
+NavBar.ProfileDropdown = function NavBarProfileDropdown(
+  props: Omit<ProfileOptions, "context">,
+) {
   return <ProfileDropdown context={ProfileDropdownContext} {...props} />;
 };
 
