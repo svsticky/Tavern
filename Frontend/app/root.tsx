@@ -2,7 +2,6 @@ import type { AxiosError, AxiosResponse } from "axios";
 import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import {
-  isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
@@ -17,6 +16,7 @@ import i18n from "./i18n";
 import "./app.css";
 import { t } from "i18next";
 import Cookies from "js-cookie";
+import RouteErrorBoundary from "./components/ErrorPage/RouteErrorBoundary";
 import FaviconHandler from "./components/FavIconHandler";
 import StickyLoadingLogo from "./components/StickyLoadingLogo";
 import { AppProvider } from "./context/AppContext";
@@ -31,7 +31,7 @@ client.setConfig({
   baseURL: getEnv("ApiUrl") ?? "http://localhost:8080",
   auth: async () => {
     const authService = getActiveAuthService();
-    if (authService?.isReady() && authService.isAuthenticated()) {
+    if (authService?.isReady()) {
       const token = await authService.getToken();
       if (token) {
         Cookies.set("access_token", token, {
@@ -65,6 +65,9 @@ client.instance.interceptors.response.use(
   },
 );
 
+/**
+ * The stylesheets and preconnects added to the document head (the Inter font).
+ */
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -78,9 +81,19 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+/**
+ * Returns the current language without its region (e.g. "nl"), for the `<html lang>` attribute.
+ */
 const getDocumentLanguage = () =>
   (i18n.resolvedLanguage || i18n.language || "en").split("-")[0];
 
+/**
+ * The HTML document shell around every page.
+ *
+ * @param {Object} props - The component props.
+ * @param {React.ReactNode} props.children - The page to render inside the document body.
+ * @component
+ */
 export function Layout({ children }: { children: React.ReactNode }) {
   const currentLang = getDocumentLanguage();
   return (
@@ -101,6 +114,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * The app root: waits for the translations and the board's theme colors to load
+ * before rendering the routes, and shows an error when the theme can't be loaded.
+ *
+ * @component
+ */
 export default function App() {
   const [i18nReady, setI18nReady] = useState(false);
   const [themeReady, setThemeReady] = useState(false);
@@ -109,10 +128,18 @@ export default function App() {
   const location = useLocation();
 
   useEffect(() => {
+    // Leaving the page (e.g. the Keycloak login redirect) makes Firefox abort the
+    // theme requests, which must not show up as an unreachable backend
+    let isLeavingPage = false;
+    const handleBeforeUnload = () => {
+      isLeavingPage = true;
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     const syncBoardTheme = async () => {
       const loadedSettingCount = await loadBoardThemeSettings();
 
-      if (loadedSettingCount === 0) {
+      if (loadedSettingCount === 0 && !isLeavingPage) {
         setThemeError(
           "Could not load the board colors. Please check that the backend is running.",
         );
@@ -155,6 +182,7 @@ export default function App() {
           BOARD_THEME_SETTINGS_UPDATED_EVENT,
           handleThemeRefresh,
         );
+        window.removeEventListener("beforeunload", handleBeforeUnload);
       };
     }
     return () => {
@@ -162,6 +190,7 @@ export default function App() {
         BOARD_THEME_SETTINGS_UPDATED_EVENT,
         handleThemeRefresh,
       );
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, []);
 
@@ -223,31 +252,15 @@ export default function App() {
   );
 }
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
-  let message = "Oops!";
-  let details = "An unexpected error occurred.";
-  let stack: string | undefined;
-
-  if (isRouteErrorResponse(error)) {
-    message = error.status === 404 ? "404" : "Error";
-    details =
-      error.status === 404
-        ? "The requested page could not be found."
-        : error.statusText || details;
-  } else if (error && error instanceof Error) {
-    details = error.message;
-    stack = error.stack;
-  }
-
+/**
+ * Shows a full-page error when a route outside the navbar layout fails to load or render.
+ *
+ * @component
+ */
+export function ErrorBoundary() {
   return (
-    <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
-      {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-      )}
+    <main className="min-h-screen flex items-center justify-center p-4">
+      <RouteErrorBoundary />
     </main>
   );
 }

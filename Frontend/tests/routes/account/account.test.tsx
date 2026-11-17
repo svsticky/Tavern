@@ -1,27 +1,46 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MemberResponseDto } from "~/api";
-import AccountPage from "~/routes/account/account";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
-import type { TokenParsed } from "~/types/TokenParsed";
+import type { MemberMailinglistDto, MemberResponseDto } from "~/api";
+import { loadMemberMailinglists } from "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers";
+import { loadProfilePictureSrc } from "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers";
+import * as route from "~/routes/account/account";
+import { makeTokenParsed, renderRoute } from "~/testUtils";
 
-const { useApp } = vi.hoisted(() => ({
+const { useApp, requireTokenParsed } = vi.hoisted(() => ({
   useApp: vi.fn(),
+  requireTokenParsed: vi.fn(),
 }));
 
 vi.mock("~/context/AppContext", () => ({ useApp }));
+vi.mock("~/util/loaderAuth.util", () => ({ requireTokenParsed }));
+
+vi.mock(
+  "~/components/Account/ChangeProfilePicture/ChangeProfilePicture.handlers",
+  () => ({ loadProfilePictureSrc: vi.fn() }),
+);
+
+vi.mock(
+  "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers",
+  () => ({ loadMemberMailinglists: vi.fn() }),
+);
 
 vi.mock(
   "~/components/Account/ChangeProfilePicture/ChangeProfilePicture",
   () => ({
     default: ({
       userId,
+      profilePictureSrc,
       children,
     }: {
       userId: string;
+      profilePictureSrc: string;
       children: React.ReactNode;
     }) => (
-      <div data-testid="change-profile-picture" data-user-id={userId}>
+      <div
+        data-testid="change-profile-picture"
+        data-user-id={userId}
+        data-src={profilePictureSrc}
+      >
         {children}
       </div>
     ),
@@ -29,97 +48,84 @@ vi.mock(
 );
 
 vi.mock("~/components/Account/ChangeProfileForm/ChangeAccountForm", () => ({
-  default: ({ member }: { member: MemberResponseDto }) => (
-    <div>change-account-form-{member.firstName}</div>
+  default: ({
+    member,
+    mailingLists,
+    mailingListsUnavailable,
+  }: {
+    member: MemberResponseDto;
+    mailingLists: MemberMailinglistDto[];
+    mailingListsUnavailable: boolean;
+  }) => (
+    <div>
+      change-account-form-{member.firstName}-lists-{mailingLists.length}
+      -unavailable-{String(mailingListsUnavailable)}
+    </div>
   ),
 }));
 
-const token: TokenParsed = {
-  locale: "en",
-  UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
-  access_level: "member",
-  given_name: "Jane",
-  family_name: "Doe",
-  name: "Jane Doe",
-};
+const token = makeTokenParsed({ given_name: "Jane", family_name: "Doe" });
+
+const member = {
+  id: token.UserId,
+  firstName: "Jane",
+  lastName: "Doe",
+  studentNumber: "s1234567",
+} as MemberResponseDto;
 
 describe("AccountPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useApp.mockReturnValue({ member: null });
+    requireTokenParsed.mockResolvedValue(token);
+    useApp.mockReturnValue({ member });
+    vi.mocked(loadProfilePictureSrc).mockResolvedValue("blob:picture");
+    vi.mocked(loadMemberMailinglists).mockResolvedValue({
+      mailingLists: [{ id: "list-1" }] as MemberMailinglistDto[],
+      mailingListsUnavailable: false,
+    });
   });
 
-  it("renders nothing while the user id has not loaded", () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(() => new Promise<TokenParsed | null>(() => {})),
-    });
-    const { container } = renderWithProviders(<AccountPage />, {
-      authService,
-      withAppProvider: false,
-    });
-    expect(container).toBeEmptyDOMElement();
-  });
-
-  it("logs an error when the token has no UserId", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => null),
-    });
-    renderWithProviders(<AccountPage />, {
-      authService,
-      withAppProvider: false,
-    });
-
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
-  });
-
-  it("renders the profile picture uploader once the user id loads", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<AccountPage />, {
-      authService,
-      withAppProvider: false,
-    });
+  it("loads the profile picture and mailing lists of the logged-in user", async () => {
+    renderRoute(route, { withAppProvider: false });
 
     const picture = await screen.findByTestId("change-profile-picture");
     expect(picture).toHaveAttribute("data-user-id", token.UserId);
+    expect(picture).toHaveAttribute("data-src", "blob:picture");
+    expect(loadProfilePictureSrc).toHaveBeenCalledWith(token.UserId);
+    expect(loadMemberMailinglists).toHaveBeenCalledWith(token.UserId);
   });
 
-  it("does not render the account form while member data has not loaded", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<AccountPage />, {
-      authService,
-      withAppProvider: false,
-    });
-
-    await screen.findByTestId("change-profile-picture");
-    expect(screen.queryByText(/change-account-form-/)).not.toBeInTheDocument();
-  });
-
-  it("renders the member's name and account form once member data is available", async () => {
-    useApp.mockReturnValue({
-      member: {
-        firstName: "Jane",
-        lastName: "Doe",
-        studentNumber: "s1234567",
-      } as MemberResponseDto,
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<AccountPage />, {
-      authService,
-      withAppProvider: false,
-    });
+  it("renders the member's name and the account form with the mailing lists", async () => {
+    renderRoute(route, { withAppProvider: false });
 
     expect(await screen.findByText("Jane Doe")).toBeInTheDocument();
     expect(screen.getByText("s1234567")).toBeInTheDocument();
-    expect(screen.getByText("change-account-form-Jane")).toBeInTheDocument();
+    expect(
+      screen.getByText(/change-account-form-Jane-lists-1\s*-unavailable-false/),
+    ).toBeInTheDocument();
+  });
+
+  it("tells the account form when the mailing lists are unavailable", async () => {
+    vi.mocked(loadMemberMailinglists).mockResolvedValue({
+      mailingLists: [],
+      mailingListsUnavailable: true,
+    });
+    renderRoute(route, { withAppProvider: false });
+
+    expect(
+      await screen.findByText(/lists-0\s*-unavailable-true/),
+    ).toBeInTheDocument();
+  });
+
+  it("renders nothing while the member data has not loaded", async () => {
+    useApp.mockReturnValue({ member: null });
+    renderRoute(route, { withAppProvider: false });
+
+    await vi.waitFor(() => expect(loadMemberMailinglists).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(
+      screen.queryByTestId("change-profile-picture"),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/change-account-form-/)).not.toBeInTheDocument();
   });
 });

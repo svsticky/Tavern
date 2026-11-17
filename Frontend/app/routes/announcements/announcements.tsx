@@ -1,19 +1,38 @@
 import { t } from "i18next";
 import { PlusIcon } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router";
-import type { GetAnnouncementResponseDto } from "~/api";
+import { useLoaderData, useNavigate } from "react-router";
+import { getAnnouncements } from "~/api";
 import AnnouncementsList from "~/components/Announcement/AnnouncementsList";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import { NoContentTile } from "~/components/Tiles/NoContentTile";
 import Button from "~/components/UI/Button";
 import { PageHeader } from "~/components/UI/PageHeader";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
 import { isBoardOrCandidateBoard } from "~/util/group.util";
-import {
-  handleCreateAnnouncementClick,
-  loadAnnouncements,
-} from "./announcements.handlers";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
+import { handleCreateAnnouncementClick } from "./announcements.handlers";
+
+/**
+ * Loads the user's token and all announcements.
+ * Redirects to the login page when the user isn't logged in.
+ *
+ * @throws {Error} When the announcements fail to load, which shows the route's error page.
+ */
+export async function clientLoader() {
+  const tokenParsed = await requireTokenParsed();
+  const announcements = await getAnnouncements();
+  if (announcements.error || !announcements.data)
+    throw new Error("Failed to load announcements");
+  return { tokenParsed, announcements: announcements.data };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The public-facing and administrative announcements page.
@@ -29,44 +48,11 @@ import {
  * @component
  */
 export default function AnnouncementsPage() {
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-
-  const [loading, setLoading] = useState(true);
-
-  const [announcements, setAnnouncements] = useState<
-    GetAnnouncementResponseDto[]
-  >([]);
+  const { tokenParsed, announcements } = useLoaderData<typeof clientLoader>();
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let cancelled = false;
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      if (!cancelled) {
-        setTokenParsed(token);
-        if (!token) {
-          console.error("User not authenticated");
-        }
-      }
-    };
-    loadToken();
-    return () => {
-      cancelled = true;
-    };
-  }, [authService]);
-
   const isBoard = isBoardOrCandidateBoard(tokenParsed);
-
-  useEffect(() => {
-    if (tokenParsed) {
-      loadAnnouncements({
-        setLoading,
-        setAnnouncements,
-      });
-    }
-  }, [tokenParsed]);
 
   return (
     <>
@@ -86,9 +72,7 @@ export default function AnnouncementsPage() {
           }
         />
       </div>
-      {loading ? (
-        t("loading")
-      ) : announcements.length === 0 ? (
+      {announcements.length === 0 ? (
         <NoContentTile text={t("no_announcements")} />
       ) : (
         <AnnouncementsList announcements={announcements} />

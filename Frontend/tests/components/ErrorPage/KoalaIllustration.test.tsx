@@ -13,8 +13,8 @@ describe("KoalaIllustration", () => {
     expect(svg).toHaveClass("custom");
   });
 
-  it("draws the koala logo in both moods", () => {
-    for (const mood of ["lost", "forbidden"] as const) {
+  it("draws the koala logo in every mood", () => {
+    for (const mood of ["lost", "forbidden", "error"] as const) {
       const { container, unmount } = render(<KoalaIllustration mood={mood} />);
       expect(container.querySelectorAll("path").length).toBeGreaterThanOrEqual(
         KOALA_MARK_PATHS.length,
@@ -38,5 +38,14 @@ describe("KoalaIllustration", () => {
     expect(marks).toEqual(["?", "?"]);
     expect(container.querySelector("circle")).not.toBeInTheDocument();
     expect(container.querySelector("rect")).not.toBeInTheDocument();
+  });
+
+  it("shows exclamation marks and no sign when in error", () => {
+    const { container } = render(<KoalaIllustration mood="error" />);
+    const marks = Array.from(container.querySelectorAll("text")).map((t) =>
+      t.textContent?.trim(),
+    );
+    expect(marks).toEqual(["!", "!"]);
+    expect(container.querySelector("circle")).not.toBeInTheDocument();
   });
 });

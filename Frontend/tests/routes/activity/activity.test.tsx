@@ -1,17 +1,16 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityResponseDto } from "~/api";
-import ActivityPage from "~/routes/activity/activity";
+import * as route from "~/routes/activity/activity";
 import {
-  getActivityBackPath,
   handleEditActivityClick,
-  loadActivityData,
+  loadActivityLoaderData,
 } from "~/routes/activity/activity.handlers";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import { renderRoute } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
 vi.mock("~/routes/activity/activity.handlers", () => ({
-  loadActivityData: vi.fn(),
+  loadActivityLoaderData: vi.fn(),
   getActivityBackPath: vi.fn(() => "/activities"),
   handleEditActivityClick: vi.fn(),
 }));
@@ -19,16 +18,27 @@ vi.mock("~/routes/activity/activity.handlers", () => ({
 vi.mock(
   "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile",
   () => ({
-    default: () => <div>activity-details-tile</div>,
+    default: ({ organizerName }: { organizerName: string | null }) => (
+      <div>activity-details-tile-{organizerName ?? "none"}</div>
+    ),
   }),
 );
 
 vi.mock(
   "~/components/Activity/ActivityParticipantsTile/ActivityParticipantsTile",
   () => ({
-    default: ({ title, isBoard }: { title?: string; isBoard?: boolean }) => (
+    default: ({
+      title,
+      isBoard,
+      enrollments,
+    }: {
+      title?: string;
+      isBoard?: boolean;
+      enrollments: { registeredOn: string }[];
+    }) => (
       <div>
-        participants-tile-{title ?? "main"}-isBoard-{String(Boolean(isBoard))}
+        participants-tile-{title ?? "main"}-isBoard-{String(Boolean(isBoard))}-
+        {enrollments.map((e) => e.registeredOn).join(",")}
       </div>
     ),
   }),
@@ -56,304 +66,153 @@ function buildActivity(
   } as ActivityResponseDto;
 }
 
+/** Makes the loader return the given activity for the given user. */
+function mockLoaderData(
+  activity: ActivityResponseDto,
+  tokenParsed: TokenParsed = memberToken,
+) {
+  vi.mocked(loadActivityLoaderData).mockResolvedValue({
+    tokenParsed,
+    activity,
+    organizerName: "Feestcie",
+  });
+}
+
+/** Renders the activity page for activity 1. */
+function renderActivityPage() {
+  return renderRoute(route, {
+    path: "/activities/:id",
+    route: "/activities/1",
+  });
+}
+
 describe("ActivityPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLoaderData(buildActivity());
   });
 
-  it("shows a loading state while the token or activity has not loaded", () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(() => new Promise<TokenParsed | null>(() => {})),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
+  it("loads the activity from the id in the URL", async () => {
+    renderActivityPage();
+
+    await screen.findByText("activity-details-tile-Feestcie");
+    expect(loadActivityLoaderData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "1" }),
     );
-    expect(screen.getByText("loading")).toBeInTheDocument();
+    expect(screen.getByText("Party")).toBeInTheDocument();
   });
 
-  it("logs an error when there is no parsed token", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => null),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
+  it("shows the error page when the activity fails to load", async () => {
+    vi.mocked(loadActivityLoaderData).mockRejectedValue(
+      new Error("Failed to load activities"),
     );
+    renderActivityPage();
 
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load activities",
+    );
   });
 
-  it("shows a failed-fetching message when the activity could not be loaded", async () => {
-    vi.mocked(loadActivityData).mockImplementation(async ({ setLoading }) => {
-      setLoading(false);
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
-
-    expect(await screen.findByText("failed_fetching")).toBeInTheDocument();
-  });
-
-  it("renders the activity details and participant tiles when participants are visible", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(buildActivity());
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+  it("renders the participant tiles when participants are visible", async () => {
+    renderActivityPage();
 
     expect(
-      await screen.findByText("activity-details-tile"),
+      await screen.findByText(/participants-tile-main-isBoard-false/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("participants-tile-main-isBoard-false"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("participants-tile-waiting_list-isBoard-false"),
+      screen.getByText(/participants-tile-waiting_list-isBoard-false/),
     ).toBeInTheDocument();
   });
 
   it("forwards isBoard=true to the participant tiles for a board member", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(buildActivity());
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: true,
-      })),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+    mockLoaderData(buildActivity(), {
+      ...memberToken,
+      is_admin: true,
+    } as TokenParsed);
+    renderActivityPage();
 
     expect(
-      await screen.findByText("participants-tile-main-isBoard-true"),
+      await screen.findByText(/participants-tile-main-isBoard-true/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("participants-tile-waiting_list-isBoard-true"),
+      screen.getByText(/participants-tile-waiting_list-isBoard-true/),
     ).toBeInTheDocument();
   });
 
   it("still renders participant tiles when enrollment has not opened, as long as areParticipantsVisible is true", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(
-          buildActivity({
-            isEnrollable: false,
-            enrollOpenDate: undefined,
-            areParticipantsVisible: true,
-          }),
-        );
-        setLoading(false);
-      },
+    mockLoaderData(
+      buildActivity({
+        isEnrollable: false,
+        enrollOpenDate: undefined,
+        areParticipantsVisible: true,
+      }),
     );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+    renderActivityPage();
 
     expect(
-      await screen.findByText("activity-details-tile"),
+      await screen.findByText(/participants-tile-main/),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("participants-tile-main-isBoard-false"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("participants-tile-waiting_list-isBoard-false"),
+      screen.getByText(/participants-tile-waiting_list/),
     ).toBeInTheDocument();
   });
 
-  it("renders participant tiles when enrollment has closed after closing date if areParticipantsVisible is true", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(
-          buildActivity({
-            isEnrollable: true,
-            enrollmentDeadline: "2020-01-01T00:00:00Z",
-            areParticipantsVisible: true,
-            enrollments: [
-              {
-                id: 1,
-                memberId: "m1",
-                isOnWaitingList: false,
-                registeredOn: "2020-01-01T00:00:00Z",
-              } as any,
-            ],
-          }),
-        );
-        setLoading(false);
-      },
+  it("splits enrollments into participants and a waiting list sorted by registration", async () => {
+    mockLoaderData(
+      buildActivity({
+        enrollments: [
+          { isOnWaitingList: true, registeredOn: "2026-01-03" },
+          { isOnWaitingList: false, registeredOn: "2026-01-01" },
+          { isOnWaitingList: true, registeredOn: "2026-01-02" },
+        ] as ActivityResponseDto["enrollments"],
+      }),
     );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+    renderActivityPage();
 
     expect(
-      await screen.findByText("activity-details-tile"),
+      await screen.findByText(
+        /participants-tile-main-isBoard-false\s*-2026-01-01$/,
+      ),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("participants-tile-main-isBoard-false"),
-    ).toBeInTheDocument();
-  });
-
-  it("sorts the waiting list by registration order when there are enrollments", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(
-          buildActivity({
-            enrollments: [
-              {
-                isOnWaitingList: true,
-                registeredOn: "2026-01-02T00:00:00Z",
-              },
-              { isOnWaitingList: false, registeredOn: "2026-01-01T00:00:00Z" },
-              {
-                isOnWaitingList: true,
-                registeredOn: "2026-01-01T00:00:00Z",
-              },
-            ] as ActivityResponseDto["enrollments"],
-          }),
-        );
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
-
-    expect(
-      await screen.findByText("participants-tile-main-isBoard-false"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("participants-tile-waiting_list-isBoard-false"),
+      screen.getByText(
+        /participants-tile-waiting_list-isBoard-false\s*-2026-01-02,2026-01-03$/,
+      ),
     ).toBeInTheDocument();
   });
 
   it("does not render participant tiles when participants are not visible", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(buildActivity({ areParticipantsVisible: false }));
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+    mockLoaderData(buildActivity({ areParticipantsVisible: false }));
+    renderActivityPage();
 
-    await screen.findByText("activity-details-tile");
-    expect(
-      screen.queryByText("participants-tile-main"),
-    ).not.toBeInTheDocument();
+    await screen.findByText("activity-details-tile-Feestcie");
+    expect(screen.queryByText(/participants-tile/)).not.toBeInTheDocument();
   });
 
   it("does not show an edit button for a member without edit rights", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(buildActivity());
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: false,
-      })),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+    renderActivityPage();
 
-    await screen.findByText("activity-details-tile");
+    await screen.findByText("activity-details-tile-Feestcie");
     expect(document.querySelector("svg.lucide-pencil")).not.toBeInTheDocument();
   });
 
   it("shows and wires up an edit button for a board member", async () => {
-    vi.mocked(loadActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity(buildActivity());
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: true,
-      })),
-    });
-    renderWithProviders(
-      <ActivityPage params={{ id: "1" }} {...({} as any)} />,
-      {
-        authService,
-      },
-    );
+    mockLoaderData(buildActivity(), {
+      ...memberToken,
+      is_admin: true,
+    } as TokenParsed);
+    renderActivityPage();
 
-    await screen.findByText("activity-details-tile");
-    await waitFor(() =>
-      expect(document.querySelector("svg.lucide-pencil")).toBeTruthy(),
-    );
+    await screen.findByText("activity-details-tile-Feestcie");
     const editButton = document
       .querySelector("svg.lucide-pencil")
       ?.closest("button");
     expect(editButton).toBeTruthy();
     fireEvent.click(editButton!);
-    expect(handleEditActivityClick).toHaveBeenCalled();
-    expect(getActivityBackPath).toHaveBeenCalled();
+    expect(handleEditActivityClick).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.any(String),
+      1,
+    );
   });
 });

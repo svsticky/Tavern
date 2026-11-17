@@ -1,7 +1,7 @@
 import { t } from "i18next";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { deleteMembersById, getMembersByIdMailinglists } from "~/api";
+import { deleteMembersById } from "~/api";
 import type { MemberMailinglistDto, MemberResponseDto } from "~/api/types.gen";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
@@ -16,6 +16,7 @@ import { useAuth } from "~/context/AuthContext";
 import { getEnv } from "~/util/config.utils";
 import { appendErrorMessage } from "~/util/error.util";
 import {
+  getSubscribedMailinglistIds,
   handleChangeEmail,
   handleChangePassword,
   handleConfigure2FA,
@@ -28,22 +29,27 @@ import type { ChangeAccountFormData } from "./ChangeAccountForm.types";
  * Renders a form for changing account details.
  * @param {Object} props - The component props.
  * @param {MemberResponseDto} props.member - The member whose account is being changed.
+ * @param {MemberMailinglistDto[]} props.mailingLists - The member's mailing lists, loaded by the route (see `loadMemberMailinglists`).
+ * @param {boolean} props.mailingListsUnavailable - Whether loading the mailing lists failed.
  * @returns {JSX.Element} - The rendered form.
  */
 export default function ChangeAccountForm({
   member,
+  mailingLists,
+  mailingListsUnavailable,
 }: {
   member: MemberResponseDto;
+  mailingLists: MemberMailinglistDto[];
+  mailingListsUnavailable: boolean;
 }) {
   const authService = useAuth();
   const { setMember } = useApp();
   const [saving, setSaving] = useState(false);
-  const [loadingMailingLists, setLoadingMailingLists] = useState(false);
-  const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
   const [confirmModal, confirm] = useConfirm();
 
-  const [mailingLists, setMailingLists] = useState<MemberMailinglistDto[]>([]);
-  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(() =>
+    getSubscribedMailinglistIds(mailingLists),
+  );
   const [formData, setFormData] = useState<ChangeAccountFormData>({
     phoneNumber: "",
     street: "",
@@ -98,43 +104,6 @@ export default function ChangeAccountForm({
       preferredLanguage: member.preferredLanguage ?? "EN",
     });
   }, [member]);
-
-  useEffect(() => {
-    const fetchMailingLists = async () => {
-      if (!member.id) return;
-
-      setLoadingMailingLists(true);
-      try {
-        const response = await getMembersByIdMailinglists({
-          path: { id: member.id },
-          query: { includeYearlyRenewal: true },
-        });
-
-        if (response.error || !response.data) {
-          throw response.error ?? new Error("Failed to fetch mailing lists");
-        }
-
-        setMailingLists(response.data);
-        setSubscribedIds(
-          new Set(
-            response.data
-              .filter((list) => list.subscribed)
-              .map((list) => list.id!),
-          ),
-        );
-        setMailingListsUnavailable(false);
-      } catch (error) {
-        console.error("Error fetching mailing lists:", error);
-        toast.error(appendErrorMessage(t("fetch_mailinglists_failed"), error));
-        setMailingLists([]);
-        setMailingListsUnavailable(true);
-      } finally {
-        setLoadingMailingLists(false);
-      }
-    };
-
-    fetchMailingLists();
-  }, [member.id]);
 
   return (
     <Form className="w-full">
@@ -222,28 +191,24 @@ export default function ChangeAccountForm({
         </div>
       </FormSection>
 
-      {(mailingLists.length > 0 || loadingMailingLists) && (
+      {mailingLists.length > 0 && (
         <section>
           <FormHeader title={t("mail_subscriptions")} />
           <Tile className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5 bg-gray-50 border border-gray-100">
-            {!loadingMailingLists ? (
-              mailingLists.map((list) => (
-                <Checkbox
-                  key={list.id}
-                  label={list.name}
-                  checked={subscribedIds.has(list.id!)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    handleSubscriptionToggle(
-                      list.id!,
-                      e.target.checked,
-                      setSubscribedIds,
-                    )
-                  }
-                />
-              ))
-            ) : (
-              <p className="text-gray-500 italic">{t("loading")}</p>
-            )}
+            {mailingLists.map((list) => (
+              <Checkbox
+                key={list.id}
+                label={list.name}
+                checked={subscribedIds.has(list.id!)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleSubscriptionToggle(
+                    list.id!,
+                    e.target.checked,
+                    setSubscribedIds,
+                  )
+                }
+              />
+            ))}
           </Tile>
         </section>
       )}
