@@ -2,8 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it } from "vitest";
 import ErrorPage from "~/components/ErrorPage/ErrorPage";
+import type { KoalaMood } from "~/components/ErrorPage/KoalaIllustration";
 
-const renderPage = (mood: "lost" | "forbidden" = "lost") =>
+const renderPage = (mood: KoalaMood = "lost") =>
   render(
     <MemoryRouter>
       <ErrorPage
@@ -36,5 +37,23 @@ describe("ErrorPage", () => {
   it("passes the mood on to the koala", () => {
     const { container } = renderPage("forbidden");
     expect(container.querySelector("circle")).toBeInTheDocument();
+  });
+
+  it("renders extra actions before the way back home and extra content below", () => {
+    render(
+      <MemoryRouter>
+        <ErrorPage
+          code="500"
+          headline="Broken"
+          description="Sorry."
+          mood="error"
+          actions={<button type="button">Retry</button>}
+        >
+          <p>More info</p>
+        </ErrorPage>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    expect(screen.getByText("More info")).toBeInTheDocument();
   });
 });

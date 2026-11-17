@@ -1,19 +1,17 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { data } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupResponseDto } from "~/api";
-import Groups from "~/routes/admin/groups";
-import { renderWithProviders } from "~/testUtils";
+import * as route from "~/routes/admin/groups";
+import { renderRoute } from "~/testUtils";
 
-const { getGroups } = vi.hoisted(() => ({
+const { getGroups, requireBoardOrCandidateBoard } = vi.hoisted(() => ({
   getGroups: vi.fn(),
+  requireBoardOrCandidateBoard: vi.fn(),
 }));
 
 vi.mock("~/api", () => ({ getGroups }));
-
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  default: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
+vi.mock("~/util/loaderAuth.util", () => ({ requireBoardOrCandidateBoard }));
 
 vi.mock("~/components/Group/CreateGroupOverlay/CreateGroupOverlay", () => ({
   default: () => <div>create-group-overlay</div>,
@@ -30,29 +28,46 @@ function makeGroup(
   } as GroupResponseDto;
 }
 
+/** Renders the groups page, with a stub for the group detail page. */
+function renderGroups() {
+  return renderRoute(route, {
+    path: "/admin/groups",
+    otherRoutes: [
+      { path: "/admin/groups/:id", Component: () => <div>group-page</div> },
+    ],
+  });
+}
+
 describe("Groups", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    requireBoardOrCandidateBoard.mockResolvedValue({});
+    getGroups.mockResolvedValue({ data: [makeGroup()] });
   });
 
-  it("shows a loading state, then the table once groups have loaded", async () => {
-    getGroups.mockResolvedValue({ data: [makeGroup()] });
-    renderWithProviders(<Groups />);
+  it("shows the table once the groups have loaded", async () => {
+    renderGroups();
 
-    expect(screen.getByText("loading")).toBeInTheDocument();
     expect(await screen.findByText("Board")).toBeInTheDocument();
   });
 
-  it("shows an error toast when groups fail to load", async () => {
-    getGroups.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  it("shows the error page when the groups fail to load", async () => {
+    getGroups.mockResolvedValue({ error: new Error("Failed to fetch groups") });
+    renderGroups();
 
-    renderWithProviders(<Groups />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to fetch groups",
+    );
+  });
 
-    await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
-    consoleError.mockRestore();
+  it("shows the forbidden page for members outside the board", async () => {
+    requireBoardOrCandidateBoard.mockRejectedValue(
+      data("Forbidden", { status: 403 }),
+    );
+    renderGroups();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("403");
+    expect(getGroups).not.toHaveBeenCalled();
   });
 
   it("filters groups by name or type as the search query changes", async () => {
@@ -62,7 +77,7 @@ describe("Groups", () => {
         makeGroup({ id: 2, name: "Party Committee", type: "WorkingGroup" }),
       ],
     });
-    renderWithProviders(<Groups />);
+    renderGroups();
 
     await screen.findByText("Board");
     fireEvent.change(screen.getByLabelText("search"), {
@@ -76,18 +91,18 @@ describe("Groups", () => {
   });
 
   it("navigates to a group's detail page when 'view_group' is clicked", async () => {
-    getGroups.mockResolvedValue({ data: [makeGroup()] });
-    renderWithProviders(<Groups />);
+    renderGroups();
 
-    await screen.findByText("Board");
-    fireEvent.click(screen.getAllByText("view_group")[0]);
+    fireEvent.click((await screen.findAllByText("view_group"))[0]);
+
+    expect(await screen.findByText("group-page")).toBeInTheDocument();
   });
 
   it("opens the create-group modal when the plus button is clicked", async () => {
     getGroups.mockResolvedValue({ data: [] });
-    renderWithProviders(<Groups />);
+    renderGroups();
 
-    await screen.findByText("loading");
+    await screen.findByLabelText("search");
     const plusButton = document
       .querySelector("svg.lucide-plus")
       ?.closest("button");

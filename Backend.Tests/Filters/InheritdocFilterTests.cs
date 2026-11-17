@@ -6,7 +6,7 @@ using Backend.Filters;
 using Backend.Models.Domain;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using NSubstitute;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Xunit;
@@ -130,7 +130,8 @@ public class InheritdocFilterTests : IDisposable
         var filter = new InheritdocSchemaFilter(_tempXmlPath);
         var schema = new OpenApiSchema
         {
-            Description = ""
+            Description = "",
+            Properties = new Dictionary<string, IOpenApiSchema>()
         };
         schema.Properties.Add("Name", new OpenApiSchema { Description = "" });
         schema.Properties.Add("Value", new OpenApiSchema { Description = "" });
@@ -152,7 +153,7 @@ public class InheritdocFilterTests : IDisposable
     public void InheritdocSchemaFilter_Apply_ResolvesDifferentPropertyNames()
     {
         var filter = new InheritdocSchemaFilter(_tempXmlPath);
-        var schema = new OpenApiSchema { Description = "" };
+        var schema = new OpenApiSchema { Description = "", Properties = new Dictionary<string, IOpenApiSchema>() };
         schema.Properties.Add("special_system_name", new OpenApiSchema { Description = "" });
         schema.Properties.Add("special_newtonsoft_name", new OpenApiSchema { Description = "" });
         schema.Properties.Add("camelCaseProperty", new OpenApiSchema { Description = "" });
@@ -183,16 +184,17 @@ public class InheritdocFilterTests : IDisposable
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
         var operation = new OpenApiOperation
         {
-            RequestBody = new OpenApiRequestBody()
+            RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>() }
         };
 
         var schema = new OpenApiSchema
         {
-            Description = ""
+            Description = "",
+            Properties = new Dictionary<string, IOpenApiSchema>()
         };
         schema.Properties.Add("Name", new OpenApiSchema { Description = "" });
 
-        operation.RequestBody.Content.Add("multipart/form-data", new OpenApiMediaType
+        operation.RequestBody.Content!.Add("multipart/form-data", new OpenApiMediaType
         {
             Schema = schema
         });
@@ -202,6 +204,7 @@ public class InheritdocFilterTests : IDisposable
             null!,
             Substitute.For<ISchemaGenerator>(),
             new SchemaRepository(),
+            new OpenApiDocument(),
             methodInfo
         );
 
@@ -217,7 +220,7 @@ public class InheritdocFilterTests : IDisposable
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
         var operation = new OpenApiOperation
         {
-            RequestBody = new OpenApiRequestBody()
+            RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>() }
         };
 
         var methodInfo = typeof(TestController).GetMethod(nameof(TestController.NonFormAction));
@@ -225,12 +228,13 @@ public class InheritdocFilterTests : IDisposable
             null!,
             Substitute.For<ISchemaGenerator>(),
             new SchemaRepository(),
+            new OpenApiDocument(),
             methodInfo
         );
 
         filter.Apply(operation, context);
 
-        Assert.Empty(operation.RequestBody.Content);
+        Assert.Empty(operation.RequestBody.Content!);
     }
 
     [Fact]
@@ -239,15 +243,15 @@ public class InheritdocFilterTests : IDisposable
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
         var operation = new OpenApiOperation
         {
-            RequestBody = new OpenApiRequestBody()
+            RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>() }
         };
 
-        var schema = new OpenApiSchema { Description = "" };
+        var schema = new OpenApiSchema { Description = "", Properties = new Dictionary<string, IOpenApiSchema>() };
         schema.Properties.Add("special_system_name", new OpenApiSchema { Description = "" });
         schema.Properties.Add("special_newtonsoft_name", new OpenApiSchema { Description = "" });
         schema.Properties.Add("camelCaseProperty", new OpenApiSchema { Description = "" });
 
-        operation.RequestBody.Content.Add("application/x-www-form-urlencoded", new OpenApiMediaType
+        operation.RequestBody.Content!.Add("application/x-www-form-urlencoded", new OpenApiMediaType
         {
             Schema = schema
         });
@@ -257,6 +261,7 @@ public class InheritdocFilterTests : IDisposable
             null!,
             Substitute.For<ISchemaGenerator>(),
             new SchemaRepository(),
+            new OpenApiDocument(),
             methodInfo
         );
 
@@ -308,7 +313,7 @@ public class InheritdocFilterTests : IDisposable
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
         var operation = new OpenApiOperation { RequestBody = null };
         var methodInfo = typeof(TestController).GetMethod(nameof(TestController.ActionMethod));
-        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), methodInfo);
+        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), new OpenApiDocument(), methodInfo);
         filter.Apply(operation, context);
     }
 
@@ -316,11 +321,11 @@ public class InheritdocFilterTests : IDisposable
     public void FormRequestBodyInheritdocFilter_Apply_UnsupportedContentType_Skips()
     {
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
-        var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody() };
-        var schema = new OpenApiSchema { Description = "" };
-        operation.RequestBody.Content.Add("application/json", new OpenApiMediaType { Schema = schema });
+        var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>() } };
+        var schema = new OpenApiSchema { Description = "", Properties = new Dictionary<string, IOpenApiSchema>() };
+        operation.RequestBody.Content!.Add("application/json", new OpenApiMediaType { Schema = schema });
         var methodInfo = typeof(TestController).GetMethod(nameof(TestController.ActionMethod));
-        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), methodInfo);
+        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), new OpenApiDocument(), methodInfo);
         filter.Apply(operation, context);
         Assert.Equal("", schema.Description);
     }
@@ -329,11 +334,11 @@ public class InheritdocFilterTests : IDisposable
     public void FormRequestBodyInheritdocFilter_Apply_NullProperties_Skips()
     {
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
-        var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody() };
+        var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>() } };
         var schema = new OpenApiSchema { Description = "", Properties = null! };
-        operation.RequestBody.Content.Add("multipart/form-data", new OpenApiMediaType { Schema = schema });
+        operation.RequestBody.Content!.Add("multipart/form-data", new OpenApiMediaType { Schema = schema });
         var methodInfo = typeof(TestController).GetMethod(nameof(TestController.ActionMethod));
-        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), methodInfo);
+        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), new OpenApiDocument(), methodInfo);
         filter.Apply(operation, context);
     }
 
@@ -341,11 +346,11 @@ public class InheritdocFilterTests : IDisposable
     public void FormRequestBodyInheritdocFilter_Apply_ExistingDescription_DoesNotOverwrite()
     {
         var filter = new FormRequestBodyInheritdocFilter(_tempXmlPath);
-        var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody() };
+        var operation = new OpenApiOperation { RequestBody = new OpenApiRequestBody { Content = new Dictionary<string, OpenApiMediaType>() } };
         var schema = new OpenApiSchema { Description = "Existing summary" };
-        operation.RequestBody.Content.Add("multipart/form-data", new OpenApiMediaType { Schema = schema });
+        operation.RequestBody.Content!.Add("multipart/form-data", new OpenApiMediaType { Schema = schema });
         var methodInfo = typeof(TestController).GetMethod(nameof(TestController.ActionMethod));
-        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), methodInfo);
+        var context = new OperationFilterContext(null!, Substitute.For<ISchemaGenerator>(), new SchemaRepository(), new OpenApiDocument(), methodInfo);
         filter.Apply(operation, context);
         Assert.Equal("Existing summary", schema.Description);
     }
@@ -354,7 +359,7 @@ public class InheritdocFilterTests : IDisposable
     public void InheritdocSchemaFilter_Apply_EdgeCases()
     {
         var filter = new InheritdocSchemaFilter(_tempXmlPath);
-        var schema = new OpenApiSchema { Description = "" };
+        var schema = new OpenApiSchema { Description = "", Properties = new Dictionary<string, IOpenApiSchema>() };
 
         schema.Properties.Add("special_system_name", new OpenApiSchema { Description = "Existing Desc" });
         schema.Properties.Add("CAMELCASEPROPERTY", new OpenApiSchema { Description = "" });

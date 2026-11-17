@@ -1,12 +1,11 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MemberResponseDto } from "~/api/types.gen";
+import type { MemberMailinglistDto, MemberResponseDto } from "~/api/types.gen";
 import ChangeAccountForm from "~/components/Account/ChangeProfileForm/ChangeAccountForm";
 import { createMockAuthService, renderWithProviders } from "~/testUtils";
 
-const { getMembersByIdMailinglists, deleteMembersById } = vi.hoisted(() => ({
-  getMembersByIdMailinglists: vi.fn(),
+const { deleteMembersById } = vi.hoisted(() => ({
   deleteMembersById: vi.fn(),
 }));
 
@@ -24,10 +23,15 @@ const {
   handleSubscriptionToggle: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ getMembersByIdMailinglists, deleteMembersById }));
+vi.mock("~/api", () => ({ deleteMembersById }));
 vi.mock(
   "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers",
-  () => ({
+  async (importOriginal) => ({
+    getSubscribedMailinglistIds: (
+      await importOriginal<
+        typeof import("~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers")
+      >()
+    ).getSubscribedMailinglistIds,
     handleChangeEmail,
     handleChangePassword,
     handleConfigure2FA,
@@ -57,14 +61,35 @@ function buildMember(
   } as MemberResponseDto;
 }
 
+/** Renders the form for the member, with the given mailing lists. */
+function renderForm(
+  member: MemberResponseDto = buildMember(),
+  {
+    mailingLists = [],
+    mailingListsUnavailable = false,
+    ...options
+  }: {
+    mailingLists?: MemberMailinglistDto[];
+    mailingListsUnavailable?: boolean;
+  } & Parameters<typeof renderWithProviders>[1] = {},
+) {
+  return renderWithProviders(
+    <ChangeAccountForm
+      member={member}
+      mailingLists={mailingLists}
+      mailingListsUnavailable={mailingListsUnavailable}
+    />,
+    options,
+  );
+}
+
 describe("ChangeAccountForm", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getMembersByIdMailinglists.mockResolvedValue({ data: [] });
   });
 
   it("pre-fills the form fields from the member", () => {
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm();
 
     expect(screen.getByDisplayValue("0612345678")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Street")).toBeInTheDocument();
@@ -72,35 +97,34 @@ describe("ChangeAccountForm", () => {
   });
 
   it("enables the save button once all required fields are filled for an adult member", () => {
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm();
     expect(screen.getByRole("button", { name: "save" })).toBeEnabled();
   });
 
   it("requires a parent phone number for a member under 18 and disables save without it", () => {
     const under18 = new Date();
     under18.setFullYear(under18.getFullYear() - 16);
-    renderWithProviders(
-      <ChangeAccountForm
-        member={buildMember({
-          dateOfBirth: under18.toISOString(),
-          parentPhoneNumber: "",
-        })}
-      />,
+    renderForm(
+      buildMember({
+        dateOfBirth: under18.toISOString(),
+        parentPhoneNumber: "",
+      }),
     );
 
     expect(screen.getByRole("button", { name: "save" })).toBeDisabled();
   });
 
-  it("fetches and renders mailing lists, and toggles subscriptions", async () => {
-    getMembersByIdMailinglists.mockResolvedValue({
-      data: [{ id: "list-1", name: "Newsletter", subscribed: false }],
-    });
+  it("renders the mailing lists with their subscriptions, and toggles them", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm(buildMember(), {
+      mailingLists: [
+        { id: "list-1", name: "Newsletter", subscribed: false },
+        { id: "list-2", name: "Alumni", subscribed: true },
+      ] as MemberMailinglistDto[],
+    });
 
-    await waitFor(() =>
-      expect(screen.getByText("Newsletter")).toBeInTheDocument(),
-    );
+    expect(screen.getByLabelText("Newsletter")).not.toBeChecked();
+    expect(screen.getByLabelText("Alumni")).toBeChecked();
 
     await user.click(screen.getByLabelText("Newsletter"));
     expect(handleSubscriptionToggle).toHaveBeenCalledWith(
@@ -110,18 +134,23 @@ describe("ChangeAccountForm", () => {
     );
   });
 
-  it("shows an error toast when fetching mailing lists fails", async () => {
-    getMembersByIdMailinglists.mockResolvedValue({ error: { title: "Boom" } });
-    const toast = (await import("react-hot-toast")).default;
+  it("shows a message when the mailing lists are unavailable", () => {
+    renderForm(buildMember(), { mailingListsUnavailable: true });
 
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    expect(screen.getByText("mailinglists_unavailable")).toBeInTheDocument();
+  });
 
-    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+  it("does not show the unavailable message when the mailing lists loaded", () => {
+    renderForm();
+
+    expect(
+      screen.queryByText("mailinglists_unavailable"),
+    ).not.toBeInTheDocument();
   });
 
   it("switches the preferred language when a language button is clicked", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm();
 
     await user.click(screen.getByRole("button", { name: "dutch" }));
     expect(screen.getByRole("button", { name: "dutch" })).toHaveClass(
@@ -132,7 +161,7 @@ describe("ChangeAccountForm", () => {
   it("calls handleSaveAccount when save is clicked", async () => {
     const user = userEvent.setup();
     const member = buildMember();
-    renderWithProviders(<ChangeAccountForm member={member} />);
+    renderForm(member);
 
     await user.click(screen.getByRole("button", { name: "save" }));
 
@@ -148,9 +177,7 @@ describe("ChangeAccountForm", () => {
   it("calls handleChangePassword, handleChangeEmail, and handleConfigure2FA with the auth service", async () => {
     const user = userEvent.setup();
     const authService = createMockAuthService();
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />, {
-      authService,
-    });
+    renderForm(buildMember(), { authService });
 
     await user.click(screen.getByRole("button", { name: "change_password" }));
     expect(handleChangePassword).toHaveBeenCalledWith(authService);
@@ -164,7 +191,7 @@ describe("ChangeAccountForm", () => {
 
   it("does not delete the account when the confirmation dialog is cancelled", async () => {
     const user = userEvent.setup();
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm();
 
     await user.click(screen.getByRole("button", { name: "delete_account" }));
     await user.click(screen.getByRole("button", { name: "cancel" }));
@@ -178,9 +205,7 @@ describe("ChangeAccountForm", () => {
     const authService = createMockAuthService();
     const member = buildMember();
 
-    renderWithProviders(<ChangeAccountForm member={member} />, {
-      authService,
-    });
+    renderForm(member, { authService });
 
     await user.click(screen.getByRole("button", { name: "delete_account" }));
     await user.click(screen.getByRole("button", { name: "confirm" }));
@@ -201,7 +226,7 @@ describe("ChangeAccountForm", () => {
       .spyOn(console, "error")
       .mockImplementation(() => {});
 
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm();
 
     await user.click(screen.getByRole("button", { name: "delete_account" }));
     await user.click(screen.getByRole("button", { name: "confirm" }));
@@ -212,7 +237,7 @@ describe("ChangeAccountForm", () => {
   });
 
   it("updates every remaining contact/address field as the user edits it", () => {
-    renderWithProviders(<ChangeAccountForm member={buildMember()} />);
+    renderForm();
 
     const fields: [RegExp, string][] = [
       [/^phone_number/, "0698765432"],
@@ -231,9 +256,7 @@ describe("ChangeAccountForm", () => {
 
   it("switches the preferred language to English when the English button is clicked", async () => {
     const user = userEvent.setup();
-    renderWithProviders(
-      <ChangeAccountForm member={buildMember({ preferredLanguage: "NL" })} />,
-    );
+    renderForm(buildMember({ preferredLanguage: "NL" }));
 
     await user.click(screen.getByRole("button", { name: "english" }));
     expect(screen.getByRole("button", { name: "english" })).toHaveClass(

@@ -39,6 +39,12 @@ vi.mock("~/api", () => ({
   postGroupsByIdGroupPicture,
 }));
 
+const { loadCommitteeYear } = vi.hoisted(() => ({
+  loadCommitteeYear: vi.fn(),
+}));
+
+vi.mock("~/util/loaderAuth.util", () => ({ loadCommitteeYear }));
+
 vi.mock("react-hot-toast", () => ({
   default: {
     success: vi.fn(),
@@ -58,11 +64,11 @@ import {
   handleRoleAliasAdded,
   handleSaveGroup,
   handleUpdateGroupRole,
-  loadGroupData,
+  loadEditGroupLoaderData,
   loadGroupMemberships,
 } from "~/routes/admin/edit-group/edit-group.handlers";
 
-describe("loadGroupData", () => {
+describe("loadEditGroupLoaderData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("URL", {
@@ -70,21 +76,7 @@ describe("loadGroupData", () => {
       createObjectURL: vi.fn(() => "blob:mock-url"),
       revokeObjectURL: vi.fn(),
     });
-  });
-
-  it("returns immediately when id is null", async () => {
-    const setLoading = vi.fn();
-    await loadGroupData({
-      id: null,
-      setFormData: vi.fn(),
-      setGroupPictureSrc: vi.fn(),
-      setRoleAliases: vi.fn(),
-      setLoading,
-    });
-    expect(setLoading).not.toHaveBeenCalled();
-  });
-
-  it("loads group data, role aliases, and picture on success", async () => {
+    loadCommitteeYear.mockResolvedValue(2026);
     getGroupsById.mockResolvedValue({
       data: {
         name: "Board",
@@ -96,55 +88,49 @@ describe("loadGroupData", () => {
       },
     });
     getRolealiases.mockResolvedValue({ data: [{ id: 1, name: "Chair" }] });
+    getGroupmemberships.mockResolvedValue({ data: [{ id: 9 }] });
     getGroupsByIdGroupPicture.mockResolvedValue({ data: new Blob(["x"]) });
-
-    const setFormData = vi.fn();
-    const setGroupPictureSrc = vi.fn();
-    const setRoleAliases = vi.fn();
-    const setLoading = vi.fn();
-
-    const cleanup = await loadGroupData({
-      id: 1,
-      setFormData,
-      setGroupPictureSrc,
-      setRoleAliases,
-      setLoading,
-    });
-
-    expect(setFormData).toHaveBeenCalledWith({
-      Name: "Board",
-      Type: "Committee",
-      Active: true,
-      DefaultGLAccount: "GL1",
-      DefaultCostCenter: "CC1",
-      DefaultCostUnit: "CU1",
-    });
-    expect(setRoleAliases).toHaveBeenCalledWith([{ id: 1, name: "Chair" }]);
-    expect(setGroupPictureSrc).toHaveBeenCalledWith("blob:mock-url");
-    expect(setLoading).toHaveBeenCalledWith(false);
-
-    cleanup?.();
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-url");
   });
 
-  it("defaults DefaultGLAccount/DefaultCostCenter/DefaultCostUnit to empty string when missing", async () => {
+  it.each([
+    ["missing", undefined],
+    ["not a number", "abc"],
+  ])("throws a 404 response when the id is %s", async (_, id) => {
+    await expect(loadEditGroupLoaderData({ id })).rejects.toMatchObject({
+      init: { status: 404 },
+    });
+    expect(getGroupsById).not.toHaveBeenCalled();
+  });
+
+  it("returns the group, role aliases, picture and this year's memberships", async () => {
+    await expect(loadEditGroupLoaderData({ id: "1" })).resolves.toEqual({
+      groupId: 1,
+      formData: {
+        Name: "Board",
+        Type: "Committee",
+        Active: true,
+        DefaultGLAccount: "GL1",
+        DefaultCostCenter: "CC1",
+        DefaultCostUnit: "CU1",
+      },
+      roleAliases: [{ id: 1, name: "Chair" }],
+      groupPictureSrc: "blob:mock-url",
+      committeeYear: 2026,
+      enrollments: [{ id: 9 }],
+    });
+    expect(getGroupmemberships).toHaveBeenCalledWith({
+      query: { GroupId: 1, MembershipYear: 2026 },
+    });
+  });
+
+  it("defaults the financial fields to an empty string when missing", async () => {
     getGroupsById.mockResolvedValue({
       data: { name: "Board", type: "Committee", active: true },
     });
-    getRolealiases.mockResolvedValue({ data: [] });
-    getGroupsByIdGroupPicture.mockResolvedValue({ data: new Blob(["x"]) });
 
-    const setFormData = vi.fn();
+    const { formData } = await loadEditGroupLoaderData({ id: "1" });
 
-    await loadGroupData({
-      id: 1,
-      setFormData,
-      setGroupPictureSrc: vi.fn(),
-      setRoleAliases: vi.fn(),
-      setLoading: vi.fn(),
-    });
-
-    expect(setFormData).toHaveBeenCalledWith(
+    expect(formData).toEqual(
       expect.objectContaining({
         DefaultGLAccount: "",
         DefaultCostCenter: "",
@@ -153,62 +139,40 @@ describe("loadGroupData", () => {
     );
   });
 
-  it("continues without a picture when the picture request fails", async () => {
-    getGroupsById.mockResolvedValue({
-      data: { name: "Board", type: "Committee", active: true },
-    });
-    getRolealiases.mockResolvedValue({ data: [] });
-    getGroupsByIdGroupPicture.mockResolvedValue({ error: "not found" });
+  it.each([
+    ["returns an error", () => Promise.resolve({ error: "not found" })],
+    ["rejects", () => Promise.reject(new Error("boom"))],
+  ])("continues without a picture when the picture request %s", async (_, respond) => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    getGroupsByIdGroupPicture.mockImplementation(respond);
 
-    const setGroupPictureSrc = vi.fn();
-    const setLoading = vi.fn();
+    const { groupPictureSrc } = await loadEditGroupLoaderData({ id: "1" });
 
-    await loadGroupData({
-      id: 1,
-      setFormData: vi.fn(),
-      setGroupPictureSrc,
-      setRoleAliases: vi.fn(),
-      setLoading,
-    });
-
-    expect(setGroupPictureSrc).not.toHaveBeenCalled();
-    expect(setLoading).toHaveBeenCalledWith(false);
+    expect(groupPictureSrc).toBeNull();
+    consoleWarn.mockRestore();
   });
 
-  it("shows an error toast when the group request fails", async () => {
-    getGroupsById.mockResolvedValue({ error: "bad" });
-    const setLoading = vi.fn();
+  it("throws when the group fails to load", async () => {
+    getGroupsById.mockResolvedValue({ data: null });
 
-    await loadGroupData({
-      id: 1,
-      setFormData: vi.fn(),
-      setGroupPictureSrc: vi.fn(),
-      setRoleAliases: vi.fn(),
-      setLoading,
-    });
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "loading_failed: Failed to load group data",
+    await expect(loadEditGroupLoaderData({ id: "1" })).rejects.toThrow(
+      "Failed to load group data",
     );
-    expect(setLoading).toHaveBeenCalledWith(false);
   });
 
-  it("shows an error toast when role aliases fail to load", async () => {
-    getGroupsById.mockResolvedValue({
-      data: { name: "Board", type: "Committee", active: true },
-    });
-    getRolealiases.mockResolvedValue({ error: "bad roles" });
+  it("throws when the role aliases fail to load", async () => {
+    getRolealiases.mockResolvedValue({ data: null });
 
-    await loadGroupData({
-      id: 1,
-      setFormData: vi.fn(),
-      setGroupPictureSrc: vi.fn(),
-      setRoleAliases: vi.fn(),
-      setLoading: vi.fn(),
-    });
+    await expect(loadEditGroupLoaderData({ id: "1" })).rejects.toThrow(
+      "Failed to load role aliases",
+    );
+  });
 
-    expect(toast.error).toHaveBeenCalledWith(
-      "loading_failed: Failed to load role aliases",
+  it("throws when the memberships fail to load", async () => {
+    getGroupmemberships.mockResolvedValue({ data: null });
+
+    await expect(loadEditGroupLoaderData({ id: "1" })).rejects.toThrow(
+      "Failed to load group memberships",
     );
   });
 });

@@ -4,7 +4,7 @@ import { Outlet, useLocation } from "react-router";
 import { client } from "~/api/client.gen";
 import { getMembersById, getSettingsById } from "~/api/sdk.gen";
 import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
+import { TokenParsedContext, useAuth } from "~/context/AuthContext";
 import i18n from "~/i18n";
 import type { TokenParsed } from "~/types/TokenParsed";
 import {
@@ -42,23 +42,25 @@ export default function AuthenticatedLayout() {
     let retryTimer: number | undefined;
 
     const loadToken = async () => {
+      // Refresh first: isAuthenticated() only checks the token's clock, so it fails for an expired access token
+      // that could still be refreshed, forcing a needless Keycloak redirect.
+      const tokenParsed = await authService.getTokenParsed();
+      if (cancelled) return;
+
+      if (tokenParsed) {
+        setTokenParsed(tokenParsed);
+        return;
+      }
+
       if (!authService.isAuthenticated()) {
         console.error("User not authenticated");
         authService.login(window.location.href);
         return;
       }
 
-      const tokenParsed = await authService.getTokenParsed();
-      if (cancelled) return;
-
-      if (!tokenParsed) {
-        retryTimer = window.setTimeout(() => {
-          if (!cancelled) loadToken();
-        }, 250);
-        return;
-      }
-
-      setTokenParsed(tokenParsed);
+      retryTimer = window.setTimeout(() => {
+        if (!cancelled) loadToken();
+      }, 250);
     };
 
     loadToken();
@@ -258,12 +260,13 @@ export default function AuthenticatedLayout() {
     setMember,
   ]);
 
+  // tokenParsed is only set once getTokenParsed() succeeded; re-checking isAuthenticated() here
+  // would bring back the false "not authenticated".
   if (!tokenParsed) return null;
 
-  if (!authService.isAuthenticated()) {
-    authService.login(window.location.href);
-    return null;
-  }
-
-  return <Outlet />;
+  return (
+    <TokenParsedContext.Provider value={tokenParsed}>
+      <Outlet />
+    </TokenParsedContext.Provider>
+  );
 }

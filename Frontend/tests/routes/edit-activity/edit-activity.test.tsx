@@ -1,23 +1,32 @@
-import { screen, waitFor } from "@testing-library/react";
-import { Route, Routes } from "react-router";
+import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityResponseDto } from "~/api";
+import type { ActivityResponseDto, GroupResponseDto } from "~/api";
+import * as route from "~/routes/edit-activity/edit-activity";
 import {
   getEditActivityBackPath,
-  loadEditActivityData,
+  loadEditActivityLoaderData,
 } from "~/routes/edit-activity/edit-activity.handlers";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
+import { renderRoute } from "~/testUtils";
 import type { TokenParsed } from "~/types/TokenParsed";
 
 vi.mock("~/routes/edit-activity/edit-activity.handlers", () => ({
-  loadEditActivityData: vi.fn(),
+  loadEditActivityLoaderData: vi.fn(),
   getEditActivityBackPath: vi.fn(() => "/activities"),
 }));
 
 vi.mock("~/components/Activity/Edit/EditActivityForm/EditActivityForm", () => ({
-  default: ({ isBoard, id }: { isBoard: boolean; id?: string }) => (
+  default: ({
+    isBoard,
+    id,
+    groups,
+  }: {
+    isBoard: boolean;
+    id?: string;
+    groups: GroupResponseDto[];
+  }) => (
     <div>
-      edit-activity-form-{isBoard ? "board" : "member"}-{id ?? "new"}
+      edit-activity-form-{isBoard ? "board" : "member"}-{id ?? "new"}-groups-
+      {groups.length}
     </div>
   ),
 }));
@@ -36,8 +45,6 @@ vi.mock(
   }),
 );
 
-import ActivityFormPage from "~/routes/edit-activity/edit-activity";
-
 const memberToken: TokenParsed = {
   locale: "en",
   UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
@@ -47,125 +54,110 @@ const memberToken: TokenParsed = {
   name: "Test User",
 };
 
+const boardToken = { ...memberToken, is_admin: true } as TokenParsed;
+const groups = [{ id: 1 }] as GroupResponseDto[];
+const activity = { id: 5, name: "Party" } as ActivityResponseDto;
+
+function renderCreate() {
+  return renderRoute(route, { path: "/activities/create" });
+}
+
+function renderEdit() {
+  return renderRoute(route, {
+    path: "/activities/edit/:id",
+    route: "/activities/edit/5",
+  });
+}
+
 describe("ActivityFormPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("shows a loading state while the token is loading", () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(() => new Promise<TokenParsed | null>(() => {})),
+    vi.mocked(loadEditActivityLoaderData).mockResolvedValue({
+      tokenParsed: memberToken,
+      activity: null,
+      groups,
     });
-    renderWithProviders(
-      <Routes>
-        <Route path="/activities/create" element={<ActivityFormPage />} />
-      </Routes>,
-      { route: "/activities/create", authService },
-    );
-
-    expect(screen.getByText("loading")).toBeInTheDocument();
   });
 
   it("renders the create-activity heading in create mode", async () => {
-    vi.mocked(loadEditActivityData).mockImplementation(async ({ setLoading }) =>
-      setLoading(false),
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <Routes>
-        <Route path="/activities/create" element={<ActivityFormPage />} />
-      </Routes>,
-      { route: "/activities/create", authService },
-    );
+    renderCreate();
 
     expect(await screen.findByText("create_activity")).toBeInTheDocument();
     expect(
-      screen.getByText("edit-activity-form-member-new"),
+      screen.getByText(/edit-activity-form-member-new-groups-\s*1/),
     ).toBeInTheDocument();
   });
 
-  it("shows failed_fetching when editing an activity that could not be loaded", async () => {
-    vi.mocked(loadEditActivityData).mockImplementation(async ({ setLoading }) =>
-      setLoading(false),
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
+  it("passes the id from the URL to the loader", async () => {
+    vi.mocked(loadEditActivityLoaderData).mockResolvedValue({
+      tokenParsed: memberToken,
+      activity,
+      groups,
     });
-    renderWithProviders(
-      <Routes>
-        <Route path="/activities/edit/:id" element={<ActivityFormPage />} />
-      </Routes>,
-      { route: "/activities/edit/5", authService },
-    );
+    renderEdit();
 
-    expect(await screen.findByText("failed_fetching")).toBeInTheDocument();
+    await screen.findByText("edit_activity");
+    expect(loadEditActivityLoaderData).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "5" }),
+    );
+  });
+
+  it("shows the error page when the data fails to load", async () => {
+    vi.mocked(loadEditActivityLoaderData).mockRejectedValue(
+      new Error("Failed to load activities"),
+    );
+    renderEdit();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load activities",
+    );
   });
 
   it("shows admin tools for a board member editing an activity", async () => {
-    vi.mocked(loadEditActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity({ id: 5, name: "Party" } as ActivityResponseDto);
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: true,
-      })),
+    vi.mocked(loadEditActivityLoaderData).mockResolvedValue({
+      tokenParsed: boardToken,
+      activity,
+      groups,
     });
-    renderWithProviders(
-      <Routes>
-        <Route path="/activities/edit/:id" element={<ActivityFormPage />} />
-      </Routes>,
-      { route: "/activities/edit/5", authService },
-    );
+    renderEdit();
 
     expect(await screen.findByText("send-activity-mail")).toBeInTheDocument();
     expect(screen.getByText("edit-participants-tile")).toBeInTheDocument();
-    expect(screen.getByText("edit-activity-form-board-5")).toBeInTheDocument();
+    expect(screen.getByText(/edit-activity-form-board-5/)).toBeInTheDocument();
+  });
+
+  it("does not show admin tools for a board member creating an activity", async () => {
+    vi.mocked(loadEditActivityLoaderData).mockResolvedValue({
+      tokenParsed: boardToken,
+      activity: null,
+      groups,
+    });
+    renderCreate();
+
+    await screen.findByText(/edit-activity-form-board-new/);
+    expect(screen.queryByText("send-activity-mail")).not.toBeInTheDocument();
   });
 
   it("does not show admin tools for a non-board member editing an activity", async () => {
-    vi.mocked(loadEditActivityData).mockImplementation(
-      async ({ setLoading, setActivity }) => {
-        setActivity({ id: 5, name: "Party" } as ActivityResponseDto);
-        setLoading(false);
-      },
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => ({
-        ...memberToken,
-        is_admin: false,
-      })),
+    vi.mocked(loadEditActivityLoaderData).mockResolvedValue({
+      tokenParsed: memberToken,
+      activity,
+      groups,
     });
-    renderWithProviders(
-      <Routes>
-        <Route path="/activities/edit/:id" element={<ActivityFormPage />} />
-      </Routes>,
-      { route: "/activities/edit/5", authService },
-    );
+    renderEdit();
 
-    await screen.findByText("edit-activity-form-member-5");
+    await screen.findByText(/edit-activity-form-member-5/);
     expect(screen.queryByText("send-activity-mail")).not.toBeInTheDocument();
   });
 
   it("uses getEditActivityBackPath for the header back link", async () => {
-    vi.mocked(loadEditActivityData).mockImplementation(async ({ setLoading }) =>
-      setLoading(false),
-    );
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => memberToken),
-    });
-    renderWithProviders(
-      <Routes>
-        <Route path="/activities/create" element={<ActivityFormPage />} />
-      </Routes>,
-      { route: "/activities/create", authService },
-    );
+    renderCreate();
 
-    await waitFor(() => expect(getEditActivityBackPath).toHaveBeenCalled());
+    await screen.findByText("create_activity");
+    expect(getEditActivityBackPath).toHaveBeenCalledWith(
+      "/activities/create",
+      false,
+      undefined,
+    );
   });
 });

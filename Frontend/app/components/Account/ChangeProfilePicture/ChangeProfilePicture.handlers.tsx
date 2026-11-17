@@ -2,9 +2,36 @@ import { t } from "i18next";
 import toast from "react-hot-toast";
 import {
   deleteMembersByIdProfilePicture,
+  getMembersByIdProfilePicture,
   postProfilepictureByIdProfilePicture,
 } from "~/api";
 import { appendErrorMessage } from "~/util/error.util";
+
+/**
+ * Loads a member's profile picture as an object URL, for use in route loaders.
+ * @param {string} userId - The ID of the user whose profile picture is loaded.
+ * @returns {Promise<string>} The picture's object URL, or the placeholder when there is none.
+ */
+export const loadProfilePictureSrc = async (
+  userId: string,
+): Promise<string> => {
+  try {
+    const response = await getMembersByIdProfilePicture({
+      path: { id: userId },
+      responseType: "blob",
+    });
+    if (
+      !response.error &&
+      response.data instanceof Blob &&
+      response.status === 200
+    ) {
+      return URL.createObjectURL(response.data);
+    }
+  } catch (err) {
+    console.error("Failed to load profile picture:", err);
+  }
+  return "/profile-picture.svg";
+};
 
 /**
  * Handles the profile picture upload process.

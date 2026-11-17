@@ -1,6 +1,5 @@
 import { t } from "i18next";
-import { useEffect, useRef, useState } from "react";
-import { getMembersByIdProfilePicture } from "~/api";
+import { useRef } from "react";
 import Button from "~/components/UI/Button";
 import {
   handleProfilePictureDelete,
@@ -11,51 +10,20 @@ import {
  * Renders a component for changing a user's profile picture.
  * @param {Object} props - The component props.
  * @param {string} props.userId - The ID of the user whose profile picture is being changed.
+ * @param {string | null} props.profilePictureSrc - The current picture's URL, loaded by the route (see `loadProfilePictureSrc`).
  * @param {React.ReactNode} [props.children] - Optional children to render below the profile picture.
  * @returns {JSX.Element} - The rendered component.
  */
 export default function ChangeProfilePicture({
   userId,
+  profilePictureSrc,
   children,
 }: {
   userId: string;
+  profilePictureSrc: string | null;
   children?: React.ReactNode;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [profilePictureSrc, setProfilePictureSrc] = useState<string | null>(
-    null,
-  );
-
-  useEffect(() => {
-    let url = null as string | null;
-    const loadProfilePicture = async () => {
-      try {
-        const ppRes = await getMembersByIdProfilePicture({
-          path: { id: userId },
-          responseType: "blob",
-        });
-        if (
-          !ppRes.error &&
-          ppRes.data instanceof Blob &&
-          ppRes.status === 200
-        ) {
-          url = URL.createObjectURL(ppRes.data);
-          setProfilePictureSrc(url);
-        } else {
-          setProfilePictureSrc("/profile-picture.svg");
-        }
-      } catch (err) {
-        console.error("Failed to load profile picture:", err);
-        setProfilePictureSrc("/profile-picture.svg");
-      }
-    };
-
-    loadProfilePicture();
-
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [userId]);
 
   return (
     <div className="flex flex-col items-center lg:w-48">

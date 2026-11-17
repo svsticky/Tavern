@@ -1,47 +1,43 @@
 import { fireEvent, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityResponseDto } from "~/api";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type {
+  ActivityResponseDto,
+  EnrollmentBalance,
+  EnrollmentResponseDto,
+} from "~/api";
 import DashboardHeader from "~/components/DashboardHeader";
-import { createMockAuthService, renderWithProviders } from "~/testUtils";
-import type { TokenParsed } from "~/types/TokenParsed";
+import {
+  createMockAuthService,
+  makeTokenParsed,
+  renderWithProviders,
+} from "~/testUtils";
 import { formatDate } from "~/util/date.util";
 
-const { getEnrollments, getPaymentsUnpaid, postPaymentsActivity } = vi.hoisted(
-  () => ({
-    getEnrollments: vi.fn(),
-    getPaymentsUnpaid: vi.fn(),
-    postPaymentsActivity: vi.fn(),
-  }),
-);
-
-vi.mock("~/api", () => ({
-  getEnrollments,
-  getPaymentsUnpaid,
-  postPaymentsActivity,
+const { getPaymentsUnpaid, postPaymentsActivity } = vi.hoisted(() => ({
+  getPaymentsUnpaid: vi.fn(),
+  postPaymentsActivity: vi.fn(),
 }));
 
-const toastErrorFn = vi.fn();
+vi.mock("~/api", () => ({ getPaymentsUnpaid, postPaymentsActivity }));
+
+const { toastPromiseErrors } = vi.hoisted(() => ({
+  toastPromiseErrors: vi.fn(),
+}));
+
 vi.mock("react-hot-toast", () => ({
   default: {
-    error: (...args: unknown[]) => toastErrorFn(...args),
+    error: vi.fn(),
     promise: vi.fn((p: Promise<unknown>, opts: any) => {
       p.then(
         (data) => opts.success?.(data),
-        (err) => opts.error?.(err),
+        (err) => toastPromiseErrors(opts.error?.(err)),
       ).catch(() => {});
       return p;
     }),
   },
 }));
 
-const token: TokenParsed = {
-  locale: "en",
-  UserId: "00000000-0000-0000-0000-000000000000" as TokenParsed["UserId"],
-  access_level: "member",
-  given_name: "Jane",
-  family_name: "Doe",
-  name: "Jane Doe",
-};
+const token = makeTokenParsed({ given_name: "Jane", family_name: "Doe" });
 
 function buildActivity(
   overrides: Partial<ActivityResponseDto> = {},
@@ -55,220 +51,163 @@ function buildActivity(
   } as ActivityResponseDto;
 }
 
+function balance(
+  amount: number,
+  activityId: number,
+  activityName = "Activity",
+): EnrollmentBalance {
+  return {
+    balance: amount,
+    enrollment: { activityId, activity: { name: activityName } },
+  } as EnrollmentBalance;
+}
+
+/** Waits for the header to load the user's token, which paying needs. */
+const waitForToken = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+/** Renders the header for Jane, with no balances or enrollments unless given. */
+function renderHeader({
+  nextActivity,
+  unpaidBalances = [],
+  enrollments = [],
+}: {
+  nextActivity?: ActivityResponseDto;
+  unpaidBalances?: EnrollmentBalance[];
+  enrollments?: unknown[];
+} = {}) {
+  const authService = createMockAuthService({
+    getTokenParsed: vi.fn(async () => token),
+  });
+  return renderWithProviders(
+    <DashboardHeader
+      name="Jane"
+      nextActivity={nextActivity as ActivityResponseDto}
+      unpaidBalances={unpaidBalances}
+      enrollments={enrollments as EnrollmentResponseDto[]}
+    />,
+    { authService },
+  );
+}
+
 describe("DashboardHeader", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getPaymentsUnpaid.mockResolvedValue({ data: [] });
-    getEnrollments.mockResolvedValue({ data: [] });
   });
 
-  it("renders the greeting with the user's name", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+  afterEach(() => {
+    window.history.replaceState({}, "", "/");
+  });
+
+  it("renders the greeting with the user's name", () => {
+    renderHeader();
     expect(screen.getByText("Hey Jane!")).toBeInTheDocument();
   });
 
-  it("stops loading without fetching when the user is not authenticated", async () => {
-    const authService = createMockAuthService({
-      isAuthenticated: vi.fn(() => false),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    await waitFor(() =>
-      expect(screen.queryByText("loading")).not.toBeInTheDocument(),
-    );
-    expect(getPaymentsUnpaid).not.toHaveBeenCalled();
-  });
-
-  it("logs an error when the token fails to parse", async () => {
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => null),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    await waitFor(() => expect(consoleError).toHaveBeenCalled());
-    consoleError.mockRestore();
-  });
-
-  it("computes outstanding payments and enrollment counts", async () => {
-    getPaymentsUnpaid.mockResolvedValue({
-      data: [
-        { balance: 5, enrollment: { activityId: 1 } },
-        { balance: 2.5, enrollment: { activityId: 2 } },
-      ],
-    });
-    getEnrollments.mockResolvedValue({
-      data: [
+  it("computes outstanding payments and enrollment counts", () => {
+    renderHeader({
+      unpaidBalances: [balance(5, 1), balance(2.5, 2)],
+      enrollments: [
         { activity: { dateTimeEnd: "2020-01-01T00:00:00Z" } },
         { activity: { dateTimeEnd: "2099-01-01T00:00:00Z" } },
         { activity: { dateTimeEnd: "2099-06-01T00:00:00Z" } },
       ],
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
 
-    expect(await screen.findByText("€7.50")).toBeInTheDocument();
+    expect(screen.getByText("€7.50")).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("1")).toBeInTheDocument();
   });
 
-  it("shows an error toast when data loading fails", async () => {
-    getPaymentsUnpaid.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
-    consoleError.mockRestore();
+  it("does not fetch the payments when not returning from a payment", () => {
+    renderHeader();
+    expect(getPaymentsUnpaid).not.toHaveBeenCalled();
   });
 
-  it("shows an error toast when fetching enrollments fails", async () => {
-    getEnrollments.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+  it("refreshes the outstanding payments when returning from a payment", async () => {
+    window.history.replaceState({}, "", "/?paymentReturn=activity");
+    getPaymentsUnpaid.mockResolvedValue({ data: [] });
+    renderHeader({ unpaidBalances: [balance(5, 1)] });
 
-    await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
-    consoleError.mockRestore();
+    expect(screen.getByText("€5.00")).toBeInTheDocument();
+    expect(await screen.findByText("€0.00")).toBeInTheDocument();
+    expect(window.location.search).toBe("");
   });
 
-  it("shows an error toast when no enrollment data is returned", async () => {
-    getEnrollments.mockResolvedValue({ data: undefined });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    await waitFor(() => expect(toastErrorFn).toHaveBeenCalled());
-    consoleError.mockRestore();
+  it("disables the pay button when there is nothing outstanding", () => {
+    renderHeader();
+    expect(screen.getByText("pay")).toBeDisabled();
   });
 
-  it("shows an error toast when the payment request fails to return a checkout URL", async () => {
-    getPaymentsUnpaid.mockResolvedValue({
-      data: [{ balance: 5, enrollment: { activityId: 1 } }],
-    });
-    postPaymentsActivity.mockResolvedValue({ data: {} });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    const payButton = await screen.findByText("pay");
-    fireEvent.click(payButton);
-
-    await waitFor(() => expect(postPaymentsActivity).toHaveBeenCalled());
-  });
-
-  it("shows an error toast when the payment request itself errors", async () => {
-    getPaymentsUnpaid.mockResolvedValue({
-      data: [{ balance: 5, enrollment: { activityId: 1 } }],
-    });
-    postPaymentsActivity.mockResolvedValue({ error: "fail" });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    const payButton = await screen.findByText("pay");
-    fireEvent.click(payButton);
-
-    await waitFor(() => expect(postPaymentsActivity).toHaveBeenCalled());
-  });
-
-  it("shows the participant count without a limit when there is none", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(
-      <DashboardHeader
-        name="Jane"
-        nextActivity={buildActivity({ participantLimit: undefined })}
-      />,
-      { authService },
-    );
-
-    expect(await screen.findByText("0 participants")).toBeInTheDocument();
-  });
-
-  it("disables the pay button when there is nothing outstanding", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
-
-    expect(await screen.findByText("pay")).toBeDisabled();
-  });
-
-  it("redirects to the checkout URL when paying outstanding balances", async () => {
-    getPaymentsUnpaid.mockResolvedValue({
-      data: [{ balance: 5, enrollment: { activityId: 1 } }],
-    });
+  it("starts a payment for all outstanding activities", async () => {
     postPaymentsActivity.mockResolvedValue({
       data: { checkoutUrl: "https://pay.example.com/checkout" },
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+    renderHeader({ unpaidBalances: [balance(5, 1), balance(3, 4)] });
 
-    const payButton = await screen.findByText("pay");
+    const payButton = screen.getByText("pay");
     expect(payButton).not.toBeDisabled();
+    await waitForToken();
     fireEvent.click(payButton);
 
     await waitFor(() =>
       expect(postPaymentsActivity).toHaveBeenCalledWith({
-        body: { memberId: token.UserId, activityIds: [1] },
+        body: { memberId: token.UserId, activityIds: [1, 4] },
       }),
     );
   });
 
-  it("does not render the next-activity card when there is none", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+  it("shows an error when no checkout URL is returned", async () => {
+    postPaymentsActivity.mockResolvedValue({ data: {} });
+    renderHeader({ unpaidBalances: [balance(5, 1)] });
 
-    await waitFor(() => expect(getPaymentsUnpaid).toHaveBeenCalled());
+    await waitForToken();
+    fireEvent.click(screen.getByText("pay"));
+
+    await waitFor(() =>
+      expect(toastPromiseErrors).toHaveBeenCalledWith(
+        expect.stringContaining("payment_initiation_failed"),
+      ),
+    );
+  });
+
+  it("shows an error when the payment request itself errors", async () => {
+    postPaymentsActivity.mockResolvedValue({ error: "fail" });
+    renderHeader({ unpaidBalances: [balance(5, 1)] });
+
+    await waitForToken();
+    fireEvent.click(screen.getByText("pay"));
+
+    await waitFor(() =>
+      expect(toastPromiseErrors).toHaveBeenCalledWith(
+        expect.stringContaining("payment_initiation_failed"),
+      ),
+    );
+  });
+
+  it("shows the participant count without a limit when there is none", () => {
+    renderHeader({
+      nextActivity: buildActivity({ participantLimit: undefined }),
+    });
+
+    expect(screen.getByText("0 participants")).toBeInTheDocument();
+  });
+
+  it("does not render the next-activity card when there is none", () => {
+    renderHeader();
     expect(screen.queryByText("upcoming_activity")).not.toBeInTheDocument();
   });
 
-  it("renders the next-activity card and navigates on click", async () => {
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(
-      <DashboardHeader
-        name="Jane"
-        nextActivity={buildActivity({ participantLimit: 20 })}
-      />,
-      { authService },
-    );
+  it("renders the next-activity card", () => {
+    renderHeader({ nextActivity: buildActivity({ participantLimit: 20 }) });
 
-    expect(await screen.findByText("Party")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("view_details"));
+    expect(screen.getByText("Party")).toBeInTheDocument();
+    expect(screen.getByText("view_details")).toBeInTheDocument();
   });
 
-  it("opens a modal with the attended activities", async () => {
-    getEnrollments.mockResolvedValue({
-      data: [
+  it("opens a modal with the attended activities", () => {
+    renderHeader({
+      enrollments: [
         {
           price: 4,
           activity: {
@@ -286,12 +225,7 @@ describe("DashboardHeader", () => {
         },
       ],
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
 
-    await waitFor(() => expect(screen.getAllByText("1")).toHaveLength(2));
     fireEvent.click(screen.getByText("attended"));
 
     expect(screen.getByText("attended_activities")).toBeInTheDocument();
@@ -308,21 +242,10 @@ describe("DashboardHeader", () => {
     expect(screen.queryByText("attended_activities")).not.toBeInTheDocument();
   });
 
-  it("opens a modal with the outstanding payments", async () => {
-    getPaymentsUnpaid.mockResolvedValue({
-      data: [
-        {
-          balance: 5,
-          enrollment: { activityId: 1, activity: { name: "Gala" } },
-        },
-      ],
-    });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
+  it("opens a modal with the outstanding payments", () => {
+    renderHeader({ unpaidBalances: [balance(5, 1, "Gala")] });
 
-    fireEvent.click(await screen.findByText("€5.00"));
+    fireEvent.click(screen.getByText("€5.00"));
 
     expect(screen.getByText("Gala")).toBeInTheDocument();
     expect(screen.getAllByText("€5.00")).toHaveLength(2);
@@ -331,9 +254,9 @@ describe("DashboardHeader", () => {
     expect(screen.queryByText("Gala")).not.toBeInTheDocument();
   });
 
-  it("opens a modal with the enrolled activities", async () => {
-    getEnrollments.mockResolvedValue({
-      data: [
+  it("opens a modal with the enrolled activities", () => {
+    renderHeader({
+      enrollments: [
         {
           price: 3,
           activity: {
@@ -352,12 +275,7 @@ describe("DashboardHeader", () => {
         },
       ],
     });
-    const authService = createMockAuthService({
-      getTokenParsed: vi.fn(async () => token),
-    });
-    renderWithProviders(<DashboardHeader name="Jane" />, { authService });
 
-    await waitFor(() => expect(screen.getAllByText("1")).toHaveLength(2));
     fireEvent.click(screen.getByText("enrollments"));
 
     expect(screen.getByText("enrolled_activities")).toBeInTheDocument();
