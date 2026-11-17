@@ -74,15 +74,32 @@ describe("AuthenticatedLayout", () => {
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
   });
 
-  it("redirects to login when the user is not authenticated", async () => {
+  it("redirects to login when the session is truly dead (refresh fails and the token is expired)", async () => {
     const authService = createMockAuthService({
       isReady: () => true,
       isAuthenticated: () => false,
+      getTokenParsed: vi.fn(async () => null),
     });
 
     renderLayout(authService);
 
     await waitFor(() => expect(authService.login).toHaveBeenCalled());
+  });
+
+  it("does not redirect to login when the access token's clock has elapsed but a refresh still succeeds", async () => {
+    // isAuthenticated() only checks the clock, so it can say "expired" while a refresh still works.
+    const authService = createMockAuthService({
+      isReady: () => true,
+      isAuthenticated: () => false,
+      getTokenParsed: vi.fn(async () => token),
+    });
+
+    renderLayout(authService);
+
+    await waitFor(() =>
+      expect(screen.getByText("Protected content")).toBeInTheDocument(),
+    );
+    expect(authService.login).not.toHaveBeenCalled();
   });
 
   it("renders the outlet once the token is loaded for an authenticated user", async () => {
