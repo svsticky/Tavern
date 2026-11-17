@@ -104,7 +104,7 @@ export const copyWeekOverview = async (
             : a.shortEnglishDescription || a.englishDescription;
           const desc = formatForWhatsApp(rawDesc);
           const activityUrl = `${getEnv("HostUrl")}/activities/${a.id}`;
-          message += `${summaryLine}\n${desc}\n${activityUrl}\n\n`;
+          message += `*${summaryLine}*\n${desc}\n${activityUrl}\n\n`;
         });
       }
     });
@@ -124,7 +124,7 @@ export const copyWeekOverview = async (
         : "Unknown location";
       message += `${drinkDay}: ${weeklyDrink.location || locationFallback}\n`;
     } else {
-      message += isDutch ? "Geen borrel deze week\n" : "No drinks this week\n";
+      message += isDutch ? "Geen borrel deze week" : "No drinks this week";
     }
 
     await navigator.clipboard.writeText(message);

@@ -358,7 +358,7 @@ export const handleCopyForWhatsapp = async (
   const location = activity.location || "TBA";
   const price = formatPromoPrice(activity.price, isDutch ? "NL" : "EN");
 
-  const header = `${activity.name} | ${timeRange} | ${location} |  ${price} `;
+  const header = `*${activity.name} | ${timeRange} | ${location} |  ${price}*`;
   const rawDesc = isDutch
     ? activity.shortDutchDescription || activity.dutchDescription
     : activity.shortEnglishDescription || activity.englishDescription;
