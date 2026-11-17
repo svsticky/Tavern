@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Reflection;
 using System.Text.Json;
@@ -26,7 +26,7 @@ public sealed class InheritdocSchemaFilter : ISchemaFilter
     /// </summary>
     /// <param name="schema">The schema being generated.</param>
     /// <param name="context">The schema filter context.</param>
-    public void Apply(OpenApiSchema schema, SchemaFilterContext context)
+    public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
         if (schema == null)
             return;
@@ -61,30 +61,34 @@ public sealed class InheritdocSchemaFilter : ISchemaFilter
         }
     }
 
-    private static OpenApiSchema? ResolveSchemaProperty(OpenApiSchema schema, PropertyInfo property)
+    private static IOpenApiSchema? ResolveSchemaProperty(IOpenApiSchema schema, PropertyInfo property)
     {
+        var properties = schema.Properties;
+        if (properties == null)
+            return null;
+
         var jsonNameAttribute = property.GetCustomAttribute<System.Text.Json.Serialization.JsonPropertyNameAttribute>();
         if (!string.IsNullOrWhiteSpace(jsonNameAttribute?.Name) &&
-            schema.Properties.TryGetValue(jsonNameAttribute.Name, out var jsonPropertySchema))
+            properties.TryGetValue(jsonNameAttribute.Name, out var jsonPropertySchema))
         {
             return jsonPropertySchema;
         }
 
         var newtonsoftNameAttribute = property.GetCustomAttribute<Newtonsoft.Json.JsonPropertyAttribute>();
         if (!string.IsNullOrWhiteSpace(newtonsoftNameAttribute?.PropertyName) &&
-            schema.Properties.TryGetValue(newtonsoftNameAttribute.PropertyName, out var newtonsoftPropertySchema))
+            properties.TryGetValue(newtonsoftNameAttribute.PropertyName, out var newtonsoftPropertySchema))
         {
             return newtonsoftPropertySchema;
         }
 
-        if (schema.Properties.TryGetValue(property.Name, out var pascalSchema))
+        if (properties.TryGetValue(property.Name, out var pascalSchema))
             return pascalSchema;
 
         var camelName = JsonNamingPolicy.CamelCase.ConvertName(property.Name);
-        if (schema.Properties.TryGetValue(camelName, out var camelSchema))
+        if (properties.TryGetValue(camelName, out var camelSchema))
             return camelSchema;
 
-        return schema.Properties
+        return properties
             .FirstOrDefault(entry => string.Equals(entry.Key, property.Name, StringComparison.OrdinalIgnoreCase))
             .Value;
     }

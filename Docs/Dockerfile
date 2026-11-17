@@ -1,5 +1,5 @@
 # -- Generation dependencies with .net, nodejs and npm and all packages for documentation generation
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS generation-deps
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS generation-deps
 
 WORKDIR /app
 
@@ -9,7 +9,7 @@ RUN apt-get update && \
     apt-get install -y nodejs && \
     rm -rf /var/lib/apt/lists/*
 
-RUN dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 6.6.2
+RUN dotnet tool install --global Swashbuckle.AspNetCore.Cli --version 10.3.1
 RUN dotnet tool install --global NSwag.ConsoleCore
 RUN dotnet tool install -g docfx
 
