@@ -1,62 +1,32 @@
-import { t } from "i18next";
-import { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router";
-import { useApp } from "~/context/AppContext";
-import { useAuth } from "~/context/AuthContext";
-import type { TokenParsed } from "~/types/TokenParsed";
-import { isBoardOrCandidateBoard } from "~/util/group.util";
+import { Outlet } from "react-router";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
+import { requireBoardOrCandidateBoard } from "~/util/loaderAuth.util";
 
 /**
- * A security-first layout wrapper for administrative and board-level routes.
+ * Only board and candidate board members can open the admin routes. Redirects to the login page
+ * when the user isn't logged in, and shows the forbidden page (403) for everyone else, before any
+ * admin page loads.
+ */
+export async function clientLoader() {
+  await requireBoardOrCandidateBoard();
+  return null;
+}
+
+/**
+ * Shown while the `clientLoader` runs on the first page load.
  *
- * This component acts as a protected route guard. It verifies that the
- * authenticated user belongs to either the current active board group or the
- * candidate board group before allowing access to nested admin features.
- *
- * Logic Flow:
- * 1. Waits for global context IDs (`boardGroupId`, `candidateBoardGroupId`) to be available.
- * 2. Checks group memberships against these IDs.
- * 3. Redirects unauthorized users to the 403 page (`/403`).
- * 4. Displays a loading state while membership verification is in progress.
- * 5. Renders child routes via `<Outlet />` only upon successful authorization.
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
+
+/**
+ * The layout wrapper for administrative and board-level routes. The access check happens in the
+ * route's `clientLoader`, so this only renders the child route.
  *
  * @component
  */
 export default function AdminLayout() {
-  const { boardGroupId, candidateBoardGroupId } = useApp();
-  const authService = useAuth();
-  const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
-  const navigate = useNavigate();
-  const [isLoading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadToken = async () => {
-      const token = await authService.getTokenParsed();
-      setTokenParsed(token);
-    };
-    loadToken();
-  }, [authService]);
-
-  useEffect(() => {
-    if (!tokenParsed) return;
-    if (
-      boardGroupId === null ||
-      candidateBoardGroupId === null ||
-      !tokenParsed
-    ) {
-      return;
-    }
-    if (!isBoardOrCandidateBoard(tokenParsed)) {
-      navigate("/403");
-      return;
-    }
-
-    setLoading(false);
-  }, [boardGroupId, candidateBoardGroupId, navigate, tokenParsed]);
-
-  if (isLoading) {
-    return `${t("loading")}`;
-  }
-
   return <Outlet />;
 }

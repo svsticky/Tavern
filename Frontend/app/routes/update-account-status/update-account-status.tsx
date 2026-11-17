@@ -2,16 +2,20 @@ import { t } from "i18next";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import { useLoaderData } from "react-router";
 import {
   deleteMembersById,
   getStudies,
   getStudyenrollments,
-  type MemberMailinglistDto,
-  type Study,
   type StudyEnrollmentResponseDto,
   type StudyStatus,
 } from "~/api";
+import {
+  getSubscribedMailinglistIds,
+  loadMemberMailinglists,
+} from "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers";
 import { loadStudyStartDates } from "~/components/Register/RegisterForm/RegisterForm.handlers";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import DataTableTile, { type Column } from "~/components/Tiles/DataTableTile";
 import Button from "~/components/UI/Button";
@@ -23,15 +27,63 @@ import Select from "~/components/UI/Select";
 import { useAuth } from "~/context/AuthContext";
 import { formatDate } from "~/util/date.util";
 import { appendErrorMessage } from "~/util/error.util";
+import { requireTokenParsed } from "~/util/loaderAuth.util";
 import {
   handleAddEnrollment,
   handleUpdateEnrollmentStatus,
-} from "./admin/edit-member/edit-member.handlers";
+} from "../admin/edit-member/edit-member.handlers";
 import {
-  fetchYearlyMailinglists,
   handleSaveYearlyMailinglists,
   handleYearlyMailinglistToggle,
 } from "./update-account-status.handlers";
+
+/**
+ * Loads the member's study enrollments, all studies (inactive ones too, so old
+ * enrollments still resolve), the configured start dates and the yearly-renewal
+ * mailing lists (General lists plus YearlyRenewalOnly ones, e.g. "alumni").
+ */
+export async function clientLoader() {
+  const tokenParsed = await requireTokenParsed();
+  const memberId = tokenParsed.UserId;
+
+  const [
+    enrollmentsResponse,
+    studiesResponse,
+    startDatesRaw,
+    mailingListsData,
+  ] = await Promise.all([
+    getStudyenrollments({ query: { MemberId: memberId } }),
+    getStudies({ query: { IncludeInactive: true } }),
+    loadStudyStartDates(),
+    loadMemberMailinglists(memberId),
+  ]);
+
+  if (enrollmentsResponse.error || !enrollmentsResponse.data) {
+    throw (
+      enrollmentsResponse.error ?? new Error("Failed to load study enrollments")
+    );
+  }
+  if (studiesResponse.error || !studiesResponse.data) {
+    throw studiesResponse.error ?? new Error("Failed to load studies");
+  }
+
+  return {
+    memberId,
+    enrollments: enrollmentsResponse.data,
+    studies: studiesResponse.data,
+    startDatesRaw: startDatesRaw ?? "",
+    ...mailingListsData,
+  };
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * Page to update your study. You can only update studies where you have been enrolled
@@ -42,76 +94,24 @@ import {
  */
 export default function UpdateAccountStatus() {
   const authService = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [memberId, setMemberId] = useState<string | null>(null);
+  const {
+    memberId,
+    enrollments: loadedEnrollments,
+    studies,
+    startDatesRaw,
+    mailingLists,
+    mailingListsUnavailable,
+  } = useLoaderData<typeof clientLoader>();
+  const [loading, setLoading] = useState(false);
   const [confirmModal, confirm] = useConfirm();
   const [selectedStudyId, setSelectedStudyId] = useState<number | "">("");
   const [selectedStartDate, setSelectedStartDate] = useState<string>("");
-  const [startDatesRaw, setStartDatesRaw] = useState<string>("");
-  const [enrollments, setEnrollments] = useState<StudyEnrollmentResponseDto[]>(
-    [],
+  const [enrollments, setEnrollments] =
+    useState<StudyEnrollmentResponseDto[]>(loadedEnrollments);
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(() =>
+    getSubscribedMailinglistIds(mailingLists),
   );
-  const [studies, setStudies] = useState<Study[]>([]);
-  const [mailingLists, setMailingLists] = useState<MemberMailinglistDto[]>([]);
-  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(new Set());
-  const [loadingMailingLists, setLoadingMailingLists] = useState(false);
   const [savingMailingLists, setSavingMailingLists] = useState(false);
-  const [mailingListsUnavailable, setMailingListsUnavailable] = useState(false);
-
-  useEffect(() => {
-    if (!authService) return;
-
-    const loadData = async () => {
-      setLoading(true);
-      const tokenParsed = await authService.getTokenParsed();
-
-      if (!tokenParsed) {
-        console.error("User not authenticated");
-        return;
-      }
-
-      setMemberId(tokenParsed.UserId);
-
-      const studyEnrollmentsResponse = await getStudyenrollments({
-        query: { MemberId: tokenParsed.UserId },
-      });
-
-      if (studyEnrollmentsResponse.error || !studyEnrollmentsResponse.data) {
-        throw (
-          studyEnrollmentsResponse.error ??
-          new Error("Failed to load study enrollments")
-        );
-      }
-
-      setEnrollments(studyEnrollmentsResponse.data);
-
-      const studiesResponse = await getStudies({
-        query: { IncludeInactive: true },
-      });
-
-      if (studiesResponse.error || !studiesResponse.data) {
-        throw studiesResponse.error ?? new Error("Failed to load studies");
-      }
-
-      setStudies(studiesResponse.data);
-      await loadStudyStartDates(setStartDatesRaw);
-      setLoading(false);
-    };
-
-    loadData();
-  }, [authService]);
-
-  useEffect(() => {
-    if (!memberId) return;
-
-    fetchYearlyMailinglists(
-      memberId,
-      setLoadingMailingLists,
-      setMailingLists,
-      setSubscribedIds,
-      setMailingListsUnavailable,
-    );
-  }, [memberId]);
 
   const startDateOptions = useMemo(() => {
     const configured = startDatesRaw
@@ -179,8 +179,6 @@ export default function UpdateAccountStatus() {
   }, [startDateOptions, selectedStartDate]);
 
   const handleDeleteAccount = async () => {
-    if (!memberId) return;
-
     const deleteProcess = async () => {
       try {
         setLoading(true);
@@ -188,7 +186,7 @@ export default function UpdateAccountStatus() {
         if (response.error) {
           throw response.error ?? new Error("Failed to delete account");
         }
-        await authService?.logout(window.location.origin);
+        await authService.logout(window.location.origin);
       } catch (err) {
         console.error("Failed to delete account:", err);
         throw err;
@@ -216,8 +214,6 @@ export default function UpdateAccountStatus() {
     {
       header: t("status"),
       render: (item) => {
-        if (!studies || studies.length === 0) return t("loading");
-
         const study = studies.find((s) => s.id === item.studyId);
 
         if (!study) {
@@ -266,7 +262,7 @@ export default function UpdateAccountStatus() {
   // Members who have never had a study enrollment can't add one themselves anymore (the backend
   // rejects it) - the yearly account-status mail instead offers them account deletion, so the
   // add-enrollment controls only make sense once at least one enrollment already exists.
-  const canAddStudy = loading || enrollments.length > 0;
+  const canAddStudy = enrollments.length > 0;
 
   return (
     <>
@@ -317,7 +313,7 @@ export default function UpdateAccountStatus() {
                 variant="primary"
                 onClick={() =>
                   handleAddEnrollment(
-                    memberId ?? undefined,
+                    memberId,
                     selectedStudyId,
                     setLoading,
                     setEnrollments,
@@ -334,36 +330,31 @@ export default function UpdateAccountStatus() {
           )}
         </BorderedTile>
 
-        {(mailingLists.length > 0 || loadingMailingLists) && (
+        {mailingLists.length > 0 && (
           <BorderedTile>
             <FormHeader title={t("yearly_mail_subscriptions")} border={false} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {!loadingMailingLists ? (
-                mailingLists.map((list) => (
-                  <Checkbox
-                    key={list.id}
-                    label={list.name}
-                    checked={subscribedIds.has(list.id!)}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      handleYearlyMailinglistToggle(
-                        list.id!,
-                        e.target.checked,
-                        setSubscribedIds,
-                      )
-                    }
-                  />
-                ))
-              ) : (
-                <p className="text-gray-500 italic">{t("loading")}</p>
-              )}
+              {mailingLists.map((list) => (
+                <Checkbox
+                  key={list.id}
+                  label={list.name}
+                  checked={subscribedIds.has(list.id!)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleYearlyMailinglistToggle(
+                      list.id!,
+                      e.target.checked,
+                      setSubscribedIds,
+                    )
+                  }
+                />
+              ))}
             </div>
             <div className="flex justify-end mt-6 pt-4 border-t border-slate-200">
               <Button
                 type="button"
                 variant="primary"
-                disabled={savingMailingLists || !memberId}
+                disabled={savingMailingLists}
                 onClick={() =>
-                  memberId &&
                   handleSaveYearlyMailinglists(
                     memberId,
                     subscribedIds,

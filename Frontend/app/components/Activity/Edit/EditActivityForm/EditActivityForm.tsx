@@ -28,7 +28,6 @@ import {
   handleActivityFormChange,
   handleActivitySubmit,
   handleDeleteActivity,
-  loadGroups,
   removeQuestion,
   updateQuestion,
 } from "./EditActivityForm.handlers";
@@ -51,6 +50,7 @@ import {
  * @param {ActivityResponseDto | null} props.activity - The existing activity data (if editing) or null (if creating).
  * @param {string | undefined} props.id - The unique identifier of the activity. If present, the form operates in "Edit" mode.
  * @param {boolean} props.isBoard - Flag indicating if the current user has board-level permissions.
+ * @param {GroupResponseDto[]} props.groups - The groups that can organize the activity, loaded by the route.
  *
  * @example
  * ```tsx
@@ -58,6 +58,7 @@ import {
  *   activity={activityData}
  *   id="123"
  *   isBoard={true}
+ *   groups={groups}
  * />
  * ```
  */
@@ -65,10 +66,12 @@ export default function EditActivityForm({
   activity,
   id,
   isBoard,
+  groups,
 }: {
   activity: ActivityResponseDto | null;
   id: string | undefined;
   isBoard: boolean;
+  groups: GroupResponseDto[];
 }) {
   const navigate = useNavigate();
   const { pathname } = window.location;
@@ -77,9 +80,7 @@ export default function EditActivityForm({
   const isEdit = !!id;
   const audienceMask = parseAudience(activity?.allowedAudience);
 
-  const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
-  const [groups, setGroups] = useState<GroupResponseDto[]>([]);
   const [organizerId, setOrganizerId] = useState<number | null>(
     activity?.organizerId ?? null,
   );
@@ -94,18 +95,8 @@ export default function EditActivityForm({
     }
   }, [activity]);
 
-  useEffect(() => {
-    if (isEdit) {
-      setFormValid(true);
-    }
-
-    loadGroups(setLoading, setGroups);
-  }, [isEdit]);
-
   // The organizer's defaults are used when these activity fields are left empty, so show them as placeholders.
   const organizer = groups.find((g) => g.id === organizerId);
-
-  if (loading) return t("loading");
 
   return (
     <div>

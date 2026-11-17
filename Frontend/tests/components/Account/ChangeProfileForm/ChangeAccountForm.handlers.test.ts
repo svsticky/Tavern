@@ -1,22 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { MemberMailinglistDto } from "~/api";
 import {
+  getSubscribedMailinglistIds,
   handleChangeEmail,
   handleChangePassword,
   handleConfigure2FA,
   handleSaveAccount,
   handleSubscriptionToggle,
+  loadMemberMailinglists,
 } from "~/components/Account/ChangeProfileForm/ChangeAccountForm.handlers";
 import type { ChangeAccountFormData } from "~/components/Account/ChangeProfileForm/ChangeAccountForm.types";
 import { createMockAuthService } from "~/testUtils";
 
-const { patchMembersById, putMembersByIdMailinglists } = vi.hoisted(() => ({
+const {
+  getMembersByIdMailinglists,
+  patchMembersById,
+  putMembersByIdMailinglists,
+  toastError,
+} = vi.hoisted(() => ({
+  getMembersByIdMailinglists: vi.fn(),
   patchMembersById: vi.fn(),
   putMembersByIdMailinglists: vi.fn(),
+  toastError: vi.fn(),
 }));
 
-vi.mock("~/api", () => ({ patchMembersById, putMembersByIdMailinglists }));
+vi.mock("~/api", () => ({
+  getMembersByIdMailinglists,
+  patchMembersById,
+  putMembersByIdMailinglists,
+}));
 vi.mock("react-hot-toast", () => ({
   default: {
+    error: toastError,
     promise: vi.fn((p: Promise<unknown>, opts: any) => {
       p.then(
         (data) => opts?.success?.(data),
@@ -26,6 +41,54 @@ vi.mock("react-hot-toast", () => ({
     }),
   },
 }));
+
+describe("loadMemberMailinglists", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("loads the member's mailing lists including the yearly-renewal ones", async () => {
+    const data: MemberMailinglistDto[] = [
+      { id: "list-1", name: "Newsletter", subscribed: false },
+      { id: "alumni", name: "Alumni", subscribed: true },
+    ] as MemberMailinglistDto[];
+    getMembersByIdMailinglists.mockResolvedValue({ data });
+
+    await expect(loadMemberMailinglists("member-1")).resolves.toEqual({
+      mailingLists: data,
+      mailingListsUnavailable: false,
+    });
+    expect(getMembersByIdMailinglists).toHaveBeenCalledWith({
+      path: { id: "member-1" },
+      query: { includeYearlyRenewal: true },
+    });
+  });
+
+  it("marks the mailing lists unavailable and shows a toast on failure", async () => {
+    getMembersByIdMailinglists.mockResolvedValue({ error: "fail" });
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    await expect(loadMemberMailinglists("member-1")).resolves.toEqual({
+      mailingLists: [],
+      mailingListsUnavailable: true,
+    });
+    expect(toastError).toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+});
+
+describe("getSubscribedMailinglistIds", () => {
+  it("returns the ids of the subscribed lists", () => {
+    expect(
+      getSubscribedMailinglistIds([
+        { id: "list-1", subscribed: false },
+        { id: "alumni", subscribed: true },
+      ] as MemberMailinglistDto[]),
+    ).toEqual(new Set(["alumni"]));
+  });
+});
 
 describe("handleSubscriptionToggle", () => {
   it("adds the id to the set when checked", () => {

@@ -1,139 +1,133 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { loadHomePageData } from "~/routes/home/home.handlers";
+import { loadHomeLoaderData } from "~/routes/home/home.handlers";
 
-const { getActivities, getAnnouncements, getGroupmemberships } = vi.hoisted(
-  () => ({
-    getActivities: vi.fn(),
-    getAnnouncements: vi.fn(),
-    getGroupmemberships: vi.fn(),
-  }),
-);
+const {
+  getActivities,
+  getAnnouncements,
+  getGroupmemberships,
+  getPaymentsUnpaid,
+  getEnrollments,
+} = vi.hoisted(() => ({
+  getActivities: vi.fn(),
+  getAnnouncements: vi.fn(),
+  getGroupmemberships: vi.fn(),
+  getPaymentsUnpaid: vi.fn(),
+  getEnrollments: vi.fn(),
+}));
 
 vi.mock("~/api", () => ({
   getActivities,
   getAnnouncements,
   getGroupmemberships,
+  getPaymentsUnpaid,
+  getEnrollments,
 }));
 
-const toastErrorFn = vi.fn();
-vi.mock("react-hot-toast", () => ({
-  toast: { error: (...args: unknown[]) => toastErrorFn(...args) },
-}));
+const future = new Date(Date.now() + 86_400_000).toISOString();
+const past = new Date(Date.now() - 86_400_000).toISOString();
 
-function baseArgs(
-  overrides: Partial<Parameters<typeof loadHomePageData>[0]> = {},
-) {
-  return {
-    authenticated: true,
-    userId: "user-1",
-    setLoading: vi.fn(),
-    setActivities: vi.fn(),
-    setAnnouncements: vi.fn(),
-    setGroupMemberships: vi.fn(),
-    setEnrolledActivities: vi.fn(),
-    ...overrides,
-  };
+/** Makes every request succeed with an empty list. */
+function mockAllEmpty() {
+  getActivities.mockResolvedValue({ data: [] });
+  getAnnouncements.mockResolvedValue({ data: [] });
+  getGroupmemberships.mockResolvedValue({ data: [] });
+  getPaymentsUnpaid.mockResolvedValue({ data: [] });
+  getEnrollments.mockResolvedValue({ data: [] });
 }
 
-describe("loadHomePageData", () => {
+describe("loadHomeLoaderData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAllEmpty();
   });
 
-  it("does nothing when not authenticated", async () => {
-    const setLoading = vi.fn();
-    await loadHomePageData(baseArgs({ authenticated: false, setLoading }));
-    expect(getActivities).not.toHaveBeenCalled();
-    expect(setLoading).not.toHaveBeenCalled();
+  it("requests the upcoming activities and the user's own data", async () => {
+    await loadHomeLoaderData("user-1");
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: { IncludePast: false, IncludeFuture: true },
+    });
+    expect(getActivities).toHaveBeenCalledWith({
+      query: { UserId: "user-1", IncludePast: false, IncludeFuture: true },
+    });
+    expect(getGroupmemberships).toHaveBeenCalledWith({
+      query: { MemberId: "user-1" },
+    });
+    expect(getEnrollments).toHaveBeenCalledWith({
+      query: { FromMemberId: "user-1" },
+    });
+    expect(getPaymentsUnpaid).toHaveBeenCalled();
+    expect(getAnnouncements).toHaveBeenCalled();
   });
 
-  it("loads activities, enrolled activities, announcements and group memberships on success", async () => {
+  it("returns the loaded data", async () => {
     getActivities
       .mockResolvedValueOnce({ data: [{ id: 1 }] })
-      .mockResolvedValueOnce({ data: [{ id: 2 }] });
-    getAnnouncements.mockResolvedValue({ data: [{ id: 3 }] });
+      .mockResolvedValueOnce({ data: [{ id: 2, dateTimeEnd: future }] });
     getGroupmemberships.mockResolvedValue({ data: [{ id: 4 }] });
+    getPaymentsUnpaid.mockResolvedValue({ data: [{ enrollmentId: 5 }] });
+    getEnrollments.mockResolvedValue({ data: [{ id: 6 }] });
 
-    const setActivities = vi.fn();
-    const setEnrolledActivities = vi.fn();
-    const setAnnouncements = vi.fn();
-    const setGroupMemberships = vi.fn();
-    const setLoading = vi.fn();
+    await expect(loadHomeLoaderData("user-1")).resolves.toEqual({
+      activities: [{ id: 1 }],
+      futureEnrollments: [{ id: 2, dateTimeEnd: future }],
+      announcements: [],
+      groupMemberships: [{ id: 4 }],
+      unpaidBalances: [{ enrollmentId: 5 }],
+      enrollments: [{ id: 6 }],
+    });
+  });
 
-    await loadHomePageData(
-      baseArgs({
-        setActivities,
-        setEnrolledActivities,
-        setAnnouncements,
-        setGroupMemberships,
-        setLoading,
-      }),
+  it("leaves out enrolled activities that have already ended", async () => {
+    getActivities.mockResolvedValueOnce({ data: [] }).mockResolvedValueOnce({
+      data: [
+        { id: 1, dateTimeEnd: past },
+        { id: 2, dateTimeEnd: future },
+      ],
+    });
+
+    const data = await loadHomeLoaderData("user-1");
+
+    expect(data.futureEnrollments.map((a) => a.id)).toEqual([2]);
+  });
+
+  it("returns only the two latest announcements", async () => {
+    getAnnouncements.mockResolvedValue({
+      data: [{ id: 1 }, { id: 2 }, { id: 3 }],
+    });
+
+    const data = await loadHomeLoaderData("user-1");
+
+    expect(data.announcements).toEqual([{ id: 1 }, { id: 2 }]);
+  });
+
+  it.each([
+    ["activities", () => getActivities.mockResolvedValue({ error: "fail" })],
+    [
+      "enrolled activities",
+      () =>
+        getActivities
+          .mockResolvedValueOnce({ data: [] })
+          .mockResolvedValueOnce({ error: "fail" }),
+    ],
+    [
+      "announcements",
+      () => getAnnouncements.mockResolvedValue({ error: "fail" }),
+    ],
+    [
+      "group memberships",
+      () => getGroupmemberships.mockResolvedValue({ error: "fail" }),
+    ],
+    [
+      "unpaid balances",
+      () => getPaymentsUnpaid.mockResolvedValue({ error: "fail" }),
+    ],
+    ["enrollments", () => getEnrollments.mockResolvedValue({ error: "fail" })],
+  ])("throws when the %s fail to load", async (name, mockFailure) => {
+    mockFailure();
+
+    await expect(loadHomeLoaderData("user-1")).rejects.toThrow(
+      `Failed to load ${name}`,
     );
-
-    expect(setActivities).toHaveBeenCalledWith([{ id: 1 }]);
-    expect(setEnrolledActivities).toHaveBeenCalledWith([{ id: 2 }]);
-    expect(setAnnouncements).toHaveBeenCalledWith([{ id: 3 }]);
-    expect(setGroupMemberships).toHaveBeenCalledWith([{ id: 4 }]);
-    expect(setLoading).toHaveBeenNthCalledWith(1, true);
-    expect(setLoading).toHaveBeenNthCalledWith(2, false);
-  });
-
-  it("logs and shows an error toast when activities fail to load", async () => {
-    getActivities.mockResolvedValue({ error: "fail" });
-    getAnnouncements.mockResolvedValue({ data: [] });
-    getGroupmemberships.mockResolvedValue({ data: [] });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    expect(toastErrorFn).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
-  it("throws when enrolled activities fail to load", async () => {
-    getActivities
-      .mockResolvedValueOnce({ data: [] })
-      .mockResolvedValueOnce({ error: "fail" });
-    getAnnouncements.mockResolvedValue({ data: [] });
-    getGroupmemberships.mockResolvedValue({ data: [] });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
-  it("throws when announcements fail to load", async () => {
-    getActivities.mockResolvedValue({ data: [] });
-    getAnnouncements.mockResolvedValue({ error: "fail" });
-    getGroupmemberships.mockResolvedValue({ data: [] });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
-  });
-
-  it("throws when group memberships fail to load", async () => {
-    getActivities.mockResolvedValue({ data: [] });
-    getAnnouncements.mockResolvedValue({ data: [] });
-    getGroupmemberships.mockResolvedValue({ error: "fail" });
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
-
-    await loadHomePageData(baseArgs());
-
-    expect(consoleError).toHaveBeenCalled();
-    consoleError.mockRestore();
   });
 });

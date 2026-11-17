@@ -1,28 +1,45 @@
 import { t } from "i18next";
 import { Euro, MessageCircle } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
-import type {
-  Activity,
-  ActivityResponseDto,
-  EnrollmentBalance,
-  Member,
-} from "~/api";
+import { Fragment, useState } from "react";
+import { useLoaderData } from "react-router";
+import type { Activity, ActivityResponseDto, EnrollmentBalance } from "~/api";
+import StickyLoadingLogo from "~/components/StickyLoadingLogo";
 import BorderedTile from "~/components/Tiles/BorderedTile";
 import Tile from "~/components/Tiles/Tile";
 import Button from "~/components/UI/Button";
 import Input from "~/components/UI/Input";
 import { PageHeader } from "~/components/UI/PageHeader";
 import Select from "~/components/UI/Select";
-import { formatDate, getCommitteeYear } from "~/util/date.util";
+import { formatDate } from "~/util/date.util";
+import { requireBoardOrCandidateBoard } from "~/util/loaderAuth.util";
 import {
   handleMarkAsPaid,
   handleOverpaidProcessed,
   handlePaymentsExport,
   handleWhatsAppClick,
   loadExpiredActivities,
-  loadFinancesData,
+  loadFinancesLoaderData,
+  type MemberWithOverduePayment,
   refreshUnpaidPayments,
 } from "./finances.handlers";
+
+/**
+ * Loads the unpaid debts, overpaid credits and expired activities (see `loadFinancesLoaderData`).
+ * Only board and candidate board members can open this page.
+ */
+export async function clientLoader() {
+  await requireBoardOrCandidateBoard();
+  return loadFinancesLoaderData();
+}
+
+/**
+ * Shown while the route's `clientLoader` runs on the first page load.
+ *
+ * @component
+ */
+export function HydrateFallback() {
+  return <StickyLoadingLogo />;
+}
 
 /**
  * The administrative Finances dashboard for the association.
@@ -42,69 +59,53 @@ import {
  * @component
  */
 export default function Finances() {
-  const [loading, setLoading] = useState(true);
+  const loaderData = useLoaderData<typeof clientLoader>();
+  const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [totalUnpaid, setTotalUnpaid] = useState(0);
-  const [openPayments, setOpenPayments] = useState(0);
-  const currentYear = getCommitteeYear();
+  const [totalUnpaid, setTotalUnpaid] = useState(loaderData.totalUnpaid);
+  const [openPayments, setOpenPayments] = useState(loaderData.openPayments);
+  const currentYear = loaderData.committeeYear;
   const [expiredActivitiesYear, setExpiredActivitiesYear] =
     useState(currentYear);
   const [loadingExpiredActivities, setLoadingExpiredActivities] =
-    useState(true);
+    useState(false);
   const [expiredActivities, setExpiredActivities] = useState<
     ActivityResponseDto[] | null
-  >(null);
+  >(loaderData.expiredActivities);
   const expiredActivitiesYears = Array.from(
     { length: 10 },
     (_, i) => currentYear - i,
   );
   const [unpaidActivities, setUnpaidActivities] = useState<Activity[] | null>(
-    null,
+    loaderData.unpaidActivities,
   );
   const [membersWithOverduePayment, setMembersWithOverduePayment] = useState<
-    { member: Member; enrollments: EnrollmentBalance[] }[] | null
-  >(null);
+    MemberWithOverduePayment[] | null
+  >(loaderData.membersWithOverduePayment);
   const [unpaidBalances, setUnpaidBalances] = useState<
     EnrollmentBalance[] | null
-  >(null);
+  >(loaderData.unpaidBalances);
   const [overpaidBalances, setOverpaidBalances] = useState<
     EnrollmentBalance[] | null
-  >(null);
+  >(loaderData.overpaidBalances);
   const [exportStartDate, setExportStartDate] = useState<string>("");
   const [exportEndDate, setExportEndDate] = useState<string>("");
 
-  useEffect(() => {
-    loadFinancesData({
-      setLoading,
-      setUnpaidBalances,
-      setTotalUnpaid,
-      setOpenPayments,
-      setUnpaidActivities,
-      setMembersWithOverduePayment,
-      setOverpaidBalances,
-    });
-  }, []);
-
-  useEffect(() => {
+  /**
+   * Shows the expired activities of another association year.
+   *
+   * @param {number} year - The association year to show.
+   */
+  const handleExpiredActivitiesYearChange = (year: number) => {
+    setExpiredActivitiesYear(year);
     loadExpiredActivities({
-      year: expiredActivitiesYear,
+      year,
       setLoadingExpiredActivities,
       setExpiredActivities,
     });
-  }, [expiredActivitiesYear]);
+  };
 
-  if (loading || (loadingExpiredActivities && expiredActivities === null))
-    return t("loading");
-
-  if (
-    totalUnpaid === null ||
-    totalUnpaid === undefined ||
-    openPayments === null ||
-    openPayments === undefined ||
-    expiredActivities === null ||
-    expiredActivities === undefined
-  )
-    return t("failed_fetching");
+  if (expiredActivities === null) return t("failed_fetching");
 
   const deviceLocale =
     typeof navigator !== "undefined" ? navigator.language : undefined;
@@ -213,7 +214,9 @@ export default function Finances() {
               label={t("year")}
               style={{ minWidth: "150px" }}
               value={expiredActivitiesYear}
-              onChange={(e) => setExpiredActivitiesYear(Number(e.target.value))}
+              onChange={(e) =>
+                handleExpiredActivitiesYearChange(Number(e.target.value))
+              }
             />
           </div>
 
