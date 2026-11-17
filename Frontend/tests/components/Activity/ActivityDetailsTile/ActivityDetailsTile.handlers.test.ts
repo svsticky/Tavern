@@ -8,8 +8,6 @@ import {
   handleUpdateEnrollment,
 } from "~/components/Activity/ActivityDetailsTile/ActivityDetailsTile.handlers";
 import { createMockAuthService } from "~/testUtils";
-import { formatDate } from "~/util/date.util";
-import { capitalizeFirst } from "~/util/string.util";
 
 const {
   postEnrollments,

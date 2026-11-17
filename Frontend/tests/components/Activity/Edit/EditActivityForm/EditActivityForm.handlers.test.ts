@@ -170,8 +170,8 @@ describe("handleActivityFormChange", () => {
     DateTimeEnd: "2026-08-01T12:00",
     Location: "Enschede",
     OrganizerId: "1",
-    DutchDescription: "Feest",
-    EnglishDescription: "Party",
+    ShortDutchDescription: "Feest",
+    ShortEnglishDescription: "Party",
   };
 
   it("marks the form valid when all required fields are present", () => {
@@ -188,6 +188,19 @@ describe("handleActivityFormChange", () => {
 
   it("marks the form invalid when a required field is missing", () => {
     const { Location: _Location, ...rest } = requiredFields;
+    const form = buildForm(rest);
+    const setFormValid = vi.fn();
+
+    handleActivityFormChange(
+      { currentTarget: form } as unknown as React.FormEvent<HTMLFormElement>,
+      setFormValid,
+    );
+
+    expect(setFormValid).toHaveBeenCalledWith(false);
+  });
+
+  it("marks the form invalid when a short description is missing", () => {
+    const { ShortEnglishDescription: _short, ...rest } = requiredFields;
     const form = buildForm(rest);
     const setFormValid = vi.fn();
 
@@ -288,8 +301,11 @@ describe("handleActivitySubmit", () => {
     postActivities.mockResolvedValue({ data: { id: 1 } });
     const navigate = vi.fn();
 
-    const { DutchDescription, EnglishDescription, ...fieldsWithoutLongDesc } =
-      baseFields;
+    const {
+      DutchDescription: _dutch,
+      EnglishDescription: _english,
+      ...fieldsWithoutLongDesc
+    } = baseFields;
 
     await handleActivitySubmit({
       e: buildFormEvent(fieldsWithoutLongDesc),

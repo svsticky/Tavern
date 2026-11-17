@@ -96,7 +96,10 @@ describe("ActivitiesPage", () => {
 
   it("shows and wires up board-only actions for a board user", async () => {
     requireTokenParsed.mockResolvedValue(boardToken);
-    const activities = [makeActivity(1)];
+    const inKoala = { ...makeActivity(1), showInKoala: true };
+    const onWebsite = { ...makeActivity(2), showOnWebsite: true };
+    const hidden = makeActivity(3);
+    const activities = [inKoala, onWebsite, hidden];
     getActivities.mockResolvedValue({ data: activities });
     const authService = createMockAuthService({
       getToken: vi.fn(async () => "tok"),
@@ -108,11 +111,12 @@ describe("ActivitiesPage", () => {
       expect(downloadPosters).toHaveBeenCalledWith(activities, "tok"),
     );
 
+    // The week overview only promotes activities that are shown in Koala or on the website.
     fireEvent.click(screen.getByText(/copy.*NL/));
-    expect(copyWeekOverview).toHaveBeenCalledWith("NL", activities);
+    expect(copyWeekOverview).toHaveBeenCalledWith("NL", [inKoala, onWebsite]);
 
     fireEvent.click(screen.getByText(/copy.*EN/));
-    expect(copyWeekOverview).toHaveBeenCalledWith("EN", activities);
+    expect(copyWeekOverview).toHaveBeenCalledWith("EN", [inKoala, onWebsite]);
   });
 
   it("shows a create-activity button for a board member and wires it up", async () => {

@@ -118,27 +118,18 @@ describe("copyWeekOverview", () => {
   });
 
   it("formats day activities with summary, short description, and link, and omits empty days", async () => {
-    const now = new Date();
-    const currentDay = now.getDay();
-    const targetDate = new Date(now);
-    if (currentDay > 3 || currentDay === 0) {
-      targetDate.setDate(now.getDate() + (8 - (currentDay || 7)));
-    } else {
-      targetDate.setDate(now.getDate() - (currentDay - 1));
-    }
-    const actDate = new Date(targetDate);
-    actDate.setDate(targetDate.getDate() + 1); // Tuesday
-    actDate.setHours(19, 0, 0, 0);
-    const endDate = new Date(actDate);
-    endDate.setHours(22, 0, 0, 0);
+    // Tuesday 19:00 - 22:00 in the association's time zone (CEST, UTC+2),
+    // independent of the time zone the tests run in.
+    const start = "2026-08-18T17:00:00Z";
+    const end = "2026-08-18T20:00:00Z";
 
     const activity = buildActivity({
       name: "BactoberFest",
       location: "Poema",
       price: 9.5,
       shortEnglishDescription: "Short promo description",
-      dateTimeStart: actDate.toISOString(),
-      dateTimeEnd: endDate.toISOString(),
+      dateTimeStart: start,
+      dateTimeEnd: end,
     });
 
     await copyWeekOverview("EN", [activity]);

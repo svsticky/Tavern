@@ -148,7 +148,8 @@ describe("Members", () => {
     renderMembers();
 
     await screen.findByText("First0 Last0");
-    expect(intersectionCallback).toBeTruthy();
+    // The observer is attached in an effect, which can run after the rows are rendered.
+    await vi.waitFor(() => expect(intersectionCallback).toBeTruthy());
 
     intersectionCallback!(
       [{ isIntersecting: true } as IntersectionObserverEntry],
