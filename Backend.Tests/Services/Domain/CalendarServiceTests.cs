@@ -213,6 +213,47 @@ public class CalendarServiceTests : IDisposable
     }
 
     [Fact]
+    public void BuildCalendar_WholeDayActivity_IsSerializedAsDateValueWithExclusiveEnd()
+    {
+        // Europe/Amsterdam is UTC+2 in summer. Local midnight is 22:00 UTC previous day, local 23:59 is 21:59 UTC.
+        var activity = BuildActivity(1,
+            new DateTimeOffset(2026, 6, 1, 0, 0, 0, SummerOffset),
+            new DateTimeOffset(2026, 6, 1, 23, 59, 0, SummerOffset));
+
+        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
+
+        Assert.Contains("DTSTART;VALUE=DATE:20260601", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20260602", ics);
+    }
+
+    [Fact]
+    public void BuildCalendar_MultiDayWholeDayActivity_IsSerializedAsDateValueWithExclusiveEnd()
+    {
+        var activity = BuildActivity(1,
+            new DateTimeOffset(2026, 6, 1, 0, 0, 0, SummerOffset),
+            new DateTimeOffset(2026, 6, 3, 23, 59, 0, SummerOffset));
+
+        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
+
+        Assert.Contains("DTSTART;VALUE=DATE:20260601", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20260604", ics);
+    }
+
+    [Fact]
+    public void BuildCalendar_WinterWholeDayActivity_IsSerializedAsDateValueInWinterTimezone()
+    {
+        // Europe/Amsterdam is UTC+1 in winter.
+        var activity = BuildActivity(1,
+            new DateTimeOffset(2026, 1, 5, 0, 0, 0, WinterOffset),
+            new DateTimeOffset(2026, 1, 5, 23, 59, 0, WinterOffset));
+
+        string ics = CalendarService.BuildCalendar(SingleEnrollment(activity), Language.EN, DateTime.UtcNow);
+
+        Assert.Contains("DTSTART;VALUE=DATE:20260105", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20260106", ics);
+    }
+
+    [Fact]
     public void BuildCalendar_WaitingListEnrollment_IsPrefixedAndTentative()
     {
         var activity = BuildActivity(1,

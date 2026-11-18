@@ -171,23 +171,47 @@ public class CalendarService : ICalendarService
     /// <returns>The start and end of the activity in iCalendar form.</returns>
     private static (CalDateTime Start, CalDateTime End) ToCalendarRange(Activity activity)
     {
-        // DateTimeOffset localStart = TimeZoneInfo.ConvertTime(activity.DateTimeStart, _associationTimeZone);
-        // DateTimeOffset localEnd = TimeZoneInfo.ConvertTime(activity.DateTimeEnd, _associationTimeZone);
-        //
-        // TODO this whole-day recogniziton implementation, if uncommented, breaks when an activity has been created in another timezone/daylight-saving-time!
-        // This creates inconsistencies in recognizing whole-day events.
-        // Left out for now, so this is not a bug, just a lacking feature.
-        //
-        // if (localStart.TimeOfDay == TimeSpan.Zero && localEnd.TimeOfDay == _wholeDayEndTime)
-        // {
-        //     // The end of a whole-day event is exclusive, so it points at the day after the final day. Deliberately
-        //     // no conversion to UTC here: a whole-day event is a date, and converting it would shift that date.
-        //     return (new CalDateTime(DateOnly.FromDateTime(localStart.Date)),
-        //             new CalDateTime(DateOnly.FromDateTime(localEnd.Date).AddDays(1)));
-        // }
+        DateTimeOffset localStart = TimeZoneInfo.ConvertTime(activity.DateTimeStart, _associationTimeZone);
+        DateTimeOffset localEnd = TimeZoneInfo.ConvertTime(activity.DateTimeEnd, _associationTimeZone);
+
+        if (IsWholeDay(localStart, localEnd, out DateOnly startDate, out DateOnly exclusiveEndDate))
+        {
+            // The end of a whole-day event is exclusive, so it points at the day after the final day. Deliberately
+            // no conversion to UTC here: a whole-day event is a date, and converting it would shift that date.
+            return (new CalDateTime(startDate.Year, startDate.Month, startDate.Day),
+                    new CalDateTime(exclusiveEndDate.Year, exclusiveEndDate.Month, exclusiveEndDate.Day));
+        }
 
         return (new CalDateTime(activity.DateTimeStart.UtcDateTime, "UTC", true),
                 new CalDateTime(activity.DateTimeEnd.UtcDateTime, "UTC", true));
+    }
+
+    /// <summary>
+    /// Checks whether the given local start and end times represent a whole-day activity.
+    /// </summary>
+    private static bool IsWholeDay(DateTimeOffset localStart, DateTimeOffset localEnd, out DateOnly startDate, out DateOnly exclusiveEndDate)
+    {
+        startDate = default;
+        exclusiveEndDate = default;
+
+        if (localStart.TimeOfDay != TimeSpan.Zero)
+            return false;
+
+        startDate = DateOnly.FromDateTime(localStart.Date);
+
+        if (localEnd.TimeOfDay.Hours == 23 && localEnd.TimeOfDay.Minutes == 59)
+        {
+            exclusiveEndDate = DateOnly.FromDateTime(localEnd.Date).AddDays(1);
+            return true;
+        }
+
+        if (localEnd.TimeOfDay == TimeSpan.Zero && localEnd.Date > localStart.Date)
+        {
+            exclusiveEndDate = DateOnly.FromDateTime(localEnd.Date);
+            return true;
+        }
+
+        return false;
     }
 
     /// <summary>
