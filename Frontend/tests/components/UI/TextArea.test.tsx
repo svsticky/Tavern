@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import TextArea from "~/components/UI/TextArea";
-import { render, screen } from "~/testUtils";
+import { fireEvent, render, screen } from "~/testUtils";
 
 describe("TextArea", () => {
   it("renders a textarea with a label", () => {
@@ -54,5 +54,25 @@ describe("TextArea", () => {
     const textarea = screen.getByRole("textbox");
     expect(textarea).toHaveAttribute("rows", "5");
     expect(textarea).toHaveAttribute("placeholder", "Type here");
+  });
+
+  it("renders a character counter when maxLength is provided and updates on input", () => {
+    const handleChange = vi.fn();
+    render(
+      <TextArea
+        label="Bio"
+        maxLength={100}
+        defaultValue="Hello"
+        onChange={handleChange}
+      />,
+    );
+
+    expect(screen.getByText("5 / 100")).toBeInTheDocument();
+
+    const textarea = screen.getByRole("textbox");
+    fireEvent.change(textarea, { target: { value: "Hello world!" } });
+
+    expect(screen.getByText("12 / 100")).toBeInTheDocument();
+    expect(handleChange).toHaveBeenCalled();
   });
 });

@@ -214,7 +214,12 @@ function BoardDropdown({ activities, token }: BoardDropdownProps) {
         </Button>
         <Button
           variant="secondary"
-          onClick={() => copyWeekOverview("NL", activities)}
+          onClick={() =>
+            copyWeekOverview(
+              "NL",
+              activities.filter((a) => a.showInKoala || a.showOnWebsite),
+            )
+          }
           className="text-xs px-3 py-1"
         >
           <CalendarDaysIcon size={20} className="mr-1" />
@@ -222,7 +227,12 @@ function BoardDropdown({ activities, token }: BoardDropdownProps) {
         </Button>
         <Button
           variant="secondary"
-          onClick={() => copyWeekOverview("EN", activities)}
+          onClick={() =>
+            copyWeekOverview(
+              "EN",
+              activities.filter((a) => a.showInKoala || a.showOnWebsite),
+            )
+          }
           className="text-xs px-3 py-1"
         >
           <CalendarDaysIcon size={20} className="mr-1" />

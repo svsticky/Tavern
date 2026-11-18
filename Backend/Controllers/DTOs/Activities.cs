@@ -26,13 +26,33 @@ public abstract class BaseActivityDTO<TQuestion>
     /// </summary>
     public IFormFile? Poster { get; set; }
 
+    // Browsers send multipart/form-data with every line break normalised to CRLF, while the textarea's
+    // maxLength counts a line break as a single character. Normalising back to LF on binding keeps the
+    // length the server validates in line with the length the user saw in the form.
+
     /// <inheritdoc cref="Activity.DutchDescription"/>
     [StringLength(2000)]
-    public required string DutchDescription { get; set; }
+    public string? DutchDescription { get => _dutchDescription; set => _dutchDescription = NormalizeLineEndings(value); }
+    private string? _dutchDescription;
 
     /// <inheritdoc cref="Activity.EnglishDescription"/>
     [StringLength(2000)]
-    public required string EnglishDescription { get; set; }
+    public string? EnglishDescription { get => _englishDescription; set => _englishDescription = NormalizeLineEndings(value); }
+    private string? _englishDescription;
+
+    /// <inheritdoc cref="Activity.ShortDutchDescription"/>
+    [StringLength(250)]
+    [Required(AllowEmptyStrings = false)]
+    public string ShortDutchDescription { get => _shortDutchDescription; set => _shortDutchDescription = NormalizeLineEndings(value) ?? string.Empty; }
+    private string _shortDutchDescription = string.Empty;
+
+    /// <inheritdoc cref="Activity.ShortEnglishDescription"/>
+    [StringLength(250)]
+    [Required(AllowEmptyStrings = false)]
+    public string ShortEnglishDescription { get => _shortEnglishDescription; set => _shortEnglishDescription = NormalizeLineEndings(value) ?? string.Empty; }
+    private string _shortEnglishDescription = string.Empty;
+
+    private static string? NormalizeLineEndings(string? value) => value?.Replace("\r\n", "\n").Replace('\r', '\n');
 
     /// <inheritdoc cref="Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
@@ -122,10 +142,16 @@ public class ActivityResponseDTO
     public string? PosterFileName { get; set; }
 
     /// <inheritdoc cref="Activity.DutchDescription"/>
-    public required string DutchDescription { get; set; }
+    public string? DutchDescription { get; set; }
 
     /// <inheritdoc cref="Activity.EnglishDescription"/>
-    public required string EnglishDescription { get; set; }
+    public string? EnglishDescription { get; set; }
+
+    /// <inheritdoc cref="Activity.ShortDutchDescription"/>
+    public string ShortDutchDescription { get; set; } = string.Empty;
+
+    /// <inheritdoc cref="Activity.ShortEnglishDescription"/>
+    public string ShortEnglishDescription { get; set; } = string.Empty;
 
     /// <inheritdoc cref="Activity.DateTimeStart"/>
     public required DateTimeOffset DateTimeStart { get; set; }
@@ -218,6 +244,8 @@ public class ActivityResponseDTO
             PosterFileName = a.PosterFileName,
             DutchDescription = a.DutchDescription,
             EnglishDescription = a.EnglishDescription,
+            ShortDutchDescription = a.ShortDutchDescription,
+            ShortEnglishDescription = a.ShortEnglishDescription,
             DateTimeStart = a.DateTimeStart,
             DateTimeEnd = a.DateTimeEnd,
             UnenrollmentDeadline = a.UnenrollmentDeadline,

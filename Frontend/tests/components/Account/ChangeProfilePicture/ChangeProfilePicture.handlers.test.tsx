@@ -104,12 +104,9 @@ describe("handleProfilePictureDelete", () => {
     const consoleError = vi
       .spyOn(console, "error")
       .mockImplementation(() => {});
-    const setProfilePictureSrc = vi.fn();
-
-    await handleProfilePictureDelete("user-1", setProfilePictureSrc);
+    await handleProfilePictureDelete("user-1");
 
     await vi.waitFor(() => expect(consoleError).toHaveBeenCalled());
-    expect(setProfilePictureSrc).not.toHaveBeenCalled();
     expect(reloadMock).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });

@@ -14,7 +14,9 @@ const { getActivities } = vi.hoisted(() => ({
 vi.mock("~/api", () => ({ getActivities }));
 
 const { getEnv } = vi.hoisted(() => ({
-  getEnv: vi.fn(() => "https://example.com"),
+  getEnv: vi.fn((key?: string) =>
+    key === "AssociationTimeZone" ? "Europe/Amsterdam" : "https://example.com",
+  ),
 }));
 vi.mock("~/util/config.utils", () => ({ getEnv }));
 
@@ -39,6 +41,7 @@ function buildActivity(
     id: 1,
     name: "Party",
     dateTimeStart: "2026-08-18T10:00:00Z",
+    dateTimeEnd: "2026-08-18T12:00:00Z",
     location: "Enschede",
     dutchDescription: "Beschrijving",
     englishDescription: "Description",
@@ -101,6 +104,8 @@ describe("copyWeekOverview", () => {
     await copyWeekOverview("EN", [buildActivity()]);
 
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
+    expect(message).toContain("*Week overview*");
     expect(toastFn).toHaveBeenCalledWith("success", "copied_to_clipboard");
   });
 
@@ -108,18 +113,33 @@ describe("copyWeekOverview", () => {
     await copyWeekOverview("NL", [buildActivity()]);
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
-    expect(message).toContain("Weekoverzicht");
-    expect(message).toContain("Beschrijving");
-    expect(message).toContain("https://example.com/activities/1");
+    expect(message).toContain("*Weekoverzicht*");
+    expect(message).toContain("_Wekelijkse borrel_");
   });
 
-  it("includes the weekly drinks location when present", async () => {
+  it("includes the weekly drinks location when present in the target week", async () => {
+    const now = new Date();
+    const currentDay = now.getDay();
+    const targetDate = new Date(now);
+    if (currentDay > 3 || currentDay === 0) {
+      targetDate.setDate(now.getDate() + (8 - (currentDay || 7)));
+    } else {
+      targetDate.setDate(now.getDate() - (currentDay - 1));
+    }
+    const drinkDate = new Date(targetDate);
+    drinkDate.setDate(targetDate.getDate() + 1); // Tuesday
+
     await copyWeekOverview("EN", [
-      buildActivity({ isWeeklyDrinks: true, location: "Café" }),
+      buildActivity({
+        isWeeklyDrinks: true,
+        location: "Café",
+        dateTimeStart: drinkDate.toISOString(),
+        dateTimeEnd: drinkDate.toISOString(),
+      }),
     ]);
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
-    expect(message).toContain("Weekly Drinks");
+    expect(message).toContain("_Weekly drinks_");
     expect(message).toContain("Tuesday: Café");
   });
 
@@ -127,12 +147,41 @@ describe("copyWeekOverview", () => {
     vi.setSystemTime(new Date("2026-08-20T08:00:00Z"));
 
     await copyWeekOverview("EN", [
-      buildActivity({ dateTimeStart: "2026-08-25T10:00:00Z" }),
+      buildActivity({
+        dateTimeStart: "2026-08-25T10:00:00Z",
+        dateTimeEnd: "2026-08-25T12:00:00Z",
+      }),
     ]);
 
     const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
     expect(message).toContain("Description");
     expect(message).toContain("No drinks this week");
+  });
+
+  it("formats day activities with summary, short description, and link, and omits empty days", async () => {
+    // Tuesday 19:00 - 22:00 in the association's time zone (CEST, UTC+2),
+    // independent of the time zone the tests run in.
+    const start = "2026-08-18T17:00:00Z";
+    const end = "2026-08-18T20:00:00Z";
+
+    const activity = buildActivity({
+      name: "BactoberFest",
+      location: "Poema",
+      price: 9.5,
+      shortEnglishDescription: "Short promo description",
+      dateTimeStart: start,
+      dateTimeEnd: end,
+    });
+
+    await copyWeekOverview("EN", [activity]);
+
+    const message = (navigator.clipboard.writeText as any).mock.calls[0][0];
+    expect(message).toContain("_Tuesday_");
+    expect(message).toContain("BactoberFest | 19:00 - 22:00 | Poema | € 9.50");
+    expect(message).toContain("Short promo description");
+    expect(message).toContain("https://example.com/activities/1");
+    // Monday should be omitted since it has no activities
+    expect(message).not.toContain("_Monday_");
   });
 
   it("shows an error toast when the clipboard write fails", async () => {
