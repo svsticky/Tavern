@@ -1,3 +1,4 @@
+import { t } from "i18next";
 import { useState, useSyncExternalStore } from "react";
 import { Link } from "react-router";
 import type { EnrollmentResponseDto } from "~/api/types.gen";
@@ -58,6 +59,8 @@ function useAnswerCycleTick() {
  *   mounted ParticipantTile via a shared heartbeat.
  * - **Hover Effects**: Includes subtle scaling and color transitions for better interactivity.
  * - **Board Navigation**: Board members can click a tile to open that member's admin profile.
+ * - **Anonymity**: Anonymous members show as "Anonymous" to regular members; viewers allowed to
+ *   see them (board, organizers, the member themselves) get a dashed border instead.
  *
  * @component
  * @param {Object} props - The component props.
@@ -79,12 +82,14 @@ export default function ParticipantTile({
   enrollment: EnrollmentResponseDto;
   isBoard?: boolean;
 }) {
-  const imageUrl = `${getEnv("ApiUrl")}/profilepicture/view/${enrollment.member.profilePicturePath}`;
+  // Member is null when the backend hides an anonymous participant from this viewer
+  const member = enrollment.member as typeof enrollment.member | null;
+  const imageUrl = `${getEnv("ApiUrl")}/profilepicture/view/${member?.profilePicturePath}`;
   const fallbackUrl = "/profile-picture.svg";
 
   const [imgError, setImgError] = useState(false);
 
-  const isFallback = imgError || !enrollment.member.profilePicturePath;
+  const isFallback = imgError || !member?.profilePicturePath;
   const answers = (enrollment.specificationAnswers || []).filter(
     (answer) => answer.isPublic,
   );
@@ -94,11 +99,14 @@ export default function ParticipantTile({
   const currentAnswerIndex =
     answers.length > 0 ? cycleTick % answers.length : 0;
 
-  const isClickable = Boolean(isBoard && enrollment.member.id);
+  const isClickable = Boolean(isBoard && member?.id);
+  const borderClass = enrollment.isAnonymous
+    ? "border-2 border-dashed border-slate-300"
+    : "border border-transparent hover:border-slate-200";
 
   const tile = (
     <Tile
-      className={`bg-slate-50 flex items-center gap-4 border border-transparent hover:border-slate-200 hover:bg-white transition-all group ${isClickable ? "cursor-pointer" : "cursor-default"}`}
+      className={`bg-slate-50 flex items-center gap-4 ${borderClass} hover:bg-white transition-all group ${isClickable ? "cursor-pointer" : "cursor-default"}`}
     >
       <div className="relative flex-shrink-0">
         <div className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-200 bg-(--board-primary)">
@@ -119,7 +127,7 @@ export default function ParticipantTile({
 
       <div className="overflow-hidden flex flex-col justify-center min-w-0">
         <p className="font-bold text-slate-900 truncate leading-tight group-hover:text-(--board-primary-dark) transition-colors">
-          {enrollment.member.firstName} {enrollment.member.lastName}
+          {member ? `${member.firstName} ${member.lastName}` : t("anonymous")}
         </p>
 
         {hasAnswers && (
@@ -140,7 +148,7 @@ export default function ParticipantTile({
 
   return (
     <Link
-      to={`/admin/members/${enrollment.member.id}`}
+      to={`/admin/members/${member?.id}`}
       className="no-underline text-inherit"
     >
       {tile}

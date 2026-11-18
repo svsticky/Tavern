@@ -52,6 +52,7 @@ export default function ChangeAccountForm({
     city: "",
     parentPhoneNumber: "",
     preferredLanguage: "NL",
+    isAnonymous: false,
   });
 
   const [isFormValid, setIsFormValid] = useState(false);
@@ -96,6 +97,7 @@ export default function ChangeAccountForm({
       city: member.city || "",
       parentPhoneNumber: member.parentPhoneNumber || "",
       preferredLanguage: member.preferredLanguage ?? "EN",
+      isAnonymous: member.isAnonymous ?? false,
     });
   }, [member]);
 
@@ -247,6 +249,16 @@ export default function ChangeAccountForm({
           </Tile>
         </section>
       )}
+      <section>
+        <FormHeader title={t("privacy")} />
+        <Checkbox
+          label={t("appear_anonymous")}
+          checked={formData.isAnonymous}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setFormData({ ...formData, isAnonymous: e.target.checked })
+          }
+        />
+      </section>
       {mailingListsUnavailable && (
         <p className="text-sm text-gray-500 italic">
           {t("mailinglists_unavailable")}

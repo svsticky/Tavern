@@ -11,4 +11,5 @@ export type ChangeAccountFormData = {
   city: string;
   parentPhoneNumber: string;
   preferredLanguage: Language;
+  isAnonymous: boolean;
 };
