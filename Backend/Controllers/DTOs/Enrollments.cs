@@ -28,6 +28,9 @@ public class EnrollmentResponseDTO
     /// <inheritdoc cref="Models.Domain.Enrollment.RegisteredOn"/>
     public required DateTime RegisteredOn { get; set; }
 
+    /// <inheritdoc cref="Models.Domain.Enrollment.MemberId"/>
+    public Guid? MemberId { get; set; }
+
     /// <inheritdoc cref="Models.Domain.Enrollment.Member"/>
     public required MemberResponseDTO? Member { get; set; }
 
@@ -54,13 +57,29 @@ public class EnrollmentResponseDTO
         var toMemberDto = includeMember && userId.HasValue ? MemberResponseDTO.ToDto(userId.Value, isBoard).Compile() : null;
         var toAnswerDto = SpecificationAnswerResponseDTO.ToDto().Compile();
 
+        Func<Enrollment, bool> canViewParticipant = e =>
+        {
+            if (!userId.HasValue)
+            {
+                return false;
+            }
+
+            var isOwnEnrollment = e.MemberId == userId || e.Member?.Id == userId;
+            var isPublicUpcomingActivity = e.Activity != null
+                && e.Activity.AreParticipantsVisible
+                && e.Activity.DateTimeEnd >= DateTime.UtcNow;
+
+            return isBoard || isOwnEnrollment || isPublicUpcomingActivity;
+        };
+
         return e => new EnrollmentResponseDTO
         {
             IsOnWaitingList = e.IsOnWaitingList,
             RegisteredOn = e.RegisteredOn,
-            Member = includeMember && e.Member != null && userId.HasValue && (isBoard || e.Member.Id == userId || (e.Activity != null && e.Activity.AreParticipantsVisible && e.Activity.DateTimeEnd >= DateTime.UtcNow))
-                        ? toMemberDto!(e.Member)
-                        : null,
+            MemberId = canViewParticipant(e) ? e.MemberId : null,
+            Member = includeMember && e.Member != null && canViewParticipant(e)
+                ? toMemberDto!(e.Member)
+                : null,
             SpecificationAnswers = e.SpecificationAnswers == null ? new List<SpecificationAnswerResponseDTO>() : e.SpecificationAnswers
                 .Where(sa => isBoard || sa.MemberId == userId || sa.Question.IsPublic && sa.Question.Activity.AreParticipantsVisible && sa.Question.Activity.DateTimeEnd >= DateTime.UtcNow)
                 .Select(sa => toAnswerDto(sa)).ToList(),

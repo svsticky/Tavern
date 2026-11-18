@@ -443,6 +443,7 @@ export type EnrollmentResponseDto = {
      * The date and time at which the enrollment was placed.
      */
     registeredOn: string;
+    memberId?: string | null;
     member: MemberResponseDto;
     /**
      * The answers for the specification questions associated with this enrollment.
