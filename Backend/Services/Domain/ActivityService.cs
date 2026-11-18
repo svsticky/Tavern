@@ -575,6 +575,8 @@ public class ActivityService : IActivityService
             Price = dto.Price,
             DutchDescription = dto.DutchDescription,
             EnglishDescription = dto.EnglishDescription,
+            ShortDutchDescription = dto.ShortDutchDescription,
+            ShortEnglishDescription = dto.ShortEnglishDescription,
             DateTimeStart = dto.DateTimeStart,
             DateTimeEnd = dto.DateTimeEnd,
             UnenrollmentDeadline = dto.UnenrollmentDeadline,
@@ -719,6 +721,8 @@ public class ActivityService : IActivityService
         activity.Price = dto.Price;
         activity.DutchDescription = dto.DutchDescription;
         activity.EnglishDescription = dto.EnglishDescription;
+        activity.ShortDutchDescription = dto.ShortDutchDescription;
+        activity.ShortEnglishDescription = dto.ShortEnglishDescription;
         activity.DateTimeStart = dto.DateTimeStart;
         activity.DateTimeEnd = dto.DateTimeEnd;
         activity.UnenrollmentDeadline = dto.UnenrollmentDeadline;

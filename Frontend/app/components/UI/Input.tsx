@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { cn } from "~/util/tailwind.util";
 import RequiredAsterisk from "./RequiredAstrix";
 
@@ -17,12 +18,36 @@ import RequiredAsterisk from "./RequiredAstrix";
 export default function Input({
   label = null,
   className,
+  onChange,
+  value,
+  defaultValue,
+  maxLength,
   ...props
 }: { label?: string | null } & React.InputHTMLAttributes<HTMLInputElement>) {
+  const [charCount, setCharCount] = useState<number>(() => {
+    if (value !== undefined && value !== null) return String(value).length;
+    if (defaultValue !== undefined && defaultValue !== null)
+      return String(defaultValue).length;
+    return 0;
+  });
+
+  useEffect(() => {
+    if (value !== undefined && value !== null) {
+      setCharCount(String(value).length);
+    } else if (defaultValue !== undefined && defaultValue !== null) {
+      setCharCount(String(defaultValue).length);
+    }
+  }, [value, defaultValue]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCharCount(e.target.value.length);
+    onChange?.(e);
+  };
+
   if (props.type === "checkbox") {
     return (
       <div className={cn("flex items-center justify-start", className)}>
-        <input type="checkbox" {...props} />
+        <input type="checkbox" onChange={onChange} {...props} />
         {label && <span className="ml-2 text-sm">{label}</span>}
         <RequiredAsterisk required={props.required || false} />
       </div>
@@ -31,14 +56,27 @@ export default function Input({
 
   return (
     <label className="flex flex-col gap-1 w-full">
-      {label && (
-        <div className="flex">
-          <span className="text-sm font-medium text-gray-700">{label}</span>
-          <RequiredAsterisk required={props.required || false} />
+      {(label || maxLength !== undefined) && (
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            {label && (
+              <span className="text-sm font-medium text-gray-700">{label}</span>
+            )}
+            <RequiredAsterisk required={props.required || false} />
+          </div>
+          {maxLength !== undefined && (
+            <span data-testid="char-counter" className="text-xs text-gray-500">
+              {charCount} / {maxLength}
+            </span>
+          )}
         </div>
       )}
       <input
         {...props}
+        value={value}
+        defaultValue={defaultValue}
+        maxLength={maxLength}
+        onChange={handleChange}
         className={cn(
           "transition-all outline-none w-full h-7 px-2 py-auto rounded-md border border-gray-200 focus:ring-2",
           props.disabled && "bg-gray-100 cursor-not-allowed text-gray-500",

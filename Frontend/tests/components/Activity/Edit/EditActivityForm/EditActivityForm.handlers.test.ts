@@ -170,8 +170,8 @@ describe("handleActivityFormChange", () => {
     DateTimeEnd: "2026-08-01T12:00",
     Location: "Enschede",
     OrganizerId: "1",
-    DutchDescription: "Feest",
-    EnglishDescription: "Party",
+    ShortDutchDescription: "Feest",
+    ShortEnglishDescription: "Party",
   };
 
   it("marks the form valid when all required fields are present", () => {
@@ -188,6 +188,19 @@ describe("handleActivityFormChange", () => {
 
   it("marks the form invalid when a required field is missing", () => {
     const { Location: _Location, ...rest } = requiredFields;
+    const form = buildForm(rest);
+    const setFormValid = vi.fn();
+
+    handleActivityFormChange(
+      { currentTarget: form } as unknown as React.FormEvent<HTMLFormElement>,
+      setFormValid,
+    );
+
+    expect(setFormValid).toHaveBeenCalledWith(false);
+  });
+
+  it("marks the form invalid when a short description is missing", () => {
+    const { ShortEnglishDescription: _short, ...rest } = requiredFields;
     const form = buildForm(rest);
     const setFormValid = vi.fn();
 
@@ -218,6 +231,8 @@ describe("handleActivitySubmit", () => {
   const baseFields = {
     Name: "Party",
     Location: "Enschede",
+    ShortDutchDescription: "Kort feest",
+    ShortEnglishDescription: "Short party",
     DutchDescription: "Feest",
     EnglishDescription: "Party",
     Price: "5",
@@ -256,6 +271,58 @@ describe("handleActivitySubmit", () => {
     expect(payload.ShowInKoala).toBe(false);
     expect(payload.ShowOnWebsite).toBe(false);
     expect(payload.IsEnrollable).toBe(false);
+  });
+
+  it("submits short descriptions in the payload when provided", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+    const navigate = vi.fn();
+
+    await handleActivitySubmit({
+      e: buildFormEvent({
+        ...baseFields,
+        ShortDutchDescription: "Korte beschrijving",
+        ShortEnglishDescription: "Short description",
+      }),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate,
+    });
+
+    const payload = postActivities.mock.calls[0][0].body;
+    expect(payload.ShortDutchDescription).toBe("Korte beschrijving");
+    expect(payload.ShortEnglishDescription).toBe("Short description");
+  });
+
+  it("allows submitting without long descriptions (optional)", async () => {
+    postActivities.mockResolvedValue({ data: { id: 1 } });
+    const navigate = vi.fn();
+
+    const {
+      DutchDescription: _dutch,
+      EnglishDescription: _english,
+      ...fieldsWithoutLongDesc
+    } = baseFields;
+
+    await handleActivitySubmit({
+      e: buildFormEvent(fieldsWithoutLongDesc),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: false,
+      id: undefined,
+      pathname: "/activities/new",
+      navigate,
+    });
+
+    const payload = postActivities.mock.calls[0][0].body;
+    expect(payload.ShortDutchDescription).toBe("Kort feest");
+    expect(payload.ShortEnglishDescription).toBe("Short party");
+    expect(payload.DutchDescription).toBeUndefined();
+    expect(payload.EnglishDescription).toBeUndefined();
   });
 
   it("creating as a board member includes financial fields in the payload", async () => {
@@ -306,6 +373,36 @@ describe("handleActivitySubmit", () => {
     // /EnrollOpenDate isn't in the backend's AllowedFields list for non-board
     // patches, so including it here would get the whole patch rejected.
     expect(paths).not.toContain("/EnrollOpenDate");
+  });
+
+  it("editing includes the short descriptions in the patch operations", async () => {
+    patchActivitiesById.mockResolvedValue({});
+
+    await handleActivitySubmit({
+      e: buildFormEvent({
+        ...baseFields,
+        ShortDutchDescription: "  Nieuw kort  ",
+        ShortEnglishDescription: "New short",
+      }),
+      isBoard: false,
+      questions: [],
+      setSaving: vi.fn(),
+      isEdit: true,
+      id: "5",
+      pathname: "/activities/5/edit",
+      navigate: vi.fn(),
+    });
+
+    const operations = patchActivitiesById.mock.calls[0][0].body as {
+      path: string;
+      value: unknown;
+    }[];
+    expect(
+      operations.find((op) => op.path === "/ShortDutchDescription")?.value,
+    ).toBe("Nieuw kort");
+    expect(
+      operations.find((op) => op.path === "/ShortEnglishDescription")?.value,
+    ).toBe("New short");
   });
 
   it("editing as a board member includes financial patch operations", async () => {

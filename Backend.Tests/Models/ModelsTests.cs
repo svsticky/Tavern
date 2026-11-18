@@ -1,3 +1,4 @@
+using Backend.Controllers.DTOs;
 using Backend.Models;
 using Backend.Models.Domain;
 using Backend.Utils.DateTime;
@@ -7,6 +8,61 @@ namespace Backend.Tests.Models;
 
 public class ModelsTests
 {
+    [Fact]
+    public void BaseActivityDTO_Descriptions_NormalizeCrlfToLf()
+    {
+        var dto = new PostActivityDTO
+        {
+            Name = "A",
+            Location = "L",
+            DateTimeStart = DateTimeOffset.UtcNow,
+            DateTimeEnd = DateTimeOffset.UtcNow.AddHours(1),
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = false,
+            AreParticipantsVisible = false,
+            IsAdultOnly = false,
+            IsWeeklyDrinks = false,
+            ShortDutchDescription = "a\r\nb\rc",
+            ShortEnglishDescription = "a\r\nb",
+            DutchDescription = "x\r\ny",
+            EnglishDescription = null,
+        };
+
+        Assert.Equal("a\nb\nc", dto.ShortDutchDescription);
+        Assert.Equal("a\nb", dto.ShortEnglishDescription);
+        Assert.Equal("x\ny", dto.DutchDescription);
+        Assert.Null(dto.EnglishDescription);
+    }
+
+    [Fact]
+    public void BaseActivityDTO_ShortDescriptionOf250CharsWithCrlf_PassesValidation()
+    {
+        // 249 characters + one line break: 250 in the textarea, 251 once the browser sends it as CRLF.
+        var text = new string('a', 124) + "\r\n" + new string('b', 125);
+        var dto = new PostActivityDTO
+        {
+            Name = "A",
+            Location = "L",
+            DateTimeStart = DateTimeOffset.UtcNow,
+            DateTimeEnd = DateTimeOffset.UtcNow.AddHours(1),
+            ShowInKoala = false,
+            ShowOnWebsite = false,
+            IsEnrollable = false,
+            AreParticipantsVisible = false,
+            IsAdultOnly = false,
+            IsWeeklyDrinks = false,
+            ShortDutchDescription = text,
+            ShortEnglishDescription = text,
+        };
+
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        var valid = System.ComponentModel.DataAnnotations.Validator.TryValidateObject(
+            dto, new System.ComponentModel.DataAnnotations.ValidationContext(dto), results, validateAllProperties: true);
+
+        Assert.True(valid, string.Join(", ", results.Select(r => r.ErrorMessage)));
+    }
+
     [Fact]
     public void Setting_GettersAndSetters_WorkCorrectly()
     {
@@ -175,6 +231,8 @@ public class ModelsTests
             PosterPath = "/path/to/poster.png",
             DutchDescription = "Feest",
             EnglishDescription = "Party",
+            ShortDutchDescription = "Kort feest",
+            ShortEnglishDescription = "Short party",
             DateTimeStart = now,
             DateTimeEnd = now.AddHours(4),
             UnenrollmentDeadline = now.AddDays(-1),
@@ -208,6 +266,32 @@ public class ModelsTests
         Assert.Equal("/path/to/poster.png", activity.PosterPath);
         Assert.Equal("Feest", activity.DutchDescription);
         Assert.Equal("Party", activity.EnglishDescription);
+        Assert.Equal("Kort feest", activity.ShortDutchDescription);
+        Assert.Equal("Short party", activity.ShortEnglishDescription);
+        Assert.Equal("Feest", activity.GetDescription(Language.NL));
+        Assert.Equal("Party", activity.GetDescription(Language.EN));
+        Assert.Equal("Kort feest", activity.GetShortDescription(Language.NL));
+        Assert.Equal("Short party", activity.GetShortDescription(Language.EN));
+
+        var fallbackActivity = new Activity
+        {
+            Name = "Fallback",
+            DateTimeStart = now,
+            DateTimeEnd = now,
+            Location = "Tavern",
+            PaymentDeadline = now,
+            ShortDutchDescription = "Kort NL",
+            ShortEnglishDescription = "Short EN"
+        };
+        // When long description is empty, GetDescription falls back to short description
+        Assert.Equal("Kort NL", fallbackActivity.GetDescription(Language.NL));
+        Assert.Equal("Short EN", fallbackActivity.GetDescription(Language.EN));
+
+        // When long description is provided, it overrides short description
+        fallbackActivity.DutchDescription = "Lange NL";
+        fallbackActivity.EnglishDescription = "Long EN";
+        Assert.Equal("Lange NL", fallbackActivity.GetDescription(Language.NL));
+        Assert.Equal("Long EN", fallbackActivity.GetDescription(Language.EN));
         Assert.Equal(now, activity.DateTimeStart);
         Assert.Equal(now.AddHours(4), activity.DateTimeEnd);
         Assert.Equal(now.AddDays(-1), activity.UnenrollmentDeadline);

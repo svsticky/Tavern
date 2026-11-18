@@ -23,6 +23,8 @@ public class Activity
         "/price",
         "/dutchdescription",
         "/englishdescription",
+        "/shortdutchdescription",
+        "/shortenglishdescription",
         "/datetimestart",
         "/datetimeend",
         "/unenrollmentdeadline",
@@ -66,30 +68,74 @@ public class Activity
     public string? PosterPath { get; set; }
 
     /// <summary>
-    /// A dutch description or arbitrary length, explaining everything there is to know about the activity.
+    /// A short Dutch description (max 250 characters) tailored for promotional channels like WhatsApp.
     /// </summary>
-    [StringLength(2000)]
-    public string DutchDescription { get; set; }
+    [StringLength(250)]
+    public string ShortDutchDescription { get; set; } = string.Empty;
 
     /// <summary>
-    /// An english description or arbitrary length, explaining everything there is to know about the activity.
+    /// A short English description (max 250 characters) tailored for promotional channels like WhatsApp.
+    /// </summary>
+    [StringLength(250)]
+    public string ShortEnglishDescription { get; set; } = string.Empty;
+
+    /// <summary>
+    /// A dutch description of arbitrary length, explaining everything there is to know about the activity.
     /// </summary>
     [StringLength(2000)]
-    public string EnglishDescription { get; set; }
+    public string? DutchDescription { get; set; }
+
+    /// <summary>
+    /// An english description of arbitrary length, explaining everything there is to know about the activity.
+    /// </summary>
+    [StringLength(2000)]
+    public string? EnglishDescription { get; set; }
 
     /// <summary>
     /// Gets the description of the activity in the specified locale.
+    /// Returns the long description if available; otherwise falls back to the short description.
     /// </summary>
     /// <param name="language">The language for which to get the description.</param>
     /// <returns>The description of the activity in the specified language.</returns>
     public string GetDescription(Language language)
     {
-        return language switch
+        var longDesc = language switch
         {
             Language.NL => DutchDescription,
             Language.EN => EnglishDescription,
             _ => EnglishDescription
         };
+
+        if (!string.IsNullOrWhiteSpace(longDesc))
+        {
+            return longDesc;
+        }
+
+        var shortDesc = language switch
+        {
+            Language.NL => ShortDutchDescription,
+            Language.EN => ShortEnglishDescription,
+            _ => ShortEnglishDescription
+        };
+
+        return shortDesc ?? string.Empty;
+    }
+
+    /// <summary>
+    /// Gets the short description of the activity in the specified locale, falling back to the standard description if absent.
+    /// </summary>
+    /// <param name="language">The language for which to get the short description.</param>
+    /// <returns>The short description of the activity in the specified language, or the standard description.</returns>
+    public string GetShortDescription(Language language)
+    {
+        var shortDesc = language switch
+        {
+            Language.NL => ShortDutchDescription,
+            Language.EN => ShortEnglishDescription,
+            _ => ShortEnglishDescription
+        };
+
+        return !string.IsNullOrWhiteSpace(shortDesc) ? shortDesc : GetDescription(language);
     }
 
     /// <summary>

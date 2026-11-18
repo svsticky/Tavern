@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import Input from "~/components/UI/Input";
-import { render, screen } from "~/testUtils";
+import { fireEvent, render, screen } from "~/testUtils";
 
 describe("Input", () => {
   it("renders a text input with a label", () => {
@@ -55,5 +55,25 @@ describe("Input", () => {
       />,
     );
     expect(screen.getByText("*")).toBeInTheDocument();
+  });
+
+  it("renders a character counter when maxLength is provided and updates on input", () => {
+    const handleChange = vi.fn();
+    render(
+      <Input
+        label="Title"
+        maxLength={50}
+        defaultValue="Party"
+        onChange={handleChange}
+      />,
+    );
+
+    expect(screen.getByText("5 / 50")).toBeInTheDocument();
+
+    const input = screen.getByRole("textbox");
+    fireEvent.change(input, { target: { value: "Party Tonight" } });
+
+    expect(screen.getByText("13 / 50")).toBeInTheDocument();
+    expect(handleChange).toHaveBeenCalled();
   });
 });
