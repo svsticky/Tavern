@@ -4,12 +4,13 @@ import {
   ImageIcon,
   MapPin,
   PencilIcon,
+  Users,
   UsersRound,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
-import type { ActivityResponseDto } from "~/api";
+import { type ActivityResponseDto, getGroupsById } from "~/api";
 import { useAuth } from "~/context/AuthContext";
 import type { TokenParsed } from "~/types/TokenParsed";
 import {
@@ -60,6 +61,7 @@ export default function ActivityTile({
   const { t } = useTranslation();
   const authService = useAuth();
   const [tokenParsed, setTokenParsed] = useState<TokenParsed | null>(null);
+  const [organizerName, setOrganizerName] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,6 +76,27 @@ export default function ActivityTile({
       cancelled = true;
     };
   }, [authService]);
+
+  useEffect(() => {
+    if (!activity.organizerId) {
+      setOrganizerName(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadOrganizer = async () => {
+      const response = await getGroupsById({
+        path: { id: activity.organizerId! },
+      });
+      if (!cancelled) {
+        setOrganizerName(response?.data?.name ?? null);
+      }
+    };
+    loadOrganizer();
+    return () => {
+      cancelled = true;
+    };
+  }, [activity.organizerId]);
 
   const canEdit = !!tokenParsed && canEditActivity(activity, tokenParsed);
   const { canEnroll } = getActivityEnrollmentStatus(activity);
@@ -192,6 +215,13 @@ export default function ActivityTile({
                 {formatDate(endDate, "timeOnly")}
               </span>
             </div>
+
+            {organizerName && (
+              <div className="mt-1 flex h-5 items-center gap-1.5">
+                <Users size={12} className="shrink-0" />
+                <span className="min-w-0 truncate">{organizerName}</span>
+              </div>
+            )}
 
             <div className="mt-1 flex h-5 items-center gap-1.5">
               <MapPin size={12} className="shrink-0" />
