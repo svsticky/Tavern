@@ -199,6 +199,30 @@ public class ActivityServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task GetActivities_WithOrganizerId_FiltersByOrganizerGroup()
+    {
+        var group1 = new Group { Id = 10, Name = "Committee 1", Type = GroupType.Committee };
+        var group2 = new Group { Id = 20, Name = "Committee 2", Type = GroupType.Committee };
+        _db.Groups.AddRange(group1, group2);
+
+        var a1 = CreateActivity("A1");
+        a1.OrganizerId = 10;
+        var a2 = CreateActivity("A2");
+        a2.OrganizerId = 20;
+        _db.Activities.AddRange(a1, a2);
+        await _db.SaveChangesAsync();
+
+        _permissionService.IsBoardOrCandidateBoardMember(_userId).Returns(true);
+
+        var dto = new GetActivitiesDTO { OrganizerId = 10, IncludePast = true, IncludeFuture = true };
+        var result = await _service.GetActivities(_userId, dto);
+
+        Assert.Single(result);
+        Assert.Equal("A1", result.First().Name);
+        Assert.Equal(10u, result.First().OrganizerId);
+    }
+
+    [Fact]
     public async Task GetActivity_NotFound_ReturnsNull()
     {
         var result = await _service.GetActivity(_userId, 999u);

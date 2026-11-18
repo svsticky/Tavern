@@ -47,6 +47,34 @@ describe("loadAdminActivities", () => {
     expect(setLoading).toHaveBeenNthCalledWith(2, false);
   });
 
+  it("includes organizerId in query when provided", async () => {
+    const setLoading = vi.fn();
+    const setActivities = vi.fn();
+    getActivities.mockResolvedValue({ data: [] });
+
+    await loadAdminActivities(
+      2024,
+      setLoading,
+      setActivities,
+      1,
+      15,
+      "test",
+      42,
+    );
+
+    expect(getActivities).toHaveBeenCalledWith({
+      query: {
+        IncludePast: true,
+        IncludeFuture: true,
+        Year: 2024,
+        Page: 1,
+        PageSize: 15,
+        Search: "test",
+        OrganizerId: 42,
+      },
+    });
+  });
+
   it("shows an error toast and does not set activities when the response has an error", async () => {
     const setLoading = vi.fn();
     const setActivities = vi.fn();

@@ -18,6 +18,7 @@ import { appendErrorMessage } from "~/util/error.util";
  * @param {number} [page] - The page number to fetch.
  * @param {number} [pageSize] - The number of activities to fetch per page.
  * @param {string} [search] - A search term to filter activities by name or location, applied server-side.
+ * @param {number} [organizerId] - An optional group ID to filter activities organized by this group.
  */
 export const loadAdminActivities = async (
   year: number,
@@ -26,6 +27,7 @@ export const loadAdminActivities = async (
   page?: number,
   pageSize?: number,
   search?: string,
+  organizerId?: number,
 ) => {
   try {
     setLoading(true);
@@ -37,6 +39,7 @@ export const loadAdminActivities = async (
         Page: page,
         PageSize: pageSize,
         Search: search || undefined,
+        OrganizerId: organizerId,
       },
     });
 

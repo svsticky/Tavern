@@ -74,6 +74,9 @@ public static class ActivityQueryExtensions
             );
         }
 
+        if (dto.OrganizerId.HasValue)
+            query = query.Where(a => a.OrganizerId == dto.OrganizerId.Value);
+
         query = query.OrderBy(a => a.DateTimeStart);
 
         return query;
